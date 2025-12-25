@@ -45,7 +45,7 @@ HEARTBEAT_INTERVAL_SECONDS = 5
 RECONNECT_TIMEOUT_SECONDS = 120
 
 # Visual Configuration (for rendering phase)
-BACKGROUND_COLOR = (10, 10, 15)  # Dark background #0a0a0f
+BACKGROUND_COLOR = (0, 0, 0)  # Pure black for vector arcade aesthetic
 PLAYER_COLORS = [
     (0, 255, 255),    # Cyan - Player 1
     (255, 0, 255),    # Magenta - Player 2
@@ -77,3 +77,12 @@ COMBAT_ANIMATION_DURATION = 0.3  # seconds
 DEFAULT_WINDOW_WIDTH = 1280
 DEFAULT_WINDOW_HEIGHT = 720
 FPS_TARGET = 60
+
+# 3D Rendering Configuration
+WALL_HEIGHT = 50.0  # Height of vertical grid walls in 3D mode
+TOKEN_HEIGHT_3D = 25.0  # Height of 3D hexagonal prism tokens
+CAMERA_FOV = 75.0  # Field of view in degrees (wide for Battlezone feel)
+CAMERA_HEIGHT_ABOVE_TOKEN = 20.0  # Eye height above token
+CAMERA_FORWARD_OFFSET = -15.0  # Distance behind token (negative = behind)
+CAMERA_NEAR_PLANE = 0.1  # Near clipping plane
+CAMERA_FAR_PLANE = 500.0  # Far clipping plane

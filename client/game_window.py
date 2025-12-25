@@ -6,8 +6,9 @@ replacing the Pygame-based implementation with GPU-accelerated rendering.
 """
 
 import arcade
-from arcade.shape_list import ShapeElementList, create_rectangle_outline, create_ellipse_outline
+from arcade.shape_list import ShapeElementList, create_rectangle_outline, create_ellipse_outline, create_line
 from typing import Optional, Tuple, List
+import math
 
 from game.game_state import GameState
 from game.movement import MovementSystem
@@ -22,6 +23,9 @@ from shared.constants import (
 )
 from client.sprites.token_sprite import TokenSprite
 from client.sprites.board_sprite import create_board_shapes
+from client.camera_3d import FirstPersonCamera3D
+from client.board_3d import Board3D
+from client.token_3d import Token3D
 
 
 class GameWindow(arcade.Window):
@@ -70,6 +74,42 @@ class GameWindow(arcade.Window):
         self.camera_speed = 10
         self.zoom_level = 1.0
 
+        # HUD Text objects (for performance)
+        self.player_text = arcade.Text(
+            "",
+            10, 0,  # Y will be updated in _draw_hud
+            (255, 255, 255),
+            font_size=24,
+            bold=True
+        )
+        self.turn_text = arcade.Text(
+            "",
+            10, 0,
+            (200, 200, 200),
+            font_size=16
+        )
+        self.phase_text = arcade.Text(
+            "",
+            200, 0,
+            (200, 200, 200),
+            font_size=16
+        )
+        self.instruction_text = arcade.Text(
+            "",
+            0, 0,  # X and Y will be updated in _draw_hud
+            (150, 150, 150),
+            font_size=14
+        )
+
+        # 3D Rendering infrastructure
+        self.camera_mode = "2D"  # Current view mode: "2D" or "3D"
+        self.camera_3d = FirstPersonCamera3D(width, height)
+        self.board_3d = None  # Will be initialized in setup()
+        self.tokens_3d = []  # List of Token3D instances
+        self.shader_3d = None  # Shared shader for 3D rendering
+        self.controlled_token_id: Optional[int] = None  # Token camera follows in 3D
+        self.token_rotation = 0.0  # Camera rotation around token
+
         # Set background color
         arcade.set_background_color(BACKGROUND_COLOR)
 
@@ -80,6 +120,7 @@ class GameWindow(arcade.Window):
         self._create_board_sprites()
         self._create_token_sprites()
         self._create_ui_sprites()
+        self._create_3d_rendering()
 
         print("Window setup complete")
 
@@ -105,6 +146,31 @@ class GameWindow(arcade.Window):
         # For now, we'll use simple text rendering instead of complex UI sprites
         pass
 
+    def _create_3d_rendering(self):
+        """Initialize 3D rendering components."""
+        # Create 3D board
+        self.board_3d = Board3D(self.game_state.board, self.ctx)
+        self.shader_3d = self.board_3d.shader_program  # Reuse shader
+
+        # Create 3D tokens
+        self.tokens_3d.clear()
+        for player in self.game_state.players.values():
+            player_color = PLAYER_COLORS[player.color.value]
+
+            for token_id in player.token_ids:
+                token = self.game_state.get_token(token_id)
+                if token and token.is_alive:
+                    token_3d = Token3D(token, player_color, self.ctx)
+                    self.tokens_3d.append(token_3d)
+
+        # Set initial controlled token (first token of current player)
+        current_player = self.game_state.get_current_player()
+        if current_player and len(current_player.token_ids) > 0:
+            self.controlled_token_id = current_player.token_ids[0]
+            token = self.game_state.get_token(self.controlled_token_id)
+            if token:
+                self.camera_3d.follow_token(token.position, self.token_rotation)
+
     def _draw_hud(self):
         """Draw the heads-up display with game information."""
         # Get current player
@@ -121,32 +187,20 @@ class GameWindow(arcade.Window):
 
         # Current player info
         player_color = PLAYER_COLORS[current_player.color.value]
-        player_text = f"{current_player.name}'s Turn"
-        arcade.draw_text(
-            player_text,
-            10, self.height - 30,
-            player_color,
-            font_size=24,
-            bold=True
-        )
+        self.player_text.text = f"{current_player.name}'s Turn"
+        self.player_text.color = player_color
+        self.player_text.y = self.height - 30
+        self.player_text.draw()
 
         # Turn number
-        turn_text = f"Turn {self.game_state.turn_number}"
-        arcade.draw_text(
-            turn_text,
-            10, self.height - 60,
-            (200, 200, 200),
-            font_size=16
-        )
+        self.turn_text.text = f"Turn {self.game_state.turn_number}"
+        self.turn_text.y = self.height - 60
+        self.turn_text.draw()
 
         # Turn phase
-        phase_text = f"Phase: {self.turn_phase.name}"
-        arcade.draw_text(
-            phase_text,
-            200, self.height - 60,
-            (200, 200, 200),
-            font_size=16
-        )
+        self.phase_text.text = f"Phase: {self.turn_phase.name}"
+        self.phase_text.y = self.height - 60
+        self.phase_text.draw()
 
         # Instructions
         if self.turn_phase == TurnPhase.MOVEMENT:
@@ -156,43 +210,102 @@ class GameWindow(arcade.Window):
         else:
             instruction = "Press SPACE to end turn"
 
-        arcade.draw_text(
-            instruction,
-            self.width - 500, self.height - 60,
-            (150, 150, 150),
-            font_size=14
-        )
+        self.instruction_text.text = instruction
+        self.instruction_text.x = self.width - 500
+        self.instruction_text.y = self.height - 60
+        self.instruction_text.draw()
 
     def _update_selection_visuals(self):
-        """Update visual feedback for selection and valid moves."""
+        """Update visual feedback for selection and valid moves with vector glow."""
         self.selection_shapes = ShapeElementList()
 
         if self.selected_token_id:
             # Find selected token position
             selected_token = self.game_state.get_token(self.selected_token_id)
             if selected_token:
-                # Draw selection highlight around selected token
+                # Draw pulsing selection highlight with glow
                 x = selected_token.position[0] * CELL_SIZE + CELL_SIZE // 2
                 y = selected_token.position[1] * CELL_SIZE + CELL_SIZE // 2
-                highlight = create_rectangle_outline(
-                    x, y,
-                    CELL_SIZE - 4, CELL_SIZE - 4,
-                    (255, 255, 0, 255),  # Yellow
-                    border_width=3
-                )
-                self.selection_shapes.append(highlight)
+                size = CELL_SIZE * 0.8
+                half = size / 2
 
-        # Draw valid move indicators
+                # Glow layers for selection
+                for i in range(6, 0, -1):
+                    alpha = int(180 / (i + 1))
+                    glow_size = size + (i * 4)
+                    glow_half = glow_size / 2
+                    points = [
+                        (x - glow_half, y - glow_half),
+                        (x + glow_half, y - glow_half),
+                        (x + glow_half, y + glow_half),
+                        (x - glow_half, y + glow_half),
+                        (x - glow_half, y - glow_half),
+                    ]
+                    for j in range(len(points) - 1):
+                        line = create_line(
+                            points[j][0], points[j][1],
+                            points[j + 1][0], points[j + 1][1],
+                            (255, 255, 0, alpha), max(1, 4 - i // 2)
+                        )
+                        self.selection_shapes.append(line)
+
+                # Bright main selection square
+                points = [
+                    (x - half, y - half),
+                    (x + half, y - half),
+                    (x + half, y + half),
+                    (x - half, y + half),
+                    (x - half, y - half),
+                ]
+                for j in range(len(points) - 1):
+                    line = create_line(
+                        points[j][0], points[j][1],
+                        points[j + 1][0], points[j + 1][1],
+                        (255, 255, 100, 255), 4
+                    )
+                    self.selection_shapes.append(line)
+
+        # Draw valid move indicators as glowing circles
         for move in self.valid_moves:
             x = move[0] * CELL_SIZE + CELL_SIZE // 2
             y = move[1] * CELL_SIZE + CELL_SIZE // 2
-            circle = create_ellipse_outline(
-                x, y,
-                CELL_SIZE // 3, CELL_SIZE // 3,
-                (0, 255, 0, 180),  # Green
-                border_width=2
-            )
-            self.selection_shapes.append(circle)
+            radius = CELL_SIZE * 0.3
+            segments = 12
+
+            # Glow layers
+            for i in range(4, 0, -1):
+                alpha = int(120 / (i + 1))
+                glow_radius = radius + (i * 3)
+                points = []
+                for seg in range(segments + 1):
+                    angle = (seg / segments) * 2 * math.pi
+                    px = x + glow_radius * math.cos(angle)
+                    py = y + glow_radius * math.sin(angle)
+                    points.append((px, py))
+
+                for j in range(len(points) - 1):
+                    line = create_line(
+                        points[j][0], points[j][1],
+                        points[j + 1][0], points[j + 1][1],
+                        (0, 255, 0, alpha), max(1, 3 - i // 2)
+                    )
+                    self.selection_shapes.append(line)
+
+            # Bright main circle
+            points = []
+            for seg in range(segments + 1):
+                angle = (seg / segments) * 2 * math.pi
+                px = x + radius * math.cos(angle)
+                py = y + radius * math.sin(angle)
+                points.append((px, py))
+
+            for j in range(len(points) - 1):
+                line = create_line(
+                    points[j][0], points[j][1],
+                    points[j + 1][0], points[j + 1][1],
+                    (100, 255, 100, 255), 3
+                )
+                self.selection_shapes.append(line)
 
     def on_draw(self):
         """
@@ -202,14 +315,31 @@ class GameWindow(arcade.Window):
         """
         self.clear()
 
-        # Draw world (with camera transform)
-        with self.camera.activate():
-            if self.board_shapes:
-                self.board_shapes.draw()
-            self.selection_shapes.draw()  # Draw selection highlights
-            self.token_sprites.draw()
+        if self.camera_mode == "2D":
+            # 2D top-down rendering
+            with self.camera.activate():
+                if self.board_shapes:
+                    self.board_shapes.draw()
+                self.selection_shapes.draw()  # Draw selection highlights
+                self.token_sprites.draw()
+        else:
+            # 3D first-person rendering
+            if self.board_3d and self.shader_3d:
+                # Update camera to follow controlled token
+                if self.controlled_token_id:
+                    token = self.game_state.get_token(self.controlled_token_id)
+                    if token and token.is_alive:
+                        self.camera_3d.follow_token(token.position, self.token_rotation)
 
-        # Draw UI (no camera transform)
+                # Draw 3D board
+                self.board_3d.draw(self.camera_3d)
+
+                # Draw 3D tokens
+                for token_3d in self.tokens_3d:
+                    if token_3d.token.is_alive:
+                        token_3d.draw(self.camera_3d, self.shader_3d)
+
+        # Draw UI (no camera transform) - always in 2D
         with self.ui_camera.activate():
             self.ui_sprites.draw()
             self._draw_hud()
@@ -227,7 +357,7 @@ class GameWindow(arcade.Window):
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
         """
-        Handle mouse press events.
+        Handle mouse press events with support for 2D and 3D picking.
 
         Args:
             x: Mouse x coordinate
@@ -236,9 +366,25 @@ class GameWindow(arcade.Window):
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
         if button == arcade.MOUSE_BUTTON_LEFT:
-            # Convert screen coordinates to world coordinates
-            world_x, world_y = self.camera.unproject((x, y))
-            self._handle_select((world_x, world_y))
+            if self.camera_mode == "2D":
+                # 2D picking using camera unproject
+                world_pos = self.camera.unproject((x, y))
+                self._handle_select((world_pos[0], world_pos[1]))
+            else:
+                # 3D ray casting
+                ray_origin, ray_direction = self.camera_3d.screen_to_ray(
+                    x, y, self.width, self.height
+                )
+
+                # Intersect with board plane (z=0)
+                intersection = self.camera_3d.ray_intersect_plane(
+                    ray_origin, ray_direction, plane_z=0.0
+                )
+
+                if intersection:
+                    world_x, world_y = intersection
+                    grid_x, grid_y = self.camera_3d.world_to_grid(world_x, world_y)
+                    self._handle_select_3d((grid_x, grid_y))
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: int, scroll_y: int):
         """
@@ -285,6 +431,33 @@ class GameWindow(arcade.Window):
         elif symbol == arcade.key.ESCAPE:
             self._handle_cancel()
 
+        # 3D View controls
+        elif symbol == arcade.key.V:
+            # Toggle between 2D and 3D views
+            self.camera_mode = "3D" if self.camera_mode == "2D" else "2D"
+            print(f"Camera mode: {self.camera_mode}")
+            if self.camera_mode == "3D" and not self.controlled_token_id:
+                # Set initial controlled token when entering 3D
+                current_player = self.game_state.get_current_player()
+                if current_player and len(current_player.token_ids) > 0:
+                    self.controlled_token_id = current_player.token_ids[0]
+
+        elif symbol == arcade.key.TAB and self.camera_mode == "3D":
+            # Cycle to next token
+            self._cycle_controlled_token()
+
+        elif symbol == arcade.key.Q and not (modifiers & arcade.key.MOD_CTRL):
+            # Rotate camera left (only in 3D mode, and not Ctrl+Q which is quit)
+            if self.camera_mode == "3D":
+                self.token_rotation -= 15.0
+                print(f"Camera rotation: {self.token_rotation}")
+
+        elif symbol == arcade.key.E:
+            # Rotate camera right (only in 3D mode)
+            if self.camera_mode == "3D":
+                self.token_rotation += 15.0
+                print(f"Camera rotation: {self.token_rotation}")
+
         # Quit
         elif symbol == arcade.key.Q and (modifiers & arcade.key.MOD_CTRL):
             arcade.close_window()
@@ -312,6 +485,32 @@ class GameWindow(arcade.Window):
         self.zoom_level = max(0.5, self.zoom_level / 1.1)
         self.camera.zoom = self.zoom_level
 
+    def _cycle_controlled_token(self):
+        """Cycle to the next alive token of the current player."""
+        current_player = self.game_state.get_current_player()
+        if not current_player:
+            return
+
+        # Get all alive tokens
+        alive_tokens = [
+            token_id for token_id in current_player.token_ids
+            if self.game_state.get_token(token_id) and self.game_state.get_token(token_id).is_alive
+        ]
+
+        if not alive_tokens:
+            return
+
+        # Find current index
+        try:
+            current_index = alive_tokens.index(self.controlled_token_id)
+            next_index = (current_index + 1) % len(alive_tokens)
+        except ValueError:
+            next_index = 0
+
+        # Set new controlled token
+        self.controlled_token_id = alive_tokens[next_index]
+        print(f"Switched to token {self.controlled_token_id}")
+
     def _handle_select(self, world_pos: Tuple[float, float]):
         """
         Handle selection at world position.
@@ -331,8 +530,9 @@ class GameWindow(arcade.Window):
         # Check if clicked on a token
         clicked_token = None
         for player in self.game_state.players.values():
-            for token in player.tokens.values():
-                if token.is_alive and token.position == (grid_x, grid_y):
+            for token_id in player.token_ids:
+                token = self.game_state.get_token(token_id)
+                if token and token.is_alive and token.position == (grid_x, grid_y):
                     clicked_token = token
                     break
             if clicked_token:
@@ -362,6 +562,24 @@ class GameWindow(arcade.Window):
                     self._try_move_to_cell((grid_x, grid_y))
                 else:
                     print(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
+
+    def _handle_select_3d(self, grid_pos: Tuple[int, int]):
+        """
+        Handle selection in 3D mode using ray-cast grid position.
+
+        Args:
+            grid_pos: Grid coordinates (x, y)
+        """
+        grid_x, grid_y = grid_pos
+
+        # For now, just use the same logic as 2D
+        # Convert grid to world position for compatibility
+        world_x = grid_x * CELL_SIZE + CELL_SIZE / 2
+        world_y = grid_y * CELL_SIZE + CELL_SIZE / 2
+
+        self._handle_select((world_x, world_y))
+
+        print(f"3D click at grid ({grid_x}, {grid_y})")
 
     def _try_move_to_cell(self, cell: Tuple[int, int]):
         """

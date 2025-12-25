@@ -32,7 +32,7 @@ class TokenSprite(arcade.Sprite):
 
         self.token = token
         self.player_color = player_color
-        self.token_radius = int(CELL_SIZE * 0.35)
+        self.token_radius = int(CELL_SIZE * 0.45)  # Larger for better visibility
 
         # Create texture
         self._create_texture()
@@ -42,56 +42,57 @@ class TokenSprite(arcade.Sprite):
         self.center_y = token.position[1] * CELL_SIZE + CELL_SIZE // 2
 
     def _create_texture(self):
-        """Create a texture for the token with hexagon shape and health number."""
-        size = self.token_radius * 3  # Give extra space for glow
+        """Create a vector wireframe texture with glow effect for arcade aesthetic."""
+        size = self.token_radius * 4  # Extra space for glow
 
-        # Create PIL image with transparency
+        # Create PIL image with transparency on pure black
         image = Image.new('RGBA', (size, size), (0, 0, 0, 0))
         draw = ImageDraw.Draw(image)
 
         center = size // 2
 
-        # Draw hexagon with glow effect (multiple layers for glow)
-        glow_layers = 5
-        for i in range(glow_layers, 0, -1):
-            alpha = int(100 / (i + 1))  # Fade out glow
-            radius = self.token_radius + (i * 3)
+        # Draw glowing hexagon wireframe (multiple passes for glow)
+        # Outer glow layers
+        for i in range(8, 0, -1):
+            alpha = int(180 / (i + 1))  # Brighter glow
+            radius = self.token_radius + (i * 2)
+            width = max(1, 4 - i // 2)
             color = (*self.player_color, alpha)
 
-            # Calculate hexagon points
             points = self._hexagon_points(center, center, radius)
-            draw.polygon(points, fill=color, outline=color)
+            # Draw as outline only for wireframe effect
+            draw.line(points + [points[0]], fill=color, width=width)
 
-        # Draw main hexagon
+        # Main bright hexagon outline
         points = self._hexagon_points(center, center, self.token_radius)
-        draw.polygon(points, fill=self.player_color, outline=self.player_color)
+        bright_color = tuple(min(255, c + 100) for c in self.player_color) + (255,)
+        draw.line(points + [points[0]], fill=bright_color, width=3)
 
-        # Draw health number
+        # Draw health number with vector-style font
         try:
-            # Try to use a nice font if available
-            font_size = int(self.token_radius * 0.8)
+            # Vector-style monospace font
+            font_size = int(self.token_radius * 1.0)
             font = ImageFont.truetype("/usr/share/fonts/liberation/LiberationMono-Bold.ttf", font_size)
         except:
-            # Fall back to default font
             font = ImageFont.load_default()
 
         health_text = str(self.token.health)
-
-        # Get text bounding box for centering
         bbox = draw.textbbox((0, 0), health_text, font=font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
-
         text_x = center - text_width // 2
         text_y = center - text_height // 2
 
-        # Draw text with dark outline for contrast
-        outline_color = (0, 0, 0, 255)
-        for dx, dy in [(-1, -1), (-1, 1), (1, -1), (1, 1)]:
-            draw.text((text_x + dx, text_y + dy), health_text, fill=outline_color, font=font)
+        # Draw glowing text
+        # Glow layers
+        for offset in range(4, 0, -1):
+            alpha = int(150 / (offset + 1))
+            glow_color = (*self.player_color, alpha)
+            for dx, dy in [(-offset, 0), (offset, 0), (0, -offset), (0, offset)]:
+                draw.text((text_x + dx, text_y + dy), health_text, fill=glow_color, font=font)
 
-        # Draw main text in white
-        draw.text((text_x, text_y), health_text, fill=(255, 255, 255, 255), font=font)
+        # Bright main text
+        draw.text((text_x, text_y), health_text, fill=bright_color, font=font)
 
         # Convert PIL image to Arcade texture
         self.texture = arcade.Texture(
