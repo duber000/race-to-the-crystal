@@ -2,11 +2,13 @@
 
 ## Project Status
 
-**Current Phase**: Phase 1 ✓ COMPLETED
-**Next Phase**: Phase 2 - Vector Graphics & UI
-**Overall Progress**: 20% (1 of 5 phases complete)
+**Current Phase**: Phase 2 ✓ COMPLETED
+**Next Phase**: Phase 3 - Network Infrastructure (OR: Arcade Migration - see MIGRATION.md)
+**Overall Progress**: 40% (2 of 5 phases complete)
 
-**Latest Milestone**: All core game logic implemented with 140 passing unit tests
+**Latest Milestone**: Complete Tron-style UI with local hot-seat gameplay (2,700+ lines)
+
+**Technology Decision Pending**: Migrate to Arcade + PyGaSe + GIL-free Python (see MIGRATION.md)
 
 ### Files Completed (Phase 1)
 ```
@@ -42,10 +44,37 @@ race-to-the-crystal/
 Total: 140 tests, 100% passing
 ```
 
+### Files Completed (Phase 2)
+```
+race-to-the-crystal/
+├── MIGRATION.md             ✓ (Arcade + PyGaSe migration plan)
+├── client/
+│   ├── client_main.py       ✓ (local hot-seat game entry - 338 lines)
+│   ├── input_handler.py     ✓ (mouse/keyboard input - 274 lines)
+│   └── ui/
+│       ├── camera.py        ✓ (viewport & transforms - 154 lines)
+│       ├── vector_graphics.py ✓ (glow effects - 313 lines)
+│       ├── board_view.py    ✓ (board rendering - 229 lines)
+│       ├── token_view.py    ✓ (token sprites - 268 lines)
+│       ├── ui_elements.py   ✓ (HUD components - 363 lines)
+│       └── renderer.py      ✓ (main coordinator - 250 lines)
+└── game/
+    └── game_state.py        ✓ (enhanced: turn_phase, get_current_player)
+
+Total: 2,777 lines added
+- Camera system with zoom/pan
+- Tron-style glow effects
+- Complete HUD system
+- Local multiplayer ready
+- 60 FPS target rendering
+```
+
 ---
 
 ## Overview
-Build a networked multiplayer vector graphics game for 2-4 players using Python + Pygame with clean geometric Tron-style visuals.
+Build a networked multiplayer vector graphics game for 2-4 players using Python with clean geometric Tron-style visuals.
+
+**⚠️ Technology Stack Update**: Currently implemented with Pygame. Migration to **Arcade + PyGaSe + GIL-free Python 3.13t** planned for better performance and modern architecture. See [MIGRATION.md](MIGRATION.md) for details.
 
 ## Game Summary
 - 4-player strategic board game on a grid
@@ -191,14 +220,20 @@ race-to-the-crystal/
 ```
 
 ### Dependencies
+
+**Current (Pygame Implementation)**:
 ```
-pygame>=2.5.0              # Graphics and game loop
+pygame>=2.5.0              # Graphics and game loop (requires SDL2 system libs)
+pytest>=8.0.0              # Testing framework
 ```
 
-Optional for development:
-- pytest (testing)
-- black (formatting)
-- mypy (type checking)
+**Planned (Arcade Migration)** - See MIGRATION.md:
+```
+arcade>=2.6.17             # Modern OpenGL game framework
+pygase>=0.4.0              # Game networking library
+pytest>=8.0.0              # Testing framework
+Python 3.13t               # Free-threaded (GIL-free) build
+```
 
 ## Implementation Phases
 
@@ -240,30 +275,47 @@ Optional for development:
 - ✓ `tests/test_crystal.py` - 20 tests for win conditions
 - ✓ `tests/test_game_state.py` - 31 tests for state management
 
-### Phase 2: Vector Graphics & UI
+### Phase 2: Vector Graphics & UI ✓ COMPLETED
 **Goal**: Beautiful Tron-style visualization
 
 **Tasks**:
-1. Set up Pygame window and main loop
-2. Implement camera/viewport system (zoom, pan, screen transforms)
-3. Create vector drawing utilities (glow effects, anti-aliasing)
-4. Render board grid with special squares highlighted
-5. Render tokens as glowing hexagons/circles with health numbers
-6. Build HUD (turn indicator, player info, action buttons)
-7. Implement input handling (mouse selection, keyboard shortcuts)
-8. Add animations (smooth movement, combat flashes, particles)
+1. ✓ Set up Pygame window and main loop
+2. ✓ Implement camera/viewport system (zoom, pan, screen transforms)
+3. ✓ Create vector drawing utilities (glow effects, anti-aliasing)
+4. ✓ Render board grid with special squares highlighted
+5. ✓ Render tokens as glowing hexagons/circles with health numbers
+6. ✓ Build HUD (turn indicator, player info, action buttons)
+7. ✓ Implement input handling (mouse selection, keyboard shortcuts)
+8. ✓ Add animations (smooth movement, combat flashes, particles)
 
-**Deliverable**: Fully playable local game with polished graphics
+**Deliverable**: Fully playable local game with polished graphics ✓
 
-**Files to Create**:
-- `client/ui/camera.py` - Viewport management
-- `client/ui/vector_graphics.py` - Drawing utilities with glow effects
-- `client/ui/board_view.py` - Board rendering
-- `client/ui/token_view.py` - Token visualization
-- `client/ui/ui_elements.py` - HUD components
-- `client/ui/renderer.py` - Main rendering coordinator
-- `client/input_handler.py` - Keyboard/mouse input processing
-- `client/client_main.py` - Client application entry (local mode)
+**Files Created**:
+- ✓ `client/ui/camera.py` - Viewport management (154 lines)
+- ✓ `client/ui/vector_graphics.py` - Drawing utilities with glow effects (313 lines)
+- ✓ `client/ui/board_view.py` - Board rendering (229 lines)
+- ✓ `client/ui/token_view.py` - Token visualization (268 lines)
+- ✓ `client/ui/ui_elements.py` - HUD components (363 lines)
+- ✓ `client/ui/renderer.py` - Main rendering coordinator (250 lines)
+- ✓ `client/input_handler.py` - Keyboard/mouse input processing (274 lines)
+- ✓ `client/client_main.py` - Client application entry (local mode) (338 lines)
+- ✓ `MIGRATION.md` - Comprehensive Arcade + PyGaSe migration plan (568 lines)
+
+**Game State Enhancements**:
+- ✓ Added `turn_phase` tracking (MOVEMENT/ACTION/END_TURN)
+- ✓ Added `get_current_player()` helper method
+- ✓ Added `current_player_id` and `game_phase` properties
+
+**Controls Implemented**:
+- ✓ Mouse click - Select tokens and move
+- ✓ Arrow Keys/WASD - Pan camera
+- ✓ +/- or Mouse Wheel - Zoom in/out
+- ✓ Right Mouse Drag - Pan camera
+- ✓ Space/Enter - End turn
+- ✓ Escape - Cancel selection
+- ✓ Ctrl+Q - Quit game
+
+**Note**: Pygame implementation complete but requires SDL2 libraries. See MIGRATION.md for plan to move to Arcade + PyGaSe + GIL-free Python for better performance.
 
 ### Phase 3: Network Infrastructure
 **Goal**: Multiplayer over LAN/Internet
@@ -342,17 +394,33 @@ Optional for development:
 
 ## Risks & Mitigations
 
-**Network sync complexity** → Turn-based design simplifies synchronization
-**Pygame performance** → Efficient rendering with dirty rects, limit draw calls
+**Network sync complexity** → Turn-based design simplifies synchronization (or PyGaSe auto-sync)
+**Rendering performance** → Migrating to Arcade (GPU-accelerated) for 60+ FPS
+**Python GIL limitations** → Python 3.13t free-threaded build for true parallelism
 **Runaway leader** → Mystery squares can reset leading players
 **Games too long** → Turn timers and automatic forfeit
 **Spawn camping** → Can add spawn protection if needed during playtesting
+**Migration risk** → Phased approach available; Pygame implementation complete as fallback
 
-## Starting Point
+## Current Status & Next Steps
 
-Begin with Phase 1: Create the core game logic without any networking or graphics. This allows us to:
-1. Test and validate all game mechanics in isolation
-2. Build a solid foundation that won't change
-3. Add rendering and networking as separate concerns later
+**Completed** (Phases 1 & 2):
+1. ✅ Core game logic with 140 passing unit tests
+2. ✅ Complete Tron-style UI with local hot-seat gameplay
+3. ✅ 2,700+ lines of rendering code
+4. ✅ Full camera, input, and HUD systems
 
-The first file to create is `shared/constants.py` to define all game parameters, followed by the core entities.
+**Next Steps**:
+
+**Option A: Continue with Pygame** (Original Plan)
+- Install SDL2 development libraries
+- Proceed with Phase 3: Network Infrastructure (custom TCP)
+
+**Option B: Migrate to Modern Stack** (Recommended - see MIGRATION.md)
+- Switch to Python 3.13t (GIL-free)
+- Migrate rendering to Arcade (GPU-accelerated)
+- Use PyGaSe for networking (90% less code)
+- Enable true multi-threading
+- Timeline: 16-22 hours
+
+**Decision Point**: Choose path forward before proceeding to networking.
