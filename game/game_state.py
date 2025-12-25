@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 import json
 
-from shared.enums import GamePhase, PlayerColor
+from shared.enums import GamePhase, PlayerColor, TurnPhase
 from shared.constants import (
     TOKEN_HEALTH_VALUES,
     TOKENS_PER_HEALTH_VALUE,
@@ -39,8 +39,19 @@ class GameState:
     current_turn_player_id: Optional[str] = None
     turn_number: int = 0
     phase: GamePhase = GamePhase.SETUP
+    turn_phase: TurnPhase = TurnPhase.MOVEMENT
     winner_id: Optional[str] = None
     _next_token_id: int = 0
+
+    @property
+    def current_player_id(self) -> Optional[str]:
+        """Alias for current_turn_player_id."""
+        return self.current_turn_player_id
+
+    @property
+    def game_phase(self) -> GamePhase:
+        """Alias for phase."""
+        return self.phase
 
     def add_player(self, player_id: str, name: str, color: PlayerColor) -> Player:
         """
@@ -107,6 +118,14 @@ class GameState:
     def get_player(self, player_id: str) -> Optional[Player]:
         """Get player by ID."""
         return self.players.get(player_id)
+
+    def get_current_player(self) -> Optional[Player]:
+        """Get the current player whose turn it is."""
+        if self.current_turn_player_id:
+            return self.get_player(self.current_turn_player_id)
+        elif self.current_player_id:
+            return self.get_player(self.current_player_id)
+        return None
 
     def get_tokens_at_position(self, position: tuple) -> List[Token]:
         """
