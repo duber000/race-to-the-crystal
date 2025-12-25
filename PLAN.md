@@ -2,13 +2,13 @@
 
 ## Project Status
 
-**Current Phase**: Phase 2 ✓ COMPLETED
-**Next Phase**: Phase 3 - Network Infrastructure (OR: Arcade Migration - see MIGRATION.md)
-**Overall Progress**: 40% (2 of 5 phases complete)
+**Current Phase**: Phase 2 ✓ COMPLETED (with 3D enhancement!)
+**Next Phase**: Phase 3 - Network Infrastructure
+**Overall Progress**: 45% (2 of 5 phases complete + 3D bonus feature)
 
-**Latest Milestone**: Complete Tron-style UI with local hot-seat gameplay (2,700+ lines)
+**Latest Milestone**: First-person 3D maze view with wireframe walls (1,274 lines added)
 
-**Technology Decision**: Migrating to Arcade + asyncio + GIL-free Python (see MIGRATION.md - IN PROGRESS)
+**Technology Stack**: Arcade + asyncio + Python 3.14 (GIL-free) ✓ MIGRATED
 
 ### Files Completed (Phase 1)
 ```
@@ -47,34 +47,39 @@ Total: 140 tests, 100% passing
 ### Files Completed (Phase 2)
 ```
 race-to-the-crystal/
-├── MIGRATION.md             ✓ (Arcade + PyGaSe migration plan)
+├── MIGRATION.md             ✓ (Arcade migration plan - COMPLETED)
 ├── client/
-│   ├── client_main.py       ✓ (local hot-seat game entry - 338 lines)
-│   ├── input_handler.py     ✓ (mouse/keyboard input - 274 lines)
-│   └── ui/
-│       ├── camera.py        ✓ (viewport & transforms - 154 lines)
-│       ├── vector_graphics.py ✓ (glow effects - 313 lines)
-│       ├── board_view.py    ✓ (board rendering - 229 lines)
-│       ├── token_view.py    ✓ (token sprites - 268 lines)
-│       ├── ui_elements.py   ✓ (HUD components - 363 lines)
-│       └── renderer.py      ✓ (main coordinator - 250 lines)
-└── game/
-    └── game_state.py        ✓ (enhanced: turn_phase, get_current_player)
+│   ├── client_main.py       ✓ (Arcade game entry - 106 lines)
+│   ├── game_window.py       ✓ (dual 2D/3D rendering - 617 lines)
+│   ├── camera_3d.py         ✓ (3D perspective camera - 267 lines)
+│   ├── board_3d.py          ✓ (3D wireframe renderer - 296 lines)
+│   ├── token_3d.py          ✓ (3D hexagon geometry - 146 lines)
+│   ├── shaders/
+│   │   ├── glow_vertex.glsl    ✓ (vertex shader - 19 lines)
+│   │   └── glow_fragment.glsl  ✓ (fragment shader - 23 lines)
+│   └── sprites/
+│       ├── board_sprite.py  ✓ (2D board rendering - 231 lines)
+│       └── token_sprite.py  ✓ (2D token sprites - 137 lines)
+└── shared/
+    └── constants.py         ✓ (3D constants added)
 
-Total: 2,777 lines added
-- Camera system with zoom/pan
-- Tron-style glow effects
-- Complete HUD system
-- Local multiplayer ready
-- 60 FPS target rendering
+Total: 4,051 lines added
+- Dual 2D/3D rendering modes with V key toggle
+- First-person perspective camera with 75° FOV
+- Wireframe grid walls (transparent, see-through)
+- 3D hexagonal prism tokens with glow
+- Token switching (TAB), camera rotation (Q/E)
+- Ray casting for 3D mouse picking
+- OpenGL shaders for distance-based glow
+- GPU-accelerated rendering via arcade.gl
 ```
 
 ---
 
 ## Overview
-Build a networked multiplayer vector graphics game for 2-4 players using Python with clean geometric Tron-style visuals.
+Build a networked multiplayer vector graphics game for 2-4 players using Python with Tron/Battlezone-style visuals in both 2D top-down and 3D first-person perspectives.
 
-**⚠️ Technology Stack Update**: Currently migrating from Pygame to **Arcade + asyncio + GIL-free Python 3.14** for better performance and modern architecture. See [MIGRATION.md](MIGRATION.md) for details and progress.
+**✓ Technology Stack**: Migrated to **Arcade + asyncio + Python 3.14 (GIL-free)** for GPU-accelerated graphics and future async networking. See [MIGRATION.md](MIGRATION.md) for migration details.
 
 ## Game Summary
 - 4-player strategic board game on a grid
