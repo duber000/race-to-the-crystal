@@ -8,7 +8,7 @@
 
 **Latest Milestone**: Complete Tron-style UI with local hot-seat gameplay (2,700+ lines)
 
-**Technology Decision Pending**: Migrate to Arcade + PyGaSe + GIL-free Python (see MIGRATION.md)
+**Technology Decision**: Migrating to Arcade + asyncio + GIL-free Python (see MIGRATION.md - IN PROGRESS)
 
 ### Files Completed (Phase 1)
 ```
@@ -74,7 +74,7 @@ Total: 2,777 lines added
 ## Overview
 Build a networked multiplayer vector graphics game for 2-4 players using Python with clean geometric Tron-style visuals.
 
-**⚠️ Technology Stack Update**: Currently implemented with Pygame. Migration to **Arcade + PyGaSe + GIL-free Python 3.14** planned for better performance and modern architecture. See [MIGRATION.md](MIGRATION.md) for details.
+**⚠️ Technology Stack Update**: Currently migrating from Pygame to **Arcade + asyncio + GIL-free Python 3.14** for better performance and modern architecture. See [MIGRATION.md](MIGRATION.md) for details and progress.
 
 ## Game Summary
 - 4-player strategic board game on a grid
@@ -227,12 +227,12 @@ pygame>=2.5.0              # Graphics and game loop (requires SDL2 system libs)
 pytest>=8.0.0              # Testing framework
 ```
 
-**Planned (Arcade Migration)** - See MIGRATION.md:
+**New Stack (Migration In Progress)** - See MIGRATION.md:
 ```
 arcade>=2.6.17             # Modern OpenGL game framework
-pygase>=0.4.0              # Game networking library
 pytest>=8.0.0              # Testing framework
-Python 3.14                # With GIL disabled (PYTHON_GIL=0)
+Python 3.14 (free-threaded)# With GIL disabled by default
+# asyncio + sockets: Built-in to Python (no external dependency)
 ```
 
 ## Implementation Phases
@@ -315,7 +315,17 @@ Python 3.14                # With GIL disabled (PYTHON_GIL=0)
 - ✓ Escape - Cancel selection
 - ✓ Ctrl+Q - Quit game
 
-**Note**: Pygame implementation complete but requires SDL2 libraries. See MIGRATION.md for plan to move to Arcade + PyGaSe + GIL-free Python for better performance.
+**Note**: Migration to Arcade + asyncio + GIL-free Python 3.14 is IN PROGRESS. See MIGRATION.md for details.
+
+**Migration Progress**:
+- ✅ Python 3.14 free-threaded installed and verified
+- ✅ Arcade installed
+- ✅ Basic Arcade window structure created
+- ✅ Token sprite rendering implemented
+- ✅ Board rendering implemented
+- ⏸️ UI/HUD migration pending
+- ⏸️ Input handling migration pending
+- ⏸️ Networking (using asyncio instead of PyGaSe)
 
 ### Phase 3: Network Infrastructure
 **Goal**: Multiplayer over LAN/Internet
@@ -412,15 +422,20 @@ Python 3.14                # With GIL disabled (PYTHON_GIL=0)
 
 **Next Steps**:
 
-**Option A: Continue with Pygame** (Original Plan)
-- Install SDL2 development libraries
-- Proceed with Phase 3: Network Infrastructure (custom TCP)
+**Migration to Modern Stack IN PROGRESS** (see MIGRATION.md):
+- ✅ Python 3.14 free-threaded installed and verified (3.53x speedup confirmed)
+- ✅ Arcade installed and basic window structure created
+- ✅ Token and board sprites implemented
+- 🔄 UI/HUD migration (next priority)
+- 🔄 Input handling migration
+- ⏸️ Network implementation with **asyncio + sockets** (not PyGaSe - unmaintained)
+- ⏸️ Multi-threading integration
+- ⏸️ Testing and optimization
 
-**Option B: Migrate to Modern Stack** (Recommended - see MIGRATION.md)
-- Use Python 3.14 with GIL disabled (already installed)
-- Migrate rendering to Arcade (GPU-accelerated)
-- Use PyGaSe for networking (90% less code)
-- Enable true multi-threading
-- Timeline: 16-22 hours
+**Technology Change**: Using **asyncio + sockets** instead of PyGaSe for networking:
+- PyGaSe is not actively maintained
+- asyncio is Python standard library (always maintained)
+- Full control over protocol
+- Better long-term sustainability
 
-**Decision Point**: Choose path forward before proceeding to networking.
+**Estimated Remaining Time**: 1-2 days

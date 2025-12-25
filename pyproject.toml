@@ -2,9 +2,9 @@
 name = "race-to-the-crystal"
 version = "0.1.0"
 description = "A networked multiplayer vector graphics game for 2-4 players"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
-    "pygame>=2.5.0",
+    "arcade>=2.6.17",
 ]
 
 [project.scripts]
