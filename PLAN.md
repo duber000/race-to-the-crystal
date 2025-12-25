@@ -74,7 +74,7 @@ Total: 2,777 lines added
 ## Overview
 Build a networked multiplayer vector graphics game for 2-4 players using Python with clean geometric Tron-style visuals.
 
-**⚠️ Technology Stack Update**: Currently implemented with Pygame. Migration to **Arcade + PyGaSe + GIL-free Python 3.13t** planned for better performance and modern architecture. See [MIGRATION.md](MIGRATION.md) for details.
+**⚠️ Technology Stack Update**: Currently implemented with Pygame. Migration to **Arcade + PyGaSe + GIL-free Python 3.14** planned for better performance and modern architecture. See [MIGRATION.md](MIGRATION.md) for details.
 
 ## Game Summary
 - 4-player strategic board game on a grid
@@ -232,7 +232,7 @@ pytest>=8.0.0              # Testing framework
 arcade>=2.6.17             # Modern OpenGL game framework
 pygase>=0.4.0              # Game networking library
 pytest>=8.0.0              # Testing framework
-Python 3.13t               # Free-threaded (GIL-free) build
+Python 3.14                # With GIL disabled (PYTHON_GIL=0)
 ```
 
 ## Implementation Phases
@@ -396,7 +396,7 @@ Python 3.13t               # Free-threaded (GIL-free) build
 
 **Network sync complexity** → Turn-based design simplifies synchronization (or PyGaSe auto-sync)
 **Rendering performance** → Migrating to Arcade (GPU-accelerated) for 60+ FPS
-**Python GIL limitations** → Python 3.13t free-threaded build for true parallelism
+**Python GIL limitations** → Python 3.14 with GIL disabled for true parallelism
 **Runaway leader** → Mystery squares can reset leading players
 **Games too long** → Turn timers and automatic forfeit
 **Spawn camping** → Can add spawn protection if needed during playtesting
@@ -417,7 +417,7 @@ Python 3.13t               # Free-threaded (GIL-free) build
 - Proceed with Phase 3: Network Infrastructure (custom TCP)
 
 **Option B: Migrate to Modern Stack** (Recommended - see MIGRATION.md)
-- Switch to Python 3.13t (GIL-free)
+- Use Python 3.14 with GIL disabled (already installed)
 - Migrate rendering to Arcade (GPU-accelerated)
 - Use PyGaSe for networking (90% less code)
 - Enable true multi-threading

@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Migrating from **Pygame** to **Arcade** with **PyGaSe** networking and **GIL-free Python 3.13+** for a cutting-edge, high-performance platform.
+Migrating from **Pygame** to **Arcade** with **PyGaSe** networking and **GIL-free Python 3.14** for a cutting-edge, high-performance platform.
 
 ### Technology Stack Changes
 
@@ -10,7 +10,7 @@ Migrating from **Pygame** to **Arcade** with **PyGaSe** networking and **GIL-fre
 |-----------|---------|-----|-----|
 | Graphics | Pygame | Arcade | Modern OpenGL backend, better performance, cleaner API |
 | Networking | Custom TCP | PyGaSe | Purpose-built for games, handles sync automatically |
-| Python Version | 3.14 (standard) | 3.13t (GIL-free) | True parallelism for game logic + rendering |
+| Python Version | 3.14 (standard) | 3.14 (GIL-free) | True parallelism for game logic + rendering |
 | Concurrency | Single-threaded | Multi-threaded | Separate threads for rendering, networking, game logic |
 
 ---
@@ -87,15 +87,17 @@ class GameState(pygase.GameState):
 
 ---
 
-## 3. GIL-Free Python (3.13t)
+## 3. GIL-Free Python (3.14)
 
 ### What is the GIL?
 The **Global Interpreter Lock** prevents true Python multithreading. Only one thread executes Python code at a time.
 
-### Python 3.13t (Free-Threaded Build)
-- Experimental GIL-free build (`python3.13t`)
+### Python 3.14 (Free-Threaded Build)
+- Requires Python 3.14 built with `--disable-gil` flag
 - **True parallelism**: Multiple threads run Python code simultaneously
 - Perfect for games: separate threads for rendering, networking, game logic
+- Control via `PYTHON_GIL=0` environment variable or build-time flag
+- Latest free-threading implementation (more mature than 3.13)
 
 ### Architecture with GIL-Free
 
@@ -114,37 +116,52 @@ The **Global Interpreter Lock** prevents true Python multithreading. Only one th
 - **60+ FPS stable**: Rendering never blocks on game logic
 - **Responsive networking**: Network thread processes messages immediately
 - **Complex AI**: Run pathfinding/AI without frame drops
-- **Future-proof**: GIL-free will be standard in Python 4.0
+- **Cutting-edge**: Python 3.14 with GIL disabled (latest free-threading support)
 
 ---
 
 ## 4. Migration Plan
 
-### Phase 1: Environment Setup ✓ (30 min)
+### Phase 1: Environment Setup (1-2 hours)
 
 **Tasks:**
-1. Install Python 3.13t (free-threaded build)
-2. Update `.python-version` to `3.13t`
+1. Build or install Python 3.14 free-threaded build
+2. Configure environment for GIL-free mode
 3. Update `pyproject.toml` dependencies
 4. Install Arcade and PyGaSe
 
 **Commands:**
 ```bash
-# Install Python 3.13t free-threaded build
-# On Fedora:
-sudo dnf install python3.13-free-threaded  # (may need COPR repo)
-# Or build from source with --disable-gil
+# Option A: Build Python 3.14 with --disable-gil from source
+# https://github.com/python/cpython
+git clone https://github.com/python/cpython.git
+cd cpython
+git checkout 3.14
+./configure --disable-gil --prefix=$HOME/.local/python3.14-nogil
+make -j$(nproc)
+make install
+
+# Option B: Use pyenv to install free-threaded build (if available)
+pyenv install 3.14t
+pyenv local 3.14t
+
+# Verify free-threading support:
+python -c "import sys; print(f'GIL can be disabled: {hasattr(sys, \"_is_gil_enabled\")}')"
 
 # Update project
-echo "3.13t" > .python-version
-uv venv --python 3.13t
+echo "3.14" > .python-version
+uv venv --python python3.14
 uv pip install arcade pygase pytest
+
+# Test GIL-free mode:
+PYTHON_GIL=0 python -c "import sys; print(f'GIL enabled: {sys._is_gil_enabled()}')"
+# Should print: GIL enabled: False
 ```
 
 **Updated pyproject.toml:**
 ```toml
 [project]
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "arcade>=2.6.17",
     "pygase>=0.4.0",
@@ -458,10 +475,10 @@ race-to-the-crystal/
 
 ## 7. Risks & Mitigations
 
-### Risk 1: Python 3.13t Stability
-- **Risk**: Free-threaded build is experimental
-- **Mitigation**: Keep Python 3.13 standard as fallback, extensive testing
-- **Impact**: Low (can disable GIL if issues arise)
+### Risk 1: GIL-Free Mode Stability
+- **Risk**: GIL-free mode is still relatively new in Python 3.14
+- **Mitigation**: Can run with GIL enabled as fallback, extensive testing
+- **Impact**: Low (toggle with PYTHON_GIL environment variable)
 
 ### Risk 2: PyGaSe Learning Curve
 - **Risk**: Team unfamiliar with PyGaSe
@@ -484,13 +501,13 @@ race-to-the-crystal/
 
 | Phase | Duration | Complexity | Can Start |
 |-------|----------|------------|-----------|
-| 1. Environment Setup | 30 min | Low | Immediately |
+| 1. Environment Setup | 1-2 hours | Medium | Immediately |
 | 2. Graphics (Arcade) | 6-8 hours | Medium | After Phase 1 |
 | 3. Networking (PyGaSe) | 4-6 hours | Low | After Phase 1 |
 | 4. Threading (GIL-free) | 2-3 hours | Medium | After Phase 2 & 3 |
 | 5. Testing | 3-4 hours | Medium | After Phase 4 |
 
-**Total**: 16-22 hours for complete migration
+**Total**: 17-24 hours for complete migration (includes building Python with --disable-gil)
 
 **Phases 2 and 3 can run in parallel** if desired.
 
@@ -499,7 +516,7 @@ race-to-the-crystal/
 ## 9. Next Steps
 
 1. **Get approval** on migration approach
-2. **Install Python 3.13t** and test GIL-free mode
+2. **Build/Install Python 3.14 free-threaded** and test GIL-free mode
 3. **Create POC**: Simple Arcade window with one sprite
 4. **Create POC**: PyGaSe server with basic state sync
 5. **Begin Phase 2**: Migrate graphics to Arcade
@@ -538,7 +555,7 @@ If full migration is too risky, consider **phased approach**:
 ### Documentation
 - **Arcade**: https://api.arcade.academy/
 - **PyGaSe**: https://github.com/sbischoff-ai/pygase
-- **Python 3.13 Free-Threading**: https://docs.python.org/3.13/whatsnew/3.13.html#free-threaded-cpython
+- **Python 3.14 Free-Threading**: https://docs.python.org/3.14/whatsnew/3.14.html#free-threaded-cpython
 
 ### Tutorials
 - Arcade platformer tutorial: https://api.arcade.academy/en/latest/examples/platform_tutorial/index.html
