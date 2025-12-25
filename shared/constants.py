@@ -1,0 +1,79 @@
+"""
+Game constants and configuration parameters.
+"""
+
+# Board Configuration
+BOARD_WIDTH = 24
+BOARD_HEIGHT = 24
+
+# Token Configuration
+TOKEN_HEALTH_VALUES = [10, 8, 6, 4]
+TOKENS_PER_HEALTH_VALUE = 5  # 5 tokens of each health value = 20 total per player
+TOKENS_PER_PLAYER = 20
+
+# Movement Configuration
+TOKEN_MOVEMENT_RANGE = 2  # All tokens move 2 spaces
+
+# Combat Configuration
+COMBAT_DAMAGE_MULTIPLIER = 0.5  # Damage = health * 0.5 (i.e., health // 2)
+
+# Generator Configuration
+GENERATOR_COUNT = 4  # One per quadrant
+GENERATOR_CAPTURE_TOKENS_REQUIRED = 2
+GENERATOR_CAPTURE_TURNS_REQUIRED = 2
+GENERATOR_TOKEN_REDUCTION = 2  # Each disabled generator reduces crystal requirement by 2
+
+# Crystal Configuration
+CRYSTAL_BASE_TOKENS_REQUIRED = 12
+CRYSTAL_CAPTURE_TURNS_REQUIRED = 3
+
+# Mystery Square Configuration
+MYSTERY_SQUARES_PER_QUADRANT = 2
+TOTAL_MYSTERY_SQUARES = MYSTERY_SQUARES_PER_QUADRANT * 4
+
+# Player Configuration
+MIN_PLAYERS = 2
+MAX_PLAYERS = 4
+
+# Turn Configuration
+TURN_TIMEOUT_SECONDS = 30  # Time limit per turn
+
+# Network Configuration
+DEFAULT_SERVER_HOST = "0.0.0.0"
+DEFAULT_SERVER_PORT = 5555
+HEARTBEAT_INTERVAL_SECONDS = 5
+RECONNECT_TIMEOUT_SECONDS = 120
+
+# Visual Configuration (for rendering phase)
+BACKGROUND_COLOR = (10, 10, 15)  # Dark background #0a0a0f
+PLAYER_COLORS = [
+    (0, 255, 255),    # Cyan - Player 1
+    (255, 0, 255),    # Magenta - Player 2
+    (255, 255, 0),    # Yellow - Player 3
+    (0, 255, 0),      # Green - Player 4
+]
+
+# Grid rendering
+CELL_SIZE = 32  # Pixels per cell
+GRID_LINE_COLOR = (30, 30, 40)
+GRID_LINE_WIDTH = 1
+
+# Special cell colors
+GENERATOR_COLOR = (100, 100, 200)
+CRYSTAL_COLOR = (255, 255, 255)
+MYSTERY_COLOR = (150, 0, 150)
+START_COLOR = (50, 50, 50)
+
+# Glow effect
+GLOW_INTENSITY = 3  # Number of glow layers
+GLOW_ALPHA_BASE = 40
+
+# Animation
+ANIMATION_SPEED = 0.1  # Speed multiplier for animations
+MOVEMENT_ANIMATION_DURATION = 0.5  # seconds
+COMBAT_ANIMATION_DURATION = 0.3  # seconds
+
+# Window
+DEFAULT_WINDOW_WIDTH = 1280
+DEFAULT_WINDOW_HEIGHT = 720
+FPS_TARGET = 60
