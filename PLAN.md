@@ -226,12 +226,6 @@ race-to-the-crystal/
 
 ### Dependencies
 
-**Current (Pygame Implementation)**:
-```
-pygame>=2.5.0              # Graphics and game loop (requires SDL2 system libs)
-pytest>=8.0.0              # Testing framework
-```
-
 **New Stack (Migration In Progress)** - See MIGRATION.md:
 ```
 arcade>=2.6.17             # Modern OpenGL game framework
@@ -319,8 +313,6 @@ Python 3.14 (free-threaded)# With GIL disabled by default
 - ✓ Space/Enter - End turn
 - ✓ Escape - Cancel selection
 - ✓ Ctrl+Q - Quit game
-
-**Note**: Migration to Arcade + asyncio + GIL-free Python 3.14 is IN PROGRESS. See MIGRATION.md for details.
 
 **Migration Progress**:
 - ✅ Python 3.14 free-threaded installed and verified
@@ -417,30 +409,3 @@ Python 3.14 (free-threaded)# With GIL disabled by default
 **Spawn camping** → Can add spawn protection if needed during playtesting
 **Migration risk** → Phased approach available; Pygame implementation complete as fallback
 
-## Current Status & Next Steps
-
-**Completed** (Phases 1 & 2):
-1. ✅ Core game logic with 140 passing unit tests
-2. ✅ Complete Tron-style UI with local hot-seat gameplay
-3. ✅ 2,700+ lines of rendering code
-4. ✅ Full camera, input, and HUD systems
-
-**Next Steps**:
-
-**Migration to Modern Stack IN PROGRESS** (see MIGRATION.md):
-- ✅ Python 3.14 free-threaded installed and verified (3.53x speedup confirmed)
-- ✅ Arcade installed and basic window structure created
-- ✅ Token and board sprites implemented
-- 🔄 UI/HUD migration (next priority)
-- 🔄 Input handling migration
-- ⏸️ Network implementation with **asyncio + sockets** (not PyGaSe - unmaintained)
-- ⏸️ Multi-threading integration
-- ⏸️ Testing and optimization
-
-**Technology Change**: Using **asyncio + sockets** instead of PyGaSe for networking:
-- PyGaSe is not actively maintained
-- asyncio is Python standard library (always maintained)
-- Full control over protocol
-- Better long-term sustainability
-
-**Estimated Remaining Time**: 1-2 days
