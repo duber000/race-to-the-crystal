@@ -361,6 +361,8 @@ class AIActionExecutor:
         if will_kill:
             message += f"\n→ Token #{action.defender_id} was KILLED!"
             result_data["defender_killed"] = True
+            # Remove dead token from game
+            game_state.remove_token(action.defender_id)
         else:
             message += f"\n→ Token #{action.defender_id} now has {defender.health}hp"
 
@@ -457,9 +459,10 @@ class AIActionExecutor:
         player_id: str
     ) -> Tuple[bool, str]:
         """Validate an end turn action."""
-        # Can only end turn in ACTION phase
-        if game_state.turn_phase != TurnPhase.ACTION:
-            return False, f"Cannot end turn: Must be in ACTION phase (currently in {game_state.turn_phase.name})"
+        # Can end turn in both MOVEMENT and ACTION phases
+        # This allows players to "pass" without taking an action
+        if game_state.turn_phase not in [TurnPhase.MOVEMENT, TurnPhase.ACTION]:
+            return False, f"Cannot end turn: Invalid phase ({game_state.turn_phase.name})"
 
         return True, "Can end turn"
 

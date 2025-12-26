@@ -295,6 +295,9 @@ class GameState:
         if not self.current_turn_player_id:
             return
 
+        # Update generators and crystal BEFORE advancing turn
+        self._update_generators_and_crystal()
+
         # Get list of active players
         active_players = [
             pid for pid, player in self.players.items()
@@ -317,6 +320,46 @@ class GameState:
         # If we wrapped around to first player, increment turn number
         if next_index == 0:
             self.turn_number += 1
+
+        # Reset turn phase to MOVEMENT for next player
+        self.turn_phase = TurnPhase.MOVEMENT
+
+    def _update_generators_and_crystal(self) -> None:
+        """
+        Update generator capture status and check crystal win condition.
+        Called at the end of each turn.
+        """
+        # Only update if generators and crystal exist
+        if not self.generators or not self.crystal:
+            return
+
+        # Build a map of positions to tokens (token_id, player_id)
+        tokens_by_position = {}
+        for token in self.tokens.values():
+            if token.is_alive and token.is_deployed:
+                pos = token.position
+                if pos not in tokens_by_position:
+                    tokens_by_position[pos] = []
+                tokens_by_position[pos].append((token.id, token.player_id))
+
+        # Update generators
+        from game.generator import GeneratorManager
+        newly_disabled = GeneratorManager.update_all_generators(
+            self.generators, tokens_by_position
+        )
+
+        # Update crystal and check for winner
+        from game.crystal import CrystalManager
+        tokens_at_crystal = tokens_by_position.get(self.crystal.position, [])
+        disabled_count = GeneratorManager.count_disabled_generators(self.generators)
+
+        winner_id = CrystalManager.check_win_condition(
+            self.crystal, tokens_at_crystal, disabled_count
+        )
+
+        # Set winner if win condition met
+        if winner_id:
+            self.set_winner(winner_id)
 
     def check_win_condition(self) -> Optional[str]:
         """

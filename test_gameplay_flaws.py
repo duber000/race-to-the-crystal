@@ -227,55 +227,23 @@ class GameplayTester:
 
         game_state = self.create_test_game()
 
-        # Deploy tokens for both players at adjacent positions
-        # Player 1 deploys a 10hp token
-        action = DeployAction(10, (10, 10))
-        self.executor.execute_action(action, game_state, "player1")
-        # After deploy, we're in ACTION phase - end turn to complete player 1's turn
-        action = EndTurnAction()
-        self.executor.execute_action(action, game_state, "player1")
+        # Deploy tokens at adjacent positions directly (bypass deployment validation for testing)
+        token1 = game_state.deploy_token("player1", 10, (10, 10))
+        token2 = game_state.deploy_token("player2", 8, (11, 10))
 
-        # Player 2 deploys an 8hp token adjacent
-        action = DeployAction(8, (11, 10))
-        self.executor.execute_action(action, game_state, "player2")
-        # End player 2's turn
-        action = EndTurnAction()
-        self.executor.execute_action(action, game_state, "player2")
+        # Set current player to player1 and phase to ACTION to test combat
+        game_state.current_turn_player_id = "player1"
+        game_state.turn_phase = TurnPhase.ACTION
 
-        # Now it's player 1's turn again, in MOVEMENT phase
-        # We must make a move to transition to ACTION phase (can't end turn in MOVEMENT)
-        moves = self.get_valid_moves(game_state, "player1")
-        if moves:
-            move = moves[0]
-            # Make a move - this will transition to ACTION phase
-            action = MoveAction(move["token_id"], tuple(move["valid_destinations"][0]))
-            success, msg, data = self.executor.execute_action(action, game_state, "player1")
-            if not success:
-                self.log_issue("HIGH", "Combat Setup", f"Failed to move token: {msg}", game_state)
-        else:
-            self.log_issue("HIGH", "Combat Setup", "No valid moves available", game_state)
+        # Perform attack
+        initial_health = token2.health
 
-        # Check phase
-        if game_state.turn_phase != TurnPhase.ACTION:
-            self.log_issue("HIGH", "Combat Setup",
-                         f"Not in ACTION phase after move, currently in {game_state.turn_phase.name}",
-                         game_state)
-            return
-
-        # Now we should be in ACTION phase - perform attack
-        player1_tokens = self.get_player_tokens(game_state, "player1")
-        player2_tokens = self.get_player_tokens(game_state, "player2")
-        attacker = player1_tokens[0]
-        defender = player2_tokens[0]
-
-        initial_health = defender.health
-
-        action = AttackAction(attacker.id, defender.id)
+        action = AttackAction(token1.id, token2.id)
         success, msg, data = self.executor.execute_action(action, game_state, "player1")
 
         if success:
-            expected_damage = attacker.max_health // 2  # 10 // 2 = 5
-            actual_damage = initial_health - defender.health
+            expected_damage = token1.max_health // 2  # 10 // 2 = 5
+            actual_damage = initial_health - token2.health
 
             if actual_damage != expected_damage:
                 self.log_issue("CRITICAL", "Combat",
@@ -285,7 +253,7 @@ class GameplayTester:
                 self.log_success(f"Combat damage correct: {expected_damage} damage dealt")
 
             # Verify attacker took no damage
-            if attacker.health != attacker.max_health:
+            if token1.health != token1.max_health:
                 self.log_issue("CRITICAL", "Combat",
                              f"Attacker took damage when they shouldn't have", game_state)
         else:
@@ -308,35 +276,16 @@ class GameplayTester:
         gen = game_state.generators[0]
         gen_pos = gen.position
 
-        # Deploy 2 tokens at generator
-        action = DeployAction(10, gen_pos)
-        self.executor.execute_action(action, game_state, "player1")
-        action = EndTurnAction()
-        self.executor.execute_action(action, game_state, "player1")
+        # Deploy 2 tokens at generator directly (bypass deployment validation for testing)
+        game_state.deploy_token("player1", 10, gen_pos)
+        game_state.deploy_token("player1", 10, gen_pos)
 
-        # Switch to player 2 and back
-        action = EndTurnAction()
-        self.executor.execute_action(action, game_state, "player2")
-
-        # Deploy second token at generator
-        action = DeployAction(10, gen_pos)
-        self.executor.execute_action(action, game_state, "player1")
-        action = EndTurnAction()
-        self.executor.execute_action(action, game_state, "player1")
-
-        # Now we have 2 tokens at generator. Need to hold for 2 turns.
-        # Track turns holding
-        turns_held = 0
-        for i in range(5):
-            # End player 2 turn
-            action = EndTurnAction()
-            self.executor.execute_action(action, game_state, "player2")
-
+        # Hold for 2 turns by ending turns
+        for turns_held in range(1, 6):
             # End player 1 turn (holding generator)
-            action = EndTurnAction()
-            self.executor.execute_action(action, game_state, "player1")
-
-            turns_held += 1
+            game_state.end_turn()
+            # End player 2 turn
+            game_state.end_turn()
 
             if turns_held >= 2:
                 # Should be disabled now
@@ -364,26 +313,16 @@ class GameplayTester:
             gen.capture_token_ids.clear()
             gen.turns_held = 0
 
-        # Deploy 4 tokens at crystal
+        # Deploy 4 tokens at crystal directly (bypass deployment validation for testing)
         for i in range(4):
-            action = DeployAction(10, crystal_pos)
-            self.executor.execute_action(action, game_state, "player1")
-            action = EndTurnAction()
-            self.executor.execute_action(action, game_state, "player1")
+            game_state.deploy_token("player1", 10, crystal_pos)
 
-            # Player 2 turn
-            action = EndTurnAction()
-            self.executor.execute_action(action, game_state, "player2")
-
-        # Now player 1 should have 4 tokens at crystal. Hold for 3 turns.
+        # Hold for 3 turns by ending turns
         for turn in range(4):
-            # Player 1 turn
-            action = EndTurnAction()
-            self.executor.execute_action(action, game_state, "player1")
-
-            # Player 2 turn
-            action = EndTurnAction()
-            self.executor.execute_action(action, game_state, "player2")
+            # End player 1 turn (holding crystal)
+            game_state.end_turn()
+            # End player 2 turn
+            game_state.end_turn()
 
             if turn >= 2:  # After 3rd turn
                 if game_state.winner_id == "player1":
@@ -404,26 +343,18 @@ class GameplayTester:
 
         game_state = self.create_test_game()
 
-        # Deploy a 4hp token (weak)
-        action = DeployAction(4, (10, 10))
-        self.executor.execute_action(action, game_state, "player1")
-        action = EndTurnAction()
-        self.executor.execute_action(action, game_state, "player1")
+        # Deploy tokens at adjacent positions directly (bypass deployment validation for testing)
+        defender_token = game_state.deploy_token("player1", 4, (10, 10))
+        attacker_token = game_state.deploy_token("player2", 10, (11, 10))
 
-        # Deploy a 10hp token adjacent
-        action = DeployAction(10, (11, 10))
-        self.executor.execute_action(action, game_state, "player2")
-        action = EndTurnAction()
-        self.executor.execute_action(action, game_state, "player2")
+        # Set current player to player2 and phase to ACTION to test combat
+        game_state.current_turn_player_id = "player2"
+        game_state.turn_phase = TurnPhase.ACTION
 
-        player1_tokens = self.get_player_tokens(game_state, "player1")
-        player2_tokens = self.get_player_tokens(game_state, "player2")
-
-        defender_id = player1_tokens[0].id
-        attacker = player2_tokens[0]
+        defender_id = defender_token.id
 
         # 10hp token attacks 4hp token - should deal 5 damage and kill it
-        action = AttackAction(attacker.id, defender_id)
+        action = AttackAction(attacker_token.id, defender_id)
         success, msg, data = self.executor.execute_action(action, game_state, "player2")
 
         if success:
