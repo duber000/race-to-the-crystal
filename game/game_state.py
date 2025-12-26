@@ -76,7 +76,7 @@ class GameState:
 
     def create_tokens_for_player(self, player_id: str) -> List[Token]:
         """
-        Create all tokens for a player.
+        Create all tokens for a player in reserve (not deployed to board).
 
         Args:
             player_id: ID of player to create tokens for
@@ -90,11 +90,12 @@ class GameState:
         player = self.players[player_id]
         tokens = []
 
-        # Get player's starting position based on color
+        # Get player's starting corner position (used as reference for deployment)
         player_index = player.color.value
-        start_pos = self.board.get_starting_position(player_index)
+        corner_pos = self.board.get_starting_position(player_index)
 
         # Create tokens with different health values
+        # Tokens start in reserve (is_deployed=False) and are not placed on board
         for health_value in TOKEN_HEALTH_VALUES:
             for _ in range(TOKENS_PER_HEALTH_VALUE):
                 token = Token(
@@ -102,7 +103,8 @@ class GameState:
                     player_id=player_id,
                     health=health_value,
                     max_health=health_value,
-                    position=start_pos,  # All start at same position initially
+                    position=corner_pos,  # Reference position (not actually on board yet)
+                    is_deployed=False,  # Starts in reserve
                 )
                 self.tokens[token.id] = token
                 player.add_token(token.id)
@@ -114,6 +116,67 @@ class GameState:
     def get_token(self, token_id: int) -> Optional[Token]:
         """Get token by ID."""
         return self.tokens.get(token_id)
+
+    def get_reserve_tokens(self, player_id: str) -> List[Token]:
+        """
+        Get all tokens in reserve (not deployed) for a player.
+
+        Args:
+            player_id: Player ID
+
+        Returns:
+            List of tokens not yet deployed
+        """
+        player = self.get_player(player_id)
+        if not player:
+            return []
+
+        return [
+            self.tokens[tid]
+            for tid in player.token_ids
+            if tid in self.tokens and not self.tokens[tid].is_deployed
+        ]
+
+    def get_reserve_token_counts(self, player_id: str) -> dict:
+        """
+        Get count of reserve tokens by health value.
+
+        Args:
+            player_id: Player ID
+
+        Returns:
+            Dictionary mapping health value to count
+        """
+        reserve = self.get_reserve_tokens(player_id)
+        counts = {10: 0, 8: 0, 6: 0, 4: 0}
+        for token in reserve:
+            if token.max_health in counts:
+                counts[token.max_health] += 1
+        return counts
+
+    def deploy_token(self, player_id: str, health_value: int, position: Tuple[int, int]) -> Optional[Token]:
+        """
+        Deploy a token from reserve to the board.
+
+        Args:
+            player_id: Player ID
+            health_value: Health value of token to deploy (10, 8, 6, or 4)
+            position: Position to deploy to
+
+        Returns:
+            The deployed token, or None if no token available
+        """
+        # Find first available token of requested type in reserve
+        reserve = self.get_reserve_tokens(player_id)
+        for token in reserve:
+            if token.max_health == health_value:
+                # Deploy the token
+                token.position = position
+                token.is_deployed = True
+                self.board.set_occupant(position, token.id)
+                return token
+
+        return None
 
     def get_player(self, player_id: str) -> Optional[Player]:
         """Get player by ID."""
@@ -141,13 +204,13 @@ class GameState:
 
     def get_player_tokens(self, player_id: str) -> List[Token]:
         """
-        Get all alive tokens for a player.
+        Get all alive, deployed tokens for a player.
 
         Args:
             player_id: Player ID
 
         Returns:
-            List of alive tokens owned by player
+            List of alive, deployed tokens owned by player
         """
         player = self.get_player(player_id)
         if not player:
@@ -156,7 +219,7 @@ class GameState:
         return [
             self.tokens[tid]
             for tid in player.token_ids
-            if tid in self.tokens and self.tokens[tid].is_alive
+            if tid in self.tokens and self.tokens[tid].is_alive and self.tokens[tid].is_deployed
         ]
 
     def move_token(self, token_id: int, new_position: tuple) -> bool:

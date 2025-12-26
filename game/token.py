@@ -17,6 +17,7 @@ class Token:
         max_health: Maximum health value (10, 8, 6, or 4)
         position: Current (x, y) position on the board
         is_alive: Whether the token is still in play
+        is_deployed: Whether the token has been deployed to the board
     """
     id: int
     player_id: str
@@ -24,6 +25,7 @@ class Token:
     max_health: int
     position: Tuple[int, int]
     is_alive: bool = True
+    is_deployed: bool = False
 
     @property
     def movement_range(self) -> int:
@@ -112,6 +114,7 @@ class Token:
             "max_health": self.max_health,
             "position": list(self.position),
             "is_alive": self.is_alive,
+            "is_deployed": self.is_deployed,
         }
 
     @classmethod
@@ -124,6 +127,7 @@ class Token:
             max_health=data["max_health"],
             position=tuple(data["position"]),
             is_alive=data["is_alive"],
+            is_deployed=data.get("is_deployed", False),
         )
 
     def __repr__(self) -> str:

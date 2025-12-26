@@ -80,6 +80,10 @@ class GameWindow(arcade.Window):
         self.valid_moves: List[Tuple[int, int]] = []
         self.turn_phase = TurnPhase.MOVEMENT
 
+        # Corner deployment menu
+        self.corner_menu_open = False
+        self.corner_menu_position: Optional[Tuple[int, int]] = None
+
         # Camera controls
         self.camera_speed = 10
         self.zoom_level = 1.0
@@ -220,6 +224,63 @@ class GameWindow(arcade.Window):
         self.instruction_text.x = self.width - 500
         self.instruction_text.y = self.height - 60
         self.instruction_text.draw()
+
+    def _draw_corner_menu(self):
+        """Draw the corner deployment menu with token type options."""
+        if not self.corner_menu_position:
+            return
+
+        current_player = self.game_state.get_current_player()
+        if not current_player:
+            return
+
+        # Get reserve token counts
+        counts = self.game_state.get_reserve_token_counts(current_player.id)
+
+        grid_x, grid_y = self.corner_menu_position
+        center_x = grid_x * CELL_SIZE + CELL_SIZE / 2
+        center_y = grid_y * CELL_SIZE + CELL_SIZE / 2
+
+        # Draw 4 options in a diamond pattern around the corner
+        menu_distance = CELL_SIZE * 2
+        options = [
+            (10, center_x, center_y + menu_distance, counts[10]),  # Top
+            (8,  center_x + menu_distance, center_y, counts[8]),   # Right
+            (6,  center_x, center_y - menu_distance, counts[6]),   # Bottom
+            (4,  center_x - menu_distance, center_y, counts[4]),   # Left
+        ]
+
+        for health, x, y, count in options:
+            if count > 0:
+                # Draw available option in cyan
+                arcade.draw_circle_filled(x, y, CELL_SIZE * 0.8, (0, 255, 255, 200))
+                arcade.draw_circle_outline(x, y, CELL_SIZE * 0.8, (0, 255, 255), 3)
+            else:
+                # Draw unavailable option in dark gray
+                arcade.draw_circle_filled(x, y, CELL_SIZE * 0.8, (50, 50, 50, 100))
+                arcade.draw_circle_outline(x, y, CELL_SIZE * 0.8, (100, 100, 100), 2)
+
+            # Draw health value
+            arcade.draw_text(
+                str(health),
+                x, y,
+                (255, 255, 255) if count > 0 else (100, 100, 100),
+                font_size=20,
+                bold=True,
+                anchor_x="center",
+                anchor_y="center",
+            )
+
+            # Draw count if available
+            if count > 0:
+                arcade.draw_text(
+                    f"({count})",
+                    x, y - 15,
+                    (200, 200, 200),
+                    font_size=12,
+                    anchor_x="center",
+                    anchor_y="center",
+                )
 
     def _update_selection_visuals(self):
         """Update visual feedback for selection and valid moves with vector glow."""
@@ -373,6 +434,11 @@ class GameWindow(arcade.Window):
         with self.ui_camera.activate():
             self.ui_sprites.draw()
             self._draw_hud()
+
+        # Draw corner menu if open (in world coordinates)
+        if self.corner_menu_open and self.corner_menu_position and self.camera_mode == "2D":
+            with self.camera.activate():
+                self._draw_corner_menu()
 
     def on_update(self, delta_time: float):
         """
@@ -543,6 +609,77 @@ class GameWindow(arcade.Window):
         self.controlled_token_id = alive_tokens[next_index]
         print(f"Switched to token {self.controlled_token_id}")
 
+    def _is_player_corner(self, grid_pos: Tuple[int, int], player_id: str) -> bool:
+        """Check if a position is a player's starting corner."""
+        player = self.game_state.get_player(player_id)
+        if not player:
+            return False
+
+        player_index = player.color.value
+        corner_pos = self.game_state.board.get_starting_position(player_index)
+        return grid_pos == corner_pos
+
+    def _handle_corner_menu_click(self, world_pos: Tuple[float, float], player_id: str) -> bool:
+        """
+        Handle click on corner menu to deploy a token.
+
+        Args:
+            world_pos: Click position in world coordinates
+            player_id: Current player ID
+
+        Returns:
+            True if a token was deployed
+        """
+        if not self.corner_menu_position:
+            return False
+
+        grid_x, grid_y = self.corner_menu_position
+        center_x = grid_x * CELL_SIZE + CELL_SIZE / 2
+        center_y = grid_y * CELL_SIZE + CELL_SIZE / 2
+
+        # Menu option positions (same as in _draw_corner_menu)
+        menu_distance = CELL_SIZE * 2
+        options = [
+            (10, center_x, center_y + menu_distance),  # Top
+            (8,  center_x + menu_distance, center_y),  # Right
+            (6,  center_x, center_y - menu_distance),  # Bottom
+            (4,  center_x - menu_distance, center_y),  # Left
+        ]
+
+        click_x, click_y = world_pos
+
+        # Check which option was clicked
+        click_radius = CELL_SIZE * 0.8
+        for health, option_x, option_y in options:
+            distance = ((click_x - option_x) ** 2 + (click_y - option_y) ** 2) ** 0.5
+            if distance <= click_radius:
+                # Deploy token of this type
+                deployed_token = self.game_state.deploy_token(player_id, health, self.corner_menu_position)
+
+                if deployed_token:
+                    print(f"Deployed {health}hp token to {self.corner_menu_position}")
+
+                    # Create sprite for the deployed token
+                    from client.sprites.token_sprite import TokenSprite
+                    player = self.game_state.get_player(player_id)
+                    player_color = PLAYER_COLORS[player.color.value] if player else (255, 255, 255)
+                    sprite = TokenSprite(deployed_token, player_color)
+                    self.token_sprites.append(sprite)
+
+                    # Close menu
+                    self.corner_menu_open = False
+                    self.corner_menu_position = None
+
+                    # End turn after deploying
+                    self.turn_phase = TurnPhase.END_TURN
+                    print("Deployment complete - press SPACE to end turn")
+                    return True
+                else:
+                    print(f"No {health}hp tokens available in reserve")
+                    return False
+
+        return False
+
     def _handle_select(self, world_pos: Tuple[float, float]):
         """
         Handle selection at world position.
@@ -559,12 +696,36 @@ class GameWindow(arcade.Window):
         if not current_player:
             return
 
+        # Check if clicked on corner menu option
+        if self.corner_menu_open and self.corner_menu_position:
+            deployed = self._handle_corner_menu_click(world_pos, current_player.id)
+            if deployed:
+                return
+
+        # Check if clicked on player's corner - show deployment menu
+        if self._is_player_corner((grid_x, grid_y), current_player.id) and self.turn_phase == TurnPhase.MOVEMENT:
+            # Toggle corner menu
+            if self.corner_menu_open and self.corner_menu_position == (grid_x, grid_y):
+                self.corner_menu_open = False
+                self.corner_menu_position = None
+                print("Closed corner menu")
+            else:
+                self.corner_menu_open = True
+                self.corner_menu_position = (grid_x, grid_y)
+                print(f"Opened corner menu at {(grid_x, grid_y)}")
+            return
+
+        # Close corner menu if clicking elsewhere
+        if self.corner_menu_open:
+            self.corner_menu_open = False
+            self.corner_menu_position = None
+
         # Check if clicked on a token
         clicked_token = None
         for player in self.game_state.players.values():
             for token_id in player.token_ids:
                 token = self.game_state.get_token(token_id)
-                if token and token.is_alive and token.position == (grid_x, grid_y):
+                if token and token.is_alive and token.is_deployed and token.position == (grid_x, grid_y):
                     clicked_token = token
                     break
             if clicked_token:
