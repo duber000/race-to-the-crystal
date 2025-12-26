@@ -38,8 +38,10 @@ class FirstPersonCamera3D:
         self.aspect_ratio = window_width / window_height
 
         # Camera position (world coordinates, in pixels)
-        # Start above board center
-        self.position = np.array([12 * CELL_SIZE, 12 * CELL_SIZE, 30.0], dtype=np.float32)
+        # Start above board center for initial view
+        self.position = np.array(
+            [12 * CELL_SIZE, 12 * CELL_SIZE, 30.0], dtype=np.float32
+        )
 
         # Camera orientation (Euler angles in degrees)
         self.yaw = 0.0  # Rotation around Z axis (left/right look)
@@ -74,12 +76,15 @@ class FirstPersonCamera3D:
         f = 1.0 / np.tan(fov_rad / 2.0)
 
         # Standard perspective projection matrix
-        projection = np.array([
-            [f / self.aspect_ratio, 0, 0, 0],
-            [0, f, 0, 0],
-            [0, 0, (self.far + self.near) / (self.near - self.far), -1],
-            [0, 0, (2 * self.far * self.near) / (self.near - self.far), 0]
-        ], dtype=np.float32)
+        projection = np.array(
+            [
+                [f / self.aspect_ratio, 0, 0, 0],
+                [0, f, 0, 0],
+                [0, 0, (self.far + self.near) / (self.near - self.far), -1],
+                [0, 0, (2 * self.far * self.near) / (self.near - self.far), 0],
+            ],
+            dtype=np.float32,
+        )
 
         return projection
 
@@ -96,11 +101,14 @@ class FirstPersonCamera3D:
         roll_rad = np.radians(self.roll)
 
         # Calculate forward, right, and up vectors
-        forward = np.array([
-            np.cos(pitch_rad) * np.cos(yaw_rad),
-            np.cos(pitch_rad) * np.sin(yaw_rad),
-            np.sin(pitch_rad)
-        ], dtype=np.float32)
+        forward = np.array(
+            [
+                np.cos(pitch_rad) * np.cos(yaw_rad),
+                np.cos(pitch_rad) * np.sin(yaw_rad),
+                np.sin(pitch_rad),
+            ],
+            dtype=np.float32,
+        )
 
         # World up vector
         world_up = np.array([0.0, 0.0, 1.0], dtype=np.float32)
@@ -135,7 +143,9 @@ class FirstPersonCamera3D:
 
         return view
 
-    def follow_token(self, token_position: Tuple[int, int], token_rotation: float = 0.0):
+    def follow_token(
+        self, token_position: Tuple[int, int], token_rotation: float = 0.0
+    ):
         """
         Position camera to follow a token in first-person view.
 
@@ -160,7 +170,9 @@ class FirstPersonCamera3D:
         self.position[1] = world_y + offset_y
         self.position[2] = self.height_above_token
 
-    def rotate(self, yaw_delta: float = 0.0, pitch_delta: float = 0.0, roll_delta: float = 0.0):
+    def rotate(
+        self, yaw_delta: float = 0.0, pitch_delta: float = 0.0, roll_delta: float = 0.0
+    ):
         """
         Rotate the camera by given deltas.
 
@@ -179,8 +191,9 @@ class FirstPersonCamera3D:
         # Keep yaw in [0, 360)
         self.yaw = self.yaw % 360.0
 
-    def screen_to_ray(self, screen_x: int, screen_y: int,
-                      window_width: int, window_height: int) -> Tuple[np.ndarray, np.ndarray]:
+    def screen_to_ray(
+        self, screen_x: int, screen_y: int, window_width: int, window_height: int
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Convert screen coordinates to 3D ray in world space for mouse picking.
 
@@ -203,7 +216,9 @@ class FirstPersonCamera3D:
         # Eye/camera space
         inv_projection = np.linalg.inv(self.get_projection_matrix())
         eye_coords = inv_projection @ clip_coords
-        eye_coords = np.array([eye_coords[0], eye_coords[1], -1.0, 0.0], dtype=np.float32)
+        eye_coords = np.array(
+            [eye_coords[0], eye_coords[1], -1.0, 0.0], dtype=np.float32
+        )
 
         # World space
         inv_view = np.linalg.inv(self.get_view_matrix())
@@ -217,8 +232,9 @@ class FirstPersonCamera3D:
 
         return ray_origin, ray_direction
 
-    def ray_intersect_plane(self, ray_origin: np.ndarray, ray_direction: np.ndarray,
-                            plane_z: float = 0.0) -> Tuple[float, float]:
+    def ray_intersect_plane(
+        self, ray_origin: np.ndarray, ray_direction: np.ndarray, plane_z: float = 0.0
+    ) -> Tuple[float, float]:
         """
         Find intersection of ray with horizontal plane (board surface).
 

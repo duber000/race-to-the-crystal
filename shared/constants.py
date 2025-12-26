@@ -21,7 +21,9 @@ COMBAT_DAMAGE_MULTIPLIER = 0.5  # Damage = health * 0.5 (i.e., health // 2)
 GENERATOR_COUNT = 4  # One per quadrant
 GENERATOR_CAPTURE_TOKENS_REQUIRED = 2
 GENERATOR_CAPTURE_TURNS_REQUIRED = 2
-GENERATOR_TOKEN_REDUCTION = 2  # Each disabled generator reduces crystal requirement by 2
+GENERATOR_TOKEN_REDUCTION = (
+    2  # Each disabled generator reduces crystal requirement by 2
+)
 
 # Crystal Configuration
 CRYSTAL_BASE_TOKENS_REQUIRED = 12
@@ -45,12 +47,12 @@ HEARTBEAT_INTERVAL_SECONDS = 5
 RECONNECT_TIMEOUT_SECONDS = 120
 
 # Visual Configuration (for rendering phase)
-BACKGROUND_COLOR = (0, 0, 0)  # Pure black for vector arcade aesthetic
+BACKGROUND_COLOR = (0, 0, 0, 255)  # Pure black for vector arcade aesthetic (RGBA)
 PLAYER_COLORS = [
-    (0, 255, 255),    # Cyan - Player 1
-    (255, 0, 255),    # Magenta - Player 2
-    (255, 255, 0),    # Yellow - Player 3
-    (0, 255, 0),      # Green - Player 4
+    (0, 255, 255),  # Cyan - Player 1
+    (255, 0, 255),  # Magenta - Player 2
+    (255, 255, 0),  # Yellow - Player 3
+    (0, 255, 0),  # Green - Player 4
 ]
 
 # Grid rendering
@@ -82,7 +84,7 @@ FPS_TARGET = 60
 WALL_HEIGHT = 50.0  # Height of vertical grid walls in 3D mode
 TOKEN_HEIGHT_3D = 25.0  # Height of 3D hexagonal prism tokens
 CAMERA_FOV = 75.0  # Field of view in degrees (wide for Battlezone feel)
-CAMERA_HEIGHT_ABOVE_TOKEN = 20.0  # Eye height above token
+CAMERA_HEIGHT_ABOVE_TOKEN = 60.0  # Eye height above token (above 50.0 walls)
 CAMERA_FORWARD_OFFSET = -15.0  # Distance behind token (negative = behind)
-CAMERA_NEAR_PLANE = 0.1  # Near clipping plane
-CAMERA_FAR_PLANE = 500.0  # Far clipping plane
+CAMERA_NEAR_PLANE = 1.0  # Near clipping plane
+CAMERA_FAR_PLANE = 2000.0  # Far clipping plane (board is 768x768)

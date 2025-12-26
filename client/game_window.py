@@ -6,7 +6,12 @@ replacing the Pygame-based implementation with GPU-accelerated rendering.
 """
 
 import arcade
-from arcade.shape_list import ShapeElementList, create_rectangle_outline, create_ellipse_outline, create_line
+from arcade.shape_list import (
+    ShapeElementList,
+    create_rectangle_outline,
+    create_ellipse_outline,
+    create_line,
+)
 from typing import Optional, Tuple, List
 import math
 
@@ -35,8 +40,13 @@ class GameWindow(arcade.Window):
     Handles rendering, input, and game loop using Arcade's event-driven architecture.
     """
 
-    def __init__(self, game_state: GameState, width: int = DEFAULT_WINDOW_WIDTH,
-                 height: int = DEFAULT_WINDOW_HEIGHT, title: str = "Race to the Crystal"):
+    def __init__(
+        self,
+        game_state: GameState,
+        width: int = DEFAULT_WINDOW_WIDTH,
+        height: int = DEFAULT_WINDOW_HEIGHT,
+        title: str = "Race to the Crystal",
+    ):
         """
         Initialize the game window.
 
@@ -77,28 +87,20 @@ class GameWindow(arcade.Window):
         # HUD Text objects (for performance)
         self.player_text = arcade.Text(
             "",
-            10, 0,  # Y will be updated in _draw_hud
+            10,
+            0,  # Y will be updated in _draw_hud
             (255, 255, 255),
             font_size=24,
-            bold=True
+            bold=True,
         )
-        self.turn_text = arcade.Text(
-            "",
-            10, 0,
-            (200, 200, 200),
-            font_size=16
-        )
-        self.phase_text = arcade.Text(
-            "",
-            200, 0,
-            (200, 200, 200),
-            font_size=16
-        )
+        self.turn_text = arcade.Text("", 10, 0, (200, 200, 200), font_size=16)
+        self.phase_text = arcade.Text("", 200, 0, (200, 200, 200), font_size=16)
         self.instruction_text = arcade.Text(
             "",
-            0, 0,  # X and Y will be updated in _draw_hud
+            0,
+            0,  # X and Y will be updated in _draw_hud
             (150, 150, 150),
-            font_size=14
+            font_size=14,
         )
 
         # 3D Rendering infrastructure
@@ -180,9 +182,11 @@ class GameWindow(arcade.Window):
 
         # HUD background
         arcade.draw_lrbt_rectangle_filled(
-            0, self.width,
-            self.height - 80, self.height,
-            (20, 20, 30, 200)  # Semi-transparent dark background
+            0,
+            self.width,
+            self.height - 80,
+            self.height,
+            (20, 20, 30, 200),  # Semi-transparent dark background
         )
 
         # Current player info
@@ -206,7 +210,9 @@ class GameWindow(arcade.Window):
         if self.turn_phase == TurnPhase.MOVEMENT:
             instruction = "Click a token to select, then click a cell to move"
         elif self.turn_phase == TurnPhase.ACTION:
-            instruction = "Click an adjacent enemy to attack, or press SPACE to end turn"
+            instruction = (
+                "Click an adjacent enemy to attack, or press SPACE to end turn"
+            )
         else:
             instruction = "Press SPACE to end turn"
 
@@ -243,9 +249,12 @@ class GameWindow(arcade.Window):
                     ]
                     for j in range(len(points) - 1):
                         line = create_line(
-                            points[j][0], points[j][1],
-                            points[j + 1][0], points[j + 1][1],
-                            (255, 255, 0, alpha), max(1, 4 - i // 2)
+                            points[j][0],
+                            points[j][1],
+                            points[j + 1][0],
+                            points[j + 1][1],
+                            (255, 255, 0, alpha),
+                            max(1, 4 - i // 2),
                         )
                         self.selection_shapes.append(line)
 
@@ -259,9 +268,12 @@ class GameWindow(arcade.Window):
                 ]
                 for j in range(len(points) - 1):
                     line = create_line(
-                        points[j][0], points[j][1],
-                        points[j + 1][0], points[j + 1][1],
-                        (255, 255, 100, 255), 4
+                        points[j][0],
+                        points[j][1],
+                        points[j + 1][0],
+                        points[j + 1][1],
+                        (255, 255, 100, 255),
+                        4,
                     )
                     self.selection_shapes.append(line)
 
@@ -285,9 +297,12 @@ class GameWindow(arcade.Window):
 
                 for j in range(len(points) - 1):
                     line = create_line(
-                        points[j][0], points[j][1],
-                        points[j + 1][0], points[j + 1][1],
-                        (0, 255, 0, alpha), max(1, 3 - i // 2)
+                        points[j][0],
+                        points[j][1],
+                        points[j + 1][0],
+                        points[j + 1][1],
+                        (0, 255, 0, alpha),
+                        max(1, 3 - i // 2),
                     )
                     self.selection_shapes.append(line)
 
@@ -301,9 +316,12 @@ class GameWindow(arcade.Window):
 
             for j in range(len(points) - 1):
                 line = create_line(
-                    points[j][0], points[j][1],
-                    points[j + 1][0], points[j + 1][1],
-                    (100, 255, 100, 255), 3
+                    points[j][0],
+                    points[j][1],
+                    points[j + 1][0],
+                    points[j + 1][1],
+                    (100, 255, 100, 255),
+                    3,
                 )
                 self.selection_shapes.append(line)
 
@@ -313,6 +331,7 @@ class GameWindow(arcade.Window):
 
         Called automatically by Arcade on each frame.
         """
+        # Clear the window (color buffer)
         self.clear()
 
         if self.camera_mode == "2D":
@@ -472,7 +491,7 @@ class GameWindow(arcade.Window):
         """
         self.camera.position = (
             self.camera.position[0] + dx,
-            self.camera.position[1] + dy
+            self.camera.position[1] + dy,
         )
 
     def _zoom_in(self):
@@ -493,8 +512,10 @@ class GameWindow(arcade.Window):
 
         # Get all alive tokens
         alive_tokens = [
-            token_id for token_id in current_player.token_ids
-            if self.game_state.get_token(token_id) and self.game_state.get_token(token_id).is_alive
+            token_id
+            for token_id in current_player.token_ids
+            if self.game_state.get_token(token_id)
+            and self.game_state.get_token(token_id).is_alive
         ]
 
         if not alive_tokens:
@@ -545,11 +566,12 @@ class GameWindow(arcade.Window):
                 if self.turn_phase == TurnPhase.MOVEMENT:
                     self.selected_token_id = clicked_token.id
                     self.valid_moves = self.movement_system.get_valid_moves(
-                        clicked_token,
-                        self.game_state.board
+                        clicked_token, self.game_state.board
                     )
                     self._update_selection_visuals()
-                    print(f"Selected token {clicked_token.id} at {clicked_token.position}")
+                    print(
+                        f"Selected token {clicked_token.id} at {clicked_token.position}"
+                    )
                     print(f"Valid moves: {len(self.valid_moves)}")
             else:
                 # Enemy token - try to attack if in action phase
@@ -602,7 +624,10 @@ class GameWindow(arcade.Window):
 
             # Update sprite position
             for sprite in self.token_sprites:
-                if isinstance(sprite, TokenSprite) and sprite.token.id == self.selected_token_id:
+                if (
+                    isinstance(sprite, TokenSprite)
+                    and sprite.token.id == self.selected_token_id
+                ):
                     sprite.update_position(cell[0], cell[1])
                     break
 
@@ -629,12 +654,14 @@ class GameWindow(arcade.Window):
             return
 
         # Check if adjacent
-        if not self.combat_system.is_adjacent(attacker.position, target_token.position):
+        if not self.movement_system.is_adjacent(
+            attacker.position, target_token.position
+        ):
             print("Target is not adjacent")
             return
 
         # Perform attack
-        result = self.combat_system.attack(attacker, target_token)
+        result = CombatSystem.resolve_combat(attacker, target_token)
 
         print(f"Token {attacker.id} attacked token {target_token.id}: {result}")
 

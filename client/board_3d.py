@@ -6,6 +6,7 @@ with Tron/Battlezone aesthetic and transparent glowing lines.
 """
 
 import arcade
+from arcade.gl import BufferDescription
 import numpy as np
 import math
 from pathlib import Path
@@ -48,7 +49,9 @@ class Board3D:
 
         # Grid and wall parameters
         self.wall_height = WALL_HEIGHT
-        self.grid_color = np.array([0.0, 0.78, 0.78, 0.7], dtype=np.float32)  # Cyan glow
+        self.grid_color = np.array(
+            [0.0, 0.78, 0.78, 0.7], dtype=np.float32
+        )  # Cyan glow
 
         # Initialize geometry and shaders
         self._create_shader()
@@ -66,11 +69,14 @@ class Board3D:
         with open(shader_path / "glow_fragment.glsl", "r") as f:
             fragment_shader = f.read()
 
-        # Compile shader program
-        self.shader_program = self.ctx.program(
-            vertex_shader=vertex_shader,
-            fragment_shader=fragment_shader
-        )
+        # Compile shader program with error handling
+        try:
+            self.shader_program = self.ctx.program(
+                vertex_shader=vertex_shader, fragment_shader=fragment_shader
+            )
+        except Exception as e:
+            print(f"ERROR: Failed to compile 3D shaders: {e}")
+            self.shader_program = None
 
     def _create_grid_geometry(self):
         """
@@ -120,13 +126,15 @@ class Board3D:
         self.grid_vbo = self.ctx.buffer(data=vertices_array.tobytes())
 
         # Create VAO (Vertex Array Object) with position attribute
-        self.grid_vao = self.ctx.geometry([
-            arcade.gl.BufferDescription(
-                self.grid_vbo,
-                '3f',  # 3 floats per vertex (x, y, z)
-                ['in_position']
-            )
-        ])
+        self.grid_vao = self.ctx.geometry(
+            [
+                BufferDescription(
+                    self.grid_vbo,
+                    "3f",  # 3 floats per vertex (x, y, z)
+                    ["in_position"],
+                )
+            ]
+        )
 
     def _create_special_cells_geometry(self):
         """
@@ -138,58 +146,81 @@ class Board3D:
         for y in range(BOARD_HEIGHT):
             for x in range(BOARD_WIDTH):
                 cell = self.board.get_cell(x, y)
-                if cell and cell.cell_type != CellType.NORMAL and cell.cell_type != CellType.START:
+                if (
+                    cell
+                    and cell.cell_type != CellType.NORMAL
+                    and cell.cell_type != CellType.START
+                ):
                     center_x = x * CELL_SIZE + CELL_SIZE / 2
                     center_y = y * CELL_SIZE + CELL_SIZE / 2
 
                     if cell.cell_type == CellType.GENERATOR:
                         # Generator as wireframe cube
-                        vertices.extend(self._create_cube_wireframe(center_x, center_y, CELL_SIZE * 0.6))
+                        vertices.extend(
+                            self._create_cube_wireframe(
+                                center_x, center_y, CELL_SIZE * 0.6
+                            )
+                        )
 
                     elif cell.cell_type == CellType.CRYSTAL:
                         # Crystal as wireframe diamond (pyramid)
-                        vertices.extend(self._create_diamond_wireframe(center_x, center_y, CELL_SIZE * 0.5))
+                        vertices.extend(
+                            self._create_diamond_wireframe(
+                                center_x, center_y, CELL_SIZE * 0.5
+                            )
+                        )
 
                     elif cell.cell_type == CellType.MYSTERY:
                         # Mystery as wireframe cylinder/circle
-                        vertices.extend(self._create_cylinder_wireframe(center_x, center_y, CELL_SIZE * 0.3))
+                        vertices.extend(
+                            self._create_cylinder_wireframe(
+                                center_x, center_y, CELL_SIZE * 0.3
+                            )
+                        )
 
         if len(vertices) > 0:
             vertices_array = np.array(vertices, dtype=np.float32)
             self.special_cells_vbo = self.ctx.buffer(data=vertices_array.tobytes())
-            self.special_cells_vao = self.ctx.geometry([
-                arcade.gl.BufferDescription(
-                    self.special_cells_vbo,
-                    '3f',
-                    ['in_position']
-                )
-            ])
+            self.special_cells_vao = self.ctx.geometry(
+                [BufferDescription(self.special_cells_vbo, "3f", ["in_position"])]
+            )
 
-    def _create_cube_wireframe(self, center_x: float, center_y: float, size: float) -> list:
+    def _create_cube_wireframe(
+        self, center_x: float, center_y: float, size: float
+    ) -> list:
         """Create wireframe cube vertices."""
         half = size / 2
         height = self.wall_height * 0.6  # Cube height
 
         # 8 vertices of cube
         vertices = [
-            (center_x - half, center_y - half, 0.0),       # 0: bottom-front-left
-            (center_x + half, center_y - half, 0.0),       # 1: bottom-front-right
-            (center_x + half, center_y + half, 0.0),       # 2: bottom-back-right
-            (center_x - half, center_y + half, 0.0),       # 3: bottom-back-left
-            (center_x - half, center_y - half, height),    # 4: top-front-left
-            (center_x + half, center_y - half, height),    # 5: top-front-right
-            (center_x + half, center_y + half, height),    # 6: top-back-right
-            (center_x - half, center_y + half, height),    # 7: top-back-left
+            (center_x - half, center_y - half, 0.0),  # 0: bottom-front-left
+            (center_x + half, center_y - half, 0.0),  # 1: bottom-front-right
+            (center_x + half, center_y + half, 0.0),  # 2: bottom-back-right
+            (center_x - half, center_y + half, 0.0),  # 3: bottom-back-left
+            (center_x - half, center_y - half, height),  # 4: top-front-left
+            (center_x + half, center_y - half, height),  # 5: top-front-right
+            (center_x + half, center_y + half, height),  # 6: top-back-right
+            (center_x - half, center_y + half, height),  # 7: top-back-left
         ]
 
         # 12 edges of cube (each edge is 2 vertices)
         edges = [
             # Bottom square
-            (0, 1), (1, 2), (2, 3), (3, 0),
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 0),
             # Top square
-            (4, 5), (5, 6), (6, 7), (7, 4),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (7, 4),
             # Vertical edges
-            (0, 4), (1, 5), (2, 6), (3, 7),
+            (0, 4),
+            (1, 5),
+            (2, 6),
+            (3, 7),
         ]
 
         # Convert edges to vertex list
@@ -200,25 +231,33 @@ class Board3D:
 
         return result
 
-    def _create_diamond_wireframe(self, center_x: float, center_y: float, size: float) -> list:
+    def _create_diamond_wireframe(
+        self, center_x: float, center_y: float, size: float
+    ) -> list:
         """Create wireframe diamond/pyramid vertices."""
         height = self.wall_height * 0.8
 
         # 5 vertices: 4 base corners + 1 apex
         vertices = [
-            (center_x, center_y, height),                 # 0: apex
-            (center_x + size, center_y, 0.0),             # 1: base-right
-            (center_x, center_y + size, 0.0),             # 2: base-back
-            (center_x - size, center_y, 0.0),             # 3: base-left
-            (center_x, center_y - size, 0.0),             # 4: base-front
+            (center_x, center_y, height),  # 0: apex
+            (center_x + size, center_y, 0.0),  # 1: base-right
+            (center_x, center_y + size, 0.0),  # 2: base-back
+            (center_x - size, center_y, 0.0),  # 3: base-left
+            (center_x, center_y - size, 0.0),  # 4: base-front
         ]
 
         # Edges: 4 base edges + 4 edges to apex
         edges = [
             # Base square
-            (1, 2), (2, 3), (3, 4), (4, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 1),
             # Edges to apex
-            (0, 1), (0, 2), (0, 3), (0, 4),
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (0, 4),
         ]
 
         result = []
@@ -228,7 +267,9 @@ class Board3D:
 
         return result
 
-    def _create_cylinder_wireframe(self, center_x: float, center_y: float, radius: float) -> list:
+    def _create_cylinder_wireframe(
+        self, center_x: float, center_y: float, radius: float
+    ) -> list:
         """Create wireframe cylinder vertices (circle at bottom and top)."""
         segments = 16
         height = self.wall_height * 0.5
@@ -266,22 +307,21 @@ class Board3D:
         Args:
             camera_3d: FirstPersonCamera3D instance with view/projection matrices
         """
-        # Enable blending for transparency and glow
-        self.ctx.enable(self.ctx.BLEND)
-        self.ctx.blend_func = self.ctx.SRC_ALPHA, self.ctx.ONE_MINUS_SRC_ALPHA
+        if self.shader_program is None:
+            print("ERROR: 3D shader not compiled, skipping rendering")
+            return
 
-        # Enable depth testing
-        self.ctx.enable(self.ctx.DEPTH_TEST)
+        # Note: OpenGL state (blending, depth test) is managed by GameWindow.on_draw
 
         # Identity model matrix (board is at world origin)
         model_matrix = np.eye(4, dtype=np.float32)
 
         # Set shader uniforms
-        self.shader_program['projection'] = camera_3d.get_projection_matrix().flatten()
-        self.shader_program['view'] = camera_3d.get_view_matrix().flatten()
-        self.shader_program['model'] = model_matrix.flatten()
-        self.shader_program['base_color'] = self.grid_color
-        self.shader_program['glow_intensity'] = 1.5
+        self.shader_program["projection"] = camera_3d.get_projection_matrix().flatten()
+        self.shader_program["view"] = camera_3d.get_view_matrix().flatten()
+        self.shader_program["model"] = model_matrix.flatten()
+        self.shader_program["base_color"] = self.grid_color
+        self.shader_program["glow_intensity"] = 1.5
 
         # Draw grid lines
         self.grid_vao.render(self.shader_program, mode=self.ctx.LINES)
@@ -289,8 +329,10 @@ class Board3D:
         # Draw special cells if they exist
         if self.special_cells_vao:
             # Generators: orange
-            self.shader_program['base_color'] = np.array([1.0, 0.65, 0.0, 0.8], dtype=np.float32)
-            self.shader_program['glow_intensity'] = 2.0
+            self.shader_program["base_color"] = np.array(
+                [1.0, 0.65, 0.0, 0.8], dtype=np.float32
+            )
+            self.shader_program["glow_intensity"] = 2.0
             # TODO: Separate VAOs for different cell types for different colors
             # For now, draw all special cells with same shader
             self.special_cells_vao.render(self.shader_program, mode=self.ctx.LINES)

@@ -6,6 +6,7 @@ with player colors and glow effects.
 """
 
 import arcade
+from arcade.gl import BufferDescription
 import numpy as np
 import math
 
@@ -29,12 +30,15 @@ class Token3D:
             ctx: Arcade OpenGL context
         """
         self.token = token
-        self.color = np.array([
-            player_color[0] / 255.0,
-            player_color[1] / 255.0,
-            player_color[2] / 255.0,
-            0.9  # Alpha
-        ], dtype=np.float32)
+        self.color = np.array(
+            [
+                player_color[0] / 255.0,
+                player_color[1] / 255.0,
+                player_color[2] / 255.0,
+                0.9,  # Alpha
+            ],
+            dtype=np.float32,
+        )
         self.ctx = ctx
 
         # 3D geometry parameters
@@ -90,13 +94,15 @@ class Token3D:
         self.vbo = self.ctx.buffer(data=vertices_array.tobytes())
 
         # Create VAO with position attribute
-        self.vao = self.ctx.geometry([
-            arcade.gl.BufferDescription(
-                self.vbo,
-                '3f',  # 3 floats per vertex (x, y, z)
-                ['in_position']
-            )
-        ])
+        self.vao = self.ctx.geometry(
+            [
+                BufferDescription(
+                    self.vbo,
+                    "3f",  # 3 floats per vertex (x, y, z)
+                    ["in_position"],
+                )
+            ]
+        )
 
     def draw(self, camera_3d, shader_program):
         """
@@ -118,11 +124,11 @@ class Token3D:
         model_matrix[2, 3] = world_z
 
         # Set shader uniforms
-        shader_program['projection'] = camera_3d.get_projection_matrix().flatten()
-        shader_program['view'] = camera_3d.get_view_matrix().flatten()
-        shader_program['model'] = model_matrix.flatten()
-        shader_program['base_color'] = self.color
-        shader_program['glow_intensity'] = 2.5  # Brighter glow for tokens
+        shader_program["projection"] = camera_3d.get_projection_matrix().flatten()
+        shader_program["view"] = camera_3d.get_view_matrix().flatten()
+        shader_program["model"] = model_matrix.flatten()
+        shader_program["base_color"] = self.color
+        shader_program["glow_intensity"] = 2.5  # Brighter glow for tokens
 
         # Render as lines
         self.vao.render(shader_program, mode=self.ctx.LINES)
