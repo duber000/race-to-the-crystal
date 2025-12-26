@@ -1,6 +1,6 @@
-# Graphics Testing Skill
-
-Test the Race to the Crystal game rendering in both 2D and 3D modes by taking internal screenshots.
+---
+name: testing-graphics
+description: Test the Race to the Crystal game rendering in both 2D and 3D modes by taking internal screenshots.
 
 ## When to Use
 
