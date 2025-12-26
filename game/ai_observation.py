@@ -417,9 +417,8 @@ class AIObserver:
 
         elif game_state.turn_phase == TurnPhase.ACTION:
             # Attack actions
-            all_tokens = list(game_state.tokens.values())
             for token in deployed_tokens:
-                attackable = CombatSystem.get_attackable_targets(token, all_tokens)
+                attackable = CombatSystem.get_attackable_targets(token, game_state.tokens)
                 for target in attackable:
                     damage = token.health // 2
                     will_kill = CombatSystem.would_kill(token, target)
