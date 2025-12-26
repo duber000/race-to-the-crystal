@@ -1,6 +1,6 @@
 ---
 name: testing-graphics
-description: Test the Race to the Crystal game rendering in both 2D and 3D modes by taking internal screenshots.
+description: Test the Race to the Crystal game rendering in both 2D and 3D modes by taking internal screenshots using arcade.get_image(). Use when verifying graphics rendering, debugging visual issues, testing camera configurations, or validating game display after code changes.
 ---
 
 # Testing Graphics

@@ -1,6 +1,6 @@
 ---
 name: testing-python
-description: How to run tests for the Race to the Crystal project
+description: Run pytest unit tests for the Race to the Crystal project using uv and make commands. Use when running tests, verifying code changes, debugging test failures, checking test coverage, or validating game mechanics implementations.
 ---
 
 # Testing Python
