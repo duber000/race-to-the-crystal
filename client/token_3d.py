@@ -123,10 +123,10 @@ class Token3D:
         model_matrix[1, 3] = world_y
         model_matrix[2, 3] = world_z
 
-        # Set shader uniforms
-        shader_program["projection"] = camera_3d.get_projection_matrix().flatten()
-        shader_program["view"] = camera_3d.get_view_matrix().flatten()
-        shader_program["model"] = model_matrix.flatten()
+        # Set shader uniforms (transpose for OpenGL column-major format)
+        shader_program["projection"] = camera_3d.get_projection_matrix().T.flatten()
+        shader_program["view"] = camera_3d.get_view_matrix().T.flatten()
+        shader_program["model"] = model_matrix.T.flatten()
         shader_program["base_color"] = self.color
         shader_program["glow_intensity"] = 2.5  # Brighter glow for tokens
 

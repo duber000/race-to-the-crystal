@@ -331,7 +331,7 @@ class GameWindow(arcade.Window):
 
         Called automatically by Arcade on each frame.
         """
-        # Clear the window (color buffer)
+        # Clear the window (color buffer and depth buffer)
         self.clear()
 
         if self.camera_mode == "2D":
@@ -342,7 +342,14 @@ class GameWindow(arcade.Window):
                 self.selection_shapes.draw()  # Draw selection highlights
                 self.token_sprites.draw()
         else:
-            # 3D first-person rendering
+            # 3D first-person rendering - enable depth testing and blending
+            self.ctx.enable(self.ctx.DEPTH_TEST)
+            self.ctx.enable(self.ctx.BLEND)
+            # Disable face culling for wireframe rendering
+            self.ctx.disable(self.ctx.CULL_FACE)
+            # Set line width for visibility
+            self.ctx.line_width = 2.0
+
             if self.board_3d and self.shader_3d:
                 # Update camera to follow controlled token
                 if self.controlled_token_id:
@@ -357,6 +364,10 @@ class GameWindow(arcade.Window):
                 for token_3d in self.tokens_3d:
                     if token_3d.token.is_alive:
                         token_3d.draw(self.camera_3d, self.shader_3d)
+
+            # Disable depth testing and blending for UI overlay
+            self.ctx.disable(self.ctx.DEPTH_TEST)
+            self.ctx.disable(self.ctx.BLEND)
 
         # Draw UI (no camera transform) - always in 2D
         with self.ui_camera.activate():

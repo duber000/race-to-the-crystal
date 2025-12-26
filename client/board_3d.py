@@ -316,10 +316,10 @@ class Board3D:
         # Identity model matrix (board is at world origin)
         model_matrix = np.eye(4, dtype=np.float32)
 
-        # Set shader uniforms
-        self.shader_program["projection"] = camera_3d.get_projection_matrix().flatten()
-        self.shader_program["view"] = camera_3d.get_view_matrix().flatten()
-        self.shader_program["model"] = model_matrix.flatten()
+        # Set shader uniforms (transpose for OpenGL column-major format)
+        self.shader_program["projection"] = camera_3d.get_projection_matrix().T.flatten()
+        self.shader_program["view"] = camera_3d.get_view_matrix().T.flatten()
+        self.shader_program["model"] = model_matrix.T.flatten()
         self.shader_program["base_color"] = self.grid_color
         self.shader_program["glow_intensity"] = 1.5
 
