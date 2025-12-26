@@ -1,6 +1,9 @@
 ---
 name: testing-graphics
 description: Test the Race to the Crystal game rendering in both 2D and 3D modes by taking internal screenshots.
+---
+
+# Testing Graphics
 
 ## When to Use
 

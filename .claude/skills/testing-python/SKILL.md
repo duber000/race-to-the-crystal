@@ -1,9 +1,9 @@
 ---
-name: testing
+name: testing-python
 description: How to run tests for the Race to the Crystal project
 ---
 
-# Testing
+# Testing Python
 
 This project uses pytest for testing with uv for dependency management.
 
