@@ -81,13 +81,18 @@ def main():
 
     print(f"\nStarting {num_players}-player game...")
     print("\nControls:")
-    print("  Left Click: Select tokens and move")
+    print("  Left Click: Select token, then move OR attack (not both)")
+    print("  Space / Enter: End turn")
+    print("  Escape: Cancel selection")
+    print("  V: Toggle 2D/3D view")
     print("  Arrow Keys / WASD: Pan camera")
     print("  +/-: Zoom in/out")
     print("  Mouse Wheel: Zoom in/out")
-    print("  Space / Enter: End turn")
-    print("  Escape: Cancel selection")
     print("  Ctrl+Q: Quit game")
+    print("\nRules:")
+    print("  - Fast tokens (4hp, 6hp): Move 2 spaces")
+    print("  - Slow tokens (8hp, 10hp): Move 1 space")
+    print("  - Each turn: Either move OR attack, but not both")
     print("\n" + "=" * 60 + "\n")
 
     # Set up game state

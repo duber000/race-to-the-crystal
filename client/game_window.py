@@ -208,7 +208,7 @@ class GameWindow(arcade.Window):
 
         # Instructions
         if self.turn_phase == TurnPhase.MOVEMENT:
-            instruction = "Click a token to select, then click a cell to move"
+            instruction = "Click a token to select, then move OR attack (not both)"
         elif self.turn_phase == TurnPhase.ACTION:
             instruction = (
                 "Click an adjacent enemy to attack, or press SPACE to end turn"
@@ -573,7 +573,7 @@ class GameWindow(arcade.Window):
         if clicked_token:
             # Clicked on a token
             if clicked_token.player_id == current_player.id:
-                # Own token - select it for movement
+                # Own token - select it for movement or attack
                 if self.turn_phase == TurnPhase.MOVEMENT:
                     self.selected_token_id = clicked_token.id
                     self.valid_moves = self.movement_system.get_valid_moves(
@@ -585,8 +585,8 @@ class GameWindow(arcade.Window):
                     )
                     print(f"Valid moves: {len(self.valid_moves)}")
             else:
-                # Enemy token - try to attack if in action phase
-                if self.turn_phase == TurnPhase.ACTION and self.selected_token_id:
+                # Enemy token - try to attack (can't attack if you already moved)
+                if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
                     self._try_attack(clicked_token)
         else:
             # Clicked on empty cell - try to move
@@ -647,8 +647,9 @@ class GameWindow(arcade.Window):
             self.valid_moves = []
             self._update_selection_visuals()
 
-            # Move to action phase
-            self.turn_phase = TurnPhase.ACTION
+            # Can't attack after moving - go directly to end turn phase
+            self.turn_phase = TurnPhase.END_TURN
+            print("Turn complete - press SPACE to end turn")
 
     def _try_attack(self, target_token):
         """

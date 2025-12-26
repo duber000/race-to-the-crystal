@@ -29,12 +29,14 @@ uv sync
 uv run race-to-the-crystal
 
 # In-game controls:
+# - Click token: Select it
+# - Click cell: Move selected token (ends your turn)
+# - Click enemy: Attack with selected token (ends your turn)
+# - Space/Enter: End turn
+# - Escape: Cancel selection
 # - V: Toggle between 2D and 3D views
 # - TAB: Switch between tokens (3D mode)
 # - Q/E: Rotate camera (3D mode)
-# - Click: Select and move tokens
-# - Space/Enter: End turn
-# - Escape: Cancel selection
 ```
 
 ### Running Tests
@@ -136,7 +138,8 @@ See [PLAN.md](PLAN.md) for the full implementation roadmap.
 ### Game Mechanics
 - ✓ **Board**: 24x24 grid with 4 starting corners, 1 crystal, 4 generators, 8-12 mystery squares
 - ✓ **Tokens**: 20 per player (5×10hp, 5×8hp, 5×6hp, 5×4hp)
-- ✓ **Movement**: All tokens move 2 spaces, 8-directional with BFS pathfinding
+- ✓ **Movement**: Fast tokens (6hp, 4hp) move 2 spaces; slow tokens (8hp, 10hp) move 1 space; 8-directional with BFS pathfinding
+- ✓ **Turn Actions**: Each turn you can either move OR attack, but not both
 - ✓ **Combat**: Adjacent attacks, damage = attacker.health // 2, attacker takes no damage
 - ✓ **Generators**: Hold with 2 tokens for 2 turns to disable, reduces crystal requirement by 2
 - ✓ **Crystal**: Win by holding with 12 tokens (or less if generators disabled) for 3 turns

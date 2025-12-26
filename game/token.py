@@ -29,9 +29,14 @@ class Token:
     def movement_range(self) -> int:
         """
         Calculate movement range for this token.
-        According to the rules, all tokens move 2 spaces.
+        According to the rules:
+        - Tokens with 6 or 4 max health move 2 spaces
+        - Tokens with 8 or 10 max health move 1 space
         """
-        return 2
+        if self.max_health in (6, 4):
+            return 2
+        else:  # max_health in (8, 10)
+            return 1
 
     @property
     def attack_power(self) -> int:
