@@ -25,14 +25,16 @@ class TestToken:
         assert token.is_alive is True
 
     def test_movement_range(self):
-        """Test that all tokens have movement range of 2."""
+        """Test movement range based on max health: 10hp/8hp move 1, 6hp/4hp move 2."""
         token_10 = Token(id=1, player_id="p1", health=10, max_health=10, position=(0, 0))
         token_8 = Token(id=2, player_id="p1", health=8, max_health=8, position=(0, 0))
         token_6 = Token(id=3, player_id="p1", health=6, max_health=6, position=(0, 0))
         token_4 = Token(id=4, player_id="p1", health=4, max_health=4, position=(0, 0))
 
-        assert token_10.movement_range == 2
-        assert token_8.movement_range == 2
+        # 10hp and 8hp tokens move 1 space
+        assert token_10.movement_range == 1
+        assert token_8.movement_range == 1
+        # 6hp and 4hp tokens move 2 spaces
         assert token_6.movement_range == 2
         assert token_4.movement_range == 2
 

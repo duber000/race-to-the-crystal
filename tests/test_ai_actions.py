@@ -434,17 +434,20 @@ class TestEndTurnActionValidation:
         assert is_valid
 
     def test_end_turn_wrong_phase(self):
-        """Test end turn fails in MOVEMENT phase."""
+        """Test end turn works in both MOVEMENT and ACTION phases."""
         game_state = create_test_game()
         executor = AIActionExecutor()
 
+        # Can end turn in MOVEMENT phase (to pass)
         game_state.turn_phase = TurnPhase.MOVEMENT
-
         action = EndTurnAction()
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
+        assert is_valid
 
-        assert not is_valid
-        assert "must be in action phase" in msg.lower()
+        # Can also end turn in ACTION phase
+        game_state.turn_phase = TurnPhase.ACTION
+        is_valid, msg = executor.validate_action(action, game_state, "player_0")
+        assert is_valid
 
 
 class TestEndTurnActionExecution:

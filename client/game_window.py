@@ -83,6 +83,7 @@ class GameWindow(arcade.Window):
         # Corner deployment menu
         self.corner_menu_open = False
         self.corner_menu_position: Optional[Tuple[int, int]] = None
+        self.corner_menu_just_opened = False  # Flag to prevent immediate click-through
 
         # Camera controls
         self.camera_speed = 10
@@ -127,6 +128,9 @@ class GameWindow(arcade.Window):
         self._create_token_sprites()
         self._create_ui_sprites()
         self._create_3d_rendering()
+
+        # Set up camera to fit entire board in view
+        self._setup_camera_view()
 
         print("Window setup complete")
 
@@ -571,6 +575,36 @@ class GameWindow(arcade.Window):
             self.camera.position[1] + dy,
         )
 
+    def _setup_camera_view(self):
+        """Set up camera to show the entire board, accounting for HUD at top."""
+        from shared.constants import BOARD_WIDTH, BOARD_HEIGHT, CELL_SIZE
+
+        # Calculate board dimensions in pixels
+        board_pixel_width = BOARD_WIDTH * CELL_SIZE
+        board_pixel_height = BOARD_HEIGHT * CELL_SIZE
+
+        # Account for HUD at top (80 pixels)
+        HUD_HEIGHT = 80
+        playable_height = self.height - HUD_HEIGHT
+
+        # Calculate zoom to fit board in playable area
+        zoom_x = self.width / board_pixel_width
+        zoom_y = playable_height / board_pixel_height
+        optimal_zoom = min(zoom_x, zoom_y) * 0.95  # 95% to add small margin
+
+        # Apply zoom
+        self.zoom_level = optimal_zoom
+        self.camera.zoom = self.zoom_level
+
+        # Center camera on board center, shifted down to account for HUD
+        board_center_x = board_pixel_width / 2
+        # Offset camera downward by half the HUD height (in world coordinates)
+        hud_offset_world = (HUD_HEIGHT / 2) / self.zoom_level
+        board_center_y = (board_pixel_height / 2) - hud_offset_world
+        self.camera.position = (board_center_x, board_center_y)
+
+        print(f"Camera setup: zoom={self.zoom_level:.2f}, position=({board_center_x:.1f}, {board_center_y:.1f}), HUD offset={hud_offset_world:.1f}")
+
     def _zoom_in(self):
         """Zoom in the camera."""
         self.zoom_level = min(2.0, self.zoom_level * 1.1)
@@ -610,14 +644,14 @@ class GameWindow(arcade.Window):
         print(f"Switched to token {self.controlled_token_id}")
 
     def _is_player_corner(self, grid_pos: Tuple[int, int], player_id: str) -> bool:
-        """Check if a position is a player's starting corner."""
+        """Check if a position is in the player's deployment zone (corner + adjacent cells)."""
         player = self.game_state.get_player(player_id)
         if not player:
             return False
 
         player_index = player.color.value
-        corner_pos = self.game_state.board.get_starting_position(player_index)
-        return grid_pos == corner_pos
+        deployable_positions = self.game_state.board.get_deployable_positions(player_index)
+        return grid_pos in deployable_positions
 
     def _handle_corner_menu_click(self, world_pos: Tuple[float, float], player_id: str) -> bool:
         """
@@ -669,6 +703,7 @@ class GameWindow(arcade.Window):
                     # Close menu
                     self.corner_menu_open = False
                     self.corner_menu_position = None
+                    self.corner_menu_just_opened = False
 
                     # End turn after deploying
                     self.turn_phase = TurnPhase.END_TURN
@@ -697,28 +732,21 @@ class GameWindow(arcade.Window):
             return
 
         # Check if clicked on corner menu option
-        if self.corner_menu_open and self.corner_menu_position:
+        if self.corner_menu_open and self.corner_menu_position and not self.corner_menu_just_opened:
             deployed = self._handle_corner_menu_click(world_pos, current_player.id)
             if deployed:
                 return
 
-        # Check if clicked on player's corner - show deployment menu
-        if self._is_player_corner((grid_x, grid_y), current_player.id) and self.turn_phase == TurnPhase.MOVEMENT:
-            # Toggle corner menu
-            if self.corner_menu_open and self.corner_menu_position == (grid_x, grid_y):
-                self.corner_menu_open = False
-                self.corner_menu_position = None
-                print("Closed corner menu")
-            else:
-                self.corner_menu_open = True
-                self.corner_menu_position = (grid_x, grid_y)
-                print(f"Opened corner menu at {(grid_x, grid_y)}")
-            return
+        # Reset the just-opened flag after first frame
+        if self.corner_menu_just_opened:
+            self.corner_menu_just_opened = False
+            return  # Don't process any other clicks this frame
 
         # Close corner menu if clicking elsewhere
         if self.corner_menu_open:
             self.corner_menu_open = False
             self.corner_menu_position = None
+            self.corner_menu_just_opened = False
 
         # Check if clicked on a token
         clicked_token = None
@@ -750,12 +778,22 @@ class GameWindow(arcade.Window):
                 if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
                     self._try_attack(clicked_token)
         else:
-            # Clicked on empty cell - try to move
+            # Clicked on empty cell
             if self.selected_token_id and self.turn_phase == TurnPhase.MOVEMENT:
+                # First priority: try to move selected token
                 if (grid_x, grid_y) in self.valid_moves:
                     self._try_move_to_cell((grid_x, grid_y))
                 else:
                     print(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
+            elif (self._is_player_corner((grid_x, grid_y), current_player.id)
+                  and self.turn_phase == TurnPhase.MOVEMENT
+                  and not self.selected_token_id):
+                # Second priority: open deployment menu if clicking on empty deployment zone
+                # (only if no token is selected)
+                self.corner_menu_open = True
+                self.corner_menu_position = (grid_x, grid_y)
+                self.corner_menu_just_opened = True  # Prevent click-through
+                print(f"Opened corner menu at {(grid_x, grid_y)}")
 
     def _handle_select_3d(self, grid_pos: Tuple[int, int]):
         """

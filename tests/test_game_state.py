@@ -151,7 +151,7 @@ class TestGameState:
         assert len(tokens_at_pos) == 20
 
     def test_get_player_tokens(self):
-        """Test getting all tokens for a player."""
+        """Test getting deployed tokens for a player."""
         state = GameState()
         state.add_player("p1", "Alice", PlayerColor.CYAN)
         state.add_player("p2", "Bob", PlayerColor.MAGENTA)
@@ -159,15 +159,24 @@ class TestGameState:
         state.create_tokens_for_player("p1")
         state.create_tokens_for_player("p2")
 
+        # Initially, no tokens are deployed
         p1_tokens = state.get_player_tokens("p1")
-        p2_tokens = state.get_player_tokens("p2")
+        assert len(p1_tokens) == 0
 
-        assert len(p1_tokens) == 20
-        assert len(p2_tokens) == 20
+        # Deploy some tokens for p1
+        health_values = [10, 8, 6, 4, 10]  # Deploy variety of token types
+        for i, health in enumerate(health_values):
+            state.deploy_token("p1", health, (i, i))
+
+        # Now should get 5 deployed tokens
+        p1_tokens = state.get_player_tokens("p1")
+        assert len(p1_tokens) == 5
 
         # All p1 tokens should belong to p1
         for token in p1_tokens:
             assert token.player_id == "p1"
+            assert token.is_deployed is True
+            assert token.is_alive is True
 
     def test_move_token(self):
         """Test moving a token."""

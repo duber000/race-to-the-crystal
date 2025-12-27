@@ -17,6 +17,18 @@ uv sync
 uv run race-to-the-crystal
 ```
 
+**Game Controls:**
+- **Arrow Keys**: Pan camera view
+- **+/-** or **Mouse Scroll**: Zoom in/out
+- **V**: Toggle between 2D and 3D view modes
+- **Tab** (3D mode): Cycle between controlled tokens
+- **A/D** (3D mode): Rotate camera left/right
+- **Space/Enter**: End turn
+- **Escape**: Cancel action
+- **Mouse Click**: Select tokens, move, attack, deploy
+
+**Note:** The camera automatically zooms to fit the entire 24x24 board in view at startup. Use +/- to zoom further if needed.
+
 ### Testing
 ```bash
 # Run all tests

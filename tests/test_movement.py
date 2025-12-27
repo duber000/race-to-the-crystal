@@ -13,7 +13,8 @@ class TestMovementSystem:
     def test_get_valid_moves_from_center(self):
         """Test getting valid moves from center of empty board."""
         board = Board(width=10, height=10)
-        token = Token(id=1, player_id="p1", health=10, max_health=10, position=(5, 5))
+        # Use 6hp token which has movement range of 2
+        token = Token(id=1, player_id="p1", health=6, max_health=6, position=(5, 5))
 
         valid_moves = MovementSystem.get_valid_moves(token, board)
 
@@ -59,7 +60,8 @@ class TestMovementSystem:
     def test_get_valid_moves_from_corner(self):
         """Test movement from board corner."""
         board = Board(width=10, height=10)
-        token = Token(id=1, player_id="p1", health=10, max_health=10, position=(0, 0))
+        # Use 6hp token which has movement range of 2
+        token = Token(id=1, player_id="p1", health=6, max_health=6, position=(0, 0))
 
         valid_moves = MovementSystem.get_valid_moves(token, board)
 
@@ -86,7 +88,8 @@ class TestMovementSystem:
     def test_is_valid_move(self):
         """Test checking if a specific move is valid."""
         board = Board(width=10, height=10)
-        token = Token(id=1, player_id="p1", health=10, max_health=10, position=(5, 5))
+        # Use 6hp token which has movement range of 2
+        token = Token(id=1, player_id="p1", health=6, max_health=6, position=(5, 5))
 
         assert MovementSystem.is_valid_move(token, (6, 5), board) is True
         assert MovementSystem.is_valid_move(token, (7, 7), board) is True

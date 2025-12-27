@@ -225,6 +225,31 @@ class Board:
         ]
         return corners[player_index % 4]
 
+    def get_deployable_positions(self, player_index: int) -> List[Tuple[int, int]]:
+        """
+        Get valid deployment positions for a player (corner and adjacent cells).
+
+        Args:
+            player_index: Player index (0-3)
+
+        Returns:
+            List of (x, y) positions where player can deploy tokens
+        """
+        corner = self.get_starting_position(player_index)
+        cx, cy = corner
+
+        # Include corner and all 8 adjacent cells
+        positions = [corner]
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                if dx == 0 and dy == 0:
+                    continue  # Skip corner itself (already added)
+                x, y = cx + dx, cy + dy
+                if 0 <= x < self.width and 0 <= y < self.height:
+                    positions.append((x, y))
+
+        return positions
+
     def get_crystal_position(self) -> Tuple[int, int]:
         """Get the position of the power crystal."""
         return (self.width // 2, self.height // 2)
