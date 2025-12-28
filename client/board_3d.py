@@ -41,8 +41,14 @@ class Board3D:
         # Vertex buffers
         self.grid_vbo = None
         self.grid_vao = None
-        self.special_cells_vbo = None
-        self.special_cells_vao = None
+        
+        # Special cell VAOs (separate for each type with different colors)
+        self.generators_vao = None
+        self.generators_vbo = None
+        self.crystal_vao = None
+        self.crystal_vbo = None
+        self.mystery_vao = None
+        self.mystery_vbo = None
 
         # Shader program
         self.shader_program = None
@@ -140,8 +146,12 @@ class Board3D:
         """
         Generate geometry for special cells (generators, crystal, mystery squares).
         Each rendered as 3D wireframe with distinct shape and color.
+        Creates separate VAOs for each type to allow different colors.
         """
-        vertices = []
+        # Collect vertices by cell type
+        generator_vertices = []
+        crystal_vertices = []
+        mystery_vertices = []
 
         for y in range(BOARD_HEIGHT):
             for x in range(BOARD_WIDTH):
@@ -155,34 +165,49 @@ class Board3D:
                     center_y = y * CELL_SIZE + CELL_SIZE / 2
 
                     if cell.cell_type == CellType.GENERATOR:
-                        # Generator as wireframe cube
-                        vertices.extend(
+                        # Generator as wireframe cube (orange)
+                        generator_vertices.extend(
                             self._create_cube_wireframe(
                                 center_x, center_y, CELL_SIZE * 0.6
                             )
                         )
 
                     elif cell.cell_type == CellType.CRYSTAL:
-                        # Crystal as wireframe diamond (pyramid)
-                        vertices.extend(
+                        # Crystal as wireframe diamond (magenta)
+                        crystal_vertices.extend(
                             self._create_diamond_wireframe(
                                 center_x, center_y, CELL_SIZE * 0.5
                             )
                         )
 
                     elif cell.cell_type == CellType.MYSTERY:
-                        # Mystery as wireframe cylinder/circle
-                        vertices.extend(
+                        # Mystery as wireframe cylinder (cyan)
+                        mystery_vertices.extend(
                             self._create_cylinder_wireframe(
                                 center_x, center_y, CELL_SIZE * 0.3
                             )
                         )
 
-        if len(vertices) > 0:
-            vertices_array = np.array(vertices, dtype=np.float32)
-            self.special_cells_vbo = self.ctx.buffer(data=vertices_array.tobytes())
-            self.special_cells_vao = self.ctx.geometry(
-                [BufferDescription(self.special_cells_vbo, "3f", ["in_position"])]
+        # Create separate VAOs for each type
+        if len(generator_vertices) > 0:
+            vertices_array = np.array(generator_vertices, dtype=np.float32)
+            self.generators_vbo = self.ctx.buffer(data=vertices_array.tobytes())
+            self.generators_vao = self.ctx.geometry(
+                [BufferDescription(self.generators_vbo, "3f", ["in_position"])]
+            )
+
+        if len(crystal_vertices) > 0:
+            vertices_array = np.array(crystal_vertices, dtype=np.float32)
+            self.crystal_vbo = self.ctx.buffer(data=vertices_array.tobytes())
+            self.crystal_vao = self.ctx.geometry(
+                [BufferDescription(self.crystal_vbo, "3f", ["in_position"])]
+            )
+
+        if len(mystery_vertices) > 0:
+            vertices_array = np.array(mystery_vertices, dtype=np.float32)
+            self.mystery_vbo = self.ctx.buffer(data=vertices_array.tobytes())
+            self.mystery_vao = self.ctx.geometry(
+                [BufferDescription(self.mystery_vbo, "3f", ["in_position"])]
             )
 
     def _create_cube_wireframe(
@@ -316,23 +341,36 @@ class Board3D:
         # Identity model matrix (board is at world origin)
         model_matrix = np.eye(4, dtype=np.float32)
 
-        # Set shader uniforms (transpose for OpenGL column-major format)
+        # Set common shader uniforms (transpose for OpenGL column-major format)
         self.shader_program["projection"] = camera_3d.get_projection_matrix().T.flatten()
         self.shader_program["view"] = camera_3d.get_view_matrix().T.flatten()
         self.shader_program["model"] = model_matrix.T.flatten()
+
+        # Draw grid lines (cyan)
         self.shader_program["base_color"] = self.grid_color
         self.shader_program["glow_intensity"] = 1.5
-
-        # Draw grid lines
         self.grid_vao.render(self.shader_program, mode=self.ctx.LINES)
 
-        # Draw special cells if they exist
-        if self.special_cells_vao:
-            # Generators: orange
+        # Draw generators (orange cubes)
+        if self.generators_vao:
             self.shader_program["base_color"] = np.array(
                 [1.0, 0.65, 0.0, 0.8], dtype=np.float32
             )
             self.shader_program["glow_intensity"] = 2.0
-            # TODO: Separate VAOs for different cell types for different colors
-            # For now, draw all special cells with same shader
-            self.special_cells_vao.render(self.shader_program, mode=self.ctx.LINES)
+            self.generators_vao.render(self.shader_program, mode=self.ctx.LINES)
+
+        # Draw crystal (magenta diamond)
+        if self.crystal_vao:
+            self.shader_program["base_color"] = np.array(
+                [1.0, 0.0, 1.0, 0.9], dtype=np.float32
+            )
+            self.shader_program["glow_intensity"] = 2.5
+            self.crystal_vao.render(self.shader_program, mode=self.ctx.LINES)
+
+        # Draw mystery squares (cyan cylinders)
+        if self.mystery_vao:
+            self.shader_program["base_color"] = np.array(
+                [0.0, 1.0, 1.0, 0.7], dtype=np.float32
+            )
+            self.shader_program["glow_intensity"] = 1.8
+            self.mystery_vao.render(self.shader_program, mode=self.ctx.LINES)

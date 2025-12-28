@@ -316,7 +316,7 @@ class GameWindow(arcade.Window):
         self.instruction_text.draw()
 
     def _draw_corner_menu(self):
-        """Draw the corner deployment menu with token type options."""
+        """Draw the corner deployment menu with token type options (2D mode)."""
         if not self.corner_menu_position:
             return
 
@@ -373,6 +373,106 @@ class GameWindow(arcade.Window):
                     anchor_x="center",
                     anchor_y="center",
                 )
+
+    def _draw_corner_menu_3d(self):
+        """Draw the corner deployment menu as HUD overlay in 3D mode."""
+        current_player = self.game_state.get_current_player()
+        if not current_player:
+            return
+
+        # Get reserve token counts
+        counts = self.game_state.get_reserve_token_counts(current_player.id)
+
+        # Draw menu in center of screen as HUD
+        menu_width = 400
+        menu_height = 200
+        center_x = self.width / 2
+        center_y = self.height / 2
+
+        # Semi-transparent background
+        arcade.draw_rectangle_filled(
+            center_x,
+            center_y,
+            menu_width,
+            menu_height,
+            (20, 20, 40, 220),
+        )
+        arcade.draw_rectangle_outline(
+            center_x, center_y, menu_width, menu_height, (0, 255, 255), 3
+        )
+
+        # Title
+        arcade.draw_text(
+            "SELECT TOKEN TYPE",
+            center_x,
+            center_y + 70,
+            (0, 255, 255),
+            font_size=18,
+            bold=True,
+            anchor_x="center",
+            anchor_y="center",
+        )
+
+        # Options in a grid
+        options = [
+            (10, center_x - 100, center_y + 20, counts[10]),
+            (8, center_x + 100, center_y + 20, counts[8]),
+            (6, center_x - 100, center_y - 30, counts[6]),
+            (4, center_x + 100, center_y - 30, counts[4]),
+        ]
+
+        for health, x, y, count in options:
+            # Store click areas for hit detection
+            if not hasattr(self, "_3d_menu_areas"):
+                self._3d_menu_areas = {}
+
+            if count > 0:
+                color = (0, 255, 255)
+                text_color = (255, 255, 255)
+            else:
+                color = (100, 100, 100)
+                text_color = (100, 100, 100)
+
+            # Draw option box
+            arcade.draw_rectangle_filled(x, y, 70, 50, (30, 30, 60, 200))
+            arcade.draw_rectangle_outline(x, y, 70, 50, color, 2)
+
+            # Store clickable area
+            self._3d_menu_areas[health] = (x - 35, x + 35, y - 25, y + 25)
+
+            # Draw health value
+            arcade.draw_text(
+                str(health),
+                x,
+                y + 5,
+                text_color,
+                font_size=16,
+                bold=True,
+                anchor_x="center",
+                anchor_y="center",
+            )
+
+            # Draw count
+            arcade.draw_text(
+                f"({count})" if count > 0 else "N/A",
+                x,
+                y - 10,
+                text_color,
+                font_size=12,
+                anchor_x="center",
+                anchor_y="center",
+            )
+
+        # Instruction
+        arcade.draw_text(
+            "Click a token type (ESC to cancel)",
+            center_x,
+            center_y - 70,
+            (200, 200, 200),
+            font_size=12,
+            anchor_x="center",
+            anchor_y="center",
+        )
 
     def _update_selection_visuals(self):
         """Update visual feedback for selection and valid moves with vector glow."""
@@ -529,13 +629,14 @@ class GameWindow(arcade.Window):
             self.ui_manager.draw()
 
         # Draw corner menu if open (in world coordinates)
-        if (
-            self.corner_menu_open
-            and self.corner_menu_position
-            and self.camera_mode == "2D"
-        ):
-            with self.camera.activate():
-                self._draw_corner_menu()
+        # Works in both 2D and 3D modes
+        if self.corner_menu_open and self.corner_menu_position:
+            if self.camera_mode == "2D":
+                with self.camera.activate():
+                    self._draw_corner_menu()
+            else:
+                # In 3D mode, draw menu in UI space (HUD-based)
+                self._draw_corner_menu_3d()
 
     def on_update(self, delta_time: float):
         """
@@ -605,6 +706,21 @@ class GameWindow(arcade.Window):
             elif ui_action == "cancel":
                 self._handle_cancel()
                 return
+
+            # Check corner menu if open (in either 2D or 3D mode)
+            current_player = self.game_state.get_current_player()
+            if self.corner_menu_open and current_player:
+                if self.camera_mode == "2D":
+                    # 2D world-space menu
+                    world_pos = self.camera.unproject((x, y))
+                    handled = self._handle_corner_menu_click((world_pos[0], world_pos[1]), current_player.id)
+                    if handled:
+                        return
+                else:
+                    # 3D HUD-space menu
+                    handled = self._handle_corner_menu_click_3d((x, y), current_player.id)
+                    if handled:
+                        return
 
             # No UI clicked, proceed with world interaction
             if self.camera_mode == "2D":
@@ -678,14 +794,23 @@ class GameWindow(arcade.Window):
 
         # 3D View controls
         elif symbol == arcade.key.V:
-            # Toggle between 2D and 3D views
-            self.camera_mode = "3D" if self.camera_mode == "2D" else "2D"
-            print(f"Camera mode: {self.camera_mode}")
-            if self.camera_mode == "3D" and not self.controlled_token_id:
-                # Set initial controlled token when entering 3D
-                current_player = self.game_state.get_current_player()
-                if current_player and len(current_player.token_ids) > 0:
-                    self.controlled_token_id = current_player.token_ids[0]
+            # Toggle between 2D and 3D views (only if 3D rendering is available)
+            if self.camera_mode == "2D":
+                # Trying to enter 3D mode
+                if self.board_3d is None or self.shader_3d is None:
+                    print("ERROR: 3D rendering failed to initialize. Cannot switch to 3D mode.")
+                    return
+                self.camera_mode = "3D"
+                print(f"Camera mode: {self.camera_mode}")
+                if not self.controlled_token_id:
+                    # Set initial controlled token when entering 3D
+                    current_player = self.game_state.get_current_player()
+                    if current_player and len(current_player.token_ids) > 0:
+                        self.controlled_token_id = current_player.token_ids[0]
+            else:
+                # Exiting 3D mode back to 2D
+                self.camera_mode = "2D"
+                print(f"Camera mode: {self.camera_mode}")
 
         elif symbol == arcade.key.TAB and self.camera_mode == "3D":
             # Cycle to next token
@@ -808,7 +933,7 @@ class GameWindow(arcade.Window):
         self, world_pos: Tuple[float, float], player_id: str
     ) -> bool:
         """
-        Handle click on corner menu to select a token type for deployment.
+        Handle click on corner menu to select a token type for deployment (2D mode).
 
         Args:
             world_pos: Click position in world coordinates
@@ -840,6 +965,46 @@ class GameWindow(arcade.Window):
         for health, option_x, option_y in options:
             distance = ((click_x - option_x) ** 2 + (click_y - option_y) ** 2) ** 0.5
             if distance <= click_radius:
+                # Check if player has this token type in reserve
+                reserve_counts = self.game_state.get_reserve_token_counts(player_id)
+                if reserve_counts.get(health, 0) > 0:
+                    # Select this token type for deployment
+                    self.selected_deploy_health = health
+                    print(
+                        f"Selected {health}hp token for deployment - click a position to deploy"
+                    )
+
+                    # Close the menu
+                    self.corner_menu_open = False
+                    self.corner_menu_position = None
+                    self.corner_menu_just_opened = False
+
+                    return True
+                else:
+                    print(f"No {health}hp tokens available in reserve")
+                    return False
+
+        return False
+
+    def _handle_corner_menu_click_3d(self, screen_pos: Tuple[int, int], player_id: str) -> bool:
+        """
+        Handle click on HUD corner menu in 3D mode.
+
+        Args:
+            screen_pos: Click position in screen coordinates
+            player_id: Current player ID
+
+        Returns:
+            True if a token type was selected
+        """
+        if not hasattr(self, "_3d_menu_areas"):
+            return False
+
+        click_x, click_y = screen_pos
+
+        # Check which menu option was clicked
+        for health, (left, right, bottom, top) in self._3d_menu_areas.items():
+            if left <= click_x <= right and bottom <= click_y <= top:
                 # Check if player has this token type in reserve
                 reserve_counts = self.game_state.get_reserve_token_counts(player_id)
                 if reserve_counts.get(health, 0) > 0:
@@ -996,20 +1161,120 @@ class GameWindow(arcade.Window):
     def _handle_select_3d(self, grid_pos: Tuple[int, int]):
         """
         Handle selection in 3D mode using ray-cast grid position.
+        Supports token selection, movement, attack, and deployment.
 
         Args:
             grid_pos: Grid coordinates (x, y)
         """
         grid_x, grid_y = grid_pos
 
-        # For now, just use the same logic as 2D
-        # Convert grid to world position for compatibility
-        world_x = grid_x * CELL_SIZE + CELL_SIZE / 2
-        world_y = grid_y * CELL_SIZE + CELL_SIZE / 2
-
-        self._handle_select((world_x, world_y))
+        current_player = self.game_state.get_current_player()
+        if not current_player:
+            return
 
         print(f"3D click at grid ({grid_x}, {grid_y})")
+
+        # Check if clicked on a token
+        clicked_token = None
+        for player in self.game_state.players.values():
+            for token_id in player.token_ids:
+                token = self.game_state.get_token(token_id)
+                if (
+                    token
+                    and token.is_alive
+                    and token.is_deployed
+                    and token.position == (grid_x, grid_y)
+                ):
+                    clicked_token = token
+                    break
+            if clicked_token:
+                break
+
+        if clicked_token:
+            # Clicked on a token
+            if clicked_token.player_id == current_player.id:
+                # Own token - select it for movement or attack
+                if self.turn_phase == TurnPhase.MOVEMENT:
+                    self.selected_token_id = clicked_token.id
+                    self.valid_moves = self.movement_system.get_valid_moves(
+                        clicked_token, self.game_state.board
+                    )
+                    self._update_selection_visuals()
+                    print(
+                        f"Selected token {clicked_token.id} at {clicked_token.position}"
+                    )
+                    print(f"Valid moves: {len(self.valid_moves)}")
+            else:
+                # Enemy token - try to attack (can't attack if you already moved)
+                if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
+                    self._try_attack(clicked_token)
+        else:
+            # Clicked on empty cell
+            if self.selected_token_id and self.turn_phase == TurnPhase.MOVEMENT:
+                # First priority: try to move selected token
+                if (grid_x, grid_y) in self.valid_moves:
+                    self._try_move_to_cell((grid_x, grid_y))
+                else:
+                    print(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
+            elif self.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
+                # Second priority: deploy selected token type if one is selected
+                if self._is_player_corner((grid_x, grid_y), current_player.id):
+                    deployed_token = self.game_state.deploy_token(
+                        current_player.id, self.selected_deploy_health, (grid_x, grid_y)
+                    )
+
+                    if deployed_token:
+                        print(
+                            f"Deployed {self.selected_deploy_health}hp token to {(grid_x, grid_y)}"
+                        )
+
+                        # Create sprite for the deployed token
+                        from client.sprites.token_sprite import TokenSprite
+
+                        player_color = PLAYER_COLORS[current_player.color.value]
+                        sprite = TokenSprite(deployed_token, player_color)
+                        self.token_sprites.append(sprite)
+
+                        # Create 3D token
+                        try:
+                            token_3d = Token3D(deployed_token, player_color, self.ctx)
+                            self.tokens_3d.append(token_3d)
+                        except Exception as e:
+                            print(f"Warning: Failed to create 3D token: {e}")
+
+                        # Clear selection
+                        self.selected_deploy_health = None
+
+                        # Transition to ACTION phase after deploying
+                        self.turn_phase = TurnPhase.ACTION
+                        print("Deployment complete - you can attack or end turn")
+
+                        # Update UI to reflect state changes
+                        self.ui_manager.rebuild_visuals(self.game_state)
+                    else:
+                        print(
+                            f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid"
+                        )
+                else:
+                    print("Cannot deploy outside your corner area")
+                    self.selected_deploy_health = None
+            elif (
+                self._is_player_corner((grid_x, grid_y), current_player.id)
+                and self.turn_phase == TurnPhase.MOVEMENT
+                and not self.selected_token_id
+            ):
+                # Third priority: open deployment menu if clicking on starting corner
+                player_index = current_player.color.value
+                starting_corner = self.game_state.board.get_starting_position(
+                    player_index
+                )
+
+                if (grid_x, grid_y) == starting_corner:
+                    # Clicked on the starting corner - open menu to select token type
+                    self.corner_menu_open = True
+                    self.corner_menu_position = (grid_x, grid_y)
+                    self.corner_menu_just_opened = True  # Prevent click-through
+                    print(f"Opened deployment menu - select a token type")
 
     def _try_move_to_cell(self, cell: Tuple[int, int]):
         """
