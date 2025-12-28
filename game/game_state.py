@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 import json
 
-from shared.enums import GamePhase, PlayerColor, TurnPhase
+from shared.enums import CellType, GamePhase, PlayerColor, TurnPhase
 from shared.constants import (
     TOKEN_HEALTH_VALUES,
     TOKENS_PER_HEALTH_VALUE,
@@ -270,6 +270,43 @@ class GameState:
         # Mark as not alive
         token.is_alive = False
 
+    def _auto_deploy_starting_tokens(self, player_id: str, player_index: int) -> None:
+        """
+        Automatically deploy tokens to starting corner positions at game start.
+
+        Args:
+            player_id: Player ID
+            player_index: Player index (0-3) for determining starting corner
+        """
+        # Get deployable positions for this player
+        deployable_positions = self.board.get_deployable_positions(player_index)
+
+        # Get reserve tokens sorted by health (deploy strongest first)
+        reserve = self.get_reserve_tokens(player_id)
+        reserve_sorted = sorted(reserve, key=lambda t: t.max_health, reverse=True)
+
+        # Deploy tokens to fill all starting positions
+        deployed_count = 0
+        for position in deployable_positions:
+            if deployed_count >= len(reserve_sorted):
+                break
+
+            # Check if position is not occupied and not a special cell
+            cell = self.board.get_cell_at(position)
+            if not cell or cell.is_occupied():
+                continue
+
+            # Don't deploy on generators, crystal, or mystery squares
+            if cell.cell_type != CellType.NORMAL:
+                continue
+
+            # Deploy the next token from reserve
+            token = reserve_sorted[deployed_count]
+            token.position = position
+            token.is_deployed = True
+            self.board.set_occupant(position, token.id)
+            deployed_count += 1
+
     def start_game(self) -> None:
         """Start the game and set up initial state."""
         if self.phase != GamePhase.SETUP:
@@ -278,6 +315,10 @@ class GameState:
         # Create tokens for all players
         for player_id in self.players.keys():
             self.create_tokens_for_player(player_id)
+
+        # Auto-deploy tokens to starting positions for all players
+        for player_id, player in self.players.items():
+            self._auto_deploy_starting_tokens(player_id, player.color.value)
 
         # Initialize generators and crystal (will implement when those classes exist)
         # self.generators = [...]

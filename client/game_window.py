@@ -83,6 +83,7 @@ class GameWindow(arcade.Window):
         self.corner_menu_open = False
         self.corner_menu_position: Optional[Tuple[int, int]] = None
         self.corner_menu_just_opened = False  # Flag to prevent immediate click-through
+        self.selected_deploy_health: Optional[int] = None  # Selected token type for deployment
 
         # Camera controls
         self.camera_speed = 10
@@ -238,7 +239,9 @@ class GameWindow(arcade.Window):
         self.phase_text.draw()
 
         # Instructions
-        if self.turn_phase == TurnPhase.MOVEMENT:
+        if self.selected_deploy_health:
+            instruction = f"Selected {self.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"
+        elif self.turn_phase == TurnPhase.MOVEMENT:
             instruction = "Click a token to select, then move OR attack (not both)"
         elif self.turn_phase == TurnPhase.ACTION:
             instruction = (
@@ -248,7 +251,7 @@ class GameWindow(arcade.Window):
             instruction = "Press SPACE to end turn"
 
         self.instruction_text.text = instruction
-        self.instruction_text.x = self.width - 500
+        self.instruction_text.x = self.width - 700
         self.instruction_text.y = self.height - 60
         self.instruction_text.draw()
 
@@ -734,14 +737,14 @@ class GameWindow(arcade.Window):
         self, world_pos: Tuple[float, float], player_id: str
     ) -> bool:
         """
-        Handle click on corner menu to deploy a token.
+        Handle click on corner menu to select a token type for deployment.
 
         Args:
             world_pos: Click position in world coordinates
             player_id: Current player ID
 
         Returns:
-            True if a token was deployed
+            True if a token type was selected
         """
         if not self.corner_menu_position:
             return False
@@ -766,35 +769,17 @@ class GameWindow(arcade.Window):
         for health, option_x, option_y in options:
             distance = ((click_x - option_x) ** 2 + (click_y - option_y) ** 2) ** 0.5
             if distance <= click_radius:
-                # Deploy token of this type
-                deployed_token = self.game_state.deploy_token(
-                    player_id, health, self.corner_menu_position
-                )
+                # Check if player has this token type in reserve
+                reserve_counts = self.game_state.get_reserve_token_counts(player_id)
+                if reserve_counts.get(health, 0) > 0:
+                    # Select this token type for deployment
+                    self.selected_deploy_health = health
+                    print(f"Selected {health}hp token for deployment - click a position to deploy")
 
-                if deployed_token:
-                    print(f"Deployed {health}hp token to {self.corner_menu_position}")
-
-                    # Create sprite for the deployed token
-                    from client.sprites.token_sprite import TokenSprite
-
-                    player = self.game_state.get_player(player_id)
-                    player_color = (
-                        PLAYER_COLORS[player.color.value] if player else (255, 255, 255)
-                    )
-                    sprite = TokenSprite(deployed_token, player_color)
-                    self.token_sprites.append(sprite)
-
-                    # Close menu
+                    # Close the menu
                     self.corner_menu_open = False
                     self.corner_menu_position = None
                     self.corner_menu_just_opened = False
-
-                    # End turn after deploying
-                    self.turn_phase = TurnPhase.END_TURN
-                    print("Deployment complete - press SPACE to end turn")
-
-                    # Update UI to reflect state changes
-                    self.ui_manager.rebuild_visuals(self.game_state)
 
                     return True
                 else:
@@ -882,17 +867,52 @@ class GameWindow(arcade.Window):
                     self._try_move_to_cell((grid_x, grid_y))
                 else:
                     print(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
+            elif self.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
+                # Second priority: deploy selected token type if one is selected
+                if self._is_player_corner((grid_x, grid_y), current_player.id):
+                    deployed_token = self.game_state.deploy_token(
+                        current_player.id, self.selected_deploy_health, (grid_x, grid_y)
+                    )
+
+                    if deployed_token:
+                        print(f"Deployed {self.selected_deploy_health}hp token to {(grid_x, grid_y)}")
+
+                        # Create sprite for the deployed token
+                        from client.sprites.token_sprite import TokenSprite
+
+                        player_color = PLAYER_COLORS[current_player.color.value]
+                        sprite = TokenSprite(deployed_token, player_color)
+                        self.token_sprites.append(sprite)
+
+                        # Clear selection
+                        self.selected_deploy_health = None
+
+                        # Transition to ACTION phase after deploying
+                        self.turn_phase = TurnPhase.ACTION
+                        print("Deployment complete - you can attack or end turn")
+
+                        # Update UI to reflect state changes
+                        self.ui_manager.rebuild_visuals(self.game_state)
+                    else:
+                        print(f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid")
+                else:
+                    print("Cannot deploy outside your corner area")
+                    self.selected_deploy_health = None
             elif (
                 self._is_player_corner((grid_x, grid_y), current_player.id)
                 and self.turn_phase == TurnPhase.MOVEMENT
                 and not self.selected_token_id
             ):
-                # Second priority: open deployment menu if clicking on empty deployment zone
-                # (only if no token is selected)
-                self.corner_menu_open = True
-                self.corner_menu_position = (grid_x, grid_y)
-                self.corner_menu_just_opened = True  # Prevent click-through
-                print(f"Opened corner menu at {(grid_x, grid_y)}")
+                # Third priority: open deployment menu if clicking on starting corner
+                player_index = current_player.color.value
+                starting_corner = self.game_state.board.get_starting_position(player_index)
+
+                if (grid_x, grid_y) == starting_corner:
+                    # Clicked on the starting corner - open menu to select token type
+                    self.corner_menu_open = True
+                    self.corner_menu_position = (grid_x, grid_y)
+                    self.corner_menu_just_opened = True  # Prevent click-through
+                    print(f"Opened deployment menu - select a token type")
 
     def _handle_select_3d(self, grid_pos: Tuple[int, int]):
         """
@@ -1003,10 +1023,18 @@ class GameWindow(arcade.Window):
     def _handle_cancel(self):
         """Handle cancel action."""
         if self.selected_token_id:
-            print("Cancelled selection")
+            print("Cancelled token selection")
             self.selected_token_id = None
             self.valid_moves = []
             self._update_selection_visuals()
+        elif self.selected_deploy_health:
+            print("Cancelled deployment selection")
+            self.selected_deploy_health = None
+        elif self.corner_menu_open:
+            print("Closed deployment menu")
+            self.corner_menu_open = False
+            self.corner_menu_position = None
+            self.corner_menu_just_opened = False
 
     def _handle_end_turn(self):
         """Handle end turn action."""

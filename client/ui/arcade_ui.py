@@ -131,14 +131,20 @@ class UIManager:
         active_players = [p for p in game_state.players.values() if p.is_active]
         current_player_id = game_state.current_turn_player_id
 
-        # Count alive tokens per player
-        tokens_alive = {}
+        # Count deployed and reserve tokens per player
+        tokens_deployed = {}
+        tokens_reserve = {}
         for player in active_players:
-            alive_count = sum(
+            deployed_count = sum(
                 1 for token in game_state.tokens.values()
-                if token.player_id == player.id and token.is_alive
+                if token.player_id == player.id and token.is_deployed and token.is_alive
             )
-            tokens_alive[player.id] = alive_count
+            reserve_count = sum(
+                1 for token in game_state.tokens.values()
+                if token.player_id == player.id and not token.is_deployed and token.is_alive
+            )
+            tokens_deployed[player.id] = deployed_count
+            tokens_reserve[player.id] = reserve_count
 
         # Build panel for each player
         for i, player in enumerate(active_players):
@@ -184,13 +190,15 @@ class UIManager:
             )
             self.text_objects.append(name_text)
 
-            # Token count text
+            # Token count text - show deployed and reserve
+            deployed = tokens_deployed[player.id]
+            reserve = tokens_reserve[player.id]
             count_text = arcade.Text(
-                f"Tokens: {tokens_alive[player.id]}",
+                f"Deployed: {deployed}, Reserve: {reserve}",
                 panel_x + 10,
                 y + 20,
                 (255, 255, 255),
-                font_size=18
+                font_size=16
             )
             self.text_objects.append(count_text)
 

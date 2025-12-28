@@ -46,6 +46,16 @@ uv run race-to-the-crystal
 - **Escape**: Cancel action
 - **Mouse Click**: Select tokens, move, attack, deploy
 
+### Deploying Tokens
+
+Players start with **3 tokens already deployed** in their starting corner, ready to move immediately!
+
+To deploy additional tokens from your reserve (17 remaining):
+1. Click your starting corner position (the corner cell)
+2. Select a token type from the menu (10hp, 8hp, 6hp, or 4hp)
+3. Click any empty cell in your corner area to deploy
+4. Press ESC to cancel at any time
+
 **Note:** The camera automatically zooms to fit the entire 24x24 board in view at startup. Use +/- to zoom further if needed.
 
 ### Game Rules

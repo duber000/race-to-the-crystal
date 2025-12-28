@@ -27,6 +27,14 @@ uv run race-to-the-crystal
 - **Escape**: Cancel action
 - **Mouse Click**: Select tokens, move, attack, deploy
 
+**Token Deployment:**
+1. Click your starting corner position (corner cell with tokens)
+2. Select a token type from the menu (10hp, 8hp, 6hp, or 4hp)
+3. Click any empty cell in your corner area (9 cells total) to deploy
+4. Press ESC to cancel at any time
+
+**Note:** Players start with 3 tokens already deployed in their corner, ready to move immediately!
+
 **Note:** The camera automatically zooms to fit the entire 24x24 board in view at startup. Use +/- to zoom further if needed.
 
 ### Testing
@@ -148,7 +156,8 @@ Constants and enums shared between game logic and rendering.
 
 4. **Token Management**:
    - Each player has 20 tokens: 5×10hp, 5×8hp, 5×6hp, 5×4hp
-   - Tokens start in **reserve** (is_deployed=False)
+   - At game start, 3 tokens are **automatically deployed** to starting corner positions
+   - Remaining 17 tokens start in **reserve** (is_deployed=False)
    - Deploy tokens to board via `game_state.deploy_token()`
    - Deployed tokens can move/attack
    - Movement range: 6hp and 4hp tokens move 2 spaces, others move 1 space

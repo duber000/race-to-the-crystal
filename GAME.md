@@ -5,9 +5,12 @@
 * grid board
 
 * each player has a group of 20 dice tokens that represent their life and move around the board
+  * players start with **3 tokens already deployed** in their starting corner
+  * remaining 17 tokens can be deployed from reserve during gameplay
 * 4 players per game
 * 2 players can team up
-* goal is to capture a power crystal in the middle of the board•players start fromeach corner of the board
+* goal is to capture a power crystal in the middle of the board
+* players start from each corner of the board
 * power crystal is empowered by 4 generators ineach quadrant of the board
 * players win by holding the power crystal for 3 turns with 12 tokens
 * each generator is "taken out" by 2 tokens holding it for 2 turns
