@@ -289,14 +289,13 @@ def generate_techno_music(
             capture_output=True,
         )
         print(f"Converted to MP3: {output_path}")
-        # Remove WAV file
-        os.remove(wav_path)
+        # Keep WAV file as fallback for when MP3 streaming fails
+        print(f"Kept WAV file as fallback: {wav_path}")
     except (FileNotFoundError, subprocess.CalledProcessError):
         print("FFmpeg not found or conversion failed, using WAV format")
-        # Rename WAV to expected filename
+        # Keep WAV file if conversion fails
         if output_path.endswith(".mp3"):
-            os.rename(wav_path, wav_path.replace(".mp3", ".wav"))
-            print(f"Music saved as: {wav_path.replace('.mp3', '.wav')}")
+            print(f"Music saved as: {wav_path}")
 
 
 if __name__ == "__main__":
