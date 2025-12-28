@@ -25,14 +25,25 @@ uv run race-to-the-crystal --3d 2
 ```
 
 **Game Controls:**
-- **Arrow Keys**: Pan camera view
+
+**2D Mode:**
+- **Arrow Keys / WASD**: Pan camera view
 - **+/-** or **Mouse Scroll**: Zoom in/out
+- **Mouse Click**: Select tokens, move, attack, deploy
+
+**3D Mode:**
+- **Right Mouse Button + Move**: Mouse-look (free camera rotation)
+- **Q/E**: Rotate camera left/right
+- **TAB**: Cycle through your tokens
+- **Arrow Keys / WASD**: Pan camera position
+- **+/-** or **Mouse Scroll**: Adjust field of view
+- **Mouse Click**: Select tokens, move, attack, deploy
+
+**Common (Both Modes):**
 - **V**: Toggle between 2D and 3D view modes
-- **Tab** (3D mode): Cycle between controlled tokens
-- **A/D** (3D mode): Rotate camera left/right
 - **Space/Enter**: End turn
 - **Escape**: Cancel action
-- **Mouse Click**: Select tokens, move, attack, deploy
+- **Ctrl+Q**: Quit game
 
 **Token Deployment:**
 1. Click your starting corner position (corner cell with tokens)

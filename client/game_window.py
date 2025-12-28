@@ -92,6 +92,11 @@ class GameWindow(arcade.Window):
         self.camera_speed = 10
         self.zoom_level = 1.0
 
+        # Mouse-look state for 3D mode
+        self.mouse_look_active = False
+        self.mouse_look_sensitivity = 0.2  # Mouse sensitivity for look around
+        self.last_mouse_position = (0, 0)  # Track mouse position for delta calculation
+
         # HUD Text objects (for performance)
         self.player_text = arcade.Text(
             "",
@@ -320,7 +325,10 @@ class GameWindow(arcade.Window):
         if self.selected_deploy_health:
             instruction = f"Selected {self.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"
         elif self.turn_phase == TurnPhase.MOVEMENT:
-            instruction = "Click a token to select, then move OR attack (not both)"
+            if self.camera_mode == "3D":
+                instruction = "Click a token to select, then move OR attack (not both) | Right-click + drag to look around"
+            else:
+                instruction = "Click a token to select, then move OR attack (not both)"
         elif self.turn_phase == TurnPhase.ACTION:
             instruction = (
                 "Click an adjacent enemy to attack, or press SPACE to end turn"
@@ -695,7 +703,7 @@ class GameWindow(arcade.Window):
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int):
         """
-        Handle mouse motion for UI hover effects.
+        Handle mouse motion for UI hover effects and mouse-look in 3D mode.
 
         Args:
             x: Mouse x coordinate
@@ -703,7 +711,30 @@ class GameWindow(arcade.Window):
             dx: Change in x
             dy: Change in y
         """
-        self.ui_manager.handle_mouse_motion(x, y)
+        # Handle mouse-look in 3D mode
+        if self.camera_mode == "3D" and self.mouse_look_active:
+            # Apply mouse movement to camera rotation
+            yaw_delta = -dx * self.mouse_look_sensitivity
+            pitch_delta = -dy * self.mouse_look_sensitivity
+            
+            # Update camera rotation
+            self.camera_3d.rotate(yaw_delta=yaw_delta, pitch_delta=pitch_delta)
+            
+            # If following a token, update the token rotation to match camera yaw
+            if self.controlled_token_id:
+                self.token_rotation = self.camera_3d.yaw
+            
+            # Store current mouse position for next frame
+            self.last_mouse_position = (x, y)
+            
+            # Hide cursor during mouse-look for better immersion
+            self.set_mouse_visible(False)
+            
+            return  # Skip UI hover effects during mouse-look
+        else:
+            # Normal UI hover effects
+            self.ui_manager.handle_mouse_motion(x, y)
+            self.set_mouse_visible(True)
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
         """
@@ -715,6 +746,14 @@ class GameWindow(arcade.Window):
             button: Which button was pressed
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
+        if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_mode == "3D":
+            # Activate mouse-look in 3D mode
+            self.mouse_look_active = True
+            self.last_mouse_position = (x, y)
+            self.set_mouse_visible(False)
+            print("Mouse-look activated")
+            return
+        
         if button == arcade.MOUSE_BUTTON_LEFT:
             # Check UI first (prevents click-through)
             ui_action = self.ui_manager.handle_mouse_click(x, y)
@@ -759,7 +798,26 @@ class GameWindow(arcade.Window):
                 if intersection:
                     world_x, world_y = intersection
                     grid_x, grid_y = self.camera_3d.world_to_grid(world_x, world_y)
+                    print(f"3D click detected at grid ({grid_x}, {grid_y})")  # Debug
                     self._handle_select_3d((grid_x, grid_y))
+                else:
+                    print(f"3D ray casting: no intersection with board plane")  # Debug
+
+    def on_mouse_release(self, x: int, y: int, button: int, modifiers: int):
+        """
+        Handle mouse release events.
+
+        Args:
+            x: Mouse x coordinate
+            y: Mouse y coordinate
+            button: Which button was released
+            modifiers: Key modifiers (Shift, Ctrl, etc.)
+        """
+        if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_mode == "3D":
+            # Deactivate mouse-look in 3D mode
+            self.mouse_look_active = False
+            self.set_mouse_visible(True)
+            print("Mouse-look deactivated")
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
         """
@@ -825,6 +883,7 @@ class GameWindow(arcade.Window):
                     current_player = self.game_state.get_current_player()
                     if current_player and len(current_player.token_ids) > 0:
                         self.controlled_token_id = current_player.token_ids[0]
+                        print(f"Auto-selected token {self.controlled_token_id} for 3D camera")
             else:
                 # Exiting 3D mode back to 2D
                 self.camera_mode = "2D"
@@ -838,13 +897,31 @@ class GameWindow(arcade.Window):
             # Rotate camera left (only in 3D mode, and not Ctrl+Q which is quit)
             if self.camera_mode == "3D":
                 self.token_rotation -= 15.0
-                print(f"Camera rotation: {self.token_rotation}")
+                # Update camera position immediately
+                if self.controlled_token_id:
+                    token = self.game_state.get_token(self.controlled_token_id)
+                    if token and token.is_alive:
+                        self.camera_3d.follow_token(token.position, self.token_rotation)
+                        print(f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}")
+                    else:
+                        print(f"Camera rotation: {self.token_rotation}, but no valid token to follow")
+                else:
+                    print(f"Camera rotation: {self.token_rotation}, but no controlled token selected")
 
         elif symbol == arcade.key.E:
             # Rotate camera right (only in 3D mode)
             if self.camera_mode == "3D":
                 self.token_rotation += 15.0
-                print(f"Camera rotation: {self.token_rotation}")
+                # Update camera position immediately
+                if self.controlled_token_id:
+                    token = self.game_state.get_token(self.controlled_token_id)
+                    if token and token.is_alive:
+                        self.camera_3d.follow_token(token.position, self.token_rotation)
+                        print(f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}")
+                    else:
+                        print(f"Camera rotation: {self.token_rotation}, but no valid token to follow")
+                else:
+                    print(f"Camera rotation: {self.token_rotation}, but no controlled token selected")
 
         # Quit
         elif symbol == arcade.key.Q and (modifiers & arcade.key.MOD_CTRL):
@@ -933,7 +1010,11 @@ class GameWindow(arcade.Window):
 
         # Set new controlled token
         self.controlled_token_id = alive_tokens[next_index]
-        print(f"Switched to token {self.controlled_token_id}")
+        token = self.game_state.get_token(self.controlled_token_id)
+        if token:
+            print(f"Switched to token {self.controlled_token_id} at {token.position}")
+        else:
+            print(f"Switched to token {self.controlled_token_id} (token not found)")
 
     def _is_player_corner(self, grid_pos: Tuple[int, int], player_id: str) -> bool:
         """Check if a position is in the player's deployment zone (corner + adjacent cells)."""
