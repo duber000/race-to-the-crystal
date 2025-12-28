@@ -37,12 +37,16 @@ uv run race-to-the-crystal
 
 ### Controls
 
-- **Mouse**: Click tokens to select, click cells to move, click enemies to attack
+- **Arrow Keys**: Pan camera view
+- **+/-** or **Mouse Scroll**: Zoom in/out
+- **V**: Toggle between 2D and 3D view modes
+- **Tab** (3D mode): Cycle between controlled tokens
+- **A/D** (3D mode): Rotate camera left/right
 - **Space/Enter**: End turn
-- **Escape**: Cancel selection
-- **V**: Toggle between 2D and 3D views
-- **TAB**: Switch between tokens (3D mode)
-- **Q/E**: Rotate camera (3D mode)
+- **Escape**: Cancel action
+- **Mouse Click**: Select tokens, move, attack, deploy
+
+**Note:** The camera automatically zooms to fit the entire 24x24 board in view at startup. Use +/- to zoom further if needed.
 
 ### Game Rules
 

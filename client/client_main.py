@@ -75,9 +75,9 @@ def main():
         try:
             num_players = int(sys.argv[1])
         except ValueError:
-            num_players = 2
+            num_players = 4
     else:
-        num_players = 2
+        num_players = 4
 
     print(f"\nStarting {num_players}-player game...")
     print("\nControls:")

@@ -31,6 +31,7 @@ from client.sprites.board_sprite import create_board_shapes
 from client.camera_3d import FirstPersonCamera3D
 from client.board_3d import Board3D
 from client.token_3d import Token3D
+from client.ui.arcade_ui import UIManager
 
 
 class GameWindow(arcade.Window):
@@ -117,6 +118,9 @@ class GameWindow(arcade.Window):
         self.controlled_token_id: Optional[int] = None  # Token camera follows in 3D
         self.token_rotation = 0.0  # Camera rotation around token
 
+        # UI Manager for panels and buttons
+        self.ui_manager = UIManager(width, height)
+
         # Set background color
         arcade.set_background_color(BACKGROUND_COLOR)
 
@@ -131,6 +135,9 @@ class GameWindow(arcade.Window):
 
         # Set up camera to fit entire board in view
         self._setup_camera_view()
+
+        # Build initial UI
+        self.ui_manager.rebuild_visuals(self.game_state)
 
         print("Window setup complete")
 
@@ -438,6 +445,7 @@ class GameWindow(arcade.Window):
         with self.ui_camera.activate():
             self.ui_sprites.draw()
             self._draw_hud()
+            self.ui_manager.draw()
 
         # Draw corner menu if open (in world coordinates)
         if self.corner_menu_open and self.corner_menu_position and self.camera_mode == "2D":
@@ -455,6 +463,37 @@ class GameWindow(arcade.Window):
         self.token_sprites.update()
         self.ui_sprites.update()
 
+    def on_resize(self, width: int, height: int):
+        """
+        Handle window resize events.
+
+        Args:
+            width: New window width
+            height: New window height
+        """
+        super().on_resize(width, height)
+
+        # Update UI manager layout
+        self.ui_manager.update_layout(width, height)
+        self.ui_manager.rebuild_visuals(self.game_state)
+
+        # Update camera setup to refit board
+        self._setup_camera_view()
+
+        print(f"Window resized to {width}x{height}")
+
+    def on_mouse_motion(self, x: int, y: int, dx: int, dy: int):
+        """
+        Handle mouse motion for UI hover effects.
+
+        Args:
+            x: Mouse x coordinate
+            y: Mouse y coordinate
+            dx: Change in x
+            dy: Change in y
+        """
+        self.ui_manager.handle_mouse_motion(x, y)
+
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
         """
         Handle mouse press events with support for 2D and 3D picking.
@@ -466,6 +505,16 @@ class GameWindow(arcade.Window):
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
         if button == arcade.MOUSE_BUTTON_LEFT:
+            # Check UI first (prevents click-through)
+            ui_action = self.ui_manager.handle_mouse_click(x, y)
+            if ui_action == "end_turn":
+                self._handle_end_turn()
+                return
+            elif ui_action == "cancel":
+                self._handle_cancel()
+                return
+
+            # No UI clicked, proceed with world interaction
             if self.camera_mode == "2D":
                 # 2D picking using camera unproject
                 world_pos = self.camera.unproject((x, y))
@@ -708,6 +757,10 @@ class GameWindow(arcade.Window):
                     # End turn after deploying
                     self.turn_phase = TurnPhase.END_TURN
                     print("Deployment complete - press SPACE to end turn")
+
+                    # Update UI to reflect state changes
+                    self.ui_manager.rebuild_visuals(self.game_state)
+
                     return True
                 else:
                     print(f"No {health}hp tokens available in reserve")
@@ -850,6 +903,9 @@ class GameWindow(arcade.Window):
             self.turn_phase = TurnPhase.END_TURN
             print("Turn complete - press SPACE to end turn")
 
+            # Update UI to reflect state changes
+            self.ui_manager.rebuild_visuals(self.game_state)
+
     def _try_attack(self, target_token):
         """
         Try to attack a target token.
@@ -892,6 +948,9 @@ class GameWindow(arcade.Window):
         self._update_selection_visuals()
         self.turn_phase = TurnPhase.END_TURN
 
+        # Update UI to reflect state changes
+        self.ui_manager.rebuild_visuals(self.game_state)
+
     def _handle_cancel(self):
         """Handle cancel action."""
         if self.selected_token_id:
@@ -922,3 +981,6 @@ class GameWindow(arcade.Window):
         next_player = self.game_state.get_current_player()
         if next_player:
             print(f"Turn {self.game_state.turn_number}: {next_player.name}'s turn")
+
+        # Update UI to reflect new turn
+        self.ui_manager.rebuild_visuals(self.game_state)
