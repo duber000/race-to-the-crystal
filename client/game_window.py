@@ -30,6 +30,7 @@ from client.camera_3d import FirstPersonCamera3D
 from client.board_3d import Board3D
 from client.token_3d import Token3D
 from client.ui.arcade_ui import UIManager
+from client.music_generator import generate_techno_music
 
 
 class GameWindow(arcade.Window):
@@ -83,7 +84,9 @@ class GameWindow(arcade.Window):
         self.corner_menu_open = False
         self.corner_menu_position: Optional[Tuple[int, int]] = None
         self.corner_menu_just_opened = False  # Flag to prevent immediate click-through
-        self.selected_deploy_health: Optional[int] = None  # Selected token type for deployment
+        self.selected_deploy_health: Optional[int] = (
+            None  # Selected token type for deployment
+        )
 
         # Camera controls
         self.camera_speed = 10
@@ -120,10 +123,64 @@ class GameWindow(arcade.Window):
         # UI Manager for panels and buttons
         self.ui_manager = UIManager(width, height)
 
+        # Background music
+        self.background_music = None
+        self.music_player = None
+        self.music_volume = 0.3
+        self.music_playing = True
+
         # Set background color
         arcade.set_background_color(BACKGROUND_COLOR)
 
         print(f"Arcade window initialized: {width}x{height}")
+
+    def _load_background_music(self):
+        """Load and play background techno music."""
+        music_path = "client/assets/music/techno.mp3"
+        wav_path = "client/assets/music/techno.wav"
+
+        try:
+            # Try MP3 first
+            self.background_music = arcade.Sound(music_path, streaming=True)
+            if self.background_music:
+                self.music_player = self.background_music.play(self.music_volume)
+                print("Background music loaded and playing")
+                return
+        except FileNotFoundError:
+            # Try WAV format
+            try:
+                self.background_music = arcade.Sound(wav_path, streaming=True)
+                if self.background_music:
+                    self.music_player = self.background_music.play(self.music_volume)
+                    print("Background music loaded and playing")
+                    return
+            except FileNotFoundError:
+                # Generate music if neither file exists
+                print("No music file found, generating techno track...")
+                try:
+                    generate_techno_music(duration=30.0)
+                    self.background_music = arcade.Sound(wav_path, streaming=True)
+                    if self.background_music:
+                        self.music_player = self.background_music.play(
+                            self.music_volume
+                        )
+                        print("Generated background music playing")
+                except Exception as e:
+                    print(f"Error generating music: {e}")
+        except Exception as e:
+            print(f"Error loading background music: {e}")
+
+    def _toggle_music(self):
+        """Toggle background music on/off."""
+        if self.music_player:
+            if self.music_playing:
+                self.music_player.pause()
+                self.music_playing = False
+                print("Music paused")
+            else:
+                self.music_player.play()
+                self.music_playing = True
+                print("Music playing")
 
     def setup(self):
         """Set up the window after initialization."""
@@ -134,6 +191,9 @@ class GameWindow(arcade.Window):
 
         # Set up camera to fit entire board in view
         self._setup_camera_view()
+
+        # Load and play background music
+        self._load_background_music()
 
         # Build initial UI
         self.ui_manager.rebuild_visuals(self.game_state)
@@ -484,6 +544,13 @@ class GameWindow(arcade.Window):
         Args:
             delta_time: Time since last update in seconds
         """
+        # Loop background music if it has ended
+        if self.background_music and self.music_player:
+            position = self.background_music.get_stream_position(self.music_player)
+            length = self.background_music.get_length()
+            if position == 0.0 and self.music_playing:
+                self.music_player.play()
+
         # Update animations
         self.token_sprites.update()
         self.ui_sprites.update()
@@ -604,6 +671,10 @@ class GameWindow(arcade.Window):
             self._handle_end_turn()
         elif symbol == arcade.key.ESCAPE:
             self._handle_cancel()
+
+        # Music toggle
+        elif symbol == arcade.key.M:
+            self._toggle_music()
 
         # 3D View controls
         elif symbol == arcade.key.V:
@@ -774,7 +845,9 @@ class GameWindow(arcade.Window):
                 if reserve_counts.get(health, 0) > 0:
                     # Select this token type for deployment
                     self.selected_deploy_health = health
-                    print(f"Selected {health}hp token for deployment - click a position to deploy")
+                    print(
+                        f"Selected {health}hp token for deployment - click a position to deploy"
+                    )
 
                     # Close the menu
                     self.corner_menu_open = False
@@ -875,7 +948,9 @@ class GameWindow(arcade.Window):
                     )
 
                     if deployed_token:
-                        print(f"Deployed {self.selected_deploy_health}hp token to {(grid_x, grid_y)}")
+                        print(
+                            f"Deployed {self.selected_deploy_health}hp token to {(grid_x, grid_y)}"
+                        )
 
                         # Create sprite for the deployed token
                         from client.sprites.token_sprite import TokenSprite
@@ -894,7 +969,9 @@ class GameWindow(arcade.Window):
                         # Update UI to reflect state changes
                         self.ui_manager.rebuild_visuals(self.game_state)
                     else:
-                        print(f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid")
+                        print(
+                            f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid"
+                        )
                 else:
                     print("Cannot deploy outside your corner area")
                     self.selected_deploy_health = None
@@ -905,7 +982,9 @@ class GameWindow(arcade.Window):
             ):
                 # Third priority: open deployment menu if clicking on starting corner
                 player_index = current_player.color.value
-                starting_corner = self.game_state.board.get_starting_position(player_index)
+                starting_corner = self.game_state.board.get_starting_position(
+                    player_index
+                )
 
                 if (grid_x, grid_y) == starting_corner:
                     # Clicked on the starting corner - open menu to select token type

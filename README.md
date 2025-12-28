@@ -44,7 +44,14 @@ uv run race-to-the-crystal
 - **A/D** (3D mode): Rotate camera left/right
 - **Space/Enter**: End turn
 - **Escape**: Cancel action
+- **M**: Toggle background music on/off
 - **Mouse Click**: Select tokens, move, attack, deploy
+
+### Music
+
+The game automatically generates a simple techno beat on startup if no music file is found. The generated track includes bass drums, hi-hats, and synth elements.
+
+If you want to use custom music, place your music file named `techno.mp3` in `client/assets/music/`. Supported formats include MP3, WAV, OGG, and FLAC. The music loops automatically during gameplay.
 
 ### Deploying Tokens
 

@@ -34,7 +34,12 @@ def setup_game_state(num_players: int = 2) -> GameState:
     num_players = max(2, min(4, num_players))
 
     # Create players
-    player_colors = [PlayerColor.CYAN, PlayerColor.MAGENTA, PlayerColor.YELLOW, PlayerColor.GREEN]
+    player_colors = [
+        PlayerColor.CYAN,
+        PlayerColor.MAGENTA,
+        PlayerColor.YELLOW,
+        PlayerColor.GREEN,
+    ]
     player_names = ["Player 1", "Player 2", "Player 3", "Player 4"]
 
     for i in range(num_players):
@@ -85,6 +90,7 @@ def main():
     print("  Space / Enter: End turn")
     print("  Escape: Cancel selection")
     print("  V: Toggle 2D/3D view")
+    print("  M: Toggle music on/off")
     print("  Arrow Keys / WASD: Pan camera")
     print("  +/-: Zoom in/out")
     print("  Mouse Wheel: Zoom in/out")

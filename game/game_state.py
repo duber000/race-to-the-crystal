@@ -1,6 +1,7 @@
 """
 Central game state management.
 """
+
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 import json
@@ -31,11 +32,14 @@ class GameState:
         phase: Current game phase
         winner_id: ID of winning player (None if game not won)
     """
+
     board: Board = field(default_factory=Board)
     players: Dict[str, Player] = field(default_factory=dict)
     tokens: Dict[int, Token] = field(default_factory=dict)
-    generators: List = field(default_factory=list)  # Will be List[Generator] when created
-    crystal = None  # Will be Crystal object when created
+    generators: List = field(
+        default_factory=list
+    )  # Will be List[Generator] when created
+    crystal: Optional["Crystal"] = None  # Will be Crystal object when created
     current_turn_player_id: Optional[str] = None
     turn_number: int = 0
     phase: GamePhase = GamePhase.SETUP
@@ -154,7 +158,9 @@ class GameState:
                 counts[token.max_health] += 1
         return counts
 
-    def deploy_token(self, player_id: str, health_value: int, position: Tuple[int, int]) -> Optional[Token]:
+    def deploy_token(
+        self, player_id: str, health_value: int, position: Tuple[int, int]
+    ) -> Optional[Token]:
         """
         Deploy a token from reserve to the board.
 
@@ -200,7 +206,9 @@ class GameState:
         Returns:
             List of tokens at that position
         """
-        return [t for t in self.tokens.values() if t.position == position and t.is_alive]
+        return [
+            t for t in self.tokens.values() if t.position == position and t.is_alive
+        ]
 
     def get_player_tokens(self, player_id: str) -> List[Token]:
         """
@@ -219,7 +227,9 @@ class GameState:
         return [
             self.tokens[tid]
             for tid in player.token_ids
-            if tid in self.tokens and self.tokens[tid].is_alive and self.tokens[tid].is_deployed
+            if tid in self.tokens
+            and self.tokens[tid].is_alive
+            and self.tokens[tid].is_deployed
         ]
 
     def move_token(self, token_id: int, new_position: tuple) -> bool:
@@ -341,8 +351,7 @@ class GameState:
 
         # Get list of active players
         active_players = [
-            pid for pid, player in self.players.items()
-            if player.is_active
+            pid for pid, player in self.players.items() if player.is_active
         ]
 
         if not active_players:
@@ -385,12 +394,14 @@ class GameState:
 
         # Update generators
         from game.generator import GeneratorManager
+
         newly_disabled = GeneratorManager.update_all_generators(
             self.generators, tokens_by_position
         )
 
         # Update crystal and check for winner
         from game.crystal import CrystalManager
+
         tokens_at_crystal = tokens_by_position.get(self.crystal.position, [])
         disabled_count = GeneratorManager.count_disabled_generators(self.generators)
 
@@ -447,12 +458,10 @@ class GameState:
         state = cls()
         state.board = Board.from_dict(data["board"])
         state.players = {
-            pid: Player.from_dict(pdata)
-            for pid, pdata in data["players"].items()
+            pid: Player.from_dict(pdata) for pid, pdata in data["players"].items()
         }
         state.tokens = {
-            int(tid): Token.from_dict(tdata)
-            for tid, tdata in data["tokens"].items()
+            int(tid): Token.from_dict(tdata) for tid, tdata in data["tokens"].items()
         }
         # state.generators = ... (will implement when Generator class exists)
         # state.crystal = ... (will implement when Crystal class exists)
