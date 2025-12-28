@@ -108,7 +108,7 @@ All Arcade/OpenGL rendering code. Consumes `GameState` but never modifies game l
 - `camera_3d.py`: First-person camera system for 3D mode
 - `token_3d.py`: 3D hexagonal prism token rendering
 - `sprites/`: 2D sprite implementations for tokens and board elements
-- `ui/`: HUD and UI overlay components
+- `ui/arcade_ui.py`: UIManager with player panels, generator status, and interactive buttons
 
 **Dual rendering modes:**
 - **2D**: Top-down Tron-style vector graphics with glow effects
