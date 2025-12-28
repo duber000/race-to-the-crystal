@@ -9,17 +9,88 @@ from arcade.shape_list import (
     ShapeElementList,
     create_line,
 )
+import math
 from game.board import Board
 from shared.constants import CELL_SIZE, BOARD_WIDTH, BOARD_HEIGHT
 from shared.enums import CellType
 
 
-def create_board_shapes(board: Board) -> ShapeElementList:
+def _draw_generator_to_crystal_lines(shape_list: ShapeElementList, generators, crystal_pos):
+    """
+    Draw animated flowing lines from each active generator to the crystal.
+    
+    Args:
+        shape_list: ShapeElementList to add lines to
+        generators: List of Generator objects
+        crystal_pos: (x, y) position of the crystal
+    """
+    crystal_center_x = crystal_pos[0] * CELL_SIZE + CELL_SIZE / 2
+    crystal_center_y = crystal_pos[1] * CELL_SIZE + CELL_SIZE / 2
+    
+    # Use global time for animation (frame counter would work too)
+    # We'll use a simple time-based animation
+    import time
+    time_val = time.time()
+    
+    for gen in generators:
+        # Skip disabled generators
+        if gen.is_disabled:
+            continue
+            
+        gen_x = gen.position[0] * CELL_SIZE + CELL_SIZE / 2
+        gen_y = gen.position[1] * CELL_SIZE + CELL_SIZE / 2
+        
+        # Draw multiple flowing segments with pulsing glow
+        segments = 12
+        segment_length = 1.0 / segments
+        
+        # Animate flow by offsetting the segments
+        flow_offset = (time_val * 2.0) % 1.0  # Flow speed
+        
+        for i in range(segments):
+            # Calculate segment position
+            t1 = (i / segments + flow_offset) % 1.0
+            t2 = ((i + 1) / segments + flow_offset) % 1.0
+            
+            # Linear interpolation along the line
+            x1 = gen_x + (crystal_center_x - gen_x) * t1
+            y1 = gen_y + (crystal_center_y - gen_y) * t1
+            x2 = gen_x + (crystal_center_x - gen_x) * t2
+            y2 = gen_y + (crystal_center_y - gen_y) * t2
+            
+            # Calculate brightness based on position (flowing effect)
+            brightness = abs(math.sin((t1 + flow_offset) * math.pi)) * 200 + 55
+            alpha = int(brightness)
+            
+            # Draw glow layers for each segment
+            for glow_offset in range(2, 0, -1):
+                glow_alpha = int(alpha * (0.3 ** glow_offset))
+                if glow_alpha > 10:
+                    line = create_line(
+                        x1, y1, x2, y2,
+                        (255, 165, 0, glow_alpha),  # Orange glow
+                        glow_offset + 1
+                    )
+                    shape_list.append(line)
+            
+            # Main bright segment
+            if alpha > 20:
+                line = create_line(
+                    x1, y1, x2, y2,
+                    (255, 200, 0, alpha),  # Bright orange
+                    2
+                )
+                shape_list.append(line)
+
+
+def create_board_shapes(board: Board, generators=None, crystal_pos=None) -> ShapeElementList:
     """
     Create a shape list for the game board with vector arcade aesthetics.
 
     Args:
         board: The game board to render
+        generators: Optional list of Generator objects for drawing connection lines
+        crystal_pos: Optional (x, y) position of crystal for drawing connection lines
 
     Returns:
         ShapeElementList containing all board visual elements
@@ -69,14 +140,14 @@ def create_board_shapes(board: Board) -> ShapeElementList:
                 center_y = y * CELL_SIZE + CELL_SIZE // 2
 
                 if cell_type == CellType.GENERATOR:
-                    # Draw generator as wireframe square with pulsing glow
+                    # Draw generator as wireframe square with enhanced pulsing glow
                     size = CELL_SIZE * 0.6
                     half = size / 2
 
-                    # Glow layers
-                    for i in range(6, 0, -1):
-                        alpha = int(120 / (i + 1))
-                        glow_size = size + (i * 4)
+                    # Enhanced glow layers (increased from 6 to 10 layers)
+                    for i in range(10, 0, -1):
+                        alpha = int(150 / (i + 0.5))  # Increased base alpha
+                        glow_size = size + (i * 5)  # Larger glow spread
                         glow_half = glow_size / 2
                         points = [
                             (center_x - glow_half, center_y - glow_half),
@@ -92,7 +163,7 @@ def create_board_shapes(board: Board) -> ShapeElementList:
                                 points[j + 1][0],
                                 points[j + 1][1],
                                 (255, 165, 0, alpha),
-                                max(1, 3 - i // 2),
+                                max(1, 4 - i // 3),  # Thicker outer glow
                             )
                             shape_list.append(line)
 
@@ -110,8 +181,8 @@ def create_board_shapes(board: Board) -> ShapeElementList:
                             points[j][1],
                             points[j + 1][0],
                             points[j + 1][1],
-                            (255, 200, 0, 255),
-                            3,
+                            (255, 220, 0, 255),  # Brighter main line
+                            4,  # Thicker main line
                         )
                         shape_list.append(line)
 
@@ -238,5 +309,9 @@ def create_board_shapes(board: Board) -> ShapeElementList:
                         2,
                     )
                     shape_list.append(line)
+
+    # Draw flowing lines from active generators to crystal
+    if generators and crystal_pos:
+        _draw_generator_to_crystal_lines(shape_list, generators, crystal_pos)
 
     return shape_list

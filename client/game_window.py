@@ -202,7 +202,16 @@ class GameWindow(arcade.Window):
 
     def _create_board_sprites(self):
         """Create shapes for the board (grid, generators, crystal, mystery squares)."""
-        self.board_shapes = create_board_shapes(self.game_state.board)
+        # Get crystal position
+        crystal = self.game_state.crystal
+        crystal_pos = crystal.position if crystal else None
+        
+        # Pass generators and crystal position for flowing line visualization
+        self.board_shapes = create_board_shapes(
+            self.game_state.board,
+            generators=self.game_state.generators,
+            crystal_pos=crystal_pos
+        )
 
     def _create_token_sprites(self):
         """Create sprites for all tokens."""
@@ -225,8 +234,17 @@ class GameWindow(arcade.Window):
     def _create_3d_rendering(self):
         """Initialize 3D rendering components."""
         try:
-            # Create 3D board
-            self.board_3d = Board3D(self.game_state.board, self.ctx)
+            # Get crystal position
+            crystal = self.game_state.crystal
+            crystal_pos = crystal.position if crystal else None
+            
+            # Create 3D board with generators and crystal position
+            self.board_3d = Board3D(
+                self.game_state.board, 
+                self.ctx,
+                generators=self.game_state.generators,
+                crystal_pos=crystal_pos
+            )
             if self.board_3d.shader_program is None:
                 print(
                     "WARNING: 3D shader compilation failed, 3D mode will not be available"

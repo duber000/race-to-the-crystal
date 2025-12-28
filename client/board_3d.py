@@ -27,16 +27,20 @@ class Board3D:
     Tron/Battlezone aesthetic with transparent glowing lines.
     """
 
-    def __init__(self, board: Board, ctx: arcade.ArcadeContext):
+    def __init__(self, board: Board, ctx: arcade.ArcadeContext, generators=None, crystal_pos=None):
         """
         Initialize the 3D board renderer.
 
         Args:
             board: Game board instance
             ctx: Arcade OpenGL context
+            generators: Optional list of Generator objects for connection lines
+            crystal_pos: Optional (x, y) position of crystal
         """
         self.board = board
         self.ctx = ctx
+        self.generators = generators
+        self.crystal_pos = crystal_pos
 
         # Vertex buffers
         self.grid_vbo = None
@@ -49,6 +53,10 @@ class Board3D:
         self.crystal_vbo = None
         self.mystery_vao = None
         self.mystery_vbo = None
+        
+        # Generator to crystal lines VAO
+        self.gen_crystal_lines_vao = None
+        self.gen_crystal_lines_vbo = None
 
         # Shader program
         self.shader_program = None
@@ -63,6 +71,7 @@ class Board3D:
         self._create_shader()
         self._create_grid_geometry()
         self._create_special_cells_geometry()
+        self._create_generator_crystal_lines_geometry()
 
     def _create_shader(self):
         """Create GLSL shader program for glow wireframe effect."""
@@ -141,6 +150,57 @@ class Board3D:
                 )
             ]
         )
+
+    def _create_generator_crystal_lines_geometry(self):
+        """
+        Generate geometry for flowing lines from generators to crystal.
+        These lines are animated and only drawn for active (non-disabled) generators.
+        """
+        if not self.generators or not self.crystal_pos:
+            return
+        
+        vertices = []
+        
+        # Get crystal position in world coordinates
+        crystal_center_x = self.crystal_pos[0] * CELL_SIZE + CELL_SIZE / 2
+        crystal_center_y = self.crystal_pos[1] * CELL_SIZE + CELL_SIZE / 2
+        crystal_height = self.wall_height * 0.8
+        
+        for gen in self.generators:
+            # Skip disabled generators
+            if gen.is_disabled:
+                continue
+            
+            # Get generator position
+            gen_x = gen.position[0] * CELL_SIZE + CELL_SIZE / 2
+            gen_y = gen.position[1] * CELL_SIZE + CELL_SIZE / 2
+            gen_height = self.wall_height * 0.6
+            
+            # Create line segments from generator to crystal
+            segments = 20
+            for i in range(segments):
+                t1 = i / segments
+                t2 = (i + 1) / segments
+                
+                # Linear interpolation
+                x1 = gen_x + (crystal_center_x - gen_x) * t1
+                y1 = gen_y + (crystal_center_y - gen_y) * t1
+                z1 = gen_height + (crystal_height - gen_height) * t1
+                
+                x2 = gen_x + (crystal_center_x - gen_x) * t2
+                y2 = gen_y + (crystal_center_y - gen_y) * t2
+                z2 = gen_height + (crystal_height - gen_height) * t2
+                
+                # Add vertices for line segment
+                vertices.extend([x1, y1, z1])
+                vertices.extend([x2, y2, z2])
+        
+        if len(vertices) > 0:
+            vertices_array = np.array(vertices, dtype=np.float32)
+            self.gen_crystal_lines_vbo = self.ctx.buffer(data=vertices_array.tobytes())
+            self.gen_crystal_lines_vao = self.ctx.geometry(
+                [BufferDescription(self.gen_crystal_lines_vbo, "3f", ["in_position"])]
+            )
 
     def _create_special_cells_geometry(self):
         """
@@ -374,3 +434,11 @@ class Board3D:
             )
             self.shader_program["glow_intensity"] = 1.8
             self.mystery_vao.render(self.shader_program, mode=self.ctx.LINES)
+        
+        # Draw generator to crystal connection lines (orange with glow)
+        if self.gen_crystal_lines_vao:
+            self.shader_program["base_color"] = np.array(
+                [1.0, 0.65, 0.0, 0.9], dtype=np.float32
+            )
+            self.shader_program["glow_intensity"] = 2.2
+            self.gen_crystal_lines_vao.render(self.shader_program, mode=self.ctx.LINES)

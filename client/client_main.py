@@ -75,16 +75,22 @@ def main():
     print("Race to the Crystal - Local Hot-Seat Game (Arcade)")
     print("=" * 60)
 
-    # Get number of players
-    if len(sys.argv) > 1:
-        try:
-            num_players = int(sys.argv[1])
-        except ValueError:
-            num_players = 4
-    else:
-        num_players = 4
+    # Parse command-line arguments
+    num_players = 4
+    start_in_3d = False
+    
+    for arg in sys.argv[1:]:
+        if arg == "--3d" or arg == "-3d":
+            start_in_3d = True
+        else:
+            try:
+                num_players = int(arg)
+            except ValueError:
+                print(f"Warning: Unknown argument '{arg}', ignoring")
 
     print(f"\nStarting {num_players}-player game...")
+    if start_in_3d:
+        print("(Starting in 3D mode)")
     print("\nControls:")
     print("  Left Click: Select token, then move OR attack (not both)")
     print("  Space / Enter: End turn")
@@ -107,6 +113,11 @@ def main():
     # Create and run Arcade window
     window = GameWindow(game_state, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT)
     window.setup()
+
+    # Start in 3D mode if requested
+    if start_in_3d:
+        window.camera_mode = "3D"
+        print("3D mode enabled")
 
     # Arcade handles the game loop
     arcade.run()

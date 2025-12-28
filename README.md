@@ -14,6 +14,7 @@ Race to the Crystal is a strategy game where players compete to capture a centra
 - **Tron-style vector graphics** with glow effects and GPU acceleration
 - **Strategic gameplay** with generators, mystery squares, and combat mechanics
 - **Hot-seat multiplayer** for 2-4 players
+- **Visual generator connections**: Flowing animated lines connect active generators to the crystal, disappearing when captured
 
 ## Tech Stack
 
@@ -21,7 +22,7 @@ Race to the Crystal is a strategy game where players compete to capture a centra
 - **OpenGL** for 3D wireframe graphics and shaders
 - **BFS pathfinding** for token movement
 - **JSON serialization** for game state management
-- **140+ unit tests** using pytest
+- **199 unit tests** using pytest with 100% pass rate
 
 ## How to Play
 
@@ -31,8 +32,15 @@ Race to the Crystal is a strategy game where players compete to capture a centra
 # Install dependencies
 uv sync
 
-# Run the game
+# Run the game (2D mode)
 uv run race-to-the-crystal
+
+# Run in 3D mode (direct startup)
+uv run race-to-the-crystal --3d
+
+# Run with custom player count (2-4)
+uv run race-to-the-crystal 2
+uv run race-to-the-crystal --3d 2
 ```
 
 ### Controls

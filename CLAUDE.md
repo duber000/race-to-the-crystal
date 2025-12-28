@@ -13,8 +13,15 @@ Race to the Crystal is a Python-based multiplayer strategy game with GPU-acceler
 # Install dependencies
 uv sync
 
-# Run game
+# Run game (2D mode)
 uv run race-to-the-crystal
+
+# Run game in 3D mode
+uv run race-to-the-crystal --3d
+
+# Run with custom player count
+uv run race-to-the-crystal 2
+uv run race-to-the-crystal --3d 2
 ```
 
 **Game Controls:**
@@ -121,7 +128,13 @@ All Arcade/OpenGL rendering code. Consumes `GameState` but never modifies game l
 **Dual rendering modes:**
 - **2D**: Top-down Tron-style vector graphics with glow effects
 - **3D**: First-person Battlezone-style wireframe graphics
-- Toggle between modes with 'V' key
+- Toggle between modes with 'V' key during gameplay
+- Start in 3D mode directly with `--3d` command-line flag
+
+**Visual features:**
+- Flowing animated lines connect active generators to the crystal
+- Enhanced generator glow effects
+- Lines automatically disappear when generators are captured
 
 #### `shared/` - Shared Definitions
 Constants and enums shared between game logic and rendering.
@@ -132,7 +145,7 @@ Constants and enums shared between game logic and rendering.
 **Important:** When changing game rules, update constants in `shared/constants.py` rather than hardcoding values.
 
 #### `tests/` - Unit Tests
-140+ pytest tests covering all game mechanics. Tests use pure game logic without rendering.
+199 pytest tests covering all game mechanics. Tests use pure game logic without rendering.
 
 ### Game State Flow
 
