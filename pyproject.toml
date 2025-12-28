@@ -17,6 +17,8 @@ dependencies = [
 
 [project.scripts]
 race-to-the-crystal = "client.client_main:main"
+race-server = "server.server_main:main"
+race-ai-client = "client.ai_client:main"
 test = "pytest:main"
 
 [dependency-groups]
