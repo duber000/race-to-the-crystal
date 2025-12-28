@@ -8,8 +8,6 @@ replacing the Pygame-based implementation with GPU-accelerated rendering.
 import arcade
 from arcade.shape_list import (
     ShapeElementList,
-    create_rectangle_outline,
-    create_ellipse_outline,
     create_line,
 )
 from typing import Optional, Tuple, List
@@ -165,9 +163,22 @@ class GameWindow(arcade.Window):
 
     def _create_3d_rendering(self):
         """Initialize 3D rendering components."""
-        # Create 3D board
-        self.board_3d = Board3D(self.game_state.board, self.ctx)
-        self.shader_3d = self.board_3d.shader_program  # Reuse shader
+        try:
+            # Create 3D board
+            self.board_3d = Board3D(self.game_state.board, self.ctx)
+            if self.board_3d.shader_program is None:
+                print(
+                    "WARNING: 3D shader compilation failed, 3D mode will not be available"
+                )
+                self.shader_3d = None
+            else:
+                self.shader_3d = self.board_3d.shader_program  # Reuse shader
+                print("3D rendering initialized successfully")
+        except Exception as e:
+            print(f"ERROR: Failed to initialize 3D rendering: {e}")
+            self.board_3d = None
+            self.shader_3d = None
+            return
 
         # Create 3D tokens
         self.tokens_3d.clear()
@@ -177,8 +188,13 @@ class GameWindow(arcade.Window):
             for token_id in player.token_ids:
                 token = self.game_state.get_token(token_id)
                 if token and token.is_alive:
-                    token_3d = Token3D(token, player_color, self.ctx)
-                    self.tokens_3d.append(token_3d)
+                    try:
+                        token_3d = Token3D(token, player_color, self.ctx)
+                        self.tokens_3d.append(token_3d)
+                    except Exception as e:
+                        print(f"ERROR: Failed to create 3D token {token_id}: {e}")
+
+        print(f"Created {len(self.tokens_3d)} 3D tokens")
 
         # Set initial controlled token (first token of current player)
         current_player = self.game_state.get_current_player()
@@ -256,9 +272,9 @@ class GameWindow(arcade.Window):
         menu_distance = CELL_SIZE * 2
         options = [
             (10, center_x, center_y + menu_distance, counts[10]),  # Top
-            (8,  center_x + menu_distance, center_y, counts[8]),   # Right
-            (6,  center_x, center_y - menu_distance, counts[6]),   # Bottom
-            (4,  center_x - menu_distance, center_y, counts[4]),   # Left
+            (8, center_x + menu_distance, center_y, counts[8]),  # Right
+            (6, center_x, center_y - menu_distance, counts[6]),  # Bottom
+            (4, center_x - menu_distance, center_y, counts[4]),  # Left
         ]
 
         for health, x, y, count in options:
@@ -274,7 +290,8 @@ class GameWindow(arcade.Window):
             # Draw health value
             arcade.draw_text(
                 str(health),
-                x, y,
+                x,
+                y,
                 (255, 255, 255) if count > 0 else (100, 100, 100),
                 font_size=20,
                 bold=True,
@@ -286,7 +303,8 @@ class GameWindow(arcade.Window):
             if count > 0:
                 arcade.draw_text(
                     f"({count})",
-                    x, y - 15,
+                    x,
+                    y - 15,
                     (200, 200, 200),
                     font_size=12,
                     anchor_x="center",
@@ -403,6 +421,10 @@ class GameWindow(arcade.Window):
 
         Called automatically by Arcade on each frame.
         """
+        # Ensure proper OpenGL state for 2D rendering
+        self.ctx.disable(self.ctx.DEPTH_TEST)
+        self.ctx.enable(self.ctx.BLEND)
+
         # Clear the window (color buffer and depth buffer)
         self.clear()
 
@@ -411,16 +433,13 @@ class GameWindow(arcade.Window):
             with self.camera.activate():
                 if self.board_shapes:
                     self.board_shapes.draw()
-                self.selection_shapes.draw()  # Draw selection highlights
+                self.selection_shapes.draw()
                 self.token_sprites.draw()
         else:
-            # 3D first-person rendering - enable depth testing and blending
+            # 3D first-person rendering - enable depth test and blending
             self.ctx.enable(self.ctx.DEPTH_TEST)
             self.ctx.enable(self.ctx.BLEND)
-            # Disable face culling for wireframe rendering
             self.ctx.disable(self.ctx.CULL_FACE)
-            # Set line width for visibility
-            self.ctx.line_width = 2.0
 
             if self.board_3d and self.shader_3d:
                 # Update camera to follow controlled token
@@ -437,9 +456,8 @@ class GameWindow(arcade.Window):
                     if token_3d.token.is_alive:
                         token_3d.draw(self.camera_3d, self.shader_3d)
 
-            # Disable depth testing and blending for UI overlay
+            # Reset state for UI
             self.ctx.disable(self.ctx.DEPTH_TEST)
-            self.ctx.disable(self.ctx.BLEND)
 
         # Draw UI (no camera transform) - always in 2D
         with self.ui_camera.activate():
@@ -448,7 +466,11 @@ class GameWindow(arcade.Window):
             self.ui_manager.draw()
 
         # Draw corner menu if open (in world coordinates)
-        if self.corner_menu_open and self.corner_menu_position and self.camera_mode == "2D":
+        if (
+            self.corner_menu_open
+            and self.corner_menu_position
+            and self.camera_mode == "2D"
+        ):
             with self.camera.activate():
                 self._draw_corner_menu()
 
@@ -535,7 +557,7 @@ class GameWindow(arcade.Window):
                     grid_x, grid_y = self.camera_3d.world_to_grid(world_x, world_y)
                     self._handle_select_3d((grid_x, grid_y))
 
-    def on_mouse_scroll(self, x: int, y: int, scroll_x: int, scroll_y: int):
+    def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
         """
         Handle mouse scroll events (for zooming).
 
@@ -652,7 +674,9 @@ class GameWindow(arcade.Window):
         board_center_y = (board_pixel_height / 2) - hud_offset_world
         self.camera.position = (board_center_x, board_center_y)
 
-        print(f"Camera setup: zoom={self.zoom_level:.2f}, position=({board_center_x:.1f}, {board_center_y:.1f}), HUD offset={hud_offset_world:.1f}")
+        print(
+            f"Camera setup: zoom={self.zoom_level:.2f}, position=({board_center_x:.1f}, {board_center_y:.1f}), HUD offset={hud_offset_world:.1f}"
+        )
 
     def _zoom_in(self):
         """Zoom in the camera."""
@@ -671,20 +695,22 @@ class GameWindow(arcade.Window):
             return
 
         # Get all alive tokens
-        alive_tokens = [
-            token_id
-            for token_id in current_player.token_ids
-            if self.game_state.get_token(token_id)
-            and self.game_state.get_token(token_id).is_alive
-        ]
+        alive_tokens = []
+        for token_id in current_player.token_ids:
+            token = self.game_state.get_token(token_id)
+            if token and token.is_alive:
+                alive_tokens.append(token_id)
 
         if not alive_tokens:
             return
 
         # Find current index
         try:
-            current_index = alive_tokens.index(self.controlled_token_id)
-            next_index = (current_index + 1) % len(alive_tokens)
+            if self.controlled_token_id is not None:
+                current_index = alive_tokens.index(self.controlled_token_id)
+                next_index = (current_index + 1) % len(alive_tokens)
+            else:
+                next_index = 0
         except ValueError:
             next_index = 0
 
@@ -699,10 +725,14 @@ class GameWindow(arcade.Window):
             return False
 
         player_index = player.color.value
-        deployable_positions = self.game_state.board.get_deployable_positions(player_index)
+        deployable_positions = self.game_state.board.get_deployable_positions(
+            player_index
+        )
         return grid_pos in deployable_positions
 
-    def _handle_corner_menu_click(self, world_pos: Tuple[float, float], player_id: str) -> bool:
+    def _handle_corner_menu_click(
+        self, world_pos: Tuple[float, float], player_id: str
+    ) -> bool:
         """
         Handle click on corner menu to deploy a token.
 
@@ -724,9 +754,9 @@ class GameWindow(arcade.Window):
         menu_distance = CELL_SIZE * 2
         options = [
             (10, center_x, center_y + menu_distance),  # Top
-            (8,  center_x + menu_distance, center_y),  # Right
-            (6,  center_x, center_y - menu_distance),  # Bottom
-            (4,  center_x - menu_distance, center_y),  # Left
+            (8, center_x + menu_distance, center_y),  # Right
+            (6, center_x, center_y - menu_distance),  # Bottom
+            (4, center_x - menu_distance, center_y),  # Left
         ]
 
         click_x, click_y = world_pos
@@ -737,15 +767,20 @@ class GameWindow(arcade.Window):
             distance = ((click_x - option_x) ** 2 + (click_y - option_y) ** 2) ** 0.5
             if distance <= click_radius:
                 # Deploy token of this type
-                deployed_token = self.game_state.deploy_token(player_id, health, self.corner_menu_position)
+                deployed_token = self.game_state.deploy_token(
+                    player_id, health, self.corner_menu_position
+                )
 
                 if deployed_token:
                     print(f"Deployed {health}hp token to {self.corner_menu_position}")
 
                     # Create sprite for the deployed token
                     from client.sprites.token_sprite import TokenSprite
+
                     player = self.game_state.get_player(player_id)
-                    player_color = PLAYER_COLORS[player.color.value] if player else (255, 255, 255)
+                    player_color = (
+                        PLAYER_COLORS[player.color.value] if player else (255, 255, 255)
+                    )
                     sprite = TokenSprite(deployed_token, player_color)
                     self.token_sprites.append(sprite)
 
@@ -785,7 +820,11 @@ class GameWindow(arcade.Window):
             return
 
         # Check if clicked on corner menu option
-        if self.corner_menu_open and self.corner_menu_position and not self.corner_menu_just_opened:
+        if (
+            self.corner_menu_open
+            and self.corner_menu_position
+            and not self.corner_menu_just_opened
+        ):
             deployed = self._handle_corner_menu_click(world_pos, current_player.id)
             if deployed:
                 return
@@ -806,7 +845,12 @@ class GameWindow(arcade.Window):
         for player in self.game_state.players.values():
             for token_id in player.token_ids:
                 token = self.game_state.get_token(token_id)
-                if token and token.is_alive and token.is_deployed and token.position == (grid_x, grid_y):
+                if (
+                    token
+                    and token.is_alive
+                    and token.is_deployed
+                    and token.position == (grid_x, grid_y)
+                ):
                     clicked_token = token
                     break
             if clicked_token:
@@ -838,9 +882,11 @@ class GameWindow(arcade.Window):
                     self._try_move_to_cell((grid_x, grid_y))
                 else:
                     print(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
-            elif (self._is_player_corner((grid_x, grid_y), current_player.id)
-                  and self.turn_phase == TurnPhase.MOVEMENT
-                  and not self.selected_token_id):
+            elif (
+                self._is_player_corner((grid_x, grid_y), current_player.id)
+                and self.turn_phase == TurnPhase.MOVEMENT
+                and not self.selected_token_id
+            ):
                 # Second priority: open deployment menu if clicking on empty deployment zone
                 # (only if no token is selected)
                 self.corner_menu_open = True
@@ -873,6 +919,9 @@ class GameWindow(arcade.Window):
         Args:
             cell: Target cell coordinates
         """
+        if self.selected_token_id is None:
+            return
+
         token = self.game_state.get_token(self.selected_token_id)
         if not token:
             return

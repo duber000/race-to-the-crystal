@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 import math
 
 from game.token import Token
-from shared.constants import CELL_SIZE, PLAYER_COLORS
+from shared.constants import CELL_SIZE
 
 
 class TokenSprite(arcade.Sprite):
@@ -46,7 +46,7 @@ class TokenSprite(arcade.Sprite):
         size = self.token_radius * 4  # Extra space for glow
 
         # Create PIL image with transparency on pure black
-        image = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         draw = ImageDraw.Draw(image)
 
         center = size // 2
@@ -70,10 +70,23 @@ class TokenSprite(arcade.Sprite):
 
         # Draw health number with vector-style font
         try:
-            # Vector-style monospace font
+            # Try multiple font paths for cross-platform compatibility
             font_size = int(self.token_radius * 1.0)
-            font = ImageFont.truetype("/usr/share/fonts/liberation/LiberationMono-Bold.ttf", font_size)
-        except:
+            font_paths = [
+                "/usr/share/fonts/liberation/LiberationMono-Bold.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+                "C:\\Windows\\Fonts\\arialbd.ttf",
+            ]
+            font = None
+            for font_path in font_paths:
+                try:
+                    font = ImageFont.truetype(font_path, font_size)
+                    break
+                except (IOError, OSError):
+                    continue
+            if font is None:
+                font = ImageFont.load_default()
+        except Exception:
             font = ImageFont.load_default()
 
         health_text = str(self.token.health)
@@ -89,16 +102,15 @@ class TokenSprite(arcade.Sprite):
             alpha = int(150 / (offset + 1))
             glow_color = (*self.player_color, alpha)
             for dx, dy in [(-offset, 0), (offset, 0), (0, -offset), (0, offset)]:
-                draw.text((text_x + dx, text_y + dy), health_text, fill=glow_color, font=font)
+                draw.text(
+                    (text_x + dx, text_y + dy), health_text, fill=glow_color, font=font
+                )
 
         # Bright main text
         draw.text((text_x, text_y), health_text, fill=bright_color, font=font)
 
         # Convert PIL image to Arcade texture
-        self.texture = arcade.Texture(
-            name=f"token_{self.token.id}",
-            image=image
-        )
+        self.texture = arcade.Texture(name=f"token_{self.token.id}", image=image)
 
     def _hexagon_points(self, cx: float, cy: float, radius: float) -> list:
         """

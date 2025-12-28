@@ -5,13 +5,9 @@ This module creates the visual representation of the game board using
 GPU-accelerated shapes.
 """
 
-import arcade
 from arcade.shape_list import (
     ShapeElementList,
     create_line,
-    create_rectangle_filled,
-    create_polygon,
-    create_ellipse_filled
 )
 from game.board import Board
 from shared.constants import CELL_SIZE, BOARD_WIDTH, BOARD_HEIGHT
@@ -41,17 +37,11 @@ def create_board_shapes(board: Board) -> ShapeElementList:
             alpha = int(100 / (offset + 1))
             glow_color = (0, 200, 200, alpha)
             line = create_line(
-                x_pos, 0,
-                x_pos, BOARD_HEIGHT * CELL_SIZE,
-                glow_color, offset
+                x_pos, 0, x_pos, BOARD_HEIGHT * CELL_SIZE, glow_color, offset
             )
             shape_list.append(line)
         # Main bright line
-        line = create_line(
-            x_pos, 0,
-            x_pos, BOARD_HEIGHT * CELL_SIZE,
-            grid_color, 2
-        )
+        line = create_line(x_pos, 0, x_pos, BOARD_HEIGHT * CELL_SIZE, grid_color, 2)
         shape_list.append(line)
 
     # Draw horizontal grid lines with glow
@@ -62,17 +52,11 @@ def create_board_shapes(board: Board) -> ShapeElementList:
             alpha = int(100 / (offset + 1))
             glow_color = (0, 200, 200, alpha)
             line = create_line(
-                0, y_pos,
-                BOARD_WIDTH * CELL_SIZE, y_pos,
-                glow_color, offset
+                0, y_pos, BOARD_WIDTH * CELL_SIZE, y_pos, glow_color, offset
             )
             shape_list.append(line)
         # Main bright line
-        line = create_line(
-            0, y_pos,
-            BOARD_WIDTH * CELL_SIZE, y_pos,
-            grid_color, 2
-        )
+        line = create_line(0, y_pos, BOARD_WIDTH * CELL_SIZE, y_pos, grid_color, 2)
         shape_list.append(line)
 
     # Draw special cells with wireframe vector graphics
@@ -103,9 +87,12 @@ def create_board_shapes(board: Board) -> ShapeElementList:
                         ]
                         for j in range(len(points) - 1):
                             line = create_line(
-                                points[j][0], points[j][1],
-                                points[j + 1][0], points[j + 1][1],
-                                (255, 165, 0, alpha), max(1, 3 - i // 2)
+                                points[j][0],
+                                points[j][1],
+                                points[j + 1][0],
+                                points[j + 1][1],
+                                (255, 165, 0, alpha),
+                                max(1, 3 - i // 2),
                             )
                             shape_list.append(line)
 
@@ -119,9 +106,12 @@ def create_board_shapes(board: Board) -> ShapeElementList:
                     ]
                     for j in range(len(points) - 1):
                         line = create_line(
-                            points[j][0], points[j][1],
-                            points[j + 1][0], points[j + 1][1],
-                            (255, 200, 0, 255), 3
+                            points[j][0],
+                            points[j][1],
+                            points[j + 1][0],
+                            points[j + 1][1],
+                            (255, 200, 0, 255),
+                            3,
                         )
                         shape_list.append(line)
 
@@ -142,9 +132,12 @@ def create_board_shapes(board: Board) -> ShapeElementList:
                         ]
                         for j in range(len(points) - 1):
                             line = create_line(
-                                points[j][0], points[j][1],
-                                points[j + 1][0], points[j + 1][1],
-                                (255, 0, 255, alpha), max(1, 4 - i // 2)
+                                points[j][0],
+                                points[j][1],
+                                points[j + 1][0],
+                                points[j + 1][1],
+                                (255, 0, 255, alpha),
+                                max(1, 4 - i // 2),
                             )
                             shape_list.append(line)
 
@@ -158,29 +151,39 @@ def create_board_shapes(board: Board) -> ShapeElementList:
                     ]
                     for j in range(len(points) - 1):
                         line = create_line(
-                            points[j][0], points[j][1],
-                            points[j + 1][0], points[j + 1][1],
-                            (255, 100, 255, 255), 4
+                            points[j][0],
+                            points[j][1],
+                            points[j + 1][0],
+                            points[j + 1][1],
+                            (255, 100, 255, 255),
+                            4,
                         )
                         shape_list.append(line)
 
                     # Draw crossing lines inside for extra detail
                     line = create_line(
-                        center_x - size, center_y,
-                        center_x + size, center_y,
-                        (255, 0, 255, 200), 2
+                        center_x - size,
+                        center_y,
+                        center_x + size,
+                        center_y,
+                        (255, 0, 255, 200),
+                        2,
                     )
                     shape_list.append(line)
                     line = create_line(
-                        center_x, center_y - size,
-                        center_x, center_y + size,
-                        (255, 0, 255, 200), 2
+                        center_x,
+                        center_y - size,
+                        center_x,
+                        center_y + size,
+                        (255, 0, 255, 200),
+                        2,
                     )
                     shape_list.append(line)
 
                 elif cell_type == CellType.MYSTERY:
                     # Draw mystery as wireframe circle with cyan glow
                     import math
+
                     radius = CELL_SIZE * 0.3
                     segments = 16  # Circle segments
 
@@ -197,9 +200,12 @@ def create_board_shapes(board: Board) -> ShapeElementList:
 
                         for j in range(len(points) - 1):
                             line = create_line(
-                                points[j][0], points[j][1],
-                                points[j + 1][0], points[j + 1][1],
-                                (0, 255, 255, alpha), max(1, 3 - i // 2)
+                                points[j][0],
+                                points[j][1],
+                                points[j + 1][0],
+                                points[j + 1][1],
+                                (0, 255, 255, alpha),
+                                max(1, 3 - i // 2),
                             )
                             shape_list.append(line)
 
@@ -213,17 +219,23 @@ def create_board_shapes(board: Board) -> ShapeElementList:
 
                     for j in range(len(points) - 1):
                         line = create_line(
-                            points[j][0], points[j][1],
-                            points[j + 1][0], points[j + 1][1],
-                            (100, 255, 255, 255), 3
+                            points[j][0],
+                            points[j][1],
+                            points[j + 1][0],
+                            points[j + 1][1],
+                            (100, 255, 255, 255),
+                            3,
                         )
                         shape_list.append(line)
 
                     # Add question mark inside
                     line = create_line(
-                        center_x, center_y - radius * 0.3,
-                        center_x, center_y + radius * 0.3,
-                        (0, 255, 255, 200), 2
+                        center_x,
+                        center_y - radius * 0.3,
+                        center_x,
+                        center_y + radius * 0.3,
+                        (0, 255, 255, 200),
+                        2,
                     )
                     shape_list.append(line)
 
