@@ -280,13 +280,9 @@ class GameWindow(arcade.Window):
 
         print(f"Created {len(self.tokens_3d)} 3D tokens")
 
-        # Set initial controlled token (first token of current player)
-        current_player = self.game_state.get_current_player()
-        if current_player and len(current_player.token_ids) > 0:
-            self.controlled_token_id = current_player.token_ids[0]
-            token = self.game_state.get_token(self.controlled_token_id)
-            if token:
-                self.camera_3d.follow_token(token.position, self.token_rotation)
+        # Don't auto-follow token - start with overview camera
+        # Players can press TAB to cycle through tokens and start following
+        # self.controlled_token_id remains None for free camera movement
 
     def _draw_hud(self):
         """Draw the heads-up display with game information."""
@@ -878,12 +874,8 @@ class GameWindow(arcade.Window):
                     return
                 self.camera_mode = "3D"
                 print(f"Camera mode: {self.camera_mode}")
-                if not self.controlled_token_id:
-                    # Set initial controlled token when entering 3D
-                    current_player = self.game_state.get_current_player()
-                    if current_player and len(current_player.token_ids) > 0:
-                        self.controlled_token_id = current_player.token_ids[0]
-                        print(f"Auto-selected token {self.controlled_token_id} for 3D camera")
+                # Don't auto-select a token - let players use TAB to follow if desired
+                print("Press TAB to cycle through and follow your tokens")
             else:
                 # Exiting 3D mode back to 2D
                 self.camera_mode = "2D"

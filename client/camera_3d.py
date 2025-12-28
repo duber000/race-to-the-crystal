@@ -38,14 +38,14 @@ class FirstPersonCamera3D:
         self.aspect_ratio = window_width / window_height
 
         # Camera position (world coordinates, in pixels)
-        # Start above board center for initial view
+        # Start above board center for initial overview
         self.position = np.array(
-            [12 * CELL_SIZE, 12 * CELL_SIZE, 30.0], dtype=np.float32
+            [12 * CELL_SIZE, 12 * CELL_SIZE, 150.0], dtype=np.float32
         )
 
         # Camera orientation (Euler angles in degrees)
         self.yaw = 0.0  # Rotation around Z axis (left/right look)
-        self.pitch = -30.0  # Rotation around X axis (up/down look, negative = down)
+        self.pitch = -60.0  # Rotation around X axis (up/down look, negative = down, steep for overview)
         self.roll = 0.0  # Rotation around Y axis (tilt)
 
         # Movement parameters

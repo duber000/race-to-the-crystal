@@ -84,7 +84,7 @@ FPS_TARGET = 60
 WALL_HEIGHT = 50.0  # Height of vertical grid walls in 3D mode
 TOKEN_HEIGHT_3D = 25.0  # Height of 3D hexagonal prism tokens
 CAMERA_FOV = 75.0  # Field of view in degrees (wide for Battlezone feel)
-CAMERA_HEIGHT_ABOVE_TOKEN = 60.0  # Eye height above token (above 50.0 walls)
-CAMERA_FORWARD_OFFSET = -15.0  # Distance behind token (negative = behind)
+CAMERA_HEIGHT_ABOVE_TOKEN = 100.0  # Eye height above token (high for better overview)
+CAMERA_FORWARD_OFFSET = -50.0  # Distance behind token (negative = behind, farther back for better view)
 CAMERA_NEAR_PLANE = 1.0  # Near clipping plane
 CAMERA_FAR_PLANE = 2000.0  # Far clipping plane (board is 768x768)
