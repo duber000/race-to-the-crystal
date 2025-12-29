@@ -58,9 +58,15 @@ class AsyncArcadeScheduler:
         # Run pending async tasks for a short time
         # This allows network operations to progress
         try:
-            # Run all ready callbacks
-            self.loop.call_soon(self.loop.stop)
-            self.loop.run_forever()
+            # Create a short sleep task to allow I/O processing
+            # This gives async tasks (including network I/O) time to progress
+            async def tick():
+                await asyncio.sleep(0)  # Yield control to let other tasks run
+                await asyncio.sleep(0.001)  # Small delay to allow I/O
+
+            # Run the tick, which processes I/O and ready callbacks
+            self.loop.run_until_complete(tick())
+
         except Exception as e:
             logger.error(f"Error in async scheduler: {e}", exc_info=True)
 

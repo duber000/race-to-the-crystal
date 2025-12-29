@@ -113,7 +113,14 @@ class NetworkClient:
             )
 
             # Start message receive loop
-            asyncio.create_task(self._message_loop())
+            # Get the current event loop (set by AsyncWindow's scheduler)
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                # Fallback: get or create event loop
+                loop = asyncio.get_event_loop()
+
+            loop.create_task(self._message_loop())
 
             return True
 

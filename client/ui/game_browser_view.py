@@ -213,6 +213,7 @@ class GameBrowserView(arcade.View):
     async def _load_games(self):
         """Connect to server and load available games."""
         try:
+            logger.info("=== Starting _load_games ===")
             self.loading = True
             self.error_message = None
             self.setup()  # Refresh UI
@@ -224,25 +225,30 @@ class GameBrowserView(arcade.View):
             # Connect to server
             logger.info(f"Connecting to {self.host}:{self.port}...")
             success = await self.network_client.connect(self.host, self.port)
+            logger.info(f"Connect result: {success}")
 
             if not success:
                 self.error_message = "Failed to connect to server"
                 self.loading = False
                 self.setup()
+                logger.error("Connection failed")
                 return
 
             # Request game list
             logger.info("Requesting game list...")
             games = await self.network_client.list_games()
+            logger.info(f"list_games returned: {games}")
 
             if games is None:
                 self.error_message = "Failed to get game list"
+                logger.error("No games returned")
             else:
                 self.games = games
                 logger.info(f"Loaded {len(self.games)} games")
 
             self.loading = False
             self.setup()  # Refresh UI with games
+            logger.info("=== Finished _load_games ===")
 
         except Exception as e:
             logger.error(f"Error loading games: {e}", exc_info=True)
