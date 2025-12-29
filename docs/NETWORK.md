@@ -59,48 +59,81 @@ This design prevents cheating, ensures consistency across all players, and works
 
 ## Quick Start
 
-### 1. Start the Server
+### Understanding the Architecture
 
-```bash
-# Start server on default port 8888
-uv run race-server
+**IMPORTANT:** The game uses a client-server architecture:
 
-# Custom host/port
-uv run race-server --host 0.0.0.0 --port 9000
-
-# With debug logging
-uv run race-server --debug
+```
+Server (race-server)      Client 1           Client 2
+     │                        │                 │
+     │  ◄────connect──────────┤                 │
+     │  ─────CONNECT_ACK─────►│                 │
+     │  ◄────CREATE_GAME──────┤                 │
+     │  ─────LOBBY_UPDATE────►│                 │
+     │                        │                 │
+     │  ◄────connect──────────┼─────────────────┤
+     │  ─────CONNECT_ACK──────┼────────────────►│
+     │  ◄────JOIN_GAME────────┼─────────────────┤
+     │  ─────LOBBY_UPDATE────►├────────────────►│
 ```
 
-The server will:
-- Listen for TCP connections on the specified port
-- Manage game lobbies and active games
-- Validate and execute all player actions
-- Broadcast state updates to clients
-- Handle chat messages and reconnections
+- **`race-server`** is a **central coordinator** (like a Discord server)
+  - Starts empty with **no games**
+  - Waits for clients to create game lobbies
+  - Can host multiple games simultaneously
 
-### 2A. Connect Human Players (GUI)
+- **"Host Network Game"** creates a **game lobby** (like creating a voice channel)
+  - A client connects to the server
+  - Tells the server to create a new game lobby
+  - Other clients can then join this lobby
 
-**New in Phase 4!** Human players can now use the graphical menu to host and join games.
+### 1. Start the Server (Required First!)
 
 ```bash
-# Launch the game with menu
+# Terminal 1: Start the central server
+uv run race-server
+
+# The server starts EMPTY - no games exist yet!
+# Output: "Server listening on 0.0.0.0:8888"
+```
+
+**The server just sits there waiting.** It doesn't create any games - clients do that!
+
+### 2. Host a Game (Client Creates Lobby)
+
+```bash
+# Terminal 2: Launch game client to HOST
 uv run race-to-the-crystal
 ```
 
-#### Hosting a Game:
+#### Creating a Game Lobby:
 1. Click **"Host Network Game"**
 2. Enter your player name (e.g., "Alice")
-3. Enter port (default: 8888)
-4. Enter game name (e.g., "Alice's Game")
-5. Click **"Create Game"**
-6. Wait in the lobby for other players to join
-7. **Chat** with other players (press Enter to type)
-8. Click **"Ready"** when you're ready
-9. When all players are ready, click **"Start Game"**
+3. Server host: **localhost** (connecting to server from step 1)
+4. Port: **8888** (must match server port)
+5. Enter game name (e.g., "Alice's Game")
+6. Click **"Create Game"**
+7. ✅ **A game lobby is now created on the server!**
+8. Wait in the lobby for other players to join
 
-#### Joining a Game:
-*Note: Game browser coming soon. For now, AI clients must join human-hosted games.*
+### 3. Join the Game (Additional Clients)
+
+```bash
+# Terminal 3: Launch another game client to JOIN
+uv run race-to-the-crystal
+```
+
+#### Joining an Existing Lobby:
+1. Click **"Join Network Game"**
+2. Enter your player name (e.g., "Bob")
+3. Server host: **localhost**
+4. Port: **8888**
+5. Click **"Start"**
+6. 🎮 **Game browser shows all available games!**
+7. Click on "Alice's Game" to join
+8. **Chat** with other players (press Enter to type)
+9. Click **"Ready"** when ready
+10. Host clicks **"Start Game"** when all players are ready
 
 #### In-Game Features:
 - **Chat**: Press **Enter** to open chat, type message, press **Enter** to send
