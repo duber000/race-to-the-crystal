@@ -217,21 +217,21 @@ class ChatWidget:
         if not self.visible:
             return
 
-        # Draw background (using lrtb API for Arcade 3.0+)
-        arcade.draw_lrtb_rectangle_filled(
+        # Draw background (using lrbt API for Arcade 3.0+)
+        arcade.draw_lrbt_rectangle_filled(
             self.x,  # left
             self.x + self.width,  # right
-            self.y + self.height,  # top
             self.y,  # bottom
+            self.y + self.height,  # top
             self.background_color
         )
 
-        # Draw border (using lrtb API for Arcade 3.0+)
-        arcade.draw_lrtb_rectangle_outline(
+        # Draw border (using lrbt API for Arcade 3.0+)
+        arcade.draw_lrbt_rectangle_outline(
             self.x,  # left
             self.x + self.width,  # right
-            self.y + self.height,  # top
             self.y,  # bottom
+            self.y + self.height,  # top
             self.border_color,
             2
         )
@@ -268,22 +268,22 @@ class ChatWidget:
         input_left = self.x + 5
         input_right = self.x + self.width - 5
 
-        # Input background (using lrtb API for Arcade 3.0+)
-        arcade.draw_lrtb_rectangle_filled(
+        # Input background (using lrbt API for Arcade 3.0+)
+        arcade.draw_lrbt_rectangle_filled(
             input_left,  # left
             input_right,  # right
-            input_y + input_height,  # top
             input_y,  # bottom
+            input_y + input_height,  # top
             self.input_bg_color
         )
 
         # Input border (highlighted if active)
         border_color = arcade.color.YELLOW if self.input_active else self.border_color
-        arcade.draw_lrtb_rectangle_outline(
+        arcade.draw_lrbt_rectangle_outline(
             input_left,  # left
             input_right,  # right
-            input_y + input_height,  # top
             input_y,  # bottom
+            input_y + input_height,  # top
             border_color,
             2
         )
