@@ -15,6 +15,7 @@ from client.ui.main_menu import MainMenuView, SettingsView, NetworkSetupView
 from client.ui.lobby_view import LobbyView
 from client.ui.network_game_view import NetworkGameView
 from client.ui.victory_view import VictoryView, VictoryViewSimple
+from client.ui.game_browser_view import GameBrowserView
 from client.ui.async_arcade import AsyncWindow
 from client.client_main import setup_game_state
 from client.game_window import GameWindow
@@ -179,21 +180,64 @@ class MenuGameWindow(AsyncWindow):
             game_name: Not used for joining (None)
         """
         logger.info(
-            f"Joining network game: player={player_name}, {host}:{port}"
+            f"Showing game browser: player={player_name}, {host}:{port}"
         )
 
-        # TODO: Implement game browser to select which game to join
-        # For now, just show error message
-        print("=" * 60)
-        print("JOIN GAME BROWSER NOT YET IMPLEMENTED")
-        print("=" * 60)
-        print("You need to know the game ID to join.")
-        print("Use the AI client for now:")
-        print("  uv run race-ai-client --join <game-id>")
-        print("=" * 60)
+        # Show game browser to select which game to join
+        browser_view = GameBrowserView(player_name, host, port, self.main_menu)
+        browser_view.on_game_selected = lambda game_id: self._join_selected_game(
+            browser_view, game_id
+        )
+        self.show_view(browser_view)
 
-        # Return to main menu
-        self.show_view(self.main_menu)
+    def _join_selected_game(self, browser_view: GameBrowserView, game_id: str):
+        """
+        Join a selected game from the browser.
+
+        Args:
+            browser_view: The browser view (contains network client)
+            game_id: ID of game to join
+        """
+        logger.info(f"Joining selected game: {game_id[:8]}")
+
+        # Take ownership of the network client from browser
+        self.network_client = browser_view.network_client
+        browser_view.network_client = None  # Prevent cleanup
+
+        # Join the game
+        asyncio.create_task(self._join_game_async(game_id))
+
+    async def _join_game_async(self, game_id: str):
+        """
+        Async task to join a game.
+
+        Args:
+            game_id: ID of game to join
+        """
+        try:
+            if not self.network_client:
+                logger.error("No network client available")
+                self.show_view(self.main_menu)
+                return
+
+            # Join the game
+            logger.info(f"Joining game {game_id[:8]}...")
+            success = await self.network_client.join_game(game_id)
+
+            if not success:
+                logger.error("Failed to join game")
+                await self.network_client.disconnect()
+                self.show_view(self.main_menu)
+                return
+
+            # Show lobby view
+            self._show_lobby(is_host=False)
+
+        except Exception as e:
+            logger.error(f"Error joining game: {e}", exc_info=True)
+            if self.network_client:
+                await self.network_client.disconnect()
+            self.show_view(self.main_menu)
 
     async def _connect_and_create_game(
         self,

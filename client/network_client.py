@@ -5,7 +5,7 @@ Handles connection to game server and message exchange.
 """
 import asyncio
 import logging
-from typing import Optional, Callable, Awaitable, Dict
+from typing import Optional, Callable, Awaitable, Dict, List
 
 from network.connection import Connection
 from network.protocol import ProtocolHandler, NetworkMessage
@@ -392,18 +392,78 @@ class NetworkClient:
         msg = self.protocol.ready_message(self.player_id, is_ready)
         return await self.connection.send_message(msg)
 
-    async def list_games(self) -> bool:
+    async def list_games(self) -> Optional[List[Dict]]:
         """
         Request list of available games.
 
         Returns:
-            True if request sent successfully
+            List of game dictionaries, or None on error
         """
         if not self.connected:
-            return False
+            logger.error("Cannot list games: Not connected")
+            return None
 
-        msg = self.protocol.list_games_message(self.player_id)
-        return await self.connection.send_message(msg)
+        try:
+            # Send LIST_GAMES request
+            msg = self.protocol.list_games_message(self.player_id)
+            await self.connection.send_message(msg)
+
+            # Wait for GAME_LIST response
+            response = await asyncio.wait_for(
+                self._wait_for_message_type(MessageType.GAME_LIST),
+                timeout=5.0
+            )
+
+            if not response:
+                logger.error("No response to LIST_GAMES")
+                return None
+
+            # Extract games from response
+            data = response.data or {}
+            games = data.get("games", [])
+            logger.info(f"Received {len(games)} games")
+            return games
+
+        except asyncio.TimeoutError:
+            logger.error("Timeout waiting for game list")
+            return None
+        except Exception as e:
+            logger.error(f"Error listing games: {e}", exc_info=True)
+            return None
+
+    async def _wait_for_message_type(self, message_type: MessageType) -> Optional[NetworkMessage]:
+        """
+        Wait for a specific message type from the server.
+
+        Args:
+            message_type: Type of message to wait for
+
+        Returns:
+            Received message or None on timeout
+        """
+        # Create a future to wait on
+        future = asyncio.Future()
+
+        # Temporarily override message handler
+        original_handler = self.on_message
+
+        async def temp_handler(message):
+            if message.type == message_type:
+                if not future.done():
+                    future.set_result(message)
+            # Still call original handler for other messages
+            if original_handler:
+                await original_handler(message)
+
+        self.on_message = temp_handler
+
+        try:
+            # Wait for the message
+            result = await asyncio.wait_for(future, timeout=10.0)
+            return result
+        finally:
+            # Restore original handler
+            self.on_message = original_handler
 
     # --- GAME ACTIONS ---
 
