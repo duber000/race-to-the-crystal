@@ -268,15 +268,25 @@ class UIManager:
         self.text_objects.append(status)
 
         # Crystal requirement
-        crystal_req = game_state.crystal.get_tokens_required(disabled_count)
-        req_text = arcade.Text(
-            f"Crystal Req: {crystal_req} tokens",
-            panel_x + 10,
-            panel_y + 25,
-            (255, 255, 255),
-            font_size=18
-        )
-        self.text_objects.append(req_text)
+        if game_state.crystal:
+            crystal_req = game_state.crystal.get_tokens_required(disabled_count)
+            req_text = arcade.Text(
+                f"Crystal Req: {crystal_req} tokens",
+                panel_x + 10,
+                panel_y + 25,
+                (255, 255, 255),
+                font_size=18
+            )
+            self.text_objects.append(req_text)
+        else:
+            req_text = arcade.Text(
+                "Crystal Req: N/A (game not started)",
+                panel_x + 10,
+                panel_y + 25,
+                (255, 255, 255),
+                font_size=18
+            )
+            self.text_objects.append(req_text)
 
     def _build_button_shapes(self):
         """Build shapes and text for all buttons."""
