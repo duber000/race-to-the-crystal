@@ -77,8 +77,37 @@ The server will:
 - Manage game lobbies and active games
 - Validate and execute all player actions
 - Broadcast state updates to clients
+- Handle chat messages and reconnections
 
-### 2. Connect AI Players
+### 2A. Connect Human Players (GUI)
+
+**New in Phase 4!** Human players can now use the graphical menu to host and join games.
+
+```bash
+# Launch the game with menu
+uv run race-to-the-crystal
+```
+
+#### Hosting a Game:
+1. Click **"Host Network Game"**
+2. Enter your player name (e.g., "Alice")
+3. Enter port (default: 8888)
+4. Enter game name (e.g., "Alice's Game")
+5. Click **"Create Game"**
+6. Wait in the lobby for other players to join
+7. **Chat** with other players (press Enter to type)
+8. Click **"Ready"** when you're ready
+9. When all players are ready, click **"Start Game"**
+
+#### Joining a Game:
+*Note: Game browser coming soon. For now, AI clients must join human-hosted games.*
+
+#### In-Game Features:
+- **Chat**: Press **Enter** to open chat, type message, press **Enter** to send
+- **Victory Screen**: Automatically appears when game ends with statistics
+- **Reconnection**: Automatic reconnection if connection drops (3 attempts with backoff)
+
+### 2B. Connect AI Players (Command Line)
 
 ```bash
 # AI creates a new game and waits for others
@@ -99,13 +128,42 @@ uv run race-ai-client --join <game-id> --strategy defensive
 - `aggressive`: Prioritizes attacks and forward movement
 - `defensive`: Prioritizes deployment and safe moves
 
-### 3. Start a Game
+### 3. Complete Multiplayer Setup Example
 
-1. Create a lobby (host AI uses `--create`)
-2. Other players join (using `--join <game-id>`)
-3. All players mark ready (AI auto-readies)
-4. Host starts the game (AI auto-starts when all ready)
-5. Game begins with turn-based play
+**Scenario: Human host, AI and human players**
+
+```bash
+# Terminal 1: Start the server
+uv run race-server
+
+# Terminal 2: Human hosts game via GUI
+uv run race-to-the-crystal
+# Click "Host Network Game"
+# Enter name: "Alice", port: 8888, game: "Mixed Game"
+# Click "Create Game"
+# Wait in lobby...
+
+# Terminal 3: AI player joins (get game-id from server logs)
+uv run race-ai-client --join abc123... --name "Bob_AI" --strategy aggressive
+
+# Terminal 4: Another AI joins
+uv run race-ai-client --join abc123... --name "Carol_AI"
+
+# Back in Terminal 2 (GUI):
+# See Bob_AI and Carol_AI in the lobby
+# Chat: "Hi everyone!"
+# Click "Ready" when ready
+# Wait for all players to ready
+# Click "Start Game" (as host)
+# Game begins!
+```
+
+### 4. Game Flow
+
+1. **Lobby Phase**: Players join, chat, and ready up
+2. **Game Phase**: Turn-based gameplay with server validation
+3. **Victory Phase**: Winner announced with statistics screen
+4. **Return to Menu**: Ready for another game!
 
 ## Network Protocol
 
@@ -126,14 +184,17 @@ All messages follow this JSON structure:
 
 ### Message Types
 
-#### Connection
+#### Connection (8 types)
 - `CONNECT`: Initial connection request
 - `CONNECT_ACK`: Server assigns player_id
+- `RECONNECT`: **[Phase 4]** Reconnect with existing player_id
+- `RECONNECT_ACK`: **[Phase 4]** Reconnection successful
+- `RECONNECT_FAILED`: **[Phase 4]** Reconnection failed (timeout/invalid)
 - `DISCONNECT`: Graceful disconnect
 - `HEARTBEAT`: Keep-alive ping
 - `HEARTBEAT_ACK`: Keep-alive response
 
-#### Lobby
+#### Lobby (9 types)
 - `CREATE_GAME`: Create new game lobby
 - `JOIN_GAME`: Join existing lobby
 - `LEAVE_GAME`: Leave lobby
@@ -144,25 +205,32 @@ All messages follow this JSON structure:
 - `READY`: Set ready status
 - `START_GAME`: Host starts the game
 
-#### Game Actions
+#### Game Actions (4 types)
 - `MOVE`: Move a token
 - `ATTACK`: Attack enemy token
 - `DEPLOY`: Deploy token from reserve
 - `END_TURN`: End current turn
 
-#### State Synchronization
+#### State Synchronization (3 types)
 - `FULL_STATE`: Complete game state
 - `STATE_UPDATE`: Delta update (future optimization)
 - `TURN_CHANGE`: Turn changed notification
 
-#### Events
+#### Events (9 types)
 - `COMBAT_RESULT`: Combat outcome
 - `TOKEN_MOVED`: Token moved event
 - `TOKEN_DEPLOYED`: Token deployed event
 - `MYSTERY_EVENT`: Mystery square triggered
+- `GENERATOR_UPDATE`: Generator capture status changed
+- `CRYSTAL_UPDATE`: Crystal capture progress changed
 - `GAME_WON`: Game ended with winner
 - `ERROR`: Server error
 - `INVALID_ACTION`: Action validation failed
+
+#### Communication (1 type)
+- `CHAT`: **[Phase 4]** Chat message from player
+
+**Total: 34 message types**
 
 ### TCP Framing
 
