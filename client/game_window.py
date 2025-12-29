@@ -699,14 +699,16 @@ class GameWindow(arcade.Window):
         """
         super().on_resize(width, height)
 
-        # Update UI manager layout
-        self.ui_manager.update_layout(width, height)
-        self.ui_manager.rebuild_visuals(self.game_state)
+        # Check if initialization is complete (ui_manager exists)
+        if hasattr(self, 'ui_manager') and self.ui_manager:
+            # Update UI manager layout
+            self.ui_manager.update_layout(width, height)
+            self.ui_manager.rebuild_visuals(self.game_state)
 
-        # Update camera setup to refit board
-        self._setup_camera_view()
+            # Update camera setup to refit board
+            self._setup_camera_view()
 
-        print(f"Window resized to {width}x{height}")
+            print(f"Window resized to {width}x{height}")
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int):
         """
@@ -718,6 +720,10 @@ class GameWindow(arcade.Window):
             dx: Change in x
             dy: Change in y
         """
+        # Check if initialization is complete
+        if not hasattr(self, 'camera_mode') or not hasattr(self, 'mouse_look_active'):
+            return
+            
         # Handle mouse-look in 3D mode
         if self.camera_mode == "3D" and self.mouse_look_active:
             # Apply mouse movement to camera rotation
@@ -753,6 +759,10 @@ class GameWindow(arcade.Window):
             button: Which button was pressed
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
+        # Check if initialization is complete
+        if not hasattr(self, 'camera_mode'):
+            return
+            
         if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_mode == "3D":
             # Activate mouse-look in 3D mode
             self.mouse_look_active = True
@@ -820,6 +830,10 @@ class GameWindow(arcade.Window):
             button: Which button was released
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
+        # Check if initialization is complete
+        if not hasattr(self, 'camera_mode') or not hasattr(self, 'mouse_look_active'):
+            return
+            
         if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_mode == "3D":
             # Deactivate mouse-look in 3D mode
             self.mouse_look_active = False
@@ -877,6 +891,10 @@ class GameWindow(arcade.Window):
 
         # 3D View controls
         elif symbol == arcade.key.V:
+            # Check if initialization is complete
+            if not hasattr(self, 'camera_mode') or not hasattr(self, 'board_3d') or not hasattr(self, 'shader_3d'):
+                return
+                
             # Toggle between 2D and 3D views (only if 3D rendering is available)
             if self.camera_mode == "2D":
                 # Trying to enter 3D mode
@@ -892,13 +910,13 @@ class GameWindow(arcade.Window):
                 self.camera_mode = "2D"
                 print(f"Camera mode: {self.camera_mode}")
 
-        elif symbol == arcade.key.TAB and self.camera_mode == "3D":
+        elif symbol == arcade.key.TAB and hasattr(self, 'camera_mode') and self.camera_mode == "3D":
             # Cycle to next token
             self._cycle_controlled_token()
 
         elif symbol == arcade.key.Q and not (modifiers & arcade.key.MOD_CTRL):
             # Rotate camera left (only in 3D mode, and not Ctrl+Q which is quit)
-            if self.camera_mode == "3D":
+            if hasattr(self, 'camera_mode') and self.camera_mode == "3D":
                 self.token_rotation -= 15.0
                 # Update camera position immediately
                 if self.controlled_token_id:
