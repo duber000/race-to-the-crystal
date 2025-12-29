@@ -26,17 +26,20 @@ class AsyncArcadeScheduler:
     def start(self):
         """Start the async scheduler."""
         if self.running:
+            logger.info("Async scheduler already running")
             return
 
         # Get or create event loop
         try:
             self.loop = asyncio.get_running_loop()
+            logger.info("Using existing running event loop")
         except RuntimeError:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
+            logger.info("Created new event loop")
 
         self.running = True
-        logger.info("Async scheduler started")
+        logger.info(f"Async scheduler started with loop: {self.loop}")
 
     def stop(self):
         """Stop the async scheduler."""
@@ -52,7 +55,12 @@ class AsyncArcadeScheduler:
         Args:
             delta_time: Time since last update
         """
-        if not self.running or not self.loop:
+        if not self.running:
+            logger.debug("Async scheduler not running, skipping update")
+            return
+
+        if not self.loop:
+            logger.warning("Async scheduler has no event loop!")
             return
 
         # Run pending async tasks for a short time
@@ -81,9 +89,13 @@ class AsyncArcadeScheduler:
             asyncio.Task
         """
         if not self.loop:
+            logger.info("Loop not started, starting now...")
             self.start()
 
-        return self.loop.create_task(coro)
+        logger.info(f"Creating task for coroutine: {coro}")
+        task = self.loop.create_task(coro)
+        logger.info(f"Task created: {task}")
+        return task
 
 
 # Global scheduler instance
@@ -113,8 +125,12 @@ def schedule_async(coro):
     Returns:
         asyncio.Task
     """
+    logger.info(f"schedule_async called with: {coro}")
     scheduler = get_async_scheduler()
-    return scheduler.create_task(coro)
+    logger.info(f"Got scheduler: {scheduler}, running={scheduler.running}")
+    task = scheduler.create_task(coro)
+    logger.info(f"schedule_async returning task: {task}")
+    return task
 
 
 class AsyncWindow(arcade.Window):
@@ -128,9 +144,10 @@ class AsyncWindow(arcade.Window):
         """Initialize async window."""
         super().__init__(*args, **kwargs)
 
-        # Create async scheduler
-        self.async_scheduler = AsyncArcadeScheduler()
+        # Use the global async scheduler (shared with schedule_async)
+        self.async_scheduler = get_async_scheduler()
         self.async_scheduler.start()
+        logger.info(f"AsyncWindow initialized with global scheduler: {self.async_scheduler}")
 
     def on_update(self, delta_time: float):
         """
