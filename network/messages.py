@@ -12,6 +12,9 @@ class MessageType(Enum):
     # Connection management
     CONNECT = "CONNECT"
     CONNECT_ACK = "CONNECT_ACK"
+    RECONNECT = "RECONNECT"
+    RECONNECT_ACK = "RECONNECT_ACK"
+    RECONNECT_FAILED = "RECONNECT_FAILED"
     DISCONNECT = "DISCONNECT"
     HEARTBEAT = "HEARTBEAT"
     HEARTBEAT_ACK = "HEARTBEAT_ACK"
@@ -46,6 +49,9 @@ class MessageType(Enum):
     GENERATOR_UPDATE = "GENERATOR_UPDATE"
     CRYSTAL_UPDATE = "CRYSTAL_UPDATE"
     GAME_WON = "GAME_WON"
+
+    # Chat
+    CHAT = "CHAT"
 
     # Error handling
     ERROR = "ERROR"

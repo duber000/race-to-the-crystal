@@ -265,6 +265,21 @@ class LobbyManager:
         """
         return self.lobbies.get(game_id)
 
+    def get_lobby_by_player(self, player_id: str) -> Optional[GameLobby]:
+        """
+        Find the lobby that contains a specific player.
+
+        Args:
+            player_id: Player to find
+
+        Returns:
+            GameLobby containing the player, or None if not found
+        """
+        for lobby in self.lobbies.values():
+            if player_id in lobby.players:
+                return lobby
+        return None
+
     def join_lobby(
         self,
         game_id: str,

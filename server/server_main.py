@@ -41,9 +41,24 @@ class ServerRunner:
 
         logger.info("Starting Race to the Crystal server...")
 
+        # Create server start task
+        server_task = asyncio.create_task(self.server.start())
+
         try:
-            # Start server (runs until shutdown)
-            await self.server.start()
+            # Wait for either server to complete or shutdown signal
+            done, pending = await asyncio.wait(
+                [server_task, asyncio.create_task(self.shutdown_event.wait())],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+
+            # If shutdown was triggered, cancel the server task
+            if self.shutdown_event.is_set():
+                logger.info("Shutdown triggered, stopping server...")
+                server_task.cancel()
+                try:
+                    await server_task
+                except asyncio.CancelledError:
+                    pass
 
         except asyncio.CancelledError:
             logger.info("Server task cancelled")
