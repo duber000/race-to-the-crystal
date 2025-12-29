@@ -16,7 +16,7 @@ from client.ui.lobby_view import LobbyView
 from client.ui.network_game_view import NetworkGameView
 from client.ui.victory_view import VictoryView, VictoryViewSimple
 from client.ui.game_browser_view import GameBrowserView
-from client.ui.async_arcade import AsyncWindow
+from client.ui.async_arcade import AsyncWindow, schedule_async
 from client.client_main import setup_game_state
 from client.game_window import GameWindow
 from client.network_client import NetworkClient
@@ -159,7 +159,7 @@ class MenuGameWindow(AsyncWindow):
         )
 
         # Create network client and connect
-        asyncio.create_task(
+        schedule_async(
             self._connect_and_create_game(player_name, host, port, game_name or "My Game")
         )
 
@@ -205,7 +205,7 @@ class MenuGameWindow(AsyncWindow):
         browser_view.network_client = None  # Prevent cleanup
 
         # Join the game
-        asyncio.create_task(self._join_game_async(game_id))
+        schedule_async(self._join_game_async(game_id))
 
     async def _join_game_async(self, game_id: str):
         """
@@ -333,7 +333,7 @@ class MenuGameWindow(AsyncWindow):
 
         # Disconnect from server
         if self.network_client:
-            asyncio.create_task(self.network_client.disconnect())
+            schedule_async(self.network_client.disconnect())
             self.network_client = None
 
         # Return to main menu

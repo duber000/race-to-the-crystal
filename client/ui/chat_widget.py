@@ -5,13 +5,13 @@ Provides a chat overlay that can be added to any game view.
 
 import arcade
 import arcade.gui
-import asyncio
 import logging
 from typing import Optional, Callable, List
 from dataclasses import dataclass
 import time
 
 from client.network_client import NetworkClient
+from client.ui.async_arcade import schedule_async
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +138,7 @@ class ChatWidget:
         if key == arcade.key.ENTER or key == arcade.key.RETURN:
             # Send message
             if self.input_text.strip():
-                asyncio.create_task(self._send_message(self.input_text.strip()))
+                schedule_async(self._send_message(self.input_text.strip()))
             self.input_text = ""
             self.toggle_input()
             return True

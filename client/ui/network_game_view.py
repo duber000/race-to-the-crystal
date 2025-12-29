@@ -4,12 +4,12 @@ Integrates GameWindow with NetworkClient for server-authoritative gameplay.
 """
 
 import arcade
-import asyncio
 import logging
 from typing import Optional, Callable, Dict
 
 from client.game_window import GameWindow
 from client.network_client import NetworkClient
+from client.ui.async_arcade import schedule_async
 from game.game_state import GameState
 from game.ai_actions import MoveAction, AttackAction, DeployAction, EndTurnAction
 from network.messages import MessageType
@@ -130,7 +130,7 @@ class NetworkGameView(arcade.View):
             if key == arcade.key.SPACE or key == arcade.key.ENTER:
                 # End turn
                 if not self.waiting_for_server:
-                    asyncio.create_task(self._send_end_turn())
+                    schedule_async(self._send_end_turn())
                 return
 
             # Pass through other keys
@@ -149,7 +149,7 @@ class NetworkGameView(arcade.View):
         def network_move_token(token_id, destination):
             """Intercept move and send to server."""
             if not self.waiting_for_server:
-                asyncio.create_task(self._send_move(token_id, destination))
+                schedule_async(self._send_move(token_id, destination))
                 self.waiting_for_server = True
                 return True  # Pretend success, server will validate
             return False
@@ -157,7 +157,7 @@ class NetworkGameView(arcade.View):
         def network_attack_token(attacker_id, target_id):
             """Intercept attack and send to server."""
             if not self.waiting_for_server:
-                asyncio.create_task(self._send_attack(attacker_id, target_id))
+                schedule_async(self._send_attack(attacker_id, target_id))
                 self.waiting_for_server = True
                 return True
             return False
@@ -165,7 +165,7 @@ class NetworkGameView(arcade.View):
         def network_deploy_token(player_id, token_id, position):
             """Intercept deploy and send to server."""
             if not self.waiting_for_server:
-                asyncio.create_task(self._send_deploy(token_id, position))
+                schedule_async(self._send_deploy(token_id, position))
                 self.waiting_for_server = True
                 return True
             return False
@@ -173,7 +173,7 @@ class NetworkGameView(arcade.View):
         def network_end_turn():
             """Intercept end turn and send to server."""
             if not self.waiting_for_server:
-                asyncio.create_task(self._send_end_turn())
+                schedule_async(self._send_end_turn())
                 self.waiting_for_server = True
                 return
             return

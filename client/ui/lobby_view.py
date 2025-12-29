@@ -5,11 +5,11 @@ Displays connected players, ready status, and game start controls.
 
 import arcade
 import arcade.gui
-import asyncio
 import logging
 from typing import Optional, Callable, Dict, List
 
 from client.network_client import NetworkClient
+from client.ui.async_arcade import schedule_async
 from client.ui.chat_widget import ChatWidget
 from network.messages import MessageType
 from shared.constants import BACKGROUND_COLOR, PLAYER_COLORS
@@ -366,7 +366,7 @@ class LobbyView(arcade.View):
         logger.info(f"Setting ready status: {self.is_ready}")
 
         # Send ready message to server
-        asyncio.create_task(
+        schedule_async(
             self.network_client.set_ready(self.is_ready)
         )
 
@@ -392,7 +392,7 @@ class LobbyView(arcade.View):
 
         # Send start game message
         # Note: The server will handle this and send START_GAME back
-        asyncio.create_task(self._send_start_game())
+        schedule_async(self._send_start_game())
 
     async def _send_start_game(self):
         """Send start game request to server."""
@@ -412,7 +412,7 @@ class LobbyView(arcade.View):
         logger.info("Leaving lobby...")
 
         # Leave game on server
-        asyncio.create_task(self.network_client.leave_game())
+        schedule_async(self.network_client.leave_game())
 
         # Notify callback
         if self.on_leave:

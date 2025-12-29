@@ -5,11 +5,11 @@ Displays available games and allows player to select one to join.
 
 import arcade
 import arcade.gui
-import asyncio
 import logging
 from typing import Optional, Callable, Dict, List
 
 from client.network_client import NetworkClient
+from client.ui.async_arcade import schedule_async
 from network.messages import MessageType, ClientType
 from shared.constants import BACKGROUND_COLOR
 
@@ -167,7 +167,7 @@ class GameBrowserView(arcade.View):
         arcade.set_background_color(BACKGROUND_COLOR)
 
         # Start loading games
-        asyncio.create_task(self._load_games())
+        schedule_async(self._load_games())
 
         logger.info("Game browser view shown")
 
@@ -177,7 +177,7 @@ class GameBrowserView(arcade.View):
 
         # Disconnect if connected
         if self.network_client:
-            asyncio.create_task(self._cleanup())
+            schedule_async(self._cleanup())
 
     async def _cleanup(self):
         """Clean up network resources."""
@@ -270,10 +270,10 @@ class GameBrowserView(arcade.View):
 
         # Disconnect current client if any
         if self.network_client:
-            asyncio.create_task(self._cleanup())
+            schedule_async(self._cleanup())
 
         # Reload games
-        asyncio.create_task(self._load_games())
+        schedule_async(self._load_games())
 
     def _on_back_click(self, event):
         """Return to main menu."""
@@ -281,6 +281,6 @@ class GameBrowserView(arcade.View):
 
         # Clean up connection
         if self.network_client:
-            asyncio.create_task(self._cleanup())
+            schedule_async(self._cleanup())
 
         self.window.show_view(self.main_menu_view)
