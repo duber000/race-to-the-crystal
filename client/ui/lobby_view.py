@@ -218,8 +218,11 @@ class LobbyView(arcade.View):
             is_ready = player_info.get("is_ready", False)
             color_index = player_info.get("color_index", 0)
 
-            # Get player color
-            color = PLAYER_COLORS.get(color_index, arcade.color.WHITE)
+            # Get player color (PLAYER_COLORS is a list, not dict)
+            if 0 <= color_index < len(PLAYER_COLORS):
+                color = PLAYER_COLORS[color_index]
+            else:
+                color = arcade.color.WHITE
 
             # Format: "Player Name [READY]" or "Player Name"
             ready_status = " [READY]" if is_ready else ""

@@ -476,5 +476,39 @@ class GameState:
         """Create game state from JSON string."""
         return cls.from_dict(json.loads(json_str))
 
+    @classmethod
+    def create_game(cls, num_players: int) -> "GameState":
+        """
+        Create a new game state with the specified number of players.
+
+        Args:
+            num_players: Number of players (2-4)
+
+        Returns:
+            Configured GameState instance
+        """
+        if num_players < 2 or num_players > 4:
+            raise ValueError("Number of players must be between 2 and 4")
+
+        # Create game state instance
+        game_state = cls()
+
+        # Add players with appropriate colors
+        player_colors = [
+            PlayerColor.CYAN,
+            PlayerColor.MAGENTA,
+            PlayerColor.YELLOW,
+            PlayerColor.GREEN
+        ]
+
+        for i in range(num_players):
+            player_id = f"player_{i}"
+            player_name = f"Player {i+1}"
+            player_color = player_colors[i]
+
+            game_state.add_player(player_id, player_name, player_color)
+
+        return game_state
+
     def __repr__(self) -> str:
         return f"GameState(Phase={self.phase.name}, Turn={self.turn_number}, Players={len(self.players)})"
