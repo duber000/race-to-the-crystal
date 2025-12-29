@@ -280,6 +280,38 @@ class GameState:
         # Mark as not alive
         token.is_alive = False
 
+    def attack_token(self, attacker_id: int, defender_id: int) -> bool:
+        """
+        Execute an attack between two tokens.
+
+        Args:
+            attacker_id: ID of attacking token
+            defender_id: ID of defending token
+
+        Returns:
+            True if attack was successful
+        """
+        from game.combat import CombatSystem
+
+        attacker = self.get_token(attacker_id)
+        defender = self.get_token(defender_id)
+
+        if not attacker or not defender:
+            return False
+
+        # Check if attack is valid
+        if not CombatSystem.can_attack(attacker, defender):
+            return False
+
+        # Resolve combat
+        outcome = CombatSystem.resolve_combat(attacker, defender)
+
+        # If defender was killed, remove them from the board
+        if outcome.defender_killed:
+            self.remove_token(defender_id)
+
+        return True
+
     def _auto_deploy_starting_tokens(self, player_id: str, player_index: int) -> None:
         """
         Automatically deploy tokens to starting corner positions at game start.
