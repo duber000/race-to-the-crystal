@@ -217,21 +217,21 @@ class ChatWidget:
         if not self.visible:
             return
 
-        # Draw background
-        arcade.draw_rectangle_filled(
-            self.x + self.width / 2,
-            self.y + self.height / 2,
-            self.width,
-            self.height,
+        # Draw background (using lrtb API for Arcade 3.0+)
+        arcade.draw_lrtb_rectangle_filled(
+            self.x,  # left
+            self.x + self.width,  # right
+            self.y + self.height,  # top
+            self.y,  # bottom
             self.background_color
         )
 
-        # Draw border
-        arcade.draw_rectangle_outline(
-            self.x + self.width / 2,
-            self.y + self.height / 2,
-            self.width,
-            self.height,
+        # Draw border (using lrtb API for Arcade 3.0+)
+        arcade.draw_lrtb_rectangle_outline(
+            self.x,  # left
+            self.x + self.width,  # right
+            self.y + self.height,  # top
+            self.y,  # bottom
             self.border_color,
             2
         )
@@ -265,23 +265,25 @@ class ChatWidget:
         # Draw input box
         input_y = self.y + 5
         input_height = 30
+        input_left = self.x + 5
+        input_right = self.x + self.width - 5
 
-        # Input background
-        arcade.draw_rectangle_filled(
-            self.x + self.width / 2,
-            input_y + input_height / 2,
-            self.width - 10,
-            input_height,
+        # Input background (using lrtb API for Arcade 3.0+)
+        arcade.draw_lrtb_rectangle_filled(
+            input_left,  # left
+            input_right,  # right
+            input_y + input_height,  # top
+            input_y,  # bottom
             self.input_bg_color
         )
 
         # Input border (highlighted if active)
         border_color = arcade.color.YELLOW if self.input_active else self.border_color
-        arcade.draw_rectangle_outline(
-            self.x + self.width / 2,
-            input_y + input_height / 2,
-            self.width - 10,
-            input_height,
+        arcade.draw_lrtb_rectangle_outline(
+            input_left,  # left
+            input_right,  # right
+            input_y + input_height,  # top
+            input_y,  # bottom
             border_color,
             2
         )

@@ -411,16 +411,18 @@ class GameWindow(arcade.Window):
         center_x = self.width / 2
         center_y = self.height / 2
 
-        # Semi-transparent background
-        arcade.draw_rectangle_filled(
-            center_x,
-            center_y,
-            menu_width,
-            menu_height,
+        # Semi-transparent background (using lrtb API for Arcade 3.0+)
+        left = center_x - menu_width / 2
+        right = center_x + menu_width / 2
+        top = center_y + menu_height / 2
+        bottom = center_y - menu_height / 2
+
+        arcade.draw_lrtb_rectangle_filled(
+            left, right, top, bottom,
             (20, 20, 40, 220),
         )
-        arcade.draw_rectangle_outline(
-            center_x, center_y, menu_width, menu_height, (0, 255, 255), 3
+        arcade.draw_lrtb_rectangle_outline(
+            left, right, top, bottom, (0, 255, 255), 3
         )
 
         # Title
@@ -455,12 +457,21 @@ class GameWindow(arcade.Window):
                 color = (100, 100, 100)
                 text_color = (100, 100, 100)
 
-            # Draw option box
-            arcade.draw_rectangle_filled(x, y, 70, 50, (30, 30, 60, 200))
-            arcade.draw_rectangle_outline(x, y, 70, 50, color, 2)
+            # Draw option box (using lrtb API for Arcade 3.0+)
+            box_left = x - 35
+            box_right = x + 35
+            box_top = y + 25
+            box_bottom = y - 25
+
+            arcade.draw_lrtb_rectangle_filled(
+                box_left, box_right, box_top, box_bottom, (30, 30, 60, 200)
+            )
+            arcade.draw_lrtb_rectangle_outline(
+                box_left, box_right, box_top, box_bottom, color, 2
+            )
 
             # Store clickable area
-            self._3d_menu_areas[health] = (x - 35, x + 35, y - 25, y + 25)
+            self._3d_menu_areas[health] = (box_left, box_right, box_bottom, box_top)
 
             # Draw health value
             arcade.draw_text(
