@@ -384,6 +384,10 @@ class GameServer:
             elif message.type in [MessageType.MOVE, MessageType.ATTACK, MessageType.DEPLOY, MessageType.END_TURN]:
                 await self._handle_game_action(player_id, message)
 
+            # Chat
+            elif message.type == MessageType.CHAT:
+                await self._handle_chat(player_id, message)
+
             else:
                 logger.warning(f"Unhandled message type: {message.type.value}")
 
@@ -649,6 +653,40 @@ class GameServer:
         self.lobby_manager.finish_game(game_session.game_id)
 
         logger.info(f"Game {game_session.game_id} ended. Winner: {winner_name}")
+
+    async def _handle_chat(self, player_id: str, message: NetworkMessage) -> None:
+        """
+        Handle chat message from a player.
+
+        Args:
+            player_id: Player sending the chat message
+            message: CHAT message
+        """
+        data = message.data or {}
+        chat_message = data.get("message", "")
+
+        if not chat_message:
+            return
+
+        # Get player's name
+        lobby = self.lobby_manager.get_lobby_by_player(player_id)
+        player_name = "Unknown"
+
+        if lobby and player_id in lobby.players:
+            player_name = lobby.players[player_id].player_name
+
+        logger.info(f"Chat from {player_name}: {chat_message}")
+
+        # Create chat message to broadcast
+        chat_msg = self.protocol.create_chat_message(
+            player_id,
+            player_name,
+            chat_message
+        )
+
+        # Broadcast to all players in the game/lobby
+        if lobby:
+            await self._broadcast_to_lobby(lobby.game_id, chat_msg)
 
     async def _send_to_player(self, player_id: str, message: NetworkMessage) -> bool:
         """Send a message to a specific player."""

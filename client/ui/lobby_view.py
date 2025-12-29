@@ -10,6 +10,7 @@ import logging
 from typing import Optional, Callable, Dict, List
 
 from client.network_client import NetworkClient
+from client.ui.chat_widget import ChatWidget
 from network.messages import MessageType
 from shared.constants import BACKGROUND_COLOR, PLAYER_COLORS
 
@@ -52,6 +53,9 @@ class LobbyView(arcade.View):
         self.title_text = None
         self.status_text = None
         self.player_texts: List[arcade.Text] = []
+
+        # Chat widget (will be created in setup)
+        self.chat_widget: Optional[ChatWidget] = None
 
         # Callbacks
         self.on_game_start: Optional[Callable[[Dict], None]] = None
@@ -130,6 +134,16 @@ class LobbyView(arcade.View):
         # Build player list display
         self._update_player_list()
 
+        # Create chat widget
+        if self.window:
+            self.chat_widget = ChatWidget(
+                self.network_client,
+                x=10,
+                y=120,
+                width=400,
+                height=250
+            )
+
     def on_show_view(self):
         """Called when this view is shown."""
         self.setup()
@@ -140,6 +154,12 @@ class LobbyView(arcade.View):
     def on_hide_view(self):
         """Called when this view is hidden."""
         self.manager.disable()
+
+    def on_update(self, delta_time: float):
+        """Update the lobby view."""
+        # Update chat widget
+        if self.chat_widget:
+            self.chat_widget.update(delta_time)
 
     def on_draw(self):
         """Render the lobby."""
@@ -157,6 +177,22 @@ class LobbyView(arcade.View):
 
         # Draw UI manager (buttons)
         self.manager.draw()
+
+        # Draw chat widget
+        if self.chat_widget:
+            self.chat_widget.draw()
+
+    def on_key_press(self, key: int, modifiers: int):
+        """Handle key press events."""
+        # Let chat widget handle keys first
+        if self.chat_widget and self.chat_widget.on_key_press(key, modifiers):
+            return  # Chat widget handled the event
+
+    def on_text(self, text: str):
+        """Handle text input events."""
+        # Let chat widget handle text input
+        if self.chat_widget:
+            self.chat_widget.on_text(text)
 
     def _update_player_list(self):
         """Rebuild the player list display."""
@@ -230,6 +266,10 @@ class LobbyView(arcade.View):
             elif message.type == MessageType.FULL_STATE:
                 # Full state update (includes lobby info)
                 await self._handle_full_state(message)
+
+            elif message.type == MessageType.CHAT:
+                # Chat message
+                await self._handle_chat_message(message)
 
             elif message.type == MessageType.ERROR:
                 # Error message
@@ -309,6 +349,16 @@ class LobbyView(arcade.View):
 
             self._update_player_list()
             self.setup()  # Refresh UI
+
+    async def _handle_chat_message(self, message):
+        """Handle CHAT message."""
+        data = message.data or {}
+        player_name = data.get("player_name", "Unknown")
+        chat_text = data.get("message", "")
+
+        if chat_text and self.chat_widget:
+            self.chat_widget.add_message(player_name, chat_text, message.player_id)
+            logger.debug(f"Chat from {player_name}: {chat_text}")
 
     def _on_ready_click(self, event):
         """Handle ready button click."""

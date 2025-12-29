@@ -14,6 +14,7 @@ from typing import Optional
 from client.ui.main_menu import MainMenuView, SettingsView, NetworkSetupView
 from client.ui.lobby_view import LobbyView
 from client.ui.network_game_view import NetworkGameView
+from client.ui.victory_view import VictoryView, VictoryViewSimple
 from client.ui.async_arcade import AsyncWindow
 from client.client_main import setup_game_state
 from client.game_window import GameWindow
@@ -303,9 +304,10 @@ class MenuGameWindow(AsyncWindow):
         """
         logger.info(f"Game ended! Winner: {winner_name}")
 
-        # TODO: Show victory screen
-        # For now, just return to menu
-        self.show_view(self.main_menu)
+        # Show victory screen
+        victory_view = VictoryViewSimple(winner_name)
+        victory_view.on_return_to_menu = lambda: self.show_view(self.main_menu)
+        self.show_view(victory_view)
 
     def _handle_network_disconnect(self):
         """Handle disconnection from network game."""

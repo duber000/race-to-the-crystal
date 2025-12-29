@@ -336,6 +336,23 @@ class ProtocolHandler:
         )
 
     @staticmethod
+    def create_chat_message(
+        player_id: str,
+        player_name: str,
+        message: str
+    ) -> NetworkMessage:
+        """Create a CHAT message."""
+        return NetworkMessage(
+            type=MessageType.CHAT,
+            timestamp=time.time(),
+            player_id=player_id,
+            data={
+                "player_name": player_name,
+                "message": message,
+            }
+        )
+
+    @staticmethod
     def create_error_message(error_msg: str, player_id: Optional[str] = None) -> NetworkMessage:
         """Create an ERROR message."""
         return NetworkMessage(

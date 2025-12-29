@@ -50,6 +50,9 @@ class MessageType(Enum):
     CRYSTAL_UPDATE = "CRYSTAL_UPDATE"
     GAME_WON = "GAME_WON"
 
+    # Chat
+    CHAT = "CHAT"
+
     # Error handling
     ERROR = "ERROR"
     INVALID_ACTION = "INVALID_ACTION"
