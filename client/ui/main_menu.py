@@ -126,10 +126,10 @@ class MainMenuView(arcade.View):
 
         # Center the button box
         self.manager.add(
-            arcade.gui.UIAnchorWidget(
+            arcade.gui.UIAnchorLayout(
                 anchor_x="center_x",
                 anchor_y="center_y",
-                child=v_box,
+                children=[v_box],
                 align_y=-50  # Offset down a bit from center
             )
         )
@@ -309,10 +309,10 @@ class SettingsView(arcade.View):
 
         # Center the button box
         self.manager.add(
-            arcade.gui.UIAnchorWidget(
+            arcade.gui.UIAnchorLayout(
                 anchor_x="center_x",
                 anchor_y="center_y",
-                child=v_box,
+                children=[v_box],
                 align_y=-100
             )
         )
@@ -505,10 +505,10 @@ class NetworkSetupView(arcade.View):
 
         # Center the layout
         self.manager.add(
-            arcade.gui.UIAnchorWidget(
+            arcade.gui.UIAnchorLayout(
                 anchor_x="center_x",
                 anchor_y="center_y",
-                child=v_box,
+                children=[v_box],
                 align_y=-50
             )
         )

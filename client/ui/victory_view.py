@@ -112,10 +112,10 @@ class VictoryView(arcade.View):
 
         # Position buttons at bottom
         self.manager.add(
-            arcade.gui.UIAnchorWidget(
+            arcade.gui.UIAnchorLayout(
                 anchor_x="center_x",
                 anchor_y="bottom",
-                child=v_box,
+                children=[v_box],
                 align_y=50
             )
         )
@@ -298,10 +298,10 @@ class VictoryViewSimple(arcade.View):
         )
 
         self.manager.add(
-            arcade.gui.UIAnchorWidget(
+            arcade.gui.UIAnchorLayout(
                 anchor_x="center_x",
                 anchor_y="bottom",
-                child=menu_button,
+                children=[menu_button],
                 align_y=50
             )
         )
