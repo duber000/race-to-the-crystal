@@ -288,7 +288,19 @@ class LobbyView(arcade.View):
         data = message.data or {}
         player_id = data.get("player_id")
         player_name = data.get("player_name", "Unknown")
+        lobby_data = data.get("lobby", {})
+        
+        # Try to get color_index from lobby data if available
         color_index = data.get("color_index", 0)
+        
+        # If lobby data is available, use it to get the complete player info
+        if lobby_data:
+            players_list = lobby_data.get("players", [])
+            # Find the player in the lobby's player list
+            for player_info in players_list:
+                if player_info.get("player_id") == player_id:
+                    color_index = player_info.get("color_index", 0)
+                    break
 
         if player_id:
             self.players[player_id] = {
@@ -344,11 +356,21 @@ class LobbyView(arcade.View):
         # Update lobby info
         if lobby_data:
             self.game_name = lobby_data.get("game_name", "Lobby")
-            players_data = lobby_data.get("players", {})
+            players_list = lobby_data.get("players", [])
 
             # Update player list
-            for player_id, player_info in players_data.items():
-                self.players[player_id] = player_info
+            # Clear existing players first
+            self.players.clear()
+            
+            # Add players from the list
+            for player_info in players_list:
+                player_id = player_info.get("player_id")
+                if player_id:
+                    self.players[player_id] = {
+                        "player_name": player_info.get("player_name", "Unknown"),
+                        "is_ready": player_info.get("is_ready", False),
+                        "color_index": player_info.get("color_index", 0)
+                    }
 
             self._update_player_list()
             self.setup()  # Refresh UI
