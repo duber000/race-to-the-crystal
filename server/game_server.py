@@ -50,6 +50,10 @@ class GameServer:
         self.connection_pool = ConnectionPool()
         self.player_connections: Dict[str, Connection] = {}  # player_id -> Connection
 
+        # Reconnection support
+        self.disconnected_players: Dict[str, Dict] = {}  # player_id -> disconnect info
+        self.reconnect_timeout = 300.0  # 5 minutes
+
         # Game management
         self.lobby_manager = LobbyManager()
         self.game_coordinator = GameCoordinator()
@@ -113,20 +117,28 @@ class GameServer:
         # Add to connection pool
         self.connection_pool.add_connection(conn_id, connection)
 
-        # Wait for CONNECT message
+        # Wait for CONNECT or RECONNECT message
         try:
-            connect_msg = await asyncio.wait_for(
+            initial_msg = await asyncio.wait_for(
                 connection.receive_message(),
                 timeout=10.0  # 10 second timeout for initial connect
             )
 
-            if not connect_msg or connect_msg.type != MessageType.CONNECT:
-                logger.warning(f"Invalid CONNECT message from {conn_id}")
+            if not initial_msg:
+                logger.warning(f"No message received from {conn_id}")
                 await connection.close()
                 return
 
-            # Process connection
-            player_id = await self._handle_connect(connection, connect_msg, conn_id)
+            # Handle CONNECT or RECONNECT
+            player_id = None
+            if initial_msg.type == MessageType.CONNECT:
+                player_id = await self._handle_connect(connection, initial_msg, conn_id)
+            elif initial_msg.type == MessageType.RECONNECT:
+                player_id = await self._handle_reconnect(connection, initial_msg, conn_id)
+            else:
+                logger.warning(f"Invalid initial message type from {conn_id}: {initial_msg.type}")
+                await connection.close()
+                return
 
             if not player_id:
                 await connection.close()
@@ -196,25 +208,137 @@ class GameServer:
 
         return player_id
 
-    async def _handle_disconnect(self, player_id: str) -> None:
+    async def _handle_reconnect(
+        self,
+        connection: Connection,
+        message: NetworkMessage,
+        conn_id: str
+    ) -> Optional[str]:
+        """
+        Handle RECONNECT message from a returning player.
+
+        Args:
+            connection: Client connection
+            message: RECONNECT message
+            conn_id: Connection ID
+
+        Returns:
+            Player ID if reconnection successful, None otherwise
+        """
+        player_id = message.player_id
+        data = message.data or {}
+        game_id = data.get("game_id")
+
+        logger.info(f"Reconnection attempt from {player_id[:8] if player_id else 'unknown'}")
+
+        # Validate player_id
+        if not player_id:
+            await connection.send_message(
+                self.protocol.create_reconnect_failed_message(
+                    "", "No player ID provided"
+                )
+            )
+            return None
+
+        # Check if player is in disconnected list
+        if player_id not in self.disconnected_players:
+            await connection.send_message(
+                self.protocol.create_reconnect_failed_message(
+                    player_id, "Player not found or reconnection timeout expired"
+                )
+            )
+            return None
+
+        # Check timeout
+        disconnect_info = self.disconnected_players[player_id]
+        disconnect_time = disconnect_info["disconnect_time"]
+        if time.time() - disconnect_time > self.reconnect_timeout:
+            # Timeout expired - remove player completely
+            self.disconnected_players.pop(player_id)
+            self.lobby_manager.remove_player_from_all(player_id)
+            self.game_coordinator.remove_player(player_id)
+
+            await connection.send_message(
+                self.protocol.create_reconnect_failed_message(
+                    player_id, "Reconnection timeout expired"
+                )
+            )
+            return None
+
+        # Validate game_id if provided
+        saved_game_id = disconnect_info.get("game_id")
+        if game_id and saved_game_id and game_id != saved_game_id:
+            await connection.send_message(
+                self.protocol.create_reconnect_failed_message(
+                    player_id, f"Game ID mismatch (expected {saved_game_id})"
+                )
+            )
+            return None
+
+        # Reconnection successful - restore connection
+        self.player_connections[player_id] = connection
+        self.disconnected_players.pop(player_id)
+
+        # Get current game state
+        game_session = disconnect_info.get("game_session")
+        session_data = {
+            "player_id": player_id,
+            "game_id": saved_game_id,
+            "reconnected": True,
+        }
+
+        # Send RECONNECT_ACK with current game state
+        ack_msg = self.protocol.create_reconnect_ack_message(
+            player_id, saved_game_id or "", session_data
+        )
+        await connection.send_message(ack_msg)
+
+        # Send full state sync
+        if game_session and saved_game_id:
+            lobby = self.lobby_manager.get_lobby(saved_game_id)
+            if lobby:
+                await self._send_full_state(player_id, lobby)
+
+        logger.info(
+            f"Player {player_id[:8]} successfully reconnected to game {saved_game_id[:8] if saved_game_id else 'N/A'}"
+        )
+
+        # TODO: Notify other players that player reconnected
+
+        return player_id
+
+    async def _handle_disconnect(self, player_id: str, explicit: bool = False) -> None:
         """
         Handle player disconnection.
 
         Args:
             player_id: Disconnecting player
+            explicit: True if player explicitly disconnected, False if connection lost
         """
-        logger.info(f"Player disconnected: {player_id[:8]}")
-
-        # Remove from lobby if in one
-        self.lobby_manager.remove_player_from_all(player_id)
-
-        # Remove from game if in one
-        game_id = self.game_coordinator.remove_player(player_id)
+        logger.info(f"Player disconnected: {player_id[:8]} (explicit={explicit})")
 
         # Remove connection
         self.player_connections.pop(player_id, None)
 
-        # TODO: Notify other players in lobby/game
+        # Check if player is in an active game
+        game_session = self.game_coordinator.get_player_game(player_id)
+
+        if game_session and not explicit:
+            # Save disconnection info for reconnection
+            lobby = self.lobby_manager.get_lobby_by_player(player_id)
+            self.disconnected_players[player_id] = {
+                "disconnect_time": time.time(),
+                "game_id": lobby.game_id if lobby else None,
+                "game_session": game_session,
+            }
+            logger.info(f"Player {player_id[:8]} marked for reconnection (timeout in {self.reconnect_timeout}s)")
+            # TODO: Notify other players that player disconnected but can reconnect
+        else:
+            # Explicit disconnect or not in game - remove completely
+            self.lobby_manager.remove_player_from_all(player_id)
+            self.game_coordinator.remove_player(player_id)
+            logger.info(f"Player {player_id[:8]} removed from all games")
+            # TODO: Notify other players in lobby/game
 
     async def _handle_message(
         self,
@@ -487,6 +611,23 @@ class GameServer:
 
             state_msg = self.protocol.create_full_state_message(state_dict, net_player_id)
             await self._send_to_player(net_player_id, state_msg)
+
+    async def _send_full_state(self, player_id: str, lobby: GameLobby) -> None:
+        """
+        Send full game state to a single player.
+
+        Args:
+            player_id: Network player ID to send state to
+            lobby: Game lobby with active game
+        """
+        game_session = self.game_coordinator.get_game(lobby.game_id)
+        if not game_session:
+            logger.warning(f"Cannot send state: Game {lobby.game_id} not found")
+            return
+
+        state_dict = game_session.get_game_state_for_player(player_id)
+        state_msg = self.protocol.create_full_state_message(state_dict, player_id)
+        await self._send_to_player(player_id, state_msg)
 
     async def _handle_game_over(self, game_session) -> None:
         """Handle game ending."""

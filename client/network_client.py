@@ -39,12 +39,20 @@ class NetworkClient:
         self.player_id: Optional[str] = None
         self.connected = False
 
+        # Reconnection support
+        self.server_host: Optional[str] = None
+        self.server_port: Optional[int] = None
+        self.auto_reconnect = True  # Automatically try to reconnect on disconnect
+        self.reconnect_attempts = 0
+        self.max_reconnect_attempts = 3
+
         # Protocol handler
         self.protocol = ProtocolHandler()
 
         # Message handlers (can be set by user)
         self.on_message: Optional[Callable[[NetworkMessage], Awaitable[None]]] = None
         self.on_disconnect: Optional[Callable[[], Awaitable[None]]] = None
+        self.on_reconnect: Optional[Callable[[], Awaitable[None]]] = None
 
         # Current game state
         self.game_id: Optional[str] = None
@@ -65,6 +73,10 @@ class NetworkClient:
         """
         try:
             logger.info(f"Connecting to {host}:{port}...")
+
+            # Save connection info for reconnection
+            self.server_host = host
+            self.server_port = port
 
             # Open TCP connection
             reader, writer = await asyncio.open_connection(host, port)
@@ -93,6 +105,7 @@ class NetworkClient:
             # Extract player_id from ACK
             self.player_id = ack_msg.player_id
             self.connected = True
+            self.reconnect_attempts = 0  # Reset reconnect counter
 
             logger.info(
                 f"Connected successfully as {self.player_name} "
@@ -109,6 +122,86 @@ class NetworkClient:
             return False
         except Exception as e:
             logger.error(f"Connection error: {e}", exc_info=True)
+            return False
+
+    async def reconnect(self) -> bool:
+        """
+        Attempt to reconnect to the server with the same player_id.
+
+        Returns:
+            True if reconnection successful
+        """
+        if not self.player_id or not self.server_host or not self.server_port:
+            logger.error("Cannot reconnect: Missing player ID or server info")
+            return False
+
+        try:
+            logger.info(
+                f"Attempting reconnection to {self.server_host}:{self.server_port} "
+                f"(attempt {self.reconnect_attempts + 1}/{self.max_reconnect_attempts})..."
+            )
+
+            # Open TCP connection
+            reader, writer = await asyncio.open_connection(
+                self.server_host,
+                self.server_port
+            )
+
+            # Create new connection wrapper
+            self.connection = Connection(reader, writer, f"client-{self.player_name}")
+
+            # Send RECONNECT message
+            reconnect_msg = self.protocol.create_reconnect_message(
+                self.player_id,
+                self.game_id
+            )
+            await self.connection.send_message(reconnect_msg)
+
+            # Wait for RECONNECT_ACK or RECONNECT_FAILED
+            response_msg = await asyncio.wait_for(
+                self.connection.receive_message(),
+                timeout=5.0
+            )
+
+            if not response_msg:
+                logger.error("No response to reconnection request")
+                await self.connection.close()
+                return False
+
+            if response_msg.type == MessageType.RECONNECT_ACK:
+                # Reconnection successful
+                self.connected = True
+                self.reconnect_attempts = 0
+
+                logger.info(f"Reconnected successfully as {self.player_name}")
+
+                # Call reconnect callback
+                if self.on_reconnect:
+                    await self.on_reconnect()
+
+                # Start message receive loop
+                asyncio.create_task(self._message_loop())
+
+                return True
+
+            elif response_msg.type == MessageType.RECONNECT_FAILED:
+                # Reconnection failed
+                data = response_msg.data or {}
+                reason = data.get("reason", "Unknown reason")
+                logger.error(f"Reconnection failed: {reason}")
+                await self.connection.close()
+                return False
+
+            else:
+                logger.error(f"Unexpected response to reconnection: {response_msg.type.value}")
+                await self.connection.close()
+                return False
+
+        except asyncio.TimeoutError:
+            logger.error("Reconnection timeout")
+            return False
+        except Exception as e:
+            logger.error(f"Reconnection error: {e}", exc_info=True)
             return False
 
     async def disconnect(self) -> None:
@@ -143,8 +236,12 @@ class NetworkClient:
                 message = await self.connection.receive_message()
 
                 if message is None:
-                    # Connection closed
-                    logger.info("Server closed connection")
+                    # Connection closed unexpectedly
+                    logger.warning("Server closed connection unexpectedly")
+
+                    # Attempt auto-reconnection if enabled and in a game
+                    if self.auto_reconnect and self.game_id:
+                        await self._attempt_auto_reconnect()
                     break
 
                 # Handle message
@@ -152,8 +249,37 @@ class NetworkClient:
 
         except Exception as e:
             logger.error(f"Message loop error: {e}", exc_info=True)
+
+            # Attempt auto-reconnection on error if enabled and in a game
+            if self.auto_reconnect and self.game_id:
+                await self._attempt_auto_reconnect()
         finally:
-            await self.disconnect()
+            # Only fully disconnect if not reconnected
+            if not self.connected:
+                await self.disconnect()
+
+    async def _attempt_auto_reconnect(self) -> None:
+        """Attempt automatic reconnection with exponential backoff."""
+        self.connected = False  # Mark as disconnected
+
+        while self.reconnect_attempts < self.max_reconnect_attempts:
+            self.reconnect_attempts += 1
+
+            # Exponential backoff: 1s, 2s, 4s
+            wait_time = 2 ** (self.reconnect_attempts - 1)
+            logger.info(f"Waiting {wait_time}s before reconnection attempt...")
+            await asyncio.sleep(wait_time)
+
+            # Attempt reconnection
+            success = await self.reconnect()
+            if success:
+                logger.info("Auto-reconnection successful!")
+                return
+
+        logger.error(f"Auto-reconnection failed after {self.max_reconnect_attempts} attempts")
+        # Call disconnect callback if all attempts failed
+        if self.on_disconnect:
+            await self.on_disconnect()
 
     async def _handle_message(self, message: NetworkMessage) -> None:
         """

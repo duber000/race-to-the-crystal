@@ -97,6 +97,49 @@ class ProtocolHandler:
         )
 
     @staticmethod
+    def create_reconnect_message(
+        player_id: str,
+        game_id: Optional[str] = None
+    ) -> NetworkMessage:
+        """Create a RECONNECT message to rejoin a game."""
+        return NetworkMessage(
+            type=MessageType.RECONNECT,
+            timestamp=time.time(),
+            player_id=player_id,
+            data={"game_id": game_id} if game_id else {}
+        )
+
+    @staticmethod
+    def create_reconnect_ack_message(
+        player_id: str,
+        game_id: str,
+        session_data: Dict
+    ) -> NetworkMessage:
+        """Create a RECONNECT_ACK response confirming successful reconnection."""
+        return NetworkMessage(
+            type=MessageType.RECONNECT_ACK,
+            timestamp=time.time(),
+            player_id=player_id,
+            data={
+                "game_id": game_id,
+                "session_data": session_data
+            }
+        )
+
+    @staticmethod
+    def create_reconnect_failed_message(
+        player_id: str,
+        reason: str
+    ) -> NetworkMessage:
+        """Create a RECONNECT_FAILED response when reconnection fails."""
+        return NetworkMessage(
+            type=MessageType.RECONNECT_FAILED,
+            timestamp=time.time(),
+            player_id=player_id,
+            data={"reason": reason}
+        )
+
+    @staticmethod
     def create_heartbeat() -> NetworkMessage:
         """Create a HEARTBEAT message."""
         return NetworkMessage(
