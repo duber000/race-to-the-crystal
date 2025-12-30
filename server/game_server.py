@@ -9,6 +9,7 @@ import logging
 import time
 import uuid
 from typing import Dict, Optional, Set
+from dataclasses import dataclass
 
 from network.connection import Connection, ConnectionPool
 from network.protocol import ProtocolHandler, NetworkMessage
@@ -22,6 +23,15 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PlayerMetadata:
+    """Metadata about a connected player."""
+    player_id: str
+    player_name: str
+    client_type: ClientType
+    connection_time: float
 
 
 class GameServer:
@@ -49,6 +59,9 @@ class GameServer:
         # Connection management
         self.connection_pool = ConnectionPool()
         self.player_connections: Dict[str, Connection] = {}  # player_id -> Connection
+
+        # Player registry - stores metadata about connected players
+        self.player_registry: Dict[str, PlayerMetadata] = {}  # player_id -> PlayerMetadata
 
         # Reconnection support
         self.disconnected_players: Dict[str, Dict] = {}  # player_id -> disconnect info
@@ -190,6 +203,14 @@ class GameServer:
         # Store connection
         self.player_connections[player_id] = connection
 
+        # Store player metadata in registry
+        self.player_registry[player_id] = PlayerMetadata(
+            player_id=player_id,
+            player_name=player_name,
+            client_type=client_type,
+            connection_time=time.time()
+        )
+
         # Send CONNECT_ACK
         session_data = {
             "player_id": player_id,
@@ -257,6 +278,7 @@ class GameServer:
             self.disconnected_players.pop(player_id)
             self.lobby_manager.remove_player_from_all(player_id)
             self.game_coordinator.remove_player(player_id)
+            self.player_registry.pop(player_id, None)  # Remove from player registry
 
             await connection.send_message(
                 self.protocol.create_reconnect_failed_message(
@@ -332,12 +354,14 @@ class GameServer:
                 "game_session": game_session,
             }
             logger.info(f"Player {player_id[:8]} marked for reconnection (timeout in {self.reconnect_timeout}s)")
+            # Keep player_registry entry for reconnection
             # TODO: Notify other players that player disconnected but can reconnect
         else:
             # Explicit disconnect or not in game - remove completely
             self.lobby_manager.remove_player_from_all(player_id)
             self.game_coordinator.remove_player(player_id)
-            logger.info(f"Player {player_id[:8]} removed from all games")
+            self.player_registry.pop(player_id, None)  # Remove from player registry
+            logger.info(f"Player {player_id[:8]} removed from all games and registry")
             # TODO: Notify other players in lobby/game
 
     async def _handle_message(
@@ -411,17 +435,19 @@ class GameServer:
         game_name = data.get("game_name", "New Game")
         max_players = data.get("max_players", 4)
 
-        # Get player info (need to determine client type)
-        # For now, assume from connection metadata
-        player_name = data.get("player_name", "Player")
-        client_type = ClientType.HUMAN  # Default
+        # Get player info from registry
+        player_metadata = self.player_registry.get(player_id)
+        if not player_metadata:
+            logger.error(f"Player {player_id[:8]} not found in registry")
+            await self._send_error(player_id, "Player not registered")
+            return
 
-        # Create lobby
+        # Create lobby with player info from registry
         lobby = self.lobby_manager.create_lobby(
             player_id=player_id,
-            player_name=player_name,
+            player_name=player_metadata.player_name,
             game_name=game_name,
-            client_type=client_type,
+            client_type=player_metadata.client_type,
             max_players=max_players
         )
 
@@ -444,10 +470,20 @@ class GameServer:
             await self._send_error(player_id, "No game_id provided")
             return
 
-        player_name = data.get("player_name", "Player")
-        client_type = ClientType.HUMAN
+        # Get player info from registry
+        player_metadata = self.player_registry.get(player_id)
+        if not player_metadata:
+            logger.error(f"Player {player_id[:8]} not found in registry")
+            await self._send_error(player_id, "Player not registered")
+            return
 
-        lobby = self.lobby_manager.join_lobby(game_id, player_id, player_name, client_type)
+        # Join lobby with player info from registry
+        lobby = self.lobby_manager.join_lobby(
+            game_id,
+            player_id,
+            player_metadata.player_name,
+            player_metadata.client_type
+        )
 
         if not lobby:
             await self._send_error(player_id, "Cannot join game (full or not found)")
@@ -469,7 +505,7 @@ class GameServer:
             data={
                 "game_id": game_id,
                 "player_id": player_id,
-                "player_name": player_name,
+                "player_name": player_metadata.player_name,
                 "lobby": lobby.to_dict()
             }
         )
