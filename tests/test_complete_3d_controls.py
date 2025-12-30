@@ -8,7 +8,6 @@ import sys
 sys.path.insert(0, '.')
 
 from client.camera_3d import FirstPersonCamera3D
-from client.game_window import GameWindow
 from game.game_state import GameState
 from shared.enums import PlayerColor
 from shared.constants import CELL_SIZE
