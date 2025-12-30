@@ -47,7 +47,7 @@ from game.generator import Generator
 from game.crystal import Crystal
 from shared.enums import PlayerColor
 from shared.constants import DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT
-from client.game_window import GameWindow
+from client.game_window import GameView
 
 # Create game state
 game_state = GameState()
@@ -65,14 +65,15 @@ for i, pos in enumerate(generator_positions):
 crystal_pos = game_state.board.get_crystal_position()
 game_state.crystal = Crystal(position=crystal_pos)
 
-# Create window
-window = GameWindow(game_state, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT)
-window.setup()
+# Create window and game view
+window = arcade.Window(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, "Game Test", resizable=True)
+game_view = GameView(game_state, start_in_3d=False)
+window.show_view(game_view)
 
-print(f"Testing 2D mode (camera_mode: {window.camera_mode})")
+print(f"Testing 2D mode (camera_mode: {game_view.camera_mode})")
 
 frame_count = [0]
-original_draw = window.on_draw
+original_draw = game_view.on_draw
 
 def new_draw():
     frame_count[0] += 1
@@ -85,26 +86,25 @@ def new_draw():
         print("Screenshot saved to /tmp/game_2d_test.png")
         arcade.exit()
 
-window.on_draw = new_draw
+game_view.on_draw = new_draw
 arcade.run()
 ```
 
 ### Test 3D Rendering
 
-Same structure but switches to 3D mode:
+Same structure but starts in 3D mode:
 
 ```python
 # ... (same setup as above) ...
 
-window = GameWindow(game_state, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT)
-window.setup()
-
-# Switch to 3D mode
-window.camera_mode = "3D"
+# Create window and game view in 3D mode
+window = arcade.Window(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, "Game Test", resizable=True)
+game_view = GameView(game_state, start_in_3d=True)
+window.show_view(game_view)
 
 print(f"Testing 3D mode")
-print(f"Camera position: {window.camera_3d.position}")
-print(f"Camera pitch: {window.camera_3d.pitch}, yaw: {window.camera_3d.yaw}")
+print(f"Camera position: {game_view.camera_3d.position}")
+print(f"Camera pitch: {game_view.camera_3d.pitch}, yaw: {game_view.camera_3d.yaw}")
 
 # ... (same screenshot code as above, save to /tmp/game_3d_test.png) ...
 ```
@@ -119,12 +119,12 @@ from shared.constants import CELL_SIZE
 
 # ... (setup code) ...
 
-window.camera_mode = "3D"
+game_view.camera_mode = "3D"
 
 # Position camera at center of board, high up, looking down
-window.camera_3d.position = np.array([12 * CELL_SIZE, 12 * CELL_SIZE, 100.0], dtype=np.float32)
-window.camera_3d.pitch = -60.0  # Looking down
-window.camera_3d.yaw = 45.0     # Rotated for better view
+game_view.camera_3d.position = np.array([12 * CELL_SIZE, 12 * CELL_SIZE, 100.0], dtype=np.float32)
+game_view.camera_3d.pitch = -60.0  # Looking down
+game_view.camera_3d.yaw = 45.0     # Rotated for better view
 
 # ... (take screenshot) ...
 ```

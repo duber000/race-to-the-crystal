@@ -15,7 +15,7 @@ from shared.constants import (
     DEFAULT_WINDOW_WIDTH,
     DEFAULT_WINDOW_HEIGHT,
 )
-from client.game_window import GameWindow
+from client.game_window import GameView
 
 
 def setup_game_state(num_players: int = 2) -> GameState:
@@ -115,14 +115,17 @@ def main():
     # Set up game state
     game_state = setup_game_state(num_players)
 
-    # Create and run Arcade window
-    window = GameWindow(game_state, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT)
-    window.setup()
+    # Create Arcade window
+    window = arcade.Window(
+        DEFAULT_WINDOW_WIDTH,
+        DEFAULT_WINDOW_HEIGHT,
+        "Race to the Crystal - Local Hot-Seat Game",
+        resizable=True
+    )
 
-    # Start in 3D mode if requested
-    if start_in_3d:
-        window.camera_mode = "3D"
-        print("3D mode enabled")
+    # Create and show game view
+    game_view = GameView(game_state, start_in_3d=start_in_3d)
+    window.show_view(game_view)
 
     # Arcade handles the game loop
     arcade.run()
