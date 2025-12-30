@@ -7,7 +7,7 @@ import arcade
 import logging
 from typing import Optional, Callable, Dict
 
-from client.game_window import GameWindow
+from client.game_window import GameView
 from client.network_client import NetworkClient
 from client.ui.async_arcade import schedule_async
 from game.game_state import GameState
@@ -48,8 +48,8 @@ class NetworkGameView(arcade.View):
         else:
             self.game_state = GameState()
 
-        # Game window (will be created in setup)
-        self.game_window: Optional[GameWindow] = None
+        # Game view (will be created in setup)
+        self.game_view: Optional[GameView] = None
 
         # Network state
         self.waiting_for_server = False
@@ -81,37 +81,30 @@ class NetworkGameView(arcade.View):
         """Called when this view is shown."""
         logger.info("Network game view shown")
 
-        # Close menu window and create game window
-        menu_window = self.window
-        menu_window.close()
+        # Create game view (using new View architecture)
+        self.game_view = GameView(self.game_state, start_in_3d=False)
 
-        # Create game window
-        self.game_window = GameWindow(
-            self.game_state,
-            menu_window.width,
-            menu_window.height,
-            "Race to the Crystal - Network Game"
-        )
-        self.game_window.setup()
+        # Show the game view within the same window
+        self.window.show_view(self.game_view)
 
-        # Override game window's action execution
+        # Override game view's action execution
         # Intercept actions and send to server instead
-        self._hook_game_window()
+        self._hook_game_view()
 
-        logger.info("Game window created for network play")
+        logger.info("Game view created for network play")
 
-    def _hook_game_window(self):
+    def _hook_game_view(self):
         """
-        Hook into GameWindow to intercept actions.
+        Hook into GameView to intercept actions.
 
         Replaces local action execution with network sending.
         """
-        if not self.game_window:
+        if not self.game_view:
             return
 
         # Store original methods
-        original_on_mouse_press = self.game_window.on_mouse_press
-        original_on_key_press = self.game_window.on_key_press
+        original_on_mouse_press = self.game_view.on_mouse_press
+        original_on_key_press = self.game_view.on_key_press
 
         # Create wrapped versions that send to server
         def network_on_mouse_press(x, y, button, modifiers):
@@ -137,7 +130,7 @@ class NetworkGameView(arcade.View):
             original_on_key_press(key, modifiers)
 
         # Replace methods
-        self.game_window.on_key_press = network_on_key_press
+        self.game_view.on_key_press = network_on_key_press
 
         # Hook game state to intercept actual action execution
         # Store original methods
@@ -277,9 +270,9 @@ class NetworkGameView(arcade.View):
 
         self.waiting_for_server = False
 
-        # Refresh game window display
-        if self.game_window:
-            self.game_window.setup()
+        # Refresh game view display
+        if self.game_view:
+            self.game_view.setup()
 
     async def _handle_state_update(self, message):
         """Handle STATE_UPDATE message with delta changes."""
@@ -287,8 +280,8 @@ class NetworkGameView(arcade.View):
         self.waiting_for_server = False
 
         # Refresh display
-        if self.game_window:
-            self.game_window.setup()
+        if self.game_view:
+            self.game_view.setup()
 
     async def _handle_invalid_action(self, message):
         """Handle INVALID_ACTION message when action was rejected."""

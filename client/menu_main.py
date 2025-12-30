@@ -92,37 +92,13 @@ class MenuGameWindow(AsyncWindow):
         # Set up game state
         game_state = setup_game_state(num_players)
 
-        # Create game window view
-        # Note: GameWindow is currently an arcade.Window, not a View
-        # For now, we'll create a new window and switch to it
-        # TODO: Refactor GameWindow to be a View instead of Window
+        # Create game view (now using View architecture)
+        from client.game_window import GameView
+        game_view = GameView(game_state, start_in_3d=start_in_3d)
 
-        # Create and run game window
-        game_window = GameWindow(
-            game_state,
-            self.width,
-            self.height,
-            "Race to the Crystal - Local Game"
-        )
-        game_window.setup()
-
-        # Set camera mode
-        if start_in_3d:
-            game_window.camera_mode = "3D"
-
-        # Transition to the game window using a timer
-        # This avoids issues with closing the window during event handling
-        import arcade
-        arcade.schedule_once(lambda dt: self._complete_window_transition(game_window), 0.0)
-        logger.info("Local game window created")
-
-    def _complete_window_transition(self, game_window):
-        """Complete the window transition after the current event loop iteration."""
-        logger.info("Completing window transition")
-        # Close the menu window
-        self.close()
-        # The game window should now be active and arcade.run() will use it
-        # Note: arcade.run() is called from the main() function and continues with the game window
+        # Show the game view (no need to close window or create new one!)
+        self.show_view(game_view)
+        logger.info("Local game view shown")
 
     def _show_host_setup(self):
         """Show the host network game setup screen."""

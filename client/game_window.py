@@ -33,30 +33,27 @@ from client.ui.arcade_ui import UIManager
 from client.music_generator import generate_techno_music
 
 
-class GameWindow(arcade.Window):
+class GameView(arcade.View):
     """
-    Main Arcade window for the game.
+    Main game view for Race to the Crystal.
 
-    Handles rendering, input, and game loop using Arcade's event-driven architecture.
+    Handles rendering, input, and game loop using Arcade's View architecture.
+    This is designed to be shown within an existing window.
     """
 
     def __init__(
         self,
         game_state: GameState,
-        width: int = DEFAULT_WINDOW_WIDTH,
-        height: int = DEFAULT_WINDOW_HEIGHT,
-        title: str = "Race to the Crystal",
+        start_in_3d: bool = False,
     ):
         """
-        Initialize the game window.
+        Initialize the game view.
 
         Args:
             game_state: The game state to render
-            width: Window width in pixels
-            height: Window height in pixels
-            title: Window title
+            start_in_3d: Whether to start in 3D mode
         """
-        super().__init__(width, height, title, resizable=True)
+        super().__init__()
 
         # Game state
         self.game_state = game_state
@@ -117,16 +114,17 @@ class GameWindow(arcade.Window):
         )
 
         # 3D Rendering infrastructure
-        self.camera_mode = "2D"  # Current view mode: "2D" or "3D"
-        self.camera_3d = FirstPersonCamera3D(width, height)
+        self.camera_mode = "3D" if start_in_3d else "2D"  # Current view mode: "2D" or "3D"
+        # camera_3d will be initialized in on_show_view() when window dimensions are available
+        self.camera_3d = None
         self.board_3d = None  # Will be initialized in setup()
         self.tokens_3d = []  # List of Token3D instances
         self.shader_3d = None  # Shared shader for 3D rendering
         self.controlled_token_id: Optional[int] = None  # Token camera follows in 3D
         self.token_rotation = 0.0  # Camera rotation around token
 
-        # UI Manager for panels and buttons
-        self.ui_manager = UIManager(width, height)
+        # UI Manager for panels and buttons (will be initialized in on_show_view)
+        self.ui_manager = None
 
         # Background music
         self.background_music = None
@@ -134,10 +132,27 @@ class GameWindow(arcade.Window):
         self.music_volume = 0.3
         self.music_playing = True
 
+        # Background color will be set in on_show_view()
+
+    def on_show_view(self):
+        """Called when this view is shown."""
         # Set background color
         arcade.set_background_color(BACKGROUND_COLOR)
 
-        print(f"Arcade window initialized: {width}x{height}")
+        # Initialize components that need window dimensions
+        self.camera_3d = FirstPersonCamera3D(self.window.width, self.window.height)
+        self.ui_manager = UIManager(self.window.width, self.window.height)
+
+        # Set up the game
+        self.setup()
+
+        print(f"Game view initialized: {self.window.width}x{self.window.height}")
+
+    def on_hide_view(self):
+        """Called when this view is hidden."""
+        # Stop music when view is hidden
+        if self.music_player and self.music_playing:
+            self.music_player.pause()
 
     def _load_background_music(self):
         """Load and play background techno music."""
@@ -245,8 +260,8 @@ class GameWindow(arcade.Window):
             
             # Create 3D board with generators and crystal position
             self.board_3d = Board3D(
-                self.game_state.board, 
-                self.ctx,
+                self.game_state.board,
+                self.window.ctx,
                 generators=self.game_state.generators,
                 crystal_pos=crystal_pos
             )
@@ -273,7 +288,7 @@ class GameWindow(arcade.Window):
                 token = self.game_state.get_token(token_id)
                 if token and token.is_alive:
                     try:
-                        token_3d = Token3D(token, player_color, self.ctx)
+                        token_3d = Token3D(token, player_color, self.window.ctx)
                         self.tokens_3d.append(token_3d)
                     except Exception as e:
                         print(f"ERROR: Failed to create 3D token {token_id}: {e}")
@@ -294,9 +309,9 @@ class GameWindow(arcade.Window):
         # HUD background
         arcade.draw_lrbt_rectangle_filled(
             0,
-            self.width,
-            self.height - 80,
-            self.height,
+            self.window.width,
+            self.window.height - 80,
+            self.window.height,
             (20, 20, 30, 200),  # Semi-transparent dark background
         )
 
@@ -304,17 +319,17 @@ class GameWindow(arcade.Window):
         player_color = PLAYER_COLORS[current_player.color.value]
         self.player_text.text = f"{current_player.name}'s Turn"
         self.player_text.color = player_color
-        self.player_text.y = self.height - 30
+        self.player_text.y = self.window.height - 30
         self.player_text.draw()
 
         # Turn number
         self.turn_text.text = f"Turn {self.game_state.turn_number}"
-        self.turn_text.y = self.height - 60
+        self.turn_text.y = self.window.height - 60
         self.turn_text.draw()
 
         # Turn phase
         self.phase_text.text = f"Phase: {self.turn_phase.name}"
-        self.phase_text.y = self.height - 60
+        self.phase_text.y = self.window.height - 60
         self.phase_text.draw()
 
         # Instructions
@@ -333,8 +348,8 @@ class GameWindow(arcade.Window):
             instruction = "Press SPACE to end turn"
 
         self.instruction_text.text = instruction
-        self.instruction_text.x = self.width - 700
-        self.instruction_text.y = self.height - 60
+        self.instruction_text.x = self.window.width - 700
+        self.instruction_text.y = self.window.height - 60
         self.instruction_text.draw()
 
     def _draw_corner_menu(self):
@@ -408,8 +423,8 @@ class GameWindow(arcade.Window):
         # Draw menu in center of screen as HUD
         menu_width = 400
         menu_height = 200
-        center_x = self.width / 2
-        center_y = self.height / 2
+        center_x = self.window.width / 2
+        center_y = self.window.height / 2
 
         # Semi-transparent background (using lrbt API for Arcade 3.0+)
         left = center_x - menu_width / 2
@@ -618,8 +633,8 @@ class GameWindow(arcade.Window):
         Called automatically by Arcade on each frame.
         """
         # Ensure proper OpenGL state for 2D rendering
-        self.ctx.disable(self.ctx.DEPTH_TEST)
-        self.ctx.enable(self.ctx.BLEND)
+        self.window.ctx.disable(self.window.ctx.DEPTH_TEST)
+        self.window.ctx.enable(self.window.ctx.BLEND)
 
         # Clear the window (color buffer and depth buffer)
         self.clear()
@@ -633,9 +648,9 @@ class GameWindow(arcade.Window):
                 self.token_sprites.draw()
         else:
             # 3D first-person rendering - enable depth test and blending
-            self.ctx.enable(self.ctx.DEPTH_TEST)
-            self.ctx.enable(self.ctx.BLEND)
-            self.ctx.disable(self.ctx.CULL_FACE)
+            self.window.ctx.enable(self.window.ctx.DEPTH_TEST)
+            self.window.ctx.enable(self.window.ctx.BLEND)
+            self.window.ctx.disable(self.window.ctx.CULL_FACE)
 
             if self.board_3d and self.shader_3d:
                 # Update camera to follow controlled token
@@ -653,7 +668,7 @@ class GameWindow(arcade.Window):
                         token_3d.draw(self.camera_3d, self.shader_3d)
 
             # Reset state for UI
-            self.ctx.disable(self.ctx.DEPTH_TEST)
+            self.window.ctx.disable(self.window.ctx.DEPTH_TEST)
 
         # Draw UI (no camera transform) - always in 2D
         with self.ui_camera.activate():
@@ -697,8 +712,6 @@ class GameWindow(arcade.Window):
             width: New window width
             height: New window height
         """
-        super().on_resize(width, height)
-
         # Check if initialization is complete (ui_manager exists)
         if hasattr(self, 'ui_manager') and self.ui_manager:
             # Update UI manager layout
@@ -708,7 +721,11 @@ class GameWindow(arcade.Window):
             # Update camera setup to refit board
             self._setup_camera_view()
 
-            print(f"Window resized to {width}x{height}")
+            # Update 3D camera aspect ratio if it exists
+            if hasattr(self, 'camera_3d') and self.camera_3d:
+                self.camera_3d = FirstPersonCamera3D(width, height)
+
+            print(f"Game view resized to {width}x{height}")
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int):
         """
@@ -739,15 +756,15 @@ class GameWindow(arcade.Window):
             
             # Store current mouse position for next frame
             self.last_mouse_position = (x, y)
-            
+
             # Hide cursor during mouse-look for better immersion
-            self.set_mouse_visible(False)
-            
+            self.window.set_mouse_visible(False)
+
             return  # Skip UI hover effects during mouse-look
         else:
             # Normal UI hover effects
             self.ui_manager.handle_mouse_motion(x, y)
-            self.set_mouse_visible(True)
+            self.window.set_mouse_visible(True)
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
         """
@@ -767,7 +784,7 @@ class GameWindow(arcade.Window):
             # Activate mouse-look in 3D mode
             self.mouse_look_active = True
             self.last_mouse_position = (x, y)
-            self.set_mouse_visible(False)
+            self.window.set_mouse_visible(False)
             print("Mouse-look activated")
             return
         
@@ -804,7 +821,7 @@ class GameWindow(arcade.Window):
             else:
                 # 3D ray casting
                 ray_origin, ray_direction = self.camera_3d.screen_to_ray(
-                    x, y, self.width, self.height
+                    x, y, self.window.width, self.window.height
                 )
 
                 # Intersect with board plane (z=0)
@@ -837,7 +854,7 @@ class GameWindow(arcade.Window):
         if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_mode == "3D":
             # Deactivate mouse-look in 3D mode
             self.mouse_look_active = False
-            self.set_mouse_visible(True)
+            self.window.set_mouse_visible(True)
             print("Mouse-look deactivated")
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
@@ -946,7 +963,7 @@ class GameWindow(arcade.Window):
 
         # Quit
         elif symbol == arcade.key.Q and (modifiers & arcade.key.MOD_CTRL):
-            arcade.close_window()
+            self.window.close()
 
     def _pan_camera(self, dx: float, dy: float):
         """
@@ -971,10 +988,10 @@ class GameWindow(arcade.Window):
 
         # Account for HUD at top (80 pixels)
         HUD_HEIGHT = 80
-        playable_height = self.height - HUD_HEIGHT
+        playable_height = self.window.height - HUD_HEIGHT
 
         # Calculate zoom to fit board in playable area
-        zoom_x = self.width / board_pixel_width
+        zoom_x = self.window.width / board_pixel_width
         zoom_y = playable_height / board_pixel_height
         optimal_zoom = min(zoom_x, zoom_y) * 0.95  # 95% to add small margin
 
@@ -1357,7 +1374,7 @@ class GameWindow(arcade.Window):
 
                         # Create 3D token
                         try:
-                            token_3d = Token3D(deployed_token, player_color, self.ctx)
+                            token_3d = Token3D(deployed_token, player_color, self.window.ctx)
                             self.tokens_3d.append(token_3d)
                         except Exception as e:
                             print(f"Warning: Failed to create 3D token: {e}")
@@ -1525,3 +1542,49 @@ class GameWindow(arcade.Window):
 
         # Update UI to reflect new turn
         self.ui_manager.rebuild_visuals(self.game_state)
+
+
+class GameWindow(arcade.Window):
+    """
+    Backward compatibility wrapper for standalone game window.
+
+    This creates a window and shows a GameView inside it.
+    For new code, prefer using GameView directly with an existing window.
+    """
+
+    def __init__(
+        self,
+        game_state: GameState,
+        width: int = DEFAULT_WINDOW_WIDTH,
+        height: int = DEFAULT_WINDOW_HEIGHT,
+        title: str = "Race to the Crystal",
+    ):
+        """
+        Initialize standalone game window.
+
+        Args:
+            game_state: The game state to render
+            width: Window width in pixels
+            height: Window height in pixels
+            title: Window title
+        """
+        super().__init__(width, height, title, resizable=True)
+
+        # Create and show the game view
+        self.game_view = GameView(game_state, start_in_3d=False)
+        self.show_view(self.game_view)
+
+    def setup(self):
+        """Set up the game (called after window creation)."""
+        # The game view sets itself up in on_show_view
+        pass
+
+    @property
+    def camera_mode(self):
+        """Get the camera mode from the game view."""
+        return self.game_view.camera_mode
+
+    @camera_mode.setter
+    def camera_mode(self, value):
+        """Set the camera mode on the game view."""
+        self.game_view.camera_mode = value
