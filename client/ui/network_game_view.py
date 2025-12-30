@@ -4,6 +4,7 @@ Integrates GameWindow with NetworkClient for server-authoritative gameplay.
 """
 
 import arcade
+import arcade.gui
 import logging
 from typing import Optional, Callable, Dict
 
@@ -68,12 +69,8 @@ class NetworkGameView(arcade.View):
 
     def setup(self):
         """Set up the game view."""
-        # Create embedded game window
-        # Note: GameWindow is an arcade.Window, so we can't directly embed it in a View
-        # Instead, we'll create it but manage it ourselves
-
-        # For now, we'll use a workaround: close this window and open GameWindow
-        # TODO: Refactor GameWindow to be a View instead of Window
+        # GameView is now a proper View that can be embedded directly
+        # It will be created in on_show_view()
 
         logger.info("Network game view setup complete")
 
@@ -259,20 +256,22 @@ class NetworkGameView(arcade.View):
             return
 
         # Deserialize game state from server
-        # TODO: Implement proper deserialization
-        # For now, we'll update the existing state
         logger.info("Received full game state from server")
 
-        # The server sends the game state as a dictionary
-        # We need to update our local game_state to match
-        # This is complex, so for now we'll log it
-        logger.debug(f"Game state keys: {game_state_data.keys()}")
+        try:
+            # Use GameState.from_dict() to properly deserialize
+            self.game_state = GameState.from_dict(game_state_data)
+            logger.debug(f"Game state deserialized successfully")
+
+            # Update game view to use new state
+            if self.game_view:
+                self.game_view.game_state = self.game_state
+                self.game_view.setup()
+
+        except Exception as e:
+            logger.error(f"Failed to deserialize game state: {e}", exc_info=True)
 
         self.waiting_for_server = False
-
-        # Refresh game view display
-        if self.game_view:
-            self.game_view.setup()
 
     async def _handle_state_update(self, message):
         """Handle STATE_UPDATE message with delta changes."""
@@ -292,7 +291,23 @@ class NetworkGameView(arcade.View):
         logger.warning(f"Action rejected by server: {action_type} - {reason}")
         self.waiting_for_server = False
 
-        # TODO: Show error message to player
+        # Show error message to player
+        error_message = f"Invalid Action!\n\n{action_type} was rejected:\n{reason}"
+
+        # Create a simple error dialog
+        message_box = arcade.gui.UIMessageBox(
+            width=400,
+            height=200,
+            message_text=error_message,
+            buttons=["OK"]
+        )
+
+        # Add to current view's UI manager if available
+        if self.game_view and hasattr(self.game_view, 'manager'):
+            # Game view doesn't have a UI manager, so we'll need to create one
+            # For now, just log it prominently
+            logger.error(f"ACTION REJECTED: {action_type} - {reason}")
+            # TODO: Add UI manager to GameView for displaying error dialogs
 
     async def _handle_game_won(self, message):
         """Handle GAME_WON message."""

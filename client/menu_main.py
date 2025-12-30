@@ -7,6 +7,7 @@ for choosing between local and network games.
 
 import sys
 import arcade
+import arcade.gui
 import asyncio
 import logging
 from typing import Optional
@@ -78,6 +79,28 @@ class MenuGameWindow(AsyncWindow):
         """Set up the initial view (main menu)."""
         self.show_view(self.main_menu)
         logger.info("Showing main menu")
+
+    def _show_error_dialog(self, title: str, message: str):
+        """
+        Show an error dialog to the user.
+
+        Args:
+            title: Dialog title
+            message: Error message to display
+        """
+        # Create a simple error dialog using arcade.gui
+        message_box = arcade.gui.UIMessageBox(
+            width=400,
+            height=200,
+            message_text=message,
+            buttons=["OK"]
+        )
+
+        # Add the message box to the current view's UI manager
+        if hasattr(self.current_view, 'manager'):
+            self.current_view.manager.add(message_box)
+
+        logger.warning(f"Error dialog: {title} - {message}")
 
     def _start_local_game(self, num_players: int, start_in_3d: bool):
         """
@@ -248,7 +271,10 @@ class MenuGameWindow(AsyncWindow):
 
             if not success:
                 logger.error("Failed to connect to server")
-                # TODO: Show error dialog
+                self._show_error_dialog(
+                    "Connection Failed",
+                    f"Could not connect to server at {host}:{port}\n\nPlease check the server address and try again."
+                )
                 self.show_view(self.main_menu)
                 return
 
@@ -340,8 +366,10 @@ class MenuGameWindow(AsyncWindow):
         """Handle disconnection from network game."""
         logger.warning("Disconnected from network game")
 
-        # TODO: Show reconnection dialog or error message
-        # For now, return to main menu
+        self._show_error_dialog(
+            "Connection Lost",
+            "You have been disconnected from the network game.\n\nReturning to main menu."
+        )
         self.show_view(self.main_menu)
 
 

@@ -412,7 +412,21 @@ class LobbyView(arcade.View):
 
         if not all_ready:
             logger.warning("Not all players are ready")
-            # TODO: Show error message
+            # Show error message
+            not_ready_players = [
+                p.get("name", "Unknown")
+                for p in self.players.values()
+                if not p.get("is_ready", False)
+            ]
+            message = f"Cannot start game!\n\nWaiting for players to be ready:\n{', '.join(not_ready_players)}"
+
+            message_box = arcade.gui.UIMessageBox(
+                width=400,
+                height=200,
+                message_text=message,
+                buttons=["OK"]
+            )
+            self.manager.add(message_box)
             return
 
         # Send start game message
