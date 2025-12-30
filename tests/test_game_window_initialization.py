@@ -1,5 +1,7 @@
 """
 Tests for GameView initialization to prevent AttributeError issues.
+
+Note: These tests require an active display/window and are skipped in headless environments.
 """
 import pytest
 import arcade
@@ -8,10 +10,37 @@ from game.game_state import GameState
 from client.game_window import GameView
 
 
+# Skip these tests if no display is available (headless environment)
+def _can_create_window():
+    """Check if we can create an arcade window."""
+    try:
+        # Try to create a minimal window
+        window = arcade.Window(100, 100, "test", visible=False)
+        window.close()
+        return True
+    except Exception:
+        return False
+
+
+requires_display = pytest.mark.skipif(
+    not _can_create_window(),
+    reason="Requires display/window (skipped in headless environment)"
+)
+
+
+@pytest.fixture
+def arcade_window():
+    """Create an arcade window for testing GameView."""
+    window = arcade.Window(800, 600, "Test Window", visible=False)
+    yield window
+    window.close()
+
+
 class TestGameViewInitialization:
     """Test GameView initialization and attribute safety."""
 
-    def test_game_view_initialization(self):
+    @requires_display
+    def test_game_view_initialization(self, arcade_window):
         """Test that GameView can be initialized without errors."""
         # Create a properly initialized game state
         game_state = GameState.create_game(2)
@@ -34,7 +63,8 @@ class TestGameViewInitialization:
         except AttributeError as e:
             pytest.fail(f"GameView initialization failed with AttributeError: {e}")
 
-    def test_event_handlers_safe_before_initialization(self):
+    @requires_display
+    def test_event_handlers_safe_before_initialization(self, arcade_window):
         """Test that event handlers can handle calls before full initialization."""
         # Create a properly initialized game state
         game_state = GameState.create_game(2)
