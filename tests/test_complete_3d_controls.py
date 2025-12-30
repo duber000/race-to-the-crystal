@@ -53,11 +53,15 @@ def test_complete_3d_navigation():
     sensitivity = 0.2
     yaw_delta = -dx * sensitivity
     pitch_delta = -dy * sensitivity
-    
+
+    # Calculate expected values BEFORE rotation
+    initial_yaw = camera.yaw
+    initial_pitch = camera.pitch
+    expected_yaw = (initial_yaw + yaw_delta) % 360.0
+    expected_pitch = initial_pitch + pitch_delta
+
     camera.rotate(yaw_delta=yaw_delta, pitch_delta=pitch_delta)
-    expected_yaw = (camera.yaw + yaw_delta) % 360.0
-    expected_pitch = camera.pitch + pitch_delta
-    
+
     assert abs(camera.yaw - expected_yaw) < 0.01, f"Expected yaw {expected_yaw}, got {camera.yaw}"
     assert abs(camera.pitch - expected_pitch) < 0.01, f"Expected pitch {expected_pitch}, got {camera.pitch}"
     

@@ -156,51 +156,66 @@ class Board3D:
         Generate geometry for flowing lines from generators to crystal.
         These lines are animated and only drawn for active (non-disabled) generators.
         """
+        # Release old buffers if they exist to prevent memory leaks and buffer copy warnings
+        if self.gen_crystal_lines_vbo:
+            self.gen_crystal_lines_vbo.release()
+            self.gen_crystal_lines_vbo = None
+        if self.gen_crystal_lines_vao:
+            self.gen_crystal_lines_vao.release()
+            self.gen_crystal_lines_vao = None
+
         if not self.generators or not self.crystal_pos:
             return
-        
+
         vertices = []
-        
+
         # Get crystal position in world coordinates
         crystal_center_x = self.crystal_pos[0] * CELL_SIZE + CELL_SIZE / 2
         crystal_center_y = self.crystal_pos[1] * CELL_SIZE + CELL_SIZE / 2
         crystal_height = self.wall_height * 0.8
-        
+
         for gen in self.generators:
             # Skip disabled generators
             if gen.is_disabled:
                 continue
-            
+
             # Get generator position
             gen_x = gen.position[0] * CELL_SIZE + CELL_SIZE / 2
             gen_y = gen.position[1] * CELL_SIZE + CELL_SIZE / 2
             gen_height = self.wall_height * 0.6
-            
+
             # Create line segments from generator to crystal
             segments = 20
             for i in range(segments):
                 t1 = i / segments
                 t2 = (i + 1) / segments
-                
+
                 # Linear interpolation
                 x1 = gen_x + (crystal_center_x - gen_x) * t1
                 y1 = gen_y + (crystal_center_y - gen_y) * t1
                 z1 = gen_height + (crystal_height - gen_height) * t1
-                
+
                 x2 = gen_x + (crystal_center_x - gen_x) * t2
                 y2 = gen_y + (crystal_center_y - gen_y) * t2
                 z2 = gen_height + (crystal_height - gen_height) * t2
-                
+
                 # Add vertices for line segment
                 vertices.extend([x1, y1, z1])
                 vertices.extend([x2, y2, z2])
-        
+
         if len(vertices) > 0:
             vertices_array = np.array(vertices, dtype=np.float32)
             self.gen_crystal_lines_vbo = self.ctx.buffer(data=vertices_array.tobytes())
             self.gen_crystal_lines_vao = self.ctx.geometry(
                 [BufferDescription(self.gen_crystal_lines_vbo, "3f", ["in_position"])]
             )
+
+    def update_generator_lines(self):
+        """
+        Update generator-to-crystal connection lines.
+        Call this when generator status changes (e.g., when disabled).
+        """
+        self._create_generator_crystal_lines_geometry()
 
     def _create_special_cells_geometry(self):
         """
@@ -442,3 +457,33 @@ class Board3D:
             )
             self.shader_program["glow_intensity"] = 2.2
             self.gen_crystal_lines_vao.render(self.shader_program, mode=self.ctx.LINES)
+
+    def cleanup(self):
+        """Release all OpenGL resources to prevent memory leaks."""
+        # Release grid buffers
+        if self.grid_vbo:
+            self.grid_vbo.release()
+        if self.grid_vao:
+            self.grid_vao.release()
+
+        # Release special cell buffers
+        if self.generators_vbo:
+            self.generators_vbo.release()
+        if self.generators_vao:
+            self.generators_vao.release()
+
+        if self.crystal_vbo:
+            self.crystal_vbo.release()
+        if self.crystal_vao:
+            self.crystal_vao.release()
+
+        if self.mystery_vbo:
+            self.mystery_vbo.release()
+        if self.mystery_vao:
+            self.mystery_vao.release()
+
+        # Release generator-crystal line buffers
+        if self.gen_crystal_lines_vbo:
+            self.gen_crystal_lines_vbo.release()
+        if self.gen_crystal_lines_vao:
+            self.gen_crystal_lines_vao.release()

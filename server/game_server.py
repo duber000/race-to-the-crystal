@@ -303,7 +303,24 @@ class GameServer:
             f"Player {player_id[:8]} successfully reconnected to game {saved_game_id[:8] if saved_game_id else 'N/A'}"
         )
 
-        # TODO: Notify other players that player reconnected
+        # Notify other players that player reconnected
+        if game_session:
+            reconnect_msg = NetworkMessage(
+                type=MessageType.PLAYER_RECONNECTED,
+                timestamp=time.time(),
+                data={"player_id": player_id, "player_name": player_name}
+            )
+            await self._broadcast_to_game(saved_game_id, reconnect_msg)
+        elif saved_game_id:
+            # Still in lobby
+            lobby = self.lobby_manager.get_lobby(saved_game_id)
+            if lobby:
+                reconnect_msg = NetworkMessage(
+                    type=MessageType.PLAYER_RECONNECTED,
+                    timestamp=time.time(),
+                    data={"player_id": player_id, "player_name": player_name}
+                )
+                await self._broadcast_to_lobby(saved_game_id, reconnect_msg)
 
         return player_id
 
@@ -332,13 +349,55 @@ class GameServer:
                 "game_session": game_session,
             }
             logger.info(f"Player {player_id[:8]} marked for reconnection (timeout in {self.reconnect_timeout}s)")
-            # TODO: Notify other players that player disconnected but can reconnect
+
+            # Notify other players that player disconnected but can reconnect
+            if lobby:
+                player_name = lobby.players.get(player_id, {}).get("name", "Unknown")
+                disconnect_msg = NetworkMessage(
+                    type=MessageType.PLAYER_DISCONNECTED,
+                    timestamp=time.time(),
+                    data={"player_id": player_id, "player_name": player_name, "can_reconnect": True}
+                )
+
+                if game_session:
+                    # In active game
+                    await self._broadcast_to_game(lobby.game_id, disconnect_msg)
+                else:
+                    # In lobby
+                    await self._broadcast_to_lobby(lobby.game_id, disconnect_msg)
         else:
             # Explicit disconnect or not in game - remove completely
+            # Get player info before removing
+            lobby = self.lobby_manager.get_lobby_by_player(player_id)
+            player_name = "Unknown"
+            game_id = None
+
+            if lobby:
+                player_name = lobby.players.get(player_id, {}).get("name", "Unknown")
+                game_id = lobby.game_id
+                in_active_game = lobby.status == GameStatus.IN_PROGRESS
+
+            # Remove from lobby/game
             self.lobby_manager.remove_player_from_all(player_id)
             self.game_coordinator.remove_player(player_id)
             logger.info(f"Player {player_id[:8]} removed from all games")
-            # TODO: Notify other players in lobby/game
+
+            # Notify other players in lobby/game
+            if game_id:
+                disconnect_msg = NetworkMessage(
+                    type=MessageType.PLAYER_LEFT,
+                    timestamp=time.time(),
+                    data={"player_id": player_id, "player_name": player_name}
+                )
+
+                if lobby and lobby.status == GameStatus.IN_PROGRESS:
+                    # Was in active game
+                    game_session = self.game_coordinator.get_game(game_id)
+                    if game_session:
+                        await self._broadcast_to_game(game_id, disconnect_msg)
+                else:
+                    # Was in lobby
+                    await self._broadcast_to_lobby(game_id, disconnect_msg)
 
     async def _handle_message(
         self,
