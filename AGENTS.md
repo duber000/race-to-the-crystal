@@ -1,314 +1,330 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This document provides guidance for AI coding agents and developers working on the Race to the Crystal codebase. It covers coding standards, architectural patterns, and best practices.
 
-## Project Overview
+## Codebase Overview
 
-Race to the Crystal is a Python-based multiplayer strategy game with GPU-accelerated vector graphics. Players compete on a 24x24 grid to capture a central crystal while managing tokens, generators, and strategic resources. The game features both 2D top-down and 3D first-person views using Arcade/OpenGL rendering.
+Race to the Crystal is a Python-based multiplayer strategy game with a clean separation between game logic and rendering. The codebase follows these core principles:
 
-## Development Commands
+- **Separation of Concerns**: Game logic (`game/`) is completely independent from rendering (`client/`)
+- **Test-Driven Development**: 199+ unit tests with 100% pass rate
+- **Type Safety**: Strong use of enums and constants
+- **AI-First Design**: Built to support AI players and headless gameplay
 
-### Running the Game
-```bash
-# Install dependencies
-uv sync
+## Coding Standards
 
-# Run game (2D mode)
-uv run race-to-the-crystal
+### Python Style
 
-# Run game in 3D mode
-uv run race-to-the-crystal --3d
+- **Python 3.14+** required
+- **Type hints** encouraged for new code
+- **Docstrings** for all public functions and classes
+- **PEP 8** compliance (use `make lint` to check)
+- **f-strings** preferred over `.format()` or `%` formatting
+- **List/dict comprehensions** preferred over loops where readable
 
-# Run with custom player count
-uv run race-to-the-crystal 2
-uv run race-to-the-crystal --3d 2
+### File Organization
+
+```python
+# Standard imports first
+import os
+import sys
+
+# Third-party imports
+import arcade
+import numpy as np
+
+# Local imports (relative)
+from . import constants
+from ..shared import enums
 ```
 
-**Game Controls:**
+### Naming Conventions
 
-**2D Mode:**
-- **Arrow Keys / WASD**: Pan camera view
-- **+/-** or **Mouse Scroll**: Zoom in/out
-- **Mouse Click**: Select tokens, move, attack, deploy
+- **Classes**: `PascalCase` (e.g., `GameState`, `Token`, `AIObserver`)
+- **Functions/methods**: `snake_case` (e.g., `validate_action`, `execute_move`)
+- **Variables**: `snake_case` (e.g., `current_player_id`, `token_position`)
+- **Constants**: `UPPER_SNAKE_CASE` (e.g., `BOARD_SIZE`, `MAX_TOKENS`)
+- **Private members**: `_prefix` (e.g., `_internal_state`, `_validate_move`)
 
-**3D Mode:**
-- **Right Mouse Button + Move**: Mouse-look (free camera rotation)
-- **Q/E**: Rotate camera left/right
-- **TAB**: Cycle through your tokens
-- **Arrow Keys / WASD**: Pan camera position
-- **+/-** or **Mouse Scroll**: Adjust field of view
-- **Mouse Click**: Select tokens, move, attack, deploy
+### Error Handling
 
-**Common (Both Modes):**
-- **V**: Toggle between 2D and 3D view modes
-- **Space/Enter**: End turn
-- **Escape**: Cancel action
-- **Ctrl+Q**: Quit game
+- Use **custom exceptions** for domain-specific errors
+- Include **detailed error messages** for debugging
+- Validate inputs early with **guard clauses**
 
-**Token Deployment:**
-1. Click your starting corner position (corner cell with tokens)
-2. Select a token type from the menu (10hp, 8hp, 6hp, or 4hp)
-3. Click any empty cell in your corner area (9 cells total) to deploy
-4. Press ESC to cancel at any time
-
-**Note:** Players start with 3 tokens already deployed in their corner, ready to move immediately!
-
-**Note:** The camera automatically zooms to fit the entire 24x24 board in view at startup. Use +/- to zoom further if needed.
-
-### Testing
-```bash
-# Run all tests
-make test
-
-# Run specific test file
-make test-specific FILE=tests/test_token.py
-
-# Run tests with verbose output
-make test-verbose
-
-# Run tests with coverage
-make test-coverage
-
-# Run only previously failed tests
-make test-failed
-
-# Quick test run (minimal output)
-make test-fast
+```python
+# Good example from ai_actions.py
+def validate_action(self, action, game_state, player_id):
+    if not isinstance(action, AIAction):
+        raise ValueError(f"Invalid action type: {type(action)}")
+    
+    if game_state.current_turn_player_id != player_id:
+        raise GameError(f"Player {player_id} cannot act - it's player {game_state.current_turn_player_id}'s turn")
 ```
 
-### Code Quality
-```bash
-# Lint code
-make lint
+## Architectural Patterns
 
-# Format code
-make format
+### Game Logic Layer (`game/`)
 
-# Clean Python cache files
-make clean
+**Key Principles:**
+- **No rendering dependencies** - pure Python logic
+- **State management** through `GameState` class
+- **Action-based API** via `ai_actions.py`
+- **Observation API** via `ai_observation.py`
 
-# Sync dependencies
-make sync
-```
+**Module Responsibilities:**
+- `game_state.py`: Central state management
+- `ai_actions.py`: Action validation and execution
+- `ai_observation.py`: State observation for AI players
+- `board.py`: Grid and cell management
+- `token.py`: Token behavior and state
+- `movement.py`: Pathfinding and movement rules
+- `combat.py`: Combat resolution
+- `generator.py`: Generator capture mechanics
+- `crystal.py`: Win condition logic
 
-## Architecture Overview
+### Rendering Layer (`client/`)
 
-### Core Design Principle: Separation of Game Logic and Rendering
+**Key Principles:**
+- **Read-only access** to game state
+- **No business logic** - only visualization
+- **Dual rendering modes** (2D/3D)
+- **Event-driven input handling**
 
-The codebase strictly separates game mechanics from visual presentation:
+**Module Responsibilities:**
+- `game_window.py`: Main rendering loop
+- `board_3d.py`: 3D board rendering
+- `token_3d.py`: 3D token rendering
+- `sprites/`: 2D sprite implementations
+- `ui/`: User interface components
 
-- **game/**: Pure game logic with NO rendering dependencies - all logic is testable without graphics
-- **client/**: All rendering and UI code using Arcade framework
-- **shared/**: Constants and enums used by both game and client
+### Shared Layer (`shared/`)
 
-### Module Structure
+**Key Principles:**
+- **Constants and enums** only
+- **No logic or state**
+- **Shared between game and client**
 
-#### `game/` - Core Game Logic
-Contains all game mechanics, rules, and state management. These modules have NO dependencies on rendering libraries.
+## Development Workflow
 
-**Key files:**
-- `game_state.py`: Central state container managing all entities and game phase
-- `ai_actions.py`: Action classes (Move, Attack, Deploy, EndTurn) and validation/execution
-- `ai_observation.py`: Converts game state to text descriptions for AI players (enables headless AI gameplay)
-- `board.py`: 24x24 grid with cell types (normal, generator, crystal, mystery)
-- `token.py`: Token entities with health, position, movement range
-- `player.py`: Player state and token ownership
-- `movement.py`: BFS pathfinding for token movement
-- `combat.py`: Combat resolution (damage = attacker.health // 2)
-- `generator.py`: Generator capture mechanics (2 tokens for 2 turns)
-- `crystal.py`: Win condition tracking (12 tokens for 3 turns, reduced by disabled generators)
-- `mystery_square.py`: Random events (heal or teleport)
+### Adding New Features
 
-**Critical architectural detail:** The `ai_observation.py` and `ai_actions.py` modules provide a complete text-based API for interacting with the game. This enables:
-1. AI players to play without rendering
-2. Automated testing of game mechanics
-3. Network multiplayer (future)
-4. Headless game simulations
+1. **Update constants** in `shared/constants.py` if needed
+2. **Implement logic** in `game/` modules
+3. **Add unit tests** in `tests/` directory
+4. **Update rendering** in `client/` if visual changes needed
+5. **Run full test suite**: `make test`
+6. **Manual testing**: Run game and verify behavior
 
-#### `client/` - Rendering and UI
-All Arcade/OpenGL rendering code. Consumes `GameState` but never modifies game logic.
+### Bug Fixing
 
-**Key files:**
-- `game_window.py`: Main Arcade window handling rendering loop and input
-- `board_3d.py`: 3D wireframe board rendering with OpenGL shaders
-- `camera_3d.py`: First-person camera system for 3D mode
-- `token_3d.py`: 3D hexagonal prism token rendering
-- `sprites/`: 2D sprite implementations for tokens and board elements
-- `ui/arcade_ui.py`: UIManager with player panels, generator status, and interactive buttons
-
-**Dual rendering modes:**
-- **2D**: Top-down Tron-style vector graphics with glow effects
-- **3D**: First-person Battlezone-style wireframe graphics
-- Toggle between modes with 'V' key during gameplay
-- Start in 3D mode directly with `--3d` command-line flag
-
-**Visual features:**
-- Flowing animated lines connect active generators to the crystal
-- Enhanced generator glow effects
-- Lines automatically disappear when generators are captured
-
-#### `shared/` - Shared Definitions
-Constants and enums shared between game logic and rendering.
-
-- `enums.py`: GamePhase, TurnPhase, PlayerColor, CellType, etc.
-- `constants.py`: All numeric constants (board size, token counts, capture requirements, colors)
-
-**Important:** When changing game rules, update constants in `shared/constants.py` rather than hardcoding values.
-
-#### `tests/` - Unit Tests
-199 pytest tests covering all game mechanics. Tests use pure game logic without rendering.
-
-### Game State Flow
-
-1. **GameState** is the single source of truth containing:
-   - Board (24x24 grid)
-   - Players (dict of player_id → Player)
-   - Tokens (dict of token_id → Token)
-   - Generators (list of 4 generators)
-   - Crystal (single central crystal)
-   - Turn tracking (current_turn_player_id, turn_number, phase)
-
-2. **Turn Phases** (in `shared.enums.TurnPhase`):
-   - **MOVEMENT**: Player can move or deploy a token
-   - **ACTION**: Player can attack or end turn
-   - Transitions: MOVEMENT → ACTION (after move/deploy) → MOVEMENT (after end turn)
-
-3. **Game Phases** (in `shared.enums.GamePhase`):
-   - **SETUP**: Players joining
-   - **PLAYING**: Active game
-   - **ENDED**: Game finished
-
-4. **Token Management**:
-   - Each player has 20 tokens: 5×10hp, 5×8hp, 5×6hp, 5×4hp
-   - At game start, 3 tokens are **automatically deployed** to starting corner positions
-   - Remaining 17 tokens start in **reserve** (is_deployed=False)
-   - Deploy tokens to board via `game_state.deploy_token()`
-   - Deployed tokens can move/attack
-   - Movement range: 6hp and 4hp tokens move 2 spaces, others move 1 space
-   - Combat: Damage = attacker.health // 2, attacker takes no damage
-
-5. **Win Condition**:
-   - Hold crystal with N tokens for 3 consecutive turns
-   - Base requirement: 12 tokens
-   - Each disabled generator reduces requirement by 2
-   - Generators disabled by holding with 2 tokens for 2 turns
-
-### AI Integration Architecture
-
-The game is designed to be playable by AI without visual rendering:
-
-1. **Observation** (`ai_observation.py`):
-   - `AIObserver.describe_game_state()`: Full text description of game state
-   - `AIObserver.get_board_map()`: ASCII art map
-   - `AIObserver.list_available_actions()`: All valid actions for current phase
-   - `AIObserver.get_situation_report()`: Complete report combining all above
-
-2. **Actions** (`ai_actions.py`):
-   - Action classes: `MoveAction`, `AttackAction`, `DeployAction`, `EndTurnAction`
-   - `AIActionExecutor.validate_action()`: Check if action is valid
-   - `AIActionExecutor.execute_action()`: Execute action and return result
-   - All validation includes detailed error messages for AI debugging
-
-3. **Example AI Play Loop**:
-   ```python
-   from game.ai_observation import AIObserver
-   from game.ai_actions import AIActionExecutor, MoveAction
-
-   # Get game state as text
-   report = AIObserver.get_situation_report(game_state, player_id)
-
-   # List valid actions
-   actions = AIObserver.list_available_actions(game_state, player_id)
-
-   # Execute action
-   executor = AIActionExecutor()
-   action = MoveAction(token_id=5, destination=(12, 12))
-   success, message, data = executor.execute_action(action, game_state, player_id)
-   ```
+1. **Reproduce** the issue
+2. **Write failing test** that demonstrates the bug
+3. **Fix logic** in appropriate module
+4. **Verify fix** with test
+5. **Run regression tests**: `make test`
 
 ### Testing Strategy
 
-The project has 140+ unit tests organized by game system:
+**Unit Tests:**
+- Test individual components in isolation
+- Use `pytest` framework
+- Focus on game logic, not rendering
 
-- `test_board.py`: Grid and cell management
-- `test_token.py`: Token state and behavior
-- `test_movement.py`: Movement validation and pathfinding
-- `test_combat.py`: Combat resolution
-- `test_generator.py`: Generator capture mechanics
-- `test_crystal.py`: Win condition logic
-- `test_game_state.py`: State management and turn flow
-- `test_ai_observation.py`: AI observation API
-- `test_ai_actions.py`: AI action execution
+**Integration Tests:**
+- Test interactions between components
+- Verify state transitions
+- Check turn-based logic
 
-**Playtesting:** Use the `/playtesting` skill or `test_gameplay_flaws.py` to run automated AI playtests. This is especially useful after implementing new features to verify end-to-end gameplay.
+**Playtesting:**
+- Manual gameplay testing
+- AI vs AI automated testing
+- Verify end-to-end gameplay flows
 
-## Important Conventions
+## AI Agent Integration
 
-### Game Logic Modifications
+The game is designed for AI agent integration through two main APIs:
 
-When modifying game mechanics:
+### Observation API (`ai_observation.py`)
 
-1. **Update game logic** in `game/` modules
-2. **Update tests** in `tests/` to match new behavior
-3. **Update constants** in `shared/constants.py` if rules changed
-4. **Run full test suite** to ensure nothing broke
-5. **Run playtesting** to verify mechanics work in actual gameplay
-6. Client rendering (`client/`) should automatically reflect changes since it reads from `GameState`
+```python
+from game.ai_observation import AIObserver
 
-### Token State Management
+# Get complete game state description
+report = AIObserver.get_situation_report(game_state, player_id)
 
-Tokens have two key boolean flags:
-- `is_deployed`: Whether token is on the board (False = in reserve)
-- `is_alive`: Whether token is active (False = destroyed)
+# Get ASCII board map
+board_map = AIObserver.get_board_map(game_state)
 
-**Critical:** Always use `game_state.deploy_token()` to move tokens from reserve to board. Never manually set `is_deployed=True` without also updating the board occupancy grid.
+# List available actions
+actions = AIObserver.list_available_actions(game_state, player_id)
+```
 
-### Board Occupancy
+### Action API (`ai_actions.py`)
 
-The board maintains an occupancy grid tracking which token is at each position:
-- Use `board.set_occupant(position, token_id)` when placing token
-- Use `board.clear_occupant(position)` when removing token
-- Use `board.get_cell_at(position).is_occupied()` to check occupancy
-- **Critical:** Keep occupancy grid in sync with token positions
+```python
+from game.ai_actions import AIActionExecutor, MoveAction
 
-### Generator and Crystal Updates
+executor = AIActionExecutor()
+action = MoveAction(token_id=5, destination=(12, 12))
+success, message, data = executor.execute_action(action, game_state, player_id)
+```
 
-Generator capture and crystal win conditions are checked at **end of turn** in `GameState.end_turn()`:
-1. Call `GeneratorManager.update_all_generators()` to check captures
-2. Call `CrystalManager.check_win_condition()` to check for winner
-3. If winner found, call `game_state.set_winner(player_id)`
+### AI Agent Example
 
-This means changes to token positions don't immediately affect capture/win status until turn ends.
+```python
+class SimpleAI:
+    def __init__(self, player_id):
+        self.player_id = player_id
+    
+    def get_action(self, game_state):
+        observer = AIObserver()
+        actions = observer.list_available_actions(game_state, self.player_id)
+        
+        # Simple strategy: move first token toward center
+        for action in actions:
+            if isinstance(action, MoveAction):
+                return action
+        
+        # Fallback: end turn
+        return EndTurnAction()
+```
 
-## Python Version and Dependencies
+## Performance Considerations
 
-- **Python 3.14** required (see `.python-version`)
-- **uv** package manager (replaces pip/venv)
-- **arcade** for rendering (GPU-accelerated)
-- **numpy** for vector math
-- **pytest** for testing
+### Game Logic
+- **Pathfinding**: BFS algorithm in `movement.py`
+- **State updates**: Minimize copying of game state
+- **Validation**: Early validation to avoid expensive operations
 
-## Common Gotchas
+### Rendering
+- **GPU acceleration**: Use Arcade's built-in GPU features
+- **Batch rendering**: Group similar objects for rendering
+- **Caching**: Cache computed values where possible
 
-1. **Movement range confusion**: Only 6hp and 4hp tokens move 2 spaces; 10hp and 8hp move 1 space. This is counter-intuitive (lower health = more speed) but matches game design.
+## Common Pitfalls
 
-2. **Phase transitions**: Moving or deploying automatically changes phase to ACTION. You cannot move twice in one turn.
+### Game State Management
+- **Always use GameState methods** for state changes
+- **Never modify state directly** - use action API
+- **Keep board occupancy in sync** with token positions
 
-3. **Reserve vs Deployed**: Tokens in reserve cannot move or attack. They must be deployed first via `deploy_token()`.
+### Token Management
+- **is_deployed vs is_alive**: Understand the difference
+- **Movement ranges**: 6hp and 4hp tokens move 2 spaces, others move 1
+- **Reserve tokens**: Must be deployed before use
 
-4. **Generator capture reset**: If a different player's tokens occupy a generator, capture progress resets for the previous player.
+### Turn Phases
+- **MOVEMENT phase**: Can move or deploy
+- **ACTION phase**: Can attack or end turn
+- **Phase transitions**: Automatic after certain actions
 
-5. **Rendering independence**: The client can be completely ignored when testing game logic. Use `AIObserver` for headless testing.
+## Documentation Standards
 
-6. **Turn end timing**: Generators and crystal are checked AFTER end turn, not during token actions. This means you can't win mid-turn.
+### Code Comments
+- **Inline comments**: Explain why, not what
+- **Complex algorithms**: Add step-by-step comments
+- **TODO markers**: Use `# TODO:` for future work
 
-## Skills Available
+### Docstrings
+```python
+"""
+Describe what the function does, not how it does it.
 
-This repository has custom Claude Code skills:
+Args:
+    param1: Description of parameter
+    param2: Description of parameter
 
-- `/playtesting`: Automated AI gameplay testing to find bugs and verify mechanics
-- `/python`: Python package management using uv
-- `/testing-graphics`: Test 2D/3D rendering via screenshots
-- `/testing-python`: Run pytest tests
+Returns:
+    Description of return value
 
-Use these skills for specialized testing and development tasks.
+Raises:
+    ExceptionType: Description of when raised
+"""
+```
+
+### Commit Messages
+- **Imperative mood**: "Add feature" not "Added feature"
+- **Scope**: Include module name if relevant
+- **Body**: Explain why, not what (for significant changes)
+
+## Version Control
+
+### Branching Strategy
+- **main**: Production-ready code
+- **feature/*`: New features
+- **bugfix/*`: Bug fixes
+- **docs/*`: Documentation updates
+
+### Commit Hygiene
+- **Small, focused commits**
+- **Clear, descriptive messages**
+- **Reference issues** when applicable
+- **Sign commits** if possible
+
+## Continuous Integration
+
+The project uses GitHub Actions for CI/CD:
+
+- **Test suite**: Runs on every push
+- **Linting**: Checks code style
+- **Type checking**: Verifies type hints
+- **Build verification**: Ensures project builds
+
+## Getting Help
+
+### Debugging Tips
+- **Use logging**: Add debug logs for complex flows
+- **Isolate components**: Test logic without rendering
+- **Check state**: Verify game state at each step
+- **Review tests**: Look at existing tests for patterns
+
+### Resources
+- **Arcade documentation**: For rendering questions
+- **Python docs**: For language features
+- **PEP 8**: For style guidelines
+- **Existing code**: Follow established patterns
+
+## Contributing
+
+### Pull Request Process
+1. **Fork repository**
+2. **Create feature branch**
+3. **Implement changes**
+4. **Add tests**
+5. **Update documentation**
+6. **Submit PR** with clear description
+
+### Code Review
+- **Be constructive** in feedback
+- **Explain reasoning** for suggestions
+- **Focus on quality** over personal preferences
+- **Respect decisions** of maintainers
+
+## Maintenance
+
+### Dependency Management
+- **uv** for package management
+- **Regular updates**: Keep dependencies current
+- **Security patches**: Apply promptly
+
+### Technical Debt
+- **Track in issues** with `tech-debt` label
+- **Address in dedicated PRs**
+- **Balance with new features**
+
+## Future Directions
+
+### Planned Features
+- **Network multiplayer**
+- **AI opponents** with different strategies
+- **Game replays** and save/load
+- **Custom maps** and scenarios
+
+### Architectural Improvements
+- **Performance optimization** for large games
+- **Better AI API** for external agents
+- **Enhanced testing** coverage
+- **Improved documentation**
+
+This document serves as a living guide for AI agents and developers working on the Race to the Crystal codebase. Update it as patterns evolve and new conventions emerge.
