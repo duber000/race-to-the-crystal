@@ -250,7 +250,15 @@ class LobbyView(arcade.View):
         logger.debug(f"Lobby received: {message.type.value}")
 
         try:
-            if message.type == MessageType.PLAYER_JOINED:
+            if message.type == MessageType.CREATE_GAME:
+                # Game created (host receives this)
+                await self._handle_lobby_update(message)
+
+            elif message.type == MessageType.JOIN_GAME:
+                # Joined game (joiner receives this)
+                await self._handle_lobby_update(message)
+
+            elif message.type == MessageType.PLAYER_JOINED:
                 # New player joined
                 await self._handle_player_joined(message)
 
@@ -283,16 +291,55 @@ class LobbyView(arcade.View):
         except Exception as e:
             logger.error(f"Error handling lobby message: {e}", exc_info=True)
 
+    async def _handle_lobby_update(self, message):
+        """
+        Handle CREATE_GAME or JOIN_GAME response with lobby data.
+
+        Args:
+            message: CREATE_GAME or JOIN_GAME message from server
+        """
+        data = message.data or {}
+
+        # The response contains the full lobby data
+        lobby_data = data
+
+        if lobby_data:
+            # Update game name
+            self.game_name = lobby_data.get("game_name", "Lobby")
+
+            # Update player list from lobby data
+            players_list = lobby_data.get("players", [])
+
+            # Clear existing players and rebuild from lobby data
+            self.players.clear()
+
+            for player_info in players_list:
+                player_id = player_info.get("player_id")
+                if player_id:
+                    self.players[player_id] = {
+                        "player_name": player_info.get("player_name", "Unknown"),
+                        "is_ready": player_info.get("is_ready", False),
+                        "color_index": player_info.get("color_index", 0)
+                    }
+
+            logger.info(f"Lobby updated: {len(self.players)} players")
+            self._update_player_list()
+
+            # Update game_id in network client if not already set
+            game_id = lobby_data.get("game_id")
+            if game_id and not self.network_client.game_id:
+                self.network_client.game_id = game_id
+
     async def _handle_player_joined(self, message):
         """Handle PLAYER_JOINED message."""
         data = message.data or {}
         player_id = data.get("player_id")
         player_name = data.get("player_name", "Unknown")
         lobby_data = data.get("lobby", {})
-        
+
         # Try to get color_index from lobby data if available
         color_index = data.get("color_index", 0)
-        
+
         # If lobby data is available, use it to get the complete player info
         if lobby_data:
             players_list = lobby_data.get("players", [])
