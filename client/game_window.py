@@ -154,6 +154,15 @@ class GameView(arcade.View):
         if self.music_player and self.music_playing:
             self.music_player.pause()
 
+        # Clean up OpenGL resources
+        if self.board_3d is not None:
+            self.board_3d.cleanup()
+            self.board_3d = None
+
+        for token_3d in self.tokens_3d:
+            token_3d.cleanup()
+        self.tokens_3d.clear()
+
     def _load_background_music(self):
         """Load and play background techno music."""
         music_path = "client/assets/music/techno.mp3"
@@ -254,10 +263,20 @@ class GameView(arcade.View):
     def _create_3d_rendering(self):
         """Initialize 3D rendering components."""
         try:
+            # Clean up old 3D board if it exists
+            if self.board_3d is not None:
+                self.board_3d.cleanup()
+                self.board_3d = None
+
+            # Clean up old 3D tokens
+            for token_3d in self.tokens_3d:
+                token_3d.cleanup()
+            self.tokens_3d.clear()
+
             # Get crystal position
             crystal = self.game_state.crystal
             crystal_pos = crystal.position if crystal else None
-            
+
             # Create 3D board with generators and crystal position
             self.board_3d = Board3D(
                 self.game_state.board,
@@ -280,7 +299,6 @@ class GameView(arcade.View):
             return
 
         # Create 3D tokens
-        self.tokens_3d.clear()
         for player in self.game_state.players.values():
             player_color = PLAYER_COLORS[player.color.value]
 
