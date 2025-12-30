@@ -10,6 +10,14 @@ import logging
 
 from shared.constants import BACKGROUND_COLOR
 
+try:
+    import pyperclip
+    CLIPBOARD_AVAILABLE = True
+except ImportError:
+    CLIPBOARD_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("pyperclip not available - clipboard operations will be disabled")
+
 logger = logging.getLogger(__name__)
 
 
@@ -537,6 +545,72 @@ class NetworkSetupView(arcade.View):
 
         # Draw UI manager
         self.manager.draw()
+
+    def on_key_press(self, key, modifiers):
+        """
+        Handle keyboard events for copy/paste functionality.
+
+        Supports:
+        - Ctrl+C: Copy selected text or entire field
+        - Ctrl+V: Paste from clipboard
+        - Ctrl+X: Cut selected text or entire field
+        """
+        if not CLIPBOARD_AVAILABLE:
+            return
+
+        # Check for Ctrl modifier (both Ctrl and Command on Mac)
+        is_ctrl = modifiers & (arcade.key.MOD_CTRL | arcade.key.MOD_COMMAND)
+
+        if not is_ctrl:
+            return
+
+        # Get the currently focused input field
+        focused_widget = None
+        for widget in [self.player_name_input, self.server_host_input,
+                      self.server_port_input, self.game_name_input]:
+            if widget and hasattr(widget, '_active') and widget._active:
+                focused_widget = widget
+                break
+
+        if not focused_widget:
+            return
+
+        # Handle copy (Ctrl+C)
+        if key == arcade.key.C:
+            text_to_copy = focused_widget.text
+            if text_to_copy:
+                try:
+                    pyperclip.copy(text_to_copy)
+                    logger.info(f"Copied to clipboard: {text_to_copy}")
+                except Exception as e:
+                    logger.error(f"Failed to copy to clipboard: {e}")
+
+        # Handle paste (Ctrl+V)
+        elif key == arcade.key.V:
+            try:
+                pasted_text = pyperclip.paste()
+                if pasted_text:
+                    # Replace the current text with pasted text
+                    focused_widget.text = pasted_text
+                    # Move caret to end
+                    if hasattr(focused_widget, 'caret'):
+                        focused_widget.caret.position = len(pasted_text)
+                    logger.info(f"Pasted from clipboard: {pasted_text}")
+            except Exception as e:
+                logger.error(f"Failed to paste from clipboard: {e}")
+
+        # Handle cut (Ctrl+X)
+        elif key == arcade.key.X:
+            text_to_cut = focused_widget.text
+            if text_to_cut:
+                try:
+                    pyperclip.copy(text_to_cut)
+                    focused_widget.text = ""
+                    if hasattr(focused_widget, 'caret'):
+                        focused_widget.caret.position = 0
+                    logger.info(f"Cut to clipboard: {text_to_cut}")
+                except Exception as e:
+                    logger.error(f"Failed to cut to clipboard: {e}")
 
     def _on_start_click(self, event):
         """Handle start button click."""

@@ -13,6 +13,7 @@ requires-python = ">=3.14"
 dependencies = [
     "arcade>=2.6.17",
     "numpy>=1.24.0",
+    "pyperclip>=1.8.0",
 ]
 
 [project.scripts]
