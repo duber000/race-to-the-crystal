@@ -18,7 +18,7 @@ from client.ui.victory_view import VictoryView, VictoryViewSimple
 from client.ui.game_browser_view import GameBrowserView
 from client.ui.async_arcade import AsyncWindow, schedule_async
 from client.client_main import setup_game_state
-from client.game_window import GameWindow
+from client.game_window import GameView
 from client.network_client import NetworkClient
 from network.messages import ClientType
 from shared.constants import DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT
@@ -93,7 +93,6 @@ class MenuGameWindow(AsyncWindow):
         game_state = setup_game_state(num_players)
 
         # Create game view (now using View architecture)
-        from client.game_window import GameView
         game_view = GameView(game_state, start_in_3d=start_in_3d)
 
         # Show the game view (no need to close window or create new one!)
