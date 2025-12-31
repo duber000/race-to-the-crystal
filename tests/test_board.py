@@ -12,39 +12,61 @@ class TestCell:
 
     def test_cell_creation(self):
         """Test creating a cell."""
-        cell = Cell(position=(3, 4), cell_type=CellType.NORMAL, occupant=None)
+        cell = Cell(position=(3, 4), cell_type=CellType.NORMAL, occupants=[])
         assert cell.position == (3, 4)
         assert cell.cell_type == CellType.NORMAL
         assert cell.occupant is None
+        assert cell.occupants == []
 
     def test_cell_is_occupied(self):
         """Test checking if cell is occupied."""
-        empty_cell = Cell(position=(0, 0), occupant=None)
-        occupied_cell = Cell(position=(1, 1), occupant=42)
+        empty_cell = Cell(position=(0, 0), occupants=[])
+        occupied_cell = Cell(position=(1, 1), occupants=[42])
 
         assert empty_cell.is_occupied() is False
         assert occupied_cell.is_occupied() is True
 
     def test_cell_is_passable(self):
-        """Test checking if cell is passable."""
-        empty_cell = Cell(position=(0, 0), occupant=None)
-        occupied_cell = Cell(position=(1, 1), occupant=42)
+        """Test checking if cell is passable (always True now - stacking allowed)."""
+        empty_cell = Cell(position=(0, 0), occupants=[])
+        occupied_cell = Cell(position=(1, 1), occupants=[42])
 
+        # Cells are always passable now - enemy checking is done at movement level
         assert empty_cell.is_passable() is True
-        assert occupied_cell.is_passable() is False
+        assert occupied_cell.is_passable() is True
+
+    def test_cell_multiple_occupants(self):
+        """Test cell with multiple occupants (stacking)."""
+        cell = Cell(position=(5, 5), occupants=[1, 2, 3])
+        assert cell.is_occupied() is True
+        assert cell.occupant == 1  # First occupant for backwards compat
+        assert len(cell.occupants) == 3
 
     def test_cell_serialization(self):
         """Test cell serialization."""
-        cell = Cell(position=(5, 6), cell_type=CellType.MYSTERY, occupant=99)
+        cell = Cell(position=(5, 6), cell_type=CellType.MYSTERY, occupants=[99])
         data = cell.to_dict()
 
         assert data["position"] == [5, 6]
         assert data["cell_type"] == "MYSTERY"
-        assert data["occupant"] == 99
+        assert data["occupants"] == [99]
 
         restored = Cell.from_dict(data)
         assert restored.position == (5, 6)
         assert restored.cell_type == CellType.MYSTERY
+        assert restored.occupant == 99
+        assert restored.occupants == [99]
+
+    def test_cell_serialization_backwards_compat(self):
+        """Test cell deserialization with old 'occupant' format."""
+        # Old format with single occupant
+        old_data = {
+            "position": [5, 6],
+            "cell_type": "MYSTERY",
+            "occupant": 99
+        }
+        restored = Cell.from_dict(old_data)
+        assert restored.occupants == [99]
         assert restored.occupant == 99
 
 

@@ -2,7 +2,7 @@
 Game board and cell representation.
 """
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict
 import random
 
 from shared.enums import CellType
@@ -21,35 +21,62 @@ class Cell:
     Attributes:
         position: (x, y) position of this cell
         cell_type: Type of cell (normal, generator, crystal, etc.)
-        occupant: Token ID currently occupying this cell (None if empty)
+        occupants: List of token IDs currently occupying this cell
     """
     position: Tuple[int, int]
     cell_type: CellType = CellType.NORMAL
-    occupant: Optional[int] = None
+    occupants: List[int] = field(default_factory=list)
+
+    @property
+    def occupant(self) -> Optional[int]:
+        """Backwards compatibility: return first occupant or None."""
+        return self.occupants[0] if self.occupants else None
 
     def is_occupied(self) -> bool:
-        """Check if this cell is occupied by a token."""
-        return self.occupant is not None
+        """Check if this cell is occupied by any token."""
+        return len(self.occupants) > 0
 
     def is_passable(self) -> bool:
-        """Check if tokens can move through this cell."""
-        return not self.is_occupied()
+        """Check if tokens can move through this cell (always True - stacking allowed)."""
+        return True
+
+    def has_enemy_tokens(self, player_id: str, tokens_dict: dict) -> bool:
+        """Check if this cell has enemy tokens."""
+        for token_id in self.occupants:
+            if token_id in tokens_dict:
+                token = tokens_dict[token_id]
+                if token.player_id != player_id:
+                    return True
+        return False
+
+    def get_occupant_player_id(self, tokens_dict: dict) -> Optional[str]:
+        """Get the player ID of the first occupant (for backward compatibility)."""
+        if self.occupants and self.occupants[0] in tokens_dict:
+            return tokens_dict[self.occupants[0]].player_id
+        return None
 
     def to_dict(self) -> dict:
         """Convert cell to dictionary for serialization."""
         return {
             "position": list(self.position),
             "cell_type": self.cell_type.name,
-            "occupant": self.occupant,
+            "occupants": list(self.occupants),
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> "Cell":
         """Create cell from dictionary."""
+        # Handle backwards compatibility with old 'occupant' field
+        if "occupants" in data:
+            occupants = list(data["occupants"])
+        elif "occupant" in data and data["occupant"] is not None:
+            occupants = [data["occupant"]]
+        else:
+            occupants = []
         return cls(
             position=tuple(data["position"]),
             cell_type=CellType[data["cell_type"]],
-            occupant=data["occupant"],
+            occupants=occupants,
         )
 
 
@@ -191,21 +218,55 @@ class Board:
         """Check if position is within board bounds."""
         return 0 <= x < self.width and 0 <= y < self.height
 
-    def set_occupant(self, position: Tuple[int, int], token_id: Optional[int]) -> None:
+    def add_occupant(self, position: Tuple[int, int], token_id: int) -> None:
         """
-        Set the occupant of a cell.
+        Add a token as an occupant of a cell.
 
         Args:
             position: (x, y) position
-            token_id: ID of token occupying the cell, or None to clear
+            token_id: ID of token to add
+        """
+        cell = self.get_cell_at(position)
+        if cell and token_id not in cell.occupants:
+            cell.occupants.append(token_id)
+
+    def remove_occupant(self, position: Tuple[int, int], token_id: int) -> None:
+        """
+        Remove a token from a cell's occupants.
+
+        Args:
+            position: (x, y) position
+            token_id: ID of token to remove
+        """
+        cell = self.get_cell_at(position)
+        if cell and token_id in cell.occupants:
+            cell.occupants.remove(token_id)
+
+    def set_occupant(self, position: Tuple[int, int], token_id: Optional[int]) -> None:
+        """
+        Add a token as occupant of a cell (backwards compatible).
+
+        Args:
+            position: (x, y) position
+            token_id: ID of token to add, or None to do nothing
+        """
+        if token_id is not None:
+            self.add_occupant(position, token_id)
+
+    def clear_occupant(self, position: Tuple[int, int], token_id: Optional[int] = None) -> None:
+        """
+        Clear occupant(s) from a cell.
+
+        Args:
+            position: (x, y) position
+            token_id: Specific token to remove, or None to clear all
         """
         cell = self.get_cell_at(position)
         if cell:
-            cell.occupant = token_id
-
-    def clear_occupant(self, position: Tuple[int, int]) -> None:
-        """Clear the occupant of a cell."""
-        self.set_occupant(position, None)
+            if token_id is not None:
+                self.remove_occupant(position, token_id)
+            else:
+                cell.occupants.clear()
 
     def get_starting_position(self, player_index: int) -> Tuple[int, int]:
         """

@@ -376,7 +376,7 @@ class AIObserver:
         if game_state.turn_phase == TurnPhase.MOVEMENT:
             # Movement actions
             for token in deployed_tokens:
-                valid_moves = MovementSystem.get_valid_moves(token, game_state.board)
+                valid_moves = MovementSystem.get_valid_moves(token, game_state.board, tokens_dict=game_state.tokens)
                 if valid_moves:
                     actions.append({
                         "type": "MOVE",

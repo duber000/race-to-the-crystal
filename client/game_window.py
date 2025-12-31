@@ -31,7 +31,7 @@ from shared.constants import (
     DEFAULT_WINDOW_WIDTH,
     PLAYER_COLORS,
 )
-from shared.enums import TurnPhase
+from shared.enums import TurnPhase, CellType
 
 
 class GameView(arcade.View):
@@ -1269,17 +1269,27 @@ class GameView(arcade.View):
         if clicked_token:
             # Clicked on a token
             if clicked_token.player_id == current_player.id:
-                # Own token - select it for movement or attack
+                # Own token clicked
                 if self.turn_phase == TurnPhase.MOVEMENT:
-                    self.selected_token_id = clicked_token.id
-                    self.valid_moves = self.movement_system.get_valid_moves(
-                        clicked_token, self.game_state.board
-                    )
-                    self._update_selection_visuals()
-                    print(
-                        f"Selected token {clicked_token.id} at {clicked_token.position}"
-                    )
-                    print(f"Valid moves: {len(self.valid_moves)}")
+                    # Check if we have a token selected and this is a valid move
+                    # (stacking on generator/crystal)
+                    cell = self.game_state.board.get_cell_at((grid_x, grid_y))
+                    if (self.selected_token_id and
+                        (grid_x, grid_y) in self.valid_moves and
+                        cell and cell.cell_type in (CellType.GENERATOR, CellType.CRYSTAL)):
+                        # Move to stack on generator/crystal
+                        self._try_move_to_cell((grid_x, grid_y))
+                    else:
+                        # Select this token for movement
+                        self.selected_token_id = clicked_token.id
+                        self.valid_moves = self.movement_system.get_valid_moves(
+                            clicked_token, self.game_state.board, tokens_dict=self.game_state.tokens
+                        )
+                        self._update_selection_visuals()
+                        print(
+                            f"Selected token {clicked_token.id} at {clicked_token.position}"
+                        )
+                        print(f"Valid moves: {len(self.valid_moves)}")
             else:
                 # Enemy token - try to attack (can't attack if you already moved)
                 if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
@@ -1374,17 +1384,27 @@ class GameView(arcade.View):
         if clicked_token:
             # Clicked on a token
             if clicked_token.player_id == current_player.id:
-                # Own token - select it for movement or attack
+                # Own token clicked
                 if self.turn_phase == TurnPhase.MOVEMENT:
-                    self.selected_token_id = clicked_token.id
-                    self.valid_moves = self.movement_system.get_valid_moves(
-                        clicked_token, self.game_state.board
-                    )
-                    self._update_selection_visuals()
-                    print(
-                        f"Selected token {clicked_token.id} at {clicked_token.position}"
-                    )
-                    print(f"Valid moves: {len(self.valid_moves)}")
+                    # Check if we have a token selected and this is a valid move
+                    # (stacking on generator/crystal)
+                    cell = self.game_state.board.get_cell_at((grid_x, grid_y))
+                    if (self.selected_token_id and
+                        (grid_x, grid_y) in self.valid_moves and
+                        cell and cell.cell_type in (CellType.GENERATOR, CellType.CRYSTAL)):
+                        # Move to stack on generator/crystal
+                        self._try_move_to_cell((grid_x, grid_y))
+                    else:
+                        # Select this token for movement
+                        self.selected_token_id = clicked_token.id
+                        self.valid_moves = self.movement_system.get_valid_moves(
+                            clicked_token, self.game_state.board, tokens_dict=self.game_state.tokens
+                        )
+                        self._update_selection_visuals()
+                        print(
+                            f"Selected token {clicked_token.id} at {clicked_token.position}"
+                        )
+                        print(f"Valid moves: {len(self.valid_moves)}")
             else:
                 # Enemy token - try to attack (can't attack if you already moved)
                 if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
@@ -1569,7 +1589,7 @@ class GameView(arcade.View):
         self.selected_token_id = None
         self.valid_moves = []
 
-        # Advance to next player
+        # Advance to next player (this updates generators and checks win condition)
         self.game_state.end_turn()
 
         # Reset to movement phase
@@ -1579,6 +1599,13 @@ class GameView(arcade.View):
         next_player = self.game_state.get_current_player()
         if next_player:
             print(f"Turn {self.game_state.turn_number}: {next_player.name}'s turn")
+
+        # Rebuild board shapes to update generator lines (when generators are captured)
+        self._create_board_sprites()
+
+        # Update 3D board generator lines if in 3D mode
+        if self.board_3d:
+            self.board_3d.update_generator_lines()
 
         # Update UI to reflect new turn
         self.ui_manager.rebuild_visuals(self.game_state)

@@ -232,7 +232,7 @@ class AIActionExecutor:
             return False, f"Cannot move: Token #{action.token_id} is dead"
 
         # Check destination is valid
-        valid_moves = MovementSystem.get_valid_moves(token, game_state.board)
+        valid_moves = MovementSystem.get_valid_moves(token, game_state.board, tokens_dict=game_state.tokens)
         if action.destination not in valid_moves:
             x, y = action.destination
             return False, f"Cannot move: Destination ({x},{y}) is not reachable from token's position"

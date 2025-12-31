@@ -37,25 +37,61 @@ class TestMovementSystem:
         assert (8, 5) not in valid_moves  # 3 steps right
         assert (5, 8) not in valid_moves  # 3 steps down
 
-    def test_get_valid_moves_blocked_by_tokens(self):
-        """Test that tokens can't move through occupied cells."""
+    def test_get_valid_moves_blocked_by_enemy_tokens(self):
+        """Test that tokens can't move through cells occupied by enemy tokens."""
         board = Board(width=10, height=10)
         token = Token(id=1, player_id="p1", health=10, max_health=10, position=(5, 5))
+        enemy_token = Token(id=99, player_id="p2", health=10, max_health=10, position=(6, 5))
 
-        # Block path to the right
+        # Block path to the right with an enemy token
         board.set_occupant((6, 5), 99)
+        tokens_dict = {1: token, 99: enemy_token}
 
-        valid_moves = MovementSystem.get_valid_moves(token, board)
+        valid_moves = MovementSystem.get_valid_moves(token, board, tokens_dict=tokens_dict)
 
-        # Can't reach the blocked cell itself
+        # Can't reach the blocked cell itself (enemy token)
         assert (6, 5) not in valid_moves
 
         # Can still reach other directions
         assert (5, 6) in valid_moves
         assert (4, 5) in valid_moves
 
-        # Note: (7, 5) might be reachable by going around the obstacle
-        # with 8-directional movement, which is valid BFS behavior
+    def test_get_valid_moves_friendly_stacking_on_normal_cell(self):
+        """Test that tokens CANNOT stack on normal cells with friendly tokens."""
+        board = Board(width=10, height=10)
+        token = Token(id=1, player_id="p1", health=10, max_health=10, position=(5, 5))
+        friendly_token = Token(id=99, player_id="p1", health=10, max_health=10, position=(6, 5))
+
+        # Friendly token to the right on a normal cell
+        board.set_occupant((6, 5), 99)
+        tokens_dict = {1: token, 99: friendly_token}
+
+        valid_moves = MovementSystem.get_valid_moves(token, board, tokens_dict=tokens_dict)
+
+        # CANNOT reach the friendly token's cell on normal cell (no stacking on normal cells)
+        assert (6, 5) not in valid_moves
+
+        # Can still reach other directions
+        assert (5, 6) in valid_moves
+        assert (4, 5) in valid_moves
+
+    def test_get_valid_moves_friendly_stacking_on_generator(self):
+        """Test that tokens CAN stack on generator cells with friendly tokens."""
+        board = Board(width=24, height=24)  # Full size to have generators
+        # Generator is at (6, 6)
+        generator_pos = board.get_generator_positions()[0]
+
+        token = Token(id=1, player_id="p1", health=6, max_health=6, position=(generator_pos[0]-1, generator_pos[1]))
+        friendly_token = Token(id=99, player_id="p1", health=10, max_health=10, position=generator_pos)
+
+        # Friendly token on the generator
+        board.set_occupant(generator_pos, 99)
+        tokens_dict = {1: token, 99: friendly_token}
+
+        valid_moves = MovementSystem.get_valid_moves(token, board, tokens_dict=tokens_dict)
+
+        # CAN reach the generator cell even with friendly token (stacking allowed on generators)
+        assert generator_pos in valid_moves
 
     def test_get_valid_moves_from_corner(self):
         """Test movement from board corner."""
@@ -120,34 +156,30 @@ class TestMovementSystem:
         assert path[0] == start
         assert path[-1] == end
 
-    def test_find_path_blocked(self):
-        """Test pathfinding with obstacle."""
+    def test_find_path_with_occupant(self):
+        """Test pathfinding goes through occupied cells (stacking is allowed)."""
         board = Board(width=10, height=10)
         start = (0, 0)
         end = (2, 0)
 
-        # Block direct path
+        # Place a token on direct path - but path can still go through
         board.set_occupant((1, 0), 99)
 
         path = MovementSystem.find_path(start, end, board, max_distance=5)
 
-        # Should find alternate path or None if max_distance too small
-        if path:
-            assert path[0] == start
-            assert path[-1] == end
-            assert (1, 0) not in path  # Doesn't go through blocked cell
+        # Path should exist and go through (stacking allowed at find_path level)
+        assert path is not None
+        assert path[0] == start
+        assert path[-1] == end
 
-    def test_find_path_no_path(self):
-        """Test pathfinding when no path exists."""
-        board = Board(width=5, height=5)
+    def test_find_path_max_distance_limit(self):
+        """Test pathfinding respects max_distance limit."""
+        board = Board(width=10, height=10)
         start = (0, 0)
-        end = (4, 4)
+        end = (5, 5)
 
-        # Create wall blocking path
-        for y in range(5):
-            board.set_occupant((2, y), 99)
-
-        path = MovementSystem.find_path(start, end, board, max_distance=10)
+        # With max_distance=3, can't reach (5,5) which is 5+ steps away
+        path = MovementSystem.find_path(start, end, board, max_distance=3)
 
         assert path is None
 

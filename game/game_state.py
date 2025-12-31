@@ -247,13 +247,13 @@ class GameState:
         if not token or not token.is_alive:
             return False
 
-        # Clear old position
-        self.board.clear_occupant(token.position)
+        # Clear old position (remove specific token)
+        self.board.clear_occupant(token.position, token_id)
 
         # Move token
         token.move_to(new_position)
 
-        # Set new position
+        # Set new position (add to occupants list)
         self.board.set_occupant(new_position, token_id)
 
         return True
@@ -269,8 +269,8 @@ class GameState:
         if not token:
             return
 
-        # Clear from board
-        self.board.clear_occupant(token.position)
+        # Clear from board (remove specific token)
+        self.board.clear_occupant(token.position, token_id)
 
         # Remove from player
         player = self.get_player(token.player_id)
