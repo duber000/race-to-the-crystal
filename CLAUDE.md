@@ -265,11 +265,19 @@ Tokens have two key boolean flags:
 
 ### Board Occupancy
 
-The board maintains an occupancy grid tracking which token is at each position:
-- Use `board.set_occupant(position, token_id)` when placing token
-- Use `board.clear_occupant(position)` when removing token
-- Use `board.get_cell_at(position).is_occupied()` to check occupancy
+The board maintains an occupancy grid tracking tokens at each position. **Multiple tokens can stack on generator and crystal cells** to enable capture mechanics:
+
+- Use `board.set_occupant(position, token_id)` to add a token to a cell
+- Use `board.clear_occupant(position, token_id)` to remove a specific token from a cell
+- Use `board.clear_occupant(position)` to clear all tokens from a cell
+- Use `board.get_cell_at(position).is_occupied()` to check if any tokens are present
+- Use `board.get_cell_at(position).occupants` to get list of token IDs at that cell
 - **Critical:** Keep occupancy grid in sync with token positions
+
+**Token Stacking Rules:**
+- Multiple friendly tokens can occupy the same **generator** or **crystal** cell
+- Tokens cannot stack on normal cells (only one token per normal cell)
+- Enemy tokens always block movement (cannot stack with enemies)
 
 ### Generator and Crystal Updates
 

@@ -15,6 +15,7 @@
 * players win by holding the power crystal for 3 turns with 12 tokens
 * each generator is "taken out" by 2 tokens holding it for 2 turns
 * each generator "taken out" reduces the tokens needed to hold the crystal by 2
+* **Token Stacking**: Multiple friendly tokens can occupy the same generator or crystal cell (required for capture)
 * tokens have these numbers on their dice representing their health: 10, 8, 6, 4
 * 6 and 4 health tokens can move two spaces, 10 and 8 health tokens move 1 space
 * each token attacks for 1/2 of their value (10hp → 5 damage, 8hp → 4 damage, etc)
