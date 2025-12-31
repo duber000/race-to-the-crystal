@@ -9,7 +9,8 @@ from typing import Dict, List, Tuple, Optional
 from game.game_state import GameState
 from game.movement import MovementSystem
 from game.combat import CombatSystem
-from shared.enums import TurnPhase, GamePhase
+from game.mystery_square import MysterySquareSystem
+from shared.enums import TurnPhase, GamePhase, CellType
 
 
 @dataclass
@@ -264,13 +265,29 @@ class AIActionExecutor:
             "new_position": new_pos,
         }
 
-        # Check for mystery square
+        # Check for mystery square and trigger effect
         cell = game_state.board.get_cell_at(new_pos)
-        if cell and cell.cell_type.name == "MYSTERY":
-            # Mystery square will be handled by game state
-            # For now, just note it in the message
-            message += "\n→ Token landed on a MYSTERY square!"
-            result_data["mystery_triggered"] = True
+        if cell and cell.cell_type == CellType.MYSTERY:
+            # Get player's starting position for potential teleport
+            player = game_state.get_player(player_id)
+            if player:
+                starting_pos = game_state.board.get_starting_position(player.color.value)
+
+                # Trigger the mystery event (50/50 heal or teleport)
+                mystery_result = MysterySquareSystem.trigger_mystery_event(token, starting_pos)
+
+                message += f"\n→ Token landed on a MYSTERY square!"
+                result_data["mystery_triggered"] = True
+                result_data["mystery_effect"] = mystery_result.effect.name
+
+                if mystery_result.effect.name == "HEAL":
+                    message += f"\n→ 🎲 HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
+                else:
+                    # Token was teleported - update board occupancy
+                    game_state.board.clear_occupant(new_pos, token.id)
+                    game_state.board.set_occupant(mystery_result.new_position, token.id)
+                    message += f"\n→ 🎲 TAILS! Token teleported back to starting corner {mystery_result.new_position}!"
+                    result_data["new_position"] = mystery_result.new_position
 
         # Change phase to ACTION
         game_state.turn_phase = TurnPhase.ACTION

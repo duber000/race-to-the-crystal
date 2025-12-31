@@ -24,6 +24,7 @@ from client.ui.arcade_ui import UIManager
 from game.combat import CombatSystem
 from game.game_state import GameState
 from game.movement import MovementSystem
+from game.mystery_square import MysterySquareSystem
 from shared.constants import (
     BACKGROUND_COLOR,
     CELL_SIZE,
@@ -1495,13 +1496,35 @@ class GameView(arcade.View):
         if success:
             print(f"Moved token {self.selected_token_id} from {old_pos} to {cell}")
 
-            # Update sprite position
+            # Check for mystery square effect
+            board_cell = self.game_state.board.get_cell_at(cell)
+            final_position = cell
+
+            if board_cell and board_cell.cell_type == CellType.MYSTERY:
+                # Get player's starting position for potential teleport
+                current_player = self.game_state.get_current_player()
+                if current_player:
+                    starting_pos = self.game_state.board.get_starting_position(current_player.color.value)
+
+                    # Trigger the mystery event (50/50 heal or teleport)
+                    mystery_result = MysterySquareSystem.trigger_mystery_event(token, starting_pos)
+
+                    if mystery_result.effect.name == "HEAL":
+                        print(f"🎲 HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!")
+                    else:
+                        # Token was teleported - update board occupancy
+                        self.game_state.board.clear_occupant(cell, token.id)
+                        self.game_state.board.set_occupant(mystery_result.new_position, token.id)
+                        final_position = mystery_result.new_position
+                        print(f"🎲 TAILS! Token teleported back to starting corner {final_position}!")
+
+            # Update sprite position to final position
             for sprite in self.token_sprites:
                 if (
                     isinstance(sprite, TokenSprite)
                     and sprite.token.id == self.selected_token_id
                 ):
-                    sprite.update_position(cell[0], cell[1])
+                    sprite.update_position(final_position[0], final_position[1])
                     break
 
             # Clear selection
