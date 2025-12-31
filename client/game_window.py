@@ -1518,13 +1518,14 @@ class GameView(arcade.View):
                         final_position = mystery_result.new_position
                         print(f"🎲 TAILS! Token teleported back to starting corner {final_position}!")
 
-            # Update sprite position to final position
+            # Update sprite position and health display
             for sprite in self.token_sprites:
                 if (
                     isinstance(sprite, TokenSprite)
                     and sprite.token.id == self.selected_token_id
                 ):
                     sprite.update_position(final_position[0], final_position[1])
+                    sprite.update_health()  # Refresh health display (for mystery heal)
                     break
 
             # Clear selection
@@ -1572,7 +1573,7 @@ class GameView(arcade.View):
                     sprite.update_health()
                 else:
                     self.token_sprites.remove(sprite)
-                    self.game_state.board.clear_occupant(target_token.position)
+                    self.game_state.board.clear_occupant(target_token.position, target_token.id)
                 break
 
         # Clear selection and move to end turn phase
