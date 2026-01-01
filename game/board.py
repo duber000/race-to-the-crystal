@@ -109,21 +109,11 @@ class Board:
             self.grid.append(row)
 
         # Place special cells
-        self._place_starting_positions()
+        # Note: Starting positions no longer marked with CellType.START
+        # Deployment areas are determined by get_deployable_positions() instead
         self._place_crystal()
         self._place_generators()
         self._place_mystery_squares()
-
-    def _place_starting_positions(self) -> None:
-        """Place starting positions in the four corners."""
-        corners = [
-            (0, 0),                          # Top-left (Player 1 - Cyan)
-            (self.width - 1, 0),             # Top-right (Player 2 - Magenta)
-            (0, self.height - 1),            # Bottom-left (Player 3 - Yellow)
-            (self.width - 1, self.height - 1)  # Bottom-right (Player 4 - Green)
-        ]
-        for x, y in corners:
-            self.grid[y][x].cell_type = CellType.START
 
     def _place_crystal(self) -> None:
         """Place the power crystal in the center of the board."""
@@ -288,7 +278,7 @@ class Board:
 
     def get_deployable_positions(self, player_index: int) -> List[Tuple[int, int]]:
         """
-        Get valid deployment positions for a player (corner and adjacent cells).
+        Get valid deployment positions for a player (3x3 area extending from corner into board).
 
         Args:
             player_index: Player index (0-3)
@@ -299,14 +289,29 @@ class Board:
         corner = self.get_starting_position(player_index)
         cx, cy = corner
 
-        # Include corner and all 8 adjacent cells
-        positions = [corner]
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                if dx == 0 and dy == 0:
-                    continue  # Skip corner itself (already added)
-                x, y = cx + dx, cy + dy
-                if 0 <= x < self.width and 0 <= y < self.height:
+        # Determine direction into the board from each corner
+        # For corners at board edges, extend inward to make a 3x3 grid on the board
+        positions = []
+
+        if player_index == 0:  # Top-left (0, 0)
+            # Deploy area: (0,0) to (2,2)
+            for x in range(3):
+                for y in range(3):
+                    positions.append((x, y))
+        elif player_index == 1:  # Top-right (23, 0)
+            # Deploy area: (21,0) to (23,2)
+            for x in range(self.width - 3, self.width):
+                for y in range(3):
+                    positions.append((x, y))
+        elif player_index == 2:  # Bottom-left (0, 23)
+            # Deploy area: (0,21) to (2,23)
+            for x in range(3):
+                for y in range(self.height - 3, self.height):
+                    positions.append((x, y))
+        elif player_index == 3:  # Bottom-right (23, 23)
+            # Deploy area: (21,21) to (23,23)
+            for x in range(self.width - 3, self.width):
+                for y in range(self.height - 3, self.height):
                     positions.append((x, y))
 
         return positions

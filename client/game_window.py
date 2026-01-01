@@ -34,6 +34,9 @@ from shared.constants import (
 )
 from shared.enums import TurnPhase, CellType
 
+# UI Constants
+HUD_HEIGHT = 80  # Height of the HUD bar at the top of the screen
+
 
 class GameView(arcade.View):
     """
@@ -266,7 +269,12 @@ class GameView(arcade.View):
 
     def _create_ui_sprites(self):
         """Create UI sprites (HUD, buttons, etc.)."""
-        # For now, we'll use simple text rendering instead of complex UI sprites
+        # Create corner indicator for current player's deployment area
+        self._create_corner_indicator()
+
+    def _create_corner_indicator(self):
+        """Create a visual indicator for the player's deployment corner in UI space."""
+        # This will be drawn in _draw_hud() to keep it in screen space (not on the board)
         pass
 
     def _create_3d_rendering(self):
@@ -379,6 +387,109 @@ class GameView(arcade.View):
         self.instruction_text.y = self.window.height - 60
         self.instruction_text.draw()
 
+        # Draw corner indicator for deployment area
+        self._draw_corner_indicator()
+
+    def _get_corner_indicator_position(self):
+        """
+        Get the position and size of the corner indicator.
+
+        Returns:
+            Tuple of (center_x, center_y, size) or None if no current player
+        """
+        current_player = self.game_state.get_current_player()
+        if not current_player:
+            return None
+
+        player_index = current_player.color.value
+        indicator_size = 40
+        margin = 20
+
+        if player_index == 0:  # Bottom-left
+            center_x = margin + indicator_size
+            center_y = margin + indicator_size
+        elif player_index == 1:  # Bottom-right
+            center_x = self.window.width - margin - indicator_size
+            center_y = margin + indicator_size
+        elif player_index == 2:  # Top-left
+            center_x = margin + indicator_size
+            center_y = self.window.height - HUD_HEIGHT - margin - indicator_size
+        else:  # player_index == 3, Top-right
+            center_x = self.window.width - margin - indicator_size
+            center_y = self.window.height - HUD_HEIGHT - margin - indicator_size
+
+        return (center_x, center_y, indicator_size)
+
+    def _is_click_on_corner_indicator(self, x: int, y: int) -> bool:
+        """
+        Check if a screen-space click is on the corner indicator.
+
+        Args:
+            x: Screen x coordinate
+            y: Screen y coordinate
+
+        Returns:
+            True if click is within the indicator hexagon
+        """
+        pos = self._get_corner_indicator_position()
+        if not pos:
+            return False
+
+        center_x, center_y, size = pos
+
+        # Simple circle collision for now (hexagon would be more accurate but this works)
+        distance_sq = (x - center_x) ** 2 + (y - center_y) ** 2
+        return distance_sq <= (size * 1.2) ** 2  # Slightly larger hit box
+
+    def _draw_corner_indicator(self):
+        """Draw a visual indicator in UI space showing the player's deployment corner."""
+        import math
+
+        pos = self._get_corner_indicator_position()
+        if not pos:
+            return
+
+        center_x, center_y, indicator_size = pos
+
+        current_player = self.game_state.get_current_player()
+        player_index = current_player.color.value
+        player_color = PLAYER_COLORS[player_index]
+
+        # Draw hexagon indicator with glow
+        num_sides = 6
+        points = []
+        for i in range(num_sides):
+            angle = (i / num_sides) * 2 * math.pi - math.pi / 2
+            x = center_x + indicator_size * math.cos(angle)
+            y = center_y + indicator_size * math.sin(angle)
+            points.append((x, y))
+
+        # Draw glow layers
+        for glow in range(4, 0, -1):
+            alpha = int(100 / (glow + 1))
+            glow_points = []
+            for i in range(num_sides):
+                angle = (i / num_sides) * 2 * math.pi - math.pi / 2
+                x = center_x + (indicator_size + glow * 3) * math.cos(angle)
+                y = center_y + (indicator_size + glow * 3) * math.sin(angle)
+                glow_points.append((x, y))
+            arcade.draw_polygon_outline(glow_points, (*player_color, alpha), max(1, 4 - glow))
+
+        # Draw main hexagon outline
+        arcade.draw_polygon_outline(points, player_color, 3)
+
+        # Draw "R" for Reserve/Repository in the center
+        arcade.draw_text(
+            "R",
+            center_x,
+            center_y,
+            player_color,
+            font_size=24,
+            bold=True,
+            anchor_x="center",
+            anchor_y="center",
+        )
+
     def _draw_corner_menu(self):
         """Draw the corner deployment menu with token type options (2D mode)."""
         if not self.corner_menu_position:
@@ -439,6 +550,96 @@ class GameView(arcade.View):
                 # Draw unavailable option in dark gray
                 arcade.draw_circle_filled(x, y, CELL_SIZE * 0.8, (50, 50, 50, 100))
                 arcade.draw_circle_outline(x, y, CELL_SIZE * 0.8, (100, 100, 100), 2)
+
+            # Draw health value
+            arcade.draw_text(
+                str(health),
+                x,
+                y,
+                (255, 255, 255) if count > 0 else (100, 100, 100),
+                font_size=20,
+                bold=True,
+                anchor_x="center",
+                anchor_y="center",
+            )
+
+            # Draw count if available
+            if count > 0:
+                arcade.draw_text(
+                    f"({count})",
+                    x,
+                    y - 15,
+                    (200, 200, 200),
+                    font_size=12,
+                    anchor_x="center",
+                    anchor_y="center",
+                )
+
+    def _draw_corner_menu_ui(self):
+        """Draw the corner deployment menu in UI space around the R hexagon."""
+        if not self.corner_menu_open:
+            return
+
+        current_player = self.game_state.get_current_player()
+        if not current_player:
+            return
+
+        # Get reserve token counts
+        counts = self.game_state.get_reserve_token_counts(current_player.id)
+
+        # Get R hexagon position
+        pos = self._get_corner_indicator_position()
+        if not pos:
+            return
+
+        center_x, center_y, indicator_size = pos
+
+        # Menu spacing around the R hexagon
+        spacing = 80  # Distance from center
+
+        # Draw options in a 2x2 grid around the R hexagon
+        # Adjust positions based on which corner to avoid going off-screen
+        player_index = current_player.color.value
+
+        if player_index == 0:  # Bottom-left - options go right and up
+            options = [
+                (10, center_x + spacing, center_y + spacing, counts[10]),  # Top-right
+                (8, center_x + spacing * 1.8, center_y + spacing, counts[8]),  # Top-far-right
+                (6, center_x + spacing, center_y, counts[6]),  # Right
+                (4, center_x + spacing * 1.8, center_y, counts[4]),  # Far-right
+            ]
+        elif player_index == 1:  # Bottom-right - options go left and up
+            options = [
+                (10, center_x - spacing, center_y + spacing, counts[10]),  # Top-left
+                (8, center_x - spacing * 1.8, center_y + spacing, counts[8]),  # Top-far-left
+                (6, center_x - spacing, center_y, counts[6]),  # Left
+                (4, center_x - spacing * 1.8, center_y, counts[4]),  # Far-left
+            ]
+        elif player_index == 2:  # Top-left - options go right and down
+            options = [
+                (10, center_x + spacing, center_y - spacing, counts[10]),  # Bottom-right
+                (8, center_x + spacing * 1.8, center_y - spacing, counts[8]),  # Bottom-far-right
+                (6, center_x + spacing, center_y, counts[6]),  # Right
+                (4, center_x + spacing * 1.8, center_y, counts[4]),  # Far-right
+            ]
+        else:  # player_index == 3, Top-right - options go left and down
+            options = [
+                (10, center_x - spacing, center_y - spacing, counts[10]),  # Bottom-left
+                (8, center_x - spacing * 1.8, center_y - spacing, counts[8]),  # Bottom-far-left
+                (6, center_x - spacing, center_y, counts[6]),  # Left
+                (4, center_x - spacing * 1.8, center_y, counts[4]),  # Far-left
+            ]
+
+        # Draw each option
+        for health, x, y, count in options:
+            if count > 0:
+                # Draw available option in cyan
+                arcade.draw_circle_filled(x, y, 30, (0, 255, 255, 200))
+                arcade.draw_circle_outline(x, y, 30, (0, 255, 255), 3)
+            else:
+                # Draw unavailable option in dark gray
+                arcade.draw_circle_filled(x, y, 30, (50, 50, 50, 100))
+                arcade.draw_circle_outline(x, y, 30, (100, 100, 100), 2)
 
             # Draw health value
             arcade.draw_text(
@@ -730,15 +931,11 @@ class GameView(arcade.View):
             self._draw_hud()
             self.ui_manager.draw()
 
-        # Draw corner menu if open (in world coordinates)
+        # Draw corner menu if open (in UI space around R hexagon)
         # Works in both 2D and 3D modes
-        if self.corner_menu_open and self.corner_menu_position:
-            if self.camera_mode == "2D":
-                with self.camera.activate():
-                    self._draw_corner_menu()
-            else:
-                # In 3D mode, draw menu in UI space (HUD-based)
-                self._draw_corner_menu_3d()
+        if self.corner_menu_open:
+            with self.ui_camera.activate():
+                self._draw_corner_menu_ui()
 
     def on_update(self, delta_time: float):
         """
@@ -852,24 +1049,21 @@ class GameView(arcade.View):
                 self._handle_cancel()
                 return
 
-            # Check corner menu if open (in either 2D or 3D mode)
             current_player = self.game_state.get_current_player()
+
+            # Check if clicking on R hexagon to open menu
+            if not self.corner_menu_open and self._is_click_on_corner_indicator(x, y):
+                if current_player and self.turn_phase == TurnPhase.MOVEMENT:
+                    self.corner_menu_open = True
+                    self.corner_menu_just_opened = True
+                    print("Opened deployment menu at R hexagon")
+                    return
+
+            # Check corner menu if open (UI-based menu)
             if self.corner_menu_open and current_player:
-                if self.camera_mode == "2D":
-                    # 2D world-space menu
-                    world_pos = self.camera.unproject((x, y))
-                    handled = self._handle_corner_menu_click(
-                        (world_pos[0], world_pos[1]), current_player.id
-                    )
-                    if handled:
-                        return
-                else:
-                    # 3D HUD-space menu
-                    handled = self._handle_corner_menu_click_3d(
-                        (x, y), current_player.id
-                    )
-                    if handled:
-                        return
+                handled = self._handle_corner_menu_click_ui((x, y), current_player.id)
+                if handled:
+                    return
 
             # No UI clicked, proceed with world interaction
             if self.camera_mode == "2D":
@@ -1104,8 +1298,7 @@ class GameView(arcade.View):
         board_pixel_width = BOARD_WIDTH * CELL_SIZE
         board_pixel_height = BOARD_HEIGHT * CELL_SIZE
 
-        # Account for HUD at top (80 pixels)
-        HUD_HEIGHT = 80
+        # Account for HUD at top
         playable_height = self.window.height - HUD_HEIGHT
 
         # Calculate zoom to fit board in playable area
@@ -1268,6 +1461,93 @@ class GameView(arcade.View):
 
         return False
 
+    def _handle_corner_menu_click_ui(
+        self, screen_pos: Tuple[int, int], player_id: str
+    ) -> bool:
+        """
+        Handle click on UI-based corner menu (around R hexagon).
+
+        Args:
+            screen_pos: Click position in screen coordinates
+            player_id: Current player ID
+
+        Returns:
+            True if a token type was selected
+        """
+        if not self.corner_menu_open:
+            return False
+
+        current_player = self.game_state.get_current_player()
+        if not current_player:
+            return False
+
+        # Get R hexagon position
+        pos = self._get_corner_indicator_position()
+        if not pos:
+            return False
+
+        center_x, center_y, indicator_size = pos
+        spacing = 80
+
+        # Calculate menu option positions (same logic as in _draw_corner_menu_ui)
+        player_index = current_player.color.value
+
+        if player_index == 0:  # Bottom-left
+            options = [
+                (10, center_x + spacing, center_y + spacing),
+                (8, center_x + spacing * 1.8, center_y + spacing),
+                (6, center_x + spacing, center_y),
+                (4, center_x + spacing * 1.8, center_y),
+            ]
+        elif player_index == 1:  # Bottom-right
+            options = [
+                (10, center_x - spacing, center_y + spacing),
+                (8, center_x - spacing * 1.8, center_y + spacing),
+                (6, center_x - spacing, center_y),
+                (4, center_x - spacing * 1.8, center_y),
+            ]
+        elif player_index == 2:  # Top-left
+            options = [
+                (10, center_x + spacing, center_y - spacing),
+                (8, center_x + spacing * 1.8, center_y - spacing),
+                (6, center_x + spacing, center_y),
+                (4, center_x + spacing * 1.8, center_y),
+            ]
+        else:  # player_index == 3, Top-right
+            options = [
+                (10, center_x - spacing, center_y - spacing),
+                (8, center_x - spacing * 1.8, center_y - spacing),
+                (6, center_x - spacing, center_y),
+                (4, center_x - spacing * 1.8, center_y),
+            ]
+
+        click_x, click_y = screen_pos
+
+        # Check which option was clicked
+        click_radius = 30
+        for health, option_x, option_y in options:
+            distance = ((click_x - option_x) ** 2 + (click_y - option_y) ** 2) ** 0.5
+            if distance <= click_radius:
+                # Check if player has this token type in reserve
+                reserve_counts = self.game_state.get_reserve_token_counts(player_id)
+                if reserve_counts.get(health, 0) > 0:
+                    # Select this token type for deployment
+                    self.selected_deploy_health = health
+                    print(
+                        f"Selected {health}hp token for deployment - click a deployment area position to deploy"
+                    )
+
+                    # Close the menu
+                    self.corner_menu_open = False
+                    self.corner_menu_just_opened = False
+
+                    return True
+                else:
+                    print(f"No {health}hp tokens available in reserve")
+                    return False
+
+        return False
+
     def _handle_corner_menu_click_3d(
         self, screen_pos: Tuple[int, int], player_id: str
     ) -> bool:
@@ -1326,25 +1606,14 @@ class GameView(arcade.View):
         if not current_player:
             return
 
-        # Check if clicked on corner menu option
-        if (
-            self.corner_menu_open
-            and self.corner_menu_position
-            and not self.corner_menu_just_opened
-        ):
-            deployed = self._handle_corner_menu_click(world_pos, current_player.id)
-            if deployed:
-                return
-
         # Reset the just-opened flag after first frame
         if self.corner_menu_just_opened:
             self.corner_menu_just_opened = False
             return  # Don't process any other clicks this frame
 
-        # Close corner menu if clicking elsewhere
+        # Close corner menu if clicking elsewhere on the board
         if self.corner_menu_open:
             self.corner_menu_open = False
-            self.corner_menu_position = None
             self.corner_menu_just_opened = False
 
         # Check if clicked on a token
@@ -1434,17 +1703,6 @@ class GameView(arcade.View):
                 else:
                     print("Cannot deploy outside your corner area")
                     self.selected_deploy_health = None
-            elif (
-                self._is_player_corner((grid_x, grid_y), current_player.id)
-                and self.turn_phase == TurnPhase.MOVEMENT
-                and not self.selected_token_id
-            ):
-                # Third priority: open deployment menu if clicking anywhere in corner area
-                # Clicked on any empty cell in corner area - open menu to select token type
-                self.corner_menu_open = True
-                self.corner_menu_position = (grid_x, grid_y)
-                self.corner_menu_just_opened = True  # Prevent click-through
-                print(f"Opened deployment menu - select a token type")
 
     def _handle_select_3d(self, grid_pos: Tuple[int, int]):
         """
@@ -1558,17 +1816,6 @@ class GameView(arcade.View):
                 else:
                     print("Cannot deploy outside your corner area")
                     self.selected_deploy_health = None
-            elif (
-                self._is_player_corner((grid_x, grid_y), current_player.id)
-                and self.turn_phase == TurnPhase.MOVEMENT
-                and not self.selected_token_id
-            ):
-                # Third priority: open deployment menu if clicking anywhere in corner area
-                # Clicked on any empty cell in corner area - open menu to select token type
-                self.corner_menu_open = True
-                self.corner_menu_position = (grid_x, grid_y)
-                self.corner_menu_just_opened = True  # Prevent click-through
-                print(f"Opened deployment menu - select a token type")
 
     def _try_move_to_cell(self, cell: Tuple[int, int]):
         """

@@ -99,10 +99,11 @@ class TestBoard:
         bottom_left = board.get_cell(0, board.height - 1)
         bottom_right = board.get_cell(board.width - 1, board.height - 1)
 
-        assert top_left.cell_type == CellType.START
-        assert top_right.cell_type == CellType.START
-        assert bottom_left.cell_type == CellType.START
-        assert bottom_right.cell_type == CellType.START
+        # Corners are now normal cells (deployment determined by get_deployable_positions)
+        assert top_left.cell_type == CellType.NORMAL
+        assert top_right.cell_type == CellType.NORMAL
+        assert bottom_left.cell_type == CellType.NORMAL
+        assert bottom_right.cell_type == CellType.NORMAL
 
     def test_crystal_position(self):
         """Test that crystal is placed in center."""
@@ -237,6 +238,34 @@ class TestBoard:
         # Should wrap around
         assert board.get_starting_position(4) == board.get_starting_position(0)
         assert board.get_starting_position(5) == board.get_starting_position(1)
+
+    def test_get_deployable_positions(self):
+        """Test that each player has exactly 9 deployable cells (3x3 area extending from corner)."""
+        board = Board()
+
+        # Player 0 (top-left): should get (0,0) to (2,2)
+        positions = board.get_deployable_positions(0)
+        assert len(positions) == 9, f"Player 0 should have 9 deployable positions, got {len(positions)}"
+        expected = {(x, y) for x in range(3) for y in range(3)}
+        assert set(positions) == expected, f"Player 0 deployment area incorrect: {set(positions)}"
+
+        # Player 1 (top-right): should get (21,0) to (23,2)
+        positions = board.get_deployable_positions(1)
+        assert len(positions) == 9, f"Player 1 should have 9 deployable positions, got {len(positions)}"
+        expected = {(x, y) for x in range(board.width - 3, board.width) for y in range(3)}
+        assert set(positions) == expected, f"Player 1 deployment area incorrect"
+
+        # Player 2 (bottom-left): should get (0,21) to (2,23)
+        positions = board.get_deployable_positions(2)
+        assert len(positions) == 9, f"Player 2 should have 9 deployable positions, got {len(positions)}"
+        expected = {(x, y) for x in range(3) for y in range(board.height - 3, board.height)}
+        assert set(positions) == expected, f"Player 2 deployment area incorrect"
+
+        # Player 3 (bottom-right): should get (21,21) to (23,23)
+        positions = board.get_deployable_positions(3)
+        assert len(positions) == 9, f"Player 3 should have 9 deployable positions, got {len(positions)}"
+        expected = {(x, y) for x in range(board.width - 3, board.width) for y in range(board.height - 3, board.height)}
+        assert set(positions) == expected, f"Player 3 deployment area incorrect"
 
     def test_get_crystal_position(self):
         """Test getting crystal position."""

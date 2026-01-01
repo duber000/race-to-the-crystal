@@ -321,7 +321,8 @@ class TestDeployActionValidation:
 
         game_state.turn_phase = TurnPhase.MOVEMENT
 
-        action = DeployAction(health_value=10, position=(0, 0))
+        # Use (1,0) since (0,0)-(0,2) are occupied by auto-deployed tokens
+        action = DeployAction(health_value=10, position=(1, 0))
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert is_valid
@@ -392,13 +393,14 @@ class TestDeployActionExecution:
         game_state.turn_phase = TurnPhase.MOVEMENT
         initial_reserve = len(game_state.get_reserve_tokens("player_0"))
 
-        action = DeployAction(health_value=10, position=(0, 0))
+        # Use (1,0) since (0,0)-(0,2) are occupied by auto-deployed tokens
+        action = DeployAction(health_value=10, position=(1, 0))
         success, msg, data = executor.execute_action(action, game_state, "player_0")
 
         assert success
         assert "new_token_id" in data
         assert data["health_value"] == 10
-        assert data["position"] == (0, 0)
+        assert data["position"] == (1, 0)
 
         # Check reserve decreased
         final_reserve = len(game_state.get_reserve_tokens("player_0"))
@@ -411,7 +413,8 @@ class TestDeployActionExecution:
 
         game_state.turn_phase = TurnPhase.MOVEMENT
 
-        action = DeployAction(health_value=10, position=(0, 0))
+        # Use (1,0) since (0,0)-(0,2) are occupied by auto-deployed tokens
+        action = DeployAction(health_value=10, position=(1, 0))
         success, msg, data = executor.execute_action(action, game_state, "player_0")
 
         assert success

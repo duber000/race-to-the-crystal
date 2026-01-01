@@ -256,6 +256,28 @@ class TestGameState:
 
         assert state.current_turn_player_id == "p1"
 
+    def test_start_game_auto_deploys_three_tokens(self):
+        """Test that starting game auto-deploys exactly 3 tokens per player."""
+        state = GameState()
+        state.add_player("p1", "Alice", PlayerColor.CYAN)
+        state.add_player("p2", "Bob", PlayerColor.MAGENTA)
+
+        state.start_game()
+
+        # Each player should have exactly 3 deployed tokens
+        p1_deployed = state.get_player_tokens("p1")
+        p2_deployed = state.get_player_tokens("p2")
+
+        assert len(p1_deployed) == 3, f"Player 1 should have 3 deployed tokens, got {len(p1_deployed)}"
+        assert len(p2_deployed) == 3, f"Player 2 should have 3 deployed tokens, got {len(p2_deployed)}"
+
+        # Check that 17 tokens remain in reserve for each player
+        p1_reserve = state.get_reserve_tokens("p1")
+        p2_reserve = state.get_reserve_tokens("p2")
+
+        assert len(p1_reserve) == 17, f"Player 1 should have 17 reserve tokens, got {len(p1_reserve)}"
+        assert len(p2_reserve) == 17, f"Player 2 should have 17 reserve tokens, got {len(p2_reserve)}"
+
     def test_end_turn(self):
         """Test ending turn and advancing to next player."""
         state = GameState()

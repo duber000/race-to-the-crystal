@@ -327,10 +327,10 @@ class GameState:
         reserve = self.get_reserve_tokens(player_id)
         reserve_sorted = sorted(reserve, key=lambda t: t.max_health, reverse=True)
 
-        # Deploy tokens to fill all starting positions
+        # Deploy exactly 3 tokens to starting positions
         deployed_count = 0
         for position in deployable_positions:
-            if deployed_count >= len(reserve_sorted):
+            if deployed_count >= 3:
                 break
 
             # Check if position is not occupied and not a special cell
