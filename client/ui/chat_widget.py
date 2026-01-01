@@ -75,6 +75,18 @@ class ChatWidget:
         self.text_color = arcade.color.WHITE
         self.input_bg_color = (30, 30, 30, 220)
         self.border_color = arcade.color.CYAN
+        
+        # Text objects for performance
+        self.input_text_obj = arcade.Text("", self.x + 15, 0, self.text_color, font_size=12)
+        self.help_text_obj = arcade.Text(
+            "Press Enter to chat...", 
+            self.x + 15, 
+            0, 
+            (150, 150, 150),
+            font_size=12,
+            italic=True
+        )
+        self.message_texts = []  # Will store message text objects
 
         logger.info("Chat widget created")
 
@@ -249,16 +261,27 @@ class ChatWidget:
             # Format: "PlayerName: message"
             display_text = f"{msg.player_name}: {msg.message}"
 
-            # Draw message text (with wrapping if needed)
-            arcade.draw_text(
-                display_text,
-                self.x + 10,
-                message_y,
-                self.text_color,
-                font_size=12,
-                width=self.width - 20,
-                multiline=False
-            )
+            # Draw message text using Text object for performance
+            # Create or update text object for this message
+            if len(self.message_texts) <= message_index:
+                # Create new text object
+                message_text = arcade.Text(
+                    display_text,
+                    self.x + 10,
+                    message_y,
+                    self.text_color,
+                    font_size=12,
+                    width=self.width - 20,
+                    multiline=False
+                )
+                self.message_texts.append(message_text)
+            else:
+                # Update existing text object
+                message_text = self.message_texts[message_index]
+                message_text.text = display_text
+                message_text.y = message_y
+            
+            self.message_texts[message_index].draw()
 
             message_y -= message_height
 
@@ -293,21 +316,11 @@ class ChatWidget:
         if self.input_active and self.cursor_visible:
             display_input += "|"
 
-        arcade.draw_text(
-            display_input,
-            self.x + 15,
-            input_y + 8,
-            self.text_color,
-            font_size=12
-        )
+        self.input_text_obj.text = display_input
+        self.input_text_obj.y = input_y + 8
+        self.input_text_obj.draw()
 
         # Draw help text if not active
         if not self.input_active and not self.input_text:
-            arcade.draw_text(
-                "Press Enter to chat...",
-                self.x + 15,
-                input_y + 8,
-                (150, 150, 150),
-                font_size=12,
-                italic=True
-            )
+            self.help_text_obj.y = input_y + 8
+            self.help_text_obj.draw()

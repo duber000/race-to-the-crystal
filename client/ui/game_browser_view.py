@@ -99,6 +99,17 @@ class GameBrowserView(arcade.View):
             font_size=16,
             anchor_x="center"
         )
+        
+        # No games message text
+        self.no_games_text = arcade.Text(
+            "No games available. Create a game from 'Host Network Game'.",
+            self.window.width // 2,
+            self.window.height // 2,
+            arcade.color.GRAY,
+            font_size=14,
+            anchor_x="center",
+            anchor_y="center"
+        )
 
         # Create button layout
         v_box = arcade.gui.UIBoxLayout(space_between=15)
@@ -200,15 +211,7 @@ class GameBrowserView(arcade.View):
 
         # Show help text if no games
         if not self.loading and not self.error_message and len(self.games) == 0:
-            arcade.draw_text(
-                "No games available. Create a game from 'Host Network Game'.",
-                self.window.width // 2,
-                self.window.height // 2,
-                arcade.color.GRAY,
-                font_size=14,
-                anchor_x="center",
-                anchor_y="center"
-            )
+            self.no_games_text.draw()
 
     async def _load_games(self):
         """Connect to server and load available games."""

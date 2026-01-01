@@ -85,6 +85,29 @@ class VictoryView(arcade.View):
             anchor_x="center",
             italic=True
         )
+        
+        # Victory text objects for the main display
+        self.victory_text = arcade.Text(
+            f"🏆 {self.winner_name} WINS! 🏆",
+            self.window.width // 2,
+            self.window.height // 2 + 50,
+            arcade.color.GOLD,
+            font_size=48,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+        
+        self.congrats_text = arcade.Text(
+            "Congratulations!",
+            self.window.width // 2,
+            self.window.height // 2 - 20,
+            arcade.color.WHITE,
+            font_size=24,
+            anchor_x="center",
+            anchor_y="center",
+            italic=True
+        )
 
         # Build statistics display
         self._build_statistics()
@@ -385,26 +408,7 @@ class VictoryViewSimple(arcade.View):
         self.clear()
 
         # Draw victory text
-        arcade.draw_text(
-            f"🏆 {self.winner_name} WINS! 🏆",
-            self.window.width // 2,
-            self.window.height // 2 + 50,
-            arcade.color.GOLD,
-            font_size=48,
-            anchor_x="center",
-            anchor_y="center",
-            bold=True
-        )
-
-        arcade.draw_text(
-            "Congratulations!",
-            self.window.width // 2,
-            self.window.height // 2 - 20,
-            arcade.color.WHITE,
-            font_size=24,
-            anchor_x="center",
-            anchor_y="center",
-            italic=True
-        )
+        self.victory_text.draw()
+        self.congrats_text.draw()
 
         self.manager.draw()

@@ -116,6 +116,20 @@ class GameView(arcade.View):
             (150, 150, 150),
             font_size=14,
         )
+        
+        # Text objects for board elements (for performance)
+        self.reserve_text = arcade.Text("R", 0, 0, (255, 255, 255), font_size=24, bold=True, anchor_x="center")
+        
+        # Pre-create health text objects (health values are 2, 4, 6, 8, 10, 12)
+        self.health_texts = {
+            health: arcade.Text(
+                str(health), 0, 0, (255, 255, 255), 
+                font_size=20, bold=True, anchor_x="center", anchor_y="center"
+            ) for health in [2, 4, 6, 8, 10, 12]
+        }
+        
+        # Count text objects will be created dynamically as needed
+        self.count_texts = {}
 
         # 3D Rendering infrastructure
         self.camera_mode = (
@@ -580,16 +594,10 @@ class GameView(arcade.View):
         arcade.draw_polygon_outline(points, player_color, 3)
 
         # Draw "R" for Reserve/Repository in the center
-        arcade.draw_text(
-            "R",
-            center_x,
-            center_y,
-            player_color,
-            font_size=24,
-            bold=True,
-            anchor_x="center",
-            anchor_y="center",
-        )
+        self.reserve_text.x = center_x
+        self.reserve_text.y = center_y
+        self.reserve_text.color = player_color
+        self.reserve_text.draw()
 
     def _draw_corner_menu_ui(self):
         """Draw the corner deployment menu in UI space around the R hexagon."""
@@ -682,29 +690,34 @@ class GameView(arcade.View):
                 arcade.draw_circle_filled(x, y, 30, (50, 50, 50, 100))
                 arcade.draw_circle_outline(x, y, 30, (100, 100, 100), 2)
 
-            # Draw health value
-            arcade.draw_text(
-                str(health),
-                x,
-                y,
-                (255, 255, 255) if count > 0 else (100, 100, 100),
-                font_size=20,
-                bold=True,
-                anchor_x="center",
-                anchor_y="center",
-            )
+            # Draw health value using Text object for performance
+            health_text = self.health_texts.get(health)
+            if health_text:
+                health_text.x = x
+                health_text.y = y
+                health_text.color = (255, 255, 255) if count > 0 else (100, 100, 100)
+                health_text.draw()
 
             # Draw count if available
             if count > 0:
-                arcade.draw_text(
-                    f"({count})",
-                    x,
-                    y - 15,
-                    (200, 200, 200),
-                    font_size=12,
-                    anchor_x="center",
-                    anchor_y="center",
-                )
+                text_key = f"{x}_{y}"  # Use position as key since count can change
+                if text_key not in self.count_texts:
+                    # Create new text object
+                    self.count_texts[text_key] = arcade.Text(
+                        f"({count})",
+                        x,
+                        y - 15,
+                        (200, 200, 200),
+                        font_size=12,
+                        anchor_x="center",
+                        anchor_y="center",
+                    )
+                else:
+                    # Update existing text object
+                    count_text = self.count_texts[text_key]
+                    count_text.text = f"({count})"
+                
+                self.count_texts[text_key].draw()
 
     def _update_selection_visuals(self):
         """Update visual feedback for selection and valid moves with vector glow."""
