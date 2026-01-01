@@ -51,6 +51,8 @@ class GameView(arcade.View):
         self,
         game_state: GameState,
         start_in_3d: bool = False,
+        is_network_game: bool = False,
+        network_client: Optional["NetworkClient"] = None,
     ):
         """
         Initialize the game view.
@@ -58,11 +60,15 @@ class GameView(arcade.View):
         Args:
             game_state: The game state to render
             start_in_3d: Whether to start in 3D mode
+            is_network_game: Whether this is a network game (enables chat)
+            network_client: Network client for chat functionality (network games only)
         """
         super().__init__()
 
         # Game state
         self.game_state = game_state
+        self.is_network_game = is_network_game
+        self.network_client = network_client
 
         # Systems
         self.movement_system = MovementSystem()
@@ -172,18 +178,21 @@ class GameView(arcade.View):
         self.camera_3d = FirstPersonCamera3D(self.window.width, self.window.height)
         self.ui_manager = UIManager(self.window.width, self.window.height)
         
-        # Initialize chat widget on the left side of the screen
-        chat_width = 300
-        chat_height = 400
-        chat_x = 20
-        chat_y = 100
-        self.chat_widget = ChatWidget(
-            network_client=None,  # No network client for local game
-            x=chat_x,
-            y=chat_y,
-            width=chat_width,
-            height=chat_height
-        )
+        # Initialize chat widget only for network games
+        if self.is_network_game:
+            chat_width = 300
+            chat_height = 400
+            chat_x = 20
+            chat_y = 100
+            self.chat_widget = ChatWidget(
+                network_client=self.network_client,
+                x=chat_x,
+                y=chat_y,
+                width=chat_width,
+                height=chat_height
+            )
+        else:
+            self.chat_widget = None
 
         # Set up the game
         self.setup()

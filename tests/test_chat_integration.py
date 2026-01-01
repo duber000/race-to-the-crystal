@@ -31,6 +31,8 @@ def test_chat_widget_in_game_view():
     # Check if chat_widget is in the __init__ method
     init_source = inspect.getsource(GameView.__init__)
     assert 'chat_widget' in init_source, "GameView should contain chat_widget initialization"
+    assert 'is_network_game' in init_source, "GameView should accept is_network_game parameter"
+    assert 'network_client' in init_source, "GameView should accept network_client parameter"
 
 
 def test_chat_widget_draw_method():
@@ -69,3 +71,13 @@ def test_chat_widget_on_text_method():
     assert hasattr(GameView, 'on_text'), "GameView should have on_text method"
     text_source = inspect.getsource(GameView.on_text)
     assert 'chat_widget' in text_source, "GameView.on_text should handle chat_widget input"
+
+
+def test_chat_widget_conditional_creation():
+    """Test that chat widget is only created for network games."""
+    from client.game_window import GameView
+    
+    # Check that chat widget creation is conditional
+    init_source = inspect.getsource(GameView.on_show_view)
+    assert 'if self.is_network_game:' in init_source, "Chat widget should only be created for network games"
+    assert 'self.chat_widget = None' in init_source, "Chat widget should be None for local games"
