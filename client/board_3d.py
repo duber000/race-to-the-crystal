@@ -58,6 +58,10 @@ class Board3D:
         self.gen_crystal_lines_vao = None
         self.gen_crystal_lines_vbo = None
 
+        # Deployment zones VAO (3x3 corner areas)
+        self.deployment_zones_vao = None
+        self.deployment_zones_vbo = None
+
         # Shader program
         self.shader_program = None
 
@@ -72,6 +76,7 @@ class Board3D:
         self._create_grid_geometry()
         self._create_special_cells_geometry()
         self._create_generator_crystal_lines_geometry()
+        self._create_deployment_zones_geometry()
 
     def _create_shader(self):
         """Create GLSL shader program for glow wireframe effect."""
@@ -397,6 +402,83 @@ class Board3D:
 
         return vertices
 
+    def _create_deployment_zones_geometry(self):
+        """
+        Generate geometry for deployment zone indicators (3x3 corner areas).
+        Creates corner bracket wireframes to mark where tokens can be deployed.
+        """
+        vertices = []
+
+        # Define 3x3 deployment zones for each corner
+        deployment_zones = [
+            (0, 0, 3, 3),      # Top-left (0,0) to (2,2)
+            (21, 0, 3, 3),     # Top-right (21,0) to (23,2)
+            (0, 21, 3, 3),     # Bottom-left (0,21) to (2,23)
+            (21, 21, 3, 3),    # Bottom-right (21,21) to (23,23)
+        ]
+
+        bracket_height = self.wall_height * 0.3  # Bracket height in 3D
+        bracket_len_cells = 0.8  # Length in cells
+
+        for zone_x, zone_y, zone_w, zone_h in deployment_zones:
+            # Calculate pixel positions for the zone boundaries
+            x1 = zone_x * CELL_SIZE
+            y1 = zone_y * CELL_SIZE
+            x2 = (zone_x + zone_w) * CELL_SIZE
+            y2 = (zone_y + zone_h) * CELL_SIZE
+
+            bracket_len = CELL_SIZE * bracket_len_cells
+
+            # Create 3D corner brackets at each corner of the deployment zone
+            # Each bracket is an L-shape in 3D space
+
+            # Top-left corner bracket
+            # Vertical line
+            vertices.extend([x1, y1, 0.0])
+            vertices.extend([x1, y1, bracket_height])
+            vertices.extend([x1, y1, bracket_height])
+            vertices.extend([x1, y1 + bracket_len, bracket_height])
+            # Horizontal line
+            vertices.extend([x1, y1, bracket_height])
+            vertices.extend([x1 + bracket_len, y1, bracket_height])
+
+            # Top-right corner bracket
+            # Vertical line
+            vertices.extend([x2, y1, 0.0])
+            vertices.extend([x2, y1, bracket_height])
+            vertices.extend([x2, y1, bracket_height])
+            vertices.extend([x2, y1 + bracket_len, bracket_height])
+            # Horizontal line
+            vertices.extend([x2, y1, bracket_height])
+            vertices.extend([x2 - bracket_len, y1, bracket_height])
+
+            # Bottom-left corner bracket
+            # Vertical line
+            vertices.extend([x1, y2, 0.0])
+            vertices.extend([x1, y2, bracket_height])
+            vertices.extend([x1, y2, bracket_height])
+            vertices.extend([x1, y2 - bracket_len, bracket_height])
+            # Horizontal line
+            vertices.extend([x1, y2, bracket_height])
+            vertices.extend([x1 + bracket_len, y2, bracket_height])
+
+            # Bottom-right corner bracket
+            # Vertical line
+            vertices.extend([x2, y2, 0.0])
+            vertices.extend([x2, y2, bracket_height])
+            vertices.extend([x2, y2, bracket_height])
+            vertices.extend([x2, y2 - bracket_len, bracket_height])
+            # Horizontal line
+            vertices.extend([x2, y2, bracket_height])
+            vertices.extend([x2 - bracket_len, y2, bracket_height])
+
+        if len(vertices) > 0:
+            vertices_array = np.array(vertices, dtype=np.float32)
+            self.deployment_zones_vbo = self.ctx.buffer(data=vertices_array.tobytes())
+            self.deployment_zones_vao = self.ctx.geometry(
+                [BufferDescription(self.deployment_zones_vbo, "3f", ["in_position"])]
+            )
+
     def draw(self, camera_3d):
         """
         Render the 3D wireframe grid and special cells.
@@ -455,6 +537,14 @@ class Board3D:
             self.shader_program["glow_intensity"] = 2.2
             self.gen_crystal_lines_vao.render(self.shader_program, mode=self.ctx.LINES)
 
+        # Draw deployment zone indicators (yellow/white brackets)
+        if self.deployment_zones_vao:
+            self.shader_program["base_color"] = np.array(
+                [1.0, 1.0, 0.6, 0.5], dtype=np.float32  # Subtle yellow/white
+            )
+            self.shader_program["glow_intensity"] = 1.2
+            self.deployment_zones_vao.render(self.shader_program, mode=self.ctx.LINES)
+
     def cleanup(self):
         """Release all OpenGL resources to prevent memory leaks."""
         # Clear all buffer references - Arcade handles cleanup via garbage collection
@@ -468,3 +558,5 @@ class Board3D:
         self.mystery_vao = None
         self.gen_crystal_lines_vbo = None
         self.gen_crystal_lines_vao = None
+        self.deployment_zones_vbo = None
+        self.deployment_zones_vao = None

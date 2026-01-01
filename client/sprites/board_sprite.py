@@ -314,4 +314,80 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None) -> Shap
     if generators and crystal_pos:
         _draw_generator_to_crystal_lines(shape_list, generators, crystal_pos)
 
+    # Draw deployment zone indicators (3x3 corners)
+    deployment_zones = [
+        (0, 0, 3, 3),      # Top-left (0,0) to (2,2)
+        (21, 0, 3, 3),     # Top-right (21,0) to (23,2)
+        (0, 21, 3, 3),     # Bottom-left (0,21) to (2,23)
+        (21, 21, 3, 3),    # Bottom-right (21,21) to (23,23)
+    ]
+
+    for zone_x, zone_y, zone_w, zone_h in deployment_zones:
+        # Calculate pixel positions
+        x1 = zone_x * CELL_SIZE
+        y1 = zone_y * CELL_SIZE
+        x2 = (zone_x + zone_w) * CELL_SIZE
+        y2 = (zone_y + zone_h) * CELL_SIZE
+
+        # Corner bracket length
+        bracket_len = CELL_SIZE * 0.8
+
+        # Deployment zone color: subtle yellow/white glow
+        zone_color = (255, 255, 150, 120)  # Semi-transparent yellow
+        glow_color = (255, 255, 150, 40)   # Very faint glow
+
+        # Draw glow layers first
+        for offset in range(3, 0, -1):
+            alpha = int(40 / (offset + 1))
+            glow = (255, 255, 150, alpha)
+
+            # Top-left corner brackets
+            line = create_line(x1, y1 + bracket_len, x1, y1, glow, offset + 1)
+            shape_list.append(line)
+            line = create_line(x1, y1, x1 + bracket_len, y1, glow, offset + 1)
+            shape_list.append(line)
+
+            # Top-right corner brackets
+            line = create_line(x2 - bracket_len, y1, x2, y1, glow, offset + 1)
+            shape_list.append(line)
+            line = create_line(x2, y1, x2, y1 + bracket_len, glow, offset + 1)
+            shape_list.append(line)
+
+            # Bottom-left corner brackets
+            line = create_line(x1, y2 - bracket_len, x1, y2, glow, offset + 1)
+            shape_list.append(line)
+            line = create_line(x1, y2, x1 + bracket_len, y2, glow, offset + 1)
+            shape_list.append(line)
+
+            # Bottom-right corner brackets
+            line = create_line(x2 - bracket_len, y2, x2, y2, glow, offset + 1)
+            shape_list.append(line)
+            line = create_line(x2, y2 - bracket_len, x2, y2, glow, offset + 1)
+            shape_list.append(line)
+
+        # Draw main bracket lines
+        # Top-left corner
+        line = create_line(x1, y1 + bracket_len, x1, y1, zone_color, 2)
+        shape_list.append(line)
+        line = create_line(x1, y1, x1 + bracket_len, y1, zone_color, 2)
+        shape_list.append(line)
+
+        # Top-right corner
+        line = create_line(x2 - bracket_len, y1, x2, y1, zone_color, 2)
+        shape_list.append(line)
+        line = create_line(x2, y1, x2, y1 + bracket_len, zone_color, 2)
+        shape_list.append(line)
+
+        # Bottom-left corner
+        line = create_line(x1, y2 - bracket_len, x1, y2, zone_color, 2)
+        shape_list.append(line)
+        line = create_line(x1, y2, x1 + bracket_len, y2, zone_color, 2)
+        shape_list.append(line)
+
+        # Bottom-right corner
+        line = create_line(x2 - bracket_len, y2, x2, y2, zone_color, 2)
+        shape_list.append(line)
+        line = create_line(x2, y2 - bracket_len, x2, y2, zone_color, 2)
+        shape_list.append(line)
+
     return shape_list

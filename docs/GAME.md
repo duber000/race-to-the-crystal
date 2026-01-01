@@ -5,17 +5,22 @@
 * grid board (24x24)
 
 * each player has a group of 20 dice tokens that represent their life and move around the board
-  * players start with **3 tokens already deployed** in their starting corner
-  * remaining 17 tokens can be deployed from reserve during gameplay
+  * players start with **3 tokens already deployed** in their starting corner (3x3 grid area)
+  * remaining 17 tokens can be deployed from reserve during gameplay to the same 3x3 corner area
+  * **Deployment Zones** (3x3 grid in each corner):
+    - Player 1 (top-left): cells (0,0) to (2,2)
+    - Player 2 (top-right): cells (21,0) to (23,2)
+    - Player 3 (bottom-left): cells (0,21) to (2,23)
+    - Player 4 (bottom-right): cells (21,21) to (23,23)
 * 2-4 players per game
 * goal is to capture a power crystal in the middle of the board
 * players start from each corner of the board
 * power crystal is empowered by 4 generators in each quadrant of the board
-* **Visual Feedback**: Flowing animated lines connect active generators to the crystal; lines disappear when generators are captured
 * players win by holding the power crystal for 3 turns with 12 tokens
 * each generator is "taken out" by 2 tokens holding it for 2 turns
 * each generator "taken out" reduces the tokens needed to hold the crystal by 2
 * **Token Stacking**: Multiple friendly tokens can occupy the same generator or crystal cell (required for capture)
+* **Token Stacking Continued**: Multiple friendly tokens can't occupy the same space otherwise
 * tokens have these numbers on their dice representing their health: 10, 8, 6, 4
 * 6 and 4 health tokens can move two spaces, 10 and 8 health tokens move 1 space
 * each token attacks for 1/2 of their value (10hp → 5 damage, 8hp → 4 damage, etc)
