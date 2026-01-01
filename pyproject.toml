@@ -19,7 +19,7 @@ dependencies = [
 race-to-the-crystal = "client.menu_main:main"
 race-direct = "client.client_main:main"
 race-server = "server.server_main:main"
-race-ai-client = "client.ai_client:main"
+race-ai-client = "client.ai_client:run_ai_client"
 test = "pytest:main"
 
 [dependency-groups]

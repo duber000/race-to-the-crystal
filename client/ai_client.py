@@ -382,5 +382,10 @@ async def main():
     await ai_player.disconnect()
 
 
-if __name__ == "__main__":
+def run_ai_client():
+    """Synchronous entry point for the AI client script."""
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    run_ai_client()
