@@ -85,6 +85,14 @@ class AISpawner:
                 )
 
                 if process:
+                    # Check if process is still running after a brief moment
+                    await asyncio.sleep(0.1)
+                    if process.returncode is not None:
+                        logger.error(
+                            f"AI player {ai_name} process exited immediately with code {process.returncode}"
+                        )
+                        continue
+
                     spawned_ai = SpawnedAI(
                         process=process,
                         player_name=ai_name,
@@ -176,27 +184,45 @@ class AISpawner:
             ai_name: Name of AI player
         """
         try:
-            # Read stdout and stderr
-            while True:
-                # Check if process is done
-                if process.returncode is not None:
-                    break
+            # Read stdout and stderr concurrently
+            async def read_stdout():
+                while True:
+                    try:
+                        line = await process.stdout.readline()
+                        if not line:
+                            break
+                        logger.info(f"[{ai_name} OUT] {line.decode().strip()}")
+                    except Exception as e:
+                        logger.debug(f"Error reading stdout from {ai_name}: {e}")
+                        break
 
-                # Try to read a line with timeout
-                try:
-                    line = await asyncio.wait_for(
-                        process.stdout.readline(),
-                        timeout=0.1
-                    )
-                    if line:
-                        logger.debug(f"[{ai_name}] {line.decode().strip()}")
-                except asyncio.TimeoutError:
-                    continue
-                except Exception:
-                    break
+            async def read_stderr():
+                while True:
+                    try:
+                        line = await process.stderr.readline()
+                        if not line:
+                            break
+                        logger.error(f"[{ai_name} ERR] {line.decode().strip()}")
+                    except Exception as e:
+                        logger.debug(f"Error reading stderr from {ai_name}: {e}")
+                        break
+
+            # Run both readers concurrently
+            await asyncio.gather(
+                read_stdout(),
+                read_stderr(),
+                return_exceptions=True
+            )
+
+            # Wait for process to complete and log exit code
+            await process.wait()
+            if process.returncode != 0:
+                logger.error(f"AI process {ai_name} exited with code {process.returncode}")
+            else:
+                logger.info(f"AI process {ai_name} exited normally")
 
         except Exception as e:
-            logger.debug(f"Error reading output from {ai_name}: {e}")
+            logger.error(f"Error reading output from {ai_name}: {e}", exc_info=True)
 
     async def cleanup_ai_for_game(self, game_id: str) -> None:
         """
