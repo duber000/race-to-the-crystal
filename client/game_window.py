@@ -225,6 +225,11 @@ class GameView(arcade.View):
         # Set up camera to fit entire board in view
         self._setup_camera_view()
 
+        # Pan camera to first player's corner for better initial view
+        first_player = self.game_state.get_current_player()
+        if first_player:
+            self._pan_to_player_corner(first_player.id)
+
         # Load and play background music
         self._load_background_music()
 
@@ -390,14 +395,40 @@ class GameView(arcade.View):
         center_x = grid_x * CELL_SIZE + CELL_SIZE / 2
         center_y = grid_y * CELL_SIZE + CELL_SIZE / 2
 
-        # Draw 4 options in a diamond pattern around the corner
-        menu_distance = CELL_SIZE * 2
-        options = [
-            (10, center_x, center_y + menu_distance, counts[10]),  # Top
-            (8, center_x + menu_distance, center_y, counts[8]),  # Right
-            (6, center_x, center_y - menu_distance, counts[6]),  # Bottom
-            (4, center_x - menu_distance, center_y, counts[4]),  # Left
-        ]
+        # Determine which corner we're in and use a 2x2 grid layout for corners
+        # This avoids the overlap issue with diamond patterns in corners
+        board_width = self.game_state.board.width
+        board_height = self.game_state.board.height
+        spacing = CELL_SIZE * 1.5  # Distance between menu options
+
+        # Check if we're in a corner (within 3 cells of edges)
+        is_near_left = grid_x <= 2
+        is_near_right = grid_x >= board_width - 3
+        is_near_bottom = grid_y <= 2
+        is_near_top = grid_y >= board_height - 3
+        is_corner = (is_near_left or is_near_right) and (is_near_bottom or is_near_top)
+
+        if is_corner:
+            # Use 2x2 grid layout for corners (all options visible)
+            # Determine grid direction based on corner
+            x_dir = 1 if is_near_left else -1  # Right if left edge, left if right edge
+            y_dir = 1 if is_near_bottom else -1  # Up if bottom edge, down if top edge
+
+            options = [
+                (10, center_x + spacing * x_dir * 0.5, center_y + spacing * y_dir * 1.5, counts[10]),  # Top row, left
+                (8, center_x + spacing * x_dir * 1.5, center_y + spacing * y_dir * 1.5, counts[8]),   # Top row, right
+                (6, center_x + spacing * x_dir * 0.5, center_y + spacing * y_dir * 0.5, counts[6]),   # Bottom row, left
+                (4, center_x + spacing * x_dir * 1.5, center_y + spacing * y_dir * 0.5, counts[4]),   # Bottom row, right
+            ]
+        else:
+            # Use diamond layout for non-corner positions (original behavior)
+            menu_distance = CELL_SIZE * 2
+            options = [
+                (10, center_x, center_y + menu_distance, counts[10]),  # Top
+                (8, center_x + menu_distance, center_y, counts[8]),    # Right
+                (6, center_x, center_y - menu_distance, counts[6]),    # Bottom
+                (4, center_x - menu_distance, center_y, counts[4]),    # Left
+            ]
 
         for health, x, y, count in options:
             if count > 0:
@@ -1027,6 +1058,44 @@ class GameView(arcade.View):
             self.camera.position[1] + dy,
         )
 
+    def _pan_to_player_corner(self, player_id: str):
+        """
+        Pan camera to show the player's starting corner for better visibility.
+
+        Args:
+            player_id: ID of the player whose corner to show
+        """
+        player = self.game_state.get_player(player_id)
+        if not player:
+            return
+
+        # Get player's starting corner position
+        player_index = player.color.value
+        corner_grid = self.game_state.board.get_starting_position(player_index)
+
+        # Convert to world coordinates (center of corner cell)
+        corner_x = corner_grid[0] * CELL_SIZE + CELL_SIZE / 2
+        corner_y = corner_grid[1] * CELL_SIZE + CELL_SIZE / 2
+
+        # Offset to show a bit more context around the corner
+        offset = CELL_SIZE * 3  # Show 3 cells of context
+
+        # Adjust offset based on which corner (move camera inward)
+        if corner_grid[0] == 0:  # Left edge
+            target_x = corner_x + offset
+        else:  # Right edge (23)
+            target_x = corner_x - offset
+
+        if corner_grid[1] == 0:  # Bottom edge
+            target_y = corner_y + offset
+        else:  # Top edge (23)
+            target_y = corner_y - offset
+
+        # Smoothly pan to the target position
+        self.camera.position = (target_x, target_y)
+
+        print(f"  Camera panned to {player.name}'s corner at ({target_x:.0f}, {target_y:.0f})")
+
     def _setup_camera_view(self):
         """Set up camera to show the entire board, accounting for HUD at top."""
         from shared.constants import BOARD_HEIGHT, BOARD_WIDTH, CELL_SIZE
@@ -1042,7 +1111,10 @@ class GameView(arcade.View):
         # Calculate zoom to fit board in playable area
         zoom_x = self.window.width / board_pixel_width
         zoom_y = playable_height / board_pixel_height
-        optimal_zoom = min(zoom_x, zoom_y) * 0.95  # 95% to add small margin
+
+        # Use 100% of fit for better token visibility
+        # Tokens will be ~21px diameter (was 20px at 95%)
+        optimal_zoom = min(zoom_x, zoom_y)
 
         # Apply zoom
         self.zoom_level = optimal_zoom
@@ -1135,14 +1207,38 @@ class GameView(arcade.View):
         center_x = grid_x * CELL_SIZE + CELL_SIZE / 2
         center_y = grid_y * CELL_SIZE + CELL_SIZE / 2
 
-        # Menu option positions (same as in _draw_corner_menu)
-        menu_distance = CELL_SIZE * 2
-        options = [
-            (10, center_x, center_y + menu_distance),  # Top
-            (8, center_x + menu_distance, center_y),  # Right
-            (6, center_x, center_y - menu_distance),  # Bottom
-            (4, center_x - menu_distance, center_y),  # Left
-        ]
+        # Menu option positions (same logic as in _draw_corner_menu)
+        board_width = self.game_state.board.width
+        board_height = self.game_state.board.height
+        spacing = CELL_SIZE * 1.5
+
+        # Check if we're in a corner
+        is_near_left = grid_x <= 2
+        is_near_right = grid_x >= board_width - 3
+        is_near_bottom = grid_y <= 2
+        is_near_top = grid_y >= board_height - 3
+        is_corner = (is_near_left or is_near_right) and (is_near_bottom or is_near_top)
+
+        if is_corner:
+            # Use 2x2 grid layout for corners
+            x_dir = 1 if is_near_left else -1
+            y_dir = 1 if is_near_bottom else -1
+
+            options = [
+                (10, center_x + spacing * x_dir * 0.5, center_y + spacing * y_dir * 1.5),
+                (8, center_x + spacing * x_dir * 1.5, center_y + spacing * y_dir * 1.5),
+                (6, center_x + spacing * x_dir * 0.5, center_y + spacing * y_dir * 0.5),
+                (4, center_x + spacing * x_dir * 1.5, center_y + spacing * y_dir * 0.5),
+            ]
+        else:
+            # Use diamond layout for non-corner positions
+            menu_distance = CELL_SIZE * 2
+            options = [
+                (10, center_x, center_y + menu_distance),
+                (8, center_x + menu_distance, center_y),
+                (6, center_x, center_y - menu_distance),
+                (4, center_x - menu_distance, center_y),
+            ]
 
         click_x, click_y = world_pos
 
@@ -1623,6 +1719,10 @@ class GameView(arcade.View):
         next_player = self.game_state.get_current_player()
         if next_player:
             print(f"Turn {self.game_state.turn_number}: {next_player.name}'s turn")
+
+            # Pan camera to the new player's starting corner for better visibility
+            if self.camera_mode == "2D":
+                self._pan_to_player_corner(next_player.id)
 
         # Rebuild board shapes to update generator lines (when generators are captured)
         self._create_board_sprites()

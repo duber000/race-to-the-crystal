@@ -157,12 +157,9 @@ class Board3D:
         These lines are animated and only drawn for active (non-disabled) generators.
         """
         # Release old buffers if they exist to prevent memory leaks and buffer copy warnings
-        if self.gen_crystal_lines_vbo:
-            self.gen_crystal_lines_vbo.release()
-            self.gen_crystal_lines_vbo = None
-        if self.gen_crystal_lines_vao:
-            self.gen_crystal_lines_vao.release()
-            self.gen_crystal_lines_vao = None
+        # Note: Arcade handles cleanup via garbage collection when references are cleared
+        self.gen_crystal_lines_vbo = None
+        self.gen_crystal_lines_vao = None
 
         if not self.generators or not self.crystal_pos:
             return
@@ -460,30 +457,14 @@ class Board3D:
 
     def cleanup(self):
         """Release all OpenGL resources to prevent memory leaks."""
-        # Release grid buffers
-        if self.grid_vbo:
-            self.grid_vbo.release()
-        if self.grid_vao:
-            self.grid_vao.release()
-
-        # Release special cell buffers
-        if self.generators_vbo:
-            self.generators_vbo.release()
-        if self.generators_vao:
-            self.generators_vao.release()
-
-        if self.crystal_vbo:
-            self.crystal_vbo.release()
-        if self.crystal_vao:
-            self.crystal_vao.release()
-
-        if self.mystery_vbo:
-            self.mystery_vbo.release()
-        if self.mystery_vao:
-            self.mystery_vao.release()
-
-        # Release generator-crystal line buffers
-        if self.gen_crystal_lines_vbo:
-            self.gen_crystal_lines_vbo.release()
-        if self.gen_crystal_lines_vao:
-            self.gen_crystal_lines_vao.release()
+        # Clear all buffer references - Arcade handles cleanup via garbage collection
+        self.grid_vbo = None
+        self.grid_vao = None
+        self.generators_vbo = None
+        self.generators_vao = None
+        self.crystal_vbo = None
+        self.crystal_vao = None
+        self.mystery_vbo = None
+        self.mystery_vao = None
+        self.gen_crystal_lines_vbo = None
+        self.gen_crystal_lines_vao = None
