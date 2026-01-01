@@ -262,7 +262,7 @@ class GameView(arcade.View):
 
             for token_id in player.token_ids:
                 token = self.game_state.get_token(token_id)
-                if token and token.is_alive:
+                if token and token.is_alive and token.is_deployed:
                     sprite = TokenSprite(token, player_color)
                     self.token_sprites.append(sprite)
 
@@ -320,7 +320,7 @@ class GameView(arcade.View):
 
             for token_id in player.token_ids:
                 token = self.game_state.get_token(token_id)
-                if token and token.is_alive:
+                if token and token.is_alive and token.is_deployed:
                     try:
                         token_3d = Token3D(token, player_color, self.window.ctx)
                         self.tokens_3d.append(token_3d)
@@ -1283,6 +1283,12 @@ class GameView(arcade.View):
                 if reserve_counts.get(health, 0) > 0:
                     # Select this token type for deployment
                     self.selected_deploy_health = health
+
+                    # Clear any existing token selection to prevent conflicts
+                    self.selected_token_id = None
+                    self.valid_moves = []
+                    self._update_selection_visuals()
+
                     print(
                         f"Selected {health}hp token for deployment - click a deployment area position to deploy"
                     )

@@ -1,6 +1,7 @@
 """
 Game board and cell representation.
 """
+
 from dataclasses import dataclass, field
 from typing import Optional, Tuple, List, Dict
 import random
@@ -23,6 +24,7 @@ class Cell:
         cell_type: Type of cell (normal, generator, crystal, etc.)
         occupants: List of token IDs currently occupying this cell
     """
+
     position: Tuple[int, int]
     cell_type: CellType = CellType.NORMAL
     occupants: List[int] = field(default_factory=list)
@@ -90,6 +92,7 @@ class Board:
         height: Height of the board
         grid: 2D array of cells
     """
+
     width: int = BOARD_WIDTH
     height: int = BOARD_HEIGHT
     grid: List[List[Cell]] = field(default_factory=list)
@@ -130,10 +133,10 @@ class Board:
         quarter_y = self.height // 4
 
         generators = [
-            (quarter_x, quarter_y),                      # Top-left quadrant
-            (mid_x + quarter_x, quarter_y),              # Top-right quadrant
-            (quarter_x, mid_y + quarter_y),              # Bottom-left quadrant
-            (mid_x + quarter_x, mid_y + quarter_y),      # Bottom-right quadrant
+            (quarter_x, quarter_y),  # Top-left quadrant
+            (mid_x + quarter_x, quarter_y),  # Top-right quadrant
+            (quarter_x, mid_y + quarter_y),  # Bottom-left quadrant
+            (mid_x + quarter_x, mid_y + quarter_y),  # Bottom-right quadrant
         ]
 
         for x, y in generators:
@@ -150,9 +153,9 @@ class Board:
 
         # Define quadrants (excluding edges to avoid overlap with special cells)
         quadrants = [
-            (2, mid_x - 2, 2, mid_y - 2),                    # Top-left
-            (mid_x + 2, self.width - 2, 2, mid_y - 2),       # Top-right
-            (2, mid_x - 2, mid_y + 2, self.height - 2),      # Bottom-left
+            (2, mid_x - 2, 2, mid_y - 2),  # Top-left
+            (mid_x + 2, self.width - 2, 2, mid_y - 2),  # Top-right
+            (2, mid_x - 2, mid_y + 2, self.height - 2),  # Bottom-left
             (mid_x + 2, self.width - 2, mid_y + 2, self.height - 2),  # Bottom-right
         ]
 
@@ -243,7 +246,9 @@ class Board:
         if token_id is not None:
             self.add_occupant(position, token_id)
 
-    def clear_occupant(self, position: Tuple[int, int], token_id: Optional[int] = None) -> None:
+    def clear_occupant(
+        self, position: Tuple[int, int], token_id: Optional[int] = None
+    ) -> None:
         """
         Clear occupant(s) from a cell.
 
@@ -269,10 +274,10 @@ class Board:
             (x, y) starting position
         """
         corners = [
-            (0, 0),                          # Player 0 - Top-left
-            (self.width - 1, 0),             # Player 1 - Top-right
-            (0, self.height - 1),            # Player 2 - Bottom-left
-            (self.width - 1, self.height - 1)  # Player 3 - Bottom-right
+            (0, 0),  # Player 0 - Top-left
+            (self.width - 1, 0),  # Player 1 - Top-right
+            (0, self.height - 1),  # Player 2 - Bottom-left
+            (self.width - 1, self.height - 1),  # Player 3 - Bottom-right
         ]
         return corners[player_index % 4]
 
@@ -300,7 +305,8 @@ class Board:
                     positions.append((x, y))
         elif player_index == 1:  # Top-right (23, 0)
             # Deploy area: (21,0) to (23,2)
-            for x in range(self.width - 3, self.width):
+            # Iterate x backwards to prioritize the right edge
+            for x in range(self.width - 1, self.width - 4, -1):
                 for y in range(3):
                     positions.append((x, y))
         elif player_index == 2:  # Bottom-left (0, 23)
@@ -310,7 +316,8 @@ class Board:
                     positions.append((x, y))
         elif player_index == 3:  # Bottom-right (23, 23)
             # Deploy area: (21,21) to (23,23)
-            for x in range(self.width - 3, self.width):
+            # Iterate x backwards to prioritize the right edge
+            for x in range(self.width - 1, self.width - 4, -1):
                 for y in range(self.height - 3, self.height):
                     positions.append((x, y))
 
@@ -351,8 +358,7 @@ class Board:
         """Create board from dictionary."""
         board = cls(width=data["width"], height=data["height"])
         board.grid = [
-            [Cell.from_dict(cell_data) for cell_data in row]
-            for row in data["grid"]
+            [Cell.from_dict(cell_data) for cell_data in row] for row in data["grid"]
         ]
         return board
 
