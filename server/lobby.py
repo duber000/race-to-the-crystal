@@ -174,6 +174,16 @@ class GameLobby:
             len(self.players) >= self.min_players
         )
 
+    def get_ai_needed_count(self) -> int:
+        """
+        Calculate how many AI players should be added to fill the lobby.
+
+        Returns:
+            Number of AI players needed (0 if lobby is full)
+        """
+        current_count = len(self.players)
+        return max(0, self.max_players - current_count)
+
     def _reassign_colors(self) -> None:
         """Reassign color indices after a player leaves."""
         for i, player_info in enumerate(self.players.values()):

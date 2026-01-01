@@ -15,6 +15,7 @@ from network.protocol import ProtocolHandler, NetworkMessage
 from network.messages import MessageType, ClientType
 from server.lobby import LobbyManager, GameStatus
 from server.game_coordinator import GameCoordinator
+from server.ai_spawner import AISpawner
 
 
 logging.basicConfig(
@@ -57,6 +58,7 @@ class GameServer:
         # Game management
         self.lobby_manager = LobbyManager()
         self.game_coordinator = GameCoordinator()
+        self.ai_spawner = AISpawner()
 
         # Protocol handler
         self.protocol = ProtocolHandler()
@@ -87,6 +89,9 @@ class GameServer:
         """Stop the server gracefully."""
         logger.info("Stopping server...")
         self.running = False
+
+        # Cleanup all AI processes
+        await self.ai_spawner.cleanup_all()
 
         # Close all connections
         await self.connection_pool.close_all()
@@ -601,7 +606,7 @@ class GameServer:
         await self._broadcast_to_lobby(lobby.game_id, ready_event)
 
     async def _handle_start_game(self, player_id: str, message: NetworkMessage) -> None:
-        """Handle START_GAME request."""
+        """Handle START_GAME request with automatic AI player filling."""
         lobby = self.lobby_manager.get_player_lobby(player_id)
 
         if not lobby:
@@ -611,6 +616,59 @@ class GameServer:
         if player_id != lobby.host_player_id:
             await self._send_error(player_id, "Only host can start game")
             return
+
+        # Check if we need to spawn AI players to fill empty slots
+        ai_needed = lobby.get_ai_needed_count()
+
+        if ai_needed > 0:
+            logger.info(
+                f"Spawning {ai_needed} AI player{'s' if ai_needed > 1 else ''} "
+                f"for game {lobby.game_id[:8]}"
+            )
+
+            # Spawn AI clients
+            spawned = await self.ai_spawner.spawn_ai_for_game(
+                game_id=lobby.game_id,
+                num_ai=ai_needed,
+                host="localhost",  # AI clients connect to localhost
+                port=self.port
+            )
+
+            if not spawned:
+                logger.warning(
+                    f"Failed to spawn AI players for game {lobby.game_id[:8]}, "
+                    "continuing with current players"
+                )
+            else:
+                # Wait for AI to join and ready up (with timeout)
+                timeout = 10.0  # 10 seconds
+                start_time = time.time()
+
+                logger.info(f"Waiting for {len(spawned)} AI player(s) to join...")
+
+                while time.time() - start_time < timeout:
+                    # Refresh lobby to check player count and ready status
+                    lobby = self.lobby_manager.get_lobby(lobby.game_id)
+
+                    if not lobby:
+                        logger.error("Lobby disappeared while waiting for AI")
+                        await self._send_error(player_id, "Lobby error")
+                        return
+
+                    # Check if all players are ready
+                    if lobby.all_players_ready():
+                        logger.info(
+                            f"All {len(lobby.players)} players ready "
+                            f"(including {len(spawned)} AI)"
+                        )
+                        break
+
+                    await asyncio.sleep(0.2)
+                else:
+                    # Timeout reached
+                    logger.warning(
+                        f"Timeout waiting for AI players to join game {lobby.game_id[:8]}"
+                    )
 
         # Try to start the game
         lobby = self.lobby_manager.start_game(lobby.game_id)
@@ -710,6 +768,9 @@ class GameServer:
 
         # Mark game as finished
         self.lobby_manager.finish_game(game_session.game_id)
+
+        # Cleanup AI processes for this game
+        await self.ai_spawner.cleanup_ai_for_game(game_session.game_id)
 
         logger.info(f"Game {game_session.game_id} ended. Winner: {winner_name}")
 
