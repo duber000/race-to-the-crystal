@@ -21,6 +21,7 @@ from client.sprites.board_sprite import create_board_shapes
 from client.sprites.token_sprite import TokenSprite
 from client.token_3d import Token3D
 from client.ui.arcade_ui import UIManager
+from client.ui.chat_widget import ChatWidget
 from game.combat import CombatSystem
 from game.game_state import GameState
 from game.movement import MovementSystem
@@ -145,6 +146,9 @@ class GameView(arcade.View):
 
         # UI Manager for panels and buttons (will be initialized in on_show_view)
         self.ui_manager = None
+        
+        # Chat widget for in-game communication
+        self.chat_widget = None
 
         # Background music
         self.background_music = None
@@ -167,6 +171,19 @@ class GameView(arcade.View):
         # Initialize components that need window dimensions
         self.camera_3d = FirstPersonCamera3D(self.window.width, self.window.height)
         self.ui_manager = UIManager(self.window.width, self.window.height)
+        
+        # Initialize chat widget on the left side of the screen
+        chat_width = 300
+        chat_height = 400
+        chat_x = 20
+        chat_y = 100
+        self.chat_widget = ChatWidget(
+            network_client=None,  # No network client for local game
+            x=chat_x,
+            y=chat_y,
+            width=chat_width,
+            height=chat_height
+        )
 
         # Set up the game
         self.setup()
@@ -872,6 +889,11 @@ class GameView(arcade.View):
             self.ui_sprites.draw()
             self._draw_hud()
             self.ui_manager.draw()
+        
+        # Draw chat widget (in UI space)
+        if self.chat_widget:
+            with self.ui_camera.activate():
+                self.chat_widget.draw()
 
         # Draw corner menu if open (in UI space around R hexagon)
         # Works in both 2D and 3D modes
@@ -889,6 +911,10 @@ class GameView(arcade.View):
         # Update animations
         self.token_sprites.update()
         self.ui_sprites.update()
+        
+        # Update chat widget
+        if self.chat_widget:
+            self.chat_widget.update(delta_time)
 
     def on_resize(self, width: int, height: int):
         """
@@ -1067,6 +1093,11 @@ class GameView(arcade.View):
             symbol: Key that was pressed
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
+        # Handle chat widget input first
+        if self.chat_widget:
+            if self.chat_widget.on_key_press(symbol, modifiers):
+                return  # Chat widget handled the input
+        
         # Camera panning
         if symbol == arcade.key.W or symbol == arcade.key.UP:
             self._pan_camera(0, self.camera_speed)
@@ -1173,6 +1204,18 @@ class GameView(arcade.View):
         # Quit
         elif symbol == arcade.key.Q and (modifiers & arcade.key.MOD_CTRL):
             self.window.close()
+
+    def on_text(self, text: str):
+        """
+        Handle text input events.
+
+        Args:
+            text: Character(s) to add
+        """
+        # Pass text input to chat widget if active
+        if self.chat_widget and self.chat_widget.input_active:
+            if self.chat_widget.on_text(text):
+                return  # Chat widget handled the text
 
     def _pan_camera(self, dx: float, dy: float):
         """
