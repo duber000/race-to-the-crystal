@@ -79,7 +79,12 @@ class NetworkGameView(arcade.View):
         logger.info("Network game view shown")
 
         # Create game view (using new View architecture)
-        self.game_view = GameView(self.game_state, start_in_3d=False)
+        self.game_view = GameView(
+            self.game_state,
+            start_in_3d=False,
+            is_network_game=True,
+            network_client=self.network_client
+        )
 
         # Show the game view within the same window
         self.window.show_view(self.game_view)
