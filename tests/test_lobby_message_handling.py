@@ -10,11 +10,32 @@ import time
 
 class MockLobbyView:
     """Mock LobbyView for testing message handling logic."""
-    
+
     def __init__(self):
         self.players = {}
         self.game_name = "Test Lobby"
-    
+        self.title_text = None
+
+    async def _handle_create_game(self, message):
+        """Handle CREATE_GAME response - initialize lobby with host player."""
+        data = message.data or {}
+
+        # Update lobby info
+        self.game_name = data.get("game_name", "Lobby")
+        players_list = data.get("players", [])
+
+        # Clear and populate player list
+        self.players.clear()
+
+        for player_info in players_list:
+            player_id = player_info.get("player_id")
+            if player_id:
+                self.players[player_id] = {
+                    "player_name": player_info.get("player_name", "Unknown"),
+                    "is_ready": player_info.get("is_ready", False),
+                    "color_index": player_info.get("color_index", 0)
+                }
+
     async def _handle_player_joined(self, message):
         """Handle PLAYER_JOINED message."""
         data = message.data or {}
@@ -204,6 +225,81 @@ class TestLobbyMessageHandling:
         assert player_info["player_name"] == "Player 1"
         assert player_info["color_index"] == 2  # Should use fallback color_index
         assert player_info["is_ready"] == False
+
+    def test_create_game_message_handling(self):
+        """Test that CREATE_GAME response correctly initializes lobby with host player."""
+        lobby_view = MockLobbyView()
+
+        # Create a CREATE_GAME response message with lobby data including host
+        message = NetworkMessage(
+            type=MessageType.CREATE_GAME,
+            timestamp=time.time(),
+            player_id="host-player-id",
+            data={
+                "game_id": "new-game-123",
+                "game_name": "My Awesome Game",
+                "host_player_id": "host-player-id",
+                "max_players": 4,
+                "min_players": 2,
+                "current_players": 1,
+                "status": "WAITING",
+                "players": [
+                    {
+                        "player_id": "host-player-id",
+                        "player_name": "Host Player",
+                        "is_ready": False,
+                        "color_index": 0
+                    }
+                ]
+            }
+        )
+
+        # Process the message
+        import asyncio
+        asyncio.run(lobby_view._handle_create_game(message))
+
+        # Verify lobby was initialized with host player
+        assert lobby_view.game_name == "My Awesome Game"
+        assert len(lobby_view.players) == 1
+        assert "host-player-id" in lobby_view.players
+
+        # Verify host player info
+        host_info = lobby_view.players["host-player-id"]
+        assert host_info["player_name"] == "Host Player"
+        assert host_info["is_ready"] == False
+        assert host_info["color_index"] == 0
+
+    def test_create_game_message_with_empty_players(self):
+        """Test CREATE_GAME handling when players list is empty (shouldn't happen but test robustness)."""
+        lobby_view = MockLobbyView()
+
+        # Add some existing player data
+        lobby_view.players["old-player"] = {
+            "player_name": "Old Player",
+            "is_ready": True,
+            "color_index": 2
+        }
+
+        # Create a CREATE_GAME message with empty players list
+        message = NetworkMessage(
+            type=MessageType.CREATE_GAME,
+            timestamp=time.time(),
+            player_id="host-player-id",
+            data={
+                "game_id": "new-game-123",
+                "game_name": "Empty Game",
+                "players": []
+            }
+        )
+
+        # Process the message
+        import asyncio
+        asyncio.run(lobby_view._handle_create_game(message))
+
+        # Verify old players were cleared and list is empty
+        assert lobby_view.game_name == "Empty Game"
+        assert len(lobby_view.players) == 0
+        assert "old-player" not in lobby_view.players
 
 
 if __name__ == "__main__":

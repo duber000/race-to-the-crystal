@@ -153,7 +153,8 @@ class ProtocolHandler:
     def create_game_message(
         player_id: str,
         game_name: str,
-        max_players: int = 4
+        max_players: int = 4,
+        player_name: str = "Player"
     ) -> NetworkMessage:
         """Create a CREATE_GAME message."""
         return NetworkMessage(
@@ -163,17 +164,21 @@ class ProtocolHandler:
             data={
                 "game_name": game_name,
                 "max_players": max_players,
+                "player_name": player_name,
             }
         )
 
     @staticmethod
-    def join_game_message(player_id: str, game_id: str) -> NetworkMessage:
+    def join_game_message(player_id: str, game_id: str, player_name: str = "Player") -> NetworkMessage:
         """Create a JOIN_GAME message."""
         return NetworkMessage(
             type=MessageType.JOIN_GAME,
             timestamp=time.time(),
             player_id=player_id,
-            data={"game_id": game_id}
+            data={
+                "game_id": game_id,
+                "player_name": player_name,
+            }
         )
 
     @staticmethod

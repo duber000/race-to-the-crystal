@@ -392,9 +392,10 @@ class NetworkSetupView(arcade.View):
         self.server_host_input = None
         self.server_port_input = None
         self.game_name_input = None
+        self.max_players_dropdown = None
 
         # Callbacks
-        self.on_start_network_game: Optional[Callable[[str, str, int, Optional[str]], None]] = None
+        self.on_start_network_game: Optional[Callable[[str, str, int, Optional[str], int], None]] = None
 
         logger.info(f"Network setup view created (host={is_host})")
 
@@ -483,6 +484,22 @@ class NetworkSetupView(arcade.View):
             )
             v_box.add(self.game_name_input)
 
+            # Max players dropdown
+            max_players_label = arcade.gui.UILabel(
+                text="Max Players:",
+                width=300,
+                font_size=16
+            )
+            v_box.add(max_players_label)
+
+            self.max_players_dropdown = arcade.gui.UIDropdown(
+                default="4 Players",
+                options=["2 Players", "3 Players", "4 Players"],
+                width=300,
+                height=40
+            )
+            v_box.add(self.max_players_dropdown)
+
         # Buttons
         start_text = "Create Game" if self.is_host else "Join Game"
         start_button = arcade.gui.UIFlatButton(
@@ -549,14 +566,19 @@ class NetworkSetupView(arcade.View):
 
         if self.is_host:
             game_name = self.game_name_input.text.strip() or "My Game"
-            logger.info(f"Starting host: {player_name}, port {port}, game '{game_name}'")
+
+            # Extract max players from dropdown (e.g., "4 Players" -> 4)
+            max_players_text = self.max_players_dropdown.value
+            max_players = int(max_players_text.split()[0])  # Extract first number
+
+            logger.info(f"Starting host: {player_name}, port {port}, game '{game_name}', max_players={max_players}")
             if self.on_start_network_game:
-                self.on_start_network_game(player_name, "localhost", port, game_name)
+                self.on_start_network_game(player_name, "localhost", port, game_name, max_players)
         else:
             host = self.server_host_input.text.strip() or "localhost"
             logger.info(f"Starting join: {player_name}, {host}:{port}")
             if self.on_start_network_game:
-                self.on_start_network_game(player_name, host, port, None)
+                self.on_start_network_game(player_name, host, port, None, 4)  # max_players not used for join
 
     def _on_back_click(self, event):
         """Return to main menu."""

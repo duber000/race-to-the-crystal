@@ -45,6 +45,7 @@ class LobbyView(arcade.View):
 
         # Lobby state
         self.game_name = "Lobby"
+        self.max_players = 4
         self.players: Dict[str, Dict] = {}  # player_id -> player_info
         self.is_ready = False
         self.game_started = False
@@ -198,10 +199,11 @@ class LobbyView(arcade.View):
         """Rebuild the player list display."""
         self.player_texts = []
 
-        # Title for player list
+        # Title for player list with count
         y_pos = self.window.height - 200
+        player_count_text = f"Players: {len(self.players)}/{self.max_players}"
         title = arcade.Text(
-            "Players:",
+            player_count_text,
             self.window.width // 2,
             y_pos,
             arcade.color.WHITE,
@@ -250,7 +252,11 @@ class LobbyView(arcade.View):
         logger.debug(f"Lobby received: {message.type.value}")
 
         try:
-            if message.type == MessageType.PLAYER_JOINED:
+            if message.type == MessageType.CREATE_GAME:
+                # Game created - initialize lobby state with host player
+                await self._handle_create_game(message)
+
+            elif message.type == MessageType.PLAYER_JOINED:
                 # New player joined
                 await self._handle_player_joined(message)
 
@@ -282,6 +288,35 @@ class LobbyView(arcade.View):
 
         except Exception as e:
             logger.error(f"Error handling lobby message: {e}", exc_info=True)
+
+    async def _handle_create_game(self, message):
+        """Handle CREATE_GAME response - initialize lobby with host player."""
+        data = message.data or {}
+
+        # Update lobby info
+        self.game_name = data.get("game_name", "Lobby")
+        self.max_players = data.get("max_players", 4)
+        players_list = data.get("players", [])
+
+        # Clear and populate player list
+        self.players.clear()
+
+        for player_info in players_list:
+            player_id = player_info.get("player_id")
+            if player_id:
+                self.players[player_id] = {
+                    "player_name": player_info.get("player_name", "Unknown"),
+                    "is_ready": player_info.get("is_ready", False),
+                    "color_index": player_info.get("color_index", 0)
+                }
+
+        logger.info(f"Lobby created: {self.game_name} with {len(self.players)} player(s), max {self.max_players}")
+
+        # Update title text if it exists
+        if self.title_text:
+            self.title_text.text = f"LOBBY: {self.game_name}"
+
+        self._update_player_list()
 
     async def _handle_player_joined(self, message):
         """Handle PLAYER_JOINED message."""
@@ -356,6 +391,7 @@ class LobbyView(arcade.View):
         # Update lobby info
         if lobby_data:
             self.game_name = lobby_data.get("game_name", "Lobby")
+            self.max_players = lobby_data.get("max_players", 4)
             players_list = lobby_data.get("players", [])
 
             # Update player list

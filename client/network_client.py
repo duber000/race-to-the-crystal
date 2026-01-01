@@ -332,7 +332,8 @@ class NetworkClient:
         msg = self.protocol.create_game_message(
             self.player_id,
             game_name,
-            max_players
+            max_players,
+            self.player_name
         )
 
         return await self.connection.send_message(msg)
@@ -351,7 +352,7 @@ class NetworkClient:
             logger.error("Not connected to server")
             return False
 
-        msg = self.protocol.join_game_message(self.player_id, game_id)
+        msg = self.protocol.join_game_message(self.player_id, game_id, self.player_name)
         success = await self.connection.send_message(msg)
 
         if success:

@@ -148,7 +148,8 @@ class MenuGameWindow(AsyncWindow):
         player_name: str,
         host: str,
         port: int,
-        game_name: Optional[str]
+        game_name: Optional[str],
+        max_players: int = 4
     ):
         """
         Start hosting a network game.
@@ -158,15 +159,16 @@ class MenuGameWindow(AsyncWindow):
             host: Server host (should be localhost for hosting)
             port: Server port
             game_name: Name of the game to create
+            max_players: Maximum number of players (2-4)
         """
         logger.info(
             f"Starting host game: player={player_name}, "
-            f"port={port}, game='{game_name}'"
+            f"port={port}, game='{game_name}', max_players={max_players}"
         )
 
         # Create network client and connect
         schedule_async(
-            self._connect_and_create_game(player_name, host, port, game_name or "My Game")
+            self._connect_and_create_game(player_name, host, port, game_name or "My Game", max_players)
         )
 
     def _start_join_game(
@@ -174,7 +176,8 @@ class MenuGameWindow(AsyncWindow):
         player_name: str,
         host: str,
         port: int,
-        game_name: Optional[str]
+        game_name: Optional[str],
+        max_players: int = 4
     ):
         """
         Join a network game.
@@ -184,6 +187,7 @@ class MenuGameWindow(AsyncWindow):
             host: Server host
             port: Server port
             game_name: Not used for joining (None)
+            max_players: Not used for joining
         """
         logger.info(
             f"Showing game browser: player={player_name}, {host}:{port}"
@@ -250,7 +254,8 @@ class MenuGameWindow(AsyncWindow):
         player_name: str,
         host: str,
         port: int,
-        game_name: str
+        game_name: str,
+        max_players: int = 4
     ):
         """
         Connect to server and create a game.
@@ -260,6 +265,7 @@ class MenuGameWindow(AsyncWindow):
             host: Server host
             port: Server port
             game_name: Name for the game
+            max_players: Maximum number of players (2-4)
         """
         try:
             # Create network client
@@ -279,8 +285,8 @@ class MenuGameWindow(AsyncWindow):
                 return
 
             # Create game
-            logger.info(f"Creating game '{game_name}'...")
-            success = await self.network_client.create_game(game_name, max_players=4)
+            logger.info(f"Creating game '{game_name}' with max {max_players} players...")
+            success = await self.network_client.create_game(game_name, max_players=max_players)
 
             if not success:
                 logger.error("Failed to create game")
