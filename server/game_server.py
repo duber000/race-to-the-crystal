@@ -50,6 +50,7 @@ class GameServer:
         # Connection management
         self.connection_pool = ConnectionPool()
         self.player_connections: Dict[str, Connection] = {}  # player_id -> Connection
+        self.player_client_types: Dict[str, ClientType] = {}  # player_id -> ClientType
 
         # Reconnection support
         self.disconnected_players: Dict[str, Dict] = {}  # player_id -> disconnect info
@@ -192,8 +193,9 @@ class GameServer:
         # Assign player ID
         player_id = str(uuid.uuid4())
 
-        # Store connection
+        # Store connection and client type
         self.player_connections[player_id] = connection
+        self.player_client_types[player_id] = client_type
 
         # Send CONNECT_ACK
         session_data = {
@@ -262,6 +264,7 @@ class GameServer:
             self.disconnected_players.pop(player_id)
             self.lobby_manager.remove_player_from_all(player_id)
             self.game_coordinator.remove_player(player_id)
+            self.player_client_types.pop(player_id, None)
 
             await connection.send_message(
                 self.protocol.create_reconnect_failed_message(
@@ -346,6 +349,7 @@ class GameServer:
         game_session = self.game_coordinator.get_player_game(player_id)
 
         if game_session and not explicit:
+            # Keep client_type for reconnection
             # Save disconnection info for reconnection
             lobby = self.lobby_manager.get_lobby_by_player(player_id)
             self.disconnected_players[player_id] = {
@@ -382,9 +386,10 @@ class GameServer:
                 game_id = lobby.game_id
                 in_active_game = lobby.status == GameStatus.IN_PROGRESS
 
-            # Remove from lobby/game
+            # Remove from lobby/game and client type tracking
             self.lobby_manager.remove_player_from_all(player_id)
             self.game_coordinator.remove_player(player_id)
+            self.player_client_types.pop(player_id, None)
             logger.info(f"Player {player_id[:8]} removed from all games")
 
             # Notify other players in lobby/game
@@ -475,10 +480,9 @@ class GameServer:
         game_name = data.get("game_name", "New Game")
         max_players = data.get("max_players", 4)
 
-        # Get player info (need to determine client type)
-        # For now, assume from connection metadata
+        # Get player info from stored client type
         player_name = data.get("player_name", "Player")
-        client_type = ClientType.HUMAN  # Default
+        client_type = self.player_client_types.get(player_id, ClientType.HUMAN)
 
         # Create lobby
         lobby = self.lobby_manager.create_lobby(
@@ -509,7 +513,8 @@ class GameServer:
             return
 
         player_name = data.get("player_name", "Player")
-        client_type = ClientType.HUMAN
+        # Use the client type stored during connection
+        client_type = self.player_client_types.get(player_id, ClientType.HUMAN)
 
         lobby = self.lobby_manager.join_lobby(game_id, player_id, player_name, client_type)
 
