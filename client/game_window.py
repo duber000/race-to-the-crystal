@@ -84,7 +84,6 @@ class GameView(arcade.View):
 
         # Corner deployment menu
         self.corner_menu_open = False
-        self.corner_menu_position: Optional[Tuple[int, int]] = None
         self.corner_menu_just_opened = False  # Flag to prevent immediate click-through
         self.selected_deploy_health: Optional[int] = (
             None  # Selected token type for deployment
@@ -473,7 +472,9 @@ class GameView(arcade.View):
                 x = center_x + (indicator_size + glow * 3) * math.cos(angle)
                 y = center_y + (indicator_size + glow * 3) * math.sin(angle)
                 glow_points.append((x, y))
-            arcade.draw_polygon_outline(glow_points, (*player_color, alpha), max(1, 4 - glow))
+            arcade.draw_polygon_outline(
+                glow_points, (*player_color, alpha), max(1, 4 - glow)
+            )
 
         # Draw main hexagon outline
         arcade.draw_polygon_outline(points, player_color, 3)
@@ -489,91 +490,6 @@ class GameView(arcade.View):
             anchor_x="center",
             anchor_y="center",
         )
-
-    def _draw_corner_menu(self):
-        """Draw the corner deployment menu with token type options (2D mode)."""
-        if not self.corner_menu_position:
-            return
-
-        current_player = self.game_state.get_current_player()
-        if not current_player:
-            return
-
-        # Get reserve token counts
-        counts = self.game_state.get_reserve_token_counts(current_player.id)
-
-        grid_x, grid_y = self.corner_menu_position
-        center_x = grid_x * CELL_SIZE + CELL_SIZE / 2
-        center_y = grid_y * CELL_SIZE + CELL_SIZE / 2
-
-        # Determine which corner we're in and use a 2x2 grid layout for corners
-        # This avoids the overlap issue with diamond patterns in corners
-        board_width = self.game_state.board.width
-        board_height = self.game_state.board.height
-        spacing = CELL_SIZE * 1.5  # Distance between menu options
-
-        # Check if we're in a corner (within 3 cells of edges)
-        is_near_left = grid_x <= 2
-        is_near_right = grid_x >= board_width - 3
-        is_near_bottom = grid_y <= 2
-        is_near_top = grid_y >= board_height - 3
-        is_corner = (is_near_left or is_near_right) and (is_near_bottom or is_near_top)
-
-        if is_corner:
-            # Use 2x2 grid layout for corners (all options visible)
-            # Determine grid direction based on corner
-            x_dir = 1 if is_near_left else -1  # Right if left edge, left if right edge
-            y_dir = 1 if is_near_bottom else -1  # Up if bottom edge, down if top edge
-
-            options = [
-                (10, center_x + spacing * x_dir * 0.5, center_y + spacing * y_dir * 1.5, counts[10]),  # Top row, left
-                (8, center_x + spacing * x_dir * 1.5, center_y + spacing * y_dir * 1.5, counts[8]),   # Top row, right
-                (6, center_x + spacing * x_dir * 0.5, center_y + spacing * y_dir * 0.5, counts[6]),   # Bottom row, left
-                (4, center_x + spacing * x_dir * 1.5, center_y + spacing * y_dir * 0.5, counts[4]),   # Bottom row, right
-            ]
-        else:
-            # Use diamond layout for non-corner positions (original behavior)
-            menu_distance = CELL_SIZE * 2
-            options = [
-                (10, center_x, center_y + menu_distance, counts[10]),  # Top
-                (8, center_x + menu_distance, center_y, counts[8]),    # Right
-                (6, center_x, center_y - menu_distance, counts[6]),    # Bottom
-                (4, center_x - menu_distance, center_y, counts[4]),    # Left
-            ]
-
-        for health, x, y, count in options:
-            if count > 0:
-                # Draw available option in cyan
-                arcade.draw_circle_filled(x, y, CELL_SIZE * 0.8, (0, 255, 255, 200))
-                arcade.draw_circle_outline(x, y, CELL_SIZE * 0.8, (0, 255, 255), 3)
-            else:
-                # Draw unavailable option in dark gray
-                arcade.draw_circle_filled(x, y, CELL_SIZE * 0.8, (50, 50, 50, 100))
-                arcade.draw_circle_outline(x, y, CELL_SIZE * 0.8, (100, 100, 100), 2)
-
-            # Draw health value
-            arcade.draw_text(
-                str(health),
-                x,
-                y,
-                (255, 255, 255) if count > 0 else (100, 100, 100),
-                font_size=20,
-                bold=True,
-                anchor_x="center",
-                anchor_y="center",
-            )
-
-            # Draw count if available
-            if count > 0:
-                arcade.draw_text(
-                    f"({count})",
-                    x,
-                    y - 15,
-                    (200, 200, 200),
-                    font_size=12,
-                    anchor_x="center",
-                    anchor_y="center",
-                )
 
     def _draw_corner_menu_ui(self):
         """Draw the corner deployment menu in UI space around the R hexagon."""
@@ -604,28 +520,53 @@ class GameView(arcade.View):
         if player_index == 0:  # Bottom-left - options go right and up
             options = [
                 (10, center_x + spacing, center_y + spacing, counts[10]),  # Top-right
-                (8, center_x + spacing * 1.8, center_y + spacing, counts[8]),  # Top-far-right
+                (
+                    8,
+                    center_x + spacing * 1.8,
+                    center_y + spacing,
+                    counts[8],
+                ),  # Top-far-right
                 (6, center_x + spacing, center_y, counts[6]),  # Right
                 (4, center_x + spacing * 1.8, center_y, counts[4]),  # Far-right
             ]
         elif player_index == 1:  # Bottom-right - options go left and up
             options = [
                 (10, center_x - spacing, center_y + spacing, counts[10]),  # Top-left
-                (8, center_x - spacing * 1.8, center_y + spacing, counts[8]),  # Top-far-left
+                (
+                    8,
+                    center_x - spacing * 1.8,
+                    center_y + spacing,
+                    counts[8],
+                ),  # Top-far-left
                 (6, center_x - spacing, center_y, counts[6]),  # Left
                 (4, center_x - spacing * 1.8, center_y, counts[4]),  # Far-left
             ]
         elif player_index == 2:  # Top-left - options go right and down
             options = [
-                (10, center_x + spacing, center_y - spacing, counts[10]),  # Bottom-right
-                (8, center_x + spacing * 1.8, center_y - spacing, counts[8]),  # Bottom-far-right
+                (
+                    10,
+                    center_x + spacing,
+                    center_y - spacing,
+                    counts[10],
+                ),  # Bottom-right
+                (
+                    8,
+                    center_x + spacing * 1.8,
+                    center_y - spacing,
+                    counts[8],
+                ),  # Bottom-far-right
                 (6, center_x + spacing, center_y, counts[6]),  # Right
                 (4, center_x + spacing * 1.8, center_y, counts[4]),  # Far-right
             ]
         else:  # player_index == 3, Top-right - options go left and down
             options = [
                 (10, center_x - spacing, center_y - spacing, counts[10]),  # Bottom-left
-                (8, center_x - spacing * 1.8, center_y - spacing, counts[8]),  # Bottom-far-left
+                (
+                    8,
+                    center_x - spacing * 1.8,
+                    center_y - spacing,
+                    counts[8],
+                ),  # Bottom-far-left
                 (6, center_x - spacing, center_y, counts[6]),  # Left
                 (4, center_x - spacing * 1.8, center_y, counts[4]),  # Far-left
             ]
@@ -664,118 +605,6 @@ class GameView(arcade.View):
                     anchor_x="center",
                     anchor_y="center",
                 )
-
-    def _draw_corner_menu_3d(self):
-        """Draw the corner deployment menu as HUD overlay in 3D mode."""
-        current_player = self.game_state.get_current_player()
-        if not current_player:
-            return
-
-        # Get reserve token counts
-        counts = self.game_state.get_reserve_token_counts(current_player.id)
-
-        # Draw menu in center of screen as HUD
-        menu_width = 400
-        menu_height = 200
-        center_x = self.window.width / 2
-        center_y = self.window.height / 2
-
-        # Semi-transparent background (using lrbt API for Arcade 3.0+)
-        left = center_x - menu_width / 2
-        right = center_x + menu_width / 2
-        top = center_y + menu_height / 2
-        bottom = center_y - menu_height / 2
-
-        arcade.draw_lrbt_rectangle_filled(
-            left,
-            right,
-            bottom,
-            top,
-            (20, 20, 40, 220),
-        )
-        arcade.draw_lrbt_rectangle_outline(left, right, bottom, top, (0, 255, 255), 3)
-
-        # Title
-        arcade.draw_text(
-            "SELECT TOKEN TYPE",
-            center_x,
-            center_y + 70,
-            (0, 255, 255),
-            font_size=18,
-            bold=True,
-            anchor_x="center",
-            anchor_y="center",
-        )
-
-        # Options in a grid
-        options = [
-            (10, center_x - 100, center_y + 20, counts[10]),
-            (8, center_x + 100, center_y + 20, counts[8]),
-            (6, center_x - 100, center_y - 30, counts[6]),
-            (4, center_x + 100, center_y - 30, counts[4]),
-        ]
-
-        for health, x, y, count in options:
-            # Store click areas for hit detection
-            if not hasattr(self, "_3d_menu_areas"):
-                self._3d_menu_areas = {}
-
-            if count > 0:
-                color = (0, 255, 255)
-                text_color = (255, 255, 255)
-            else:
-                color = (100, 100, 100)
-                text_color = (100, 100, 100)
-
-            # Draw option box (using lrbt API for Arcade 3.0+)
-            box_left = x - 35
-            box_right = x + 35
-            box_top = y + 25
-            box_bottom = y - 25
-
-            arcade.draw_lrbt_rectangle_filled(
-                box_left, box_right, box_bottom, box_top, (30, 30, 60, 200)
-            )
-            arcade.draw_lrbt_rectangle_outline(
-                box_left, box_right, box_bottom, box_top, color, 2
-            )
-
-            # Store clickable area
-            self._3d_menu_areas[health] = (box_left, box_right, box_bottom, box_top)
-
-            # Draw health value
-            arcade.draw_text(
-                str(health),
-                x,
-                y + 5,
-                text_color,
-                font_size=16,
-                bold=True,
-                anchor_x="center",
-                anchor_y="center",
-            )
-
-            # Draw count
-            arcade.draw_text(
-                f"({count})" if count > 0 else "N/A",
-                x,
-                y - 10,
-                text_color,
-                font_size=12,
-                anchor_x="center",
-                anchor_y="center",
-            )
-
-        # Instruction
-        arcade.draw_text(
-            "Click a token type (ESC to cancel)",
-            center_x,
-            center_y - 70,
-            (200, 200, 200),
-            font_size=12,
-            anchor_x="center",
-            anchor_y="center",
-        )
 
     def _update_selection_visuals(self):
         """Update visual feedback for selection and valid moves with vector glow."""
@@ -1288,7 +1117,9 @@ class GameView(arcade.View):
         # Smoothly pan to the target position
         self.camera.position = (target_x, target_y)
 
-        print(f"  Camera panned to {player.name}'s corner at ({target_x:.0f}, {target_y:.0f})")
+        print(
+            f"  Camera panned to {player.name}'s corner at ({target_x:.0f}, {target_y:.0f})"
+        )
 
     def _setup_camera_view(self):
         """Set up camera to show the entire board, accounting for HUD at top."""
@@ -1380,87 +1211,6 @@ class GameView(arcade.View):
         )
         return grid_pos in deployable_positions
 
-    def _handle_corner_menu_click(
-        self, world_pos: Tuple[float, float], player_id: str
-    ) -> bool:
-        """
-        Handle click on corner menu to select a token type for deployment (2D mode).
-
-        Args:
-            world_pos: Click position in world coordinates
-            player_id: Current player ID
-
-        Returns:
-            True if a token type was selected
-        """
-        if not self.corner_menu_position:
-            return False
-
-        grid_x, grid_y = self.corner_menu_position
-        center_x = grid_x * CELL_SIZE + CELL_SIZE / 2
-        center_y = grid_y * CELL_SIZE + CELL_SIZE / 2
-
-        # Menu option positions (same logic as in _draw_corner_menu)
-        board_width = self.game_state.board.width
-        board_height = self.game_state.board.height
-        spacing = CELL_SIZE * 1.5
-
-        # Check if we're in a corner
-        is_near_left = grid_x <= 2
-        is_near_right = grid_x >= board_width - 3
-        is_near_bottom = grid_y <= 2
-        is_near_top = grid_y >= board_height - 3
-        is_corner = (is_near_left or is_near_right) and (is_near_bottom or is_near_top)
-
-        if is_corner:
-            # Use 2x2 grid layout for corners
-            x_dir = 1 if is_near_left else -1
-            y_dir = 1 if is_near_bottom else -1
-
-            options = [
-                (10, center_x + spacing * x_dir * 0.5, center_y + spacing * y_dir * 1.5),
-                (8, center_x + spacing * x_dir * 1.5, center_y + spacing * y_dir * 1.5),
-                (6, center_x + spacing * x_dir * 0.5, center_y + spacing * y_dir * 0.5),
-                (4, center_x + spacing * x_dir * 1.5, center_y + spacing * y_dir * 0.5),
-            ]
-        else:
-            # Use diamond layout for non-corner positions
-            menu_distance = CELL_SIZE * 2
-            options = [
-                (10, center_x, center_y + menu_distance),
-                (8, center_x + menu_distance, center_y),
-                (6, center_x, center_y - menu_distance),
-                (4, center_x - menu_distance, center_y),
-            ]
-
-        click_x, click_y = world_pos
-
-        # Check which option was clicked
-        click_radius = CELL_SIZE * 0.8
-        for health, option_x, option_y in options:
-            distance = ((click_x - option_x) ** 2 + (click_y - option_y) ** 2) ** 0.5
-            if distance <= click_radius:
-                # Check if player has this token type in reserve
-                reserve_counts = self.game_state.get_reserve_token_counts(player_id)
-                if reserve_counts.get(health, 0) > 0:
-                    # Select this token type for deployment
-                    self.selected_deploy_health = health
-                    print(
-                        f"Selected {health}hp token for deployment - click a position to deploy"
-                    )
-
-                    # Close the menu
-                    self.corner_menu_open = False
-                    self.corner_menu_position = None
-                    self.corner_menu_just_opened = False
-
-                    return True
-                else:
-                    print(f"No {health}hp tokens available in reserve")
-                    return False
-
-        return False
-
     def _handle_corner_menu_click_ui(
         self, screen_pos: Tuple[int, int], player_id: str
     ) -> bool:
@@ -1548,48 +1298,6 @@ class GameView(arcade.View):
 
         return False
 
-    def _handle_corner_menu_click_3d(
-        self, screen_pos: Tuple[int, int], player_id: str
-    ) -> bool:
-        """
-        Handle click on HUD corner menu in 3D mode.
-
-        Args:
-            screen_pos: Click position in screen coordinates
-            player_id: Current player ID
-
-        Returns:
-            True if a token type was selected
-        """
-        if not hasattr(self, "_3d_menu_areas"):
-            return False
-
-        click_x, click_y = screen_pos
-
-        # Check which menu option was clicked
-        for health, (left, right, bottom, top) in self._3d_menu_areas.items():
-            if left <= click_x <= right and bottom <= click_y <= top:
-                # Check if player has this token type in reserve
-                reserve_counts = self.game_state.get_reserve_token_counts(player_id)
-                if reserve_counts.get(health, 0) > 0:
-                    # Select this token type for deployment
-                    self.selected_deploy_health = health
-                    print(
-                        f"Selected {health}hp token for deployment - click a position to deploy"
-                    )
-
-                    # Close the menu
-                    self.corner_menu_open = False
-                    self.corner_menu_position = None
-                    self.corner_menu_just_opened = False
-
-                    return True
-                else:
-                    print(f"No {health}hp tokens available in reserve")
-                    return False
-
-        return False
-
     def _handle_select(self, world_pos: Tuple[float, float]):
         """
         Handle selection at world position.
@@ -1640,16 +1348,21 @@ class GameView(arcade.View):
                     # Check if we have a token selected and this is a valid move
                     # (stacking on generator/crystal)
                     cell = self.game_state.board.get_cell_at((grid_x, grid_y))
-                    if (self.selected_token_id and
-                        (grid_x, grid_y) in self.valid_moves and
-                        cell and cell.cell_type in (CellType.GENERATOR, CellType.CRYSTAL)):
+                    if (
+                        self.selected_token_id
+                        and (grid_x, grid_y) in self.valid_moves
+                        and cell
+                        and cell.cell_type in (CellType.GENERATOR, CellType.CRYSTAL)
+                    ):
                         # Move to stack on generator/crystal
                         self._try_move_to_cell((grid_x, grid_y))
                     else:
                         # Select this token for movement
                         self.selected_token_id = clicked_token.id
                         self.valid_moves = self.movement_system.get_valid_moves(
-                            clicked_token, self.game_state.board, tokens_dict=self.game_state.tokens
+                            clicked_token,
+                            self.game_state.board,
+                            tokens_dict=self.game_state.tokens,
                         )
                         self._update_selection_visuals()
                         print(
@@ -1744,16 +1457,21 @@ class GameView(arcade.View):
                     # Check if we have a token selected and this is a valid move
                     # (stacking on generator/crystal)
                     cell = self.game_state.board.get_cell_at((grid_x, grid_y))
-                    if (self.selected_token_id and
-                        (grid_x, grid_y) in self.valid_moves and
-                        cell and cell.cell_type in (CellType.GENERATOR, CellType.CRYSTAL)):
+                    if (
+                        self.selected_token_id
+                        and (grid_x, grid_y) in self.valid_moves
+                        and cell
+                        and cell.cell_type in (CellType.GENERATOR, CellType.CRYSTAL)
+                    ):
                         # Move to stack on generator/crystal
                         self._try_move_to_cell((grid_x, grid_y))
                     else:
                         # Select this token for movement
                         self.selected_token_id = clicked_token.id
                         self.valid_moves = self.movement_system.get_valid_moves(
-                            clicked_token, self.game_state.board, tokens_dict=self.game_state.tokens
+                            clicked_token,
+                            self.game_state.board,
+                            tokens_dict=self.game_state.tokens,
                         )
                         self._update_selection_visuals()
                         print(
@@ -1847,19 +1565,29 @@ class GameView(arcade.View):
                 # Get player's starting position for potential teleport
                 current_player = self.game_state.get_current_player()
                 if current_player:
-                    starting_pos = self.game_state.board.get_starting_position(current_player.color.value)
+                    starting_pos = self.game_state.board.get_starting_position(
+                        current_player.color.value
+                    )
 
                     # Trigger the mystery event (50/50 heal or teleport)
-                    mystery_result = MysterySquareSystem.trigger_mystery_event(token, starting_pos)
+                    mystery_result = MysterySquareSystem.trigger_mystery_event(
+                        token, starting_pos
+                    )
 
                     if mystery_result.effect.name == "HEAL":
-                        print(f"🎲 HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!")
+                        print(
+                            f"🎲 HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
+                        )
                     else:
                         # Token was teleported - update board occupancy
                         self.game_state.board.clear_occupant(cell, token.id)
-                        self.game_state.board.set_occupant(mystery_result.new_position, token.id)
+                        self.game_state.board.set_occupant(
+                            mystery_result.new_position, token.id
+                        )
                         final_position = mystery_result.new_position
-                        print(f"🎲 TAILS! Token teleported back to starting corner {final_position}!")
+                        print(
+                            f"🎲 TAILS! Token teleported back to starting corner {final_position}!"
+                        )
 
             # Update sprite position and health display
             for sprite in self.token_sprites:
@@ -1916,7 +1644,9 @@ class GameView(arcade.View):
                     sprite.update_health()
                 else:
                     self.token_sprites.remove(sprite)
-                    self.game_state.board.clear_occupant(target_token.position, target_token.id)
+                    self.game_state.board.clear_occupant(
+                        target_token.position, target_token.id
+                    )
                 break
 
         # Clear selection and move to end turn phase
@@ -1941,7 +1671,6 @@ class GameView(arcade.View):
         elif self.corner_menu_open:
             print("Closed deployment menu")
             self.corner_menu_open = False
-            self.corner_menu_position = None
             self.corner_menu_just_opened = False
 
     def _handle_end_turn(self):
