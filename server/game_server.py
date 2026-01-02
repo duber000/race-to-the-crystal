@@ -688,11 +688,14 @@ class GameServer:
         self.lobby_manager.set_game_in_progress(lobby.game_id)
 
         # Send full game state to all players
+        logger.info(f"Sending FULL_STATE to {len(lobby.players)} players")
         for net_player_id in lobby.players.keys():
             state_dict = game_session.get_game_state_for_player(net_player_id)
+            logger.info(f"  -> Sending FULL_STATE to player {net_player_id}")
 
             state_msg = self.protocol.create_full_state_message(state_dict, net_player_id)
             await self._send_to_player(net_player_id, state_msg)
+            logger.info(f"  -> FULL_STATE sent to player {net_player_id}")
 
         # Broadcast START_GAME event
         start_event = NetworkMessage(

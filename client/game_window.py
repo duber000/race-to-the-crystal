@@ -180,10 +180,14 @@ class GameView(arcade.View):
         
         # Initialize chat widget only for network games
         if self.is_network_game:
-            chat_width = 300
-            chat_height = 400
-            chat_x = 20
-            chat_y = 100
+            chat_width = 320
+            chat_height = 300
+            # Position on left side, avoiding corner deployment menus
+            # Bottom-left deployment: y=60 (center), extends to ~y=140 (top)
+            # Top-left deployment: y=560 (center), starts at ~y=500 (bottom)
+            # Safe zone: y=200 to y=500
+            chat_x = 10
+            chat_y = 200
             self.chat_widget = ChatWidget(
                 network_client=self.network_client,
                 x=chat_x,
@@ -359,21 +363,20 @@ class GameView(arcade.View):
 
     def setup(self):
         """Set up the window after initialization."""
+        print(f"Setup called - Game state has {len(self.game_state.players)} players, {len(self.game_state.tokens)} tokens")
+
         self._create_board_sprites()
         self._create_token_sprites()
+        print(f"Created {len(self.token_sprites)} token sprites")
         self._create_ui_sprites()
         self._create_3d_rendering()
 
         # Set up camera to fit entire board in view
         self._setup_camera_view()
 
-        # Pan camera to first player's corner for better initial view
-        first_player = self.game_state.get_current_player()
-        if first_player:
-            self._pan_to_player_corner(first_player.id)
-
-        # Load and play background music
-        self._load_background_music()
+        # Load and play background music (only if not already loaded)
+        if not self.background_music:
+            self._load_background_music()
 
         # Build initial UI
         self.ui_manager.rebuild_visuals(self.game_state)
@@ -1239,46 +1242,6 @@ class GameView(arcade.View):
             self.camera.position[1] + dy,
         )
 
-    def _pan_to_player_corner(self, player_id: str):
-        """
-        Pan camera to show the player's starting corner for better visibility.
-
-        Args:
-            player_id: ID of the player whose corner to show
-        """
-        player = self.game_state.get_player(player_id)
-        if not player:
-            return
-
-        # Get player's starting corner position
-        player_index = player.color.value
-        corner_grid = self.game_state.board.get_starting_position(player_index)
-
-        # Convert to world coordinates (center of corner cell)
-        corner_x = corner_grid[0] * CELL_SIZE + CELL_SIZE / 2
-        corner_y = corner_grid[1] * CELL_SIZE + CELL_SIZE / 2
-
-        # Offset to show a bit more context around the corner
-        offset = CELL_SIZE * 3  # Show 3 cells of context
-
-        # Adjust offset based on which corner (move camera inward)
-        if corner_grid[0] == 0:  # Left edge
-            target_x = corner_x + offset
-        else:  # Right edge (23)
-            target_x = corner_x - offset
-
-        if corner_grid[1] == 0:  # Bottom edge
-            target_y = corner_y + offset
-        else:  # Top edge (23)
-            target_y = corner_y - offset
-
-        # Smoothly pan to the target position
-        self.camera.position = (target_x, target_y)
-
-        print(
-            f"  Camera panned to {player.name}'s corner at ({target_x:.0f}, {target_y:.0f})"
-        )
-
     def _setup_camera_view(self):
         """Set up camera to show the entire board, accounting for HUD at top."""
         from shared.constants import BOARD_HEIGHT, BOARD_WIDTH, CELL_SIZE
@@ -1859,10 +1822,6 @@ class GameView(arcade.View):
         next_player = self.game_state.get_current_player()
         if next_player:
             print(f"Turn {self.game_state.turn_number}: {next_player.name}'s turn")
-
-            # Pan camera to the new player's starting corner for better visibility
-            if self.camera_mode == "2D":
-                self._pan_to_player_corner(next_player.id)
 
         # Rebuild board shapes to update generator lines (when generators are captured)
         self._create_board_sprites()

@@ -49,6 +49,7 @@ class LobbyView(arcade.View):
         self.players: Dict[str, Dict] = {}  # player_id -> player_info
         self.is_ready = False
         self.game_started = False
+        self.pending_game_state = None  # Store FULL_STATE that arrives before game view is ready
 
         # UI elements
         self.title_text = None
@@ -377,9 +378,13 @@ class LobbyView(arcade.View):
         if self.status_text:
             self.status_text.text = "Game starting..."
 
-        # Notify callback
+        # Notify callback with any pending game state
         if self.on_game_start:
             data = message.data or {}
+            # Include pending game state if it arrived before START_GAME
+            if self.pending_game_state:
+                data["initial_game_state"] = self.pending_game_state
+                logger.info("Passing pending game state to NetworkGameView")
             self.on_game_start(data)
 
     async def _handle_full_state(self, message):
@@ -387,6 +392,14 @@ class LobbyView(arcade.View):
         data = message.data or {}
         game_state_data = data.get("game_state", {})
         lobby_data = data.get("lobby", {})
+
+        # If we receive a FULL_STATE with actual game state data (tokens, board, etc.),
+        # it's for the game view, not the lobby. Store it for NetworkGameView.
+        # Check if game_state has the "tokens" field which indicates it's actual game state
+        if game_state_data and "tokens" in game_state_data:
+            logger.info("Lobby view received game FULL_STATE - storing for NetworkGameView")
+            self.pending_game_state = game_state_data
+            return  # Don't process as lobby update
 
         # Update lobby info
         if lobby_data:
@@ -397,7 +410,7 @@ class LobbyView(arcade.View):
             # Update player list
             # Clear existing players first
             self.players.clear()
-            
+
             # Add players from the list
             for player_info in players_list:
                 player_id = player_info.get("player_id")

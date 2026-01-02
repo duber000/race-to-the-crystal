@@ -76,7 +76,7 @@ class NetworkGameView(arcade.View):
 
     def on_show_view(self):
         """Called when this view is shown."""
-        logger.info("Network game view shown")
+        logger.info(f"Network game view shown with game state: {len(self.game_state.players)} players, {len(self.game_state.tokens)} tokens")
 
         # Create game view (using new View architecture)
         self.game_view = GameView(
@@ -222,7 +222,7 @@ class NetworkGameView(arcade.View):
         Args:
             message: NetworkMessage from server
         """
-        logger.debug(f"Game received: {message.type.value}")
+        logger.info(f"NetworkGameView received message: {message.type.value}")
 
         try:
             if message.type == MessageType.FULL_STATE:
@@ -266,12 +266,16 @@ class NetworkGameView(arcade.View):
         try:
             # Use GameState.from_dict() to properly deserialize
             self.game_state = GameState.from_dict(game_state_data)
-            logger.debug(f"Game state deserialized successfully")
+            logger.info(f"Game state deserialized - Players: {len(self.game_state.players)}, Tokens: {len(self.game_state.tokens)}")
 
             # Update game view to use new state
             if self.game_view:
+                logger.info("Updating game view with new state and calling setup()")
                 self.game_view.game_state = self.game_state
                 self.game_view.setup()
+                logger.info("Game view setup complete")
+            else:
+                logger.warning("No game view exists yet - will be created with this state")
 
         except Exception as e:
             logger.error(f"Failed to deserialize game state: {e}", exc_info=True)

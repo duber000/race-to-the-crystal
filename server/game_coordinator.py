@@ -50,6 +50,10 @@ class GameSession:
         # Initialize players from lobby
         self._initialize_players(lobby)
 
+        # Start the game (creates tokens and auto-deploys initial positions)
+        self.game_state.start_game()
+        logger.info(f"Game started with {len(self.game_state.tokens)} tokens")
+
         # Action executor for validating and executing actions
         self.executor = AIActionExecutor()
 

@@ -257,6 +257,7 @@ class ChatWidget:
 
         for i in range(visible_start, visible_end):
             msg = self.messages[i]
+            message_index = i - visible_start
 
             # Format: "PlayerName: message"
             display_text = f"{msg.player_name}: {msg.message}"
@@ -280,7 +281,7 @@ class ChatWidget:
                 message_text = self.message_texts[message_index]
                 message_text.text = display_text
                 message_text.y = message_y
-            
+
             self.message_texts[message_index].draw()
 
             message_y -= message_height

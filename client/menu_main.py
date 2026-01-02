@@ -328,12 +328,26 @@ class MenuGameWindow(AsyncWindow):
         Start the network game (called from lobby when game starts).
 
         Args:
-            game_data: Game start data from server
+            game_data: Game start data from server (may include initial_game_state)
         """
         logger.info("Starting network game from lobby")
 
-        # Create network game view
-        self.network_game_view = NetworkGameView(self.network_client)
+        # Extract initial game state if provided
+        initial_state = None
+        if "initial_game_state" in game_data:
+            from game.game_state import GameState
+            try:
+                game_state_dict = game_data["initial_game_state"]
+                logger.info(f"Game state dict has keys: {list(game_state_dict.keys())}")
+                logger.info(f"Tokens in dict: {len(game_state_dict.get('tokens', {}))}")
+
+                initial_state = GameState.from_dict(game_state_dict)
+                logger.info(f"Received initial game state with {len(initial_state.players)} players, {len(initial_state.tokens)} tokens")
+            except Exception as e:
+                logger.error(f"Failed to deserialize initial game state: {e}", exc_info=True)
+
+        # Create network game view with initial state
+        self.network_game_view = NetworkGameView(self.network_client, initial_state)
 
         # Set up callbacks
         self.network_game_view.on_game_end = self._handle_game_end
