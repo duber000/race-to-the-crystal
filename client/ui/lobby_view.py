@@ -6,6 +6,7 @@ Displays connected players, ready status, and game start controls.
 import arcade
 import arcade.gui
 import logging
+import pyperclip
 from typing import Optional, Callable, Dict, List
 
 from client.network_client import NetworkClient
@@ -53,6 +54,9 @@ class LobbyView(arcade.View):
 
         # UI elements
         self.title_text = None
+        self.game_id_text = None
+        self.copy_feedback_text = None
+        self.copy_feedback_timer = 0.0
         self.status_text = None
         self.player_texts: List[arcade.Text] = []
 
@@ -83,12 +87,34 @@ class LobbyView(arcade.View):
             bold=True
         )
 
+        # Game ID display
+        game_id = self.network_client.game_id or "Unknown"
+        self.game_id_text = arcade.Text(
+            f"Game ID: {game_id}",
+            self.window.width // 2,
+            self.window.height - 120,
+            arcade.color.GRAY,
+            font_size=14,
+            anchor_x="center"
+        )
+
+        # Copy feedback text (shown briefly after copying)
+        self.copy_feedback_text = arcade.Text(
+            "Copied!",
+            self.window.width // 2,
+            self.window.height - 145,
+            arcade.color.GREEN,
+            font_size=12,
+            anchor_x="center",
+            bold=True
+        )
+
         # Status text
         status = "You are the host" if self.is_host else "Waiting for host to start..."
         self.status_text = arcade.Text(
             status,
             self.window.width // 2,
-            self.window.height - 130,
+            self.window.height - 170,
             arcade.color.WHITE,
             font_size=16,
             anchor_x="center"
@@ -102,6 +128,11 @@ class LobbyView(arcade.View):
             "height": 50,
             "width": 250,
         }
+
+        # Copy Game ID button
+        copy_button = arcade.gui.UIFlatButton(text="Copy Game ID", **button_style)
+        copy_button.on_click = self._on_copy_game_id_click
+        v_box.add(copy_button)
 
         # Ready/Unready button
         ready_text = "Unready" if self.is_ready else "Ready"
@@ -163,6 +194,10 @@ class LobbyView(arcade.View):
         if self.chat_widget:
             self.chat_widget.update(delta_time)
 
+        # Update copy feedback timer
+        if self.copy_feedback_timer > 0:
+            self.copy_feedback_timer -= delta_time
+
     def on_draw(self):
         """Render the lobby."""
         self.clear()
@@ -170,6 +205,10 @@ class LobbyView(arcade.View):
         # Draw title and status
         if self.title_text:
             self.title_text.draw()
+        if self.game_id_text:
+            self.game_id_text.draw()
+        if self.copy_feedback_timer > 0 and self.copy_feedback_text:
+            self.copy_feedback_text.draw()
         if self.status_text:
             self.status_text.draw()
 
@@ -214,8 +253,8 @@ class LobbyView(arcade.View):
         )
         self.player_texts.append(title)
 
-        # List players
-        y_pos -= 40
+        # List players (adjusted position for game ID display)
+        y_pos -= 60
         for i, (player_id, player_info) in enumerate(self.players.items()):
             name = player_info.get("player_name", "Unknown")
             is_ready = player_info.get("is_ready", False)
@@ -293,6 +332,16 @@ class LobbyView(arcade.View):
     async def _handle_create_game(self, message):
         """Handle CREATE_GAME response - initialize lobby with host player."""
         data = message.data or {}
+
+        # Extract and store game ID
+        game_id = data.get("game_id")
+        if game_id:
+            self.network_client.game_id = game_id
+            logger.info(f"Game ID set: {game_id}")
+
+            # Update game ID display
+            if self.game_id_text:
+                self.game_id_text.text = f"Game ID: {game_id}"
 
         # Update lobby info
         self.game_name = data.get("game_name", "Lobby")
@@ -403,6 +452,16 @@ class LobbyView(arcade.View):
 
         # Update lobby info
         if lobby_data:
+            # Extract and store game ID if present
+            game_id = lobby_data.get("game_id")
+            if game_id and not self.network_client.game_id:
+                self.network_client.game_id = game_id
+                logger.info(f"Game ID set from FULL_STATE: {game_id}")
+
+                # Update game ID display
+                if self.game_id_text:
+                    self.game_id_text.text = f"Game ID: {game_id}"
+
             self.game_name = lobby_data.get("game_name", "Lobby")
             self.max_players = lobby_data.get("max_players", 4)
             players_list = lobby_data.get("players", [])
@@ -433,6 +492,20 @@ class LobbyView(arcade.View):
         if chat_text and self.chat_widget:
             self.chat_widget.add_message(player_name, chat_text, message.player_id)
             logger.debug(f"Chat from {player_name}: {chat_text}")
+
+    def _on_copy_game_id_click(self, event):
+        """Handle copy game ID button click."""
+        game_id = self.network_client.game_id
+        if game_id:
+            try:
+                pyperclip.copy(game_id)
+                logger.info(f"Copied game ID to clipboard: {game_id[:8]}...")
+                # Show feedback
+                self.copy_feedback_timer = 2.0  # Show "Copied!" for 2 seconds
+            except Exception as e:
+                logger.error(f"Failed to copy game ID to clipboard: {e}")
+        else:
+            logger.warning("No game ID available to copy")
 
     def _on_ready_click(self, event):
         """Handle ready button click."""

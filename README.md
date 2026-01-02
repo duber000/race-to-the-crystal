@@ -13,7 +13,9 @@ Race to the Crystal is a strategy game where players compete to capture a centra
 - **Dual rendering modes**: 2D top-down and 3D first-person views
 - **Tron-style vector graphics** with glow effects and GPU acceleration
 - **Strategic gameplay** with generators, mystery squares, and combat mechanics
-- **Hot-seat multiplayer** for 2-4 players
+- **Local hot-seat multiplayer** for 2-4 players on the same computer
+- **Network multiplayer** with server-client architecture
+- **AI players** with multiple strategy modes (random, aggressive, defensive)
 - **Visual generator connections**: Flowing animated lines connect active generators to the crystal, disappearing when captured
 
 ## Tech Stack
@@ -31,17 +33,70 @@ Race to the Crystal is a strategy game where players compete to capture a centra
 ```bash
 # Install dependencies
 uv sync
+```
 
-# Run the game (2D mode)
+#### Option 1: Local Hot-Seat Game (Human Players Only)
+
+```bash
+# Run the game via main menu
 uv run race-to-the-crystal
+# Click "Play Local Hot-Seat Game"
+
+# Or run directly (2D mode)
+uv run race-direct
 
 # Run in 3D mode (direct startup)
-uv run race-to-the-crystal --3d
+uv run race-direct --3d
 
 # Run with custom player count (2-4)
-uv run race-to-the-crystal 2
-uv run race-to-the-crystal --3d 2
+uv run race-direct 2
+uv run race-direct --3d 2
 ```
+
+#### Option 2: Network Multiplayer (Human + AI Players)
+
+**Start the server first (required):**
+```bash
+# Terminal 1: Start the server
+uv run race-server
+```
+
+**Then connect clients:**
+
+```bash
+# Human player via GUI
+uv run race-to-the-crystal
+# Click "Host Network Game" or "Join Network Game"
+
+# AI player (creates a game and waits)
+uv run race-ai-client --create "My Game" --name "AI_Alice"
+
+# Another AI player (joins existing game)
+uv run race-ai-client --join <game-id> --name "AI_Bob" --strategy aggressive
+```
+
+**AI Strategies:**
+- `random` - Random action selection (default)
+- `aggressive` - Prioritizes attacks and forward movement
+- `defensive` - Prioritizes deployment and safe moves
+
+**Complete Example - Mixed Human/AI Game:**
+```bash
+# Terminal 1: Start server
+uv run race-server
+
+# Terminal 2: Human hosts game via GUI
+uv run race-to-the-crystal
+# Click "Host Network Game", create "Mixed Game"
+
+# Terminal 3: AI joins
+uv run race-ai-client --join <game-id> --name "Bot1" --strategy aggressive
+
+# Terminal 4: Another AI joins
+uv run race-ai-client --join <game-id> --name "Bot2"
+```
+
+See [NETWORK.md](docs/NETWORK.md) for complete network multiplayer documentation.
 
 ### Controls
 
@@ -99,11 +154,19 @@ See [GAME.md](GAME.md) for complete rules.
 
 ```
 race-to-the-crystal/
-├── game/          # Core game logic
-├── client/        # Rendering and UI
+├── game/          # Core game logic (rendering-independent)
+├── client/        # Rendering, UI, and AI client
+├── server/        # Network game server
+├── network/       # Protocol and connection handling
 ├── shared/        # Constants and enums
-└── tests/         # Unit tests (140+ tests)
+├── tests/         # Unit tests (199 tests)
+└── docs/          # Documentation (NETWORK.md, GAME.md)
 ```
+
+For detailed documentation:
+- **Game Rules**: [docs/GAME.md](docs/GAME.md)
+- **Network Multiplayer**: [docs/NETWORK.md](docs/NETWORK.md)
+- **Development Guide**: [CLAUDE.md](CLAUDE.md)
 
 ### Running Tests
 

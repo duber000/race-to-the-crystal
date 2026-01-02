@@ -298,7 +298,15 @@ class NetworkClient:
         logger.debug(f"Received {message.type.value}")
 
         # Update internal state based on message type
-        if message.type == MessageType.FULL_STATE:
+        if message.type == MessageType.CREATE_GAME:
+            # Game created - store game_id
+            data = message.data or {}
+            game_id = data.get("game_id")
+            if game_id:
+                self.game_id = game_id
+                logger.info(f"Game created with ID: {game_id}")
+
+        elif message.type == MessageType.FULL_STATE:
             # Full game state received
             data = message.data or {}
             self.current_game_state = data.get("game_state")
