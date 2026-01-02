@@ -22,12 +22,13 @@
 * **Token Stacking**: Multiple friendly tokens can occupy the same generator or crystal cell (required for capture)
 * **Token Stacking Continued**: Multiple friendly tokens can't occupy the same space otherwise
 * tokens have these numbers on their dice representing their health: 10, 8, 6, 4
-* 6 and 4 health tokens can move two spaces, 10 and 8 health tokens move 1 space
+* **Movement is dynamic**: tokens with **current health of 7 or more** move 1 space, tokens with **6 or less** move 2 spaces
+  - This means damaged tokens become more mobile! An 8hp token that takes 4 damage becomes 4hp and can move 2 spaces
 * each token attacks for 1/2 of their value (10hp → 5 damage, 8hp → 4 damage, etc)
 * attacker takes no damage when attacking
 * mystery squares (distributed throughout the board) trigger random events:
   - Heads: heal token to full health
-  - Tails: teleport token back to starting corner
+  - Tails: teleport token back to deployment area (first empty cell in 3x3 corner zone)
 
 ## Visual Elements
 

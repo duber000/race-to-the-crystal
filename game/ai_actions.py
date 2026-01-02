@@ -268,13 +268,15 @@ class AIActionExecutor:
         # Check for mystery square and trigger effect
         cell = game_state.board.get_cell_at(new_pos)
         if cell and cell.cell_type == CellType.MYSTERY:
-            # Get player's starting position for potential teleport
+            # Get player's index for potential teleport to deployment area
             player = game_state.get_player(player_id)
             if player:
-                starting_pos = game_state.board.get_starting_position(player.color.value)
+                player_index = player.color.value
 
                 # Trigger the mystery event (50/50 heal or teleport)
-                mystery_result = MysterySquareSystem.trigger_mystery_event(token, starting_pos)
+                mystery_result = MysterySquareSystem.trigger_mystery_event(
+                    token, game_state.board, player_index
+                )
 
                 message += f"\n→ Token landed on a MYSTERY square!"
                 result_data["mystery_triggered"] = True
@@ -286,7 +288,7 @@ class AIActionExecutor:
                     # Token was teleported - update board occupancy
                     game_state.board.clear_occupant(new_pos, token.id)
                     game_state.board.set_occupant(mystery_result.new_position, token.id)
-                    message += f"\n→ 🎲 TAILS! Token teleported back to starting corner {mystery_result.new_position}!"
+                    message += f"\n→ 🎲 TAILS! Token teleported back to deployment area {mystery_result.new_position}!"
                     result_data["new_position"] = mystery_result.new_position
 
         # Change phase to ACTION

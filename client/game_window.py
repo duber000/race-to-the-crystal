@@ -1689,16 +1689,14 @@ class GameView(arcade.View):
             final_position = cell
 
             if board_cell and board_cell.cell_type == CellType.MYSTERY:
-                # Get player's starting position for potential teleport
+                # Get player's index for potential teleport to deployment area
                 current_player = self.game_state.get_current_player()
                 if current_player:
-                    starting_pos = self.game_state.board.get_starting_position(
-                        current_player.color.value
-                    )
+                    player_index = current_player.color.value
 
                     # Trigger the mystery event (50/50 heal or teleport)
                     mystery_result = MysterySquareSystem.trigger_mystery_event(
-                        token, starting_pos
+                        token, self.game_state.board, player_index
                     )
 
                     if mystery_result.effect.name == "HEAL":
@@ -1713,7 +1711,7 @@ class GameView(arcade.View):
                         )
                         final_position = mystery_result.new_position
                         print(
-                            f"🎲 TAILS! Token teleported back to starting corner {final_position}!"
+                            f"🎲 TAILS! Token teleported back to deployment area {final_position}!"
                         )
 
             # Update sprite position and health display

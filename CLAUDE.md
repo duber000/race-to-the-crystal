@@ -184,7 +184,7 @@ Constants and enums shared between game logic and rendering.
    - Remaining 17 tokens start in **reserve** (is_deployed=False)
    - Deploy tokens to board via `game_state.deploy_token()`
    - Deployed tokens can move/attack
-   - Movement range: 6hp and 4hp tokens move 2 spaces, others move 1 space
+   - Movement range: **Dynamic based on current health** - tokens with 7+ HP move 1 space, 6 or less HP move 2 spaces
    - Combat: Damage = attacker.health // 2, attacker takes no damage
 
 5. **Win Condition**:
@@ -298,7 +298,7 @@ This means changes to token positions don't immediately affect capture/win statu
 
 ## Common Gotchas
 
-1. **Movement range confusion**: Only 6hp and 4hp tokens move 2 spaces; 10hp and 8hp move 1 space. This is counter-intuitive (lower health = more speed) but matches game design.
+1. **Movement range is dynamic**: Movement range is based on **current health**, not max health. Tokens with 7+ HP move 1 space, while tokens with 6 or less HP move 2 spaces. This means damaged tokens become more mobile - an 8hp token that takes 4 damage becomes 4hp and gains the ability to move 2 spaces.
 
 2. **Phase transitions**: Moving or deploying automatically changes phase to ACTION. You cannot move twice in one turn.
 

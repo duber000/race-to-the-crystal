@@ -3,10 +3,13 @@ Mystery square random event handling.
 """
 from dataclasses import dataclass
 import random
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 
 from game.token import Token
 from shared.enums import MysteryEffect
+
+if TYPE_CHECKING:
+    from game.board import Board
 
 
 @dataclass
@@ -54,18 +57,20 @@ class MysterySquareSystem:
     @staticmethod
     def trigger_mystery_event(
         token: Token,
-        starting_position: Tuple[int, int]
+        board: "Board",
+        player_index: int
     ) -> MysteryEventResult:
         """
         Trigger mystery square effect for a token.
 
         The effect is a coin flip:
         - Heads: Heal to full health
-        - Tails: Teleport back to starting position
+        - Tails: Teleport back to deployment area (first empty cell, or corner if all full)
 
         Args:
             token: Token that landed on mystery square
-            starting_position: Player's starting position (for teleport)
+            board: Game board (for finding deployment area)
+            player_index: Player's index (0-3) for determining deployment area
 
         Returns:
             MysteryEventResult describing what happened
@@ -83,10 +88,24 @@ class MysterySquareSystem:
             effect = MysteryEffect.HEAL
             new_position = old_position  # Position unchanged
         else:
-            # Tails: Teleport back to start
-            token.move_to(starting_position)
+            # Tails: Teleport back to deployment area
+            # Find first empty cell in deployment area
+            deployment_positions = board.get_deployable_positions(player_index)
+            teleport_position = None
+
+            for pos in deployment_positions:
+                cell = board.get_cell_at(pos)
+                if cell and not cell.is_occupied():
+                    teleport_position = pos
+                    break
+
+            # If no empty cell found, use corner position as fallback
+            if teleport_position is None:
+                teleport_position = board.get_starting_position(player_index)
+
+            token.move_to(teleport_position)
             effect = MysteryEffect.TELEPORT
-            new_position = starting_position
+            new_position = teleport_position
 
         return MysteryEventResult(
             effect=effect,
@@ -124,7 +143,7 @@ class MysterySquareSystem:
         if effect == MysteryEffect.HEAL:
             return "Healed to full health!"
         elif effect == MysteryEffect.TELEPORT:
-            return "Teleported back to starting position!"
+            return "Teleported back to deployment area!"
         return "Unknown effect"
 
     @staticmethod
@@ -141,5 +160,5 @@ class MysterySquareSystem:
         if effect == MysteryEffect.HEAL:
             return "Token will be healed to maximum health"
         elif effect == MysteryEffect.TELEPORT:
-            return "Token will be sent back to starting corner"
+            return "Token will be sent back to deployment area"
         return "Unknown"

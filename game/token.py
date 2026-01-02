@@ -30,14 +30,16 @@ class Token:
     @property
     def movement_range(self) -> int:
         """
-        Calculate movement range for this token.
+        Calculate movement range for this token based on current health.
         According to the rules:
-        - Tokens with 6 or 4 max health move 2 spaces
-        - Tokens with 8 or 10 max health move 1 space
+        - Tokens with current health of 6 or less move 2 spaces
+        - Tokens with current health of 7 or more move 1 space
+
+        This means damaged tokens can gain mobility as they take damage.
         """
-        if self.max_health in (6, 4):
+        if self.health <= 6:
             return 2
-        else:  # max_health in (8, 10)
+        else:  # health >= 7
             return 1
 
     @property
