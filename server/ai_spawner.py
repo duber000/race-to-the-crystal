@@ -140,13 +140,39 @@ class AISpawner:
         Returns:
             Process object or None if spawn failed
         """
+        # Validate inputs for security (defense in depth)
+        try:
+            # Import validation functions
+            from server.lobby import validate_player_name, validate_game_name
+            
+            # Validate AI name
+            validate_player_name(ai_name)
+            
+            # Validate game_id (should be UUID format)
+            if not isinstance(game_id, str) or len(game_id) > 50:
+                raise ValueError(f"Invalid game_id length: {len(game_id) if game_id else 0}")
+            
+            # Additional security checks for command arguments
+            if any(char in ai_name for char in [';', '&', '|', '$', '>', '<', '`', '\\']):
+                raise ValueError(f"AI name contains unsafe characters: {ai_name}")
+            
+            if any(char in game_id for char in [';', '&', '|', '$', '>', '<', '`', '\\']):
+                raise ValueError(f"Game ID contains unsafe characters: {game_id}")
+                
+        except ValueError as e:
+            logger.error(f"Security validation failed for AI spawn: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected validation error: {e}", exc_info=True)
+            return None
+
         # Build command to spawn AI client
         # Use uv run to execute the AI client
         cmd = [
             "uv", "run", "race-ai-client",
-            "--join", game_id,
-            "--name", ai_name,
-            "--host", host,
+            "--join", str(game_id),  # Ensure string type
+            "--name", str(ai_name),  # Ensure string type
+            "--host", str(host),
             "--port", str(port),
             "--strategy", strategy
         ]

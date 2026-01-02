@@ -5,6 +5,7 @@ Handles game creation, player joining, ready status, and game starting.
 """
 import uuid
 import logging
+import re
 from typing import Dict, List, Optional, Set
 from dataclasses import dataclass, field
 from enum import Enum
@@ -13,6 +14,12 @@ from network.messages import ClientType
 
 
 logger = logging.getLogger(__name__)
+
+# Security constants for input validation
+MAX_GAME_NAME_LENGTH = 50
+MAX_PLAYER_NAME_LENGTH = 30
+ALLOWED_GAME_NAME_CHARS = r'^[a-zA-Z0-9_\- \.]+$'
+ALLOWED_PLAYER_NAME_CHARS = r'^[a-zA-Z0-9_\- \.]+$'
 
 
 class GameStatus(Enum):
@@ -44,6 +51,89 @@ class PlayerInfo:
         }
 
 
+def validate_game_name(game_name: str) -> bool:
+    """
+    Validate game name for security and compatibility.
+    
+    Args:
+        game_name: Game name to validate
+        
+    Returns:
+        True if valid, False otherwise
+        
+    Raises:
+        ValueError: If game name is invalid with specific reason
+    """
+    if not game_name or not game_name.strip():
+        raise ValueError("Game name cannot be empty")
+    
+    if len(game_name) > MAX_GAME_NAME_LENGTH:
+        raise ValueError(f"Game name too long (max {MAX_GAME_NAME_LENGTH} characters)")
+    
+    if not re.match(ALLOWED_GAME_NAME_CHARS, game_name):
+        raise ValueError(
+            f"Game name contains invalid characters. "
+            f"Allowed: alphanumeric, spaces, underscores, hyphens, and periods"
+        )
+    
+    # Additional security checks
+    if ".." in game_name:  # Prevent directory traversal patterns
+        raise ValueError("Game name cannot contain '..' sequence")
+    
+    if game_name.strip() != game_name:  # Prevent leading/trailing whitespace
+        raise ValueError("Game name cannot have leading or trailing whitespace")
+    
+    # Check for control characters and other unsafe characters
+    import string
+    control_chars = set(chr(i) for i in range(32))  # ASCII control characters
+    unsafe_chars = set(';&|$><`\\')  # Shell metacharacters
+    
+    for char in game_name:
+        if char in control_chars or char in unsafe_chars:
+            raise ValueError(f"Game name contains unsafe character: '{char}'")
+    
+    return True
+
+
+def validate_player_name(player_name: str) -> bool:
+    """
+    Validate player name for security and compatibility.
+    
+    Args:
+        player_name: Player name to validate
+        
+    Returns:
+        True if valid, False otherwise
+        
+    Raises:
+        ValueError: If player name is invalid with specific reason
+    """
+    if not player_name or not player_name.strip():
+        raise ValueError("Player name cannot be empty")
+    
+    if len(player_name) > MAX_PLAYER_NAME_LENGTH:
+        raise ValueError(f"Player name too long (max {MAX_PLAYER_NAME_LENGTH} characters)")
+    
+    if not re.match(ALLOWED_PLAYER_NAME_CHARS, player_name):
+        raise ValueError(
+            f"Player name contains invalid characters. "
+            f"Allowed: alphanumeric, spaces, underscores, hyphens, and periods"
+        )
+    
+    if player_name.strip() != player_name:
+        raise ValueError("Player name cannot have leading or trailing whitespace")
+    
+    # Check for control characters and other unsafe characters
+    control_chars = set(chr(i) for i in range(32))  # ASCII control characters
+    unsafe_chars = set(';&|$><`\\')  # Shell metacharacters
+    
+    for char in player_name:
+        if char in control_chars or char in unsafe_chars:
+            raise ValueError(f"Player name contains unsafe character: '{char}'")
+    
+    return True
+
+
 @dataclass
 class GameLobby:
     """Represents a game lobby that players can join."""
@@ -71,7 +161,17 @@ class GameLobby:
 
         Returns:
             True if player added successfully, False if lobby is full
+            
+        Raises:
+            ValueError: If player name is invalid
         """
+        # Validate player name for security
+        try:
+            validate_player_name(player_name)
+        except ValueError as e:
+            logger.warning(f"Invalid player name attempt: {e}")
+            raise
+
         if len(self.players) >= self.max_players:
             logger.warning(f"Cannot add player to full lobby {self.game_id}")
             return False
@@ -244,7 +344,18 @@ class LobbyManager:
 
         Returns:
             Created GameLobby
+            
+        Raises:
+            ValueError: If game name or player name is invalid
         """
+        # Validate inputs for security
+        try:
+            validate_game_name(game_name)
+            validate_player_name(player_name)
+        except ValueError as e:
+            logger.warning(f"Invalid game creation attempt: {e}")
+            raise
+
         game_id = str(uuid.uuid4())
 
         lobby = GameLobby(

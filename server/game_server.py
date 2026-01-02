@@ -484,14 +484,19 @@ class GameServer:
         player_name = data.get("player_name", "Player")
         client_type = self.player_client_types.get(player_id, ClientType.HUMAN)
 
-        # Create lobby
-        lobby = self.lobby_manager.create_lobby(
-            player_id=player_id,
-            player_name=player_name,
-            game_name=game_name,
-            client_type=client_type,
-            max_players=max_players
-        )
+        # Create lobby with validation
+        try:
+            lobby = self.lobby_manager.create_lobby(
+                player_id=player_id,
+                player_name=player_name,
+                game_name=game_name,
+                client_type=client_type,
+                max_players=max_players
+            )
+        except ValueError as e:
+            logger.warning(f"Invalid game creation attempt by {player_id}: {e}")
+            await self._send_error(player_id, f"Invalid game name: {e}")
+            return
 
         # Send confirmation
         response = NetworkMessage(
@@ -516,7 +521,13 @@ class GameServer:
         # Use the client type stored during connection
         client_type = self.player_client_types.get(player_id, ClientType.HUMAN)
 
-        lobby = self.lobby_manager.join_lobby(game_id, player_id, player_name, client_type)
+        # Join lobby with validation
+        try:
+            lobby = self.lobby_manager.join_lobby(game_id, player_id, player_name, client_type)
+        except ValueError as e:
+            logger.warning(f"Invalid join attempt by {player_id}: {e}")
+            await self._send_error(player_id, f"Invalid player name: {e}")
+            return
 
         if not lobby:
             await self._send_error(player_id, "Cannot join game (full or not found)")
