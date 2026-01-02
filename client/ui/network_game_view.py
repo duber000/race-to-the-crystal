@@ -157,13 +157,13 @@ class NetworkGameView(arcade.View):
                 return True
             return False
 
-        def network_deploy_token(player_id, token_id, position):
+        def network_deploy_token(player_id, health_value, position):
             """Intercept deploy and send to server."""
             if not self.waiting_for_server:
-                schedule_async(self._send_deploy(token_id, position))
+                schedule_async(self._send_deploy(health_value, position))
                 self.waiting_for_server = True
-                return True
-            return False
+                return None  # Return None like the original method
+            return None
 
         def network_end_turn():
             """Intercept end turn and send to server."""
@@ -197,9 +197,9 @@ class NetworkGameView(arcade.View):
             logger.error("Failed to send attack action")
             self.waiting_for_server = False
 
-    async def _send_deploy(self, token_id: int, position: tuple):
+    async def _send_deploy(self, health_value: int, position: tuple):
         """Send deploy action to server."""
-        action = DeployAction(token_id=token_id, position=position)
+        action = DeployAction(health_value=health_value, position=position)
         success = await self.network_client.send_action(action)
         if not success:
             logger.error("Failed to send deploy action")
