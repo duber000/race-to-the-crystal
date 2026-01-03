@@ -936,11 +936,19 @@ class GameView(arcade.View):
             width: New window width
             height: New window height
         """
-        # Call parent resize handler - this updates camera viewports automatically
+        # Call parent resize handler
         super().on_resize(width, height)
 
         # Check if initialization is complete (ui_manager exists)
         if hasattr(self, "ui_manager") and self.ui_manager:
+            # Update camera viewports to match new window size
+            # Note: super().on_resize() does NOT automatically update Camera2D viewports
+            if hasattr(self, "camera") and self.camera:
+                self.camera.viewport = arcade.types.LBWH(0, 0, width, height)
+
+            if hasattr(self, "ui_camera") and self.ui_camera:
+                self.ui_camera.viewport = arcade.types.LBWH(0, 0, width, height)
+
             # Update UI manager layout
             self.ui_manager.update_layout(width, height)
             self.ui_manager.rebuild_visuals(self.game_state)
