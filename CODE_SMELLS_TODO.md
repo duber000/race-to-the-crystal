@@ -74,7 +74,7 @@ This document tracks identified code smells and refactoring opportunities in the
 - 984b254: Refactor: Extract AudioManager from GameView (Phase 1/8)
 - 517f13b: Refactor: Extract DeploymentMenuController from GameView (Phase 2/8)
 - 997f10a: Refactor: Extract CameraController from GameView (Phase 3/8)
-- (Phase 4 commit pending)
+- 30e746f: Refactor: Extract Renderer2D from GameView (Phase 4/8)
 
 ---
 
