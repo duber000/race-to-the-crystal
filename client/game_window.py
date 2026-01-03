@@ -167,6 +167,11 @@ class GameView(arcade.View):
         self.generator_hum_players = []  # List of MediaPlayer objects
         self.generator_hum_volume = 0.7  # Volume for each generator hum (louder so you notice when they drop!)
 
+        # Mystery square coin flip animations
+        # Dict mapping (x, y) position to animation progress (0.0 to 1.0)
+        self.mystery_animations = {}  # {(x, y): progress}
+        self.mystery_animation_duration = 1.0  # Duration in seconds
+
         # Background color will be set in on_show_view()
 
     def on_show_view(self):
@@ -389,11 +394,12 @@ class GameView(arcade.View):
         crystal = self.game_state.crystal
         crystal_pos = crystal.position if crystal else None
 
-        # Pass generators and crystal position for flowing line visualization
+        # Pass generators, crystal position, and mystery animations
         self.board_shapes = create_board_shapes(
             self.game_state.board,
             generators=self.game_state.generators,
             crystal_pos=crystal_pos,
+            mystery_animations=self.mystery_animations,
         )
 
     def _create_token_sprites(self):
@@ -436,12 +442,13 @@ class GameView(arcade.View):
             crystal = self.game_state.crystal
             crystal_pos = crystal.position if crystal else None
 
-            # Create 3D board with generators and crystal position
+            # Create 3D board with generators, crystal position, and mystery animations
             self.board_3d = Board3D(
                 self.game_state.board,
                 self.window.ctx,
                 generators=self.game_state.generators,
                 crystal_pos=crystal_pos,
+                mystery_animations=self.mystery_animations,
             )
             if self.board_3d.shader_program is None:
                 print(
@@ -928,7 +935,26 @@ class GameView(arcade.View):
         if self.chat_widget:
             self.chat_widget.update(delta_time)
 
-        # Rebuild board shapes every frame to animate generator lines
+        # Update mystery square coin flip animations
+        positions_to_remove = []
+        for position, progress in self.mystery_animations.items():
+            # Advance animation
+            new_progress = progress + (delta_time / self.mystery_animation_duration)
+            if new_progress >= 1.0:
+                # Animation complete
+                positions_to_remove.append(position)
+            else:
+                self.mystery_animations[position] = new_progress
+
+        # Remove completed animations
+        for position in positions_to_remove:
+            del self.mystery_animations[position]
+
+        # Update 3D mystery animations if there are any active
+        if self.board_3d and len(self.mystery_animations) > 0:
+            self.board_3d.update_mystery_animations(self.mystery_animations)
+
+        # Rebuild board shapes every frame to animate generator lines and mystery squares
         if self.camera_mode == "2D":
             self._create_board_sprites()
 
@@ -1693,6 +1719,10 @@ class GameView(arcade.View):
             final_position = cell
 
             if board_cell and board_cell.cell_type == CellType.MYSTERY:
+                # Start coin flip animation for this mystery square
+                self.mystery_animations[cell] = 0.0
+                print(f"🎲 Coin flip started at {cell}!")
+
                 # Get player's index for potential teleport to deployment area
                 current_player = self.game_state.get_current_player()
                 if current_player:
