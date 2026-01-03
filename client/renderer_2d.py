@@ -9,7 +9,8 @@ import math
 from typing import Dict, List, Optional, Set, Tuple
 
 import arcade
-from arcade import ShapeElementList, SpriteList
+from arcade import SpriteList
+from arcade.shape_list import ShapeElementList
 
 from client.sprites.board import create_board_shapes
 from client.sprites.token_sprite import TokenSprite
