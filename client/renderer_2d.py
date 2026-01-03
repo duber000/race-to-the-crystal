@@ -12,7 +12,7 @@ import arcade
 from arcade import SpriteList
 from arcade.shape_list import ShapeElementList
 
-from client.sprites.board import create_board_shapes
+from client.sprites.board_sprite import create_board_shapes
 from client.sprites.token_sprite import TokenSprite
 from shared.constants import CELL_SIZE, CIRCLE_SEGMENTS, PLAYER_COLORS
 from shared.logging_config import setup_logger
