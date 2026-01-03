@@ -27,7 +27,7 @@ class Board3D:
     Tron/Battlezone aesthetic with transparent glowing lines.
     """
 
-    def __init__(self, board: Board, ctx: arcade.ArcadeContext, generators=None, crystal_pos=None):
+    def __init__(self, board: Board, ctx: arcade.ArcadeContext, generators=None, crystal_pos=None, mystery_animations=None):
         """
         Initialize the 3D board renderer.
 
@@ -36,11 +36,13 @@ class Board3D:
             ctx: Arcade OpenGL context
             generators: Optional list of Generator objects for connection lines
             crystal_pos: Optional (x, y) position of crystal
+            mystery_animations: Optional dict mapping (x, y) to animation progress (0.0 to 1.0)
         """
         self.board = board
         self.ctx = ctx
         self.generators = generators
         self.crystal_pos = crystal_pos
+        self.mystery_animations = mystery_animations if mystery_animations is not None else {}
 
         # Vertex buffers
         self.grid_vbo = None
@@ -219,6 +221,18 @@ class Board3D:
         """
         self._create_generator_crystal_lines_geometry()
 
+    def update_mystery_animations(self, mystery_animations):
+        """
+        Update mystery square animations for coin flip effect.
+        Call this every frame if there are active animations.
+
+        Args:
+            mystery_animations: Dict mapping (x, y) to animation progress (0.0 to 1.0)
+        """
+        self.mystery_animations = mystery_animations
+        # Rebuild mystery square geometry with rotation
+        self._create_special_cells_geometry()
+
     def _create_special_cells_geometry(self):
         """
         Generate geometry for special cells (generators, crystal, mystery squares).
@@ -258,10 +272,11 @@ class Board3D:
                         )
 
                     elif cell.cell_type == CellType.MYSTERY:
-                        # Mystery as wireframe cylinder (cyan)
+                        # Mystery as wireframe cylinder (cyan) with coin flip animation
+                        animation_progress = self.mystery_animations.get((x, y), 0.0)
                         mystery_vertices.extend(
                             self._create_cylinder_wireframe(
-                                center_x, center_y, CELL_SIZE * 0.3
+                                center_x, center_y, CELL_SIZE * 0.3, animation_progress
                             )
                         )
 
@@ -370,22 +385,41 @@ class Board3D:
         return result
 
     def _create_cylinder_wireframe(
-        self, center_x: float, center_y: float, radius: float
+        self, center_x: float, center_y: float, radius: float, animation_progress: float = 0.0
     ) -> list:
-        """Create wireframe cylinder vertices (circle at bottom and top)."""
+        """
+        Create wireframe cylinder vertices (circle at bottom and top) with coin flip animation.
+
+        Args:
+            center_x: Center X position
+            center_y: Center Y position
+            radius: Cylinder radius
+            animation_progress: Animation progress from 0.0 to 1.0 for coin flip effect
+
+        Returns:
+            List of vertex coordinates
+        """
         segments = 16
         height = self.wall_height * 0.5
 
         vertices = []
+
+        # Calculate rotation angle for coin flip (3 full spins around Y axis)
+        rotation_angle = animation_progress * 3 * 2 * math.pi
+
+        # Scale factor based on rotation (perspective effect)
+        # cos(angle) gives width scaling: 1.0 (full width) -> 0.0 (edge-on) -> 1.0
+        scale_x = abs(math.cos(rotation_angle))
 
         # Bottom circle
         for i in range(segments):
             angle1 = (i / segments) * 2 * math.pi
             angle2 = ((i + 1) / segments) * 2 * math.pi
 
-            x1 = center_x + radius * math.cos(angle1)
+            # Apply horizontal scaling for coin flip effect (Y-axis rotation)
+            x1 = center_x + radius * math.cos(angle1) * scale_x
             y1 = center_y + radius * math.sin(angle1)
-            x2 = center_x + radius * math.cos(angle2)
+            x2 = center_x + radius * math.cos(angle2) * scale_x
             y2 = center_y + radius * math.sin(angle2)
 
             # Bottom circle edge
@@ -396,9 +430,10 @@ class Board3D:
             vertices.extend([x1, y1, height])
             vertices.extend([x2, y2, height])
 
-            # Vertical edge
-            vertices.extend([x1, y1, 0.0])
-            vertices.extend([x1, y1, height])
+            # Vertical edge (only draw visible edges when not edge-on)
+            if scale_x > 0.2:
+                vertices.extend([x1, y1, 0.0])
+                vertices.extend([x1, y1, height])
 
         return vertices
 

@@ -83,7 +83,7 @@ def _draw_generator_to_crystal_lines(shape_list: ShapeElementList, generators, c
                 shape_list.append(line)
 
 
-def create_board_shapes(board: Board, generators=None, crystal_pos=None) -> ShapeElementList:
+def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery_animations=None) -> ShapeElementList:
     """
     Create a shape list for the game board with vector arcade aesthetics.
 
@@ -91,11 +91,15 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None) -> Shap
         board: The game board to render
         generators: Optional list of Generator objects for drawing connection lines
         crystal_pos: Optional (x, y) position of crystal for drawing connection lines
+        mystery_animations: Optional dict mapping (x, y) to animation progress (0.0 to 1.0)
 
     Returns:
         ShapeElementList containing all board visual elements
     """
     shape_list = ShapeElementList()
+
+    if mystery_animations is None:
+        mystery_animations = {}
 
     # Bright neon grid lines for vector arcade look
     grid_color = (0, 200, 200, 180)  # Brighter cyan with transparency
@@ -258,6 +262,16 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None) -> Shap
                     radius = CELL_SIZE * 0.3
                     segments = 16  # Circle segments
 
+                    # Check if this mystery square is animating (coin flip)
+                    animation_progress = mystery_animations.get((x, y), 0.0)
+
+                    # Calculate rotation angle for coin flip (3 full spins)
+                    rotation_angle = animation_progress * 3 * 2 * math.pi
+
+                    # Scale factor based on rotation (perspective effect - circle becomes ellipse)
+                    # cos(angle) gives width scaling: 1.0 (full width) -> 0.0 (edge-on) -> 1.0
+                    scale_x = abs(math.cos(rotation_angle))
+
                     # Glow layers
                     for i in range(5, 0, -1):
                         alpha = int(100 / (i + 1))
@@ -265,7 +279,8 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None) -> Shap
                         points = []
                         for seg in range(segments + 1):
                             angle = (seg / segments) * 2 * math.pi
-                            px = center_x + glow_radius * math.cos(angle)
+                            # Apply horizontal scaling for coin flip effect
+                            px = center_x + glow_radius * math.cos(angle) * scale_x
                             py = center_y + glow_radius * math.sin(angle)
                             points.append((px, py))
 
@@ -284,7 +299,7 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None) -> Shap
                     points = []
                     for seg in range(segments + 1):
                         angle = (seg / segments) * 2 * math.pi
-                        px = center_x + radius * math.cos(angle)
+                        px = center_x + radius * math.cos(angle) * scale_x
                         py = center_y + radius * math.sin(angle)
                         points.append((px, py))
 
@@ -299,16 +314,64 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None) -> Shap
                         )
                         shape_list.append(line)
 
-                    # Add question mark inside
-                    line = create_line(
-                        center_x,
-                        center_y - radius * 0.3,
-                        center_x,
-                        center_y + radius * 0.3,
-                        (0, 255, 255, 200),
-                        2,
-                    )
-                    shape_list.append(line)
+                    # Draw question mark symbol inside the circle (only when visible)
+                    # Don't draw when edge-on (scale_x < 0.3)
+                    if scale_x > 0.3:
+                        qm_size = radius * 0.5  # Size of question mark
+
+                        # Top curve of question mark (semicircle)
+                        qm_segments = 8
+                        qm_points = []
+                        for seg in range(qm_segments + 1):
+                            # Arc from 180 degrees to 0 degrees (left to right)
+                            angle = math.pi + (seg / qm_segments) * math.pi
+                            px = center_x + (qm_size * 0.5 + (qm_size * 0.5) * math.cos(angle)) * scale_x
+                            py = center_y + (qm_size * 0.3) + (qm_size * 0.5) * math.sin(angle)
+                            qm_points.append((px, py))
+
+                        # Draw the curve
+                        for j in range(len(qm_points) - 1):
+                            line = create_line(
+                                qm_points[j][0],
+                                qm_points[j][1],
+                                qm_points[j + 1][0],
+                                qm_points[j + 1][1],
+                                (0, 255, 255, 230),
+                                2,
+                            )
+                            shape_list.append(line)
+
+                        # Vertical stem of question mark
+                        line = create_line(
+                            center_x + qm_size * 0.5 * scale_x,
+                            center_y + qm_size * 0.3,
+                            center_x + qm_size * 0.5 * scale_x,
+                            center_y - qm_size * 0.2,
+                            (0, 255, 255, 230),
+                            2,
+                        )
+                        shape_list.append(line)
+
+                        # Dot at bottom of question mark
+                        dot_segments = 6
+                        dot_radius = qm_size * 0.15
+                        dot_points = []
+                        for seg in range(dot_segments + 1):
+                            angle = (seg / dot_segments) * 2 * math.pi
+                            px = center_x + (qm_size * 0.5 + dot_radius * math.cos(angle)) * scale_x
+                            py = center_y - qm_size * 0.5 + dot_radius * math.sin(angle)
+                            dot_points.append((px, py))
+
+                        for j in range(len(dot_points) - 1):
+                            line = create_line(
+                                dot_points[j][0],
+                                dot_points[j][1],
+                                dot_points[j + 1][0],
+                                dot_points[j + 1][1],
+                                (0, 255, 255, 230),
+                                2,
+                            )
+                            shape_list.append(line)
 
     # Draw flowing lines from active generators to crystal
     if generators and crystal_pos:
