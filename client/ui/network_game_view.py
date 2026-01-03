@@ -156,8 +156,16 @@ class NetworkGameView(arcade.View):
         self.game_view.on_key_press = network_on_key_press
         self.game_view._handle_end_turn = network_handle_end_turn
 
-        # Hook game state to intercept actual action execution
-        # Store original methods
+        # Hook game state methods
+        self._hook_game_state_methods()
+
+    def _hook_game_state_methods(self):
+        """
+        Hook game state methods to intercept actions and send to server.
+
+        This method can be called multiple times as the game state gets updated.
+        """
+        # Store original methods from the current game_state
         original_move_token = self.game_state.move_token
         original_attack_token = self.game_state.attack_token
         original_deploy_token = self.game_state.deploy_token
@@ -306,10 +314,11 @@ class NetworkGameView(arcade.View):
                 self.game_view.setup()
                 logger.info("Game view setup complete")
 
-                # Re-hook the game view with the new game_state instance
-                logger.info("Re-hooking game view with new game state...")
-                self._hook_game_view()
-                logger.info("Game view re-hooked successfully")
+                # Re-hook the game state methods since we just replaced the game state object
+                # Note: We only need to re-hook game_state methods, not game_view methods
+                # since the game_view instance itself hasn't changed
+                self._hook_game_state_methods()
+                logger.info("Re-hooked game state methods after state update")
             else:
                 logger.warning("No game view exists yet - will be created with this state")
 
