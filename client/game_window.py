@@ -28,16 +28,31 @@ from game.movement import MovementSystem
 from game.mystery_square import MysterySquareSystem
 from shared.constants import (
     BACKGROUND_COLOR,
+    BACKGROUND_MUSIC_VOLUME,
+    CAMERA_INITIAL_ZOOM,
+    CAMERA_PAN_SPEED,
+    CAMERA_ROTATION_INCREMENT,
     CELL_SIZE,
+    CHAT_WIDGET_HEIGHT,
+    CHAT_WIDGET_WIDTH,
+    CHAT_WIDGET_X,
+    CHAT_WIDGET_Y,
+    CIRCLE_SEGMENTS,
+    CORNER_INDICATOR_MARGIN,
+    CORNER_INDICATOR_SIZE,
     DEFAULT_WINDOW_HEIGHT,
     DEFAULT_WINDOW_WIDTH,
+    DEPLOYMENT_MENU_SPACING,
+    GENERATOR_HUM_VOLUME,
+    HEXAGON_SIDES,
+    HUD_HEIGHT,
+    MENU_OPTION_CLICK_RADIUS,
+    MOUSE_LOOK_SENSITIVITY,
+    MYSTERY_ANIMATION_DURATION,
     PLAYER_COLORS,
 )
 from shared.enums import TurnPhase, CellType
 from shared.logging_config import setup_logger
-
-# UI Constants
-HUD_HEIGHT = 80  # Height of the HUD bar at the top of the screen
 
 # Set up logger for this module
 logger = setup_logger(__name__)
@@ -101,12 +116,12 @@ class GameView(arcade.View):
         )
 
         # Camera controls
-        self.camera_speed = 10
-        self.zoom_level = 1.0
+        self.camera_speed = CAMERA_PAN_SPEED
+        self.zoom_level = CAMERA_INITIAL_ZOOM
 
         # Mouse-look state for 3D mode
         self.mouse_look_active = False
-        self.mouse_look_sensitivity = 0.2  # Mouse sensitivity for look around
+        self.mouse_look_sensitivity = MOUSE_LOOK_SENSITIVITY  # Mouse sensitivity for look around
         self.last_mouse_position = (0, 0)  # Track mouse position for delta calculation
 
         # HUD Text objects (for performance)
@@ -163,18 +178,18 @@ class GameView(arcade.View):
         # Background music
         self.background_music = None
         self.music_player = None
-        self.music_volume = 0.9  # LOUD for maximum impact!
+        self.music_volume = BACKGROUND_MUSIC_VOLUME  # LOUD for maximum impact!
         self.music_playing = True
 
         # Generator hum tracks (separate audio for each generator)
         self.generator_hums = []  # List of Sound objects
         self.generator_hum_players = []  # List of MediaPlayer objects
-        self.generator_hum_volume = 0.7  # Volume for each generator hum (louder so you notice when they drop!)
+        self.generator_hum_volume = GENERATOR_HUM_VOLUME  # Volume for each generator hum (louder so you notice when they drop!)
 
         # Mystery square coin flip animations
         # Dict mapping (x, y) position to animation progress (0.0 to 1.0)
         self.mystery_animations = {}  # {(x, y): progress}
-        self.mystery_animation_duration = 1.0  # Duration in seconds
+        self.mystery_animation_duration = MYSTERY_ANIMATION_DURATION  # Duration in seconds
 
         # Background color will be set in on_show_view()
 
@@ -189,14 +204,14 @@ class GameView(arcade.View):
         
         # Initialize chat widget only for network games
         if self.is_network_game:
-            chat_width = 320
-            chat_height = 300
+            chat_width = CHAT_WIDGET_WIDTH
+            chat_height = CHAT_WIDGET_HEIGHT
             # Position on left side, avoiding corner deployment menus
             # Bottom-left deployment: y=60 (center), extends to ~y=140 (top)
             # Top-left deployment: y=560 (center), starts at ~y=500 (bottom)
             # Safe zone: y=200 to y=500
-            chat_x = 10
-            chat_y = 200
+            chat_x = CHAT_WIDGET_X
+            chat_y = CHAT_WIDGET_Y
             self.chat_widget = ChatWidget(
                 network_client=self.network_client,
                 x=chat_x,
@@ -552,8 +567,8 @@ class GameView(arcade.View):
             return None
 
         player_index = current_player.color.value
-        indicator_size = 40
-        margin = 20
+        indicator_size = CORNER_INDICATOR_SIZE
+        margin = CORNER_INDICATOR_MARGIN
 
         config = get_ui_corner_config(player_index)
         center_x, center_y = config.get_indicator_position(
@@ -602,7 +617,7 @@ class GameView(arcade.View):
         player_color = PLAYER_COLORS[player_index]
 
         # Draw hexagon indicator with glow
-        num_sides = 6
+        num_sides = HEXAGON_SIDES
         points = []
         for i in range(num_sides):
             angle = (i / num_sides) * 2 * math.pi - math.pi / 2
@@ -654,7 +669,7 @@ class GameView(arcade.View):
         center_x, center_y, indicator_size = pos
 
         # Menu spacing around the R hexagon
-        spacing = 80  # Distance from center
+        spacing = DEPLOYMENT_MENU_SPACING  # Distance from center
 
         # Get menu option positions using corner configuration
         player_index = current_player.color.value
@@ -769,7 +784,7 @@ class GameView(arcade.View):
             x = move[0] * CELL_SIZE + CELL_SIZE // 2
             y = move[1] * CELL_SIZE + CELL_SIZE // 2
             radius = CELL_SIZE * 0.3
-            segments = 12
+            segments = CIRCLE_SEGMENTS
 
             # Glow layers
             for i in range(4, 0, -1):
@@ -1168,7 +1183,7 @@ class GameView(arcade.View):
         elif symbol == arcade.key.Q and not (modifiers & arcade.key.MOD_CTRL):
             # Rotate camera left (only in 3D mode, and not Ctrl+Q which is quit)
             if hasattr(self, "camera_mode") and self.camera_mode == "3D":
-                self.token_rotation -= 15.0
+                self.token_rotation -= CAMERA_ROTATION_INCREMENT
                 # Update camera position immediately
                 if self.controlled_token_id:
                     token = self.game_state.get_token(self.controlled_token_id)
@@ -1325,7 +1340,7 @@ class GameView(arcade.View):
             return False
 
         center_x, center_y, indicator_size = pos
-        spacing = 80
+        spacing = DEPLOYMENT_MENU_SPACING
 
         # Calculate menu option positions (same logic as in _draw_corner_menu_ui)
         player_index = current_player.color.value
@@ -1362,7 +1377,7 @@ class GameView(arcade.View):
         click_x, click_y = screen_pos
 
         # Check which option was clicked
-        click_radius = 30
+        click_radius = MENU_OPTION_CLICK_RADIUS
         for health, option_x, option_y in options:
             distance = ((click_x - option_x) ** 2 + (click_y - option_y) ** 2) ** 0.5
             if distance <= click_radius:

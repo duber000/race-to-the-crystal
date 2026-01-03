@@ -103,22 +103,27 @@ elif player_index == 1:  # Top-right
 ---
 
 ### 🟡 5. Magic Numbers
-**Status:** Open
+**Status:** ✅ **COMPLETED**
 **Location:** Multiple files
 
-**Examples:**
-- `client/game_window.py:39`: `HUD_HEIGHT = 80` (not in constants)
-- `game_window.py:106`: `self.mouse_look_sensitivity = 0.2`
-- `game_window.py:162`: `self.music_volume = 0.9`
-- `game_window.py:168`: `self.generator_hum_volume = 0.7`
-- `game_window.py:547`: `indicator_size = 40`, `margin = 20`
-- `game_window.py:652`: `spacing = 80`
-- `board.py:156`: `(2, mid_x - 2, 2, mid_y - 2)` for quadrant boundaries
+**Issue:** Hardcoded numeric values throughout the codebase without named constants.
 
-**Recommendation:**
-- Move all magic numbers to `shared/constants.py`
-- Use descriptive constant names
-- Group related constants together
+**Resolution:**
+- ✅ Added 20+ new constants to `shared/constants.py`:
+  - **UI Configuration**: HUD_HEIGHT, CORNER_INDICATOR_SIZE, CORNER_INDICATOR_MARGIN, DEPLOYMENT_MENU_SPACING, MENU_OPTION_CLICK_RADIUS, HEXAGON_SIDES, CIRCLE_SEGMENTS
+  - **Chat Widget**: CHAT_WIDGET_WIDTH, CHAT_WIDGET_HEIGHT, CHAT_WIDGET_X, CHAT_WIDGET_Y
+  - **Camera Controls**: CAMERA_PAN_SPEED, CAMERA_INITIAL_ZOOM, CAMERA_ROTATION_INCREMENT, MOUSE_LOOK_SENSITIVITY
+  - **Audio**: BACKGROUND_MUSIC_VOLUME, GENERATOR_HUM_VOLUME
+  - **Animation**: MYSTERY_ANIMATION_DURATION
+  - **Board Generation**: MYSTERY_PLACEMENT_MAX_ATTEMPTS, MYSTERY_PLACEMENT_EDGE_MARGIN
+- ✅ Replaced all magic numbers in `client/game_window.py` with named constants
+- ✅ Replaced magic numbers in `game/board.py` for mystery square placement
+- ✅ All constants properly documented with comments
+
+**Files Modified:**
+- `shared/constants.py` (+20 new constants)
+- `client/game_window.py` (replaced ~15 magic numbers)
+- `game/board.py` (replaced 3 magic numbers)
 
 ---
 
@@ -369,11 +374,10 @@ The codebase has many **good practices**:
 5. Refactor `GameView` class - split into smaller components (1835 lines)
 
 ### Medium Priority (When Time Permits)
-5. Create `Position` value object to replace tuple usage
+5. ✅ **COMPLETED** - Move magic numbers to constants
 6. Create state machine for UI states
 7. Refactor long methods (>50 lines)
-8. Move magic numbers to constants
-9. Add `ActionResult` class for better error handling
+8. Add `ActionResult` class for better error handling
 
 ### Low Priority (Nice to Have)
 10. Consider creating ID wrapper types

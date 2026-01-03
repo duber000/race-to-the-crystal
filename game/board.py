@@ -10,6 +10,8 @@ from shared.enums import CellType
 from shared.constants import (
     BOARD_WIDTH,
     BOARD_HEIGHT,
+    MYSTERY_PLACEMENT_EDGE_MARGIN,
+    MYSTERY_PLACEMENT_MAX_ATTEMPTS,
     MYSTERY_SQUARES_PER_QUADRANT,
 )
 
@@ -150,13 +152,14 @@ class Board:
 
         mid_x = self.width // 2
         mid_y = self.height // 2
+        margin = MYSTERY_PLACEMENT_EDGE_MARGIN
 
         # Define quadrants (excluding edges to avoid overlap with special cells)
         quadrants = [
-            (2, mid_x - 2, 2, mid_y - 2),  # Top-left
-            (mid_x + 2, self.width - 2, 2, mid_y - 2),  # Top-right
-            (2, mid_x - 2, mid_y + 2, self.height - 2),  # Bottom-left
-            (mid_x + 2, self.width - 2, mid_y + 2, self.height - 2),  # Bottom-right
+            (margin, mid_x - margin, margin, mid_y - margin),  # Top-left
+            (mid_x + margin, self.width - margin, margin, mid_y - margin),  # Top-right
+            (margin, mid_x - margin, mid_y + margin, self.height - margin),  # Bottom-left
+            (mid_x + margin, self.width - margin, mid_y + margin, self.height - margin),  # Bottom-right
         ]
 
         for x_min, x_max, y_min, y_max in quadrants:
@@ -166,9 +169,8 @@ class Board:
 
             placed = 0
             attempts = 0
-            max_attempts = 100
 
-            while placed < MYSTERY_SQUARES_PER_QUADRANT and attempts < max_attempts:
+            while placed < MYSTERY_SQUARES_PER_QUADRANT and attempts < MYSTERY_PLACEMENT_MAX_ATTEMPTS:
                 x = random.randint(x_min, x_max)
                 y = random.randint(y_min, y_max)
 
