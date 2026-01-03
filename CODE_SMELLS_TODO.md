@@ -13,35 +13,48 @@ This document tracks identified code smells and refactoring opportunities in the
 ## Critical Issues
 
 ### 🔴 1. God Object - GameView Class
-**Status:** Open
-**Location:** `client/game_window.py` (1835 lines)
+**Status:** ✅ **IN PROGRESS** (Phases 1-2 of 8 complete)
+**Location:** `client/game_window.py` (1816 lines → 1380 lines after Phases 1-2)
 **Issue:** The `GameView` class handles too many responsibilities:
 - Rendering (2D and 3D)
 - Input handling (mouse, keyboard)
 - Camera management (2D and 3D cameras)
 - UI management
-- Music/audio management
+- ~~Music/audio management~~ ✅ **EXTRACTED**
 - Game state updates
 - Network communication
-- Deployment menu logic
+- ~~Deployment menu logic~~ ✅ **EXTRACTED**
 - Token selection logic
 
-**Recommendation:**
-- Extract separate controllers: `InputHandler`, `AudioManager`, `CameraController`, `DeploymentMenuController`
-- Split rendering into `Renderer2D` and `Renderer3D` classes
-- Move UI-specific logic to dedicated UI controller classes
-- Consider using a Component pattern or MVC architecture
+**Progress:**
+- ✅ **Phase 1 Complete:** Extracted `AudioManager` (151 lines removed)
+  - Background music loading and playback
+  - Generator hum track management (4 separate audio streams)
+  - Music toggle functionality
+  - Generator hum updates based on game state
+  - File: `client/audio_manager.py` (248 lines)
 
-**Example Refactoring:**
-```python
-class GameView(arcade.View):
-    def __init__(self, ...):
-        self.input_handler = InputHandler(self)
-        self.audio_manager = AudioManager()
-        self.renderer_2d = Renderer2D()
-        self.renderer_3d = Renderer3D()
-        self.camera_controller = CameraController()
-```
+- ✅ **Phase 2 Complete:** Extracted `DeploymentMenuController` (285 lines removed)
+  - Corner indicator rendering (R hexagon)
+  - Deployment menu rendering and interaction
+  - Menu state management
+  - Deployment position validation
+  - Fixed duplicate corner positioning logic using shared corner_layout config
+  - File: `client/deployment_menu_controller.py` (399 lines)
+
+**Remaining Phases:**
+- Phase 3: Extract `CameraController` (camera management)
+- Phase 4: Extract `Renderer2D` (2D rendering)
+- Phase 5: Extract `Renderer3D` (3D rendering)
+- Phase 6: Extract `GameActionHandler` (game actions)
+- Phase 7: Extract `InputHandler` (input coordination)
+- Phase 8: Final cleanup and testing
+
+**Total Reduction:** 436 lines removed (1816 → 1380 lines, 24% reduction)
+
+**Commits:**
+- 984b254: Refactor: Extract AudioManager from GameView (Phase 1/8)
+- 517f13b: Refactor: Extract DeploymentMenuController from GameView (Phase 2/8)
 
 ---
 
