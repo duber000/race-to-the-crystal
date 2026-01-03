@@ -291,37 +291,10 @@ class Board:
         Returns:
             List of (x, y) positions where player can deploy tokens
         """
-        corner = self.get_starting_position(player_index)
-        cx, cy = corner
+        from shared.corner_layout import get_board_corner_config
 
-        # Determine direction into the board from each corner
-        # For corners at board edges, extend inward to make a 3x3 grid on the board
-        positions = []
-
-        if player_index == 0:  # Top-left (0, 0)
-            # Deploy area: (0,0) to (2,2)
-            for x in range(3):
-                for y in range(3):
-                    positions.append((x, y))
-        elif player_index == 1:  # Top-right (23, 0)
-            # Deploy area: (21,0) to (23,2)
-            # Iterate x backwards to prioritize the right edge
-            for x in range(self.width - 1, self.width - 4, -1):
-                for y in range(3):
-                    positions.append((x, y))
-        elif player_index == 2:  # Bottom-left (0, 23)
-            # Deploy area: (0,21) to (2,23)
-            for x in range(3):
-                for y in range(self.height - 3, self.height):
-                    positions.append((x, y))
-        elif player_index == 3:  # Bottom-right (23, 23)
-            # Deploy area: (21,21) to (23,23)
-            # Iterate x backwards to prioritize the right edge
-            for x in range(self.width - 1, self.width - 4, -1):
-                for y in range(self.height - 3, self.height):
-                    positions.append((x, y))
-
-        return positions
+        config = get_board_corner_config(player_index)
+        return config.get_deployable_positions()
 
     def get_crystal_position(self) -> Tuple[int, int]:
         """Get the position of the power crystal."""

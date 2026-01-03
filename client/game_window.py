@@ -417,12 +417,7 @@ class GameView(arcade.View):
 
     def _create_ui_sprites(self):
         """Create UI sprites (HUD, buttons, etc.)."""
-        # Create corner indicator for current player's deployment area
-        self._create_corner_indicator()
-
-    def _create_corner_indicator(self):
-        """Create a visual indicator for the player's deployment corner in UI space."""
-        # This will be drawn in _draw_hud() to keep it in screen space (not on the board)
+        # Corner indicator is drawn directly in _draw_hud() in screen space
         pass
 
     def _create_3d_rendering(self):
@@ -546,6 +541,8 @@ class GameView(arcade.View):
         Returns:
             Tuple of (center_x, center_y, size) or None if no current player
         """
+        from shared.corner_layout import get_ui_corner_config
+
         current_player = self.game_state.get_current_player()
         if not current_player:
             return None
@@ -554,18 +551,14 @@ class GameView(arcade.View):
         indicator_size = 40
         margin = 20
 
-        if player_index == 0:  # Bottom-left
-            center_x = margin + indicator_size
-            center_y = margin + indicator_size
-        elif player_index == 1:  # Bottom-right
-            center_x = self.window.width - margin - indicator_size
-            center_y = margin + indicator_size
-        elif player_index == 2:  # Top-left
-            center_x = margin + indicator_size
-            center_y = self.window.height - HUD_HEIGHT - margin - indicator_size
-        else:  # player_index == 3, Top-right
-            center_x = self.window.width - margin - indicator_size
-            center_y = self.window.height - HUD_HEIGHT - margin - indicator_size
+        config = get_ui_corner_config(player_index)
+        center_x, center_y = config.get_indicator_position(
+            self.window.width,
+            self.window.height,
+            HUD_HEIGHT,
+            margin,
+            indicator_size
+        )
 
         return (center_x, center_y, indicator_size)
 
@@ -637,6 +630,8 @@ class GameView(arcade.View):
 
     def _draw_corner_menu_ui(self):
         """Draw the corner deployment menu in UI space around the R hexagon."""
+        from shared.corner_layout import get_ui_corner_config
+
         if not self.corner_menu_open:
             return
 
@@ -657,63 +652,17 @@ class GameView(arcade.View):
         # Menu spacing around the R hexagon
         spacing = 80  # Distance from center
 
-        # Draw options in a 2x2 grid around the R hexagon
-        # Adjust positions based on which corner to avoid going off-screen
+        # Get menu option positions using corner configuration
         player_index = current_player.color.value
+        config = get_ui_corner_config(player_index)
+        positions = config.get_menu_option_positions(center_x, center_y, spacing)
 
-        if player_index == 0:  # Bottom-left - options go right and up
-            options = [
-                (10, center_x + spacing, center_y + spacing, counts[10]),  # Top-right
-                (
-                    8,
-                    center_x + spacing * 1.8,
-                    center_y + spacing,
-                    counts[8],
-                ),  # Top-far-right
-                (6, center_x + spacing, center_y, counts[6]),  # Right
-                (4, center_x + spacing * 1.8, center_y, counts[4]),  # Far-right
-            ]
-        elif player_index == 1:  # Bottom-right - options go left and up
-            options = [
-                (10, center_x - spacing, center_y + spacing, counts[10]),  # Top-left
-                (
-                    8,
-                    center_x - spacing * 1.8,
-                    center_y + spacing,
-                    counts[8],
-                ),  # Top-far-left
-                (6, center_x - spacing, center_y, counts[6]),  # Left
-                (4, center_x - spacing * 1.8, center_y, counts[4]),  # Far-left
-            ]
-        elif player_index == 2:  # Top-left - options go right and down
-            options = [
-                (
-                    10,
-                    center_x + spacing,
-                    center_y - spacing,
-                    counts[10],
-                ),  # Bottom-right
-                (
-                    8,
-                    center_x + spacing * 1.8,
-                    center_y - spacing,
-                    counts[8],
-                ),  # Bottom-far-right
-                (6, center_x + spacing, center_y, counts[6]),  # Right
-                (4, center_x + spacing * 1.8, center_y, counts[4]),  # Far-right
-            ]
-        else:  # player_index == 3, Top-right - options go left and down
-            options = [
-                (10, center_x - spacing, center_y - spacing, counts[10]),  # Bottom-left
-                (
-                    8,
-                    center_x - spacing * 1.8,
-                    center_y - spacing,
-                    counts[8],
-                ),  # Bottom-far-left
-                (6, center_x - spacing, center_y, counts[6]),  # Left
-                (4, center_x - spacing * 1.8, center_y, counts[4]),  # Far-left
-            ]
+        # Build options list: (health_value, x, y, count)
+        health_values = [10, 8, 6, 4]
+        options = [
+            (health, x, y, counts[health])
+            for (health, (x, y)) in zip(health_values, positions)
+        ]
 
         # Draw each option
         for health, x, y, count in options:

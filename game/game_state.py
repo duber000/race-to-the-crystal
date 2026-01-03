@@ -451,9 +451,12 @@ class GameState:
 
         Returns:
             Player ID of winner, or None if no winner yet
+
+        Note:
+            Win condition checking is performed automatically in end_turn()
+            via _update_generators_and_crystal(). This method just returns
+            the cached winner_id value.
         """
-        # Will implement when Crystal class is created
-        # For now, return current winner_id
         return self.winner_id
 
     def set_winner(self, player_id: str) -> None:
@@ -467,17 +470,21 @@ class GameState:
         self.phase = GamePhase.ENDED
 
     def to_dict(self) -> dict:
-        """Convert game state to dictionary for serialization."""
+        """Convert game state to dictionary for serialization.
+
+        Note: Generator and Crystal serialization not yet implemented.
+        This will cause issues when saving/loading active games.
+        """
         return {
             "board": self.board.to_dict(),
             "players": {pid: p.to_dict() for pid, p in self.players.items()},
             "tokens": {tid: t.to_dict() for tid, t in self.tokens.items()},
-            "generators": [],  # Will implement when Generator class exists
-            "crystal": None,  # Will implement when Crystal class exists
+            "generators": [],  # TODO: Implement generator serialization
+            "crystal": None,  # TODO: Implement crystal serialization
             "current_turn_player_id": self.current_turn_player_id,
             "turn_number": self.turn_number,
             "phase": self.phase.name,
-            "turn_phase": self.turn_phase.name,  # Serialize turn phase
+            "turn_phase": self.turn_phase.name,
             "winner_id": self.winner_id,
         }
 
@@ -487,7 +494,11 @@ class GameState:
 
     @classmethod
     def from_dict(cls, data: dict) -> "GameState":
-        """Create game state from dictionary."""
+        """Create game state from dictionary.
+
+        Note: Generator and Crystal deserialization not yet implemented.
+        This will cause issues when loading saved games.
+        """
         state = cls()
         state.board = Board.from_dict(data["board"])
         state.players = {
@@ -496,8 +507,8 @@ class GameState:
         state.tokens = {
             int(tid): Token.from_dict(tdata) for tid, tdata in data["tokens"].items()
         }
-        # state.generators = ... (will implement when Generator class exists)
-        # state.crystal = ... (will implement when Crystal class exists)
+        # TODO: Implement generator deserialization
+        # TODO: Implement crystal deserialization
         state.current_turn_player_id = data["current_turn_player_id"]
         state.turn_number = data["turn_number"]
         state.phase = GamePhase[data["phase"]]
