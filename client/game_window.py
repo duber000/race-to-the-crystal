@@ -28,15 +28,34 @@ from game.movement import MovementSystem
 from game.mystery_square import MysterySquareSystem
 from shared.constants import (
     BACKGROUND_COLOR,
+    BACKGROUND_MUSIC_VOLUME,
+    CAMERA_INITIAL_ZOOM,
+    CAMERA_PAN_SPEED,
+    CAMERA_ROTATION_INCREMENT,
     CELL_SIZE,
+    CHAT_WIDGET_HEIGHT,
+    CHAT_WIDGET_WIDTH,
+    CHAT_WIDGET_X,
+    CHAT_WIDGET_Y,
+    CIRCLE_SEGMENTS,
+    CORNER_INDICATOR_MARGIN,
+    CORNER_INDICATOR_SIZE,
     DEFAULT_WINDOW_HEIGHT,
     DEFAULT_WINDOW_WIDTH,
+    DEPLOYMENT_MENU_SPACING,
+    GENERATOR_HUM_VOLUME,
+    HEXAGON_SIDES,
+    HUD_HEIGHT,
+    MENU_OPTION_CLICK_RADIUS,
+    MOUSE_LOOK_SENSITIVITY,
+    MYSTERY_ANIMATION_DURATION,
     PLAYER_COLORS,
 )
 from shared.enums import TurnPhase, CellType
+from shared.logging_config import setup_logger
 
-# UI Constants
-HUD_HEIGHT = 80  # Height of the HUD bar at the top of the screen
+# Set up logger for this module
+logger = setup_logger(__name__)
 
 
 class GameView(arcade.View):
@@ -97,12 +116,12 @@ class GameView(arcade.View):
         )
 
         # Camera controls
-        self.camera_speed = 10
-        self.zoom_level = 1.0
+        self.camera_speed = CAMERA_PAN_SPEED
+        self.zoom_level = CAMERA_INITIAL_ZOOM
 
         # Mouse-look state for 3D mode
         self.mouse_look_active = False
-        self.mouse_look_sensitivity = 0.2  # Mouse sensitivity for look around
+        self.mouse_look_sensitivity = MOUSE_LOOK_SENSITIVITY  # Mouse sensitivity for look around
         self.last_mouse_position = (0, 0)  # Track mouse position for delta calculation
 
         # HUD Text objects (for performance)
@@ -159,18 +178,18 @@ class GameView(arcade.View):
         # Background music
         self.background_music = None
         self.music_player = None
-        self.music_volume = 0.9  # LOUD for maximum impact!
+        self.music_volume = BACKGROUND_MUSIC_VOLUME  # LOUD for maximum impact!
         self.music_playing = True
 
         # Generator hum tracks (separate audio for each generator)
         self.generator_hums = []  # List of Sound objects
         self.generator_hum_players = []  # List of MediaPlayer objects
-        self.generator_hum_volume = 0.7  # Volume for each generator hum (louder so you notice when they drop!)
+        self.generator_hum_volume = GENERATOR_HUM_VOLUME  # Volume for each generator hum (louder so you notice when they drop!)
 
         # Mystery square coin flip animations
         # Dict mapping (x, y) position to animation progress (0.0 to 1.0)
         self.mystery_animations = {}  # {(x, y): progress}
-        self.mystery_animation_duration = 1.0  # Duration in seconds
+        self.mystery_animation_duration = MYSTERY_ANIMATION_DURATION  # Duration in seconds
 
         # Background color will be set in on_show_view()
 
@@ -185,14 +204,14 @@ class GameView(arcade.View):
         
         # Initialize chat widget only for network games
         if self.is_network_game:
-            chat_width = 320
-            chat_height = 300
+            chat_width = CHAT_WIDGET_WIDTH
+            chat_height = CHAT_WIDGET_HEIGHT
             # Position on left side, avoiding corner deployment menus
             # Bottom-left deployment: y=60 (center), extends to ~y=140 (top)
             # Top-left deployment: y=560 (center), starts at ~y=500 (bottom)
             # Safe zone: y=200 to y=500
-            chat_x = 10
-            chat_y = 200
+            chat_x = CHAT_WIDGET_X
+            chat_y = CHAT_WIDGET_Y
             self.chat_widget = ChatWidget(
                 network_client=self.network_client,
                 x=chat_x,
@@ -206,7 +225,7 @@ class GameView(arcade.View):
         # Set up the game
         self.setup()
 
-        print(f"Game view initialized: {self.window.width}x{self.window.height}")
+        logger.info(f"Game view initialized: {self.window.width}x{self.window.height}")
 
     def on_hide_view(self):
         """Called when this view is hidden."""
@@ -238,17 +257,17 @@ class GameView(arcade.View):
             self.background_music = arcade.Sound(music_path, streaming=True)
             if self.background_music:
                 self.music_player = self.background_music.play(self.music_volume, loop=True)
-                print("Background music loaded and playing (looping)")
+                logger.info("Background music loaded and playing (looping)")
         except FileNotFoundError:
             # Try WAV format
             try:
                 self.background_music = arcade.Sound(wav_path, streaming=True)
                 if self.background_music:
                     self.music_player = self.background_music.play(self.music_volume, loop=True)
-                    print("Background music loaded and playing (looping)")
+                    logger.info("Background music loaded and playing (looping)")
             except FileNotFoundError:
                 # Generate music if neither file exists
-                print("No music file found, generating techno track...")
+                logger.warning("No music file found, generating techno track...")
                 try:
                     generate_techno_music(duration=30.0)
                     self.background_music = arcade.Sound(wav_path, streaming=True)
@@ -256,11 +275,11 @@ class GameView(arcade.View):
                         self.music_player = self.background_music.play(
                             self.music_volume, loop=True
                         )
-                        print("Generated background music playing (looping)")
+                        logger.info("Generated background music playing (looping)")
                 except Exception as e:
-                    print(f"Error generating music: {e}")
+                    logger.error(f"Error generating music: {e}")
         except Exception as e:
-            print(f"Error loading background music: {e}")
+            logger.error(f"Error loading background music: {e}")
 
         # Load and play generator hum tracks
         self._load_generator_hums()
@@ -273,27 +292,27 @@ class GameView(arcade.View):
 
             # Check if file exists
             if not os.path.exists(hum_path):
-                print(f"ERROR: Generator {gen_id} hum file not found: {hum_path}")
+                logger.error(f"Generator {gen_id} hum file not found: {hum_path}")
                 self.generator_hums.append(None)
                 self.generator_hum_players.append(None)
                 continue
 
             try:
-                print(f"Loading generator {gen_id} hum from: {hum_path}")
+                logger.debug(f"Loading generator {gen_id} hum from: {hum_path}")
                 hum_sound = arcade.Sound(hum_path, streaming=True)
-                print(f"  Sound object created: {hum_sound}")
+                logger.debug(f"  Sound object created: {hum_sound}")
 
                 hum_player = hum_sound.play(self.generator_hum_volume, loop=True)
-                print(f"  Player created: {hum_player}")
+                logger.debug(f"  Player created: {hum_player}")
 
                 if hum_player is None:
-                    print(f"  WARNING: Player is None for generator {gen_id}!")
+                    logger.warning(f"  Player is None for generator {gen_id}!")
 
                 self.generator_hums.append(hum_sound)
                 self.generator_hum_players.append(hum_player)
-                print(f"✓ Generator {gen_id} hum loaded and playing")
+                logger.info(f"✓ Generator {gen_id} hum loaded and playing")
             except Exception as e:
-                print(f"✗ ERROR loading generator {gen_id} hum: {e}")
+                logger.error(f"Error loading generator {gen_id} hum: {e}")
                 import traceback
                 traceback.print_exc()
                 self.generator_hums.append(None)
@@ -310,24 +329,24 @@ class GameView(arcade.View):
                     if player:
                         player.pause()
                 self.music_playing = False
-                print("Music paused")
+                logger.info("Music paused")
             else:
                 # Restart the music with looping
                 self.music_player = self.background_music.play(self.music_volume, loop=True)
                 # Restart generator hums (respecting their captured state)
                 self._update_generator_hums()
                 self.music_playing = True
-                print("Music playing")
+                logger.info("Music playing")
 
     def _update_generator_hums(self):
         """Update generator hum audio based on which generators are captured."""
         if not self.music_playing:
             return
 
-        print("\n=== Updating Generator Hums ===")
+        logger.debug("\n=== Updating Generator Hums ===")
         active_hums = 0
         for gen_id, generator in enumerate(self.game_state.generators):
-            print(f"Generator {gen_id}: is_disabled={generator.is_disabled}, turns_held={generator.turns_held}, capturing_player={generator.capturing_player_id}")
+            logger.debug(f"Generator {gen_id}: is_disabled={generator.is_disabled}, turns_held={generator.turns_held}, capturing_player={generator.capturing_player_id}")
 
             if gen_id < len(self.generator_hum_players):
                 player = self.generator_hum_players[gen_id]
@@ -335,7 +354,7 @@ class GameView(arcade.View):
 
                 if player is not None:
                     active_hums += 1
-                print(f"  player={player}, hum_sound={hum_sound}")
+                logger.debug(f"  player={player}, hum_sound={hum_sound}")
 
                 if player and hum_sound:
                     # Check if generator is disabled (fully captured)
@@ -345,34 +364,34 @@ class GameView(arcade.View):
                             player.pause()
                             player.delete()
                             self.generator_hum_players[gen_id] = None
-                            print(f"  → Generator {gen_id} DISABLED - HUM STOPPED")
+                            logger.debug(f"  Generator {gen_id} DISABLED - HUM STOPPED")
                         except Exception as e:
-                            print(f"  → Error stopping hum: {e}")
+                            logger.error(f"  Error stopping hum: {e}")
                     elif self.generator_hum_players[gen_id] is None:
                         # Generator is free and hum was stopped - restart it
                         try:
                             self.generator_hum_players[gen_id] = hum_sound.play(
                                 self.generator_hum_volume, loop=True
                             )
-                            print(f"  → Generator {gen_id} freed - HUM RESTARTED")
+                            logger.debug(f"  Generator {gen_id} freed - HUM RESTARTED")
                         except Exception as e:
-                            print(f"  → Error restarting hum: {e}")
+                            logger.error(f"  Error restarting hum: {e}")
                     else:
-                        print(f"  → Generator {gen_id} active - hum playing")
+                        logger.debug(f"  Generator {gen_id} active - hum playing")
                 elif generator.is_disabled and hum_sound:
                     # Player is None but generator is disabled, need to handle restart case
-                    print(f"  → Generator {gen_id} disabled but player is None (already stopped)")
+                    logger.debug(f"  Generator {gen_id} disabled but player is None (already stopped)")
                 else:
-                    print(f"  → Generator {gen_id} - player or hum_sound is None, skipping")
-        print(f"=== Active Generator Hums: {active_hums}/4 ===\n")
+                    logger.debug(f"  Generator {gen_id} - player or hum_sound is None, skipping")
+        logger.debug(f"=== Active Generator Hums: {active_hums}/4 ===\n")
 
     def setup(self):
         """Set up the window after initialization."""
-        print(f"Setup called - Game state has {len(self.game_state.players)} players, {len(self.game_state.tokens)} tokens")
+        logger.debug(f"Setup called - Game state has {len(self.game_state.players)} players, {len(self.game_state.tokens)} tokens")
 
         self._create_board_sprites()
         self._create_token_sprites()
-        print(f"Created {len(self.token_sprites)} token sprites")
+        logger.debug(f"Created {len(self.token_sprites)} token sprites")
         self._create_ui_sprites()
         self._create_3d_rendering()
 
@@ -386,7 +405,7 @@ class GameView(arcade.View):
         # Build initial UI
         self.ui_manager.rebuild_visuals(self.game_state)
 
-        print("Window setup complete")
+        logger.info("Window setup complete")
 
     def _create_board_sprites(self):
         """Create shapes for the board (grid, generators, crystal, mystery squares)."""
@@ -417,12 +436,7 @@ class GameView(arcade.View):
 
     def _create_ui_sprites(self):
         """Create UI sprites (HUD, buttons, etc.)."""
-        # Create corner indicator for current player's deployment area
-        self._create_corner_indicator()
-
-    def _create_corner_indicator(self):
-        """Create a visual indicator for the player's deployment corner in UI space."""
-        # This will be drawn in _draw_hud() to keep it in screen space (not on the board)
+        # Corner indicator is drawn directly in _draw_hud() in screen space
         pass
 
     def _create_3d_rendering(self):
@@ -451,15 +465,15 @@ class GameView(arcade.View):
                 mystery_animations=self.mystery_animations,
             )
             if self.board_3d.shader_program is None:
-                print(
-                    "WARNING: 3D shader compilation failed, 3D mode will not be available"
+                logger.warning(
+                    "3D shader compilation failed, 3D mode will not be available"
                 )
                 self.shader_3d = None
             else:
                 self.shader_3d = self.board_3d.shader_program  # Reuse shader
-                print("3D rendering initialized successfully")
+                logger.info("3D rendering initialized successfully")
         except Exception as e:
-            print(f"ERROR: Failed to initialize 3D rendering: {e}")
+            logger.error(f"Failed to initialize 3D rendering: {e}")
             self.board_3d = None
             self.shader_3d = None
             return
@@ -475,9 +489,9 @@ class GameView(arcade.View):
                         token_3d = Token3D(token, player_color, self.window.ctx)
                         self.tokens_3d.append(token_3d)
                     except Exception as e:
-                        print(f"ERROR: Failed to create 3D token {token_id}: {e}")
+                        logger.error(f"Failed to create 3D token {token_id}: {e}")
 
-        print(f"Created {len(self.tokens_3d)} 3D tokens")
+        logger.debug(f"Created {len(self.tokens_3d)} 3D tokens")
 
         # Don't auto-follow token - start with overview camera
         # Players can press TAB to cycle through tokens and start following
@@ -546,26 +560,24 @@ class GameView(arcade.View):
         Returns:
             Tuple of (center_x, center_y, size) or None if no current player
         """
+        from shared.corner_layout import get_ui_corner_config
+
         current_player = self.game_state.get_current_player()
         if not current_player:
             return None
 
         player_index = current_player.color.value
-        indicator_size = 40
-        margin = 20
+        indicator_size = CORNER_INDICATOR_SIZE
+        margin = CORNER_INDICATOR_MARGIN
 
-        if player_index == 0:  # Bottom-left
-            center_x = margin + indicator_size
-            center_y = margin + indicator_size
-        elif player_index == 1:  # Bottom-right
-            center_x = self.window.width - margin - indicator_size
-            center_y = margin + indicator_size
-        elif player_index == 2:  # Top-left
-            center_x = margin + indicator_size
-            center_y = self.window.height - HUD_HEIGHT - margin - indicator_size
-        else:  # player_index == 3, Top-right
-            center_x = self.window.width - margin - indicator_size
-            center_y = self.window.height - HUD_HEIGHT - margin - indicator_size
+        config = get_ui_corner_config(player_index)
+        center_x, center_y = config.get_indicator_position(
+            self.window.width,
+            self.window.height,
+            HUD_HEIGHT,
+            margin,
+            indicator_size
+        )
 
         return (center_x, center_y, indicator_size)
 
@@ -605,7 +617,7 @@ class GameView(arcade.View):
         player_color = PLAYER_COLORS[player_index]
 
         # Draw hexagon indicator with glow
-        num_sides = 6
+        num_sides = HEXAGON_SIDES
         points = []
         for i in range(num_sides):
             angle = (i / num_sides) * 2 * math.pi - math.pi / 2
@@ -637,6 +649,8 @@ class GameView(arcade.View):
 
     def _draw_corner_menu_ui(self):
         """Draw the corner deployment menu in UI space around the R hexagon."""
+        from shared.corner_layout import get_ui_corner_config
+
         if not self.corner_menu_open:
             return
 
@@ -655,65 +669,19 @@ class GameView(arcade.View):
         center_x, center_y, indicator_size = pos
 
         # Menu spacing around the R hexagon
-        spacing = 80  # Distance from center
+        spacing = DEPLOYMENT_MENU_SPACING  # Distance from center
 
-        # Draw options in a 2x2 grid around the R hexagon
-        # Adjust positions based on which corner to avoid going off-screen
+        # Get menu option positions using corner configuration
         player_index = current_player.color.value
+        config = get_ui_corner_config(player_index)
+        positions = config.get_menu_option_positions(center_x, center_y, spacing)
 
-        if player_index == 0:  # Bottom-left - options go right and up
-            options = [
-                (10, center_x + spacing, center_y + spacing, counts[10]),  # Top-right
-                (
-                    8,
-                    center_x + spacing * 1.8,
-                    center_y + spacing,
-                    counts[8],
-                ),  # Top-far-right
-                (6, center_x + spacing, center_y, counts[6]),  # Right
-                (4, center_x + spacing * 1.8, center_y, counts[4]),  # Far-right
-            ]
-        elif player_index == 1:  # Bottom-right - options go left and up
-            options = [
-                (10, center_x - spacing, center_y + spacing, counts[10]),  # Top-left
-                (
-                    8,
-                    center_x - spacing * 1.8,
-                    center_y + spacing,
-                    counts[8],
-                ),  # Top-far-left
-                (6, center_x - spacing, center_y, counts[6]),  # Left
-                (4, center_x - spacing * 1.8, center_y, counts[4]),  # Far-left
-            ]
-        elif player_index == 2:  # Top-left - options go right and down
-            options = [
-                (
-                    10,
-                    center_x + spacing,
-                    center_y - spacing,
-                    counts[10],
-                ),  # Bottom-right
-                (
-                    8,
-                    center_x + spacing * 1.8,
-                    center_y - spacing,
-                    counts[8],
-                ),  # Bottom-far-right
-                (6, center_x + spacing, center_y, counts[6]),  # Right
-                (4, center_x + spacing * 1.8, center_y, counts[4]),  # Far-right
-            ]
-        else:  # player_index == 3, Top-right - options go left and down
-            options = [
-                (10, center_x - spacing, center_y - spacing, counts[10]),  # Bottom-left
-                (
-                    8,
-                    center_x - spacing * 1.8,
-                    center_y - spacing,
-                    counts[8],
-                ),  # Bottom-far-left
-                (6, center_x - spacing, center_y, counts[6]),  # Left
-                (4, center_x - spacing * 1.8, center_y, counts[4]),  # Far-left
-            ]
+        # Build options list: (health_value, x, y, count)
+        health_values = [10, 8, 6, 4]
+        options = [
+            (health, x, y, counts[health])
+            for (health, (x, y)) in zip(health_values, positions)
+        ]
 
         # Draw each option
         for health, x, y, count in options:
@@ -816,7 +784,7 @@ class GameView(arcade.View):
             x = move[0] * CELL_SIZE + CELL_SIZE // 2
             y = move[1] * CELL_SIZE + CELL_SIZE // 2
             radius = CELL_SIZE * 0.3
-            segments = 12
+            segments = CIRCLE_SEGMENTS
 
             # Glow layers
             for i in range(4, 0, -1):
@@ -990,7 +958,7 @@ class GameView(arcade.View):
             if hasattr(self, "camera_3d") and self.camera_3d:
                 self.camera_3d.update_aspect_ratio(width, height)
 
-            print(f"Game view resized to {width}x{height}")
+            logger.debug(f"Game view resized to {width}x{height}")
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int):
         """
@@ -1050,7 +1018,7 @@ class GameView(arcade.View):
             self.mouse_look_active = True
             self.last_mouse_position = (x, y)
             self.window.set_mouse_visible(False)
-            print("Mouse-look activated")
+            logger.debug("Mouse-look activated")
             return
 
         if button == arcade.MOUSE_BUTTON_LEFT:
@@ -1070,7 +1038,7 @@ class GameView(arcade.View):
                 if current_player and self.turn_phase == TurnPhase.MOVEMENT:
                     self.corner_menu_open = True
                     self.corner_menu_just_opened = True
-                    print("Opened deployment menu at R hexagon")
+                    logger.debug("Opened deployment menu at R hexagon")
                     return
 
             # Check corner menu if open (UI-based menu)
@@ -1098,10 +1066,10 @@ class GameView(arcade.View):
                 if intersection:
                     world_x, world_y = intersection
                     grid_x, grid_y = self.camera_3d.world_to_grid(world_x, world_y)
-                    print(f"3D click detected at grid ({grid_x}, {grid_y})")  # Debug
+                    logger.debug(f"3D click detected at grid ({grid_x}, {grid_y})")  # Debug
                     self._handle_select_3d((grid_x, grid_y))
                 else:
-                    print(f"3D ray casting: no intersection with board plane")  # Debug
+                    logger.debug(f"3D ray casting: no intersection with board plane")  # Debug
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int):
         """
@@ -1121,7 +1089,7 @@ class GameView(arcade.View):
             # Deactivate mouse-look in 3D mode
             self.mouse_look_active = False
             self.window.set_mouse_visible(True)
-            print("Mouse-look deactivated")
+            logger.debug("Mouse-look deactivated")
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
         """
@@ -1191,18 +1159,18 @@ class GameView(arcade.View):
             if self.camera_mode == "2D":
                 # Trying to enter 3D mode
                 if self.board_3d is None or self.shader_3d is None:
-                    print(
-                        "ERROR: 3D rendering failed to initialize. Cannot switch to 3D mode."
+                    logger.error(
+                        "3D rendering failed to initialize. Cannot switch to 3D mode."
                     )
                     return
                 self.camera_mode = "3D"
-                print(f"Camera mode: {self.camera_mode}")
+                logger.debug(f"Camera mode: {self.camera_mode}")
                 # Don't auto-select a token - let players use TAB to follow if desired
-                print("Press TAB to cycle through and follow your tokens")
+                logger.info("Press TAB to cycle through and follow your tokens")
             else:
                 # Exiting 3D mode back to 2D
                 self.camera_mode = "2D"
-                print(f"Camera mode: {self.camera_mode}")
+                logger.debug(f"Camera mode: {self.camera_mode}")
 
         elif (
             symbol == arcade.key.TAB
@@ -1215,44 +1183,32 @@ class GameView(arcade.View):
         elif symbol == arcade.key.Q and not (modifiers & arcade.key.MOD_CTRL):
             # Rotate camera left (only in 3D mode, and not Ctrl+Q which is quit)
             if hasattr(self, "camera_mode") and self.camera_mode == "3D":
-                self.token_rotation -= 15.0
+                self.token_rotation -= CAMERA_ROTATION_INCREMENT
                 # Update camera position immediately
                 if self.controlled_token_id:
                     token = self.game_state.get_token(self.controlled_token_id)
                     if token and token.is_alive:
                         self.camera_3d.follow_token(token.position, self.token_rotation)
-                        print(
-                            f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}"
-                        )
+                        logger.debug(f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}")
                     else:
-                        print(
-                            f"Camera rotation: {self.token_rotation}, but no valid token to follow"
-                        )
+                        logger.debug(f"Camera rotation: {self.token_rotation}, but no valid token to follow")
                 else:
-                    print(
-                        f"Camera rotation: {self.token_rotation}, but no controlled token selected"
-                    )
+                    logger.debug(f"Camera rotation: {self.token_rotation}, but no controlled token selected")
 
         elif symbol == arcade.key.E:
             # Rotate camera right (only in 3D mode)
-            if self.camera_mode == "3D":
-                self.token_rotation += 15.0
+            if hasattr(self, "camera_mode") and self.camera_mode == "3D":
+                self.token_rotation += CAMERA_ROTATION_INCREMENT
                 # Update camera position immediately
                 if self.controlled_token_id:
                     token = self.game_state.get_token(self.controlled_token_id)
                     if token and token.is_alive:
                         self.camera_3d.follow_token(token.position, self.token_rotation)
-                        print(
-                            f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}"
-                        )
+                        logger.debug(f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}")
                     else:
-                        print(
-                            f"Camera rotation: {self.token_rotation}, but no valid token to follow"
-                        )
+                        logger.debug(f"Camera rotation: {self.token_rotation}, but no valid token to follow")
                 else:
-                    print(
-                        f"Camera rotation: {self.token_rotation}, but no controlled token selected"
-                    )
+                    logger.debug(f"Camera rotation: {self.token_rotation}, but no controlled token selected")
 
         # Quit
         elif symbol == arcade.key.Q and (modifiers & arcade.key.MOD_CTRL):
@@ -1313,9 +1269,7 @@ class GameView(arcade.View):
         board_center_y = (board_pixel_height / 2) - hud_offset_world
         self.camera.position = (board_center_x, board_center_y)
 
-        print(
-            f"Camera setup: zoom={self.zoom_level:.2f}, position=({board_center_x:.1f}, {board_center_y:.1f}), HUD offset={hud_offset_world:.1f}"
-        )
+        logger.debug(f"Camera setup: zoom={self.zoom_level:.2f}, position=({board_center_x:.1f}, {board_center_y:.1f}), HUD offset={hud_offset_world:.1f}")
 
     def _zoom_in(self):
         """Zoom in the camera."""
@@ -1357,9 +1311,9 @@ class GameView(arcade.View):
         self.controlled_token_id = alive_tokens[next_index]
         token = self.game_state.get_token(self.controlled_token_id)
         if token:
-            print(f"Switched to token {self.controlled_token_id} at {token.position}")
+            logger.debug(f"Switched to token {self.controlled_token_id} at {token.position}")
         else:
-            print(f"Switched to token {self.controlled_token_id} (token not found)")
+            logger.debug(f"Switched to token {self.controlled_token_id} (token not found)")
 
     def _is_player_corner(self, grid_pos: Tuple[int, int], player_id: str) -> bool:
         """Check if a position is in the player's deployment zone (corner + adjacent cells)."""
@@ -1399,7 +1353,7 @@ class GameView(arcade.View):
             return False
 
         center_x, center_y, indicator_size = pos
-        spacing = 80
+        spacing = DEPLOYMENT_MENU_SPACING
 
         # Calculate menu option positions (same logic as in _draw_corner_menu_ui)
         player_index = current_player.color.value
@@ -1436,7 +1390,7 @@ class GameView(arcade.View):
         click_x, click_y = screen_pos
 
         # Check which option was clicked
-        click_radius = 30
+        click_radius = MENU_OPTION_CLICK_RADIUS
         for health, option_x, option_y in options:
             distance = ((click_x - option_x) ** 2 + (click_y - option_y) ** 2) ** 0.5
             if distance <= click_radius:
@@ -1451,9 +1405,7 @@ class GameView(arcade.View):
                     self.valid_moves = []
                     self._update_selection_visuals()
 
-                    print(
-                        f"Selected {health}hp token for deployment - click a deployment area position to deploy"
-                    )
+                    logger.debug(f"Selected {health}hp token for deployment - click a deployment area position to deploy")
 
                     # Close the menu
                     self.corner_menu_open = False
@@ -1461,7 +1413,7 @@ class GameView(arcade.View):
 
                     return True
                 else:
-                    print(f"No {health}hp tokens available in reserve")
+                    logger.warning(f"No {health}hp tokens available in reserve")
                     return False
 
         return False
@@ -1533,10 +1485,8 @@ class GameView(arcade.View):
                             tokens_dict=self.game_state.tokens,
                         )
                         self._update_selection_visuals()
-                        print(
-                            f"Selected token {clicked_token.id} at {clicked_token.position}"
-                        )
-                        print(f"Valid moves: {len(self.valid_moves)}")
+                        logger.debug(f"Selected token {clicked_token.id} at {clicked_token.position}")
+                        logger.debug(f"Valid moves: {len(self.valid_moves)}")
             else:
                 # Enemy token - try to attack (can't attack if you already moved)
                 if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
@@ -1548,7 +1498,7 @@ class GameView(arcade.View):
                 if (grid_x, grid_y) in self.valid_moves:
                     self._try_move_to_cell((grid_x, grid_y))
                 else:
-                    print(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
+                    logger.warning(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
             elif self.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
                 # Second priority: deploy selected token type if one is selected
                 if self._is_player_corner((grid_x, grid_y), current_player.id):
@@ -1557,9 +1507,7 @@ class GameView(arcade.View):
                     )
 
                     if deployed_token:
-                        print(
-                            f"Deployed {self.selected_deploy_health}hp token to {(grid_x, grid_y)}"
-                        )
+                        logger.info(f"Deployed {self.selected_deploy_health}hp token to {(grid_x, grid_y)}")
 
                         # Create sprite for the deployed token
                         from client.sprites.token_sprite import TokenSprite
@@ -1573,16 +1521,14 @@ class GameView(arcade.View):
 
                         # Transition to ACTION phase after deploying
                         self.turn_phase = TurnPhase.ACTION
-                        print("Deployment complete - you can attack or end turn")
+                        logger.info("Deployment complete - you can attack or end turn")
 
                         # Update UI to reflect state changes
                         self.ui_manager.rebuild_visuals(self.game_state)
                     else:
-                        print(
-                            f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid"
-                        )
+                        logger.warning(f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid")
                 else:
-                    print("Cannot deploy outside your corner area")
+                    logger.warning("Cannot deploy outside your corner area")
                     self.selected_deploy_health = None
 
     def _handle_select_3d(self, grid_pos: Tuple[int, int]):
@@ -1599,7 +1545,7 @@ class GameView(arcade.View):
         if not current_player:
             return
 
-        print(f"3D click at grid ({grid_x}, {grid_y})")
+        logger.debug(f"3D click at grid ({grid_x}, {grid_y})")
 
         # Check if clicked on a token
         clicked_token = None
@@ -1642,10 +1588,8 @@ class GameView(arcade.View):
                             tokens_dict=self.game_state.tokens,
                         )
                         self._update_selection_visuals()
-                        print(
-                            f"Selected token {clicked_token.id} at {clicked_token.position}"
-                        )
-                        print(f"Valid moves: {len(self.valid_moves)}")
+                        logger.debug(f"Selected token {clicked_token.id} at {clicked_token.position}")
+                        logger.debug(f"Valid moves: {len(self.valid_moves)}")
             else:
                 # Enemy token - try to attack (can't attack if you already moved)
                 if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
@@ -1657,7 +1601,7 @@ class GameView(arcade.View):
                 if (grid_x, grid_y) in self.valid_moves:
                     self._try_move_to_cell((grid_x, grid_y))
                 else:
-                    print(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
+                    logger.warning(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
             elif self.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
                 # Second priority: deploy selected token type if one is selected
                 if self._is_player_corner((grid_x, grid_y), current_player.id):
@@ -1666,9 +1610,7 @@ class GameView(arcade.View):
                     )
 
                     if deployed_token:
-                        print(
-                            f"Deployed {self.selected_deploy_health}hp token to {(grid_x, grid_y)}"
-                        )
+                        logger.info(f"Deployed {self.selected_deploy_health}hp token to {(grid_x, grid_y)}")
 
                         # Create sprite for the deployed token
                         from client.sprites.token_sprite import TokenSprite
@@ -1684,23 +1626,21 @@ class GameView(arcade.View):
                             )
                             self.tokens_3d.append(token_3d)
                         except Exception as e:
-                            print(f"Warning: Failed to create 3D token: {e}")
+                            logger.warning(f"Failed to create 3D token: {e}")
 
                         # Clear selection
                         self.selected_deploy_health = None
 
                         # Transition to ACTION phase after deploying
                         self.turn_phase = TurnPhase.ACTION
-                        print("Deployment complete - you can attack or end turn")
+                        logger.info("Deployment complete - you can attack or end turn")
 
                         # Update UI to reflect state changes
                         self.ui_manager.rebuild_visuals(self.game_state)
                     else:
-                        print(
-                            f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid"
-                        )
+                        logger.warning(f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid")
                 else:
-                    print("Cannot deploy outside your corner area")
+                    logger.warning("Cannot deploy outside your corner area")
                     self.selected_deploy_health = None
 
     def _try_move_to_cell(self, cell: Tuple[int, int]):
@@ -1723,7 +1663,7 @@ class GameView(arcade.View):
         success = self.game_state.move_token(self.selected_token_id, cell)
 
         if success:
-            print(f"Moved token {self.selected_token_id} from {old_pos} to {cell}")
+            logger.debug(f"Moved token {self.selected_token_id} from {old_pos} to {cell}")
 
             # Check for mystery square effect
             board_cell = self.game_state.board.get_cell_at(cell)
@@ -1732,7 +1672,7 @@ class GameView(arcade.View):
             if board_cell and board_cell.cell_type == CellType.MYSTERY:
                 # Start coin flip animation for this mystery square
                 self.mystery_animations[cell] = 0.0
-                print(f"🎲 Coin flip started at {cell}!")
+                logger.info(f"🎲 Coin flip started at {cell}!")
 
                 # Get player's index for potential teleport to deployment area
                 current_player = self.game_state.get_current_player()
@@ -1745,9 +1685,7 @@ class GameView(arcade.View):
                     )
 
                     if mystery_result.effect.name == "HEAL":
-                        print(
-                            f"🎲 HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
-                        )
+                        logger.info(f"🎲 HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!")
                     else:
                         # Token was teleported - update board occupancy
                         self.game_state.board.clear_occupant(cell, token.id)
@@ -1755,9 +1693,7 @@ class GameView(arcade.View):
                             mystery_result.new_position, token.id
                         )
                         final_position = mystery_result.new_position
-                        print(
-                            f"🎲 TAILS! Token teleported back to deployment area {final_position}!"
-                        )
+                        logger.info(f"🎲 TAILS! Token teleported back to deployment area {final_position}!")
 
             # Update sprite position and health display
             for sprite in self.token_sprites:
@@ -1776,7 +1712,7 @@ class GameView(arcade.View):
 
             # Can't attack after moving - go directly to end turn phase
             self.turn_phase = TurnPhase.END_TURN
-            print("Turn complete - press SPACE to end turn")
+            logger.info("Turn complete - press SPACE to end turn")
 
             # Update UI to reflect state changes
             self.ui_manager.rebuild_visuals(self.game_state)
@@ -1799,13 +1735,13 @@ class GameView(arcade.View):
         if not self.movement_system.is_adjacent(
             attacker.position, target_token.position
         ):
-            print("Target is not adjacent")
+            logger.warning("Target is not adjacent")
             return
 
         # Perform attack
         result = CombatSystem.resolve_combat(attacker, target_token)
 
-        print(f"Token {attacker.id} attacked token {target_token.id}: {result}")
+        logger.debug(f"Token {attacker.id} attacked token {target_token.id}: {result}")
 
         # Update token sprite health or remove if killed
         for sprite in self.token_sprites:
@@ -1831,15 +1767,15 @@ class GameView(arcade.View):
     def _handle_cancel(self):
         """Handle cancel action."""
         if self.selected_token_id:
-            print("Cancelled token selection")
+            logger.debug("Cancelled token selection")
             self.selected_token_id = None
             self.valid_moves = []
             self._update_selection_visuals()
         elif self.selected_deploy_health:
-            print("Cancelled deployment selection")
+            logger.debug("Cancelled deployment selection")
             self.selected_deploy_health = None
         elif self.corner_menu_open:
-            print("Closed deployment menu")
+            logger.debug("Closed deployment menu")
             self.corner_menu_open = False
             self.corner_menu_just_opened = False
 
@@ -1849,7 +1785,7 @@ class GameView(arcade.View):
         if not current_player:
             return
 
-        print(f"Ending turn for {current_player.name}")
+        logger.info(f"Ending turn for {current_player.name}")
 
         # Clear selection
         self.selected_token_id = None
@@ -1864,7 +1800,7 @@ class GameView(arcade.View):
 
         next_player = self.game_state.get_current_player()
         if next_player:
-            print(f"Turn {self.game_state.turn_number}: {next_player.name}'s turn")
+            logger.info(f"Turn {self.game_state.turn_number}: {next_player.name}'s turn")
 
         # Rebuild board shapes to update generator lines (when generators are captured)
         self._create_board_sprites()

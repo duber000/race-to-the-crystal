@@ -88,3 +88,36 @@ CAMERA_HEIGHT_ABOVE_TOKEN = 100.0  # Eye height above token (high for better ove
 CAMERA_FORWARD_OFFSET = -50.0  # Distance behind token (negative = behind, farther back for better view)
 CAMERA_NEAR_PLANE = 1.0  # Near clipping plane
 CAMERA_FAR_PLANE = 2000.0  # Far clipping plane (board is 768x768)
+
+# UI Configuration
+HUD_HEIGHT = 80  # Height of HUD bar at top of screen (pixels)
+CORNER_INDICATOR_SIZE = 40  # Size of corner deployment indicator (pixels)
+CORNER_INDICATOR_MARGIN = 20  # Margin from screen edges (pixels)
+DEPLOYMENT_MENU_SPACING = 80  # Spacing for deployment menu options (pixels)
+MENU_OPTION_CLICK_RADIUS = 30  # Click detection radius for menu options (pixels)
+HEXAGON_SIDES = 6  # Number of sides for hexagonal shapes
+CIRCLE_SEGMENTS = 12  # Number of segments for rendering circles
+
+# Chat Widget Configuration (for network games)
+CHAT_WIDGET_WIDTH = 320  # Width of chat widget (pixels)
+CHAT_WIDGET_HEIGHT = 300  # Height of chat widget (pixels)
+CHAT_WIDGET_X = 10  # X position of chat widget
+CHAT_WIDGET_Y = 200  # Y position of chat widget (safe zone between corners)
+
+# Camera Controls
+CAMERA_PAN_SPEED = 10  # Speed of camera panning with arrow keys
+CAMERA_INITIAL_ZOOM = 1.0  # Initial camera zoom level
+CAMERA_ROTATION_INCREMENT = 15.0  # Degrees to rotate camera per key press (Q/E keys)
+MOUSE_LOOK_SENSITIVITY = 0.2  # Mouse sensitivity for 3D camera look-around
+
+# Audio Configuration
+BACKGROUND_MUSIC_VOLUME = 0.9  # Volume for background music (0.0 to 1.0)
+GENERATOR_HUM_VOLUME = 0.7  # Volume for generator hum audio (0.0 to 1.0)
+
+# Animation Configuration (extends existing ANIMATION_SPEED)
+MYSTERY_ANIMATION_DURATION = 1.0  # Duration of mystery square animation (seconds)
+
+# Board Generation Configuration
+MYSTERY_PLACEMENT_MAX_ATTEMPTS = 100  # Max attempts to place mystery squares per quadrant
+MYSTERY_PLACEMENT_EDGE_MARGIN = 2  # Margin from board edges when placing mystery squares
+
