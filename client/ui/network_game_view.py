@@ -124,15 +124,37 @@ class NetworkGameView(arcade.View):
             """Intercept key press (like Space for end turn)."""
             if key == arcade.key.SPACE or key == arcade.key.ENTER:
                 # End turn
+                logger.info(f"Space/Enter pressed. waiting_for_server={self.waiting_for_server}")
                 if not self.waiting_for_server:
+                    logger.info("Sending END_TURN to server...")
                     schedule_async(self._send_end_turn())
+                    self.waiting_for_server = True
+                else:
+                    logger.info("Already waiting for server, ignoring key press")
                 return
 
             # Pass through other keys
             original_on_key_press(key, modifiers)
 
+        # Store original _handle_end_turn
+        original_handle_end_turn = self.game_view._handle_end_turn
+
+        def network_handle_end_turn():
+            """Intercept _handle_end_turn to prevent local turn advancement."""
+            logger.info("GameView._handle_end_turn() called - intercepting!")
+            if not self.waiting_for_server:
+                logger.info("Sending END_TURN to server instead of advancing locally...")
+                schedule_async(self._send_end_turn())
+                self.waiting_for_server = True
+                # Clear selection like the original does
+                self.game_view.selected_token_id = None
+                self.game_view.valid_moves = []
+            else:
+                logger.info("Already waiting for server, ignoring _handle_end_turn")
+
         # Replace methods
         self.game_view.on_key_press = network_on_key_press
+        self.game_view._handle_end_turn = network_handle_end_turn
 
         # Hook game state to intercept actual action execution
         # Store original methods
@@ -167,10 +189,15 @@ class NetworkGameView(arcade.View):
 
         def network_end_turn():
             """Intercept end turn and send to server."""
+            logger.info(f"network_end_turn() called! waiting_for_server={self.waiting_for_server}")
             if not self.waiting_for_server:
+                logger.info("Scheduling _send_end_turn()...")
                 schedule_async(self._send_end_turn())
                 self.waiting_for_server = True
+                logger.info("END_TURN scheduled and waiting_for_server set to True")
                 return
+            else:
+                logger.info("Already waiting for server, skipping END_TURN send")
             return
 
         # Replace game state methods
@@ -207,11 +234,15 @@ class NetworkGameView(arcade.View):
 
     async def _send_end_turn(self):
         """Send end turn action to server."""
+        logger.info("_send_end_turn() called - creating END_TURN action")
         action = EndTurnAction()
+        logger.info(f"Sending END_TURN action to server via network_client...")
         success = await self.network_client.send_action(action)
         if not success:
             logger.error("Failed to send end turn action")
             self.waiting_for_server = False
+        else:
+            logger.info("END_TURN action sent successfully")
 
     # --- Network Message Handling ---
 
@@ -274,6 +305,11 @@ class NetworkGameView(arcade.View):
                 self.game_view.game_state = self.game_state
                 self.game_view.setup()
                 logger.info("Game view setup complete")
+
+                # Re-hook the game view with the new game_state instance
+                logger.info("Re-hooking game view with new game state...")
+                self._hook_game_view()
+                logger.info("Game view re-hooked successfully")
             else:
                 logger.warning("No game view exists yet - will be created with this state")
 
