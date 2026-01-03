@@ -17,6 +17,7 @@ from arcade.shape_list import (
 from client.audio_manager import AudioManager
 from client.board_3d import Board3D
 from client.camera_3d import FirstPersonCamera3D
+from client.deployment_menu_controller import DeploymentMenuController
 from client.sprites.board_sprite import create_board_shapes
 from client.sprites.token_sprite import TokenSprite
 from client.token_3d import Token3D
@@ -106,13 +107,6 @@ class GameView(arcade.View):
         self.valid_moves: List[Tuple[int, int]] = []
         self.turn_phase = TurnPhase.MOVEMENT
 
-        # Corner deployment menu
-        self.corner_menu_open = False
-        self.corner_menu_just_opened = False  # Flag to prevent immediate click-through
-        self.selected_deploy_health: Optional[int] = (
-            None  # Selected token type for deployment
-        )
-
         # Camera controls
         self.camera_speed = CAMERA_PAN_SPEED
         self.zoom_level = CAMERA_INITIAL_ZOOM
@@ -140,20 +134,6 @@ class GameView(arcade.View):
             (150, 150, 150),
             font_size=14,
         )
-        
-        # Text objects for board elements (for performance)
-        self.reserve_text = arcade.Text("R", 0, 0, (255, 255, 255), font_size=24, bold=True, anchor_x="center")
-        
-        # Pre-create health text objects (health values are 2, 4, 6, 8, 10, 12)
-        self.health_texts = {
-            health: arcade.Text(
-                str(health), 0, 0, (255, 255, 255), 
-                font_size=20, bold=True, anchor_x="center", anchor_y="center"
-            ) for health in [2, 4, 6, 8, 10, 12]
-        }
-        
-        # Count text objects will be created dynamically as needed
-        self.count_texts = {}
 
         # 3D Rendering infrastructure
         self.camera_mode = (
@@ -169,7 +149,10 @@ class GameView(arcade.View):
 
         # UI Manager for panels and buttons (will be initialized in on_show_view)
         self.ui_manager = None
-        
+
+        # Deployment menu controller (will be initialized in on_show_view)
+        self.deployment_controller = None
+
         # Chat widget for in-game communication
         self.chat_widget = None
 
@@ -191,7 +174,8 @@ class GameView(arcade.View):
         # Initialize components that need window dimensions
         self.camera_3d = FirstPersonCamera3D(self.window.width, self.window.height)
         self.ui_manager = UIManager(self.window.width, self.window.height)
-        
+        self.deployment_controller = DeploymentMenuController(self.window.width, self.window.height)
+
         # Initialize chat widget only for network games
         if self.is_network_game:
             chat_width = CHAT_WIDGET_WIDTH
@@ -377,8 +361,8 @@ class GameView(arcade.View):
         self.phase_text.draw()
 
         # Instructions
-        if self.selected_deploy_health:
-            instruction = f"Selected {self.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"
+        if self.deployment_controller.selected_deploy_health:
+            instruction = f"Selected {self.deployment_controller.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"
         elif self.turn_phase == TurnPhase.MOVEMENT:
             if self.camera_mode == "3D":
                 instruction = "Click a token to select, then move OR attack (not both) | Right-click + drag to look around"
@@ -397,177 +381,9 @@ class GameView(arcade.View):
         self.instruction_text.draw()
 
         # Draw corner indicator for deployment area
-        self._draw_corner_indicator()
-
-    def _get_corner_indicator_position(self):
-        """
-        Get the position and size of the corner indicator.
-
-        Returns:
-            Tuple of (center_x, center_y, size) or None if no current player
-        """
-        from shared.corner_layout import get_ui_corner_config
-
         current_player = self.game_state.get_current_player()
-        if not current_player:
-            return None
-
-        player_index = current_player.color.value
-        indicator_size = CORNER_INDICATOR_SIZE
-        margin = CORNER_INDICATOR_MARGIN
-
-        config = get_ui_corner_config(player_index)
-        center_x, center_y = config.get_indicator_position(
-            self.window.width,
-            self.window.height,
-            HUD_HEIGHT,
-            margin,
-            indicator_size
-        )
-
-        return (center_x, center_y, indicator_size)
-
-    def _is_click_on_corner_indicator(self, x: int, y: int) -> bool:
-        """
-        Check if a screen-space click is on the corner indicator.
-
-        Args:
-            x: Screen x coordinate
-            y: Screen y coordinate
-
-        Returns:
-            True if click is within the indicator hexagon
-        """
-        pos = self._get_corner_indicator_position()
-        if not pos:
-            return False
-
-        center_x, center_y, size = pos
-
-        # Simple circle collision for now (hexagon would be more accurate but this works)
-        distance_sq = (x - center_x) ** 2 + (y - center_y) ** 2
-        return distance_sq <= (size * 1.2) ** 2  # Slightly larger hit box
-
-    def _draw_corner_indicator(self):
-        """Draw a visual indicator in UI space showing the player's deployment corner."""
-        import math
-
-        pos = self._get_corner_indicator_position()
-        if not pos:
-            return
-
-        center_x, center_y, indicator_size = pos
-
-        current_player = self.game_state.get_current_player()
-        player_index = current_player.color.value
-        player_color = PLAYER_COLORS[player_index]
-
-        # Draw hexagon indicator with glow
-        num_sides = HEXAGON_SIDES
-        points = []
-        for i in range(num_sides):
-            angle = (i / num_sides) * 2 * math.pi - math.pi / 2
-            x = center_x + indicator_size * math.cos(angle)
-            y = center_y + indicator_size * math.sin(angle)
-            points.append((x, y))
-
-        # Draw glow layers
-        for glow in range(4, 0, -1):
-            alpha = int(100 / (glow + 1))
-            glow_points = []
-            for i in range(num_sides):
-                angle = (i / num_sides) * 2 * math.pi - math.pi / 2
-                x = center_x + (indicator_size + glow * 3) * math.cos(angle)
-                y = center_y + (indicator_size + glow * 3) * math.sin(angle)
-                glow_points.append((x, y))
-            arcade.draw_polygon_outline(
-                glow_points, (*player_color, alpha), max(1, 4 - glow)
-            )
-
-        # Draw main hexagon outline
-        arcade.draw_polygon_outline(points, player_color, 3)
-
-        # Draw "R" for Reserve/Repository in the center
-        self.reserve_text.x = center_x
-        self.reserve_text.y = center_y
-        self.reserve_text.color = player_color
-        self.reserve_text.draw()
-
-    def _draw_corner_menu_ui(self):
-        """Draw the corner deployment menu in UI space around the R hexagon."""
-        from shared.corner_layout import get_ui_corner_config
-
-        if not self.corner_menu_open:
-            return
-
-        current_player = self.game_state.get_current_player()
-        if not current_player:
-            return
-
-        # Get reserve token counts
-        counts = self.game_state.get_reserve_token_counts(current_player.id)
-
-        # Get R hexagon position
-        pos = self._get_corner_indicator_position()
-        if not pos:
-            return
-
-        center_x, center_y, indicator_size = pos
-
-        # Menu spacing around the R hexagon
-        spacing = DEPLOYMENT_MENU_SPACING  # Distance from center
-
-        # Get menu option positions using corner configuration
-        player_index = current_player.color.value
-        config = get_ui_corner_config(player_index)
-        positions = config.get_menu_option_positions(center_x, center_y, spacing)
-
-        # Build options list: (health_value, x, y, count)
-        health_values = [10, 8, 6, 4]
-        options = [
-            (health, x, y, counts[health])
-            for (health, (x, y)) in zip(health_values, positions)
-        ]
-
-        # Draw each option
-        for health, x, y, count in options:
-            if count > 0:
-                # Draw available option in cyan
-                arcade.draw_circle_filled(x, y, 30, (0, 255, 255, 200))
-                arcade.draw_circle_outline(x, y, 30, (0, 255, 255), 3)
-            else:
-                # Draw unavailable option in dark gray
-                arcade.draw_circle_filled(x, y, 30, (50, 50, 50, 100))
-                arcade.draw_circle_outline(x, y, 30, (100, 100, 100), 2)
-
-            # Draw health value using Text object for performance
-            health_text = self.health_texts.get(health)
-            if health_text:
-                health_text.x = x
-                health_text.y = y
-                health_text.color = (255, 255, 255) if count > 0 else (100, 100, 100)
-                health_text.draw()
-
-            # Draw count if available
-            if count > 0:
-                text_key = f"{x}_{y}"  # Use position as key since count can change
-                if text_key not in self.count_texts:
-                    # Create new text object
-                    self.count_texts[text_key] = arcade.Text(
-                        f"({count})",
-                        x,
-                        y - 15,
-                        (200, 200, 200),
-                        font_size=12,
-                        anchor_x="center",
-                        anchor_y="center",
-                    )
-                else:
-                    # Update existing text object
-                    count_text = self.count_texts[text_key]
-                    count_text.text = f"({count})"
-                
-                self.count_texts[text_key].draw()
+        if current_player:
+            self.deployment_controller.draw_indicator(current_player)
 
     def _update_selection_visuals(self):
         """Update visual feedback for selection and valid moves with vector glow."""
@@ -730,9 +546,13 @@ class GameView(arcade.View):
 
         # Draw corner menu if open (in UI space around R hexagon)
         # Works in both 2D and 3D modes
-        if self.corner_menu_open:
+        # Draw deployment menu if open
+        if self.deployment_controller.menu_open:
             with self.ui_camera.activate():
-                self._draw_corner_menu_ui()
+                current_player = self.game_state.get_current_player()
+                if current_player:
+                    reserve_counts = self.game_state.get_reserve_token_counts(current_player.id)
+                    self.deployment_controller.draw_menu(current_player, reserve_counts)
 
     def on_update(self, delta_time: float):
         """
@@ -880,17 +700,20 @@ class GameView(arcade.View):
             current_player = self.game_state.get_current_player()
 
             # Check if clicking on R hexagon to open menu
-            if not self.corner_menu_open and self._is_click_on_corner_indicator(x, y):
+            if not self.deployment_controller.menu_open and self.deployment_controller.is_click_on_indicator(x, y, current_player):
                 if current_player and self.turn_phase == TurnPhase.MOVEMENT:
-                    self.corner_menu_open = True
-                    self.corner_menu_just_opened = True
-                    logger.debug("Opened deployment menu at R hexagon")
+                    self.deployment_controller.open_menu()
                     return
 
             # Check corner menu if open (UI-based menu)
-            if self.corner_menu_open and current_player:
-                handled = self._handle_corner_menu_click_ui((x, y), current_player.id)
-                if handled:
+            if self.deployment_controller.menu_open and current_player:
+                reserve_counts = self.game_state.get_reserve_token_counts(current_player.id)
+                selected_health = self.deployment_controller.handle_menu_click((x, y), current_player, reserve_counts)
+                if selected_health:
+                    # Clear any existing token selection to prevent conflicts
+                    self.selected_token_id = None
+                    self.valid_moves = []
+                    self._update_selection_visuals()
                     return
 
             # No UI clicked, proceed with world interaction
@@ -1164,109 +987,6 @@ class GameView(arcade.View):
         else:
             logger.debug(f"Switched to token {self.controlled_token_id} (token not found)")
 
-    def _is_player_corner(self, grid_pos: Tuple[int, int], player_id: str) -> bool:
-        """Check if a position is in the player's deployment zone (corner + adjacent cells)."""
-        player = self.game_state.get_player(player_id)
-        if not player:
-            return False
-
-        player_index = player.color.value
-        deployable_positions = self.game_state.board.get_deployable_positions(
-            player_index
-        )
-        return grid_pos in deployable_positions
-
-    def _handle_corner_menu_click_ui(
-        self, screen_pos: Tuple[int, int], player_id: str
-    ) -> bool:
-        """
-        Handle click on UI-based corner menu (around R hexagon).
-
-        Args:
-            screen_pos: Click position in screen coordinates
-            player_id: Current player ID
-
-        Returns:
-            True if a token type was selected
-        """
-        if not self.corner_menu_open:
-            return False
-
-        current_player = self.game_state.get_current_player()
-        if not current_player:
-            return False
-
-        # Get R hexagon position
-        pos = self._get_corner_indicator_position()
-        if not pos:
-            return False
-
-        center_x, center_y, indicator_size = pos
-        spacing = DEPLOYMENT_MENU_SPACING
-
-        # Calculate menu option positions (same logic as in _draw_corner_menu_ui)
-        player_index = current_player.color.value
-
-        if player_index == 0:  # Bottom-left
-            options = [
-                (10, center_x + spacing, center_y + spacing),
-                (8, center_x + spacing * 1.8, center_y + spacing),
-                (6, center_x + spacing, center_y),
-                (4, center_x + spacing * 1.8, center_y),
-            ]
-        elif player_index == 1:  # Bottom-right
-            options = [
-                (10, center_x - spacing, center_y + spacing),
-                (8, center_x - spacing * 1.8, center_y + spacing),
-                (6, center_x - spacing, center_y),
-                (4, center_x - spacing * 1.8, center_y),
-            ]
-        elif player_index == 2:  # Top-left
-            options = [
-                (10, center_x + spacing, center_y - spacing),
-                (8, center_x + spacing * 1.8, center_y - spacing),
-                (6, center_x + spacing, center_y),
-                (4, center_x + spacing * 1.8, center_y),
-            ]
-        else:  # player_index == 3, Top-right
-            options = [
-                (10, center_x - spacing, center_y - spacing),
-                (8, center_x - spacing * 1.8, center_y - spacing),
-                (6, center_x - spacing, center_y),
-                (4, center_x - spacing * 1.8, center_y),
-            ]
-
-        click_x, click_y = screen_pos
-
-        # Check which option was clicked
-        click_radius = MENU_OPTION_CLICK_RADIUS
-        for health, option_x, option_y in options:
-            distance = ((click_x - option_x) ** 2 + (click_y - option_y) ** 2) ** 0.5
-            if distance <= click_radius:
-                # Check if player has this token type in reserve
-                reserve_counts = self.game_state.get_reserve_token_counts(player_id)
-                if reserve_counts.get(health, 0) > 0:
-                    # Select this token type for deployment
-                    self.selected_deploy_health = health
-
-                    # Clear any existing token selection to prevent conflicts
-                    self.selected_token_id = None
-                    self.valid_moves = []
-                    self._update_selection_visuals()
-
-                    logger.debug(f"Selected {health}hp token for deployment - click a deployment area position to deploy")
-
-                    # Close the menu
-                    self.corner_menu_open = False
-                    self.corner_menu_just_opened = False
-
-                    return True
-                else:
-                    logger.warning(f"No {health}hp tokens available in reserve")
-                    return False
-
-        return False
-
     def _handle_select(self, world_pos: Tuple[float, float]):
         """
         Handle selection at world position.
@@ -1284,14 +1004,13 @@ class GameView(arcade.View):
             return
 
         # Reset the just-opened flag after first frame
-        if self.corner_menu_just_opened:
-            self.corner_menu_just_opened = False
+        if self.deployment_controller.menu_just_opened:
+            self.deployment_controller.clear_just_opened_flag()
             return  # Don't process any other clicks this frame
 
         # Close corner menu if clicking elsewhere on the board
-        if self.corner_menu_open:
-            self.corner_menu_open = False
-            self.corner_menu_just_opened = False
+        if self.deployment_controller.menu_open:
+            self.deployment_controller.close_menu()
 
         # Check if clicked on a token
         clicked_token = None
@@ -1348,15 +1067,15 @@ class GameView(arcade.View):
                     self._try_move_to_cell((grid_x, grid_y))
                 else:
                     logger.warning(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
-            elif self.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
+            elif self.deployment_controller.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
                 # Second priority: deploy selected token type if one is selected
-                if self._is_player_corner((grid_x, grid_y), current_player.id):
+                if self.deployment_controller.is_valid_deployment_position((grid_x, grid_y), current_player.id, self.game_state):
                     deployed_token = self.game_state.deploy_token(
-                        current_player.id, self.selected_deploy_health, (grid_x, grid_y)
+                        current_player.id, self.deployment_controller.selected_deploy_health, (grid_x, grid_y)
                     )
 
                     if deployed_token:
-                        logger.info(f"Deployed {self.selected_deploy_health}hp token to {(grid_x, grid_y)}")
+                        logger.info(f"Deployed {self.deployment_controller.selected_deploy_health}hp token to {(grid_x, grid_y)}")
 
                         # Create sprite for the deployed token
                         from client.sprites.token_sprite import TokenSprite
@@ -1366,7 +1085,7 @@ class GameView(arcade.View):
                         self.token_sprites.append(sprite)
 
                         # Clear selection
-                        self.selected_deploy_health = None
+                        self.deployment_controller.selected_deploy_health = None
 
                         # Transition to ACTION phase after deploying
                         self.turn_phase = TurnPhase.ACTION
@@ -1378,7 +1097,7 @@ class GameView(arcade.View):
                         logger.warning(f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid")
                 else:
                     logger.warning("Cannot deploy outside your corner area")
-                    self.selected_deploy_health = None
+                    self.deployment_controller.selected_deploy_health = None
 
     def _handle_select_3d(self, grid_pos: Tuple[int, int]):
         """
@@ -1451,15 +1170,15 @@ class GameView(arcade.View):
                     self._try_move_to_cell((grid_x, grid_y))
                 else:
                     logger.warning(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
-            elif self.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
+            elif self.deployment_controller.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
                 # Second priority: deploy selected token type if one is selected
-                if self._is_player_corner((grid_x, grid_y), current_player.id):
+                if self.deployment_controller.is_valid_deployment_position((grid_x, grid_y), current_player.id, self.game_state):
                     deployed_token = self.game_state.deploy_token(
-                        current_player.id, self.selected_deploy_health, (grid_x, grid_y)
+                        current_player.id, self.deployment_controller.selected_deploy_health, (grid_x, grid_y)
                     )
 
                     if deployed_token:
-                        logger.info(f"Deployed {self.selected_deploy_health}hp token to {(grid_x, grid_y)}")
+                        logger.info(f"Deployed {self.deployment_controller.selected_deploy_health}hp token to {(grid_x, grid_y)}")
 
                         # Create sprite for the deployed token
                         from client.sprites.token_sprite import TokenSprite
@@ -1478,7 +1197,7 @@ class GameView(arcade.View):
                             logger.warning(f"Failed to create 3D token: {e}")
 
                         # Clear selection
-                        self.selected_deploy_health = None
+                        self.deployment_controller.selected_deploy_health = None
 
                         # Transition to ACTION phase after deploying
                         self.turn_phase = TurnPhase.ACTION
@@ -1490,7 +1209,7 @@ class GameView(arcade.View):
                         logger.warning(f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid")
                 else:
                     logger.warning("Cannot deploy outside your corner area")
-                    self.selected_deploy_health = None
+                    self.deployment_controller.selected_deploy_health = None
 
     def _try_move_to_cell(self, cell: Tuple[int, int]):
         """
@@ -1620,13 +1339,9 @@ class GameView(arcade.View):
             self.selected_token_id = None
             self.valid_moves = []
             self._update_selection_visuals()
-        elif self.selected_deploy_health:
-            logger.debug("Cancelled deployment selection")
-            self.selected_deploy_health = None
-        elif self.corner_menu_open:
-            logger.debug("Closed deployment menu")
-            self.corner_menu_open = False
-            self.corner_menu_just_opened = False
+        else:
+            # Let deployment controller handle its own cancel logic
+            self.deployment_controller.cancel_selection()
 
     def _handle_end_turn(self):
         """Handle end turn action."""
