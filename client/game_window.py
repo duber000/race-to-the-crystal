@@ -16,7 +16,7 @@ from arcade.shape_list import (
 
 from client.audio_manager import AudioManager
 from client.board_3d import Board3D
-from client.camera_3d import FirstPersonCamera3D
+from client.camera_controller import CameraController
 from client.deployment_menu_controller import DeploymentMenuController
 from client.sprites.board_sprite import create_board_shapes
 from client.sprites.token_sprite import TokenSprite
@@ -29,9 +29,6 @@ from game.movement import MovementSystem
 from game.mystery_square import MysterySquareSystem
 from shared.constants import (
     BACKGROUND_COLOR,
-    CAMERA_INITIAL_ZOOM,
-    CAMERA_PAN_SPEED,
-    CAMERA_ROTATION_INCREMENT,
     CELL_SIZE,
     CHAT_WIDGET_HEIGHT,
     CHAT_WIDGET_WIDTH,
@@ -46,7 +43,6 @@ from shared.constants import (
     HEXAGON_SIDES,
     HUD_HEIGHT,
     MENU_OPTION_CLICK_RADIUS,
-    MOUSE_LOOK_SENSITIVITY,
     MYSTERY_ANIMATION_DURATION,
     PLAYER_COLORS,
 )
@@ -87,14 +83,14 @@ class GameView(arcade.View):
         self.game_state = game_state
         self.is_network_game = is_network_game
         self.network_client = network_client
+        self.start_in_3d = start_in_3d
 
         # Systems
         self.movement_system = MovementSystem()
         self.combat_system = CombatSystem()
 
-        # Camera
-        self.camera = arcade.camera.Camera2D()
-        self.ui_camera = arcade.camera.Camera2D()  # For HUD (doesn't move with world)
+        # Camera controller (will be initialized in on_show_view)
+        self.camera_controller = None
 
         # Visual elements
         self.board_shapes = None  # ShapeElementList for board
@@ -106,15 +102,6 @@ class GameView(arcade.View):
         self.selected_token_id: Optional[int] = None
         self.valid_moves: List[Tuple[int, int]] = []
         self.turn_phase = TurnPhase.MOVEMENT
-
-        # Camera controls
-        self.camera_speed = CAMERA_PAN_SPEED
-        self.zoom_level = CAMERA_INITIAL_ZOOM
-
-        # Mouse-look state for 3D mode
-        self.mouse_look_active = False
-        self.mouse_look_sensitivity = MOUSE_LOOK_SENSITIVITY  # Mouse sensitivity for look around
-        self.last_mouse_position = (0, 0)  # Track mouse position for delta calculation
 
         # HUD Text objects (for performance)
         self.player_text = arcade.Text(
@@ -136,16 +123,9 @@ class GameView(arcade.View):
         )
 
         # 3D Rendering infrastructure
-        self.camera_mode = (
-            "3D" if start_in_3d else "2D"
-        )  # Current view mode: "2D" or "3D"
-        # camera_3d will be initialized in on_show_view() when window dimensions are available
-        self.camera_3d = None
         self.board_3d = None  # Will be initialized in setup()
         self.tokens_3d = []  # List of Token3D instances
         self.shader_3d = None  # Shared shader for 3D rendering
-        self.controlled_token_id: Optional[int] = None  # Token camera follows in 3D
-        self.token_rotation = 0.0  # Camera rotation around token
 
         # UI Manager for panels and buttons (will be initialized in on_show_view)
         self.ui_manager = None
@@ -172,7 +152,7 @@ class GameView(arcade.View):
         arcade.set_background_color(BACKGROUND_COLOR)
 
         # Initialize components that need window dimensions
-        self.camera_3d = FirstPersonCamera3D(self.window.width, self.window.height)
+        self.camera_controller = CameraController(self.window.width, self.window.height, self.start_in_3d)
         self.ui_manager = UIManager(self.window.width, self.window.height)
         self.deployment_controller = DeploymentMenuController(self.window.width, self.window.height)
 
@@ -226,7 +206,7 @@ class GameView(arcade.View):
         self._create_3d_rendering()
 
         # Set up camera to fit entire board in view
-        self._setup_camera_view()
+        self.camera_controller.setup_initial_view(self.window.width, self.window.height)
 
         # Load and play background music (only if not already loaded)
         if not self.audio_manager.background_music:
@@ -364,7 +344,7 @@ class GameView(arcade.View):
         if self.deployment_controller.selected_deploy_health:
             instruction = f"Selected {self.deployment_controller.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"
         elif self.turn_phase == TurnPhase.MOVEMENT:
-            if self.camera_mode == "3D":
+            if self.camera_controller.camera_mode == "3D":
                 instruction = "Click a token to select, then move OR attack (not both) | Right-click + drag to look around"
             else:
                 instruction = "Click a token to select, then move OR attack (not both)"
@@ -502,9 +482,9 @@ class GameView(arcade.View):
         # Clear the window (color buffer and depth buffer)
         self.clear()
 
-        if self.camera_mode == "2D":
+        if self.camera_controller.camera_mode == "2D":
             # 2D top-down rendering
-            with self.camera.activate():
+            with self.camera_controller.camera_2d.activate():
                 if self.board_shapes:
                     self.board_shapes.draw()
                 self.selection_shapes.draw()
@@ -517,38 +497,35 @@ class GameView(arcade.View):
 
             if self.board_3d and self.shader_3d:
                 # Update camera to follow controlled token
-                if self.controlled_token_id:
-                    token = self.game_state.get_token(self.controlled_token_id)
-                    if token and token.is_alive:
-                        self.camera_3d.follow_token(token.position, self.token_rotation)
+                self.camera_controller.update_3d_camera(self.game_state)
 
                 # Draw 3D board
-                self.board_3d.draw(self.camera_3d)
+                self.board_3d.draw(self.camera_controller.camera_3d)
 
                 # Draw 3D tokens
                 for token_3d in self.tokens_3d:
                     if token_3d.token.is_alive:
-                        token_3d.draw(self.camera_3d, self.shader_3d)
+                        token_3d.draw(self.camera_controller.camera_3d, self.shader_3d)
 
             # Reset state for UI
             self.window.ctx.disable(self.window.ctx.DEPTH_TEST)
 
         # Draw UI (no camera transform) - always in 2D
-        with self.ui_camera.activate():
+        with self.camera_controller.ui_camera.activate():
             self.ui_sprites.draw()
             self._draw_hud()
             self.ui_manager.draw()
-        
+
         # Draw chat widget (in UI space)
         if self.chat_widget:
-            with self.ui_camera.activate():
+            with self.camera_controller.ui_camera.activate():
                 self.chat_widget.draw()
 
         # Draw corner menu if open (in UI space around R hexagon)
         # Works in both 2D and 3D modes
         # Draw deployment menu if open
         if self.deployment_controller.menu_open:
-            with self.ui_camera.activate():
+            with self.camera_controller.ui_camera.activate():
                 current_player = self.game_state.get_current_player()
                 if current_player:
                     reserve_counts = self.game_state.get_reserve_token_counts(current_player.id)
@@ -589,7 +566,7 @@ class GameView(arcade.View):
             self.board_3d.update_mystery_animations(self.mystery_animations)
 
         # Rebuild board shapes every frame to animate generator lines and mystery squares
-        if self.camera_mode == "2D":
+        if self.camera_controller.camera_mode == "2D":
             self._create_board_sprites()
 
     def on_resize(self, width: int, height: int):
@@ -605,24 +582,17 @@ class GameView(arcade.View):
 
         # Check if initialization is complete (ui_manager exists)
         if hasattr(self, "ui_manager") and self.ui_manager:
-            # Update camera viewports to match new window size
-            # Note: super().on_resize() does NOT automatically update Camera2D viewports
-            if hasattr(self, "camera") and self.camera:
-                self.camera.viewport = arcade.types.LBWH(0, 0, width, height)
-
-            if hasattr(self, "ui_camera") and self.ui_camera:
-                self.ui_camera.viewport = arcade.types.LBWH(0, 0, width, height)
+            # Update camera system
+            if hasattr(self, "camera_controller") and self.camera_controller:
+                self.camera_controller.resize(width, height)
 
             # Update UI manager layout
             self.ui_manager.update_layout(width, height)
             self.ui_manager.rebuild_visuals(self.game_state)
 
-            # Update camera setup to refit board
-            self._setup_camera_view()
-
-            # Update 3D camera aspect ratio if it exists (without resetting position)
-            if hasattr(self, "camera_3d") and self.camera_3d:
-                self.camera_3d.update_aspect_ratio(width, height)
+            # Update deployment controller
+            if hasattr(self, "deployment_controller") and self.deployment_controller:
+                self.deployment_controller.resize(width, height)
 
             logger.debug(f"Game view resized to {width}x{height}")
 
@@ -637,33 +607,15 @@ class GameView(arcade.View):
             dy: Change in y
         """
         # Check if initialization is complete
-        if not hasattr(self, "camera_mode") or not hasattr(self, "mouse_look_active"):
+        if not hasattr(self, "camera_controller") or not self.camera_controller:
             return
 
         # Handle mouse-look in 3D mode
-        if self.camera_mode == "3D" and self.mouse_look_active:
-            # Apply mouse movement to camera rotation
-            yaw_delta = -dx * self.mouse_look_sensitivity
-            pitch_delta = -dy * self.mouse_look_sensitivity
+        if self.camera_controller.handle_mouse_motion(x, y, dx, dy, self.window):
+            return  # Mouse-look handled, skip UI hover effects
 
-            # Update camera rotation
-            self.camera_3d.rotate(yaw_delta=yaw_delta, pitch_delta=pitch_delta)
-
-            # If following a token, update the token rotation to match camera yaw
-            if self.controlled_token_id:
-                self.token_rotation = self.camera_3d.yaw
-
-            # Store current mouse position for next frame
-            self.last_mouse_position = (x, y)
-
-            # Hide cursor during mouse-look for better immersion
-            self.window.set_mouse_visible(False)
-
-            return  # Skip UI hover effects during mouse-look
-        else:
-            # Normal UI hover effects
-            self.ui_manager.handle_mouse_motion(x, y)
-            self.window.set_mouse_visible(True)
+        # Normal UI hover effects
+        self.ui_manager.handle_mouse_motion(x, y)
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
         """
@@ -676,15 +628,12 @@ class GameView(arcade.View):
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
         # Check if initialization is complete
-        if not hasattr(self, "camera_mode"):
+        if not hasattr(self, "camera_controller") or not self.camera_controller:
             return
 
-        if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_mode == "3D":
+        if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_controller.camera_mode == "3D":
             # Activate mouse-look in 3D mode
-            self.mouse_look_active = True
-            self.last_mouse_position = (x, y)
-            self.window.set_mouse_visible(False)
-            logger.debug("Mouse-look activated")
+            self.camera_controller.activate_mouse_look(x, y, self.window)
             return
 
         if button == arcade.MOUSE_BUTTON_LEFT:
@@ -717,28 +666,18 @@ class GameView(arcade.View):
                     return
 
             # No UI clicked, proceed with world interaction
-            if self.camera_mode == "2D":
+            if self.camera_controller.camera_mode == "2D":
                 # 2D picking using camera unproject
-                world_pos = self.camera.unproject((x, y))
+                world_pos = self.camera_controller.screen_to_world_2d(x, y)
                 self._handle_select((world_pos[0], world_pos[1]))
             else:
                 # 3D ray casting
-                ray_origin, ray_direction = self.camera_3d.screen_to_ray(
-                    x, y, self.window.width, self.window.height
-                )
-
-                # Intersect with board plane (z=0)
-                intersection = self.camera_3d.ray_intersect_plane(
-                    ray_origin, ray_direction, plane_z=0.0
-                )
-
-                if intersection:
-                    world_x, world_y = intersection
-                    grid_x, grid_y = self.camera_3d.world_to_grid(world_x, world_y)
-                    logger.debug(f"3D click detected at grid ({grid_x}, {grid_y})")  # Debug
-                    self._handle_select_3d((grid_x, grid_y))
+                grid_pos = self.camera_controller.screen_to_grid_3d(x, y, self.window.width, self.window.height)
+                if grid_pos:
+                    logger.debug(f"3D click detected at grid {grid_pos}")
+                    self._handle_select_3d(grid_pos)
                 else:
-                    logger.debug(f"3D ray casting: no intersection with board plane")  # Debug
+                    logger.debug("3D ray casting: no intersection with board plane")
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int):
         """
@@ -751,14 +690,12 @@ class GameView(arcade.View):
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
         # Check if initialization is complete
-        if not hasattr(self, "camera_mode") or not hasattr(self, "mouse_look_active"):
+        if not hasattr(self, "camera_controller") or not self.camera_controller:
             return
 
-        if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_mode == "3D":
+        if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_controller.camera_mode == "3D":
             # Deactivate mouse-look in 3D mode
-            self.mouse_look_active = False
-            self.window.set_mouse_visible(True)
-            logger.debug("Mouse-look deactivated")
+            self.camera_controller.deactivate_mouse_look(self.window)
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
         """
@@ -771,9 +708,9 @@ class GameView(arcade.View):
             scroll_y: Vertical scroll amount
         """
         if scroll_y > 0:
-            self._zoom_in()
+            self.camera_controller.zoom_in()
         elif scroll_y < 0:
-            self._zoom_out()
+            self.camera_controller.zoom_out()
 
     def on_key_press(self, symbol: int, modifiers: int):
         """
@@ -790,19 +727,19 @@ class GameView(arcade.View):
         
         # Camera panning
         if symbol == arcade.key.W or symbol == arcade.key.UP:
-            self._pan_camera(0, self.camera_speed)
+            self.camera_controller.pan(0, self.camera_controller.camera_speed)
         elif symbol == arcade.key.S or symbol == arcade.key.DOWN:
-            self._pan_camera(0, -self.camera_speed)
+            self.camera_controller.pan(0, -self.camera_controller.camera_speed)
         elif symbol == arcade.key.A or symbol == arcade.key.LEFT:
-            self._pan_camera(-self.camera_speed, 0)
+            self.camera_controller.pan(-self.camera_controller.camera_speed, 0)
         elif symbol == arcade.key.D or symbol == arcade.key.RIGHT:
-            self._pan_camera(self.camera_speed, 0)
+            self.camera_controller.pan(self.camera_controller.camera_speed, 0)
 
         # Zoom
         elif symbol == arcade.key.PLUS or symbol == arcade.key.EQUAL:
-            self._zoom_in()
+            self.camera_controller.zoom_in()
         elif symbol == arcade.key.MINUS:
-            self._zoom_out()
+            self.camera_controller.zoom_out()
 
         # Game controls
         elif symbol == arcade.key.SPACE or symbol == arcade.key.ENTER:
@@ -821,66 +758,31 @@ class GameView(arcade.View):
         elif symbol == arcade.key.V:
             # Check if initialization is complete
             if (
-                not hasattr(self, "camera_mode")
+                not hasattr(self, "camera_controller")
                 or not hasattr(self, "board_3d")
                 or not hasattr(self, "shader_3d")
             ):
                 return
 
             # Toggle between 2D and 3D views (only if 3D rendering is available)
-            if self.camera_mode == "2D":
-                # Trying to enter 3D mode
-                if self.board_3d is None or self.shader_3d is None:
-                    logger.error(
-                        "3D rendering failed to initialize. Cannot switch to 3D mode."
-                    )
-                    return
-                self.camera_mode = "3D"
-                logger.debug(f"Camera mode: {self.camera_mode}")
-                # Don't auto-select a token - let players use TAB to follow if desired
-                logger.info("Press TAB to cycle through and follow your tokens")
-            else:
-                # Exiting 3D mode back to 2D
-                self.camera_mode = "2D"
-                logger.debug(f"Camera mode: {self.camera_mode}")
+            board_3d_available = self.board_3d is not None and self.shader_3d is not None
+            self.camera_controller.toggle_mode(board_3d_available)
 
         elif (
             symbol == arcade.key.TAB
-            and hasattr(self, "camera_mode")
-            and self.camera_mode == "3D"
+            and hasattr(self, "camera_controller")
+            and self.camera_controller.camera_mode == "3D"
         ):
             # Cycle to next token
-            self._cycle_controlled_token()
+            self.camera_controller.cycle_controlled_token(self.game_state)
 
         elif symbol == arcade.key.Q and not (modifiers & arcade.key.MOD_CTRL):
             # Rotate camera left (only in 3D mode, and not Ctrl+Q which is quit)
-            if hasattr(self, "camera_mode") and self.camera_mode == "3D":
-                self.token_rotation -= CAMERA_ROTATION_INCREMENT
-                # Update camera position immediately
-                if self.controlled_token_id:
-                    token = self.game_state.get_token(self.controlled_token_id)
-                    if token and token.is_alive:
-                        self.camera_3d.follow_token(token.position, self.token_rotation)
-                        logger.debug(f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}")
-                    else:
-                        logger.debug(f"Camera rotation: {self.token_rotation}, but no valid token to follow")
-                else:
-                    logger.debug(f"Camera rotation: {self.token_rotation}, but no controlled token selected")
+            self.camera_controller.rotate_camera_left(self.game_state)
 
         elif symbol == arcade.key.E:
             # Rotate camera right (only in 3D mode)
-            if hasattr(self, "camera_mode") and self.camera_mode == "3D":
-                self.token_rotation += CAMERA_ROTATION_INCREMENT
-                # Update camera position immediately
-                if self.controlled_token_id:
-                    token = self.game_state.get_token(self.controlled_token_id)
-                    if token and token.is_alive:
-                        self.camera_3d.follow_token(token.position, self.token_rotation)
-                        logger.debug(f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}")
-                    else:
-                        logger.debug(f"Camera rotation: {self.token_rotation}, but no valid token to follow")
-                else:
-                    logger.debug(f"Camera rotation: {self.token_rotation}, but no controlled token selected")
+            self.camera_controller.rotate_camera_right(self.game_state)
 
         # Quit
         elif symbol == arcade.key.Q and (modifiers & arcade.key.MOD_CTRL):
@@ -897,95 +799,6 @@ class GameView(arcade.View):
         if self.chat_widget and self.chat_widget.input_active:
             if self.chat_widget.on_text(text):
                 return  # Chat widget handled the text
-
-    def _pan_camera(self, dx: float, dy: float):
-        """
-        Pan the camera by the given amount.
-
-        Args:
-            dx: Change in x
-            dy: Change in y
-        """
-        self.camera.position = (
-            self.camera.position[0] + dx,
-            self.camera.position[1] + dy,
-        )
-
-    def _setup_camera_view(self):
-        """Set up camera to show the entire board, accounting for HUD at top."""
-        from shared.constants import BOARD_HEIGHT, BOARD_WIDTH, CELL_SIZE
-
-        # Calculate board dimensions in pixels
-        board_pixel_width = BOARD_WIDTH * CELL_SIZE
-        board_pixel_height = BOARD_HEIGHT * CELL_SIZE
-
-        # Account for HUD at top
-        playable_height = self.window.height - HUD_HEIGHT
-
-        # Calculate zoom to fit board in playable area
-        zoom_x = self.window.width / board_pixel_width
-        zoom_y = playable_height / board_pixel_height
-
-        # Use 100% of fit for better token visibility
-        # Tokens will be ~21px diameter (was 20px at 95%)
-        optimal_zoom = min(zoom_x, zoom_y)
-
-        # Apply zoom
-        self.zoom_level = optimal_zoom
-        self.camera.zoom = self.zoom_level
-
-        # Center camera on board center, shifted down to account for HUD
-        board_center_x = board_pixel_width / 2
-        # Offset camera downward by half the HUD height (in world coordinates)
-        hud_offset_world = (HUD_HEIGHT / 2) / self.zoom_level
-        board_center_y = (board_pixel_height / 2) - hud_offset_world
-        self.camera.position = (board_center_x, board_center_y)
-
-        logger.debug(f"Camera setup: zoom={self.zoom_level:.2f}, position=({board_center_x:.1f}, {board_center_y:.1f}), HUD offset={hud_offset_world:.1f}")
-
-    def _zoom_in(self):
-        """Zoom in the camera."""
-        self.zoom_level = min(2.0, self.zoom_level * 1.1)
-        self.camera.zoom = self.zoom_level
-
-    def _zoom_out(self):
-        """Zoom out the camera."""
-        self.zoom_level = max(0.5, self.zoom_level / 1.1)
-        self.camera.zoom = self.zoom_level
-
-    def _cycle_controlled_token(self):
-        """Cycle to the next alive token of the current player."""
-        current_player = self.game_state.get_current_player()
-        if not current_player:
-            return
-
-        # Get all alive tokens
-        alive_tokens = []
-        for token_id in current_player.token_ids:
-            token = self.game_state.get_token(token_id)
-            if token and token.is_alive:
-                alive_tokens.append(token_id)
-
-        if not alive_tokens:
-            return
-
-        # Find current index
-        try:
-            if self.controlled_token_id is not None:
-                current_index = alive_tokens.index(self.controlled_token_id)
-                next_index = (current_index + 1) % len(alive_tokens)
-            else:
-                next_index = 0
-        except ValueError:
-            next_index = 0
-
-        # Set new controlled token
-        self.controlled_token_id = alive_tokens[next_index]
-        token = self.game_state.get_token(self.controlled_token_id)
-        if token:
-            logger.debug(f"Switched to token {self.controlled_token_id} at {token.position}")
-        else:
-            logger.debug(f"Switched to token {self.controlled_token_id} (token not found)")
 
     def _handle_select(self, world_pos: Tuple[float, float]):
         """

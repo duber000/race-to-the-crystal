@@ -13,12 +13,12 @@ This document tracks identified code smells and refactoring opportunities in the
 ## Critical Issues
 
 ### 🔴 1. God Object - GameView Class
-**Status:** ✅ **IN PROGRESS** (Phases 1-2 of 8 complete)
-**Location:** `client/game_window.py` (1816 lines → 1380 lines after Phases 1-2)
+**Status:** ✅ **IN PROGRESS** (Phases 1-3 of 8 complete)
+**Location:** `client/game_window.py` (1816 lines → 1193 lines after Phases 1-3)
 **Issue:** The `GameView` class handles too many responsibilities:
 - Rendering (2D and 3D)
 - Input handling (mouse, keyboard)
-- Camera management (2D and 3D cameras)
+- ~~Camera management (2D and 3D cameras)~~ ✅ **EXTRACTED**
 - UI management
 - ~~Music/audio management~~ ✅ **EXTRACTED**
 - Game state updates
@@ -42,19 +42,31 @@ This document tracks identified code smells and refactoring opportunities in the
   - Fixed duplicate corner positioning logic using shared corner_layout config
   - File: `client/deployment_menu_controller.py` (399 lines)
 
+- ✅ **Phase 3 Complete:** Extracted `CameraController` (187 lines removed)
+  - 2D camera system (orthographic top-down view)
+  - 3D camera system (first-person perspective)
+  - Camera mode switching between 2D and 3D
+  - Panning and zooming in 2D mode
+  - Token following in 3D mode
+  - Mouse-look rotation (right-click drag)
+  - Q/E key camera rotation around token
+  - Screen-to-world coordinate conversion (2D and 3D ray casting)
+  - Window resize handling
+  - File: `client/camera_controller.py` (397 lines)
+
 **Remaining Phases:**
-- Phase 3: Extract `CameraController` (camera management)
 - Phase 4: Extract `Renderer2D` (2D rendering)
 - Phase 5: Extract `Renderer3D` (3D rendering)
 - Phase 6: Extract `GameActionHandler` (game actions)
 - Phase 7: Extract `InputHandler` (input coordination)
 - Phase 8: Final cleanup and testing
 
-**Total Reduction:** 436 lines removed (1816 → 1380 lines, 24% reduction)
+**Total Reduction:** 623 lines removed (1816 → 1193 lines, 34% reduction)
 
 **Commits:**
 - 984b254: Refactor: Extract AudioManager from GameView (Phase 1/8)
 - 517f13b: Refactor: Extract DeploymentMenuController from GameView (Phase 2/8)
+- (Phase 3 commit pending)
 
 ---
 
