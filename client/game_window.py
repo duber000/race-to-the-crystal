@@ -13,6 +13,7 @@ import arcade
 from client.audio_manager import AudioManager
 from client.camera_controller import CameraController
 from client.deployment_menu_controller import DeploymentMenuController
+from client.game_action_handler import GameActionHandler
 from client.renderer_2d import Renderer2D
 from client.renderer_3d import Renderer3D
 from client.ui.arcade_ui import UIManager
@@ -145,6 +146,16 @@ class GameView(arcade.View):
         self.camera_controller = CameraController(self.window.width, self.window.height, self.start_in_3d)
         self.ui_manager = UIManager(self.window.width, self.window.height)
         self.deployment_controller = DeploymentMenuController(self.window.width, self.window.height)
+
+        # Initialize action handler (needs renderer and ui_manager references)
+        self.action_handler = GameActionHandler(
+            self.game_state,
+            self.movement_system,
+            self.renderer_2d,
+            self.renderer_3d,
+            self.ui_manager,
+            self.audio_manager,
+        )
 
         # Initialize chat widget only for network games
         if self.is_network_game:
@@ -686,31 +697,20 @@ class GameView(arcade.View):
             elif self.deployment_controller.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
                 # Second priority: deploy selected token type if one is selected
                 if self.deployment_controller.is_valid_deployment_position((grid_x, grid_y), current_player.id, self.game_state):
-                    deployed_token = self.game_state.deploy_token(
-                        current_player.id, self.deployment_controller.selected_deploy_health, (grid_x, grid_y)
+                    deployed_token = self.action_handler.execute_deployment(
+                        current_player.id,
+                        self.deployment_controller.selected_deploy_health,
+                        (grid_x, grid_y),
+                        self.window.ctx,
                     )
 
                     if deployed_token:
-                        logger.info(f"Deployed {self.deployment_controller.selected_deploy_health}hp token to {(grid_x, grid_y)}")
-
-                        # Create sprite for the deployed token
-                        from client.sprites.token_sprite import TokenSprite
-
-                        player_color = PLAYER_COLORS[current_player.color.value]
-                        sprite = TokenSprite(deployed_token, player_color)
-                        self.renderer_2d.token_sprites.append(sprite)
-
                         # Clear selection
                         self.deployment_controller.selected_deploy_health = None
 
                         # Transition to ACTION phase after deploying
                         self.turn_phase = TurnPhase.ACTION
                         logger.info("Deployment complete - you can attack or end turn")
-
-                        # Update UI to reflect state changes
-                        self.ui_manager.rebuild_visuals(self.game_state)
-                    else:
-                        logger.warning(f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid")
                 else:
                     logger.warning("Cannot deploy outside your corner area")
                     self.deployment_controller.selected_deploy_health = None
@@ -791,36 +791,20 @@ class GameView(arcade.View):
             elif self.deployment_controller.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
                 # Second priority: deploy selected token type if one is selected
                 if self.deployment_controller.is_valid_deployment_position((grid_x, grid_y), current_player.id, self.game_state):
-                    deployed_token = self.game_state.deploy_token(
-                        current_player.id, self.deployment_controller.selected_deploy_health, (grid_x, grid_y)
+                    deployed_token = self.action_handler.execute_deployment(
+                        current_player.id,
+                        self.deployment_controller.selected_deploy_health,
+                        (grid_x, grid_y),
+                        self.window.ctx,
                     )
 
                     if deployed_token:
-                        logger.info(f"Deployed {self.deployment_controller.selected_deploy_health}hp token to {(grid_x, grid_y)}")
-
-                        # Create sprite for the deployed token
-                        from client.sprites.token_sprite import TokenSprite
-
-                        player_color = PLAYER_COLORS[current_player.color.value]
-                        sprite = TokenSprite(deployed_token, player_color)
-                        self.renderer_2d.token_sprites.append(sprite)
-
-                        # Create 3D token
-                        self.renderer_3d.add_token(
-                            deployed_token, player_color, self.window.ctx
-                        )
-
                         # Clear selection
                         self.deployment_controller.selected_deploy_health = None
 
                         # Transition to ACTION phase after deploying
                         self.turn_phase = TurnPhase.ACTION
                         logger.info("Deployment complete - you can attack or end turn")
-
-                        # Update UI to reflect state changes
-                        self.ui_manager.rebuild_visuals(self.game_state)
-                    else:
-                        logger.warning(f"Cannot deploy to {(grid_x, grid_y)} - position occupied or invalid")
                 else:
                     logger.warning("Cannot deploy outside your corner area")
                     self.deployment_controller.selected_deploy_health = None
@@ -835,71 +819,22 @@ class GameView(arcade.View):
         if self.selected_token_id is None:
             return
 
-        token = self.game_state.get_token(self.selected_token_id)
-        if not token:
-            return
-
-        old_pos = token.position
-
-        # Move the token
-        success = self.game_state.move_token(self.selected_token_id, cell)
+        # Execute move through action handler
+        success, final_position = self.action_handler.execute_move(
+            self.selected_token_id, cell, self.mystery_animations, self.window.ctx
+        )
 
         if success:
-            logger.debug(f"Moved token {self.selected_token_id} from {old_pos} to {cell}")
-
-            # Check for mystery square effect
-            board_cell = self.game_state.board.get_cell_at(cell)
-            final_position = cell
-
-            if board_cell and board_cell.cell_type == CellType.MYSTERY:
-                # Start coin flip animation for this mystery square
-                self.mystery_animations[cell] = 0.0
-                logger.info(f"🎲 Coin flip started at {cell}!")
-
-                # Get player's index for potential teleport to deployment area
-                current_player = self.game_state.get_current_player()
-                if current_player:
-                    player_index = current_player.color.value
-
-                    # Trigger the mystery event (50/50 heal or teleport)
-                    mystery_result = MysterySquareSystem.trigger_mystery_event(
-                        token, self.game_state.board, player_index
-                    )
-
-                    if mystery_result.effect.name == "HEAL":
-                        logger.info(f"🎲 HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!")
-                    else:
-                        # Token was teleported - update board occupancy
-                        self.game_state.board.clear_occupant(cell, token.id)
-                        self.game_state.board.set_occupant(
-                            mystery_result.new_position, token.id
-                        )
-                        final_position = mystery_result.new_position
-                        logger.info(f"🎲 TAILS! Token teleported back to deployment area {final_position}!")
-
-            # Update sprite position and health display
-            for sprite in self.renderer_2d.token_sprites:
-                if (
-                    isinstance(sprite, TokenSprite)
-                    and sprite.token.id == self.selected_token_id
-                ):
-                    sprite.update_position(final_position[0], final_position[1])
-                    sprite.update_health()  # Refresh health display (for mystery heal)
-                    break
-
             # Clear selection
             self.selected_token_id = None
             self.valid_moves = []
             self.renderer_2d.update_selection_visuals(
-            self.selected_token_id, self.valid_moves, self.game_state
-        )
+                self.selected_token_id, self.valid_moves, self.game_state
+            )
 
             # Can't attack after moving - go directly to end turn phase
             self.turn_phase = TurnPhase.END_TURN
             logger.info("Turn complete - press SPACE to end turn")
-
-            # Update UI to reflect state changes
-            self.ui_manager.rebuild_visuals(self.game_state)
 
     def _try_attack(self, target_token):
         """
@@ -911,44 +846,19 @@ class GameView(arcade.View):
         if not self.selected_token_id:
             return
 
-        attacker = self.game_state.get_token(self.selected_token_id)
-        if not attacker:
-            return
-
-        # Check if adjacent
-        if not self.movement_system.is_adjacent(
-            attacker.position, target_token.position
-        ):
-            logger.warning("Target is not adjacent")
-            return
-
-        # Perform attack
-        result = CombatSystem.resolve_combat(attacker, target_token)
-
-        logger.debug(f"Token {attacker.id} attacked token {target_token.id}: {result}")
-
-        # Update token sprite health or remove if killed
-        for sprite in self.renderer_2d.token_sprites:
-            if isinstance(sprite, TokenSprite) and sprite.token.id == target_token.id:
-                if target_token.is_alive:
-                    sprite.update_health()
-                else:
-                    self.renderer_2d.token_sprites.remove(sprite)
-                    self.game_state.board.clear_occupant(
-                        target_token.position, target_token.id
-                    )
-                break
-
-        # Clear selection and move to end turn phase
-        self.selected_token_id = None
-        self.valid_moves = []
-        self.renderer_2d.update_selection_visuals(
-            self.selected_token_id, self.valid_moves, self.game_state
+        # Execute attack through action handler
+        success = self.action_handler.execute_attack(
+            self.selected_token_id, target_token.id
         )
-        self.turn_phase = TurnPhase.END_TURN
 
-        # Update UI to reflect state changes
-        self.ui_manager.rebuild_visuals(self.game_state)
+        if success:
+            # Clear selection and move to end turn phase
+            self.selected_token_id = None
+            self.valid_moves = []
+            self.renderer_2d.update_selection_visuals(
+                self.selected_token_id, self.valid_moves, self.game_state
+            )
+            self.turn_phase = TurnPhase.END_TURN
 
     def _handle_cancel(self):
         """Handle cancel action."""
@@ -965,40 +875,12 @@ class GameView(arcade.View):
 
     def _handle_end_turn(self):
         """Handle end turn action."""
-        current_player = self.game_state.get_current_player()
-        if not current_player:
-            return
-
-        logger.info(f"Ending turn for {current_player.name}")
-
         # Clear selection
         self.selected_token_id = None
         self.valid_moves = []
 
-        # Advance to next player (this updates generators and checks win condition)
-        self.game_state.end_turn()
+        # Execute end turn through action handler
+        self.action_handler.execute_end_turn(self.mystery_animations)
 
         # Reset to movement phase
         self.turn_phase = TurnPhase.MOVEMENT
-        self.game_state.turn_phase = TurnPhase.MOVEMENT
-
-        next_player = self.game_state.get_current_player()
-        if next_player:
-            logger.info(f"Turn {self.game_state.turn_number}: {next_player.name}'s turn")
-
-        # Rebuild board shapes to update generator lines (when generators are captured)
-        self.renderer_2d.create_board_sprites(
-            self.game_state.board,
-            self.game_state.generators,
-            self.game_state.crystal,
-            self.mystery_animations,
-        )
-
-        # Update 3D board generator lines
-        self.renderer_3d.update_generator_lines()
-
-        # Update UI to reflect new turn
-        self.ui_manager.rebuild_visuals(self.game_state)
-
-        # Update generator hums based on captured state
-        self.audio_manager.update_generator_hums(self.game_state.generators)

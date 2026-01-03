@@ -13,15 +13,15 @@ This document tracks identified code smells and refactoring opportunities in the
 ## Critical Issues
 
 ### 🔴 1. God Object - GameView Class
-**Status:** ✅ **IN PROGRESS** (Phases 1-5 of 8 complete)
-**Location:** `client/game_window.py` (1816 lines → 1004 lines after Phases 1-5)
+**Status:** ✅ **IN PROGRESS** (Phases 1-6 of 8 complete)
+**Location:** `client/game_window.py` (1816 lines → 886 lines after Phases 1-6)
 **Issue:** The `GameView` class handles too many responsibilities:
 - ~~Rendering (2D and 3D)~~ ✅ **EXTRACTED**
 - Input handling (mouse, keyboard)
 - ~~Camera management (2D and 3D cameras)~~ ✅ **EXTRACTED**
 - UI management
 - ~~Music/audio management~~ ✅ **EXTRACTED**
-- Game state updates
+- ~~Game state updates~~ ✅ **EXTRACTED**
 - Network communication
 - ~~Deployment menu logic~~ ✅ **EXTRACTED**
 - Token selection logic
@@ -71,19 +71,27 @@ This document tracks identified code smells and refactoring opportunities in the
   - Mystery square animation updates
   - File: `client/renderer_3d.py` (191 lines)
 
+- ✅ **Phase 6 Complete:** Extracted `GameActionHandler` (118 lines removed)
+  - Move execution (including mystery square effects)
+  - Attack resolution (including sprite/model updates)
+  - Token deployment (2D and 3D creation)
+  - Turn ending (generator/crystal updates, audio updates)
+  - Post-action UI and rendering updates
+  - File: `client/game_action_handler.py` (267 lines)
+
 **Remaining Phases:**
-- Phase 6: Extract `GameActionHandler` (game actions)
 - Phase 7: Extract `InputHandler` (input coordination)
 - Phase 8: Final cleanup and testing
 
-**Total Reduction:** 812 lines removed (1816 → 1004 lines, 45% reduction)
+**Total Reduction:** 930 lines removed (1816 → 886 lines, 51% reduction)
 
 **Commits:**
 - 984b254: Refactor: Extract AudioManager from GameView (Phase 1/8)
 - 517f13b: Refactor: Extract DeploymentMenuController from GameView (Phase 2/8)
 - 997f10a: Refactor: Extract CameraController from GameView (Phase 3/8)
 - 30e746f: Refactor: Extract Renderer2D from GameView (Phase 4/8)
-- (Phase 5 commit pending)
+- b07a8ac: Refactor: Extract Renderer3D from GameView (Phase 5/8)
+- (Phase 6 commit pending)
 
 ---
 
