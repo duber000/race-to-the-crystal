@@ -314,6 +314,12 @@ class NetworkGameView(arcade.View):
                 self.game_view.setup()
                 logger.info("Game view setup complete")
 
+                # Sync the GameView's local turn_phase with the server's game_state.turn_phase
+                # This is critical because GameView maintains its own turn_phase variable
+                # that gets out of sync when actions are intercepted and sent to server
+                self.game_view.turn_phase = self.game_state.turn_phase
+                logger.info(f"Synced turn_phase to {self.game_state.turn_phase.name}")
+
                 # Re-hook the game state methods since we just replaced the game state object
                 # Note: We only need to re-hook game_state methods, not game_view methods
                 # since the game_view instance itself hasn't changed
