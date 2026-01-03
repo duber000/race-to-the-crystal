@@ -1195,6 +1195,21 @@ class GameView(arcade.View):
                 else:
                     logger.debug(f"Camera rotation: {self.token_rotation}, but no controlled token selected")
 
+        elif symbol == arcade.key.E:
+            # Rotate camera right (only in 3D mode)
+            if hasattr(self, "camera_mode") and self.camera_mode == "3D":
+                self.token_rotation += CAMERA_ROTATION_INCREMENT
+                # Update camera position immediately
+                if self.controlled_token_id:
+                    token = self.game_state.get_token(self.controlled_token_id)
+                    if token and token.is_alive:
+                        self.camera_3d.follow_token(token.position, self.token_rotation)
+                        logger.debug(f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}")
+                    else:
+                        logger.debug(f"Camera rotation: {self.token_rotation}, but no valid token to follow")
+                else:
+                    logger.debug(f"Camera rotation: {self.token_rotation}, but no controlled token selected")
+
         # Quit
         elif symbol == arcade.key.Q and (modifiers & arcade.key.MOD_CTRL):
             self.window.close()
