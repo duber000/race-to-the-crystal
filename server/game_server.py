@@ -746,11 +746,17 @@ class GameServer:
 
     async def _broadcast_game_state(self, game_session) -> None:
         """Broadcast updated game state to all players in a game."""
+        logger.info(f"Broadcasting game state to {len(game_session.network_to_game_id)} players in game {game_session.game_id}")
+        logger.info(f"  Game state before broadcast - current_turn: {game_session.game_state.current_turn_player_id}, turn_phase: {game_session.game_state.turn_phase.name}, turn_number: {game_session.game_state.turn_number}")
         for net_player_id in game_session.network_to_game_id.keys():
             state_dict = game_session.get_game_state_for_player(net_player_id)
+            if state_dict:
+                logger.info(f"  State dict for {net_player_id[:8]}: turn_phase={state_dict.get('turn_phase')}")
 
             state_msg = self.protocol.create_full_state_message(state_dict, net_player_id)
+            logger.info(f"  -> Sending FULL_STATE to player {net_player_id[:8]}...")
             await self._send_to_player(net_player_id, state_msg)
+            logger.info(f"  -> FULL_STATE sent to player {net_player_id[:8]}")
 
     async def _send_full_state(self, player_id: str, lobby: GameLobby) -> None:
         """
@@ -831,9 +837,17 @@ class GameServer:
         """Send a message to a specific player."""
         connection = self.player_connections.get(player_id)
         if not connection:
+            logger.warning(f"Cannot send {message.type.value} to {player_id[:8]}: No connection found")
             return False
 
-        return await connection.send_message(message)
+        try:
+            result = await connection.send_message(message)
+            if not result:
+                logger.warning(f"Failed to send {message.type.value} to {player_id[:8]}")
+            return result
+        except Exception as e:
+            logger.error(f"Error sending {message.type.value} to {player_id[:8]}: {e}", exc_info=True)
+            return False
 
     async def _send_error(self, player_id: str, error_msg: str) -> None:
         """Send an error message to a player."""

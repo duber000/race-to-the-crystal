@@ -238,8 +238,10 @@ class NetworkClient:
 
     async def _message_loop(self) -> None:
         """Internal loop for receiving messages from server."""
+        logger.info("Message loop started")
         try:
             while self.connected and self.connection:
+                logger.debug("Waiting for message from server...")
                 message = await self.connection.receive_message()
 
                 if message is None:
@@ -251,6 +253,7 @@ class NetworkClient:
                         await self._attempt_auto_reconnect()
                     break
 
+                logger.debug(f"Received message: {message.type.value}")
                 # Handle message
                 await self._handle_message(message)
 
@@ -261,6 +264,7 @@ class NetworkClient:
             if self.auto_reconnect and self.game_id:
                 await self._attempt_auto_reconnect()
         finally:
+            logger.info(f"Message loop exited. connected={self.connected}")
             # Only fully disconnect if not reconnected
             if not self.connected:
                 await self.disconnect()

@@ -16,6 +16,7 @@ from network.protocol import NetworkMessage
 from game.game_state import GameState
 from game.ai_observation import AIObserver
 from game.ai_actions import MoveAction, AttackAction, DeployAction, EndTurnAction
+from shared.enums import GamePhase
 
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,8 @@ class AIPlayer(NetworkClient):
         Args:
             message: Received message
         """
+        logger.info(f"AI handling message: {message.type.value}")
+
         if message.type == MessageType.FULL_STATE:
             # Game state update
             await self._handle_state_update(message)
@@ -100,10 +103,12 @@ class AIPlayer(NetworkClient):
         Args:
             message: FULL_STATE message
         """
+        logger.info("Received FULL_STATE message")
         data = message.data or {}
         state_dict = data.get("game_state")
 
         if not state_dict:
+            logger.warning("No game_state in FULL_STATE message")
             return
 
         # Deserialize game state
@@ -113,6 +118,12 @@ class AIPlayer(NetworkClient):
 
             # Get perspective player ID
             perspective_player_id = state_dict.get("perspective_player_id")
+            logger.info(f"State update - perspective_player: {perspective_player_id}, current_turn: {game_state.current_turn_player_id}, game_phase: {game_state.phase.name}, turn_phase: {game_state.turn_phase.name}")
+
+            # Check if game is active (handle case where AI joins game already in progress)
+            if game_state.phase == GamePhase.PLAYING:
+                logger.info("Game is PLAYING - setting game_active=True")
+                self.game_active = True
 
             # Log situation report (for debugging)
             if logger.isEnabledFor(logging.DEBUG):
@@ -121,17 +132,35 @@ class AIPlayer(NetworkClient):
 
             # Check if it's our turn
             self.my_turn = (game_state.current_turn_player_id == perspective_player_id)
+            logger.info(f"my_turn={self.my_turn}, game_active={self.game_active}")
 
             if self.my_turn and self.game_active:
                 # Take our turn after a small delay (to simulate thinking)
-                await asyncio.sleep(0.5)
-                await self._take_turn()
+                # Use create_task to avoid blocking the message loop
+                logger.info("It's our turn! Scheduling turn action...")
+                asyncio.create_task(self._take_turn_async())
+            else:
+                if not self.my_turn:
+                    logger.info("Not our turn yet")
+                if not self.game_active:
+                    logger.info("Game not active yet")
 
         except Exception as e:
             logger.error(f"Error processing game state: {e}", exc_info=True)
 
+    async def _take_turn_async(self) -> None:
+        """Async wrapper for taking turn with delay (runs in background)."""
+        try:
+            # Small delay to simulate thinking
+            await asyncio.sleep(0.5)
+            await self._take_turn()
+        except Exception as e:
+            logger.error(f"Error in async turn execution: {e}", exc_info=True)
+
     async def _take_turn(self) -> None:
         """Execute AI turn by choosing and sending an action."""
+        logger.info("_take_turn() called")
+
         if not self.current_game_state:
             logger.warning("No game state available for turn")
             return
@@ -142,6 +171,8 @@ class AIPlayer(NetworkClient):
             game_state = GameState.from_dict(state_dict)
             perspective_player_id = state_dict.get("perspective_player_id")
 
+            logger.info(f"Taking turn for player_id: {perspective_player_id}, current_turn: {game_state.current_turn_player_id}, phase: {game_state.turn_phase.name}")
+
             # Get available actions
             actions_data = AIObserver.list_available_actions(
                 game_state,
@@ -149,9 +180,10 @@ class AIPlayer(NetworkClient):
             )
 
             actions = actions_data.get("actions", [])
+            logger.info(f"Found {len(actions)} available actions")
 
             if not actions:
-                logger.warning("No available actions")
+                logger.warning(f"No available actions. Phase: {actions_data.get('phase')}")
                 return
 
             # Choose an action based on strategy
@@ -167,6 +199,8 @@ class AIPlayer(NetworkClient):
 
             if not success:
                 logger.error("Failed to send action")
+            else:
+                logger.info("Action sent successfully")
 
         except Exception as e:
             logger.error(f"Error taking turn: {e}", exc_info=True)
