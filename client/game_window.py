@@ -9,17 +9,12 @@ import math
 from typing import List, Optional, Tuple
 
 import arcade
-from arcade.shape_list import (
-    ShapeElementList,
-    create_line,
-)
 
 from client.audio_manager import AudioManager
 from client.board_3d import Board3D
 from client.camera_controller import CameraController
 from client.deployment_menu_controller import DeploymentMenuController
-from client.sprites.board_sprite import create_board_shapes
-from client.sprites.token_sprite import TokenSprite
+from client.renderer_2d import Renderer2D
 from client.token_3d import Token3D
 from client.ui.arcade_ui import UIManager
 from client.ui.chat_widget import ChatWidget
@@ -92,11 +87,11 @@ class GameView(arcade.View):
         # Camera controller (will be initialized in on_show_view)
         self.camera_controller = None
 
+        # Renderer controllers
+        self.renderer_2d = Renderer2D()
+
         # Visual elements
-        self.board_shapes = None  # ShapeElementList for board
-        self.token_sprites = arcade.SpriteList()
         self.ui_sprites = arcade.SpriteList()
-        self.selection_shapes = ShapeElementList()  # For selection highlights
 
         # Selection state
         self.selected_token_id: Optional[int] = None
@@ -199,9 +194,16 @@ class GameView(arcade.View):
         """Set up the window after initialization."""
         logger.debug(f"Setup called - Game state has {len(self.game_state.players)} players, {len(self.game_state.tokens)} tokens")
 
-        self._create_board_sprites()
-        self._create_token_sprites()
-        logger.debug(f"Created {len(self.token_sprites)} token sprites")
+        # Create 2D rendering elements
+        self.renderer_2d.create_board_sprites(
+            self.game_state.board,
+            self.game_state.generators,
+            self.game_state.crystal,
+            self.mystery_animations,
+        )
+        self.renderer_2d.create_token_sprites(self.game_state)
+        logger.debug(f"Created {len(self.renderer_2d.token_sprites)} token sprites")
+
         self._create_ui_sprites()
         self._create_3d_rendering()
 
@@ -217,32 +219,6 @@ class GameView(arcade.View):
 
         logger.info("Window setup complete")
 
-    def _create_board_sprites(self):
-        """Create shapes for the board (grid, generators, crystal, mystery squares)."""
-        # Get crystal position
-        crystal = self.game_state.crystal
-        crystal_pos = crystal.position if crystal else None
-
-        # Pass generators, crystal position, and mystery animations
-        self.board_shapes = create_board_shapes(
-            self.game_state.board,
-            generators=self.game_state.generators,
-            crystal_pos=crystal_pos,
-            mystery_animations=self.mystery_animations,
-        )
-
-    def _create_token_sprites(self):
-        """Create sprites for all tokens."""
-        self.token_sprites.clear()
-
-        for player in self.game_state.players.values():
-            player_color = PLAYER_COLORS[player.color.value]
-
-            for token_id in player.token_ids:
-                token = self.game_state.get_token(token_id)
-                if token and token.is_alive and token.is_deployed:
-                    sprite = TokenSprite(token, player_color)
-                    self.token_sprites.append(sprite)
 
     def _create_ui_sprites(self):
         """Create UI sprites (HUD, buttons, etc.)."""
@@ -365,109 +341,6 @@ class GameView(arcade.View):
         if current_player:
             self.deployment_controller.draw_indicator(current_player)
 
-    def _update_selection_visuals(self):
-        """Update visual feedback for selection and valid moves with vector glow."""
-        self.selection_shapes = ShapeElementList()
-
-        if self.selected_token_id:
-            # Find selected token position
-            selected_token = self.game_state.get_token(self.selected_token_id)
-            if selected_token:
-                # Draw pulsing selection highlight with glow
-                x = selected_token.position[0] * CELL_SIZE + CELL_SIZE // 2
-                y = selected_token.position[1] * CELL_SIZE + CELL_SIZE // 2
-                size = CELL_SIZE * 0.8
-                half = size / 2
-
-                # Glow layers for selection
-                for i in range(6, 0, -1):
-                    alpha = int(180 / (i + 1))
-                    glow_size = size + (i * 4)
-                    glow_half = glow_size / 2
-                    points = [
-                        (x - glow_half, y - glow_half),
-                        (x + glow_half, y - glow_half),
-                        (x + glow_half, y + glow_half),
-                        (x - glow_half, y + glow_half),
-                        (x - glow_half, y - glow_half),
-                    ]
-                    for j in range(len(points) - 1):
-                        line = create_line(
-                            points[j][0],
-                            points[j][1],
-                            points[j + 1][0],
-                            points[j + 1][1],
-                            (255, 255, 0, alpha),
-                            max(1, 4 - i // 2),
-                        )
-                        self.selection_shapes.append(line)
-
-                # Bright main selection square
-                points = [
-                    (x - half, y - half),
-                    (x + half, y - half),
-                    (x + half, y + half),
-                    (x - half, y + half),
-                    (x - half, y - half),
-                ]
-                for j in range(len(points) - 1):
-                    line = create_line(
-                        points[j][0],
-                        points[j][1],
-                        points[j + 1][0],
-                        points[j + 1][1],
-                        (255, 255, 100, 255),
-                        4,
-                    )
-                    self.selection_shapes.append(line)
-
-        # Draw valid move indicators as glowing circles
-        for move in self.valid_moves:
-            x = move[0] * CELL_SIZE + CELL_SIZE // 2
-            y = move[1] * CELL_SIZE + CELL_SIZE // 2
-            radius = CELL_SIZE * 0.3
-            segments = CIRCLE_SEGMENTS
-
-            # Glow layers
-            for i in range(4, 0, -1):
-                alpha = int(120 / (i + 1))
-                glow_radius = radius + (i * 3)
-                points = []
-                for seg in range(segments + 1):
-                    angle = (seg / segments) * 2 * math.pi
-                    px = x + glow_radius * math.cos(angle)
-                    py = y + glow_radius * math.sin(angle)
-                    points.append((px, py))
-
-                for j in range(len(points) - 1):
-                    line = create_line(
-                        points[j][0],
-                        points[j][1],
-                        points[j + 1][0],
-                        points[j + 1][1],
-                        (0, 255, 0, alpha),
-                        max(1, 3 - i // 2),
-                    )
-                    self.selection_shapes.append(line)
-
-            # Bright main circle
-            points = []
-            for seg in range(segments + 1):
-                angle = (seg / segments) * 2 * math.pi
-                px = x + radius * math.cos(angle)
-                py = y + radius * math.sin(angle)
-                points.append((px, py))
-
-            for j in range(len(points) - 1):
-                line = create_line(
-                    points[j][0],
-                    points[j][1],
-                    points[j + 1][0],
-                    points[j + 1][1],
-                    (100, 255, 100, 255),
-                    3,
-                )
-                self.selection_shapes.append(line)
 
     def on_draw(self):
         """
@@ -484,11 +357,7 @@ class GameView(arcade.View):
 
         if self.camera_controller.camera_mode == "2D":
             # 2D top-down rendering
-            with self.camera_controller.camera_2d.activate():
-                if self.board_shapes:
-                    self.board_shapes.draw()
-                self.selection_shapes.draw()
-                self.token_sprites.draw()
+            self.renderer_2d.draw(self.camera_controller.camera_2d)
         else:
             # 3D first-person rendering - enable depth test and blending
             self.window.ctx.enable(self.window.ctx.DEPTH_TEST)
@@ -539,7 +408,7 @@ class GameView(arcade.View):
             delta_time: Time since last update in seconds
         """
         # Update animations
-        self.token_sprites.update()
+        self.renderer_2d.update(delta_time)
         self.ui_sprites.update()
 
         # Update chat widget
@@ -567,7 +436,12 @@ class GameView(arcade.View):
 
         # Rebuild board shapes every frame to animate generator lines and mystery squares
         if self.camera_controller.camera_mode == "2D":
-            self._create_board_sprites()
+            self.renderer_2d.create_board_sprites(
+                self.game_state.board,
+                self.game_state.generators,
+                self.game_state.crystal,
+                self.mystery_animations,
+            )
 
     def on_resize(self, width: int, height: int):
         """
@@ -662,7 +536,9 @@ class GameView(arcade.View):
                     # Clear any existing token selection to prevent conflicts
                     self.selected_token_id = None
                     self.valid_moves = []
-                    self._update_selection_visuals()
+                    self.renderer_2d.update_selection_visuals(
+                        self.selected_token_id, self.valid_moves, self.game_state
+                    )
                     return
 
             # No UI clicked, proceed with world interaction
@@ -865,7 +741,9 @@ class GameView(arcade.View):
                             self.game_state.board,
                             tokens_dict=self.game_state.tokens,
                         )
-                        self._update_selection_visuals()
+                        self.renderer_2d.update_selection_visuals(
+                        self.selected_token_id, self.valid_moves, self.game_state
+                    )
                         logger.debug(f"Selected token {clicked_token.id} at {clicked_token.position}")
                         logger.debug(f"Valid moves: {len(self.valid_moves)}")
             else:
@@ -895,7 +773,7 @@ class GameView(arcade.View):
 
                         player_color = PLAYER_COLORS[current_player.color.value]
                         sprite = TokenSprite(deployed_token, player_color)
-                        self.token_sprites.append(sprite)
+                        self.renderer_2d.token_sprites.append(sprite)
 
                         # Clear selection
                         self.deployment_controller.selected_deploy_health = None
@@ -968,7 +846,9 @@ class GameView(arcade.View):
                             self.game_state.board,
                             tokens_dict=self.game_state.tokens,
                         )
-                        self._update_selection_visuals()
+                        self.renderer_2d.update_selection_visuals(
+                        self.selected_token_id, self.valid_moves, self.game_state
+                    )
                         logger.debug(f"Selected token {clicked_token.id} at {clicked_token.position}")
                         logger.debug(f"Valid moves: {len(self.valid_moves)}")
             else:
@@ -998,7 +878,7 @@ class GameView(arcade.View):
 
                         player_color = PLAYER_COLORS[current_player.color.value]
                         sprite = TokenSprite(deployed_token, player_color)
-                        self.token_sprites.append(sprite)
+                        self.renderer_2d.token_sprites.append(sprite)
 
                         # Create 3D token
                         try:
@@ -1077,7 +957,7 @@ class GameView(arcade.View):
                         logger.info(f"🎲 TAILS! Token teleported back to deployment area {final_position}!")
 
             # Update sprite position and health display
-            for sprite in self.token_sprites:
+            for sprite in self.renderer_2d.token_sprites:
                 if (
                     isinstance(sprite, TokenSprite)
                     and sprite.token.id == self.selected_token_id
@@ -1089,7 +969,9 @@ class GameView(arcade.View):
             # Clear selection
             self.selected_token_id = None
             self.valid_moves = []
-            self._update_selection_visuals()
+            self.renderer_2d.update_selection_visuals(
+            self.selected_token_id, self.valid_moves, self.game_state
+        )
 
             # Can't attack after moving - go directly to end turn phase
             self.turn_phase = TurnPhase.END_TURN
@@ -1125,12 +1007,12 @@ class GameView(arcade.View):
         logger.debug(f"Token {attacker.id} attacked token {target_token.id}: {result}")
 
         # Update token sprite health or remove if killed
-        for sprite in self.token_sprites:
+        for sprite in self.renderer_2d.token_sprites:
             if isinstance(sprite, TokenSprite) and sprite.token.id == target_token.id:
                 if target_token.is_alive:
                     sprite.update_health()
                 else:
-                    self.token_sprites.remove(sprite)
+                    self.renderer_2d.token_sprites.remove(sprite)
                     self.game_state.board.clear_occupant(
                         target_token.position, target_token.id
                     )
@@ -1139,7 +1021,9 @@ class GameView(arcade.View):
         # Clear selection and move to end turn phase
         self.selected_token_id = None
         self.valid_moves = []
-        self._update_selection_visuals()
+        self.renderer_2d.update_selection_visuals(
+            self.selected_token_id, self.valid_moves, self.game_state
+        )
         self.turn_phase = TurnPhase.END_TURN
 
         # Update UI to reflect state changes
@@ -1151,7 +1035,9 @@ class GameView(arcade.View):
             logger.debug("Cancelled token selection")
             self.selected_token_id = None
             self.valid_moves = []
-            self._update_selection_visuals()
+            self.renderer_2d.update_selection_visuals(
+            self.selected_token_id, self.valid_moves, self.game_state
+        )
         else:
             # Let deployment controller handle its own cancel logic
             self.deployment_controller.cancel_selection()
@@ -1180,7 +1066,12 @@ class GameView(arcade.View):
             logger.info(f"Turn {self.game_state.turn_number}: {next_player.name}'s turn")
 
         # Rebuild board shapes to update generator lines (when generators are captured)
-        self._create_board_sprites()
+        self.renderer_2d.create_board_sprites(
+            self.game_state.board,
+            self.game_state.generators,
+            self.game_state.crystal,
+            self.mystery_animations,
+        )
 
         # Update 3D board generator lines if in 3D mode
         if self.board_3d:

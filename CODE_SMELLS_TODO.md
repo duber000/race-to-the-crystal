@@ -13,10 +13,10 @@ This document tracks identified code smells and refactoring opportunities in the
 ## Critical Issues
 
 ### 🔴 1. God Object - GameView Class
-**Status:** ✅ **IN PROGRESS** (Phases 1-3 of 8 complete)
-**Location:** `client/game_window.py` (1816 lines → 1193 lines after Phases 1-3)
+**Status:** ✅ **IN PROGRESS** (Phases 1-4 of 8 complete)
+**Location:** `client/game_window.py` (1816 lines → 1084 lines after Phases 1-4)
 **Issue:** The `GameView` class handles too many responsibilities:
-- Rendering (2D and 3D)
+- ~~Rendering (2D and 3D)~~ ✅ **2D EXTRACTED**
 - Input handling (mouse, keyboard)
 - ~~Camera management (2D and 3D cameras)~~ ✅ **EXTRACTED**
 - UI management
@@ -54,19 +54,27 @@ This document tracks identified code smells and refactoring opportunities in the
   - Window resize handling
   - File: `client/camera_controller.py` (397 lines)
 
+- ✅ **Phase 4 Complete:** Extracted `Renderer2D` (109 lines removed)
+  - Board shapes rendering (grid, generators, crystal, mystery squares)
+  - Token sprite management and rendering
+  - Selection visual feedback (highlights and valid move indicators)
+  - 2D rendering update loop
+  - Sprite animation updates
+  - File: `client/renderer_2d.py` (249 lines)
+
 **Remaining Phases:**
-- Phase 4: Extract `Renderer2D` (2D rendering)
 - Phase 5: Extract `Renderer3D` (3D rendering)
 - Phase 6: Extract `GameActionHandler` (game actions)
 - Phase 7: Extract `InputHandler` (input coordination)
 - Phase 8: Final cleanup and testing
 
-**Total Reduction:** 623 lines removed (1816 → 1193 lines, 34% reduction)
+**Total Reduction:** 732 lines removed (1816 → 1084 lines, 40% reduction)
 
 **Commits:**
 - 984b254: Refactor: Extract AudioManager from GameView (Phase 1/8)
 - 517f13b: Refactor: Extract DeploymentMenuController from GameView (Phase 2/8)
 - 997f10a: Refactor: Extract CameraController from GameView (Phase 3/8)
+- (Phase 4 commit pending)
 
 ---
 
