@@ -14,9 +14,9 @@ from arcade.shape_list import (
     create_line,
 )
 
+from client.audio_manager import AudioManager
 from client.board_3d import Board3D
 from client.camera_3d import FirstPersonCamera3D
-from client.music_generator import generate_techno_music
 from client.sprites.board_sprite import create_board_shapes
 from client.sprites.token_sprite import TokenSprite
 from client.token_3d import Token3D
@@ -28,7 +28,6 @@ from game.movement import MovementSystem
 from game.mystery_square import MysterySquareSystem
 from shared.constants import (
     BACKGROUND_COLOR,
-    BACKGROUND_MUSIC_VOLUME,
     CAMERA_INITIAL_ZOOM,
     CAMERA_PAN_SPEED,
     CAMERA_ROTATION_INCREMENT,
@@ -43,7 +42,6 @@ from shared.constants import (
     DEFAULT_WINDOW_HEIGHT,
     DEFAULT_WINDOW_WIDTH,
     DEPLOYMENT_MENU_SPACING,
-    GENERATOR_HUM_VOLUME,
     HEXAGON_SIDES,
     HUD_HEIGHT,
     MENU_OPTION_CLICK_RADIUS,
@@ -175,16 +173,8 @@ class GameView(arcade.View):
         # Chat widget for in-game communication
         self.chat_widget = None
 
-        # Background music
-        self.background_music = None
-        self.music_player = None
-        self.music_volume = BACKGROUND_MUSIC_VOLUME  # LOUD for maximum impact!
-        self.music_playing = True
-
-        # Generator hum tracks (separate audio for each generator)
-        self.generator_hums = []  # List of Sound objects
-        self.generator_hum_players = []  # List of MediaPlayer objects
-        self.generator_hum_volume = GENERATOR_HUM_VOLUME  # Volume for each generator hum (louder so you notice when they drop!)
+        # Audio manager for background music and generator hums
+        self.audio_manager = AudioManager()
 
         # Mystery square coin flip animations
         # Dict mapping (x, y) position to animation progress (0.0 to 1.0)
@@ -229,14 +219,8 @@ class GameView(arcade.View):
 
     def on_hide_view(self):
         """Called when this view is hidden."""
-        # Stop music when view is hidden
-        if self.music_player and self.music_playing:
-            self.music_player.pause()
-
-        # Stop all generator hums
-        for player in self.generator_hum_players:
-            if player:
-                player.pause()
+        # Pause all audio
+        self.audio_manager.pause_all()
 
         # Clean up OpenGL resources
         if self.board_3d is not None:
@@ -246,144 +230,6 @@ class GameView(arcade.View):
         for token_3d in self.tokens_3d:
             token_3d.cleanup()
         self.tokens_3d.clear()
-
-    def _load_background_music(self):
-        """Load and play background techno music with separate generator hums."""
-        music_path = "client/assets/music/techno.mp3"
-        wav_path = "client/assets/music/techno.wav"
-
-        try:
-            # Try MP3 first
-            self.background_music = arcade.Sound(music_path, streaming=True)
-            if self.background_music:
-                self.music_player = self.background_music.play(self.music_volume, loop=True)
-                logger.info("Background music loaded and playing (looping)")
-        except FileNotFoundError:
-            # Try WAV format
-            try:
-                self.background_music = arcade.Sound(wav_path, streaming=True)
-                if self.background_music:
-                    self.music_player = self.background_music.play(self.music_volume, loop=True)
-                    logger.info("Background music loaded and playing (looping)")
-            except FileNotFoundError:
-                # Generate music if neither file exists
-                logger.warning("No music file found, generating techno track...")
-                try:
-                    generate_techno_music(duration=30.0)
-                    self.background_music = arcade.Sound(wav_path, streaming=True)
-                    if self.background_music:
-                        self.music_player = self.background_music.play(
-                            self.music_volume, loop=True
-                        )
-                        logger.info("Generated background music playing (looping)")
-                except Exception as e:
-                    logger.error(f"Error generating music: {e}")
-        except Exception as e:
-            logger.error(f"Error loading background music: {e}")
-
-        # Load and play generator hum tracks
-        self._load_generator_hums()
-
-    def _load_generator_hums(self):
-        """Load and play the 4 generator hum tracks that can be individually controlled."""
-        import os
-        for gen_id in range(4):
-            hum_path = f"client/assets/music/generator_{gen_id}_hum.wav"
-
-            # Check if file exists
-            if not os.path.exists(hum_path):
-                logger.error(f"Generator {gen_id} hum file not found: {hum_path}")
-                self.generator_hums.append(None)
-                self.generator_hum_players.append(None)
-                continue
-
-            try:
-                logger.debug(f"Loading generator {gen_id} hum from: {hum_path}")
-                hum_sound = arcade.Sound(hum_path, streaming=True)
-                logger.debug(f"  Sound object created: {hum_sound}")
-
-                hum_player = hum_sound.play(self.generator_hum_volume, loop=True)
-                logger.debug(f"  Player created: {hum_player}")
-
-                if hum_player is None:
-                    logger.warning(f"  Player is None for generator {gen_id}!")
-
-                self.generator_hums.append(hum_sound)
-                self.generator_hum_players.append(hum_player)
-                logger.info(f"✓ Generator {gen_id} hum loaded and playing")
-            except Exception as e:
-                logger.error(f"Error loading generator {gen_id} hum: {e}")
-                import traceback
-                traceback.print_exc()
-                self.generator_hums.append(None)
-                self.generator_hum_players.append(None)
-
-    def _toggle_music(self):
-        """Toggle background music on/off."""
-        if self.background_music:
-            if self.music_playing:
-                if self.music_player:
-                    self.music_player.pause()
-                # Pause all generator hums
-                for player in self.generator_hum_players:
-                    if player:
-                        player.pause()
-                self.music_playing = False
-                logger.info("Music paused")
-            else:
-                # Restart the music with looping
-                self.music_player = self.background_music.play(self.music_volume, loop=True)
-                # Restart generator hums (respecting their captured state)
-                self._update_generator_hums()
-                self.music_playing = True
-                logger.info("Music playing")
-
-    def _update_generator_hums(self):
-        """Update generator hum audio based on which generators are captured."""
-        if not self.music_playing:
-            return
-
-        logger.debug("\n=== Updating Generator Hums ===")
-        active_hums = 0
-        for gen_id, generator in enumerate(self.game_state.generators):
-            logger.debug(f"Generator {gen_id}: is_disabled={generator.is_disabled}, turns_held={generator.turns_held}, capturing_player={generator.capturing_player_id}")
-
-            if gen_id < len(self.generator_hum_players):
-                player = self.generator_hum_players[gen_id]
-                hum_sound = self.generator_hums[gen_id]
-
-                if player is not None:
-                    active_hums += 1
-                logger.debug(f"  player={player}, hum_sound={hum_sound}")
-
-                if player and hum_sound:
-                    # Check if generator is disabled (fully captured)
-                    if generator.is_disabled:
-                        # Generator is captured - stop this hum completely
-                        try:
-                            player.pause()
-                            player.delete()
-                            self.generator_hum_players[gen_id] = None
-                            logger.debug(f"  Generator {gen_id} DISABLED - HUM STOPPED")
-                        except Exception as e:
-                            logger.error(f"  Error stopping hum: {e}")
-                    elif self.generator_hum_players[gen_id] is None:
-                        # Generator is free and hum was stopped - restart it
-                        try:
-                            self.generator_hum_players[gen_id] = hum_sound.play(
-                                self.generator_hum_volume, loop=True
-                            )
-                            logger.debug(f"  Generator {gen_id} freed - HUM RESTARTED")
-                        except Exception as e:
-                            logger.error(f"  Error restarting hum: {e}")
-                    else:
-                        logger.debug(f"  Generator {gen_id} active - hum playing")
-                elif generator.is_disabled and hum_sound:
-                    # Player is None but generator is disabled, need to handle restart case
-                    logger.debug(f"  Generator {gen_id} disabled but player is None (already stopped)")
-                else:
-                    logger.debug(f"  Generator {gen_id} - player or hum_sound is None, skipping")
-        logger.debug(f"=== Active Generator Hums: {active_hums}/4 ===\n")
 
     def setup(self):
         """Set up the window after initialization."""
@@ -399,8 +245,8 @@ class GameView(arcade.View):
         self._setup_camera_view()
 
         # Load and play background music (only if not already loaded)
-        if not self.background_music:
-            self._load_background_music()
+        if not self.audio_manager.background_music:
+            self.audio_manager.load_background_music()
 
         # Build initial UI
         self.ui_manager.rebuild_visuals(self.game_state)
@@ -1143,7 +989,10 @@ class GameView(arcade.View):
 
         # Music toggle
         elif symbol == arcade.key.M:
-            self._toggle_music()
+            self.audio_manager.toggle_music()
+            # Update generator hums to respect captured state when resuming
+            if self.audio_manager.music_playing:
+                self.audio_manager.update_generator_hums(self.game_state.generators)
 
         # 3D View controls
         elif symbol == arcade.key.V:
@@ -1813,4 +1662,4 @@ class GameView(arcade.View):
         self.ui_manager.rebuild_visuals(self.game_state)
 
         # Update generator hums based on captured state
-        self._update_generator_hums()
+        self.audio_manager.update_generator_hums(self.game_state.generators)
