@@ -923,10 +923,14 @@ class GameView(arcade.View):
         # Update animations
         self.token_sprites.update()
         self.ui_sprites.update()
-        
+
         # Update chat widget
         if self.chat_widget:
             self.chat_widget.update(delta_time)
+
+        # Rebuild board shapes every frame to animate generator lines
+        if self.camera_mode == "2D":
+            self._create_board_sprites()
 
     def on_resize(self, width: int, height: int):
         """
