@@ -936,8 +936,19 @@ class GameView(arcade.View):
             width: New window width
             height: New window height
         """
+        # Call parent resize handler
+        super().on_resize(width, height)
+
         # Check if initialization is complete (ui_manager exists)
         if hasattr(self, "ui_manager") and self.ui_manager:
+            # Update 2D camera viewport to match new window size
+            if hasattr(self, "camera") and self.camera:
+                self.camera.viewport = (0, 0, width, height)
+
+            # Update UI camera viewport
+            if hasattr(self, "ui_camera") and self.ui_camera:
+                self.ui_camera.viewport = (0, 0, width, height)
+
             # Update UI manager layout
             self.ui_manager.update_layout(width, height)
             self.ui_manager.rebuild_visuals(self.game_state)
@@ -945,9 +956,14 @@ class GameView(arcade.View):
             # Update camera setup to refit board
             self._setup_camera_view()
 
-            # Update 3D camera aspect ratio if it exists
+            # Update 3D camera aspect ratio if it exists (without resetting position)
             if hasattr(self, "camera_3d") and self.camera_3d:
-                self.camera_3d = FirstPersonCamera3D(width, height)
+                self.camera_3d.update_aspect_ratio(width, height)
+
+            # Update chat widget position if it exists
+            if hasattr(self, "chat_widget") and self.chat_widget:
+                # Chat widget position might need adjustment based on new window size
+                pass
 
             print(f"Game view resized to {width}x{height}")
 
