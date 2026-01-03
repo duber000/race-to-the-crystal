@@ -1191,8 +1191,6 @@ class GameView(arcade.View):
                         self.camera_3d.follow_token(token.position, self.token_rotation)
                         logger.debug(f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}")
                     else:
-                        logger.debug(f"Camera rotation: {self.token_rotation}, following token {token.id} at {token.position}")
-                    else:
                         logger.debug(f"Camera rotation: {self.token_rotation}, but no valid token to follow")
                 else:
                     logger.debug(f"Camera rotation: {self.token_rotation}, but no controlled token selected")
