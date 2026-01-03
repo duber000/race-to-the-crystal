@@ -191,13 +191,19 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery
                         shape_list.append(line)
 
                 elif cell_type == CellType.CRYSTAL:
-                    # Draw crystal as wireframe diamond with intense glow
+                    # Draw crystal as wireframe diamond with pulsing glow animation
+                    import time
                     size = CELL_SIZE * 0.5
 
-                    # Multiple glow layers for intense effect
+                    # Pulsing animation - slower and more subtle than flowing lines
+                    pulse = math.sin(time.time() * 1.5) * 0.3 + 0.7  # Oscillates between 0.4 and 1.0
+
+                    # Multiple glow layers for intense pulsing effect
                     for i in range(8, 0, -1):
-                        alpha = int(150 / (i + 1))
-                        glow_size = size + (i * 3)
+                        # Pulse affects both alpha and size
+                        base_alpha = 150 / (i + 1)
+                        alpha = int(base_alpha * pulse)
+                        glow_size = size + (i * 3 * pulse)
                         points = [
                             (center_x, center_y + glow_size),  # Top
                             (center_x + glow_size, center_y),  # Right
@@ -216,7 +222,8 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery
                             )
                             shape_list.append(line)
 
-                    # Bright main diamond
+                    # Bright main diamond with slight pulse
+                    main_alpha = int(255 * (0.8 + pulse * 0.2))  # Subtle pulse for main shape
                     points = [
                         (center_x, center_y + size),
                         (center_x + size, center_y),
@@ -230,18 +237,19 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery
                             points[j][1],
                             points[j + 1][0],
                             points[j + 1][1],
-                            (255, 100, 255, 255),
+                            (255, 100, 255, main_alpha),
                             4,
                         )
                         shape_list.append(line)
 
-                    # Draw crossing lines inside for extra detail
+                    # Draw crossing lines inside for extra detail with pulse
+                    cross_alpha = int(200 * pulse)
                     line = create_line(
                         center_x - size,
                         center_y,
                         center_x + size,
                         center_y,
-                        (255, 0, 255, 200),
+                        (255, 0, 255, cross_alpha),
                         2,
                     )
                     shape_list.append(line)
@@ -250,7 +258,7 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery
                         center_y - size,
                         center_x,
                         center_y + size,
-                        (255, 0, 255, 200),
+                        (255, 0, 255, cross_alpha),
                         2,
                     )
                     shape_list.append(line)
