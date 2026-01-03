@@ -11,11 +11,10 @@ from typing import List, Optional, Tuple
 import arcade
 
 from client.audio_manager import AudioManager
-from client.board_3d import Board3D
 from client.camera_controller import CameraController
 from client.deployment_menu_controller import DeploymentMenuController
 from client.renderer_2d import Renderer2D
-from client.token_3d import Token3D
+from client.renderer_3d import Renderer3D
 from client.ui.arcade_ui import UIManager
 from client.ui.chat_widget import ChatWidget
 from game.combat import CombatSystem
@@ -89,6 +88,7 @@ class GameView(arcade.View):
 
         # Renderer controllers
         self.renderer_2d = Renderer2D()
+        self.renderer_3d = Renderer3D()
 
         # Visual elements
         self.ui_sprites = arcade.SpriteList()
@@ -116,11 +116,6 @@ class GameView(arcade.View):
             (150, 150, 150),
             font_size=14,
         )
-
-        # 3D Rendering infrastructure
-        self.board_3d = None  # Will be initialized in setup()
-        self.tokens_3d = []  # List of Token3D instances
-        self.shader_3d = None  # Shared shader for 3D rendering
 
         # UI Manager for panels and buttons (will be initialized in on_show_view)
         self.ui_manager = None
@@ -182,13 +177,7 @@ class GameView(arcade.View):
         self.audio_manager.pause_all()
 
         # Clean up OpenGL resources
-        if self.board_3d is not None:
-            self.board_3d.cleanup()
-            self.board_3d = None
-
-        for token_3d in self.tokens_3d:
-            token_3d.cleanup()
-        self.tokens_3d.clear()
+        self.renderer_3d.cleanup()
 
     def setup(self):
         """Set up the window after initialization."""
@@ -205,7 +194,7 @@ class GameView(arcade.View):
         logger.debug(f"Created {len(self.renderer_2d.token_sprites)} token sprites")
 
         self._create_ui_sprites()
-        self._create_3d_rendering()
+        self.renderer_3d.create(self.game_state, self.window.ctx, self.mystery_animations)
 
         # Set up camera to fit entire board in view
         self.camera_controller.setup_initial_view(self.window.width, self.window.height)
@@ -225,63 +214,6 @@ class GameView(arcade.View):
         # Corner indicator is drawn directly in _draw_hud() in screen space
         pass
 
-    def _create_3d_rendering(self):
-        """Initialize 3D rendering components."""
-        try:
-            # Clean up old 3D board if it exists
-            if self.board_3d is not None:
-                self.board_3d.cleanup()
-                self.board_3d = None
-
-            # Clean up old 3D tokens
-            for token_3d in self.tokens_3d:
-                token_3d.cleanup()
-            self.tokens_3d.clear()
-
-            # Get crystal position
-            crystal = self.game_state.crystal
-            crystal_pos = crystal.position if crystal else None
-
-            # Create 3D board with generators, crystal position, and mystery animations
-            self.board_3d = Board3D(
-                self.game_state.board,
-                self.window.ctx,
-                generators=self.game_state.generators,
-                crystal_pos=crystal_pos,
-                mystery_animations=self.mystery_animations,
-            )
-            if self.board_3d.shader_program is None:
-                logger.warning(
-                    "3D shader compilation failed, 3D mode will not be available"
-                )
-                self.shader_3d = None
-            else:
-                self.shader_3d = self.board_3d.shader_program  # Reuse shader
-                logger.info("3D rendering initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize 3D rendering: {e}")
-            self.board_3d = None
-            self.shader_3d = None
-            return
-
-        # Create 3D tokens
-        for player in self.game_state.players.values():
-            player_color = PLAYER_COLORS[player.color.value]
-
-            for token_id in player.token_ids:
-                token = self.game_state.get_token(token_id)
-                if token and token.is_alive and token.is_deployed:
-                    try:
-                        token_3d = Token3D(token, player_color, self.window.ctx)
-                        self.tokens_3d.append(token_3d)
-                    except Exception as e:
-                        logger.error(f"Failed to create 3D token {token_id}: {e}")
-
-        logger.debug(f"Created {len(self.tokens_3d)} 3D tokens")
-
-        # Don't auto-follow token - start with overview camera
-        # Players can press TAB to cycle through tokens and start following
-        # self.controlled_token_id remains None for free camera movement
 
     def _draw_hud(self):
         """Draw the heads-up display with game information."""
@@ -364,17 +296,12 @@ class GameView(arcade.View):
             self.window.ctx.enable(self.window.ctx.BLEND)
             self.window.ctx.disable(self.window.ctx.CULL_FACE)
 
-            if self.board_3d and self.shader_3d:
+            if self.renderer_3d.is_available():
                 # Update camera to follow controlled token
                 self.camera_controller.update_3d_camera(self.game_state)
 
-                # Draw 3D board
-                self.board_3d.draw(self.camera_controller.camera_3d)
-
-                # Draw 3D tokens
-                for token_3d in self.tokens_3d:
-                    if token_3d.token.is_alive:
-                        token_3d.draw(self.camera_controller.camera_3d, self.shader_3d)
+                # Draw 3D rendering
+                self.renderer_3d.draw(self.camera_controller.camera_3d)
 
             # Reset state for UI
             self.window.ctx.disable(self.window.ctx.DEPTH_TEST)
@@ -431,8 +358,7 @@ class GameView(arcade.View):
             del self.mystery_animations[position]
 
         # Update 3D mystery animations if there are any active
-        if self.board_3d and len(self.mystery_animations) > 0:
-            self.board_3d.update_mystery_animations(self.mystery_animations)
+        self.renderer_3d.update_mystery_animations(self.mystery_animations)
 
         # Rebuild board shapes every frame to animate generator lines and mystery squares
         if self.camera_controller.camera_mode == "2D":
@@ -641,8 +567,7 @@ class GameView(arcade.View):
                 return
 
             # Toggle between 2D and 3D views (only if 3D rendering is available)
-            board_3d_available = self.board_3d is not None and self.shader_3d is not None
-            self.camera_controller.toggle_mode(board_3d_available)
+            self.camera_controller.toggle_mode(self.renderer_3d.is_available())
 
         elif (
             symbol == arcade.key.TAB
@@ -881,13 +806,9 @@ class GameView(arcade.View):
                         self.renderer_2d.token_sprites.append(sprite)
 
                         # Create 3D token
-                        try:
-                            token_3d = Token3D(
-                                deployed_token, player_color, self.window.ctx
-                            )
-                            self.tokens_3d.append(token_3d)
-                        except Exception as e:
-                            logger.warning(f"Failed to create 3D token: {e}")
+                        self.renderer_3d.add_token(
+                            deployed_token, player_color, self.window.ctx
+                        )
 
                         # Clear selection
                         self.deployment_controller.selected_deploy_health = None
@@ -1073,9 +994,8 @@ class GameView(arcade.View):
             self.mystery_animations,
         )
 
-        # Update 3D board generator lines if in 3D mode
-        if self.board_3d:
-            self.board_3d.update_generator_lines()
+        # Update 3D board generator lines
+        self.renderer_3d.update_generator_lines()
 
         # Update UI to reflect new turn
         self.ui_manager.rebuild_visuals(self.game_state)
