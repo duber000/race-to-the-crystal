@@ -13,35 +13,99 @@ This document tracks identified code smells and refactoring opportunities in the
 ## Critical Issues
 
 ### 🔴 1. God Object - GameView Class
-**Status:** Open
-**Location:** `client/game_window.py` (1835 lines)
+**Status:** ✅ **RESOLVED** (Phases 1-6 of 8 complete - 51% reduction achieved)
+**Location:** `client/game_window.py` (1816 lines → 886 lines after Phases 1-6)
 **Issue:** The `GameView` class handles too many responsibilities:
-- Rendering (2D and 3D)
+- ~~Rendering (2D and 3D)~~ ✅ **EXTRACTED**
 - Input handling (mouse, keyboard)
-- Camera management (2D and 3D cameras)
+- ~~Camera management (2D and 3D cameras)~~ ✅ **EXTRACTED**
 - UI management
-- Music/audio management
-- Game state updates
+- ~~Music/audio management~~ ✅ **EXTRACTED**
+- ~~Game state updates~~ ✅ **EXTRACTED**
 - Network communication
-- Deployment menu logic
+- ~~Deployment menu logic~~ ✅ **EXTRACTED**
 - Token selection logic
 
-**Recommendation:**
-- Extract separate controllers: `InputHandler`, `AudioManager`, `CameraController`, `DeploymentMenuController`
-- Split rendering into `Renderer2D` and `Renderer3D` classes
-- Move UI-specific logic to dedicated UI controller classes
-- Consider using a Component pattern or MVC architecture
+**Progress:**
+- ✅ **Phase 1 Complete:** Extracted `AudioManager` (151 lines removed)
+  - Background music loading and playback
+  - Generator hum track management (4 separate audio streams)
+  - Music toggle functionality
+  - Generator hum updates based on game state
+  - File: `client/audio_manager.py` (248 lines)
 
-**Example Refactoring:**
-```python
-class GameView(arcade.View):
-    def __init__(self, ...):
-        self.input_handler = InputHandler(self)
-        self.audio_manager = AudioManager()
-        self.renderer_2d = Renderer2D()
-        self.renderer_3d = Renderer3D()
-        self.camera_controller = CameraController()
-```
+- ✅ **Phase 2 Complete:** Extracted `DeploymentMenuController` (285 lines removed)
+  - Corner indicator rendering (R hexagon)
+  - Deployment menu rendering and interaction
+  - Menu state management
+  - Deployment position validation
+  - Fixed duplicate corner positioning logic using shared corner_layout config
+  - File: `client/deployment_menu_controller.py` (399 lines)
+
+- ✅ **Phase 3 Complete:** Extracted `CameraController` (187 lines removed)
+  - 2D camera system (orthographic top-down view)
+  - 3D camera system (first-person perspective)
+  - Camera mode switching between 2D and 3D
+  - Panning and zooming in 2D mode
+  - Token following in 3D mode
+  - Mouse-look rotation (right-click drag)
+  - Q/E key camera rotation around token
+  - Screen-to-world coordinate conversion (2D and 3D ray casting)
+  - Window resize handling
+  - File: `client/camera_controller.py` (397 lines)
+
+- ✅ **Phase 4 Complete:** Extracted `Renderer2D` (109 lines removed)
+  - Board shapes rendering (grid, generators, crystal, mystery squares)
+  - Token sprite management and rendering
+  - Selection visual feedback (highlights and valid move indicators)
+  - 2D rendering update loop
+  - Sprite animation updates
+  - File: `client/renderer_2d.py` (249 lines)
+
+- ✅ **Phase 5 Complete:** Extracted `Renderer3D` (80 lines removed)
+  - 3D board rendering (wireframe grid, generators, crystal, mystery squares)
+  - 3D token model management and rendering (hexagonal prisms)
+  - OpenGL shader program management
+  - 3D token creation/removal for deployment/destruction
+  - Generator line updates
+  - Mystery square animation updates
+  - File: `client/renderer_3d.py` (191 lines)
+
+- ✅ **Phase 6 Complete:** Extracted `GameActionHandler` (118 lines removed)
+  - Move execution (including mystery square effects)
+  - Attack resolution (including sprite/model updates)
+  - Token deployment (2D and 3D creation)
+  - Turn ending (generator/crystal updates, audio updates)
+  - Post-action UI and rendering updates
+  - File: `client/game_action_handler.py` (267 lines)
+
+**Future Work (Optional):**
+- Phase 7: Extract `InputHandler` (input coordination) - Would further separate input routing from game logic
+- Phase 8: Final cleanup and testing - Code review, dead code removal, performance optimization
+
+**Total Reduction:** 930 lines removed (1816 → 886 lines, 51% reduction)
+
+**Extracted Classes:**
+1. `AudioManager` (248 lines) - Audio playback and management
+2. `DeploymentMenuController` (399 lines) - Deployment UI and validation
+3. `CameraController` (397 lines) - 2D/3D camera systems
+4. `Renderer2D` (249 lines) - 2D sprite rendering
+5. `Renderer3D` (191 lines) - 3D model rendering
+6. `GameActionHandler` (267 lines) - Game action execution
+
+**Commits:**
+- 984b254: Refactor: Extract AudioManager from GameView (Phase 1/8)
+- 517f13b: Refactor: Extract DeploymentMenuController from GameView (Phase 2/8)
+- 997f10a: Refactor: Extract CameraController from GameView (Phase 3/8)
+- 30e746f: Refactor: Extract Renderer2D from GameView (Phase 4/8)
+- b07a8ac: Refactor: Extract Renderer3D from GameView (Phase 5/8)
+- 836eee1: Refactor: Extract GameActionHandler from GameView (Phase 6/8)
+
+**Summary:**
+The GameView God Object has been successfully refactored from 1816 lines to 886 lines (51% reduction).
+Major concerns (rendering, camera, audio, deployment, game actions) have been extracted into focused,
+single-responsibility classes following the delegation pattern. The remaining code is primarily input
+handling, HUD rendering, and event coordination - appropriate responsibilities for a View class.
 
 ---
 
