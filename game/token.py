@@ -4,6 +4,7 @@ Token entity representing a player's game piece.
 from dataclasses import dataclass
 from typing import Tuple
 
+from shared.constants import TOKEN_HEALTH_VALUES
 from shared.types import TokenID, PlayerID
 
 
@@ -56,6 +57,9 @@ class Token:
         """
         Apply damage to this token.
 
+        After taking damage, health rounds DOWN to nearest valid value (10, 8, 6, 4).
+        If health drops below 4, token dies.
+
         Args:
             damage: Amount of damage to apply
 
@@ -63,10 +67,27 @@ class Token:
             True if token is killed, False otherwise
         """
         self.health -= damage
+
+        # Round down to nearest valid health value
         if self.health <= 0:
             self.health = 0
             self.is_alive = False
             return True
+
+        # Find the nearest valid health value (rounding down)
+        valid_health = None
+        for health_value in sorted(TOKEN_HEALTH_VALUES, reverse=True):
+            if self.health >= health_value:
+                valid_health = health_value
+                break
+
+        # If no valid health value found (below 4), token dies
+        if valid_health is None:
+            self.health = 0
+            self.is_alive = False
+            return True
+
+        self.health = valid_health
         return False
 
     def heal_to_full(self) -> None:

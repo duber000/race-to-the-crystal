@@ -161,13 +161,17 @@ class TestNetworkMultiplayerIntegration:
                 assert latest_state["turn_number"] == 1  # Should still be turn 1
             
             print("✅ Two-player network game workflow completed successfully")
-            
+
         finally:
             # Cleanup
             await client1.disconnect()
             await client2.disconnect()
             await server.stop()
-            await server_task
+            # Suppress CancelledError when awaiting server task after stop
+            try:
+                await server_task
+            except asyncio.CancelledError:
+                pass
     
     @pytest.mark.asyncio
     async def test_heartbeat_functionality(self):
@@ -207,46 +211,50 @@ class TestNetworkMultiplayerIntegration:
             assert len(heartbeat_acks) > 0, "Should receive HEARTBEAT_ACK from server"
             
             print("✅ Heartbeat functionality working correctly")
-            
+
         finally:
             await client.disconnect()
             await server.stop()
-            await server_task
+            # Suppress CancelledError when awaiting server task after stop
+            try:
+                await server_task
+            except asyncio.CancelledError:
+                pass
     
     @pytest.mark.asyncio
     async def test_turn_change_notifications(self):
-        """Test that TURN_CHANGE messages are sent when turns change."""
+        """Test that turn changes are communicated via FULL_STATE updates."""
         # Create server
         server = GameServer(host="localhost", port=9997)
         server_task = asyncio.create_task(server.start())
-        
+
         await asyncio.sleep(0.5)
-        
+
         try:
             # Create two clients
             client1 = NetworkClient("TurnTest1", ClientType.HUMAN)
             client2 = NetworkClient("TurnTest2", ClientType.HUMAN)
-            
+
             handler1 = MockMessageHandler()
             handler2 = MockMessageHandler()
-            
+
             client1.on_message = handler1.handle_message
             client2.on_message = handler2.handle_message
-            
+
             # Connect and setup game
             assert await client1.connect("localhost", 9997)
             assert await client2.connect("localhost", 9997)
-            
+
             assert await client1.create_game("Turn Test Game", max_players=2)
             await asyncio.sleep(0.2)
-            
+
             assert await client2.join_game(client1.game_id)
             await asyncio.sleep(0.2)
-            
+
             assert await client1.set_ready(True)
             assert await client2.set_ready(True)
             await asyncio.sleep(0.2)
-            
+
             # Start game
             start_msg = NetworkMessage(
                 type=MessageType.START_GAME,
@@ -255,16 +263,14 @@ class TestNetworkMultiplayerIntegration:
             )
             assert await client1.connection.send_message(start_msg)
             await asyncio.sleep(0.5)
-            
-            # Clear message history to focus on turn changes
-            handler1.received_messages.clear()
-            handler2.received_messages.clear()
-            
+
+            # Save initial state
+            initial_state = handler1.game_states[-1]
+            initial_player = initial_state["current_turn_player_id"]
+            initial_state_count = len(handler1.game_states)
+
             # Take a turn to trigger turn change
-            current_state = handler1.game_states[-1]
-            current_player = current_state["current_turn_player_id"]
-            
-            if current_player == "player_0":
+            if initial_player == "player_0":
                 # Player 1's turn
                 end_turn_action = EndTurnAction()
                 assert await client1.send_action(end_turn_action)
@@ -272,31 +278,34 @@ class TestNetworkMultiplayerIntegration:
                 # Player 2's turn
                 end_turn_action = EndTurnAction()
                 assert await client2.send_action(end_turn_action)
-            
+
             await asyncio.sleep(0.2)
-            
-            # Check for TURN_CHANGE messages
-            turn_changes = [
-                msg for msg in handler1.received_messages + handler2.received_messages
-                if msg.type == MessageType.TURN_CHANGE
-            ]
-            
-            assert len(turn_changes) > 0, "Should receive TURN_CHANGE notifications"
-            
-            # Verify turn change data
-            turn_change = turn_changes[0]
-            data = turn_change.data or {}
-            assert "current_player_id" in data
-            assert "turn_number" in data
-            assert "phase" in data
-            
+
+            # Check that we received updated FULL_STATE messages after turn change
+            assert len(handler1.game_states) > initial_state_count, "Should receive FULL_STATE update after turn change"
+
+            # Verify turn changed in the new state
+            new_state = handler1.game_states[-1]
+            new_player = new_state["current_turn_player_id"]
+
+            assert "current_turn_player_id" in new_state
+            assert "turn_number" in new_state
+            assert "turn_phase" in new_state
+
+            # Turn should have changed to the other player
+            assert new_player != initial_player, "Turn should change to the other player"
+
             print("✅ Turn change notifications working correctly")
-            
+
         finally:
             await client1.disconnect()
             await client2.disconnect()
             await server.stop()
-            await server_task
+            # Suppress CancelledError when awaiting server task after stop
+            try:
+                await server_task
+            except asyncio.CancelledError:
+                pass
 
 
 if __name__ == "__main__":

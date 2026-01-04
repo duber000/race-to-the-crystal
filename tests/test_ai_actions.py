@@ -285,16 +285,16 @@ class TestAttackActionExecution:
         game_state = create_test_game()
         executor = AIActionExecutor()
 
-        attacker = game_state.deploy_token("player_0", 10, (5, 5))  # 10hp = 5 damage
-        defender = game_state.deploy_token("player_1", 8, (5, 6))   # 8hp
+        attacker = game_state.deploy_token("player_0", 8, (5, 5))  # 8hp = 4 damage
+        defender = game_state.deploy_token("player_1", 10, (5, 6))   # 10hp
         game_state.turn_phase = TurnPhase.ACTION
 
         action = AttackAction(attacker_id=attacker.id, defender_id=defender.id)
         success, msg, data = executor.execute_action(action, game_state, "player_0")
 
         assert success
-        assert data["damage_dealt"] == 5
-        assert defender.health == 3  # 8 - 5 = 3
+        assert data["damage_dealt"] == 4
+        assert defender.health == 6  # 10 - 4 = 6 (valid health value)
 
     def test_execute_attack_kill(self):
         """Test executing an attack that kills the defender."""

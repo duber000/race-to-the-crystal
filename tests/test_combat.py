@@ -70,15 +70,16 @@ class TestCombatSystem:
         result = CombatSystem.resolve_combat(attacker, defender)
 
         # Attacker deals 5 damage (10 // 2)
-        assert result.result == CombatResult.HIT
+        # Defender: 8 - 5 = 3, rounds down to 0 (dies - below minimum valid value of 4)
+        assert result.result == CombatResult.KILLED
         assert result.damage_dealt == 5
         assert result.attacker_id == 1
         assert result.defender_id == 2
-        assert result.defender_killed is False
+        assert result.defender_killed is True
 
-        # Defender should have 3 health remaining
-        assert defender.health == 3
-        assert defender.is_alive is True
+        # Defender should be dead (3 rounds to 0 as it's below 4)
+        assert defender.health == 0
+        assert defender.is_alive is False
 
         # Attacker should be unharmed
         assert attacker.health == 10
@@ -144,14 +145,16 @@ class TestCombatSystem:
 
     def test_resolve_combat_attacker_damaged(self):
         """Test that damaged attackers deal less damage."""
-        attacker = Token(id=1, player_id="p1", health=3, max_health=10, position=(5, 5))
-        defender = Token(id=2, player_id="p2", health=8, max_health=8, position=(6, 5))
+        attacker = Token(id=1, player_id="p1", health=4, max_health=10, position=(5, 5))
+        defender = Token(id=2, player_id="p2", health=10, max_health=10, position=(6, 5))
 
         result = CombatSystem.resolve_combat(attacker, defender)
 
-        # Damaged attacker with 3 health deals 1 damage (3 // 2)
-        assert result.damage_dealt == 1
-        assert defender.health == 7
+        # Damaged attacker with 4 health deals 2 damage (4 // 2)
+        # Defender: 10 - 2 = 8 (valid health value, no rounding needed)
+        assert result.damage_dealt == 2
+        assert defender.health == 8
+        assert defender.is_alive is True
 
     def test_get_attackable_targets(self):
         """Test getting list of attackable targets."""
@@ -244,3 +247,73 @@ class TestCombatSystem:
         assert data["attacker_id"] == 1
         assert data["defender_id"] == 2
         assert data["defender_killed"] is True
+
+    def test_health_rounding_10_takes_3_damage(self):
+        """Test 10hp token taking 3 damage rounds to 6hp."""
+        attacker = Token(id=1, player_id="p1", health=6, max_health=6, position=(5, 5))
+        defender = Token(id=2, player_id="p2", health=10, max_health=10, position=(6, 5))
+
+        result = CombatSystem.resolve_combat(attacker, defender)
+
+        # 6hp attacker deals 3 damage
+        # Defender: 10 - 3 = 7, rounds down to 6hp
+        assert result.damage_dealt == 3
+        assert result.defender_killed is False
+        assert defender.health == 6
+        assert defender.is_alive is True
+
+    def test_health_rounding_8_takes_5_damage_dies(self):
+        """Test 8hp token taking 5 damage rounds to 0 (dies)."""
+        attacker = Token(id=1, player_id="p1", health=10, max_health=10, position=(5, 5))
+        defender = Token(id=2, player_id="p2", health=8, max_health=8, position=(6, 5))
+
+        result = CombatSystem.resolve_combat(attacker, defender)
+
+        # 10hp attacker deals 5 damage
+        # Defender: 8 - 5 = 3, rounds down to 0 (dies - below minimum)
+        assert result.damage_dealt == 5
+        assert result.defender_killed is True
+        assert defender.health == 0
+        assert defender.is_alive is False
+
+    def test_health_rounding_6_takes_2_damage_exact(self):
+        """Test 6hp token taking 2 damage = 4hp (exact match, no rounding)."""
+        attacker = Token(id=1, player_id="p1", health=4, max_health=4, position=(5, 5))
+        defender = Token(id=2, player_id="p2", health=6, max_health=6, position=(6, 5))
+
+        result = CombatSystem.resolve_combat(attacker, defender)
+
+        # 4hp attacker deals 2 damage
+        # Defender: 6 - 2 = 4 (exact match, valid health value)
+        assert result.damage_dealt == 2
+        assert result.defender_killed is False
+        assert defender.health == 4
+        assert defender.is_alive is True
+
+    def test_health_rounding_10_takes_4_damage(self):
+        """Test 10hp token taking 4 damage rounds to 6hp."""
+        attacker = Token(id=1, player_id="p1", health=8, max_health=8, position=(5, 5))
+        defender = Token(id=2, player_id="p2", health=10, max_health=10, position=(6, 5))
+
+        result = CombatSystem.resolve_combat(attacker, defender)
+
+        # 8hp attacker deals 4 damage
+        # Defender: 10 - 4 = 6 (exact match, valid health value)
+        assert result.damage_dealt == 4
+        assert result.defender_killed is False
+        assert defender.health == 6
+        assert defender.is_alive is True
+
+    def test_health_rounding_6_takes_3_damage_dies(self):
+        """Test 6hp token taking 3 damage rounds to 0 (dies)."""
+        attacker = Token(id=1, player_id="p1", health=6, max_health=6, position=(5, 5))
+        defender = Token(id=2, player_id="p2", health=6, max_health=6, position=(6, 5))
+
+        result = CombatSystem.resolve_combat(attacker, defender)
+
+        # 6hp attacker deals 3 damage
+        # Defender: 6 - 3 = 3, rounds down to 0 (dies - below minimum)
+        assert result.damage_dealt == 3
+        assert result.defender_killed is True
+        assert defender.health == 0
+        assert defender.is_alive is False

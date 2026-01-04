@@ -22,6 +22,11 @@
 * **Token Stacking**: Multiple friendly tokens can occupy the same generator or crystal cell (required for capture)
 * **Token Stacking Continued**: Multiple friendly tokens can't occupy the same space otherwise
 * tokens have these numbers on their dice representing their health: 10, 8, 6, 4
+* **Health Rounding**: After taking damage, token health rounds DOWN to the nearest valid value (10, 8, 6, 4)
+  - 10hp token takes 3 damage → 7hp → rounds to 6hp (survives)
+  - 8hp token takes 5 damage → 3hp → rounds to 0hp (dies, no valid value below 4)
+  - 6hp token takes 2 damage → 4hp (exact match, no rounding)
+  - If resulting health is below 4, the token dies
 * **Movement is dynamic**: tokens with **current health of 7 or more** move 1 space, tokens with **6 or less** move 2 spaces
   - This means damaged tokens become more mobile! An 8hp token that takes 4 damage becomes 4hp and can move 2 spaces
 * each token attacks for 1/2 of their value (10hp → 5 damage, 8hp → 4 damage, etc)
