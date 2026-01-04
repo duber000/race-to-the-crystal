@@ -91,6 +91,9 @@ class GameActionHandler:
 
         logger.debug(f"Moved token {token_id} from {old_pos} to {target_cell}")
 
+        # Play sliding sound effect for movement
+        self.audio_manager.play_sliding_sound()
+
         # Check for mystery square effect
         board_cell = self.game_state.board.get_cell_at(target_cell)
         final_position = target_cell
@@ -99,6 +102,9 @@ class GameActionHandler:
             # Start coin flip animation for this mystery square
             mystery_animations[target_cell] = 0.0
             logger.info(f"🎲 Coin flip started at {target_cell}!")
+
+            # Play mystery bing sound effect
+            self.audio_manager.play_mystery_bing_sound()
 
             # Get player's index for potential teleport to deployment area
             current_player = self.game_state.get_current_player()
@@ -245,7 +251,21 @@ class GameActionHandler:
 
         logger.info(f"Ending turn for {current_player.name}")
 
-        # Advance to next player (this updates generators and checks win condition)
+        # Get the current generator and crystal state before ending turn
+        newly_disabled_generators, crystal_captured = self.game_state._update_generators_and_crystal()
+
+        # Play sound effects for newly captured generators
+        if newly_disabled_generators:
+            for gen_id in newly_disabled_generators:
+                self.audio_manager.play_generator_explosion_sound()
+                logger.info(f"💥 Generator {gen_id} captured! Playing explosion sound")
+
+        # Play sound effect if crystal was captured
+        if crystal_captured:
+            self.audio_manager.play_crystal_shatter_sound()
+            logger.info("🏆 Crystal captured! Playing shatter sound")
+
+        # Advance to next player
         self.game_state.end_turn()
 
         # Reset to movement phase

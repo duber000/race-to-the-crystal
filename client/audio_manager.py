@@ -1,8 +1,8 @@
 """
 Audio management for Race to the Crystal.
 
-This module handles all audio functionality including background music
-and generator hum tracks.
+This module handles all audio functionality including background music,
+generator hum tracks, and game sound effects.
 """
 
 import os
@@ -11,7 +11,13 @@ from typing import List, Optional
 import arcade
 
 from client.music_generator import generate_techno_music
-from shared.constants import BACKGROUND_MUSIC_VOLUME, GENERATOR_HUM_VOLUME
+from client.sound_effects import (
+    generate_sliding_sound,
+    generate_mystery_bing_sound,
+    generate_generator_explosion_sound,
+    generate_crystal_shatter_sound,
+)
+from shared.constants import BACKGROUND_MUSIC_VOLUME, GENERATOR_HUM_VOLUME, SOUND_EFFECTS_VOLUME
 from shared.logging_config import setup_logger
 
 logger = setup_logger(__name__)
@@ -19,11 +25,12 @@ logger = setup_logger(__name__)
 
 class AudioManager:
     """
-    Manages all audio for the game including background music and generator hums.
+    Manages all audio for the game including background music, generator hums, and sound effects.
 
     The AudioManager handles:
     - Loading and playing background music (with fallback generation)
     - Managing 4 separate generator hum tracks that can be individually controlled
+    - Loading and playing game sound effects (movement, mystery squares, explosions, etc.)
     - Toggling music on/off
     - Updating generator hums based on game state
     - Pausing and cleaning up audio resources
@@ -41,6 +48,11 @@ class AudioManager:
         self.generator_hums: List[Optional[arcade.Sound]] = []  # List of Sound objects
         self.generator_hum_players: List[Optional[arcade.Sound]] = []  # List of MediaPlayer objects
         self.generator_hum_volume = GENERATOR_HUM_VOLUME
+
+        # Sound effects
+        self.sound_effects_volume = SOUND_EFFECTS_VOLUME
+        self.sound_effects: dict = {}
+        self._load_sound_effects()
 
     def load_background_music(self) -> None:
         """
@@ -87,6 +99,31 @@ class AudioManager:
 
         # Load and play generator hum tracks
         self._load_generator_hums()
+
+    def _load_sound_effects(self) -> None:
+        """Load all sound effects."""
+        sound_effects_dir = "client/assets/sounds"
+        
+        # Define sound effects to load
+        sound_effects = {
+            "sliding": f"{sound_effects_dir}/sliding.wav",
+            "mystery_bing": f"{sound_effects_dir}/mystery_bing.wav",
+            "generator_explosion": f"{sound_effects_dir}/generator_explosion.wav",
+            "crystal_shatter": f"{sound_effects_dir}/crystal_shatter.wav",
+        }
+        
+        for name, path in sound_effects.items():
+            try:
+                if os.path.exists(path):
+                    sound = arcade.Sound(path)
+                    self.sound_effects[name] = sound
+                    logger.info(f"✓ Loaded sound effect: {name}")
+                else:
+                    logger.warning(f"Sound effect file not found: {path}")
+                    self.sound_effects[name] = None
+            except Exception as e:
+                logger.error(f"Error loading sound effect {name}: {e}")
+                self.sound_effects[name] = None
 
     def _load_generator_hums(self) -> None:
         """Load and play the 4 generator hum tracks that can be individually controlled."""
@@ -207,6 +244,42 @@ class AudioManager:
                     logger.debug(f"  Generator {gen_id} - player or hum_sound is None, skipping")
         logger.debug(f"=== Active Generator Hums: {active_hums}/4 ===\n")
 
+    def play_sliding_sound(self) -> None:
+        """Play the sliding sound effect for token movement."""
+        if "sliding" in self.sound_effects and self.sound_effects["sliding"]:
+            try:
+                self.sound_effects["sliding"].play(self.sound_effects_volume)
+                logger.debug("Playing sliding sound effect")
+            except Exception as e:
+                logger.error(f"Error playing sliding sound: {e}")
+
+    def play_mystery_bing_sound(self) -> None:
+        """Play the mystery bing sound effect for landing on mystery squares."""
+        if "mystery_bing" in self.sound_effects and self.sound_effects["mystery_bing"]:
+            try:
+                self.sound_effects["mystery_bing"].play(self.sound_effects_volume)
+                logger.debug("Playing mystery bing sound effect")
+            except Exception as e:
+                logger.error(f"Error playing mystery bing sound: {e}")
+
+    def play_generator_explosion_sound(self) -> None:
+        """Play the generator explosion sound effect for capturing generators."""
+        if "generator_explosion" in self.sound_effects and self.sound_effects["generator_explosion"]:
+            try:
+                self.sound_effects["generator_explosion"].play(self.sound_effects_volume)
+                logger.debug("Playing generator explosion sound effect")
+            except Exception as e:
+                logger.error(f"Error playing generator explosion sound: {e}")
+
+    def play_crystal_shatter_sound(self) -> None:
+        """Play the crystal shatter sound effect for capturing the crystal."""
+        if "crystal_shatter" in self.sound_effects and self.sound_effects["crystal_shatter"]:
+            try:
+                self.sound_effects["crystal_shatter"].play(self.sound_effects_volume)
+                logger.debug("Playing crystal shatter sound effect")
+            except Exception as e:
+                logger.error(f"Error playing crystal shatter sound: {e}")
+
     def pause_all(self) -> None:
         """
         Pause all audio (called when view is hidden).
@@ -242,5 +315,8 @@ class AudioManager:
                 player.delete()
         self.generator_hum_players.clear()
         self.generator_hums.clear()
+
+        # Clear sound effects
+        self.sound_effects.clear()
 
         self.background_music = None

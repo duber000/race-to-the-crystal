@@ -378,8 +378,9 @@ class GameState:
         if not self.current_turn_player_id:
             return
 
-        # Update generators and crystal BEFORE advancing turn
-        self._update_generators_and_crystal()
+        # Note: _update_generators_and_crystal() is now called separately
+        # in the game action handler to allow for sound effects
+        # self._update_generators_and_crystal()
 
         # Get list of active players
         active_players = [
@@ -406,14 +407,17 @@ class GameState:
         # Reset turn phase to MOVEMENT for next player
         self.turn_phase = TurnPhase.MOVEMENT
 
-    def _update_generators_and_crystal(self) -> None:
+    def _update_generators_and_crystal(self) -> Tuple[List[int], bool]:
         """
         Update generator capture status and check crystal win condition.
         Called at the end of each turn.
+        
+        Returns:
+            Tuple of (newly_disabled_generator_ids, crystal_captured)
         """
         # Only update if generators and crystal exist
         if not self.generators or not self.crystal:
-            return
+            return [], False
 
         # Build a map of positions to tokens (token_id, player_id)
         tokens_by_position = {}
@@ -442,8 +446,12 @@ class GameState:
         )
 
         # Set winner if win condition met
+        crystal_captured = False
         if winner_id:
             self.set_winner(winner_id)
+            crystal_captured = True
+
+        return newly_disabled, crystal_captured
 
     def check_win_condition(self) -> Optional[str]:
         """

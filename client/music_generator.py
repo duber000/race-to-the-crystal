@@ -122,7 +122,7 @@ class TechnoMusicGenerator:
         return samples
 
     def _generate_generator_hums(self, duration: float) -> array.array:
-        """Generate 4 interleaving electric hums representing the generators."""
+        """Generate 4 interleaving electric hums representing the generators with techno-style processing."""
         num_samples = int(self.sample_rate * duration)
         samples = array.array("h")
 
@@ -134,6 +134,9 @@ class TechnoMusicGenerator:
             130.8,   # C3 - Generator 4
         ]
 
+        # Add crystal resonance frequency (higher pitch, ethereal)
+        crystal_freq = 880.0  # A5 - Crystal resonance
+
         for i in range(num_samples):
             t = i / self.sample_rate
 
@@ -143,24 +146,108 @@ class TechnoMusicGenerator:
             pulse3 = 0.5 + 0.5 * math.sin(2 * math.pi * 0.9 * t)  # Medium-fast pulse
             pulse4 = 0.5 + 0.5 * math.sin(2 * math.pi * 1.1 * t)  # Fast pulse
 
-            # Generate each generator hum with harmonics
+            # Generate each generator hum with harmonics and techno-style processing
             hum1 = pulse1 * (math.sin(2 * math.pi * gen_freqs[0] * t) +
-                            0.3 * math.sin(2 * math.pi * gen_freqs[0] * 2 * t))
+                            0.3 * math.sin(2 * math.pi * gen_freqs[0] * 2 * t) +
+                            0.1 * math.sin(2 * math.pi * gen_freqs[0] * 4 * t))  # More harmonics
             hum2 = pulse2 * (math.sin(2 * math.pi * gen_freqs[1] * t) +
-                            0.3 * math.sin(2 * math.pi * gen_freqs[1] * 2 * t))
+                            0.3 * math.sin(2 * math.pi * gen_freqs[1] * 2 * t) +
+                            0.1 * math.sin(2 * math.pi * gen_freqs[1] * 4 * t))
             hum3 = pulse3 * (math.sin(2 * math.pi * gen_freqs[2] * t) +
-                            0.3 * math.sin(2 * math.pi * gen_freqs[2] * 2 * t))
+                            0.3 * math.sin(2 * math.pi * gen_freqs[2] * 2 * t) +
+                            0.1 * math.sin(2 * math.pi * gen_freqs[2] * 4 * t))
             hum4 = pulse4 * (math.sin(2 * math.pi * gen_freqs[3] * t) +
-                            0.3 * math.sin(2 * math.pi * gen_freqs[3] * 2 * t))
+                            0.3 * math.sin(2 * math.pi * gen_freqs[3] * 2 * t) +
+                            0.1 * math.sin(2 * math.pi * gen_freqs[3] * 4 * t))
 
-            # Mix all 4 generators
-            mixed_hum = (hum1 + hum2 + hum3 + hum4) / 4.0
+            # Add crystal resonance that builds over time
+            crystal_pulse = 0.3 + 0.2 * math.sin(2 * math.pi * 0.2 * t)  # Slow building pulse
+            crystal_harmonic = crystal_pulse * (0.2 * math.sin(2 * math.pi * crystal_freq * t) +
+                                              0.1 * math.sin(2 * math.pi * crystal_freq * 1.5 * t))
+
+            # Mix all 4 generators with crystal resonance
+            mixed_hum = (hum1 + hum2 + hum3 + hum4) / 4.0 + crystal_harmonic
+
+            # Add techno-style distortion/overdrive effect
+            mixed_hum = self._techno_distortion(mixed_hum, 0.7)
 
             # Convert to sample value with HIGH volume so it's clearly audible
             value = int(0.6 * 32767 * mixed_hum)  # Much louder!
             value = max(-32768, min(32767, value))
             samples.append(value)
 
+        return samples
+
+    def _techno_distortion(self, sample: float, amount: float) -> float:
+        """Apply techno-style distortion/overdrive effect."""
+        # Soft clipping for warm distortion
+        if sample > 0:
+            return math.tanh(sample * amount) / math.tanh(amount)
+        else:
+            return -math.tanh(-sample * amount) / math.tanh(amount)
+
+    def _generate_crystal_arpeggio(self, duration: float) -> array.array:
+        """Generate a crystal-inspired arpeggio that represents the crystal's energy."""
+        samples = array.array("h")
+        num_samples = int(self.sample_rate * duration)
+        
+        # Crystal-inspired notes - high, ethereal, and shimmering
+        crystal_notes = [880.0, 1046.5, 1174.7, 1318.5]  # A5, C6, D6, E6
+        
+        for i in range(num_samples):
+            t = i / self.sample_rate
+            
+            # Create a fast, shimmering arpeggio pattern
+            arpeggio_speed = 8  # 8th notes
+            note_idx = int((t * arpeggio_speed) % len(crystal_notes))
+            freq = crystal_notes[note_idx]
+            
+            # Add harmonics for a crystal-like shimmer
+            fundamental = math.sin(2 * math.pi * freq * t)
+            harmonic1 = 0.4 * math.sin(2 * math.pi * freq * 1.5 * t)
+            harmonic2 = 0.2 * math.sin(2 * math.pi * freq * 2.0 * t)
+            harmonic3 = 0.1 * math.sin(2 * math.pi * freq * 3.0 * t)
+            
+            # Add envelope for staccato feel
+            envelope = math.exp(-t * 12)
+            
+            # Mix with volume that builds over time
+            build_factor = min(1.0, t * 0.5)  # Gradually build volume
+            value = int(0.4 * 32767 * (fundamental + harmonic1 + harmonic2 + harmonic3) * envelope * build_factor)
+            value = max(-32768, min(32767, value))
+            samples.append(value)
+        
+        return samples
+
+    def _generate_techno_synth_lead(self, notes: List[float], duration: float) -> array.array:
+        """Generate a techno-style synth lead with filter sweep."""
+        samples = array.array("h")
+        num_samples = int(self.sample_rate * duration)
+        samples_per_note = num_samples // len(notes)
+        
+        for note_idx, freq in enumerate(notes):
+            for i in range(samples_per_note):
+                t = i / self.sample_rate
+                
+                # Create a sawtooth-like wave with harmonics
+                saw = 0.0
+                for harmonic in range(1, 10):
+                    saw += math.sin(2 * math.pi * freq * harmonic * t) / harmonic
+                
+                # Add filter sweep effect
+                filter_cutoff = 0.5 + 0.5 * math.sin(2 * math.pi * 0.5 * t)  # Slow sweep
+                filtered_saw = saw * filter_cutoff
+                
+                # Add envelope
+                envelope = math.exp(-t * 6)
+                
+                # Distortion for techno edge
+                distorted = self._techno_distortion(filtered_saw, 0.8)
+                
+                value = int(0.5 * 32767 * distorted * envelope)
+                value = max(-32768, min(32767, value))
+                samples.append(value)
+        
         return samples
 
     def generate_track(self) -> array.array:
@@ -275,6 +362,17 @@ class TechnoMusicGenerator:
             synth_notes = [220.0, 246.9]
             synth = self._generate_arpeggio(synth_notes, self.measure_duration, speed=1)
             self._blend_layer(track, measure_start, synth, 0.15)
+        
+        # Add crystal arpeggio layer - builds throughout the track
+        if section in ["buildup1", "drop", "buildup2", "final_drop"]:
+            crystal_arp = self._generate_crystal_arpeggio(self.measure_duration)
+            self._blend_layer(track, measure_start, crystal_arp, 0.30)
+        
+        # Add techno synth lead in key sections
+        if section in ["drop", "final_drop"]:
+            lead_notes = [261.6, 293.7, 329.6, 349.2]  # C4, D4, E4, F4
+            lead_synth = self._generate_techno_synth_lead(lead_notes, self.measure_duration)
+            self._blend_layer(track, measure_start, lead_synth, 0.35)
     
     def _layer_drum(self, track: array.array, measure_start: int, drum_type: str, beat_offsets: List[float], kick_duration: float) -> None:
         """Add drum hits at specific beat offsets within a measure."""

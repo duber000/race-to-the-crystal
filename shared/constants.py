@@ -113,6 +113,7 @@ MOUSE_LOOK_SENSITIVITY = 0.2  # Mouse sensitivity for 3D camera look-around
 # Audio Configuration
 BACKGROUND_MUSIC_VOLUME = 0.9  # Volume for background music (0.0 to 1.0)
 GENERATOR_HUM_VOLUME = 0.7  # Volume for generator hum audio (0.0 to 1.0)
+SOUND_EFFECTS_VOLUME = 0.8  # Volume for game sound effects (0.0 to 1.0)
 
 # Animation Configuration (extends existing ANIMATION_SPEED)
 MYSTERY_ANIMATION_DURATION = 1.0  # Duration of mystery square animation (seconds)
