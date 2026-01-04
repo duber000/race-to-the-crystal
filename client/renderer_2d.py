@@ -84,17 +84,39 @@ class Renderer2D:
         """
         # Store references for recreating shapes during updates (needed for animations)
         self.board = board
-        self.generators = generators
-        self.crystal = crystal
+
+        # Network play currently sends generators/crystal as empty/None.
+        # Fall back to board metadata so animations still run.
+        if crystal is None and hasattr(board, "get_crystal_position"):
+            class _DummyCrystal:
+                def __init__(self, pos: Tuple[int, int]):
+                    self.position = pos
+
+            self.crystal = _DummyCrystal(board.get_crystal_position())
+        else:
+            self.crystal = crystal
+
+        if (not generators) and hasattr(board, "get_generator_positions"):
+            class _DummyGenerator:
+                def __init__(self, pos: Tuple[int, int]):
+                    self.position = pos
+                    self.is_disabled = False
+
+            self.generators = [
+                _DummyGenerator(pos) for pos in board.get_generator_positions()
+            ]
+        else:
+            self.generators = generators
+
         self.mystery_animations = mystery_animations
 
-        crystal_pos = crystal.position if crystal else None
+        crystal_pos = self.crystal.position if self.crystal else None
 
         self.board_shapes = create_board_shapes(
             board,
-            generators=generators,
+            generators=self.generators,
             crystal_pos=crystal_pos,
-            mystery_animations=mystery_animations,
+            mystery_animations=self.mystery_animations,
         )
         logger.debug("Created board shapes for 2D rendering")
 
@@ -201,7 +223,7 @@ class Renderer2D:
         """
         self.selection_shapes = ShapeElementList()
 
-        if selected_token_id:
+        if selected_token_id is not None:
             # Find selected token position
             selected_token = game_state.get_token(selected_token_id)
             if selected_token:

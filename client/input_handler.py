@@ -196,6 +196,9 @@ class InputHandler:
             if (
                 not clicked_on_token
                 and not self.deployment_controller.menu_open
+                # Do not steal clicks when a token or deploy option is selected
+                and self.selected_token_id is None
+                and not self.deployment_controller.selected_deploy_health
                 and self.deployment_controller.is_click_on_indicator(
                     x, y, current_player
                 )
@@ -463,12 +466,12 @@ class InputHandler:
 
     def _handle_enemy_token_click(self, clicked_token):
         """Handle clicking on enemy token (attack)."""
-        if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
+        if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id is not None:
             self._try_attack(clicked_token)
 
     def _handle_empty_cell_click(self, grid_pos: Tuple[int, int], current_player):
         """Handle clicking on empty cell."""
-        if self.selected_token_id and self.turn_phase == TurnPhase.MOVEMENT:
+        if self.selected_token_id is not None and self.turn_phase == TurnPhase.MOVEMENT:
             self._try_move_selected_token(grid_pos)
         elif (
             self.deployment_controller.selected_deploy_health
@@ -572,7 +575,7 @@ class InputHandler:
         Args:
             target_token: Token to attack
         """
-        if not self.selected_token_id:
+        if self.selected_token_id is None:
             return
 
         # Execute attack through action handler
@@ -591,7 +594,7 @@ class InputHandler:
 
     def _handle_cancel(self):
         """Handle cancel action."""
-        if self.selected_token_id:
+        if self.selected_token_id is not None:
             logger.debug("Cancelled token selection")
             self.selected_token_id = None
             self.valid_moves = set()

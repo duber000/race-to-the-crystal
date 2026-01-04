@@ -66,15 +66,30 @@ class Renderer3D:
                 token_3d.cleanup()
             self.tokens_3d.clear()
 
-            # Get crystal position
+            # Get crystal position (fallback for network games that omit it)
             crystal = game_state.crystal
-            crystal_pos = crystal.position if crystal else None
+            if crystal:
+                crystal_pos = crystal.position
+            elif hasattr(game_state.board, "get_crystal_position"):
+                crystal_pos = game_state.board.get_crystal_position()
+            else:
+                crystal_pos = None
+
+            # Get generator list (fallback to board positions when missing)
+            generators = game_state.generators
+            if (not generators) and hasattr(game_state.board, "get_generator_positions"):
+                from types import SimpleNamespace
+
+                generators = [
+                    SimpleNamespace(position=pos, is_disabled=False)
+                    for pos in game_state.board.get_generator_positions()
+                ]
 
             # Create 3D board with generators, crystal position, and mystery animations
             self.board_3d = Board3D(
                 game_state.board,
                 ctx,
-                generators=game_state.generators,
+                generators=generators,
                 crystal_pos=crystal_pos,
                 mystery_animations=mystery_animations,
             )

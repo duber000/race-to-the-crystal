@@ -421,8 +421,8 @@ class NetworkGameView(arcade.View):
         if token:
             logger.info(f"Rolling back token {token_id} from {token.position} to {original_position}")
             
-            # Revert position
-            token.position = original_position.copy()
+            # Revert position (original_position is a tuple)
+            token.position = tuple(original_position)
             
             # Revert health if it changed (e.g., from mystery square)
             if token.health != original_health:

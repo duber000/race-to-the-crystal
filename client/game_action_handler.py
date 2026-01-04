@@ -62,6 +62,7 @@ class GameActionHandler:
         target_cell: Tuple[int, int],
         mystery_animations: Dict[Tuple[int, int], float],
         ctx,
+        animate: bool = True,
     ) -> Tuple[bool, Optional[Tuple[int, int]]]:
         """
         Execute a token move action.
@@ -127,7 +128,12 @@ class GameActionHandler:
         # Update sprite position and health display
         for sprite in self.renderer_2d.token_sprites:
             if isinstance(sprite, TokenSprite) and sprite.token.id == token_id:
-                sprite.update_position(final_position[0], final_position[1])
+                # In network mode we want to show the move animation during prediction
+                sprite.update_position(
+                    final_position[0],
+                    final_position[1],
+                    instant=not animate,
+                )
                 sprite.update_health()  # Refresh health display (for mystery heal)
                 break
 
