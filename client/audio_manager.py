@@ -166,23 +166,35 @@ class AudioManager:
         When resuming, background music restarts and generator hums are updated
         based on current game state (via update_generator_hums).
         """
-        if self.background_music:
+        if not self.background_music:
+            # If music isn't loaded yet, interpret toggle as enable → load, disable → just flip flag
             if self.music_playing:
-                if self.music_player:
-                    self.music_player.pause()
-                # Pause all generator hums
-                for player in self.generator_hum_players:
-                    if player:
-                        player.pause()
                 self.music_playing = False
-                logger.info("Music paused")
-            else:
-                # Restart the music with looping
-                self.music_player = self.background_music.play(self.music_volume, loop=True)
-                # Generator hums will be restarted via update_generator_hums()
-                # (caller should call update_generator_hums after this)
-                self.music_playing = True
+                logger.info("Music paused (not loaded)")
+                return
+
+            self.load_background_music()
+            self.music_playing = bool(self.music_player or any(self.generator_hum_players))
+            if self.music_playing:
                 logger.info("Music playing")
+            return
+
+        if self.music_playing:
+            if self.music_player:
+                self.music_player.pause()
+            # Pause all generator hums
+            for player in self.generator_hum_players:
+                if player:
+                    player.pause()
+            self.music_playing = False
+            logger.info("Music paused")
+        else:
+            # Restart the music with looping
+            self.music_player = self.background_music.play(self.music_volume, loop=True)
+            # Generator hums will be restarted via update_generator_hums()
+            # (caller should call update_generator_hums after this)
+            self.music_playing = True
+            logger.info("Music playing")
 
     def update_generator_hums(self, generators: List) -> None:
         """

@@ -116,7 +116,11 @@ class MenuGameWindow(AsyncWindow):
         game_state = setup_game_state(num_players)
 
         # Create game view (now using View architecture)
-        game_view = GameView(game_state, start_in_3d=start_in_3d)
+        game_view = GameView(
+            game_state,
+            start_in_3d=start_in_3d,
+            music_enabled=self.main_menu.music_enabled,
+        )
 
         # Show the game view (no need to close window or create new one!)
         self.show_view(game_view)
@@ -347,7 +351,11 @@ class MenuGameWindow(AsyncWindow):
                 logger.error(f"Failed to deserialize initial game state: {e}", exc_info=True)
 
         # Create network game view with initial state
-        self.network_game_view = NetworkGameView(self.network_client, initial_state)
+        self.network_game_view = NetworkGameView(
+            self.network_client,
+            initial_state,
+            music_enabled=self.main_menu.music_enabled,
+        )
 
         # Set up callbacks
         self.network_game_view.on_game_end = self._handle_game_end

@@ -323,6 +323,21 @@ class InputHandler:
                 self.audio_manager.update_generator_hums(self.game_state.generators)
             return True
 
+        # Deployment menu toggle (R)
+        elif symbol == arcade.key.R:
+            current_player = self.game_state.get_current_player()
+            if (
+                current_player
+                and self.turn_phase == TurnPhase.MOVEMENT
+                and not self.deployment_controller.selected_deploy_health
+            ):
+                # Toggle open/close; respect the menu_just_opened guard
+                if self.deployment_controller.menu_open:
+                    self.deployment_controller.close_menu()
+                else:
+                    self.deployment_controller.open_menu()
+                return True
+
         # 3D View controls
         elif symbol == arcade.key.V:
             # Toggle between 2D and 3D views (only if 3D rendering is available)

@@ -31,6 +31,7 @@ class NetworkGameView(arcade.View):
         self,
         network_client: NetworkClient,
         initial_game_state: Optional[GameState] = None,
+        music_enabled: bool = True,
     ):
         """
         Initialize network game view.
@@ -38,10 +39,12 @@ class NetworkGameView(arcade.View):
         Args:
             network_client: Connected network client
             initial_game_state: Initial game state (from server)
+            music_enabled: Whether background music/hums should start enabled
         """
         super().__init__()
 
         self.network_client = network_client
+        self.music_enabled = music_enabled
 
         # Create a dummy game state if not provided
         # The server will send the real state
@@ -88,6 +91,7 @@ class NetworkGameView(arcade.View):
             start_in_3d=False,
             is_network_game=True,
             network_client=self.network_client,
+            music_enabled=self.music_enabled,
         )
 
         # Show the game view within the same window

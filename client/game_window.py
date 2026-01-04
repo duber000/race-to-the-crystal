@@ -53,6 +53,7 @@ class GameView(arcade.View):
         start_in_3d: bool = False,
         is_network_game: bool = False,
         network_client: Optional["NetworkClient"] = None,
+        music_enabled: bool = True,
     ):
         """
         Initialize the game view.
@@ -62,6 +63,7 @@ class GameView(arcade.View):
             start_in_3d: Whether to start in 3D mode
             is_network_game: Whether this is a network game (enables chat)
             network_client: Network client for chat functionality (network games only)
+            music_enabled: Whether background music/hums should start enabled
         """
         super().__init__()
 
@@ -71,6 +73,7 @@ class GameView(arcade.View):
         self.network_client = network_client
         self.window.ctx  # Ensure context is available
         self.start_in_3d = start_in_3d
+        self.music_enabled = music_enabled
 
         # Systems
         self.movement_system = MovementSystem()
@@ -222,8 +225,9 @@ class GameView(arcade.View):
         # Set up camera to fit entire board in view
         self.camera_controller.setup_initial_view(self.window.width, self.window.height)  # type: ignore
 
-        # Load and play background music (only if not already loaded)
-        if not self.audio_manager.background_music:
+        # Load and play background music (only if enabled and not already loaded)
+        self.audio_manager.music_playing = self.music_enabled
+        if self.music_enabled and not self.audio_manager.background_music:
             self.audio_manager.load_background_music()
 
         # Build initial UI
