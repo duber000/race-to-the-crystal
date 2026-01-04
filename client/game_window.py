@@ -459,13 +459,32 @@ class GameView(arcade.View):
 
             current_player = self.game_state.get_current_player()
 
-            # Check if clicking on R hexagon to open menu
-            if not self.deployment_controller.menu_open and self.deployment_controller.is_click_on_indicator(x, y, current_player):
-                if current_player and self.turn_phase == TurnPhase.MOVEMENT:
-                    self.deployment_controller.open_menu()
-                    return
+            # First, convert screen coordinates to world/grid to check for tokens
+            world_pos = None
+            grid_pos = None
+            clicked_on_token = False
 
-            # Check corner menu if open (UI-based menu)
+            if self.camera_controller.camera_mode == "2D":
+                world_pos = self.camera_controller.screen_to_world_2d(x, y)
+                grid_x = int(world_pos[0] // CELL_SIZE)
+                grid_y = int(world_pos[1] // CELL_SIZE)
+                grid_pos = (grid_x, grid_y)
+            else:
+                grid_pos = self.camera_controller.screen_to_grid_3d(x, y, self.window.width, self.window.height)
+
+            # Check if there's a token at the click position
+            if grid_pos and self.game_state.board.is_valid_position(grid_pos[0], grid_pos[1]):
+                for player in self.game_state.players.values():
+                    for token_id in player.token_ids:
+                        token = self.game_state.get_token(token_id)
+                        if (token and token.is_alive and token.is_deployed and
+                            token.position == grid_pos):
+                            clicked_on_token = True
+                            break
+                    if clicked_on_token:
+                        break
+
+            # Check corner menu if open (UI-based menu) - do this before indicator check
             if self.deployment_controller.menu_open and current_player:
                 reserve_counts = self.game_state.get_reserve_token_counts(current_player.id)
                 selected_health = self.deployment_controller.handle_menu_click((x, y), current_player, reserve_counts)
@@ -478,14 +497,19 @@ class GameView(arcade.View):
                     )
                     return
 
-            # No UI clicked, proceed with world interaction
+            # Check if clicking on R hexagon to open menu - but NOT if clicking on a token
+            if (not clicked_on_token and
+                not self.deployment_controller.menu_open and
+                self.deployment_controller.is_click_on_indicator(x, y, current_player)):
+                if current_player and self.turn_phase == TurnPhase.MOVEMENT:
+                    self.deployment_controller.open_menu()
+                    return
+
+            # Proceed with world interaction
             if self.camera_controller.camera_mode == "2D":
-                # 2D picking using camera unproject
-                world_pos = self.camera_controller.screen_to_world_2d(x, y)
-                self._handle_select((world_pos[0], world_pos[1]))
+                if world_pos:
+                    self._handle_select((world_pos[0], world_pos[1]))
             else:
-                # 3D ray casting
-                grid_pos = self.camera_controller.screen_to_grid_3d(x, y, self.window.width, self.window.height)
                 if grid_pos:
                     logger.debug(f"3D click detected at grid {grid_pos}")
                     self._handle_select_3d(grid_pos)
