@@ -177,6 +177,18 @@ class TestProtocolHandler:
         assert restored_action.token_id == original_action.token_id
         assert restored_action.destination == original_action.destination
 
+    def test_create_heartbeat_ack(self):
+        """Test creating HEARTBEAT_ACK message."""
+        handler = ProtocolHandler()
+        timestamp = time.time()
+        
+        msg = handler.create_heartbeat_ack(timestamp)
+        
+        assert msg.type == MessageType.HEARTBEAT_ACK
+        assert msg.timestamp == timestamp
+        assert msg.player_id is None
+        assert msg.data is None
+
 
 class TestMessageFraming:
     """Test TCP message framing."""

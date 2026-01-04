@@ -147,6 +147,14 @@ class ProtocolHandler:
             timestamp=time.time()
         )
 
+    @staticmethod
+    def create_heartbeat_ack(timestamp: float) -> NetworkMessage:
+        """Create a HEARTBEAT_ACK message."""
+        return NetworkMessage(
+            type=MessageType.HEARTBEAT_ACK,
+            timestamp=timestamp
+        )
+
     # --- LOBBY MESSAGES ---
 
     @staticmethod

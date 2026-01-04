@@ -361,7 +361,8 @@ class GameServer:
 
             # Notify other players that player disconnected but can reconnect
             if lobby:
-                player_name = lobby.players.get(player_id, {}).get("name", "Unknown")
+                player_info = lobby.players.get(player_id)
+                player_name = player_info.player_name if player_info else "Unknown"
                 disconnect_msg = NetworkMessage(
                     type=MessageType.PLAYER_DISCONNECTED,
                     timestamp=time.time(),
@@ -429,7 +430,7 @@ class GameServer:
                 await self._handle_disconnect(player_id)
 
             elif message.type == MessageType.HEARTBEAT:
-                await self._handle_heartbeat(player_id)
+                await self._handle_heartbeat(player_id, message)
 
             elif message.type == MessageType.CREATE_GAME:
                 await self._handle_create_game(player_id, message)
@@ -464,14 +465,11 @@ class GameServer:
             logger.error(f"Error handling message {message.type.value}: {e}", exc_info=True)
             await self._send_error(player_id, f"Server error: {e}")
 
-    async def _handle_heartbeat(self, player_id: str) -> None:
+    async def _handle_heartbeat(self, player_id: str, message: NetworkMessage) -> None:
         """Respond to heartbeat."""
         connection = self.player_connections.get(player_id)
         if connection:
-            ack_msg = NetworkMessage(
-                type=MessageType.HEARTBEAT_ACK,
-                timestamp=message.timestamp
-            )
+            ack_msg = self.protocol.create_heartbeat_ack(message.timestamp)
             await connection.send_message(ack_msg)
 
     async def _handle_create_game(self, player_id: str, message: NetworkMessage) -> None:
