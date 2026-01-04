@@ -283,20 +283,45 @@ status = AIObserver._get_generator_status(gen, game_state)
 
 ---
 
-### 🟡 8. Primitive Obsession - Token ID and Player ID
-**Status:** Open
+### ✅ 8. Primitive Obsession - Token ID and Player ID
+**Status:** ✅ **COMPLETED**
 **Location:** Throughout codebase
 
 **Issue:** Using `int` for token_id and `str` for player_id without type safety.
 
-**Recommendation:**
-- Consider using NewType or custom ID classes:
-```python
-from typing import NewType
+**Resolution:**
+- ✅ Created `shared/types.py` module with NewType definitions
+- ✅ Updated all type hints in core game files:
+  - `game/token.py`: Token.id, Token.player_id
+  - `game/player.py`: Player.id, Player.token_ids, method signatures
+  - `game/game_state.py`: All player_id and token_id parameters and fields
+  - `game/board.py`: Cell.occupants, method signatures
+  - `game/generator.py`: Generator.capturing_player_id, Generator.capture_token_ids
+  - `game/crystal.py`: Crystal.holding_player_id, Crystal.holding_token_ids
+  - `game/mystery_square.py`: MysteryEventResult.token_id
+  - `game/ai_actions.py`: All action classes and method signatures
+  - `game/ai_observation.py`: All method signatures
+- ✅ All 263 tests pass without modification
+- ✅ Backward compatible - NewType is assignment-compatible with base types
 
-TokenID = NewType('TokenID', int)
-PlayerID = NewType('PlayerID', str)
-```
+**Benefits:**
+- Better type safety and IDE autocomplete
+- Self-documenting code (TokenID vs int, PlayerID vs str)
+- Easier to extend in the future
+- No runtime overhead (NewType is erased at runtime)
+- Better code clarity and maintainability
+
+**Files Modified:**
+- `shared/types.py` (new, 274 bytes)
+- `game/token.py` (2 type hints updated)
+- `game/player.py` (4 type hints updated)
+- `game/game_state.py` (20+ type hints updated)
+- `game/board.py` (6 type hints updated)
+- `game/generator.py` (2 type hints updated)
+- `game/crystal.py` (2 type hints updated)
+- `game/mystery_square.py` (1 type hint updated)
+- `game/ai_actions.py` (10+ type hints updated)
+- `game/ai_observation.py` (11 type hints updated)
 
 ---
 
@@ -602,6 +627,7 @@ The codebase has many **good practices**:
 9. ✅ **COMPLETED** - Add `ActionResult` class for better error handling
 10. ✅ **COMPLETED** - Refactor long parameter lists using parameter objects
 11. ✅ **COMPLETED** - Eliminate "what" comments through self-documenting code
+12. ✅ **COMPLETED** - Add TokenID and PlayerID NewType classes for better type safety
 
 ### Low Priority (Nice to Have)
 12. Consider creating ID wrapper types

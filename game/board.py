@@ -14,6 +14,7 @@ from shared.constants import (
     MYSTERY_PLACEMENT_MAX_ATTEMPTS,
     MYSTERY_SQUARES_PER_QUADRANT,
 )
+from shared.types import TokenID, PlayerID
 
 
 @dataclass
@@ -29,7 +30,7 @@ class Cell:
 
     position: Tuple[int, int]
     cell_type: CellType = CellType.NORMAL
-    occupants: List[int] = field(default_factory=list)
+    occupants: List[TokenID] = field(default_factory=list)
 
     def is_occupied(self) -> bool:
         """Check if this cell is occupied by any token."""
@@ -39,7 +40,7 @@ class Cell:
         """Check if tokens can move through this cell (always True - stacking allowed)."""
         return True
 
-    def has_enemy_tokens(self, player_id: str, tokens_dict: dict) -> bool:
+    def has_enemy_tokens(self, player_id: PlayerID, tokens_dict: dict) -> bool:
         """Check if this cell has enemy tokens."""
         for token_id in self.occupants:
             if token_id in tokens_dict:
@@ -208,7 +209,7 @@ class Board:
         """Check if position is within board bounds."""
         return 0 <= x < self.width and 0 <= y < self.height
 
-    def add_occupant(self, position: Tuple[int, int], token_id: int) -> None:
+    def add_occupant(self, position: Tuple[int, int], token_id: TokenID) -> None:
         """
         Add a token as an occupant of a cell.
 
@@ -220,7 +221,7 @@ class Board:
         if cell and token_id not in cell.occupants:
             cell.occupants.append(token_id)
 
-    def remove_occupant(self, position: Tuple[int, int], token_id: int) -> None:
+    def remove_occupant(self, position: Tuple[int, int], token_id: TokenID) -> None:
         """
         Remove a token from a cell's occupants.
 
@@ -232,7 +233,7 @@ class Board:
         if cell and token_id in cell.occupants:
             cell.occupants.remove(token_id)
 
-    def set_occupant(self, position: Tuple[int, int], token_id: Optional[int]) -> None:
+    def set_occupant(self, position: Tuple[int, int], token_id: Optional[TokenID]) -> None:
         """
         Add a token as occupant of a cell (backwards compatible).
 
@@ -244,7 +245,7 @@ class Board:
             self.add_occupant(position, token_id)
 
     def clear_occupant(
-        self, position: Tuple[int, int], token_id: Optional[int] = None
+        self, position: Tuple[int, int], token_id: Optional[TokenID] = None
     ) -> None:
         """
         Clear occupant(s) from a cell.

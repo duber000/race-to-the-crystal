@@ -7,6 +7,7 @@ from typing import Tuple, TYPE_CHECKING
 
 from game.token import Token
 from shared.enums import MysteryEffect
+from shared.types import TokenID
 
 if TYPE_CHECKING:
     from game.board import Board
@@ -26,7 +27,7 @@ class MysteryEventResult:
         new_health: Token's health after event
     """
     effect: MysteryEffect
-    token_id: int
+    token_id: TokenID
     old_position: Tuple[int, int]
     new_position: Tuple[int, int]
     old_health: int

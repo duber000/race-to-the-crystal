@@ -17,6 +17,7 @@ from shared.constants import (
     CRYSTAL_BASE_TOKENS_REQUIRED,
     GENERATOR_TOKEN_REDUCTION,
 )
+from shared.types import TokenID, PlayerID
 
 
 class AIObserver:
@@ -86,7 +87,7 @@ class AIObserver:
 
     @staticmethod
     def describe_game_state(
-        game_state: GameState, perspective_player_id: str
+        game_state: GameState, perspective_player_id: PlayerID
     ) -> str:
         """
         Generate comprehensive text description of current game state.
@@ -131,7 +132,7 @@ class AIObserver:
 
     @staticmethod
     def _add_game_header(
-        lines: list, game_state: GameState, perspective_player_id: str
+        lines: list, game_state: GameState, perspective_player_id: PlayerID
     ) -> None:
         """Add game header with turn information."""
         if game_state.phase == GamePhase.ENDED:
@@ -168,7 +169,7 @@ class AIObserver:
 
     @staticmethod
     def _add_player_tokens(
-        lines: list, game_state: GameState, player_id: str
+        lines: list, game_state: GameState, player_id: PlayerID
     ) -> None:
         """Add deployed and reserve token information for player."""
         deployed_tokens = [
@@ -204,7 +205,7 @@ class AIObserver:
 
     @staticmethod
     def _add_enemy_tokens(
-        lines: list, game_state: GameState, perspective_player_id: str
+        lines: list, game_state: GameState, perspective_player_id: PlayerID
     ) -> None:
         """Add enemy token information."""
         enemy_players = [
@@ -275,7 +276,7 @@ class AIObserver:
 
     @staticmethod
     def get_board_map(
-        game_state: GameState, perspective_player_id: str
+        game_state: GameState, perspective_player_id: PlayerID
     ) -> str:
         """
         Generate ASCII art map of the board.
@@ -306,7 +307,7 @@ class AIObserver:
 
     @staticmethod
     def _create_board_grid(
-        game_state: GameState, perspective_player_id: str
+        game_state: GameState, perspective_player_id: PlayerID
     ) -> list:
         """Create and populate the board grid with symbols."""
         board_grid = [[AIObserver.SYMBOL_EMPTY for _ in range(BOARD_WIDTH)]
@@ -345,7 +346,7 @@ class AIObserver:
 
     @staticmethod
     def _place_tokens_on_grid(
-        board_grid: list, game_state: GameState, perspective_player_id: str
+        board_grid: list, game_state: GameState, perspective_player_id: PlayerID
     ) -> None:
         """Place tokens on the board grid."""
         for token in game_state.tokens.values():
@@ -391,7 +392,7 @@ class AIObserver:
 
     @staticmethod
     def _render_legend(
-        lines: list, game_state: GameState, perspective_player_id: str
+        lines: list, game_state: GameState, perspective_player_id: PlayerID
     ) -> None:
         """Render the board legend."""
         lines.append("LEGEND:")
@@ -409,7 +410,7 @@ class AIObserver:
 
     @staticmethod
     def list_available_actions(
-        game_state: GameState, player_id: str
+        game_state: GameState, player_id: PlayerID
     ) -> Dict:
         """
         Return structured dictionary of all valid actions for current turn phase.
@@ -474,7 +475,7 @@ class AIObserver:
 
     @staticmethod
     def _add_deployment_actions(
-        actions: list, game_state: GameState, player_id: str, player
+        actions: list, game_state: GameState, player_id: PlayerID, player
     ) -> None:
         """Add deployment actions for tokens in reserve."""
         reserve_counts = game_state.get_reserve_token_counts(player_id)
@@ -620,7 +621,7 @@ class AIObserver:
 
     @staticmethod
     def get_situation_report(
-        game_state: GameState, perspective_player_id: str
+        game_state: GameState, perspective_player_id: PlayerID
     ) -> str:
         """
         Get complete situation report combining all observations.

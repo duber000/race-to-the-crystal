@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from shared.enums import PlayerColor
+from shared.types import TokenID, PlayerID
 
 
 @dataclass
@@ -21,10 +22,10 @@ class Player:
         is_active: Whether player is still in the game
         team: Optional team identifier for team games
     """
-    id: str
+    id: PlayerID
     name: str
     color: PlayerColor
-    token_ids: List[int] = field(default_factory=list)
+    token_ids: List[TokenID] = field(default_factory=list)
     is_ready: bool = False
     is_active: bool = True
     team: Optional[int] = None
@@ -38,7 +39,7 @@ class Player:
         """
         return len(self.token_ids)
 
-    def add_token(self, token_id: int) -> None:
+    def add_token(self, token_id: TokenID) -> None:
         """
         Add a token to this player's collection.
 
@@ -48,7 +49,7 @@ class Player:
         if token_id not in self.token_ids:
             self.token_ids.append(token_id)
 
-    def remove_token(self, token_id: int) -> None:
+    def remove_token(self, token_id: TokenID) -> None:
         """
         Remove a token from this player's collection.
 
@@ -58,7 +59,7 @@ class Player:
         if token_id in self.token_ids:
             self.token_ids.remove(token_id)
 
-    def has_token(self, token_id: int) -> bool:
+    def has_token(self, token_id: TokenID) -> bool:
         """
         Check if this player owns a token.
 

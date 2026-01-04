@@ -9,6 +9,7 @@ from shared.constants import (
     GENERATOR_CAPTURE_TURNS_REQUIRED,
     GENERATOR_TOKEN_REDUCTION,
 )
+from shared.types import TokenID, PlayerID
 
 
 @dataclass
@@ -29,8 +30,8 @@ class Generator:
     """
     id: int
     position: Tuple[int, int]
-    capturing_player_id: Optional[str] = None
-    capture_token_ids: List[int] = field(default_factory=list)
+    capturing_player_id: Optional[PlayerID] = None
+    capture_token_ids: List[TokenID] = field(default_factory=list)
     turns_held: int = 0
     is_disabled: bool = False
 

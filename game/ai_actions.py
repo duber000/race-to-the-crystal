@@ -11,6 +11,7 @@ from game.movement import MovementSystem
 from game.combat import CombatSystem
 from game.mystery_square import MysterySquareSystem
 from shared.enums import TurnPhase, GamePhase, CellType
+from shared.types import TokenID, PlayerID
 
 
 @dataclass
@@ -73,10 +74,10 @@ class MoveAction(AIAction):
         token_id: ID of token to move
         destination: Target (x, y) position
     """
-    token_id: int
+    token_id: TokenID
     destination: Tuple[int, int]
 
-    def __init__(self, token_id: int, destination: Tuple[int, int]):
+    def __init__(self, token_id: TokenID, destination: Tuple[int, int]):
         super().__init__(action_type="MOVE")
         self.token_id = token_id
         self.destination = destination
@@ -98,10 +99,10 @@ class AttackAction(AIAction):
         attacker_id: ID of attacking token
         defender_id: ID of defending token
     """
-    attacker_id: int
-    defender_id: int
+    attacker_id: TokenID
+    defender_id: TokenID
 
-    def __init__(self, attacker_id: int, defender_id: int):
+    def __init__(self, attacker_id: TokenID, defender_id: TokenID):
         super().__init__(action_type="ATTACK")
         self.attacker_id = attacker_id
         self.defender_id = defender_id
@@ -164,7 +165,7 @@ class AIActionExecutor:
         self,
         action: AIAction,
         game_state: GameState,
-        player_id: str
+        player_id: PlayerID
     ) -> ValidationResult:
         """
         Validate action without executing it.
@@ -203,7 +204,7 @@ class AIActionExecutor:
         self,
         action: AIAction,
         game_state: GameState,
-        player_id: str
+        player_id: PlayerID
     ) -> ActionResult:
         """
         Validate and execute an action.
@@ -239,7 +240,7 @@ class AIActionExecutor:
         self,
         action: MoveAction,
         game_state: GameState,
-        player_id: str
+        player_id: PlayerID
     ) -> ValidationResult:
         """Validate a move action."""
         # Check phase
@@ -275,7 +276,7 @@ class AIActionExecutor:
         self,
         action: MoveAction,
         game_state: GameState,
-        player_id: str
+        player_id: PlayerID
     ) -> ActionResult:
         """Execute a move action."""
         token = game_state.get_token(action.token_id)
@@ -334,7 +335,7 @@ class AIActionExecutor:
         self,
         action: AttackAction,
         game_state: GameState,
-        player_id: str
+        player_id: PlayerID
     ) -> ValidationResult:
         """Validate an attack action."""
         # Check phase
@@ -381,7 +382,7 @@ class AIActionExecutor:
         self,
         action: AttackAction,
         game_state: GameState,
-        player_id: str
+        player_id: PlayerID
     ) -> ActionResult:
         """Execute an attack action."""
         attacker = game_state.get_token(action.attacker_id)
@@ -424,7 +425,7 @@ class AIActionExecutor:
         self,
         action: DeployAction,
         game_state: GameState,
-        player_id: str
+        player_id: PlayerID
     ) -> ValidationResult:
         """Validate a deploy action."""
         # Check phase
@@ -469,7 +470,7 @@ class AIActionExecutor:
         self,
         action: DeployAction,
         game_state: GameState,
-        player_id: str
+        player_id: PlayerID
     ) -> ActionResult:
         """Execute a deploy action."""
         # Deploy the token
@@ -506,7 +507,7 @@ class AIActionExecutor:
         self,
         action: EndTurnAction,
         game_state: GameState,
-        player_id: str
+        player_id: PlayerID
     ) -> ValidationResult:
         """Validate an end turn action."""
         # Can end turn in both MOVEMENT and ACTION phases
@@ -520,7 +521,7 @@ class AIActionExecutor:
         self,
         action: EndTurnAction,
         game_state: GameState,
-        player_id: str
+        player_id: PlayerID
     ) -> ActionResult:
         """Execute an end turn action."""
         # End the turn

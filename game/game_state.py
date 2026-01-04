@@ -11,6 +11,7 @@ from shared.constants import (
     TOKEN_HEALTH_VALUES,
     TOKENS_PER_HEALTH_VALUE,
 )
+from shared.types import TokenID, PlayerID
 from game.board import Board
 from game.player import Player
 from game.token import Token
@@ -34,21 +35,21 @@ class GameState:
     """
 
     board: Board = field(default_factory=Board)
-    players: Dict[str, Player] = field(default_factory=dict)
-    tokens: Dict[int, Token] = field(default_factory=dict)
+    players: Dict[PlayerID, Player] = field(default_factory=dict)
+    tokens: Dict[TokenID, Token] = field(default_factory=dict)
     generators: List = field(
         default_factory=list
     )  # Will be List[Generator] when created
     crystal: Optional["Crystal"] = None  # Will be Crystal object when created
-    current_turn_player_id: Optional[str] = None
+    current_turn_player_id: Optional[PlayerID] = None
     turn_number: int = 0
     phase: GamePhase = GamePhase.SETUP
     turn_phase: TurnPhase = TurnPhase.MOVEMENT
-    winner_id: Optional[str] = None
+    winner_id: Optional[PlayerID] = None
     _next_token_id: int = 0
 
     @property
-    def current_player_id(self) -> Optional[str]:
+    def current_player_id(self) -> Optional[PlayerID]:
         """Alias for current_turn_player_id."""
         return self.current_turn_player_id
 
@@ -57,7 +58,7 @@ class GameState:
         """Alias for phase."""
         return self.phase
 
-    def add_player(self, player_id: str, name: str, color: PlayerColor) -> Player:
+    def add_player(self, player_id: PlayerID, name: str, color: PlayerColor) -> Player:
         """
         Add a new player to the game.
 
@@ -73,12 +74,12 @@ class GameState:
         self.players[player_id] = player
         return player
 
-    def remove_player(self, player_id: str) -> None:
+    def remove_player(self, player_id: PlayerID) -> None:
         """Remove a player from the game."""
         if player_id in self.players:
             del self.players[player_id]
 
-    def create_tokens_for_player(self, player_id: str) -> List[Token]:
+    def create_tokens_for_player(self, player_id: PlayerID) -> List[Token]:
         """
         Create all tokens for a player in reserve (not deployed to board).
 
@@ -103,7 +104,7 @@ class GameState:
         for health_value in TOKEN_HEALTH_VALUES:
             for _ in range(TOKENS_PER_HEALTH_VALUE):
                 token = Token(
-                    id=self._next_token_id,
+                    id=TokenID(self._next_token_id),
                     player_id=player_id,
                     health=health_value,
                     max_health=health_value,
@@ -117,11 +118,11 @@ class GameState:
 
         return tokens
 
-    def get_token(self, token_id: int) -> Optional[Token]:
+    def get_token(self, token_id: TokenID) -> Optional[Token]:
         """Get token by ID."""
         return self.tokens.get(token_id)
 
-    def get_reserve_tokens(self, player_id: str) -> List[Token]:
+    def get_reserve_tokens(self, player_id: PlayerID) -> List[Token]:
         """
         Get all tokens in reserve (not deployed) for a player.
 
@@ -141,7 +142,7 @@ class GameState:
             if tid in self.tokens and not self.tokens[tid].is_deployed
         ]
 
-    def get_reserve_token_counts(self, player_id: str) -> dict:
+    def get_reserve_token_counts(self, player_id: PlayerID) -> dict:
         """
         Get count of reserve tokens by health value.
 
@@ -159,7 +160,7 @@ class GameState:
         return counts
 
     def deploy_token(
-        self, player_id: str, health_value: int, position: Tuple[int, int]
+        self, player_id: PlayerID, health_value: int, position: Tuple[int, int]
     ) -> Optional[Token]:
         """
         Deploy a token from reserve to the board.
@@ -184,7 +185,7 @@ class GameState:
 
         return None
 
-    def get_player(self, player_id: str) -> Optional[Player]:
+    def get_player(self, player_id: PlayerID) -> Optional[Player]:
         """Get player by ID."""
         return self.players.get(player_id)
 
@@ -210,7 +211,7 @@ class GameState:
             t for t in self.tokens.values() if t.position == position and t.is_alive
         ]
 
-    def get_player_tokens(self, player_id: str) -> List[Token]:
+    def get_player_tokens(self, player_id: PlayerID) -> List[Token]:
         """
         Get all alive, deployed tokens for a player.
 
@@ -232,7 +233,7 @@ class GameState:
             and self.tokens[tid].is_deployed
         ]
 
-    def move_token(self, token_id: int, new_position: tuple) -> bool:
+    def move_token(self, token_id: TokenID, new_position: tuple) -> bool:
         """
         Move a token to a new position.
 
@@ -258,7 +259,7 @@ class GameState:
 
         return True
 
-    def remove_token(self, token_id: int) -> None:
+    def remove_token(self, token_id: TokenID) -> None:
         """
         Remove a dead token from play.
 
@@ -280,7 +281,7 @@ class GameState:
         # Mark as not alive
         token.is_alive = False
 
-    def attack_token(self, attacker_id: int, defender_id: int) -> bool:
+    def attack_token(self, attacker_id: TokenID, defender_id: TokenID) -> bool:
         """
         Execute an attack between two tokens.
 
@@ -312,7 +313,7 @@ class GameState:
 
         return True
 
-    def _auto_deploy_starting_tokens(self, player_id: str, player_index: int) -> None:
+    def _auto_deploy_starting_tokens(self, player_id: PlayerID, player_index: int) -> None:
         """
         Automatically deploy tokens to starting corner positions at game start.
 
@@ -467,7 +468,7 @@ class GameState:
         """
         return self.winner_id
 
-    def set_winner(self, player_id: str) -> None:
+    def set_winner(self, player_id: PlayerID) -> None:
         """
         Set the game winner and end the game.
 

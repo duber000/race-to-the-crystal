@@ -4,6 +4,8 @@ Token entity representing a player's game piece.
 from dataclasses import dataclass
 from typing import Tuple
 
+from shared.types import TokenID, PlayerID
+
 
 @dataclass
 class Token:
@@ -19,8 +21,8 @@ class Token:
         is_alive: Whether the token is still in play
         is_deployed: Whether the token has been deployed to the board
     """
-    id: int
-    player_id: str
+    id: TokenID
+    player_id: PlayerID
     health: int
     max_health: int
     position: Tuple[int, int]

@@ -8,6 +8,7 @@ from shared.constants import (
     CRYSTAL_BASE_TOKENS_REQUIRED,
     CRYSTAL_CAPTURE_TURNS_REQUIRED,
 )
+from shared.types import TokenID, PlayerID
 
 
 @dataclass
@@ -26,8 +27,8 @@ class Crystal:
         base_tokens_required: Base number of tokens required to hold crystal
     """
     position: Tuple[int, int]
-    holding_player_id: Optional[str] = None
-    holding_token_ids: List[int] = field(default_factory=list)
+    holding_player_id: Optional[PlayerID] = None
+    holding_token_ids: List[TokenID] = field(default_factory=list)
     turns_held: int = 0
     base_tokens_required: int = CRYSTAL_BASE_TOKENS_REQUIRED
 
