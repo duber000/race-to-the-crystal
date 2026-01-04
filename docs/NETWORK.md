@@ -433,6 +433,13 @@ The server sends complete game state to clients:
 }
 ```
 
+**Client-Side Interpolation**:
+To ensure smooth gameplay, the client implements state interpolation:
+1. `NetworkGameView` receives the new state but does not immediately hard-reset the view.
+2. It calls `sync_tokens()` on the renderer.
+3. The renderer identifies existing tokens and updates their `target_position` instead of their immediate position.
+4. The render loop smoothly animates tokens to their new targets over time.
+
 **When State is Sent**:
 - On game start
 - After any action execution

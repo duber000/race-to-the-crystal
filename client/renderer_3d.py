@@ -121,6 +121,76 @@ class Renderer3D:
         except Exception as e:
             logger.error(f"Failed to create 3D token {token.id}: {e}")
 
+    def sync_tokens(self, game_state, ctx) -> None:
+        """
+        Synchronize 3D tokens with game state, animating changes.
+
+        Args:
+            game_state: New game state object
+            ctx: OpenGL context
+        """
+        # Create a map of existing tokens by token ID
+        existing_tokens = {t.token.id: t for t in self.tokens_3d}
+
+        # Track processed IDs
+        processed_ids = set()
+
+        for player in game_state.players.values():
+            player_color = PLAYER_COLORS[player.color.value]
+
+            for token_id in player.token_ids:
+                token = game_state.get_token(token_id)
+                if not token or not token.is_alive or not token.is_deployed:
+                    continue
+
+                processed_ids.add(token_id)
+
+                if token_id in existing_tokens:
+                    # Update existing token
+                    token_3d = existing_tokens[token_id]
+
+                    # Update reference
+                    token_3d.token = token
+
+                    # Update position target (non-instant)
+                    # Note: We check against render target, not current position, to avoid interrupting animation
+                    current_grid_x = int(
+                        token_3d.target_x // 32
+                    )  # Using 32 as approximate CELL_SIZE if imported locally
+                    current_grid_y = int(token_3d.target_y // 32)
+
+                    # Just update target, Token3D handles interpolation
+                    token_3d.update_position(
+                        token.position[0], token.position[1], instant=False
+                    )
+                else:
+                    # Create new token
+                    try:
+                        self.add_token(token, player_color, ctx)
+                    except Exception as e:
+                        logger.error(f"Failed to create new 3D token {token_id}: {e}")
+
+        # Remove dead/undeployed tokens
+        tokens_to_remove = []
+        for token_3d in self.tokens_3d:
+            if token_3d.token.id not in processed_ids:
+                tokens_to_remove.append(token_3d)
+
+        for token_3d in tokens_to_remove:
+            token_3d.cleanup()
+            self.tokens_3d.remove(token_3d)
+
+    def update(self, delta_time: float) -> None:
+        """
+        Update 3D animations.
+
+        Args:
+            delta_time: Time since last update
+        """
+        for token_3d in self.tokens_3d:
+            if hasattr(token_3d, "update"):
+                token_3d.update(delta_time)
+
     def remove_token(self, token_id: int) -> None:
         """
         Remove a 3D token by ID (used when tokens are destroyed).

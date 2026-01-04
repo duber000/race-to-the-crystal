@@ -8,10 +8,10 @@
   * players start with **3 tokens already deployed** in their starting corner (3x3 grid area)
   * remaining 17 tokens can be deployed from reserve during gameplay to the same 3x3 corner area
   * **Deployment Zones** (3x3 grid in each corner):
-    - Player 1 (top-left): cells (0,0) to (2,2)
-    - Player 2 (top-right): cells (21,0) to (23,2)
-    - Player 3 (bottom-left): cells (0,21) to (2,23)
-    - Player 4 (bottom-right): cells (21,21) to (23,23)
+    - Player 1 (bottom-left): cells (0,0) to (2,2)
+    - Player 2 (bottom-right): cells (21,0) to (23,2)
+    - Player 3 (top-left): cells (0,21) to (2,23)
+    - Player 4 (top-right): cells (21,21) to (23,23)
 * 2-4 players per game
 * goal is to capture a power crystal in the middle of the board
 * players start from each corner of the board
@@ -34,10 +34,10 @@
 
 ### Generators
 Each quadrant has a generator positioned at the center:
-- **Top-Left**: (6, 6)
-- **Top-Right**: (18, 6)
-- **Bottom-Left**: (6, 18)
-- **Bottom-Right**: (18, 18)
+- **Bottom-Left**: (6, 6)
+- **Bottom-Right**: (18, 6)
+- **Top-Left**: (6, 18)
+- **Top-Right**: (18, 18)
 
 Generators have enhanced glow effects to make them more visible. When a generator is captured (disabled), the visual connection line to the crystal disappears.
 

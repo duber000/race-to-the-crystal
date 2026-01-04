@@ -41,6 +41,14 @@ class Token3D:
         )
         self.ctx = ctx
 
+        # Animation state
+        # Initialize render position based on token's current position
+        self.render_x = self.token.position[0] * CELL_SIZE + CELL_SIZE / 2
+        self.render_y = self.token.position[1] * CELL_SIZE + CELL_SIZE / 2
+        self.target_x = self.render_x
+        self.target_y = self.render_y
+        self.is_moving = False
+
         # 3D geometry parameters
         self.radius = CELL_SIZE * 0.45
         self.height = TOKEN_HEIGHT_3D
@@ -112,9 +120,9 @@ class Token3D:
             camera_3d: FirstPersonCamera3D instance
             shader_program: Compiled shader program
         """
-        # Create model matrix (translate to token position)
-        world_x = self.token.position[0] * CELL_SIZE + CELL_SIZE / 2
-        world_y = self.token.position[1] * CELL_SIZE + CELL_SIZE / 2
+        # Create model matrix (translate to interpolated render position)
+        world_x = self.render_x
+        world_y = self.render_y
         world_z = 0.0  # Tokens sit on the board surface
 
         # Translation matrix
@@ -133,16 +141,51 @@ class Token3D:
         # Render as lines
         self.vao.render(shader_program, mode=self.ctx.LINES)
 
-    def update_position(self, new_position: tuple):
+    def update_position(self, grid_x: int, grid_y: int, instant: bool = False):
         """
-        Update token position (no need to recreate geometry).
+        Update token target position.
 
         Args:
-            new_position: New (x, y) grid position
+            grid_x: New grid x coordinate
+            grid_y: New grid y coordinate
+            instant: Whether to move instantly or animate
         """
-        # Position is read from self.token.position during draw()
-        # So just update the token's position
-        pass  # No action needed, position is read dynamically
+        self.target_x = grid_x * CELL_SIZE + CELL_SIZE / 2
+        self.target_y = grid_y * CELL_SIZE + CELL_SIZE / 2
+
+        if instant:
+            self.render_x = self.target_x
+            self.render_y = self.target_y
+            self.is_moving = False
+        else:
+            self.is_moving = True
+
+    def update(self, delta_time: float):
+        """
+        Update animation.
+
+        Args:
+            delta_time: Time since last update in seconds
+        """
+        if not self.is_moving:
+            return
+
+        # Move towards target
+        dx = self.target_x - self.render_x
+        dy = self.target_y - self.render_y
+
+        dist = (dx * dx + dy * dy) ** 0.5
+
+        # Speed matches 2D renderer speed
+        speed = (CELL_SIZE * 5.0) * delta_time
+
+        if dist <= speed:
+            self.render_x = self.target_x
+            self.render_y = self.target_y
+            self.is_moving = False
+        else:
+            self.render_x += (dx / dist) * speed
+            self.render_y += (dy / dist) * speed
 
     def cleanup(self):
         """Release OpenGL resources."""

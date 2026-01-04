@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 import math
 
 from game.token import Token
-from shared.constants import CELL_SIZE
+from shared.constants import CELL_SIZE, MOVEMENT_ANIMATION_DURATION
 
 
 class TokenSprite(arcade.Sprite):
@@ -38,8 +38,13 @@ class TokenSprite(arcade.Sprite):
         self._create_texture()
 
         # Set sprite position (Arcade uses center coordinates)
-        self.center_x = token.position[0] * CELL_SIZE + CELL_SIZE // 2
-        self.center_y = token.position[1] * CELL_SIZE + CELL_SIZE // 2
+        self.target_x = token.position[0] * CELL_SIZE + CELL_SIZE // 2
+        self.target_y = token.position[1] * CELL_SIZE + CELL_SIZE // 2
+        self.center_x = self.target_x
+        self.center_y = self.target_y
+
+        self.is_moving = False
+        self.move_speed = 10.0  # Pixels per frame approximation, will use delta_time
 
     def _create_texture(self):
         """Create a vector wireframe texture with glow effect for arcade aesthetic."""
@@ -132,16 +137,68 @@ class TokenSprite(arcade.Sprite):
             points.append((x, y))
         return points
 
-    def update_position(self, grid_x: int, grid_y: int):
+    def update_position(self, grid_x: int, grid_y: int, instant: bool = True):
         """
         Update sprite position to a new grid cell.
 
         Args:
             grid_x: Grid x coordinate
             grid_y: Grid y coordinate
+            instant: Whether to move instantly or animate
         """
-        self.center_x = grid_x * CELL_SIZE + CELL_SIZE // 2
-        self.center_y = grid_y * CELL_SIZE + CELL_SIZE // 2
+        target_x = grid_x * CELL_SIZE + CELL_SIZE // 2
+        target_y = grid_y * CELL_SIZE + CELL_SIZE // 2
+
+        self.target_x = target_x
+        self.target_y = target_y
+
+        if instant:
+            self.center_x = target_x
+            self.center_y = target_y
+            self.is_moving = False
+        else:
+            self.is_moving = True
+
+    def update(self, delta_time: float = 1 / 60):
+        """
+        Update sprite animation.
+
+        Args:
+            delta_time: Time since last update in seconds
+        """
+        if not self.is_moving:
+            return
+
+        # Move towards target
+        dx = self.target_x - self.center_x
+        dy = self.target_y - self.center_y
+
+        dist = (dx * dx + dy * dy) ** 0.5
+
+        # Calculate speed based on movement duration
+        # We want to cross a cell in MOVEMENT_ANIMATION_DURATION seconds
+        # But tokens might move 2 cells (speed boost)
+        # So we calculate speed to reach target in duration
+        # Assuming we just started moving, but this is continuous update
+        # So using a fixed speed is safer for simple linear interpolation
+
+        # Speed = Distance / Time
+        # Standard move is 1 or 2 cells
+        # Let's target 1 cell per duration for consistent feel
+        speed = (CELL_SIZE / MOVEMENT_ANIMATION_DURATION) * delta_time
+
+        # Increase speed if distance is large (to catch up)
+        if dist > CELL_SIZE * 2:
+            speed *= 2.0
+
+        if dist <= speed:
+            self.center_x = self.target_x
+            self.center_y = self.target_y
+            self.is_moving = False
+        else:
+            # Normalize and scale
+            self.center_x += (dx / dist) * speed
+            self.center_y += (dy / dist) * speed
 
     def update_health(self):
         """Recreate texture when health changes."""

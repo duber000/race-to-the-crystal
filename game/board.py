@@ -135,10 +135,10 @@ class Board:
         quarter_y = self.height // 4
 
         generators = [
-            (quarter_x, quarter_y),  # Top-left quadrant
-            (mid_x + quarter_x, quarter_y),  # Top-right quadrant
-            (quarter_x, mid_y + quarter_y),  # Bottom-left quadrant
-            (mid_x + quarter_x, mid_y + quarter_y),  # Bottom-right quadrant
+            (quarter_x, quarter_y),  # Bottom-left quadrant
+            (mid_x + quarter_x, quarter_y),  # Bottom-right quadrant
+            (quarter_x, mid_y + quarter_y),  # Top-left quadrant
+            (mid_x + quarter_x, mid_y + quarter_y),  # Top-right quadrant
         ]
 
         for x, y in generators:
@@ -156,10 +156,20 @@ class Board:
 
         # Define quadrants (excluding edges to avoid overlap with special cells)
         quadrants = [
-            (margin, mid_x - margin, margin, mid_y - margin),  # Top-left
-            (mid_x + margin, self.width - margin, margin, mid_y - margin),  # Top-right
-            (margin, mid_x - margin, mid_y + margin, self.height - margin),  # Bottom-left
-            (mid_x + margin, self.width - margin, mid_y + margin, self.height - margin),  # Bottom-right
+            (margin, mid_x - margin, margin, mid_y - margin),  # Bottom-left
+            (
+                mid_x + margin,
+                self.width - margin,
+                margin,
+                mid_y - margin,
+            ),  # Bottom-right
+            (margin, mid_x - margin, mid_y + margin, self.height - margin),  # Top-left
+            (
+                mid_x + margin,
+                self.width - margin,
+                mid_y + margin,
+                self.height - margin,
+            ),  # Top-right
         ]
 
         for x_min, x_max, y_min, y_max in quadrants:
@@ -170,7 +180,10 @@ class Board:
             placed = 0
             attempts = 0
 
-            while placed < MYSTERY_SQUARES_PER_QUADRANT and attempts < MYSTERY_PLACEMENT_MAX_ATTEMPTS:
+            while (
+                placed < MYSTERY_SQUARES_PER_QUADRANT
+                and attempts < MYSTERY_PLACEMENT_MAX_ATTEMPTS
+            ):
                 x = random.randint(x_min, x_max)
                 y = random.randint(y_min, y_max)
 
@@ -276,10 +289,10 @@ class Board:
             (x, y) starting position
         """
         corners = [
-            (0, 0),  # Player 0 - Top-left
-            (self.width - 1, 0),  # Player 1 - Top-right
-            (0, self.height - 1),  # Player 2 - Bottom-left
-            (self.width - 1, self.height - 1),  # Player 3 - Bottom-right
+            (0, 0),  # Player 0 - Bottom-left
+            (self.width - 1, 0),  # Player 1 - Bottom-right
+            (0, self.height - 1),  # Player 2 - Top-left
+            (self.width - 1, self.height - 1),  # Player 3 - Top-right
         ]
         return corners[player_index % 4]
 

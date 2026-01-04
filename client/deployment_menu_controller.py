@@ -99,12 +99,12 @@ class DeploymentMenuController:
         viewport = ViewportConfig(
             window_width=self.window_width,
             window_height=self.window_height,
-            hud_height=HUD_HEIGHT
+            hud_height=HUD_HEIGHT,
         )
         style = UIStyleConfig(
             margin=CORNER_INDICATOR_MARGIN,
             indicator_size=CORNER_INDICATOR_SIZE,
-            spacing=DEPLOYMENT_MENU_SPACING
+            spacing=DEPLOYMENT_MENU_SPACING,
         )
 
         config = get_ui_corner_config(player_index)
@@ -112,9 +112,7 @@ class DeploymentMenuController:
 
         return (center_x, center_y, style.indicator_size)
 
-    def is_click_on_indicator(
-        self, x: int, y: int, current_player
-    ) -> bool:
+    def is_click_on_indicator(self, x: int, y: int, current_player) -> bool:
         """
         Check if a screen-space click is on the corner indicator.
 
@@ -161,7 +159,10 @@ class DeploymentMenuController:
             self.close_menu()
 
     def handle_menu_click(
-        self, screen_pos: Tuple[int, int], current_player, reserve_counts: Dict[int, int]
+        self,
+        screen_pos: Tuple[int, int],
+        current_player,
+        reserve_counts: Dict[int, int],
     ) -> Optional[int]:
         """
         Handle click on UI-based corner menu (around R hexagon).

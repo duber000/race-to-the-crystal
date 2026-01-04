@@ -22,7 +22,7 @@ logger = setup_logger(__name__)
 
 def create_line(
     start_x: float, start_y: float, end_x: float, end_y: float, color, line_width: int
-) -> arcade.shape_list.Line:
+) -> arcade.shape_list.Shape:
     """
     Create a line shape for rendering.
 
@@ -37,7 +37,9 @@ def create_line(
     Returns:
         Line shape object
     """
-    return arcade.shape_list.create_line(start_x, start_y, end_x, end_y, color, line_width)
+    return arcade.shape_list.create_line(
+        start_x, start_y, end_x, end_y, color, line_width
+    )
 
 
 class Renderer2D:
@@ -114,7 +116,71 @@ class Renderer2D:
                     sprite = TokenSprite(token, player_color)
                     self.token_sprites.append(sprite)
 
-        logger.debug(f"Created {len(self.token_sprites)} token sprites for 2D rendering")
+        logger.debug(
+            f"Created {len(self.token_sprites)} token sprites for 2D rendering"
+        )
+
+    def sync_tokens(self, game_state) -> None:
+        """
+        Synchronize token sprites with game state, animating changes.
+
+        Args:
+            game_state: New game state object
+        """
+        # Create a map of existing sprites by token ID
+        existing_sprites = {
+            sprite.token.id: sprite
+            for sprite in self.token_sprites
+            if hasattr(sprite, "token")
+        }
+
+        # Track which token IDs we've processed
+        processed_ids = set()
+
+        for player in game_state.players.values():
+            player_color = PLAYER_COLORS[player.color.value]
+
+            for token_id in player.token_ids:
+                token = game_state.get_token(token_id)
+                if not token or not token.is_alive or not token.is_deployed:
+                    continue
+
+                processed_ids.add(token_id)
+
+                if token_id in existing_sprites:
+                    # Update existing sprite
+                    sprite = existing_sprites[token_id]
+
+                    # Update health if changed
+                    if sprite.token.health != token.health:
+                        sprite.token = token  # Update reference
+                        sprite.update_health()
+
+                    # Update position (with animation)
+                    # Check if position actually changed
+                    current_grid_x = int(sprite.target_x // CELL_SIZE)
+                    current_grid_y = int(sprite.target_y // CELL_SIZE)
+
+                    if (
+                        current_grid_x != token.position[0]
+                        or current_grid_y != token.position[1]
+                    ):
+                        sprite.update_position(
+                            token.position[0], token.position[1], instant=False
+                        )
+                else:
+                    # Create new sprite
+                    sprite = TokenSprite(token, player_color)
+                    self.token_sprites.append(sprite)
+
+        # Remove sprites for tokens that are no longer present/alive/deployed
+        sprites_to_remove = []
+        for sprite in self.token_sprites:
+            if hasattr(sprite, "token") and sprite.token.id not in processed_ids:
+                sprites_to_remove.append(sprite)
+
+        for sprite in sprites_to_remove:
+            self.token_sprites.remove(sprite)
 
     def update_selection_visuals(
         self,
@@ -240,11 +306,18 @@ class Renderer2D:
         Args:
             delta_time: Time since last update in seconds
         """
-        self.token_sprites.update()
+        self.token_sprites.update_animation(delta_time)
+        for sprite in self.token_sprites:
+            if hasattr(sprite, "update"):
+                sprite.update(delta_time)
 
         # Recreate board shapes every frame to update animations (glowing lines, crystal pulse)
-        # This is necessary because shape lists are static and don't automatically animate
-        if self.board is not None and self.generators is not None and self.crystal is not None and self.mystery_animations is not None:
+        if (
+            self.board is not None
+            and self.generators is not None
+            and self.crystal is not None
+            and self.mystery_animations is not None
+        ):
             crystal_pos = self.crystal.position if self.crystal else None
             self.board_shapes = create_board_shapes(
                 self.board,

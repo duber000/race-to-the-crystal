@@ -29,7 +29,7 @@ class NetworkGameView(arcade.View):
     def __init__(
         self,
         network_client: NetworkClient,
-        initial_game_state: Optional[GameState] = None
+        initial_game_state: Optional[GameState] = None,
     ):
         """
         Initialize network game view.
@@ -76,14 +76,16 @@ class NetworkGameView(arcade.View):
 
     def on_show_view(self):
         """Called when this view is shown."""
-        logger.info(f"Network game view shown with game state: {len(self.game_state.players)} players, {len(self.game_state.tokens)} tokens")
+        logger.info(
+            f"Network game view shown with game state: {len(self.game_state.players)} players, {len(self.game_state.tokens)} tokens"
+        )
 
         # Create game view (using new View architecture)
         self.game_view = GameView(
             self.game_state,
             start_in_3d=False,
             is_network_game=True,
-            network_client=self.network_client
+            network_client=self.network_client,
         )
 
         # Show the game view within the same window
@@ -120,11 +122,13 @@ class NetworkGameView(arcade.View):
             # For now, we'll let the original GameWindow handle input
             # and intercept at the game_state level
 
-        def network_on_key_press(key, modifiers):
+        def network_on_key_press(symbol, modifiers):
             """Intercept key press (like Space for end turn)."""
-            if key == arcade.key.SPACE or key == arcade.key.ENTER:
+            if symbol == arcade.key.SPACE or symbol == arcade.key.ENTER:
                 # End turn
-                logger.info(f"Space/Enter pressed. waiting_for_server={self.waiting_for_server}")
+                logger.info(
+                    f"Space/Enter pressed. waiting_for_server={self.waiting_for_server}"
+                )
                 if not self.waiting_for_server:
                     logger.info("Sending END_TURN to server...")
                     schedule_async(self._send_end_turn())
@@ -134,7 +138,7 @@ class NetworkGameView(arcade.View):
                 return
 
             # Pass through other keys
-            original_on_key_press(key, modifiers)
+            original_on_key_press(symbol, modifiers)
 
         # Store original _handle_end_turn (now in InputHandler)
         if not self.game_view.input_handler:
@@ -147,7 +151,9 @@ class NetworkGameView(arcade.View):
             """Intercept _handle_end_turn to prevent local turn advancement."""
             logger.info("InputHandler._handle_end_turn() called - intercepting!")
             if not self.waiting_for_server:
-                logger.info("Sending END_TURN to server instead of advancing locally...")
+                logger.info(
+                    "Sending END_TURN to server instead of advancing locally..."
+                )
                 schedule_async(self._send_end_turn())
                 self.waiting_for_server = True
                 # Clear selection like the original does
@@ -176,18 +182,18 @@ class NetworkGameView(arcade.View):
         original_deploy_token = self.game_state.deploy_token
         original_end_turn = self.game_state.end_turn
 
-        def network_move_token(token_id, destination):
+        def network_move_token(token_id, new_position):
             """Intercept move and send to server."""
             if not self.waiting_for_server:
-                schedule_async(self._send_move(token_id, destination))
+                schedule_async(self._send_move(token_id, new_position))
                 self.waiting_for_server = True
                 return True  # Pretend success, server will validate
             return False
 
-        def network_attack_token(attacker_id, target_id):
+        def network_attack_token(attacker_id, defender_id):
             """Intercept attack and send to server."""
             if not self.waiting_for_server:
-                schedule_async(self._send_attack(attacker_id, target_id))
+                schedule_async(self._send_attack(attacker_id, defender_id))
                 self.waiting_for_server = True
                 return True
             return False
@@ -202,7 +208,9 @@ class NetworkGameView(arcade.View):
 
         def network_end_turn():
             """Intercept end turn and send to server."""
-            logger.info(f"network_end_turn() called! waiting_for_server={self.waiting_for_server}")
+            logger.info(
+                f"network_end_turn() called! waiting_for_server={self.waiting_for_server}"
+            )
             if not self.waiting_for_server:
                 logger.info("Scheduling _send_end_turn()...")
                 schedule_async(self._send_end_turn())
@@ -231,7 +239,7 @@ class NetworkGameView(arcade.View):
 
     async def _send_attack(self, attacker_id: int, target_id: int):
         """Send attack action to server."""
-        action = AttackAction(attacker_id=attacker_id, target_id=target_id)
+        action = AttackAction(attacker_id=attacker_id, defender_id=target_id)
         success = await self.network_client.send_action(action)
         if not success:
             logger.error("Failed to send attack action")
@@ -314,29 +322,56 @@ class NetworkGameView(arcade.View):
         try:
             # Use GameState.from_dict() to properly deserialize
             self.game_state = GameState.from_dict(game_state_data)
-            logger.info(f"Game state deserialized - Players: {len(self.game_state.players)}, Tokens: {len(self.game_state.tokens)}")
+            logger.info(
+                f"Game state deserialized - Players: {len(self.game_state.players)}, Tokens: {len(self.game_state.tokens)}"
+            )
 
             # Update game view to use new state
             if self.game_view:
-                logger.info("Updating game view with new state and calling setup()")
+                logger.info("Updating game view with new state")
+
                 self.game_view.game_state = self.game_state
-                self.game_view.setup()
-                logger.info("Game view setup complete")
+
+                # Sync tokens instead of full setup (preserves/triggers animations)
+                self.game_view.renderer_2d.sync_tokens(self.game_state)
+
+                # Sync 3D tokens
+                if hasattr(self.game_view.renderer_3d, "sync_tokens"):
+                    self.game_view.renderer_3d.sync_tokens(
+                        self.game_state, self.game_view.window.ctx
+                    )
+
+                # We still need to recreate board sprites for generator/crystal updates
+                # but we don't want to nuke the tokens
+                self.game_view.renderer_2d.create_board_sprites(
+                    self.game_state.board,
+                    self.game_state.generators,
+                    self.game_state.crystal,
+                    self.game_view.mystery_animations,
+                )
+
+                # Rebuild UI
+                self.game_view.ui_manager.rebuild_visuals(self.game_state)
+
+                # Update InputHandler reference
+                if self.game_view.input_handler:
+                    self.game_view.input_handler.game_state = self.game_state
+                    self.game_view.action_handler.game_state = self.game_state
 
                 # Sync the InputHandler's local turn_phase with the server's game_state.turn_phase
-                # This is critical because InputHandler maintains its own turn_phase variable
-                # that gets out of sync when actions are intercepted and sent to server
                 if self.game_view.input_handler:
                     self.game_view.input_handler.turn_phase = self.game_state.turn_phase
-                    logger.info(f"Synced turn_phase to {self.game_state.turn_phase.name}")
+                    logger.info(
+                        f"Synced turn_phase to {self.game_state.turn_phase.name}"
+                    )
 
                 # Re-hook the game state methods since we just replaced the game state object
-                # Note: We only need to re-hook game_state methods, not game_view methods
-                # since the game_view instance itself hasn't changed
                 self._hook_game_state_methods()
                 logger.info("Re-hooked game state methods after state update")
             else:
-                logger.warning("No game view exists yet - will be created with this state")
+                logger.warning(
+                    "No game view exists yet - will be created with this state"
+                )
 
         except Exception as e:
             logger.error(f"Failed to deserialize game state: {e}", exc_info=True)
@@ -366,14 +401,11 @@ class NetworkGameView(arcade.View):
 
         # Create a simple error dialog
         message_box = arcade.gui.UIMessageBox(
-            width=400,
-            height=200,
-            message_text=error_message,
-            buttons=["OK"]
+            width=400, height=200, message_text=error_message, buttons=["OK"]
         )
 
         # Add to current view's UI manager if available
-        if self.game_view and hasattr(self.game_view, 'manager'):
+        if self.game_view and hasattr(self.game_view, "manager"):
             # Game view doesn't have a UI manager, so we'll need to create one
             # For now, just log it prominently
             logger.error(f"ACTION REJECTED: {action_type} - {reason}")

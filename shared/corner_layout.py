@@ -14,6 +14,7 @@ from shared.ui_config import ViewportConfig, UIStyleConfig
 
 class CornerPosition(Enum):
     """Screen position of corners for UI placement."""
+
     TOP_LEFT = "top_left"
     TOP_RIGHT = "top_right"
     BOTTOM_LEFT = "bottom_left"
@@ -31,6 +32,7 @@ class BoardCornerConfig:
         x_range: Range for X coordinates in deployment area
         y_range: Range for Y coordinates in deployment area
     """
+
     player_index: int
     corner_pos: CornerPosition
     x_range: range
@@ -63,6 +65,7 @@ class UICornerConfig:
         menu_h_direction: Direction for menu options horizontally (1 = right, -1 = left)
         menu_v_direction: Direction for menu options vertically (1 = up, -1 = down)
     """
+
     player_index: int
     corner_pos: CornerPosition
     h_anchor: int  # -1 = left, 1 = right
@@ -71,9 +74,7 @@ class UICornerConfig:
     menu_v_direction: int  # 1 = expand up, -1 = expand down
 
     def get_indicator_position(
-        self,
-        viewport: ViewportConfig,
-        style: UIStyleConfig
+        self, viewport: ViewportConfig, style: UIStyleConfig
     ) -> Tuple[float, float]:
         """
         Calculate screen-space position for corner indicator.
@@ -95,7 +96,12 @@ class UICornerConfig:
         if self.v_anchor == -1:  # Bottom edge
             center_y = style.margin + style.indicator_size
         else:  # Top edge
-            center_y = viewport.window_height - viewport.hud_height - style.margin - style.indicator_size
+            center_y = (
+                viewport.window_height
+                - viewport.hud_height
+                - style.margin
+                - style.indicator_size
+            )
 
         return (center_x, center_y)
 
@@ -104,7 +110,7 @@ class UICornerConfig:
         center_x: float,
         center_y: float,
         spacing: float,
-        far_spacing_multiplier: float = 1.8
+        far_spacing_multiplier: float = 1.8,
     ) -> List[Tuple[float, float]]:
         """
         Calculate positions for menu options around the corner indicator.
@@ -128,10 +134,13 @@ class UICornerConfig:
         # Position 2: horizontal only
         # Position 3: far horizontal only
         return [
-            (center_x + h_dir * spacing, center_y + v_dir * spacing),      # 10hp - diagonal
-            (center_x + h_dir * far_spacing, center_y + v_dir * spacing),  # 8hp - far diagonal
-            (center_x + h_dir * spacing, center_y),                        # 6hp - horizontal
-            (center_x + h_dir * far_spacing, center_y),                    # 4hp - far horizontal
+            (center_x + h_dir * spacing, center_y + v_dir * spacing),  # 10hp - diagonal
+            (
+                center_x + h_dir * far_spacing,
+                center_y + v_dir * spacing,
+            ),  # 8hp - far diagonal
+            (center_x + h_dir * spacing, center_y),  # 6hp - horizontal
+            (center_x + h_dir * far_spacing, center_y),  # 4hp - far horizontal
         ]
 
 
@@ -139,25 +148,25 @@ class UICornerConfig:
 BOARD_CORNER_CONFIGS = {
     0: BoardCornerConfig(
         player_index=0,
-        corner_pos=CornerPosition.TOP_LEFT,
+        corner_pos=CornerPosition.BOTTOM_LEFT,
         x_range=range(0, 3),
         y_range=range(0, 3),
     ),
     1: BoardCornerConfig(
         player_index=1,
-        corner_pos=CornerPosition.TOP_RIGHT,
+        corner_pos=CornerPosition.BOTTOM_RIGHT,
         x_range=range(23, 20, -1),  # Reversed for right-to-left priority
         y_range=range(0, 3),
     ),
     2: BoardCornerConfig(
         player_index=2,
-        corner_pos=CornerPosition.BOTTOM_LEFT,
+        corner_pos=CornerPosition.TOP_LEFT,
         x_range=range(0, 3),
         y_range=range(21, 24),
     ),
     3: BoardCornerConfig(
         player_index=3,
-        corner_pos=CornerPosition.BOTTOM_RIGHT,
+        corner_pos=CornerPosition.TOP_RIGHT,
         x_range=range(23, 20, -1),  # Reversed for right-to-left priority
         y_range=range(21, 24),
     ),
@@ -171,30 +180,30 @@ UI_CORNER_CONFIGS = {
         corner_pos=CornerPosition.BOTTOM_LEFT,
         h_anchor=-1,  # Left edge
         v_anchor=-1,  # Bottom edge
-        menu_h_direction=1,   # Menu expands right
-        menu_v_direction=1,   # Menu expands up
+        menu_h_direction=1,  # Menu expands right
+        menu_v_direction=1,  # Menu expands up
     ),
     1: UICornerConfig(
         player_index=1,
         corner_pos=CornerPosition.BOTTOM_RIGHT,
-        h_anchor=1,   # Right edge
+        h_anchor=1,  # Right edge
         v_anchor=-1,  # Bottom edge
         menu_h_direction=-1,  # Menu expands left
-        menu_v_direction=1,   # Menu expands up
+        menu_v_direction=1,  # Menu expands up
     ),
     2: UICornerConfig(
         player_index=2,
         corner_pos=CornerPosition.TOP_LEFT,
         h_anchor=-1,  # Left edge
-        v_anchor=1,   # Top edge
-        menu_h_direction=1,   # Menu expands right
+        v_anchor=1,  # Top edge
+        menu_h_direction=1,  # Menu expands right
         menu_v_direction=-1,  # Menu expands down
     ),
     3: UICornerConfig(
         player_index=3,
         corner_pos=CornerPosition.TOP_RIGHT,
-        h_anchor=1,   # Right edge
-        v_anchor=1,   # Top edge
+        h_anchor=1,  # Right edge
+        v_anchor=1,  # Top edge
         menu_h_direction=-1,  # Menu expands left
         menu_v_direction=-1,  # Menu expands down
     ),

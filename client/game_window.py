@@ -120,7 +120,9 @@ class GameView(arcade.View):
         # Mystery square coin flip animations
         # Dict mapping (x, y) position to animation progress (0.0 to 1.0)
         self.mystery_animations = {}  # {(x, y): progress}
-        self.mystery_animation_duration = MYSTERY_ANIMATION_DURATION  # Duration in seconds
+        self.mystery_animation_duration = (
+            MYSTERY_ANIMATION_DURATION  # Duration in seconds
+        )
 
         # Background color will be set in on_show_view()
 
@@ -130,9 +132,13 @@ class GameView(arcade.View):
         arcade.set_background_color(BACKGROUND_COLOR)
 
         # Initialize components that need window dimensions
-        self.camera_controller = CameraController(self.window.width, self.window.height, self.start_in_3d)
+        self.camera_controller = CameraController(
+            self.window.width, self.window.height, self.start_in_3d
+        )
         self.ui_manager = UIManager(self.window.width, self.window.height)
-        self.deployment_controller = DeploymentMenuController(self.window.width, self.window.height)
+        self.deployment_controller = DeploymentMenuController(
+            self.window.width, self.window.height
+        )
 
         # Initialize action handler (needs renderer and ui_manager references)
         self.action_handler = GameActionHandler(
@@ -173,7 +179,7 @@ class GameView(arcade.View):
                 x=chat_x,
                 y=chat_y,
                 width=chat_width,
-                height=chat_height
+                height=chat_height,
             )
         else:
             self.chat_widget = None
@@ -193,7 +199,9 @@ class GameView(arcade.View):
 
     def setup(self):
         """Set up the window after initialization."""
-        logger.debug(f"Setup called - Game state has {len(self.game_state.players)} players, {len(self.game_state.tokens)} tokens")
+        logger.debug(
+            f"Setup called - Game state has {len(self.game_state.players)} players, {len(self.game_state.tokens)} tokens"
+        )
 
         # Create 2D rendering elements
         self.renderer_2d.create_board_sprites(
@@ -206,7 +214,9 @@ class GameView(arcade.View):
         logger.debug(f"Created {len(self.renderer_2d.token_sprites)} token sprites")
 
         self._create_ui_sprites()
-        self.renderer_3d.create(self.game_state, self.window.ctx, self.mystery_animations)
+        self.renderer_3d.create(
+            self.game_state, self.window.ctx, self.mystery_animations
+        )
 
         # Set up camera to fit entire board in view
         self.camera_controller.setup_initial_view(self.window.width, self.window.height)
@@ -220,12 +230,10 @@ class GameView(arcade.View):
 
         logger.info("Window setup complete")
 
-
     def _create_ui_sprites(self):
         """Create UI sprites (HUD, buttons, etc.)."""
         # Corner indicator is drawn directly in _draw_hud() in screen space
         pass
-
 
     def _draw_hud(self):
         """Draw the heads-up display with game information."""
@@ -271,7 +279,9 @@ class GameView(arcade.View):
                 if self.camera_controller.camera_mode == "3D":
                     instruction = "Click a token to select, then move OR attack (not both) | Right-click + drag to look around"
                 else:
-                    instruction = "Click a token to select, then move OR attack (not both)"
+                    instruction = (
+                        "Click a token to select, then move OR attack (not both)"
+                    )
             elif self.input_handler.turn_phase == TurnPhase.ACTION:
                 instruction = (
                     "Click an adjacent enemy to attack, or press SPACE to end turn"
@@ -290,7 +300,6 @@ class GameView(arcade.View):
         current_player = self.game_state.get_current_player()
         if current_player:
             self.deployment_controller.draw_indicator(current_player)
-
 
     def on_draw(self):
         """
@@ -342,7 +351,9 @@ class GameView(arcade.View):
             with self.camera_controller.ui_camera.activate():
                 current_player = self.game_state.get_current_player()
                 if current_player:
-                    reserve_counts = self.game_state.get_reserve_token_counts(current_player.id)
+                    reserve_counts = self.game_state.get_reserve_token_counts(
+                        current_player.id
+                    )
                     self.deployment_controller.draw_menu(current_player, reserve_counts)
 
     def on_update(self, delta_time: float):
@@ -354,6 +365,7 @@ class GameView(arcade.View):
         """
         # Update animations
         self.renderer_2d.update(delta_time)
+        self.renderer_3d.update(delta_time)
         self.ui_sprites.update()
 
         # Update chat widget
@@ -488,7 +500,9 @@ class GameView(arcade.View):
         if not self.input_handler:
             return
 
-        self.input_handler.handle_key_press(symbol, modifiers, self.chat_widget, self.window)
+        self.input_handler.handle_key_press(
+            symbol, modifiers, self.chat_widget, self.window
+        )
 
     def on_text(self, text: str):
         """
