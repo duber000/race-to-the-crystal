@@ -5,8 +5,7 @@ This module implements the primary game window using the Arcade framework,
 replacing the Pygame-based implementation with GPU-accelerated rendering.
 """
 
-import math
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import arcade
 
@@ -14,6 +13,7 @@ from client.audio_manager import AudioManager
 from client.camera_controller import CameraController
 from client.deployment_menu_controller import DeploymentMenuController
 from client.game_action_handler import GameActionHandler
+from client.input_handler import InputHandler
 from client.renderer_2d import Renderer2D
 from client.renderer_3d import Renderer3D
 from client.ui.arcade_ui import UIManager
@@ -21,27 +21,16 @@ from client.ui.chat_widget import ChatWidget
 from game.combat import CombatSystem
 from game.game_state import GameState
 from game.movement import MovementSystem
-from game.mystery_square import MysterySquareSystem
 from shared.constants import (
     BACKGROUND_COLOR,
-    CELL_SIZE,
     CHAT_WIDGET_HEIGHT,
     CHAT_WIDGET_WIDTH,
     CHAT_WIDGET_X,
     CHAT_WIDGET_Y,
-    CIRCLE_SEGMENTS,
-    CORNER_INDICATOR_MARGIN,
-    CORNER_INDICATOR_SIZE,
-    DEFAULT_WINDOW_HEIGHT,
-    DEFAULT_WINDOW_WIDTH,
-    DEPLOYMENT_MENU_SPACING,
-    HEXAGON_SIDES,
-    HUD_HEIGHT,
-    MENU_OPTION_CLICK_RADIUS,
     MYSTERY_ANIMATION_DURATION,
     PLAYER_COLORS,
 )
-from shared.enums import TurnPhase, CellType
+from shared.enums import TurnPhase
 from shared.logging_config import setup_logger
 
 # Set up logger for this module
@@ -94,10 +83,8 @@ class GameView(arcade.View):
         # Visual elements
         self.ui_sprites = arcade.SpriteList()
 
-        # Selection state
-        self.selected_token_id: Optional[int] = None
-        self.valid_moves: List[Tuple[int, int]] = []
-        self.turn_phase = TurnPhase.MOVEMENT
+        # Input handler (will be initialized in on_show_view)
+        self.input_handler = None
 
         # HUD Text objects (for performance)
         self.player_text = arcade.Text(
@@ -156,6 +143,20 @@ class GameView(arcade.View):
             self.ui_manager,
             self.audio_manager,
         )
+
+        # Initialize input handler (coordinates all input events)
+        self.input_handler = InputHandler(
+            self.game_state,
+            self.camera_controller,
+            self.deployment_controller,
+            self.ui_manager,
+            self.action_handler,
+            self.renderer_2d,
+            self.renderer_3d,
+            self.movement_system,
+            self.audio_manager,
+        )
+        self.input_handler.set_mystery_animations(self.mystery_animations)
 
         # Initialize chat widget only for network games
         if self.is_network_game:
@@ -254,25 +255,31 @@ class GameView(arcade.View):
         self.turn_text.y = self.window.height - 60
         self.turn_text.draw()
 
-        # Turn phase
-        self.phase_text.text = f"Phase: {self.turn_phase.name}"
+        # Turn phase (check if input_handler exists)
+        if self.input_handler:
+            self.phase_text.text = f"Phase: {self.input_handler.turn_phase.name}"
+        else:
+            self.phase_text.text = "Phase: MOVEMENT"
         self.phase_text.y = self.window.height - 60
         self.phase_text.draw()
 
-        # Instructions
-        if self.deployment_controller.selected_deploy_health:
-            instruction = f"Selected {self.deployment_controller.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"
-        elif self.turn_phase == TurnPhase.MOVEMENT:
-            if self.camera_controller.camera_mode == "3D":
-                instruction = "Click a token to select, then move OR attack (not both) | Right-click + drag to look around"
+        # Instructions (check if input_handler exists)
+        if self.input_handler:
+            if self.deployment_controller.selected_deploy_health:
+                instruction = f"Selected {self.deployment_controller.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"
+            elif self.input_handler.turn_phase == TurnPhase.MOVEMENT:
+                if self.camera_controller.camera_mode == "3D":
+                    instruction = "Click a token to select, then move OR attack (not both) | Right-click + drag to look around"
+                else:
+                    instruction = "Click a token to select, then move OR attack (not both)"
+            elif self.input_handler.turn_phase == TurnPhase.ACTION:
+                instruction = (
+                    "Click an adjacent enemy to attack, or press SPACE to end turn"
+                )
             else:
-                instruction = "Click a token to select, then move OR attack (not both)"
-        elif self.turn_phase == TurnPhase.ACTION:
-            instruction = (
-                "Click an adjacent enemy to attack, or press SPACE to end turn"
-            )
+                instruction = "Press SPACE to end turn"
         else:
-            instruction = "Press SPACE to end turn"
+            instruction = ""
 
         self.instruction_text.text = instruction
         self.instruction_text.x = self.window.width - 700
@@ -418,15 +425,10 @@ class GameView(arcade.View):
             dy: Change in y
         """
         # Check if initialization is complete
-        if not hasattr(self, "camera_controller") or not self.camera_controller:
+        if not self.input_handler:
             return
 
-        # Handle mouse-look in 3D mode
-        if self.camera_controller.handle_mouse_motion(x, y, dx, dy, self.window):
-            return  # Mouse-look handled, skip UI hover effects
-
-        # Normal UI hover effects
-        self.ui_manager.handle_mouse_motion(x, y)
+        self.input_handler.handle_mouse_motion(x, y, dx, dy, self.window)
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
         """
@@ -439,82 +441,10 @@ class GameView(arcade.View):
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
         # Check if initialization is complete
-        if not hasattr(self, "camera_controller") or not self.camera_controller:
+        if not self.input_handler:
             return
 
-        if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_controller.camera_mode == "3D":
-            # Activate mouse-look in 3D mode
-            self.camera_controller.activate_mouse_look(x, y, self.window)
-            return
-
-        if button == arcade.MOUSE_BUTTON_LEFT:
-            # Check UI first (prevents click-through)
-            ui_action = self.ui_manager.handle_mouse_click(x, y)
-            if ui_action == "end_turn":
-                self._handle_end_turn()
-                return
-            elif ui_action == "cancel":
-                self._handle_cancel()
-                return
-
-            current_player = self.game_state.get_current_player()
-
-            # First, convert screen coordinates to world/grid to check for tokens
-            world_pos = None
-            grid_pos = None
-            clicked_on_token = False
-
-            if self.camera_controller.camera_mode == "2D":
-                world_pos = self.camera_controller.screen_to_world_2d(x, y)
-                grid_x = int(world_pos[0] // CELL_SIZE)
-                grid_y = int(world_pos[1] // CELL_SIZE)
-                grid_pos = (grid_x, grid_y)
-            else:
-                grid_pos = self.camera_controller.screen_to_grid_3d(x, y, self.window.width, self.window.height)
-
-            # Check if there's a token at the click position
-            if grid_pos and self.game_state.board.is_valid_position(grid_pos[0], grid_pos[1]):
-                for player in self.game_state.players.values():
-                    for token_id in player.token_ids:
-                        token = self.game_state.get_token(token_id)
-                        if (token and token.is_alive and token.is_deployed and
-                            token.position == grid_pos):
-                            clicked_on_token = True
-                            break
-                    if clicked_on_token:
-                        break
-
-            # Check corner menu if open (UI-based menu) - do this before indicator check
-            if self.deployment_controller.menu_open and current_player:
-                reserve_counts = self.game_state.get_reserve_token_counts(current_player.id)
-                selected_health = self.deployment_controller.handle_menu_click((x, y), current_player, reserve_counts)
-                if selected_health:
-                    # Clear any existing token selection to prevent conflicts
-                    self.selected_token_id = None
-                    self.valid_moves = []
-                    self.renderer_2d.update_selection_visuals(
-                        self.selected_token_id, self.valid_moves, self.game_state
-                    )
-                    return
-
-            # Check if clicking on R hexagon to open menu - but NOT if clicking on a token
-            if (not clicked_on_token and
-                not self.deployment_controller.menu_open and
-                self.deployment_controller.is_click_on_indicator(x, y, current_player)):
-                if current_player and self.turn_phase == TurnPhase.MOVEMENT:
-                    self.deployment_controller.open_menu()
-                    return
-
-            # Proceed with world interaction
-            if self.camera_controller.camera_mode == "2D":
-                if world_pos:
-                    self._handle_select((world_pos[0], world_pos[1]))
-            else:
-                if grid_pos:
-                    logger.debug(f"3D click detected at grid {grid_pos}")
-                    self._handle_select_3d(grid_pos)
-                else:
-                    logger.debug("3D ray casting: no intersection with board plane")
+        self.input_handler.handle_mouse_press(x, y, button, modifiers, self.window)
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int):
         """
@@ -527,12 +457,10 @@ class GameView(arcade.View):
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
         # Check if initialization is complete
-        if not hasattr(self, "camera_controller") or not self.camera_controller:
+        if not self.input_handler:
             return
 
-        if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_controller.camera_mode == "3D":
-            # Deactivate mouse-look in 3D mode
-            self.camera_controller.deactivate_mouse_look(self.window)
+        self.input_handler.handle_mouse_release(x, y, button, modifiers, self.window)
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
         """
@@ -544,10 +472,10 @@ class GameView(arcade.View):
             scroll_x: Horizontal scroll amount
             scroll_y: Vertical scroll amount
         """
-        if scroll_y > 0:
-            self.camera_controller.zoom_in()
-        elif scroll_y < 0:
-            self.camera_controller.zoom_out()
+        if not self.input_handler:
+            return
+
+        self.input_handler.handle_mouse_scroll(scroll_y)
 
     def on_key_press(self, symbol: int, modifiers: int):
         """
@@ -557,72 +485,10 @@ class GameView(arcade.View):
             symbol: Key that was pressed
             modifiers: Key modifiers (Shift, Ctrl, etc.)
         """
-        # Handle chat widget input first
-        if self.chat_widget:
-            if self.chat_widget.on_key_press(symbol, modifiers):
-                return  # Chat widget handled the input
-        
-        # Camera panning
-        if symbol == arcade.key.W or symbol == arcade.key.UP:
-            self.camera_controller.pan(0, self.camera_controller.camera_speed)
-        elif symbol == arcade.key.S or symbol == arcade.key.DOWN:
-            self.camera_controller.pan(0, -self.camera_controller.camera_speed)
-        elif symbol == arcade.key.A or symbol == arcade.key.LEFT:
-            self.camera_controller.pan(-self.camera_controller.camera_speed, 0)
-        elif symbol == arcade.key.D or symbol == arcade.key.RIGHT:
-            self.camera_controller.pan(self.camera_controller.camera_speed, 0)
+        if not self.input_handler:
+            return
 
-        # Zoom
-        elif symbol == arcade.key.PLUS or symbol == arcade.key.EQUAL:
-            self.camera_controller.zoom_in()
-        elif symbol == arcade.key.MINUS:
-            self.camera_controller.zoom_out()
-
-        # Game controls
-        elif symbol == arcade.key.SPACE or symbol == arcade.key.ENTER:
-            self._handle_end_turn()
-        elif symbol == arcade.key.ESCAPE:
-            self._handle_cancel()
-
-        # Music toggle
-        elif symbol == arcade.key.M:
-            self.audio_manager.toggle_music()
-            # Update generator hums to respect captured state when resuming
-            if self.audio_manager.music_playing:
-                self.audio_manager.update_generator_hums(self.game_state.generators)
-
-        # 3D View controls
-        elif symbol == arcade.key.V:
-            # Check if initialization is complete
-            if (
-                not hasattr(self, "camera_controller")
-                or not hasattr(self, "board_3d")
-                or not hasattr(self, "shader_3d")
-            ):
-                return
-
-            # Toggle between 2D and 3D views (only if 3D rendering is available)
-            self.camera_controller.toggle_mode(self.renderer_3d.is_available())
-
-        elif (
-            symbol == arcade.key.TAB
-            and hasattr(self, "camera_controller")
-            and self.camera_controller.camera_mode == "3D"
-        ):
-            # Cycle to next token
-            self.camera_controller.cycle_controlled_token(self.game_state)
-
-        elif symbol == arcade.key.Q and not (modifiers & arcade.key.MOD_CTRL):
-            # Rotate camera left (only in 3D mode, and not Ctrl+Q which is quit)
-            self.camera_controller.rotate_camera_left(self.game_state)
-
-        elif symbol == arcade.key.E:
-            # Rotate camera right (only in 3D mode)
-            self.camera_controller.rotate_camera_right(self.game_state)
-
-        # Quit
-        elif symbol == arcade.key.Q and (modifiers & arcade.key.MOD_CTRL):
-            self.window.close()
+        self.input_handler.handle_key_press(symbol, modifiers, self.chat_widget, self.window)
 
     def on_text(self, text: str):
         """
@@ -631,228 +497,7 @@ class GameView(arcade.View):
         Args:
             text: Character(s) to add
         """
-        # Pass text input to chat widget if active
-        if self.chat_widget and self.chat_widget.input_active:
-            if self.chat_widget.on_text(text):
-                return  # Chat widget handled the text
-
-    def _handle_select(self, world_pos: Tuple[float, float]):
-        """
-        Handle selection at world position.
-
-        Args:
-            world_pos: Position in world coordinates
-        """
-        # Convert world coordinates to grid coordinates
-        grid_pos = (int(world_pos[0] // CELL_SIZE), int(world_pos[1] // CELL_SIZE))
-
-        # Get current player
-        current_player = self.game_state.get_current_player()
-        if not current_player:
+        if not self.input_handler:
             return
 
-        # Handle menu state
-        if not self._handle_menu_state():
-            return  # Menu just opened, don't process clicks
-
-        # Find token at clicked position
-        clicked_token = self._find_token_at_position(grid_pos)
-
-        if clicked_token:
-            self._handle_token_click(clicked_token, current_player, grid_pos)
-        else:
-            self._handle_empty_cell_click(grid_pos, current_player)
-
-    def _handle_menu_state(self) -> bool:
-        """
-        Handle deployment menu state.
-
-        Returns:
-            False if menu just opened (block further clicks), True otherwise
-        """
-        if self.deployment_controller.menu_just_opened:
-            self.deployment_controller.clear_just_opened_flag()
-            return False
-
-        if self.deployment_controller.menu_open:
-            self.deployment_controller.close_menu()
-
-        return True
-
-    def _find_token_at_position(self, grid_pos: Tuple[int, int]):
-        """Find token at grid position."""
-        for player in self.game_state.players.values():
-            for token_id in player.token_ids:
-                token = self.game_state.get_token(token_id)
-                if (token and token.is_alive and token.is_deployed and
-                    token.position == grid_pos):
-                    return token
-        return None
-
-    def _handle_token_click(self, clicked_token, current_player, grid_pos: Tuple[int, int]):
-        """Handle clicking on a token."""
-        if clicked_token.player_id == current_player.id:
-            self._handle_own_token_click(clicked_token, grid_pos)
-        else:
-            self._handle_enemy_token_click(clicked_token)
-
-    def _handle_own_token_click(self, clicked_token, grid_pos: Tuple[int, int]):
-        """Handle clicking on own token."""
-        if self.turn_phase != TurnPhase.MOVEMENT:
-            return
-
-        # Check if trying to stack on generator/crystal
-        cell = self.game_state.board.get_cell_at(grid_pos)
-        if (self.selected_token_id and grid_pos in self.valid_moves and
-            cell and cell.cell_type in (CellType.GENERATOR, CellType.CRYSTAL)):
-            self._try_move_to_cell(grid_pos)
-        else:
-            # Select this token for movement
-            self.selected_token_id = clicked_token.id
-            self.valid_moves = self.movement_system.get_valid_moves(
-                clicked_token,
-                self.game_state.board,
-                tokens_dict=self.game_state.tokens,
-            )
-            self.renderer_2d.update_selection_visuals(
-                self.selected_token_id, self.valid_moves, self.game_state
-            )
-            logger.debug(f"Selected token {clicked_token.id} at {clicked_token.position}")
-            logger.debug(f"Valid moves: {len(self.valid_moves)}")
-
-    def _handle_enemy_token_click(self, clicked_token):
-        """Handle clicking on enemy token (attack)."""
-        if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
-            self._try_attack(clicked_token)
-
-    def _handle_empty_cell_click(self, grid_pos: Tuple[int, int], current_player):
-        """Handle clicking on empty cell."""
-        if self.selected_token_id and self.turn_phase == TurnPhase.MOVEMENT:
-            self._try_move_selected_token(grid_pos)
-        elif self.deployment_controller.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
-            self._try_deploy_token(grid_pos, current_player)
-
-    def _try_move_selected_token(self, grid_pos: Tuple[int, int]):
-        """Try to move selected token to grid position."""
-        if grid_pos in self.valid_moves:
-            self._try_move_to_cell(grid_pos)
-        else:
-            logger.warning(f"Cannot move to {grid_pos} - not a valid move")
-
-    def _try_deploy_token(self, grid_pos: Tuple[int, int], current_player):
-        """Try to deploy token at grid position."""
-        if self.deployment_controller.is_valid_deployment_position(
-            grid_pos, current_player.id, self.game_state
-        ):
-            deployed_token = self.action_handler.execute_deployment(
-                current_player.id,
-                self.deployment_controller.selected_deploy_health,
-                grid_pos,
-                self.window.ctx,
-            )
-
-            if deployed_token:
-                self.deployment_controller.selected_deploy_health = None
-                self.turn_phase = TurnPhase.ACTION
-                logger.info("Deployment complete - you can attack or end turn")
-        else:
-            logger.warning("Cannot deploy outside your corner area")
-            self.deployment_controller.selected_deploy_health = None
-
-    def _handle_select_3d(self, grid_pos: Tuple[int, int]):
-        """
-        Handle selection in 3D mode using ray-cast grid position.
-        Supports token selection, movement, attack, and deployment.
-
-        Args:
-            grid_pos: Grid coordinates (x, y)
-        """
-        current_player = self.game_state.get_current_player()
-        if not current_player:
-            return
-
-        logger.debug(f"3D click at grid {grid_pos}")
-
-        # Find token at clicked position
-        clicked_token = self._find_token_at_position(grid_pos)
-
-        if clicked_token:
-            self._handle_token_click(clicked_token, current_player, grid_pos)
-        else:
-            self._handle_empty_cell_click(grid_pos, current_player)
-
-    def _try_move_to_cell(self, cell: Tuple[int, int]):
-        """
-        Try to move the selected token to a cell.
-
-        Args:
-            cell: Target cell coordinates
-        """
-        if self.selected_token_id is None:
-            return
-
-        # Execute move through action handler
-        success, final_position = self.action_handler.execute_move(
-            self.selected_token_id, cell, self.mystery_animations, self.window.ctx
-        )
-
-        if success:
-            # Clear selection
-            self.selected_token_id = None
-            self.valid_moves = []
-            self.renderer_2d.update_selection_visuals(
-                self.selected_token_id, self.valid_moves, self.game_state
-            )
-
-            # Can't attack after moving - go directly to end turn phase
-            self.turn_phase = TurnPhase.END_TURN
-            logger.info("Turn complete - press SPACE to end turn")
-
-    def _try_attack(self, target_token):
-        """
-        Try to attack a target token.
-
-        Args:
-            target_token: Token to attack
-        """
-        if not self.selected_token_id:
-            return
-
-        # Execute attack through action handler
-        success = self.action_handler.execute_attack(
-            self.selected_token_id, target_token.id
-        )
-
-        if success:
-            # Clear selection and move to end turn phase
-            self.selected_token_id = None
-            self.valid_moves = []
-            self.renderer_2d.update_selection_visuals(
-                self.selected_token_id, self.valid_moves, self.game_state
-            )
-            self.turn_phase = TurnPhase.END_TURN
-
-    def _handle_cancel(self):
-        """Handle cancel action."""
-        if self.selected_token_id:
-            logger.debug("Cancelled token selection")
-            self.selected_token_id = None
-            self.valid_moves = []
-            self.renderer_2d.update_selection_visuals(
-            self.selected_token_id, self.valid_moves, self.game_state
-        )
-        else:
-            # Let deployment controller handle its own cancel logic
-            self.deployment_controller.cancel_selection()
-
-    def _handle_end_turn(self):
-        """Handle end turn action."""
-        # Clear selection
-        self.selected_token_id = None
-        self.valid_moves = []
-
-        # Execute end turn through action handler
-        self.action_handler.execute_end_turn(self.mystery_animations)
-
-        # Reset to movement phase
-        self.turn_phase = TurnPhase.MOVEMENT
+        self.input_handler.handle_text(text, self.chat_widget)
