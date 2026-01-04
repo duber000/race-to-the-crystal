@@ -11,6 +11,8 @@ from game.ai_actions import (
     AttackAction,
     DeployAction,
     EndTurnAction,
+    ValidationResult,
+    ActionResult,
 )
 from shared.enums import PlayerColor, GamePhase, TurnPhase
 

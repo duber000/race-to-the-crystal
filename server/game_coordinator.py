@@ -9,7 +9,7 @@ from typing import Dict, Optional, List, Tuple
 
 from game.game_state import GameState
 from game.player import Player
-from game.ai_actions import AIAction, AIActionExecutor
+from game.ai_actions import AIAction, AIActionExecutor, ActionResult
 from game.ai_observation import AIObserver
 from server.lobby import GameLobby, PlayerInfo
 from shared.enums import PlayerColor

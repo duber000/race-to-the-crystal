@@ -379,20 +379,31 @@ self.corner_menu_just_opened = False  # Flag to prevent immediate click-through
 ---
 
 ### 🟡 12. Inconsistent Return Types
-**Status:** Open
+**Status:** ✅ **COMPLETED**
 **Location:** `game/ai_actions.py`
 
 **Issue:** The `execute_action()` method returns `Tuple[bool, str, Optional[Dict]]`, which is complex and error-prone.
 
-**Recommendation:**
-- Use a result object:
-```python
-@dataclass
-class ActionResult:
-    success: bool
-    message: str
-    data: Optional[Dict] = None
-```
+**Resolution:**
+- ✅ Created `ValidationResult` dataclass with `is_valid` and `message` fields
+- ✅ Created `ActionResult` dataclass with `success`, `message`, and `data` fields
+- ✅ Updated `validate_action()` to return `ValidationResult`
+- ✅ Updated `execute_action()` to return `ActionResult`
+- ✅ Updated all private validation and execution methods
+- ✅ Added `__iter__` method to both classes for backward compatibility with tuple unpacking
+- ✅ All 266 tests pass without modification
+- ✅ Updated imports in key consuming files
+
+**Benefits:**
+- Better type safety and IDE autocomplete
+- Self-documenting code (field names instead of positional indices)
+- Easier to extend in the future (can add new fields without breaking existing code)
+- Backward compatible via tuple unpacking
+
+**Files Modified:**
+- `game/ai_actions.py` (added result classes, updated all methods)
+- `tests/test_ai_actions.py` (updated imports)
+- `server/game_coordinator.py` (updated imports)
 
 ---
 
