@@ -70,7 +70,7 @@ window = arcade.Window(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, "Game Test",
 game_view = GameView(game_state, start_in_3d=False)
 window.show_view(game_view)
 
-print(f"Testing 2D mode (camera_mode: {game_view.camera_mode})")
+print(f"Testing 2D mode (camera_mode: {game_view.camera_controller.camera_mode})")
 
 frame_count = [0]
 original_draw = game_view.on_draw
@@ -103,8 +103,8 @@ game_view = GameView(game_state, start_in_3d=True)
 window.show_view(game_view)
 
 print(f"Testing 3D mode")
-print(f"Camera position: {game_view.camera_3d.position}")
-print(f"Camera pitch: {game_view.camera_3d.pitch}, yaw: {game_view.camera_3d.yaw}")
+print(f"Camera position: {game_view.camera_controller.camera_3d.position}")
+print(f"Camera pitch: {game_view.camera_controller.camera_3d.pitch}, yaw: {game_view.camera_controller.camera_3d.yaw}")
 
 # ... (same screenshot code as above, save to /tmp/game_3d_test.png) ...
 ```
@@ -119,12 +119,10 @@ from shared.constants import CELL_SIZE
 
 # ... (setup code) ...
 
-game_view.camera_mode = "3D"
-
 # Position camera at center of board, high up, looking down
-game_view.camera_3d.position = np.array([12 * CELL_SIZE, 12 * CELL_SIZE, 100.0], dtype=np.float32)
-game_view.camera_3d.pitch = -60.0  # Looking down
-game_view.camera_3d.yaw = 45.0     # Rotated for better view
+game_view.camera_controller.camera_3d.position = np.array([12 * CELL_SIZE, 12 * CELL_SIZE, 100.0], dtype=np.float32)
+game_view.camera_controller.camera_3d.pitch = -60.0  # Looking down
+game_view.camera_controller.camera_3d.yaw = 45.0     # Rotated for better view
 
 # ... (take screenshot) ...
 ```

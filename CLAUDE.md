@@ -108,15 +108,22 @@ Contains all game mechanics, rules, and state management. These modules have NO 
 
 **Key files:**
 - `game_state.py`: Central state container managing all entities and game phase
-- `ai_actions.py`: Action classes (Move, Attack, Deploy, EndTurn) and validation/execution
+- `ai_actions.py`: Action classes (Move, Attack, Deploy, EndTurn) with validation/execution
+  - Returns `ActionResult` and `ValidationResult` dataclasses (not tuples)
 - `ai_observation.py`: Converts game state to text descriptions for AI players (enables headless AI gameplay)
 - `board.py`: 24x24 grid with cell types (normal, generator, crystal, mystery)
+  - Uses `shared/corner_layout.py` for deployment position calculations
 - `token.py`: Token entities with health, position, movement range
 - `player.py`: Player state and token ownership
 - `movement.py`: BFS pathfinding for token movement
 - `combat.py`: Combat resolution (damage = attacker.health // 2)
+  - Clean, self-documenting code without redundant comments
 - `generator.py`: Generator capture mechanics (2 tokens for 2 turns)
+  - Uses helper methods: `_count_tokens_by_player()`, `_find_dominant_player()`, `_process_capture_logic()`
+  - Self-documenting method names eliminate need for "what" comments
 - `crystal.py`: Win condition tracking (12 tokens for 3 turns, reduced by disabled generators)
+  - Uses helper methods: `_count_tokens_by_player()`, `_find_dominant_player()`, `_process_win_logic()`
+  - Self-documenting method names eliminate need for "what" comments
 - `mystery_square.py`: Random events (heal or teleport)
 
 **Critical architectural detail:** The `ai_observation.py` and `ai_actions.py` modules provide a complete text-based API for interacting with the game. This enables:
@@ -128,13 +135,26 @@ Contains all game mechanics, rules, and state management. These modules have NO 
 #### `client/` - Rendering and UI
 All Arcade/OpenGL rendering code. Consumes `GameState` but never modifies game logic.
 
+**Architecture:** The client uses a **delegation pattern** with specialized controllers to manage different responsibilities. The main `GameView` class (515 lines) delegates to focused controllers rather than handling everything itself.
+
 **Key files:**
-- `game_window.py`: Main Arcade window handling rendering loop and input
-- `board_3d.py`: 3D wireframe board rendering with OpenGL shaders
-- `camera_3d.py`: First-person camera system for 3D mode
-- `token_3d.py`: 3D hexagonal prism token rendering
-- `sprites/`: 2D sprite implementations for tokens and board elements
-- `ui/arcade_ui.py`: UIManager with player panels, generator status, and interactive buttons
+- `game_window.py`: Main Arcade window coordinating rendering loop and delegating to controllers
+- **Controllers** (delegation pattern):
+  - `audio_manager.py`: Background music and generator hum management
+  - `camera_controller.py`: 2D/3D camera systems and coordinate conversion
+  - `deployment_menu_controller.py`: Deployment UI (R hexagon indicator and menu)
+  - `input_handler.py`: Mouse/keyboard input routing and selection state
+  - `game_action_handler.py`: Game action execution (move, attack, deploy, end turn)
+  - `renderer_2d.py`: 2D sprite rendering and animations
+  - `renderer_3d.py`: 3D model rendering and OpenGL shaders
+- **3D Rendering:**
+  - `board_3d.py`: 3D wireframe board with OpenGL shaders
+  - `camera_3d.py`: First-person camera system
+  - `token_3d.py`: 3D hexagonal prism token models
+- **2D Rendering:**
+  - `sprites/`: 2D sprite implementations for tokens and board elements
+- **UI:**
+  - `ui/arcade_ui.py`: UIManager with player panels, generator status, and interactive buttons
 
 **Dual rendering modes:**
 - **2D**: Top-down Tron-style vector graphics with glow effects
@@ -148,15 +168,24 @@ All Arcade/OpenGL rendering code. Consumes `GameState` but never modifies game l
 - Lines automatically disappear when generators are captured
 
 #### `shared/` - Shared Definitions
-Constants and enums shared between game logic and rendering.
+Constants, enums, and configuration objects shared between game logic and rendering.
 
+**Key files:**
 - `enums.py`: GamePhase, TurnPhase, PlayerColor, CellType, etc.
 - `constants.py`: All numeric constants (board size, token counts, capture requirements, colors)
+- `corner_layout.py`: Corner position configurations for player deployment areas
+  - `BoardCornerConfig`: Board-space corner deployment logic (3x3 deployment zones)
+  - `UICornerConfig`: UI-space corner indicator and menu positioning
+  - Data-driven approach eliminates if-elif chains for player-specific positioning
+- `ui_config.py`: UI parameter objects to improve method signatures
+  - `ViewportConfig`: Window and viewport dimensions (window_width, window_height, hud_height)
+  - `UIStyleConfig`: UI styling parameters (margin, indicator_size, spacing)
+- `logging_config.py`: Centralized logging configuration
 
 **Important:** When changing game rules, update constants in `shared/constants.py` rather than hardcoding values.
 
 #### `tests/` - Unit Tests
-199 pytest tests covering all game mechanics. Tests use pure game logic without rendering.
+268 pytest tests covering all game mechanics. Tests use pure game logic without rendering.
 
 ### Game State Flow
 
@@ -228,7 +257,7 @@ The game is designed to be playable by AI without visual rendering:
 
 ### Testing Strategy
 
-The project has 140+ unit tests organized by game system:
+The project has 268 unit tests organized by game system:
 
 - `test_board.py`: Grid and cell management
 - `test_token.py`: Token state and behavior
@@ -243,6 +272,36 @@ The project has 140+ unit tests organized by game system:
 **Playtesting:** Use the `/playtesting` skill or `test_gameplay_flaws.py` to run automated AI playtests. This is especially useful after implementing new features to verify end-to-end gameplay.
 
 ## Important Conventions
+
+### Code Quality Standards
+
+This codebase follows strict quality standards to maintain readability and maintainability:
+
+1. **Self-Documenting Code**:
+   - Use descriptive method and variable names
+   - Extract complex logic into well-named helper methods
+   - Only comment "why", never "what" (the code should show what it does)
+   - Example: Instead of `# Count tokens by player`, use `player_token_counts = self._count_tokens_by_player(tokens)`
+
+2. **Parameter Objects Over Long Parameter Lists**:
+   - Use dataclasses to group related parameters
+   - Example: `ViewportConfig(window_width, window_height, hud_height)` instead of passing 3+ individual parameters
+   - Makes code self-documenting and easier to extend
+
+3. **Data-Driven Configuration**:
+   - Use configuration objects and dictionaries instead of if-elif chains
+   - Example: `corner_layout.py` uses `BOARD_CORNER_CONFIGS` dict instead of player_index conditionals
+   - Single source of truth for configuration data
+
+4. **Return Value Objects**:
+   - Use dataclasses for complex return types instead of tuples
+   - Example: `ActionResult(success, message, data)` instead of `Tuple[bool, str, Optional[Dict]]`
+   - Self-documenting and prevents positional argument errors
+
+5. **Delegation Pattern**:
+   - Delegate responsibilities to focused, single-purpose classes
+   - Example: `GameView` delegates to `CameraController`, `InputHandler`, `Renderer2D`, etc.
+   - Each controller has a clear, focused responsibility
 
 ### Game Logic Modifications
 

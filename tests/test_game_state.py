@@ -192,8 +192,8 @@ class TestGameState:
 
         assert success is True
         assert token.position == new_pos
-        assert state.board.get_cell_at(new_pos).occupant == token.id
-        assert state.board.get_cell_at(old_pos).occupant is None
+        assert token.id in state.board.get_cell_at(new_pos).occupants
+        assert len(state.board.get_cell_at(old_pos).occupants) == 0
 
     def test_move_token_invalid(self):
         """Test moving non-existent token fails."""
@@ -229,7 +229,7 @@ class TestGameState:
         state.remove_token(token_id)
 
         assert token.is_alive is False
-        assert state.board.get_cell_at(position).occupant is None
+        assert len(state.board.get_cell_at(position).occupants) == 0
 
         player = state.get_player("p1")
         assert token_id not in player.token_ids

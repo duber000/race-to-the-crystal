@@ -73,15 +73,20 @@ uv run --group dev pytest
 
 ## Test Structure
 
-The project has 140 unit tests organized by component:
+The project has 268 unit tests organized by component:
 
-- `tests/test_token.py` - 14 tests for token mechanics
-- `tests/test_board.py` - 22 tests for board and cells
-- `tests/test_movement.py` - 17 tests for pathfinding
-- `tests/test_combat.py` - 17 tests for combat system
-- `tests/test_generator.py` - 19 tests for generator capture
-- `tests/test_crystal.py` - 20 tests for win conditions
-- `tests/test_game_state.py` - 31 tests for state management
+- `tests/test_token.py` - Token mechanics and state
+- `tests/test_board.py` - Board and cell management
+- `tests/test_movement.py` - Pathfinding and movement validation
+- `tests/test_combat.py` - Combat system and damage calculations
+- `tests/test_generator.py` - Generator capture mechanics
+- `tests/test_crystal.py` - Win condition logic
+- `tests/test_game_state.py` - State management and turn flow
+- `tests/test_ai_observation.py` - AI observation API
+- `tests/test_ai_actions.py` - AI action execution
+- `tests/test_3d_controls.py` - 3D camera and controls
+- `tests/test_network_*.py` - Network multiplayer functionality
+- And more...
 
 ## Test Configuration
 

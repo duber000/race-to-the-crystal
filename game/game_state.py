@@ -520,12 +520,7 @@ class GameState:
         state.current_turn_player_id = data["current_turn_player_id"]
         state.turn_number = data["turn_number"]
         state.phase = GamePhase[data["phase"]]
-        # Deserialize turn_phase (with backwards compatibility)
-        if "turn_phase" in data:
-            state.turn_phase = TurnPhase[data["turn_phase"]]
-        else:
-            # Default to MOVEMENT if not present (backwards compatibility)
-            state.turn_phase = TurnPhase.MOVEMENT
+        state.turn_phase = TurnPhase[data["turn_phase"]]
         state.winner_id = data["winner_id"]
         return state
 

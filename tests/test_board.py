@@ -15,7 +15,6 @@ class TestCell:
         cell = Cell(position=(3, 4), cell_type=CellType.NORMAL, occupants=[])
         assert cell.position == (3, 4)
         assert cell.cell_type == CellType.NORMAL
-        assert cell.occupant is None
         assert cell.occupants == []
 
     def test_cell_is_occupied(self):
@@ -39,7 +38,7 @@ class TestCell:
         """Test cell with multiple occupants (stacking)."""
         cell = Cell(position=(5, 5), occupants=[1, 2, 3])
         assert cell.is_occupied() is True
-        assert cell.occupant == 1  # First occupant for backwards compat
+        assert cell.occupants[0] == 1  # First occupant
         assert len(cell.occupants) == 3
 
     def test_cell_serialization(self):
@@ -54,20 +53,7 @@ class TestCell:
         restored = Cell.from_dict(data)
         assert restored.position == (5, 6)
         assert restored.cell_type == CellType.MYSTERY
-        assert restored.occupant == 99
         assert restored.occupants == [99]
-
-    def test_cell_serialization_backwards_compat(self):
-        """Test cell deserialization with old 'occupant' format."""
-        # Old format with single occupant
-        old_data = {
-            "position": [5, 6],
-            "cell_type": "MYSTERY",
-            "occupant": 99
-        }
-        restored = Cell.from_dict(old_data)
-        assert restored.occupants == [99]
-        assert restored.occupant == 99
 
 
 class TestBoard:
@@ -203,7 +189,7 @@ class TestBoard:
 
         board.set_occupant(position, 42)
         cell = board.get_cell_at(position)
-        assert cell.occupant == 42
+        assert 42 in cell.occupants
 
     def test_clear_occupant(self):
         """Test clearing cell occupant."""
@@ -214,7 +200,7 @@ class TestBoard:
         board.clear_occupant(position)
 
         cell = board.get_cell_at(position)
-        assert cell.occupant is None
+        assert len(cell.occupants) == 0
 
     def test_get_starting_position(self):
         """Test getting starting positions for each player."""
@@ -289,7 +275,7 @@ class TestBoard:
         # Check that occupant was serialized
         restored = Board.from_dict(data)
         cell = restored.get_cell(2, 2)
-        assert cell.occupant == 99
+        assert 99 in cell.occupants
 
     def test_board_serialization_preserves_special_cells(self):
         """Test that serialization preserves special cell types."""

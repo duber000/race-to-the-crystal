@@ -31,11 +31,6 @@ class Cell:
     cell_type: CellType = CellType.NORMAL
     occupants: List[int] = field(default_factory=list)
 
-    @property
-    def occupant(self) -> Optional[int]:
-        """Backwards compatibility: return first occupant or None."""
-        return self.occupants[0] if self.occupants else None
-
     def is_occupied(self) -> bool:
         """Check if this cell is occupied by any token."""
         return len(self.occupants) > 0
@@ -53,12 +48,6 @@ class Cell:
                     return True
         return False
 
-    def get_occupant_player_id(self, tokens_dict: dict) -> Optional[str]:
-        """Get the player ID of the first occupant (for backward compatibility)."""
-        if self.occupants and self.occupants[0] in tokens_dict:
-            return tokens_dict[self.occupants[0]].player_id
-        return None
-
     def to_dict(self) -> dict:
         """Convert cell to dictionary for serialization."""
         return {
@@ -70,17 +59,10 @@ class Cell:
     @classmethod
     def from_dict(cls, data: dict) -> "Cell":
         """Create cell from dictionary."""
-        # Handle backwards compatibility with old 'occupant' field
-        if "occupants" in data:
-            occupants = list(data["occupants"])
-        elif "occupant" in data and data["occupant"] is not None:
-            occupants = [data["occupant"]]
-        else:
-            occupants = []
         return cls(
             position=tuple(data["position"]),
             cell_type=CellType[data["cell_type"]],
-            occupants=occupants,
+            occupants=list(data["occupants"]),
         )
 
 
