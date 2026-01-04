@@ -165,9 +165,12 @@ class Renderer2D:
                         current_grid_x != token.position[0]
                         or current_grid_y != token.position[1]
                     ):
+                        logger.debug(f"Animating token {token_id} from ({current_grid_x},{current_grid_y}) to ({token.position[0]},{token.position[1]})")
                         sprite.update_position(
                             token.position[0], token.position[1], instant=False
                         )
+                    else:
+                        logger.debug(f"Token {token_id} already at target position ({token.position[0]},{token.position[1]})")
                 else:
                     # Create new sprite
                     sprite = TokenSprite(token, player_color)

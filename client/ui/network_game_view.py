@@ -55,6 +55,7 @@ class NetworkGameView(arcade.View):
         # Network state
         self.waiting_for_server = False
         self.last_action_sent = None
+        self._pending_move_rollback = None
 
         # Callbacks
         self.on_game_end: Optional[Callable[[str], None]] = None
@@ -183,11 +184,29 @@ class NetworkGameView(arcade.View):
         original_end_turn = self.game_state.end_turn
 
         def network_move_token(token_id, new_position):
-            """Intercept move and send to server."""
+            """Intercept move and send to server with client-side prediction."""
             if not self.waiting_for_server:
-                schedule_async(self._send_move(token_id, new_position))
-                self.waiting_for_server = True
-                return True  # Pretend success, server will validate
+                # Store original position for potential rollback
+                original_token = self.game_state.get_token(token_id)
+                if original_token:
+                    self._pending_move_rollback = {
+                        "token_id": token_id,
+                        "original_position": original_token.position,  # tuple is immutable, no need to copy
+                        "original_health": original_token.health,
+                    }
+                else:
+                    self._pending_move_rollback = None
+                
+                # Apply client-side prediction - update local state immediately
+                success = original_move_token(token_id, new_position)
+                
+                if success:
+                    schedule_async(self._send_move(token_id, new_position))
+                    self.waiting_for_server = True
+                    return True
+                else:
+                    # Local validation failed, don't send to server
+                    return False
             return False
 
         def network_attack_token(attacker_id, defender_id):
@@ -387,6 +406,46 @@ class NetworkGameView(arcade.View):
         if self.game_view:
             self.game_view.setup()
 
+    def _rollback_move_prediction(self):
+        """Rollback client-side prediction when server rejects a move."""
+        if not self._pending_move_rollback:
+            return
+            
+        rollback_info = self._pending_move_rollback
+        token_id = rollback_info["token_id"]
+        original_position = rollback_info["original_position"]
+        original_health = rollback_info["original_health"]
+        
+        # Get the token and revert its state
+        token = self.game_state.get_token(token_id)
+        if token:
+            logger.info(f"Rolling back token {token_id} from {token.position} to {original_position}")
+            
+            # Revert position
+            token.position = original_position.copy()
+            
+            # Revert health if it changed (e.g., from mystery square)
+            if token.health != original_health:
+                token.health = original_health
+                
+            # Update visuals to reflect rollback
+            if self.game_view:
+                # Update 2D renderer
+                if hasattr(self.game_view.renderer_2d, 'sync_tokens'):
+                    self.game_view.renderer_2d.sync_tokens(self.game_state)
+                    
+                # Update 3D renderer
+                if hasattr(self.game_view.renderer_3d, 'sync_tokens'):
+                    self.game_view.renderer_3d.sync_tokens(self.game_state, self.game_view.window.ctx)
+                    
+                # Clear selection
+                if self.game_view.input_handler:
+                    self.game_view.input_handler.selected_token_id = None
+                    self.game_view.input_handler.valid_moves = set()
+                    self.game_view.renderer_2d.update_selection_visuals(
+                        None, set(), self.game_state
+                    )
+
     async def _handle_invalid_action(self, message):
         """Handle INVALID_ACTION message when action was rejected."""
         data = message.data or {}
@@ -394,6 +453,12 @@ class NetworkGameView(arcade.View):
         reason = data.get("reason", "Unknown reason")
 
         logger.warning(f"Action rejected by server: {action_type} - {reason}")
+        
+        # Rollback client-side prediction if this was a move action
+        if action_type == "MOVE" and self._pending_move_rollback:
+            self._rollback_move_prediction()
+            self._pending_move_rollback = None
+        
         self.waiting_for_server = False
 
         # Show error message to player
