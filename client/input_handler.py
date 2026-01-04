@@ -21,6 +21,7 @@ from game.movement import MovementSystem
 from shared.constants import CELL_SIZE
 from shared.enums import CellType, TurnPhase
 from shared.logging_config import setup_logger
+from shared.types import TokenID
 
 logger = setup_logger(__name__)
 
@@ -73,7 +74,7 @@ class InputHandler:
         self.audio_manager = audio_manager
 
         # Selection state
-        self.selected_token_id: Optional[int] = None
+        self.selected_token_id: Optional[TokenID] = None
         self.valid_moves: Set[Tuple[int, int]] = set()
         self.turn_phase = TurnPhase.MOVEMENT
 

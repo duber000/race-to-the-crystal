@@ -11,6 +11,7 @@ from network.connection import Connection
 from network.protocol import ProtocolHandler, NetworkMessage
 from network.messages import MessageType, ClientType
 from game.ai_actions import AIAction
+from shared.types import PlayerID
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class NetworkClient:
 
         # Connection state
         self.connection: Optional[Connection] = None
-        self.player_id: Optional[str] = None
+        self.player_id: Optional[PlayerID] = None
         self.connected = False
 
         # Reconnection support

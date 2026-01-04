@@ -10,6 +10,7 @@ from client.board_3d import Board3D
 from client.token_3d import Token3D
 from shared.constants import PLAYER_COLORS
 from shared.logging_config import setup_logger
+from shared.types import TokenID
 
 logger = setup_logger(__name__)
 
@@ -212,7 +213,7 @@ class Renderer3D:
             if hasattr(token_3d, "update"):
                 token_3d.update(delta_time)
 
-    def remove_token(self, token_id: int) -> None:
+    def remove_token(self, token_id: TokenID) -> None:
         """
         Remove a 3D token by ID (used when tokens are destroyed).
 

@@ -21,6 +21,7 @@ from shared.constants import (
     MOUSE_LOOK_SENSITIVITY,
 )
 from shared.logging_config import setup_logger
+from shared.types import TokenID
 
 logger = setup_logger(__name__)
 
@@ -56,7 +57,7 @@ class CameraController:
 
         # 3D Camera system
         self.camera_3d = FirstPersonCamera3D(window_width, window_height)
-        self.controlled_token_id: Optional[int] = None  # Token camera follows in 3D
+        self.controlled_token_id: Optional[TokenID] = None  # Token camera follows in 3D
         self.token_rotation = 0.0  # Camera rotation around token
 
         # Camera mode

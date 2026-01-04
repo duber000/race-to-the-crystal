@@ -7,6 +7,7 @@ from collections import deque
 
 from game.token import Token
 from game.board import Board
+from shared.types import TokenID
 
 
 class MovementSystem:
@@ -29,7 +30,7 @@ class MovementSystem:
         token: Token,
         board: Board,
         max_range: Optional[int] = None,
-        tokens_dict: Optional[Dict[int, Token]] = None,
+        tokens_dict: Optional[Dict[TokenID, Token]] = None,
     ) -> Set[Tuple[int, int]]:
         """
         Calculate all valid destination cells for a token using BFS.
@@ -108,7 +109,7 @@ class MovementSystem:
         token: Token,
         destination: Tuple[int, int],
         board: Board,
-        tokens_dict: Optional[Dict[int, Token]] = None,
+        tokens_dict: Optional[Dict[TokenID, Token]] = None,
     ) -> bool:
         """
         Check if a move is valid for a token.

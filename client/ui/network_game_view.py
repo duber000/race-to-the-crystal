@@ -15,6 +15,7 @@ from game.game_state import GameState
 from game.ai_actions import MoveAction, AttackAction, DeployAction, EndTurnAction
 from network.messages import MessageType
 from shared.constants import DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT
+from shared.types import TokenID
 
 logger = logging.getLogger(__name__)
 
@@ -248,7 +249,7 @@ class NetworkGameView(arcade.View):
 
     # --- Network Action Sending ---
 
-    async def _send_move(self, token_id: int, destination: tuple):
+    async def _send_move(self, token_id: TokenID, destination: tuple):
         """Send move action to server."""
         action = MoveAction(token_id=token_id, destination=destination)
         success = await self.network_client.send_action(action)
@@ -256,7 +257,7 @@ class NetworkGameView(arcade.View):
             logger.error("Failed to send move action")
             self.waiting_for_server = False
 
-    async def _send_attack(self, attacker_id: int, target_id: int):
+    async def _send_attack(self, attacker_id: TokenID, target_id: TokenID):
         """Send attack action to server."""
         action = AttackAction(attacker_id=attacker_id, defender_id=target_id)
         success = await self.network_client.send_action(action)

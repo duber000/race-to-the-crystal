@@ -13,6 +13,7 @@ from game.mystery_square import MysterySquareSystem
 from shared.constants import PLAYER_COLORS
 from shared.enums import CellType, TurnPhase
 from shared.logging_config import setup_logger
+from shared.types import TokenID
 
 logger = setup_logger(__name__)
 
@@ -58,7 +59,7 @@ class GameActionHandler:
 
     def execute_move(
         self,
-        token_id: int,
+        token_id: TokenID,
         target_cell: Tuple[int, int],
         mystery_animations: Dict[Tuple[int, int], float],
         ctx,

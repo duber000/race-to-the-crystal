@@ -21,6 +21,7 @@ from shared.constants import (
 )
 from shared.corner_layout import get_ui_corner_config
 from shared.logging_config import setup_logger
+from shared.types import PlayerID
 from shared.ui_config import ViewportConfig, UIStyleConfig
 
 logger = setup_logger(__name__)
@@ -347,7 +348,7 @@ class DeploymentMenuController:
                 self.count_texts[text_key].draw()
 
     def is_valid_deployment_position(
-        self, grid_pos: Tuple[int, int], player_id: str, game_state
+        self, grid_pos: Tuple[int, int], player_id: PlayerID, game_state
     ) -> bool:
         """
         Check if a position is valid for deployment.

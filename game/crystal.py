@@ -53,7 +53,7 @@ class Crystal:
         required = self.base_tokens_required - reduction
         return max(1, required)
 
-    def _count_tokens_by_player(self, tokens_at_position: List[Tuple[int, str]]) -> dict[str, List[int]]:
+    def _count_tokens_by_player(self, tokens_at_position: List[Tuple[TokenID, PlayerID]]) -> dict[PlayerID, List[TokenID]]:
         """
         Group tokens by their controlling player.
 
@@ -63,14 +63,14 @@ class Crystal:
         Returns:
             Dictionary mapping player_id to list of their token_ids
         """
-        player_token_counts: dict[str, List[int]] = {}
+        player_token_counts: dict[PlayerID, List[TokenID]] = {}
         for token_id, player_id in tokens_at_position:
             if player_id not in player_token_counts:
                 player_token_counts[player_id] = []
             player_token_counts[player_id].append(token_id)
         return player_token_counts
 
-    def _find_dominant_player(self, player_token_counts: dict[str, List[int]]) -> Tuple[Optional[str], int]:
+    def _find_dominant_player(self, player_token_counts: dict[PlayerID, List[TokenID]]) -> Tuple[Optional[PlayerID], int]:
         """
         Determine which player has the most tokens, if any.
 
@@ -80,7 +80,7 @@ class Crystal:
         Returns:
             Tuple of (dominant_player_id, token_count). Returns (None, count) if contested.
         """
-        dominant_player: Optional[str] = None
+        dominant_player: Optional[PlayerID] = None
         dominant_count = 0
 
         for player_id, token_ids in player_token_counts.items():
@@ -94,11 +94,11 @@ class Crystal:
 
     def _process_win_logic(
         self,
-        dominant_player: Optional[str],
+        dominant_player: Optional[PlayerID],
         dominant_count: int,
         required_tokens: int,
-        player_token_counts: dict[str, List[int]]
-    ) -> Optional[str]:
+        player_token_counts: dict[PlayerID, List[TokenID]]
+    ) -> Optional[PlayerID]:
         """
         Update crystal holding state and check for win condition.
 
@@ -130,9 +130,9 @@ class Crystal:
 
     def update_capture_status(
         self,
-        tokens_at_position: List[Tuple[int, str]],
+        tokens_at_position: List[Tuple[TokenID, PlayerID]],
         disabled_generators: int
-    ) -> Optional[str]:
+    ) -> Optional[PlayerID]:
         """
         Update crystal capture status based on tokens at this position.
 
@@ -228,9 +228,9 @@ class CrystalManager:
     @staticmethod
     def check_win_condition(
         crystal: Crystal,
-        tokens_at_position: List[Tuple[int, str]],
+        tokens_at_position: List[Tuple[TokenID, PlayerID]],
         disabled_generators: int
-    ) -> Optional[str]:
+    ) -> Optional[PlayerID]:
         """
         Check if win condition is met and update crystal status.
 

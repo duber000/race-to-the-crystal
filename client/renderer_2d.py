@@ -16,6 +16,7 @@ from client.sprites.board_sprite import create_board_shapes
 from client.sprites.token_sprite import TokenSprite
 from shared.constants import CELL_SIZE, CIRCLE_SEGMENTS, PLAYER_COLORS
 from shared.logging_config import setup_logger
+from shared.types import TokenID
 
 logger = setup_logger(__name__)
 
@@ -209,7 +210,7 @@ class Renderer2D:
 
     def update_selection_visuals(
         self,
-        selected_token_id: Optional[int],
+        selected_token_id: Optional[TokenID],
         valid_moves: Set[Tuple[int, int]],
         game_state,
     ) -> None:

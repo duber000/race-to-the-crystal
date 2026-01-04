@@ -12,6 +12,7 @@ import time
 
 from client.network_client import NetworkClient
 from client.ui.async_arcade import schedule_async
+from shared.types import PlayerID
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class ChatMessage:
     player_name: str
     message: str
     timestamp: float
-    player_id: Optional[str] = None
+    player_id: Optional[PlayerID] = None
 
 
 class ChatWidget:
@@ -90,7 +91,7 @@ class ChatWidget:
 
         logger.info("Chat widget created")
 
-    def add_message(self, player_name: str, message: str, player_id: Optional[str] = None):
+    def add_message(self, player_name: str, message: str, player_id: Optional[PlayerID] = None):
         """
         Add a chat message to the history.
 
