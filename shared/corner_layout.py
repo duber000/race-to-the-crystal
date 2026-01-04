@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from typing import Tuple, List
 from enum import Enum
 
+from shared.ui_config import ViewportConfig, UIStyleConfig
+
 
 class CornerPosition(Enum):
     """Screen position of corners for UI placement."""
@@ -70,36 +72,30 @@ class UICornerConfig:
 
     def get_indicator_position(
         self,
-        window_width: int,
-        window_height: int,
-        hud_height: int,
-        margin: int,
-        indicator_size: int
+        viewport: ViewportConfig,
+        style: UIStyleConfig
     ) -> Tuple[float, float]:
         """
         Calculate screen-space position for corner indicator.
 
         Args:
-            window_width: Width of the window in pixels
-            window_height: Height of the window in pixels
-            hud_height: Height of the HUD at top of screen
-            margin: Margin from screen edges
-            indicator_size: Size of the indicator
+            viewport: Viewport configuration (window dimensions, HUD height)
+            style: UI style configuration (margins, sizes)
 
         Returns:
             (center_x, center_y) position for indicator
         """
         # Calculate x position
         if self.h_anchor == -1:  # Left edge
-            center_x = margin + indicator_size
+            center_x = style.margin + style.indicator_size
         else:  # Right edge
-            center_x = window_width - margin - indicator_size
+            center_x = viewport.window_width - style.margin - style.indicator_size
 
         # Calculate y position
         if self.v_anchor == -1:  # Bottom edge
-            center_y = margin + indicator_size
+            center_y = style.margin + style.indicator_size
         else:  # Top edge
-            center_y = window_height - hud_height - margin - indicator_size
+            center_y = viewport.window_height - viewport.hud_height - style.margin - style.indicator_size
 
         return (center_x, center_y)
 

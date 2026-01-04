@@ -49,6 +49,80 @@ class Generator:
         """How much this generator reduces crystal requirements when disabled."""
         return GENERATOR_TOKEN_REDUCTION
 
+    def _count_tokens_by_player(self, tokens_at_position: List[Tuple[int, str]]) -> dict[str, List[int]]:
+        """
+        Group tokens by their controlling player.
+
+        Args:
+            tokens_at_position: List of (token_id, player_id) tuples
+
+        Returns:
+            Dictionary mapping player_id to list of their token_ids
+        """
+        player_token_counts: dict[str, List[int]] = {}
+        for token_id, player_id in tokens_at_position:
+            if player_id not in player_token_counts:
+                player_token_counts[player_id] = []
+            player_token_counts[player_id].append(token_id)
+        return player_token_counts
+
+    def _find_dominant_player(self, player_token_counts: dict[str, List[int]]) -> Tuple[Optional[str], int]:
+        """
+        Determine which player has the most tokens, if any.
+
+        Args:
+            player_token_counts: Dictionary mapping player_id to token_ids
+
+        Returns:
+            Tuple of (dominant_player_id, token_count). Returns (None, count) if contested.
+        """
+        dominant_player: Optional[str] = None
+        dominant_count = 0
+
+        for player_id, token_ids in player_token_counts.items():
+            if len(token_ids) > dominant_count:
+                dominant_player = player_id
+                dominant_count = len(token_ids)
+            elif len(token_ids) == dominant_count and dominant_count > 0:
+                dominant_player = None  # Contested
+
+        return (dominant_player, dominant_count)
+
+    def _process_capture_logic(
+        self,
+        dominant_player: Optional[str],
+        dominant_count: int,
+        player_token_counts: dict[str, List[int]]
+    ) -> bool:
+        """
+        Update capture state based on dominant player and token count.
+
+        Args:
+            dominant_player: Player with most tokens, or None if contested
+            dominant_count: Number of tokens the dominant player has
+            player_token_counts: Full token counts by player
+
+        Returns:
+            True if generator was just disabled
+        """
+        if dominant_player and dominant_count >= self.required_tokens:
+            if dominant_player == self.capturing_player_id:
+                self.turns_held += 1
+                self.capture_token_ids = player_token_counts[dominant_player]
+
+                if self.turns_held >= self.required_turns:
+                    self.is_disabled = True
+                    return True
+            else:
+                self.capturing_player_id = dominant_player
+                self.turns_held = 1
+                self.capture_token_ids = player_token_counts[dominant_player]
+        else:
+            self.capturing_player_id = None
+            self.turns_held = 0
+
+        return False
+
     def update_capture_status(self, tokens_at_position: List[Tuple[int, str]]) -> bool:
         """
         Update generator capture status based on tokens at this position.
@@ -62,50 +136,12 @@ class Generator:
         if self.is_disabled:
             return False
 
-        # Clear current capture tokens
         self.capture_token_ids.clear()
 
-        # Count tokens by player
-        player_token_counts: dict[str, List[int]] = {}
-        for token_id, player_id in tokens_at_position:
-            if player_id not in player_token_counts:
-                player_token_counts[player_id] = []
-            player_token_counts[player_id].append(token_id)
+        player_token_counts = self._count_tokens_by_player(tokens_at_position)
+        dominant_player, dominant_count = self._find_dominant_player(player_token_counts)
 
-        # Find player with most tokens
-        dominant_player: Optional[str] = None
-        dominant_count = 0
-
-        for player_id, token_ids in player_token_counts.items():
-            if len(token_ids) > dominant_count:
-                dominant_player = player_id
-                dominant_count = len(token_ids)
-            elif len(token_ids) == dominant_count and dominant_count > 0:
-                # Contested - multiple players have same number of tokens
-                dominant_player = None
-
-        # Check if requirements are met
-        if dominant_player and dominant_count >= self.required_tokens:
-            # Same player continues capturing
-            if dominant_player == self.capturing_player_id:
-                self.turns_held += 1
-                self.capture_token_ids = player_token_counts[dominant_player]
-
-                # Check if capture is complete
-                if self.turns_held >= self.required_turns:
-                    self.is_disabled = True
-                    return True  # Generator just disabled
-            else:
-                # New player starts capturing
-                self.capturing_player_id = dominant_player
-                self.turns_held = 1
-                self.capture_token_ids = player_token_counts[dominant_player]
-        else:
-            # Requirements not met - reset capture
-            self.capturing_player_id = None
-            self.turns_held = 0
-
-        return False
+        return self._process_capture_logic(dominant_player, dominant_count, player_token_counts)
 
     def reset_capture(self) -> None:
         """Reset capture progress."""

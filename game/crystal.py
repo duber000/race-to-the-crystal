@@ -40,18 +40,92 @@ class Crystal:
         """
         Calculate number of tokens required based on disabled generators.
 
+        Each disabled generator reduces the requirement by 2, with a minimum of 1 token.
+
         Args:
             disabled_generators: Number of generators that have been disabled
 
         Returns:
             Number of tokens required to hold crystal
         """
-        # Each disabled generator reduces requirement by 2
         reduction = disabled_generators * 2
         required = self.base_tokens_required - reduction
-
-        # Minimum of 1 token required
         return max(1, required)
+
+    def _count_tokens_by_player(self, tokens_at_position: List[Tuple[int, str]]) -> dict[str, List[int]]:
+        """
+        Group tokens by their controlling player.
+
+        Args:
+            tokens_at_position: List of (token_id, player_id) tuples
+
+        Returns:
+            Dictionary mapping player_id to list of their token_ids
+        """
+        player_token_counts: dict[str, List[int]] = {}
+        for token_id, player_id in tokens_at_position:
+            if player_id not in player_token_counts:
+                player_token_counts[player_id] = []
+            player_token_counts[player_id].append(token_id)
+        return player_token_counts
+
+    def _find_dominant_player(self, player_token_counts: dict[str, List[int]]) -> Tuple[Optional[str], int]:
+        """
+        Determine which player has the most tokens, if any.
+
+        Args:
+            player_token_counts: Dictionary mapping player_id to token_ids
+
+        Returns:
+            Tuple of (dominant_player_id, token_count). Returns (None, count) if contested.
+        """
+        dominant_player: Optional[str] = None
+        dominant_count = 0
+
+        for player_id, token_ids in player_token_counts.items():
+            if len(token_ids) > dominant_count:
+                dominant_player = player_id
+                dominant_count = len(token_ids)
+            elif len(token_ids) == dominant_count and dominant_count > 0:
+                dominant_player = None  # Contested
+
+        return (dominant_player, dominant_count)
+
+    def _process_win_logic(
+        self,
+        dominant_player: Optional[str],
+        dominant_count: int,
+        required_tokens: int,
+        player_token_counts: dict[str, List[int]]
+    ) -> Optional[str]:
+        """
+        Update crystal holding state and check for win condition.
+
+        Args:
+            dominant_player: Player with most tokens, or None if contested
+            dominant_count: Number of tokens the dominant player has
+            required_tokens: Number of tokens required to hold crystal
+            player_token_counts: Full token counts by player
+
+        Returns:
+            Player ID if win condition met, otherwise None
+        """
+        if dominant_player and dominant_count >= required_tokens:
+            if dominant_player == self.holding_player_id:
+                self.turns_held += 1
+                self.holding_token_ids = player_token_counts[dominant_player]
+
+                if self.turns_held >= self.turns_required:
+                    return dominant_player
+            else:
+                self.holding_player_id = dominant_player
+                self.turns_held = 1
+                self.holding_token_ids = player_token_counts[dominant_player]
+        else:
+            self.holding_player_id = None
+            self.turns_held = 0
+
+        return None
 
     def update_capture_status(
         self,
@@ -68,52 +142,13 @@ class Crystal:
         Returns:
             Player ID of winner if win condition met, otherwise None
         """
-        # Clear current holding tokens
         self.holding_token_ids.clear()
 
-        # Count tokens by player
-        player_token_counts: dict[str, List[int]] = {}
-        for token_id, player_id in tokens_at_position:
-            if player_id not in player_token_counts:
-                player_token_counts[player_id] = []
-            player_token_counts[player_id].append(token_id)
-
-        # Find player with most tokens
-        dominant_player: Optional[str] = None
-        dominant_count = 0
-
-        for player_id, token_ids in player_token_counts.items():
-            if len(token_ids) > dominant_count:
-                dominant_player = player_id
-                dominant_count = len(token_ids)
-            elif len(token_ids) == dominant_count and dominant_count > 0:
-                # Contested - multiple players have same number of tokens
-                dominant_player = None
-
-        # Calculate required tokens
+        player_token_counts = self._count_tokens_by_player(tokens_at_position)
+        dominant_player, dominant_count = self._find_dominant_player(player_token_counts)
         required_tokens = self.get_tokens_required(disabled_generators)
 
-        # Check if requirements are met
-        if dominant_player and dominant_count >= required_tokens:
-            # Same player continues holding
-            if dominant_player == self.holding_player_id:
-                self.turns_held += 1
-                self.holding_token_ids = player_token_counts[dominant_player]
-
-                # Check for win condition
-                if self.turns_held >= self.turns_required:
-                    return dominant_player  # Winner!
-            else:
-                # New player starts holding
-                self.holding_player_id = dominant_player
-                self.turns_held = 1
-                self.holding_token_ids = player_token_counts[dominant_player]
-        else:
-            # Requirements not met - reset holding
-            self.holding_player_id = None
-            self.turns_held = 0
-
-        return None  # No winner yet
+        return self._process_win_logic(dominant_player, dominant_count, required_tokens, player_token_counts)
 
     def reset_capture(self) -> None:
         """Reset capture progress."""

@@ -52,15 +52,12 @@ class CombatSystem:
         Returns:
             True if attack is valid
         """
-        # Both must be alive
         if not attacker.is_alive or not defender.is_alive:
             return False
 
-        # Must be from different players
         if attacker.player_id == defender.player_id:
             return False
 
-        # Must be adjacent
         if not attacker.is_adjacent_to(defender.position):
             return False
 
@@ -83,7 +80,6 @@ class CombatSystem:
         Returns:
             CombatOutcome describing the result
         """
-        # Validate attack
         if not CombatSystem.can_attack(attacker, defender):
             return CombatOutcome(
                 result=CombatResult.INVALID,
@@ -93,13 +89,8 @@ class CombatSystem:
                 defender_killed=False,
             )
 
-        # Calculate damage
         damage = attacker.attack_power
-
-        # Apply damage to defender
         was_killed = defender.take_damage(damage)
-
-        # Determine result
         result = CombatResult.KILLED if was_killed else CombatResult.HIT
 
         return CombatOutcome(

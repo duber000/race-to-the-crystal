@@ -21,6 +21,7 @@ from shared.constants import (
 )
 from shared.corner_layout import get_ui_corner_config
 from shared.logging_config import setup_logger
+from shared.ui_config import ViewportConfig, UIStyleConfig
 
 logger = setup_logger(__name__)
 
@@ -93,15 +94,23 @@ class DeploymentMenuController:
             return None
 
         player_index = current_player.color.value
-        indicator_size = CORNER_INDICATOR_SIZE
-        margin = CORNER_INDICATOR_MARGIN
 
-        config = get_ui_corner_config(player_index)
-        center_x, center_y = config.get_indicator_position(
-            self.window_width, self.window_height, HUD_HEIGHT, margin, indicator_size
+        # Create configuration objects
+        viewport = ViewportConfig(
+            window_width=self.window_width,
+            window_height=self.window_height,
+            hud_height=HUD_HEIGHT
+        )
+        style = UIStyleConfig(
+            margin=CORNER_INDICATOR_MARGIN,
+            indicator_size=CORNER_INDICATOR_SIZE,
+            spacing=DEPLOYMENT_MENU_SPACING
         )
 
-        return (center_x, center_y, indicator_size)
+        config = get_ui_corner_config(player_index)
+        center_x, center_y = config.get_indicator_position(viewport, style)
+
+        return (center_x, center_y, style.indicator_size)
 
     def is_click_on_indicator(
         self, x: int, y: int, current_player
