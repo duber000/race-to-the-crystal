@@ -184,6 +184,10 @@ class GameActionHandler:
                 if target_token.is_alive:
                     sprite.update_health()
                 else:
+                    # Play flushing sound when enemy token is defeated
+                    self.audio_manager.play_flushing_sound()
+                    logger.info(f"💀 Token {target_id} defeated! Playing flush sound")
+
                     self.renderer_2d.token_sprites.remove(sprite)
                     self.game_state.board.clear_occupant(
                         target_token.position, target_token.id

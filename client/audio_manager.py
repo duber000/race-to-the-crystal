@@ -110,6 +110,7 @@ class AudioManager:
             "mystery_bing": f"{sound_effects_dir}/mystery_bing.wav",
             "generator_explosion": f"{sound_effects_dir}/generator_explosion.wav",
             "crystal_shatter": f"{sound_effects_dir}/crystal_shatter.wav",
+            "flushing": f"{sound_effects_dir}/flushing.wav",
         }
         
         for name, path in sound_effects.items():
@@ -291,6 +292,15 @@ class AudioManager:
                 logger.debug("Playing crystal shatter sound effect")
             except Exception as e:
                 logger.error(f"Error playing crystal shatter sound: {e}")
+
+    def play_flushing_sound(self) -> None:
+        """Play the flushing sound effect for defeating enemy tokens."""
+        if "flushing" in self.sound_effects and self.sound_effects["flushing"]:
+            try:
+                self.sound_effects["flushing"].play(self.sound_effects_volume)
+                logger.debug("Playing flushing sound effect")
+            except Exception as e:
+                logger.error(f"Error playing flushing sound: {e}")
 
     def pause_all(self) -> None:
         """

@@ -169,6 +169,57 @@ def generate_crystal_shatter_sound(duration: float = 1.5, sample_rate: int = 441
     return samples
 
 
+def generate_flushing_sound(duration: float = 2.0, sample_rate: int = 44100) -> array.array:
+    """
+    Generate a toilet flushing sound effect for defeating enemy tokens.
+
+    Creates a humorous flushing sound with rushing water, swirling, and draining.
+    """
+    num_samples = int(sample_rate * duration)
+    samples = array.array("h")
+
+    for i in range(num_samples):
+        t = i / sample_rate
+
+        # Rushing water sound (filtered noise)
+        water_noise = 0.0
+        for _ in range(5):  # Multiple noise layers for water texture
+            water_noise += random.random() * 2 - 1
+        water_noise /= 5
+
+        # Swirling frequency sweep (high to low, like water going down)
+        swirl_freq = 800.0 * math.exp(-t * 1.5)  # Exponential decay from 800Hz
+        swirl = 0.3 * math.sin(2 * math.pi * swirl_freq * t)
+
+        # Gurgling/bubbling (low frequency modulation)
+        gurgle_freq = 40.0 + 20.0 * math.sin(2 * math.pi * 3 * t)  # Oscillating 40-60Hz
+        gurgle = 0.2 * math.sin(2 * math.pi * gurgle_freq * t)
+
+        # Add some random burbling
+        burble = 0.15 * (random.random() * 2 - 1) * math.sin(2 * math.pi * 200 * t)
+
+        # Create envelope - quick start, sustain, then fade with drain
+        if t < 0.1:
+            # Quick attack (flush lever)
+            envelope = t * 10
+        elif t < duration * 0.7:
+            # Sustain (flushing)
+            envelope = 1.0
+        else:
+            # Drain fadeout
+            fade_progress = (t - duration * 0.7) / (duration * 0.3)
+            envelope = 1.0 - fade_progress
+
+        # Mix all components
+        mixed = (water_noise * 0.6 + swirl + gurgle + burble) * envelope
+
+        value = int(32767 * 0.7 * mixed)
+        value = max(-32768, min(32767, value))
+        samples.append(value)
+
+    return samples
+
+
 def save_sound_effect(samples: array.array, filename: str, sample_rate: int = 44100) -> None:
     """Save sound effect samples to a WAV file."""
     # Create directory if it doesn't exist
@@ -181,9 +232,9 @@ def save_sound_effect(samples: array.array, filename: str, sample_rate: int = 44
         wav_file.writeframes(samples.tobytes())
 
 
-def generate_all_sound_effects() -> None:
+def generate_all_sound_effects(output_dir: Optional[str] = None) -> None:
     """Generate all sound effects and save them to files."""
-    sound_effects_dir = "client/assets/sounds"
+    sound_effects_dir = output_dir if output_dir else "client/assets/sounds"
     
     print("Generating sound effects...")
     
@@ -206,7 +257,12 @@ def generate_all_sound_effects() -> None:
     shatter_samples = generate_crystal_shatter_sound(duration=1.5)
     save_sound_effect(shatter_samples, f"{sound_effects_dir}/crystal_shatter.wav")
     print("✓ Generated crystal shatter sound")
-    
+
+    # Generate flushing sound
+    flushing_samples = generate_flushing_sound(duration=2.0)
+    save_sound_effect(flushing_samples, f"{sound_effects_dir}/flushing.wav")
+    print("✓ Generated flushing sound")
+
     print(f"All sound effects generated and saved to {sound_effects_dir}/")
 
 

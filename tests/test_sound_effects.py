@@ -10,6 +10,7 @@ from client.sound_effects import (
     generate_mystery_bing_sound,
     generate_generator_explosion_sound,
     generate_crystal_shatter_sound,
+    generate_flushing_sound,
     save_sound_effect,
     generate_all_sound_effects,
 )
@@ -46,6 +47,13 @@ class TestSoundEffectsGeneration:
         assert len(samples) > 0
         assert samples.typecode == 'h'
 
+    def test_flushing_sound_generation(self):
+        """Test that flushing sound generates valid audio samples."""
+        samples = generate_flushing_sound(duration=2.0)
+        assert isinstance(samples, array.array)
+        assert len(samples) > 0
+        assert samples.typecode == 'h'
+
     def test_sound_effects_file_generation(self, tmp_path):
         """Test that sound effects can be saved to files."""
         sound_effects_dir = tmp_path / "sounds"
@@ -72,17 +80,23 @@ class TestSoundEffectsGeneration:
         save_sound_effect(shatter_samples, str(shatter_path))
         assert shatter_path.exists()
 
-    def test_all_sound_effects_generation(self):
+        flushing_samples = generate_flushing_sound(duration=2.0)
+        flushing_path = sound_effects_dir / "flushing.wav"
+        save_sound_effect(flushing_samples, str(flushing_path))
+        assert flushing_path.exists()
+
+    def test_all_sound_effects_generation(self, tmp_path):
         """Test that all sound effects can be generated together."""
-        # This will generate files in the actual assets directory
-        generate_all_sound_effects()
-        
+        # Generate files in a temporary directory
+        sound_effects_dir = tmp_path / "sounds"
+        generate_all_sound_effects(output_dir=str(sound_effects_dir))
+
         # Verify files were created
-        sound_effects_dir = "client/assets/sounds"
-        assert os.path.exists(f"{sound_effects_dir}/sliding.wav")
-        assert os.path.exists(f"{sound_effects_dir}/mystery_bing.wav")
-        assert os.path.exists(f"{sound_effects_dir}/generator_explosion.wav")
-        assert os.path.exists(f"{sound_effects_dir}/crystal_shatter.wav")
+        assert (sound_effects_dir / "sliding.wav").exists()
+        assert (sound_effects_dir / "mystery_bing.wav").exists()
+        assert (sound_effects_dir / "generator_explosion.wav").exists()
+        assert (sound_effects_dir / "crystal_shatter.wav").exists()
+        assert (sound_effects_dir / "flushing.wav").exists()
 
 
 class TestSoundEffectsIntegration:
@@ -91,44 +105,41 @@ class TestSoundEffectsIntegration:
     def test_audio_manager_sound_effects_loading(self):
         """Test that audio manager can load sound effects."""
         from client.audio_manager import AudioManager
-        
-        # Generate sound effects first
-        generate_all_sound_effects()
-        
-        # Create audio manager
+
+        # Create audio manager (should load existing sound effects from assets)
         audio_manager = AudioManager()
-        
+
         # Verify sound effects were loaded
         assert "sliding" in audio_manager.sound_effects
         assert "mystery_bing" in audio_manager.sound_effects
         assert "generator_explosion" in audio_manager.sound_effects
         assert "crystal_shatter" in audio_manager.sound_effects
-        
+        assert "flushing" in audio_manager.sound_effects
+
         # Cleanup
         audio_manager.cleanup()
 
     def test_audio_manager_sound_effects_playback(self):
         """Test that audio manager can play sound effects (without actual audio)."""
         from client.audio_manager import AudioManager
-        
-        # Generate sound effects first
-        generate_all_sound_effects()
-        
-        # Create audio manager
+
+        # Create audio manager (should load existing sound effects from assets)
         audio_manager = AudioManager()
-        
+
         # Verify that sound effects have play methods
         assert hasattr(audio_manager.sound_effects["sliding"], 'play')
         assert hasattr(audio_manager.sound_effects["mystery_bing"], 'play')
         assert hasattr(audio_manager.sound_effects["generator_explosion"], 'play')
         assert hasattr(audio_manager.sound_effects["crystal_shatter"], 'play')
-        
+        assert hasattr(audio_manager.sound_effects["flushing"], 'play')
+
         # Verify that audio manager has playback methods
         assert hasattr(audio_manager, 'play_sliding_sound')
         assert hasattr(audio_manager, 'play_mystery_bing_sound')
         assert hasattr(audio_manager, 'play_generator_explosion_sound')
         assert hasattr(audio_manager, 'play_crystal_shatter_sound')
-        
+        assert hasattr(audio_manager, 'play_flushing_sound')
+
         # Cleanup
         audio_manager.cleanup()
 
