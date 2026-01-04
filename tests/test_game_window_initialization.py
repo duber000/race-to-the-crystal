@@ -50,53 +50,47 @@ class TestGameViewInitialization:
         try:
             game_view = GameView(game_state, start_in_3d=False)
 
-            # Verify that critical attributes are set
-            assert hasattr(game_view, 'camera_mode')
-            assert hasattr(game_view, 'mouse_look_active')
-            assert hasattr(game_view, 'board_3d')
-            assert hasattr(game_view, 'shader_3d')
+            # Show the view to trigger on_show_view() which initializes controllers
+            arcade_window.show_view(game_view)
+
+            # Verify that critical attributes are set after on_show_view()
+            assert hasattr(game_view, 'camera_controller')
+            assert game_view.camera_controller is not None
+            assert hasattr(game_view.camera_controller, 'camera_mode')
+            assert hasattr(game_view.camera_controller, 'mouse_look_active')
+            assert hasattr(game_view, 'renderer_3d')
+            assert hasattr(game_view, 'ui_manager')
 
             # Verify attribute values
-            assert game_view.camera_mode == "2D"
-            # ui_manager is initialized in on_show_view()
+            assert game_view.camera_controller.camera_mode == "2D"
 
         except AttributeError as e:
             pytest.fail(f"GameView initialization failed with AttributeError: {e}")
 
     @requires_display
     def test_event_handlers_safe_before_initialization(self, arcade_window):
-        """Test that event handlers can handle calls before full initialization."""
+        """Test that event handlers can handle calls before on_show_view is called."""
         # Create a properly initialized game state
         game_state = GameState.create_game(2)
         game_state.start_game()  # Start the game to initialize all components
 
-        # Create GameView
+        # Create GameView but DON'T call show_view yet
+        # This simulates the state before on_show_view() is called
         game_view = GameView(game_state, start_in_3d=False)
 
-        # Test that event handlers don't crash when called with missing attributes
-        # We'll temporarily remove the attributes to simulate the initialization race condition
-        original_camera_mode = game_view.camera_mode
-        original_mouse_look_active = game_view.mouse_look_active
-
         try:
-            # Simulate the race condition where attributes are not yet set
-            delattr(game_view, 'camera_mode')
-            delattr(game_view, 'mouse_look_active')
-
-            # These should not raise AttributeError even if called during initialization
-            # Note: ui_manager is initialized in on_show_view, so it may be None
+            # These should not raise AttributeError even when called before on_show_view()
+            # The event handlers check for input_handler existence before accessing it
             game_view.on_resize(800, 600)  # Should handle missing ui_manager gracefully
-            game_view.on_mouse_motion(100, 100, 10, 10)  # Should handle missing camera_mode gracefully
-            game_view.on_mouse_press(100, 100, 1, 0)  # Should handle missing camera_mode gracefully
-            game_view.on_mouse_release(100, 100, 1, 0)  # Should handle missing camera_mode gracefully
-            game_view.on_key_press(ord('v'), 0)  # Should handle missing camera_mode gracefully
+            game_view.on_mouse_motion(100, 100, 10, 10)  # Should handle missing input_handler gracefully
+            game_view.on_mouse_press(100, 100, 1, 0)  # Should handle missing input_handler gracefully
+            game_view.on_mouse_release(100, 100, 1, 0)  # Should handle missing input_handler gracefully
+            game_view.on_mouse_scroll(100, 100, 0, 1.0)  # Should handle missing input_handler gracefully
+            game_view.on_key_press(ord('v'), 0)  # Should handle missing input_handler gracefully
+            game_view.on_text("a")  # Should handle missing input_handler gracefully
 
         except AttributeError as e:
-            pytest.fail(f"Event handler failed with AttributeError: {e}")
-        finally:
-            # Restore the attributes
-            game_view.camera_mode = original_camera_mode
-            game_view.mouse_look_active = original_mouse_look_active
+            pytest.fail(f"Event handler failed with AttributeError before on_show_view: {e}")
 
 
 if __name__ == "__main__":
