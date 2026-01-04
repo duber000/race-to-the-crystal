@@ -41,6 +41,7 @@ uv run race-to-the-crystal --3d 2
 
 **Common (Both Modes):**
 - **V**: Toggle between 2D and 3D view modes
+- **R**: Open Deployment Menu
 - **Space/Enter**: End turn
 - **Escape**: Cancel action
 - **Ctrl+Q**: Quit game
