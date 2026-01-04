@@ -190,6 +190,6 @@ class Token3D:
     def cleanup(self):
         """Release OpenGL resources."""
         if self.vbo:
-            self.vbo.release()
+            self.vbo.delete()
         if self.vao:
-            self.vao.release()
+            self.vao.delete()

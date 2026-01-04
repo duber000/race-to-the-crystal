@@ -367,11 +367,37 @@ class VictoryViewSimple(arcade.View):
         self.manager = arcade.gui.UIManager()
         self.on_return_to_menu: Optional[Callable[[], None]] = None
 
+        # Particle system for confetti
+        self.particles = []
+
         logger.info(f"Simple victory view created for: {winner_name}")
 
     def setup(self):
         """Set up the victory screen."""
         self.manager.clear()
+
+        # Victory text objects for the main display
+        self.victory_text = arcade.Text(
+            f"🏆 {self.winner_name} WINS! 🏆",
+            self.window.width // 2,
+            self.window.height // 2 + 50,
+            arcade.color.GOLD,
+            font_size=48,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        self.congrats_text = arcade.Text(
+            "Congratulations!",
+            self.window.width // 2,
+            self.window.height // 2 - 20,
+            arcade.color.WHITE,
+            font_size=24,
+            anchor_x="center",
+            anchor_y="center",
+            italic=True
+        )
 
         # Create button
         menu_button = arcade.gui.UIFlatButton(
@@ -398,6 +424,59 @@ class VictoryViewSimple(arcade.View):
         self.setup()
         self.manager.enable()
         arcade.set_background_color(BACKGROUND_COLOR)
+        self._create_confetti()
+        logger.info("Simple victory view shown")
+
+    def _create_confetti(self):
+        """Create confetti particles for celebration effect."""
+        self.particles = []
+        confetti_colors = [
+            arcade.color.GOLD,
+            arcade.color.YELLOW,
+            arcade.color.ORANGE,
+            arcade.color.RED,
+            arcade.color.PINK,
+            arcade.color.CYAN,
+            arcade.color.BLUE,
+            arcade.color.PURPLE,
+        ]
+
+        # Create 100 confetti particles
+        for _ in range(100):
+            particle = {
+                "x": random.uniform(0, self.window.width),
+                "y": random.uniform(self.window.height, self.window.height + 200),
+                "vx": random.uniform(-50, 50),
+                "vy": random.uniform(-100, -200),
+                "size": random.uniform(4, 10),
+                "color": random.choice(confetti_colors),
+                "rotation": random.uniform(0, 360),
+                "rotation_speed": random.uniform(-180, 180),
+            }
+            self.particles.append(particle)
+
+    def on_update(self, delta_time: float):
+        """Update particle positions."""
+        # Update confetti particles
+        for particle in self.particles:
+            particle["x"] += particle["vx"] * delta_time
+            particle["y"] += particle["vy"] * delta_time
+            particle["rotation"] += particle["rotation_speed"] * delta_time
+
+            # Gravity
+            particle["vy"] -= 300 * delta_time
+
+            # Wrap around horizontally
+            if particle["x"] < -20:
+                particle["x"] = self.window.width + 20
+            elif particle["x"] > self.window.width + 20:
+                particle["x"] = -20
+
+            # Reset particle if it goes off bottom
+            if particle["y"] < -20:
+                particle["y"] = self.window.height + 20
+                particle["x"] = random.uniform(0, self.window.width)
+                particle["vy"] = random.uniform(-100, -200)
 
     def on_hide_view(self):
         """Called when view is hidden."""
@@ -406,6 +485,17 @@ class VictoryViewSimple(arcade.View):
     def on_draw(self):
         """Render the screen."""
         self.clear()
+
+        # Draw confetti particles
+        for particle in self.particles:
+            arcade.draw_rectangle_filled(
+                particle["x"],
+                particle["y"],
+                particle["size"],
+                particle["size"] * 2,
+                particle["color"],
+                particle["rotation"]
+            )
 
         # Draw victory text
         self.victory_text.draw()
