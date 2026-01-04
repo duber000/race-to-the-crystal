@@ -84,7 +84,7 @@ class Player:
         return {
             "id": self.id,
             "name": self.name,
-            "color": self.color.name,
+            "color": self.color.value,
             "token_ids": self.token_ids,
             "is_ready": self.is_ready,
             "is_active": self.is_active,
@@ -97,7 +97,7 @@ class Player:
         return cls(
             id=data["id"],
             name=data["name"],
-            color=PlayerColor[data["color"]],
+            color=PlayerColor(data["color"]),
             token_ids=data["token_ids"],
             is_ready=data["is_ready"],
             is_active=data["is_active"],

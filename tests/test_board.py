@@ -47,7 +47,7 @@ class TestCell:
         data = cell.to_dict()
 
         assert data["position"] == [5, 6]
-        assert data["cell_type"] == "MYSTERY"
+        assert data["cell_type"] == CellType.MYSTERY.value
         assert data["occupants"] == [99]
 
         restored = Cell.from_dict(data)

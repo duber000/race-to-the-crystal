@@ -18,6 +18,8 @@ from game.token import Token
 from game.generator import Generator
 from game.crystal import Crystal
 
+SERIALIZATION_VERSION = 1
+
 
 @dataclass
 class GameState:
@@ -485,6 +487,7 @@ class GameState:
 
         """
         return {
+            "schema_version": SERIALIZATION_VERSION,
             "board": self.board.to_dict(),
             "players": {pid: p.to_dict() for pid, p in self.players.items()},
             "tokens": {tid: t.to_dict() for tid, t in self.tokens.items()},
@@ -492,8 +495,8 @@ class GameState:
             "crystal": self.crystal.to_dict() if self.crystal else None,
             "current_turn_player_id": self.current_turn_player_id,
             "turn_number": self.turn_number,
-            "phase": self.phase.name,
-            "turn_phase": self.turn_phase.name,
+            "phase": self.phase.value,
+            "turn_phase": self.turn_phase.value,
             "winner_id": self.winner_id,
         }
 
@@ -523,8 +526,8 @@ class GameState:
 
         state.current_turn_player_id = data["current_turn_player_id"]
         state.turn_number = data["turn_number"]
-        state.phase = GamePhase[data["phase"]]
-        state.turn_phase = TurnPhase[data["turn_phase"]]
+        state.phase = GamePhase(data["phase"])
+        state.turn_phase = TurnPhase(data["turn_phase"])
         state.winner_id = data["winner_id"]
         return state
 

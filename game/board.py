@@ -53,7 +53,7 @@ class Cell:
         """Convert cell to dictionary for serialization."""
         return {
             "position": list(self.position),
-            "cell_type": self.cell_type.name,
+            "cell_type": self.cell_type.value,
             "occupants": list(self.occupants),
         }
 
@@ -62,7 +62,7 @@ class Cell:
         """Create cell from dictionary."""
         return cls(
             position=tuple(data["position"]),
-            cell_type=CellType[data["cell_type"]],
+            cell_type=CellType(data["cell_type"]),
             occupants=list(data["occupants"]),
         )
 

@@ -348,8 +348,9 @@ class TestGameState:
         assert "board" in data
         assert "players" in data
         assert "tokens" in data
-        assert data["phase"] == "SETUP"
+        assert data["phase"] == GamePhase.SETUP.value
         assert data["turn_number"] == 0
+        assert data["schema_version"] == 1
 
     def test_game_state_json_serialization(self):
         """Test serializing game state to JSON."""
