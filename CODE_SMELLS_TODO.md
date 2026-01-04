@@ -110,17 +110,42 @@ handling, HUD rendering, and event coordination - appropriate responsibilities f
 ---
 
 ### 🔴 2. Long Methods
-**Status:** Open
-**Locations:**
-- `client/game_window.py:_draw_corner_menu_ui()` (lines 631-699+)
-- `game/ai_observation.py:describe_game_state()` (lines 88-237)
-- `game/ai_observation.py:list_available_actions()` (lines 343-453)
-- `client/game_window.py:on_mouse_press()` (likely 100+ lines)
+**Status:** ✅ **COMPLETED**
+**Locations:** (All refactored)
 
-**Recommendation:**
-- Break down methods into smaller, single-responsibility functions
-- Extract complex conditional logic into separate helper methods
-- Use early returns to reduce nesting
+**Resolution:**
+Successfully refactored all major long methods by extracting helper methods following single-responsibility principle:
+
+1. ✅ **`ai_observation.py:describe_game_state()`** (152 lines → 43 lines)
+   - Extracted 6 helper methods: `_add_game_header()`, `_add_turn_phase_info()`, `_add_player_tokens()`, `_add_enemy_tokens()`, `_add_generator_info()`, `_add_crystal_info()`
+   - Each helper now has a single, clear responsibility
+
+2. ✅ **`ai_observation.py:list_available_actions()`** (113 lines → 41 lines)
+   - Extracted 4 helper methods: `_add_movement_actions()`, `_add_deployment_actions()`, `_add_attack_actions()`, `_add_end_turn_action()`
+   - Separated action types into focused methods
+
+3. ✅ **`ai_observation.py:get_board_map()`** (103 lines → 30 lines)
+   - Extracted 9 helper methods for board grid creation, marking, rendering, and legend
+   - Clear separation of concerns: data creation vs rendering
+
+4. ✅ **`game_window.py:_handle_select()`** (103 lines → 26 lines)
+   - Extracted 8 helper methods: `_handle_menu_state()`, `_find_token_at_position()`, `_handle_token_click()`, `_handle_own_token_click()`, `_handle_enemy_token_click()`, `_handle_empty_cell_click()`, `_try_move_selected_token()`, `_try_deploy_token()`
+   - Each method handles one aspect of the selection logic
+
+5. ✅ **`game_window.py:_handle_select_3d()`** (94 lines → 21 lines)
+   - Refactored to reuse helper methods from `_handle_select()`
+   - Eliminated code duplication between 2D and 3D selection handling
+
+**Benefits:**
+- Improved readability and maintainability
+- Easier to test individual components
+- Reduced cognitive complexity
+- Eliminated code duplication
+- Better adherence to single-responsibility principle
+
+**Files Modified:**
+- `game/ai_observation.py` (+19 new methods, 3 main methods refactored)
+- `client/game_window.py` (+8 new methods, 2 main methods refactored)
 
 ---
 

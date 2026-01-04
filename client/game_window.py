@@ -644,100 +644,120 @@ class GameView(arcade.View):
             world_pos: Position in world coordinates
         """
         # Convert world coordinates to grid coordinates
-        grid_x = int(world_pos[0] // CELL_SIZE)
-        grid_y = int(world_pos[1] // CELL_SIZE)
+        grid_pos = (int(world_pos[0] // CELL_SIZE), int(world_pos[1] // CELL_SIZE))
 
         # Get current player
         current_player = self.game_state.get_current_player()
         if not current_player:
             return
 
-        # Reset the just-opened flag after first frame
+        # Handle menu state
+        if not self._handle_menu_state():
+            return  # Menu just opened, don't process clicks
+
+        # Find token at clicked position
+        clicked_token = self._find_token_at_position(grid_pos)
+
+        if clicked_token:
+            self._handle_token_click(clicked_token, current_player, grid_pos)
+        else:
+            self._handle_empty_cell_click(grid_pos, current_player)
+
+    def _handle_menu_state(self) -> bool:
+        """
+        Handle deployment menu state.
+
+        Returns:
+            False if menu just opened (block further clicks), True otherwise
+        """
         if self.deployment_controller.menu_just_opened:
             self.deployment_controller.clear_just_opened_flag()
-            return  # Don't process any other clicks this frame
+            return False
 
-        # Close corner menu if clicking elsewhere on the board
         if self.deployment_controller.menu_open:
             self.deployment_controller.close_menu()
 
-        # Check if clicked on a token
-        clicked_token = None
+        return True
+
+    def _find_token_at_position(self, grid_pos: Tuple[int, int]):
+        """Find token at grid position."""
         for player in self.game_state.players.values():
             for token_id in player.token_ids:
                 token = self.game_state.get_token(token_id)
-                if (
-                    token
-                    and token.is_alive
-                    and token.is_deployed
-                    and token.position == (grid_x, grid_y)
-                ):
-                    clicked_token = token
-                    break
-            if clicked_token:
-                break
+                if (token and token.is_alive and token.is_deployed and
+                    token.position == grid_pos):
+                    return token
+        return None
 
-        if clicked_token:
-            # Clicked on a token
-            if clicked_token.player_id == current_player.id:
-                # Own token clicked
-                if self.turn_phase == TurnPhase.MOVEMENT:
-                    # Check if we have a token selected and this is a valid move
-                    # (stacking on generator/crystal)
-                    cell = self.game_state.board.get_cell_at((grid_x, grid_y))
-                    if (
-                        self.selected_token_id
-                        and (grid_x, grid_y) in self.valid_moves
-                        and cell
-                        and cell.cell_type in (CellType.GENERATOR, CellType.CRYSTAL)
-                    ):
-                        # Move to stack on generator/crystal
-                        self._try_move_to_cell((grid_x, grid_y))
-                    else:
-                        # Select this token for movement
-                        self.selected_token_id = clicked_token.id
-                        self.valid_moves = self.movement_system.get_valid_moves(
-                            clicked_token,
-                            self.game_state.board,
-                            tokens_dict=self.game_state.tokens,
-                        )
-                        self.renderer_2d.update_selection_visuals(
-                        self.selected_token_id, self.valid_moves, self.game_state
-                    )
-                        logger.debug(f"Selected token {clicked_token.id} at {clicked_token.position}")
-                        logger.debug(f"Valid moves: {len(self.valid_moves)}")
-            else:
-                # Enemy token - try to attack (can't attack if you already moved)
-                if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
-                    self._try_attack(clicked_token)
+    def _handle_token_click(self, clicked_token, current_player, grid_pos: Tuple[int, int]):
+        """Handle clicking on a token."""
+        if clicked_token.player_id == current_player.id:
+            self._handle_own_token_click(clicked_token, grid_pos)
         else:
-            # Clicked on empty cell
-            if self.selected_token_id and self.turn_phase == TurnPhase.MOVEMENT:
-                # First priority: try to move selected token
-                if (grid_x, grid_y) in self.valid_moves:
-                    self._try_move_to_cell((grid_x, grid_y))
-                else:
-                    logger.warning(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
-            elif self.deployment_controller.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
-                # Second priority: deploy selected token type if one is selected
-                if self.deployment_controller.is_valid_deployment_position((grid_x, grid_y), current_player.id, self.game_state):
-                    deployed_token = self.action_handler.execute_deployment(
-                        current_player.id,
-                        self.deployment_controller.selected_deploy_health,
-                        (grid_x, grid_y),
-                        self.window.ctx,
-                    )
+            self._handle_enemy_token_click(clicked_token)
 
-                    if deployed_token:
-                        # Clear selection
-                        self.deployment_controller.selected_deploy_health = None
+    def _handle_own_token_click(self, clicked_token, grid_pos: Tuple[int, int]):
+        """Handle clicking on own token."""
+        if self.turn_phase != TurnPhase.MOVEMENT:
+            return
 
-                        # Transition to ACTION phase after deploying
-                        self.turn_phase = TurnPhase.ACTION
-                        logger.info("Deployment complete - you can attack or end turn")
-                else:
-                    logger.warning("Cannot deploy outside your corner area")
-                    self.deployment_controller.selected_deploy_health = None
+        # Check if trying to stack on generator/crystal
+        cell = self.game_state.board.get_cell_at(grid_pos)
+        if (self.selected_token_id and grid_pos in self.valid_moves and
+            cell and cell.cell_type in (CellType.GENERATOR, CellType.CRYSTAL)):
+            self._try_move_to_cell(grid_pos)
+        else:
+            # Select this token for movement
+            self.selected_token_id = clicked_token.id
+            self.valid_moves = self.movement_system.get_valid_moves(
+                clicked_token,
+                self.game_state.board,
+                tokens_dict=self.game_state.tokens,
+            )
+            self.renderer_2d.update_selection_visuals(
+                self.selected_token_id, self.valid_moves, self.game_state
+            )
+            logger.debug(f"Selected token {clicked_token.id} at {clicked_token.position}")
+            logger.debug(f"Valid moves: {len(self.valid_moves)}")
+
+    def _handle_enemy_token_click(self, clicked_token):
+        """Handle clicking on enemy token (attack)."""
+        if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
+            self._try_attack(clicked_token)
+
+    def _handle_empty_cell_click(self, grid_pos: Tuple[int, int], current_player):
+        """Handle clicking on empty cell."""
+        if self.selected_token_id and self.turn_phase == TurnPhase.MOVEMENT:
+            self._try_move_selected_token(grid_pos)
+        elif self.deployment_controller.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
+            self._try_deploy_token(grid_pos, current_player)
+
+    def _try_move_selected_token(self, grid_pos: Tuple[int, int]):
+        """Try to move selected token to grid position."""
+        if grid_pos in self.valid_moves:
+            self._try_move_to_cell(grid_pos)
+        else:
+            logger.warning(f"Cannot move to {grid_pos} - not a valid move")
+
+    def _try_deploy_token(self, grid_pos: Tuple[int, int], current_player):
+        """Try to deploy token at grid position."""
+        if self.deployment_controller.is_valid_deployment_position(
+            grid_pos, current_player.id, self.game_state
+        ):
+            deployed_token = self.action_handler.execute_deployment(
+                current_player.id,
+                self.deployment_controller.selected_deploy_health,
+                grid_pos,
+                self.window.ctx,
+            )
+
+            if deployed_token:
+                self.deployment_controller.selected_deploy_health = None
+                self.turn_phase = TurnPhase.ACTION
+                logger.info("Deployment complete - you can attack or end turn")
+        else:
+            logger.warning("Cannot deploy outside your corner area")
+            self.deployment_controller.selected_deploy_health = None
 
     def _handle_select_3d(self, grid_pos: Tuple[int, int]):
         """
@@ -747,91 +767,19 @@ class GameView(arcade.View):
         Args:
             grid_pos: Grid coordinates (x, y)
         """
-        grid_x, grid_y = grid_pos
-
         current_player = self.game_state.get_current_player()
         if not current_player:
             return
 
-        logger.debug(f"3D click at grid ({grid_x}, {grid_y})")
+        logger.debug(f"3D click at grid {grid_pos}")
 
-        # Check if clicked on a token
-        clicked_token = None
-        for player in self.game_state.players.values():
-            for token_id in player.token_ids:
-                token = self.game_state.get_token(token_id)
-                if (
-                    token
-                    and token.is_alive
-                    and token.is_deployed
-                    and token.position == (grid_x, grid_y)
-                ):
-                    clicked_token = token
-                    break
-            if clicked_token:
-                break
+        # Find token at clicked position
+        clicked_token = self._find_token_at_position(grid_pos)
 
         if clicked_token:
-            # Clicked on a token
-            if clicked_token.player_id == current_player.id:
-                # Own token clicked
-                if self.turn_phase == TurnPhase.MOVEMENT:
-                    # Check if we have a token selected and this is a valid move
-                    # (stacking on generator/crystal)
-                    cell = self.game_state.board.get_cell_at((grid_x, grid_y))
-                    if (
-                        self.selected_token_id
-                        and (grid_x, grid_y) in self.valid_moves
-                        and cell
-                        and cell.cell_type in (CellType.GENERATOR, CellType.CRYSTAL)
-                    ):
-                        # Move to stack on generator/crystal
-                        self._try_move_to_cell((grid_x, grid_y))
-                    else:
-                        # Select this token for movement
-                        self.selected_token_id = clicked_token.id
-                        self.valid_moves = self.movement_system.get_valid_moves(
-                            clicked_token,
-                            self.game_state.board,
-                            tokens_dict=self.game_state.tokens,
-                        )
-                        self.renderer_2d.update_selection_visuals(
-                        self.selected_token_id, self.valid_moves, self.game_state
-                    )
-                        logger.debug(f"Selected token {clicked_token.id} at {clicked_token.position}")
-                        logger.debug(f"Valid moves: {len(self.valid_moves)}")
-            else:
-                # Enemy token - try to attack (can't attack if you already moved)
-                if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id:
-                    self._try_attack(clicked_token)
+            self._handle_token_click(clicked_token, current_player, grid_pos)
         else:
-            # Clicked on empty cell
-            if self.selected_token_id and self.turn_phase == TurnPhase.MOVEMENT:
-                # First priority: try to move selected token
-                if (grid_x, grid_y) in self.valid_moves:
-                    self._try_move_to_cell((grid_x, grid_y))
-                else:
-                    logger.warning(f"Cannot move to ({grid_x}, {grid_y}) - not a valid move")
-            elif self.deployment_controller.selected_deploy_health and self.turn_phase == TurnPhase.MOVEMENT:
-                # Second priority: deploy selected token type if one is selected
-                if self.deployment_controller.is_valid_deployment_position((grid_x, grid_y), current_player.id, self.game_state):
-                    deployed_token = self.action_handler.execute_deployment(
-                        current_player.id,
-                        self.deployment_controller.selected_deploy_health,
-                        (grid_x, grid_y),
-                        self.window.ctx,
-                    )
-
-                    if deployed_token:
-                        # Clear selection
-                        self.deployment_controller.selected_deploy_health = None
-
-                        # Transition to ACTION phase after deploying
-                        self.turn_phase = TurnPhase.ACTION
-                        logger.info("Deployment complete - you can attack or end turn")
-                else:
-                    logger.warning("Cannot deploy outside your corner area")
-                    self.deployment_controller.selected_deploy_health = None
+            self._handle_empty_cell_click(grid_pos, current_player)
 
     def _try_move_to_cell(self, cell: Tuple[int, int]):
         """
