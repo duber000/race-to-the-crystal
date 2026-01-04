@@ -5,6 +5,7 @@ import pytest
 from server.game_coordinator import GameCoordinator
 from server.lobby import GameLobby, PlayerInfo
 from network.messages import ClientType
+from game.ai_actions import EndTurnAction
 
 
 class TestGameCoordinatorIntegration:
@@ -121,6 +122,37 @@ class TestGameCoordinatorIntegration:
         player2_game = coordinator.get_player_game('player2')
         assert player1_game is game_session
         assert player2_game is game_session
+
+    def test_generator_capture_advances_in_network_game(self):
+        """Ensure generators exist and can be disabled via turn progression."""
+        lobby = GameLobby('gen-cap', 'Generator Capture', 'p_host')
+        lobby.add_player('p_host', 'Alice', ClientType.HUMAN)
+        lobby.add_player('p_guest', 'Bob', ClientType.HUMAN)
+
+        session = GameCoordinator().create_game(lobby)
+        game_state = session.game_state
+
+        # Generators and crystal should be initialized for network games
+        assert game_state.generators
+        assert game_state.crystal is not None
+
+        # Place two of player_0's tokens on the first generator
+        gen = game_state.generators[0]
+        gen_pos = gen.position
+        tokens = game_state.get_player_tokens('player_0')[:2]
+        for token in tokens:
+            game_state.board.clear_occupant(token.position, token.id)
+            token.position = gen_pos
+            game_state.board.set_occupant(gen_pos, token.id)
+
+        # End two turns (player_0 then player_1) to satisfy capture requirement
+        action = EndTurnAction()
+        success, _, _ = session.execute_action('p_host', action)
+        assert success
+        success, _, _ = session.execute_action('p_guest', action)
+        assert success
+
+        assert gen.is_disabled is True
 
 
 if __name__ == "__main__":

@@ -15,6 +15,8 @@ from shared.types import TokenID, PlayerID
 from game.board import Board
 from game.player import Player
 from game.token import Token
+from game.generator import Generator
+from game.crystal import Crystal
 
 
 @dataclass
@@ -481,15 +483,13 @@ class GameState:
     def to_dict(self) -> dict:
         """Convert game state to dictionary for serialization.
 
-        Note: Generator and Crystal serialization not yet implemented.
-        This will cause issues when saving/loading active games.
         """
         return {
             "board": self.board.to_dict(),
             "players": {pid: p.to_dict() for pid, p in self.players.items()},
             "tokens": {tid: t.to_dict() for tid, t in self.tokens.items()},
-            "generators": [],  # TODO: Implement generator serialization
-            "crystal": None,  # TODO: Implement crystal serialization
+            "generators": [g.to_dict() for g in self.generators],
+            "crystal": self.crystal.to_dict() if self.crystal else None,
             "current_turn_player_id": self.current_turn_player_id,
             "turn_number": self.turn_number,
             "phase": self.phase.name,
@@ -505,8 +505,6 @@ class GameState:
     def from_dict(cls, data: dict) -> "GameState":
         """Create game state from dictionary.
 
-        Note: Generator and Crystal deserialization not yet implemented.
-        This will cause issues when loading saved games.
         """
         state = cls()
         state.board = Board.from_dict(data["board"])
@@ -516,8 +514,13 @@ class GameState:
         state.tokens = {
             int(tid): Token.from_dict(tdata) for tid, tdata in data["tokens"].items()
         }
-        # TODO: Implement generator deserialization
-        # TODO: Implement crystal deserialization
+        # Generators/crystal may be absent in older saves
+        gen_data = data.get("generators", [])
+        state.generators = [Generator.from_dict(g) for g in gen_data]
+
+        crystal_data = data.get("crystal")
+        state.crystal = Crystal.from_dict(crystal_data) if crystal_data else None
+
         state.current_turn_player_id = data["current_turn_player_id"]
         state.turn_number = data["turn_number"]
         state.phase = GamePhase[data["phase"]]

@@ -524,6 +524,9 @@ class AIActionExecutor:
         player_id: PlayerID
     ) -> ActionResult:
         """Execute an end turn action."""
+        # Update generators/crystal capture before advancing the turn
+        newly_disabled, crystal_captured = game_state._update_generators_and_crystal()
+
         # End the turn
         game_state.end_turn()
 
@@ -538,6 +541,8 @@ class AIActionExecutor:
         result_data = {
             "turn_number": game_state.turn_number,
             "next_player_id": game_state.current_turn_player_id,
+            "generators_disabled": newly_disabled,
+            "crystal_captured": crystal_captured,
         }
 
         return ActionResult(True, message, result_data)

@@ -15,6 +15,8 @@ from server.lobby import GameLobby, PlayerInfo
 from shared.enums import PlayerColor
 from network.protocol import ProtocolHandler, NetworkMessage
 from network.messages import MessageType
+from game.generator import GeneratorManager
+from game.crystal import CrystalManager
 
 
 logger = logging.getLogger(__name__)
@@ -52,6 +54,7 @@ class GameSession:
 
         # Start the game (creates tokens and auto-deploys initial positions)
         self.game_state.start_game()
+        self._initialize_objectives()
         logger.info(f"Game started with {len(self.game_state.tokens)} tokens")
 
         # Action executor for validating and executing actions
@@ -95,6 +98,21 @@ class GameSession:
                     f"Mapped {player_info.player_name} "
                     f"({player_info.player_id[:8]}) -> {game_player_id}"
                 )
+
+    def _initialize_objectives(self) -> None:
+        """
+        Initialize generators and crystal for the session if missing.
+
+        Network games rely on these objects for capture/win logic, but
+        GameState.start_game() leaves them unset for flexibility in tests.
+        """
+        if not self.game_state.generators:
+            gen_positions = self.game_state.board.get_generator_positions()
+            self.game_state.generators = GeneratorManager.create_generators(gen_positions)
+
+        if not self.game_state.crystal:
+            crystal_pos = self.game_state.board.get_crystal_position()
+            self.game_state.crystal = CrystalManager.create_crystal(crystal_pos)
 
     def execute_action(
         self,

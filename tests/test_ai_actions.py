@@ -329,6 +329,24 @@ class TestDeployActionValidation:
 
         assert is_valid
 
+    def test_deploy_uses_full_corner_area(self):
+        """Deployment validation should honor the full 3x3 corner layout."""
+        game_state = create_test_game()
+        executor = AIActionExecutor()
+        game_state.turn_phase = TurnPhase.MOVEMENT
+
+        deployable = game_state.board.get_deployable_positions(0)
+        corner_edge = (2, 0)  # Outside the old 2x2 area but inside the 3x3 layout
+        assert corner_edge in deployable
+
+        cell = game_state.board.get_cell_at(corner_edge)
+        assert cell and not cell.is_occupied()
+
+        action = DeployAction(health_value=10, position=corner_edge)
+        is_valid, msg = executor.validate_action(action, game_state, "player_0")
+
+        assert is_valid, msg
+
     def test_deploy_wrong_phase(self):
         """Test deploy fails in wrong phase."""
         game_state = create_test_game()

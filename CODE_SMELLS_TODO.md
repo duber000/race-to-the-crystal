@@ -242,7 +242,22 @@ Successfully refactored all major long methods by extracting helper methods foll
 
 ---
 
-### 🟡 6. Feature Envy - AIObserver
+### 🟡 6. Missing Objective Serialization (Network Sync)
+**Status:** ✅ **COMPLETED**
+**Location:** `game/game_state.py`, `server/game_coordinator.py`
+
+**Issue:** Generators and the crystal were not serialized, so network clients could not see capture state or win conditions from the server.
+
+**Resolution:**
+- ✅ Added generator/crystal serialization and deserialization to `GameState`
+- ✅ Server now initializes generators/crystal for network games so capture data is included in FULL_STATE
+- ✅ Added regression tests for objective round-trip and network capture progress
+
+**Benefits:** Network clients receive authoritative generator/crystal state (disabled/held/turns), reducing desyncs and enabling accurate UI.
+
+---
+
+### 🟡 7. Feature Envy - AIObserver
 **Status:** ⏸️ **ON HOLD** (Skipped for now)
 **Location:** `game/ai_observation.py`
 
@@ -265,7 +280,7 @@ status = AIObserver._get_generator_status(gen, game_state)
 
 ---
 
-### 🟡 7. Data Clumps - Position Tuples
+### 🟡 8. Data Clumps - Position Tuples
 **Status:** ✅ **COMPLETED** → ❌ **REVERTED**
 **Location:** Throughout codebase
 

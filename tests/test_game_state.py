@@ -4,6 +4,8 @@ Unit tests for GameState class.
 import pytest
 import json
 from game.game_state import GameState
+from game.generator import GeneratorManager
+from game.crystal import CrystalManager
 from shared.enums import GamePhase, PlayerColor
 
 
@@ -396,3 +398,29 @@ class TestGameState:
         assert len(restored.tokens) == len(state.tokens)
         assert restored.phase == state.phase
         assert restored.turn_number == state.turn_number
+
+    def test_generators_and_crystal_serialization(self):
+        """Ensure generators and crystal survive serialization."""
+        state = GameState.create_game(2)
+        state.start_game()
+
+        # Initialize objectives
+        gen_positions = state.board.get_generator_positions()
+        state.generators = GeneratorManager.create_generators(gen_positions)
+        state.crystal = CrystalManager.create_crystal(state.board.get_crystal_position())
+
+        # Simulate some capture progress
+        state.generators[0].capturing_player_id = "player_0"
+        state.generators[0].turns_held = 1
+        state.crystal.holding_player_id = "player_1"
+        state.crystal.turns_held = 2
+
+        data = state.to_dict()
+        restored = GameState.from_dict(data)
+
+        assert len(restored.generators) == 4
+        assert restored.generators[0].capturing_player_id == "player_0"
+        assert restored.generators[0].turns_held == 1
+        assert restored.crystal is not None
+        assert restored.crystal.holding_player_id == "player_1"
+        assert restored.crystal.turns_held == 2

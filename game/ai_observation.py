@@ -69,21 +69,9 @@ class AIObserver:
 
     @staticmethod
     def _get_deployable_positions(board, player_index: int) -> List[Tuple[int, int]]:
-        """Get valid deployment positions for a player (corner and adjacent cells)."""
-        corner = board.get_starting_position(player_index)
-        cx, cy = corner
-
-        # Include corner and all 8 adjacent cells
-        positions = [corner]
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                if dx == 0 and dy == 0:
-                    continue  # Skip corner itself (already added)
-                x, y = cx + dx, cy + dy
-                if 0 <= x < board.width and 0 <= y < board.height:
-                    positions.append((x, y))
-
-        return positions
+        """Get valid deployment positions for a player (3x3 corner area)."""
+        # Reuse the board helper so network validation matches the UI and board config
+        return board.get_deployable_positions(player_index)
 
     @staticmethod
     def describe_game_state(
