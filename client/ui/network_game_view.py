@@ -136,25 +136,30 @@ class NetworkGameView(arcade.View):
             # Pass through other keys
             original_on_key_press(key, modifiers)
 
-        # Store original _handle_end_turn
-        original_handle_end_turn = self.game_view._handle_end_turn
+        # Store original _handle_end_turn (now in InputHandler)
+        if not self.game_view.input_handler:
+            logger.warning("InputHandler not yet initialized, skipping end turn hook")
+            return
+
+        original_handle_end_turn = self.game_view.input_handler._handle_end_turn
 
         def network_handle_end_turn():
             """Intercept _handle_end_turn to prevent local turn advancement."""
-            logger.info("GameView._handle_end_turn() called - intercepting!")
+            logger.info("InputHandler._handle_end_turn() called - intercepting!")
             if not self.waiting_for_server:
                 logger.info("Sending END_TURN to server instead of advancing locally...")
                 schedule_async(self._send_end_turn())
                 self.waiting_for_server = True
                 # Clear selection like the original does
-                self.game_view.selected_token_id = None
-                self.game_view.valid_moves = []
+                if self.game_view.input_handler:
+                    self.game_view.input_handler.selected_token_id = None
+                    self.game_view.input_handler.valid_moves = []
             else:
                 logger.info("Already waiting for server, ignoring _handle_end_turn")
 
         # Replace methods
         self.game_view.on_key_press = network_on_key_press
-        self.game_view._handle_end_turn = network_handle_end_turn
+        self.game_view.input_handler._handle_end_turn = network_handle_end_turn
 
         # Hook game state methods
         self._hook_game_state_methods()
@@ -280,6 +285,10 @@ class NetworkGameView(arcade.View):
                 # Game ended
                 await self._handle_game_won(message)
 
+            elif message.type == MessageType.CHAT:
+                # Chat message
+                await self._handle_chat_message(message)
+
             elif message.type == MessageType.ERROR:
                 # Error message
                 data = message.data or {}
@@ -314,11 +323,12 @@ class NetworkGameView(arcade.View):
                 self.game_view.setup()
                 logger.info("Game view setup complete")
 
-                # Sync the GameView's local turn_phase with the server's game_state.turn_phase
-                # This is critical because GameView maintains its own turn_phase variable
+                # Sync the InputHandler's local turn_phase with the server's game_state.turn_phase
+                # This is critical because InputHandler maintains its own turn_phase variable
                 # that gets out of sync when actions are intercepted and sent to server
-                self.game_view.turn_phase = self.game_state.turn_phase
-                logger.info(f"Synced turn_phase to {self.game_state.turn_phase.name}")
+                if self.game_view.input_handler:
+                    self.game_view.input_handler.turn_phase = self.game_state.turn_phase
+                    logger.info(f"Synced turn_phase to {self.game_state.turn_phase.name}")
 
                 # Re-hook the game state methods since we just replaced the game state object
                 # Note: We only need to re-hook game_state methods, not game_view methods
@@ -380,6 +390,19 @@ class NetworkGameView(arcade.View):
         # Notify callback
         if self.on_game_end:
             self.on_game_end(winner_name)
+
+    async def _handle_chat_message(self, message):
+        """Handle CHAT message."""
+        data = message.data or {}
+        player_name = data.get("player_name", "Unknown")
+        chat_message = data.get("message", "")
+        player_id = message.player_id
+
+        logger.info(f"Chat message from {player_name}: {chat_message}")
+
+        # Add message to chat widget if available
+        if self.game_view and self.game_view.chat_widget:
+            self.game_view.chat_widget.add_message(player_name, chat_message, player_id)
 
     async def _handle_disconnect(self):
         """Handle disconnect from server."""

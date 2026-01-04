@@ -58,6 +58,12 @@ class Renderer2D:
         self.token_sprites: SpriteList = SpriteList()
         self.selection_shapes: ShapeElementList = ShapeElementList()
 
+        # Store board data for recreating shapes (needed for animations)
+        self.board = None
+        self.generators = None
+        self.crystal = None
+        self.mystery_animations = None
+
     def create_board_sprites(
         self,
         board,
@@ -74,6 +80,12 @@ class Renderer2D:
             crystal: Crystal object
             mystery_animations: Dict mapping positions to animation progress (0.0-1.0)
         """
+        # Store references for recreating shapes during updates (needed for animations)
+        self.board = board
+        self.generators = generators
+        self.crystal = crystal
+        self.mystery_animations = mystery_animations
+
         crystal_pos = crystal.position if crystal else None
 
         self.board_shapes = create_board_shapes(
@@ -135,12 +147,13 @@ class Renderer2D:
                     alpha = int(180 / (i + 1))
                     glow_size = size + (i * 4)
                     glow_half = glow_size / 2
+                    # Clamp coordinates to prevent negative values (fixes clipping at board edges)
                     points = [
-                        (x - glow_half, y - glow_half),
-                        (x + glow_half, y - glow_half),
-                        (x + glow_half, y + glow_half),
-                        (x - glow_half, y + glow_half),
-                        (x - glow_half, y - glow_half),
+                        (max(0, x - glow_half), max(0, y - glow_half)),
+                        (max(0, x + glow_half), max(0, y - glow_half)),
+                        (max(0, x + glow_half), max(0, y + glow_half)),
+                        (max(0, x - glow_half), max(0, y + glow_half)),
+                        (max(0, x - glow_half), max(0, y - glow_half)),
                     ]
                     for j in range(len(points) - 1):
                         line = create_line(
@@ -153,13 +166,13 @@ class Renderer2D:
                         )
                         self.selection_shapes.append(line)
 
-                # Bright main selection square
+                # Bright main selection square (clamp coordinates)
                 points = [
-                    (x - half, y - half),
-                    (x + half, y - half),
-                    (x + half, y + half),
-                    (x - half, y + half),
-                    (x - half, y - half),
+                    (max(0, x - half), max(0, y - half)),
+                    (max(0, x + half), max(0, y - half)),
+                    (max(0, x + half), max(0, y + half)),
+                    (max(0, x - half), max(0, y + half)),
+                    (max(0, x - half), max(0, y - half)),
                 ]
                 for j in range(len(points) - 1):
                     line = create_line(
@@ -179,15 +192,15 @@ class Renderer2D:
             radius = CELL_SIZE * 0.3
             segments = CIRCLE_SEGMENTS
 
-            # Glow layers
+            # Glow layers (clamp coordinates to prevent negative values)
             for i in range(4, 0, -1):
                 alpha = int(120 / (i + 1))
                 glow_radius = radius + (i * 3)
                 points = []
                 for seg in range(segments + 1):
                     angle = (seg / segments) * 2 * math.pi
-                    px = x + glow_radius * math.cos(angle)
-                    py = y + glow_radius * math.sin(angle)
+                    px = max(0, x + glow_radius * math.cos(angle))
+                    py = max(0, y + glow_radius * math.sin(angle))
                     points.append((px, py))
 
                 for j in range(len(points) - 1):
@@ -201,12 +214,12 @@ class Renderer2D:
                     )
                     self.selection_shapes.append(line)
 
-            # Bright main circle
+            # Bright main circle (clamp coordinates)
             points = []
             for seg in range(segments + 1):
                 angle = (seg / segments) * 2 * math.pi
-                px = x + radius * math.cos(angle)
-                py = y + radius * math.sin(angle)
+                px = max(0, x + radius * math.cos(angle))
+                py = max(0, y + radius * math.sin(angle))
                 points.append((px, py))
 
             for j in range(len(points) - 1):
@@ -228,6 +241,17 @@ class Renderer2D:
             delta_time: Time since last update in seconds
         """
         self.token_sprites.update()
+
+        # Recreate board shapes every frame to update animations (glowing lines, crystal pulse)
+        # This is necessary because shape lists are static and don't automatically animate
+        if self.board is not None and self.generators is not None and self.crystal is not None and self.mystery_animations is not None:
+            crystal_pos = self.crystal.position if self.crystal else None
+            self.board_shapes = create_board_shapes(
+                self.board,
+                generators=self.generators,
+                crystal_pos=crystal_pos,
+                mystery_animations=self.mystery_animations,
+            )
 
     def draw(self, camera_2d) -> None:
         """
