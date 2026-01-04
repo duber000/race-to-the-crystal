@@ -1,6 +1,7 @@
 """
 Movement system with pathfinding.
 """
+
 from typing import List, Tuple, Set, Optional, Dict
 from collections import deque
 
@@ -13,9 +14,14 @@ class MovementSystem:
 
     # 8-directional movement (orthogonal + diagonal)
     DIRECTIONS = [
-        (-1, -1), (-1, 0), (-1, 1),  # Top-left, Top, Top-right
-        (0, -1),           (0, 1),    # Left, Right
-        (1, -1),  (1, 0),  (1, 1),    # Bottom-left, Bottom, Bottom-right
+        (-1, -1),
+        (-1, 0),
+        (-1, 1),  # Top-left, Top, Top-right
+        (0, -1),
+        (0, 1),  # Left, Right
+        (1, -1),
+        (1, 0),
+        (1, 1),  # Bottom-left, Bottom, Bottom-right
     ]
 
     @staticmethod
@@ -23,8 +29,8 @@ class MovementSystem:
         token: Token,
         board: Board,
         max_range: Optional[int] = None,
-        tokens_dict: Optional[Dict[int, Token]] = None
-    ) -> List[Tuple[int, int]]:
+        tokens_dict: Optional[Dict[int, Token]] = None,
+    ) -> Set[Tuple[int, int]]:
         """
         Calculate all valid destination cells for a token using BFS.
 
@@ -35,10 +41,10 @@ class MovementSystem:
             tokens_dict: Dictionary of all tokens (for enemy detection)
 
         Returns:
-            List of valid (x, y) positions
+            Set of valid (x, y) positions
         """
         if not token.is_alive:
-            return []
+            return set()
 
         if max_range is None:
             max_range = token.movement_range
@@ -47,7 +53,7 @@ class MovementSystem:
         player_id = token.player_id
         visited: Set[Tuple[int, int]] = {start}
         queue = deque([(start, 0)])
-        valid_moves: List[Tuple[int, int]] = []
+        valid_moves: Set[Tuple[int, int]] = set()
 
         while queue:
             (x, y), distance = queue.popleft()
@@ -80,6 +86,7 @@ class MovementSystem:
                         continue
                     # Friendly tokens - only allow stacking on generator and crystal cells
                     from shared.enums import CellType
+
                     if cell.cell_type not in (CellType.GENERATOR, CellType.CRYSTAL):
                         # Can't stack on regular cells with friendly tokens
                         continue
@@ -89,7 +96,7 @@ class MovementSystem:
 
                 # Add to valid moves (but not starting position)
                 if (nx, ny) != start:
-                    valid_moves.append((nx, ny))
+                    valid_moves.add((nx, ny))
 
                 # Continue exploring from this cell
                 queue.append(((nx, ny), distance + 1))
@@ -101,7 +108,7 @@ class MovementSystem:
         token: Token,
         destination: Tuple[int, int],
         board: Board,
-        tokens_dict: Optional[Dict[int, Token]] = None
+        tokens_dict: Optional[Dict[int, Token]] = None,
     ) -> bool:
         """
         Check if a move is valid for a token.
@@ -119,15 +126,14 @@ class MovementSystem:
             return False
 
         # Check if destination is in valid moves
-        valid_moves = MovementSystem.get_valid_moves(token, board, tokens_dict=tokens_dict)
+        valid_moves = MovementSystem.get_valid_moves(
+            token, board, tokens_dict=tokens_dict
+        )
         return destination in valid_moves
 
     @staticmethod
     def find_path(
-        start: Tuple[int, int],
-        end: Tuple[int, int],
-        board: Board,
-        max_distance: int
+        start: Tuple[int, int], end: Tuple[int, int], board: Board, max_distance: int
     ) -> Optional[List[Tuple[int, int]]]:
         """
         Find shortest path from start to end using BFS.
@@ -233,8 +239,7 @@ class MovementSystem:
 
     @staticmethod
     def get_adjacent_positions(
-        position: Tuple[int, int],
-        board: Board
+        position: Tuple[int, int], board: Board
     ) -> List[Tuple[int, int]]:
         """
         Get all valid adjacent positions to a given position.

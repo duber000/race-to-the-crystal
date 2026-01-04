@@ -5,7 +5,7 @@ This module handles all input events (mouse, keyboard, text) and coordinates
 with other controllers to execute game actions.
 """
 
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 import arcade
 
@@ -74,7 +74,7 @@ class InputHandler:
 
         # Selection state
         self.selected_token_id: Optional[int] = None
-        self.valid_moves: List[Tuple[int, int]] = []
+        self.valid_moves: Set[Tuple[int, int]] = set()
         self.turn_phase = TurnPhase.MOVEMENT
 
         # Mystery animations reference (will be set by GameView)
@@ -122,7 +122,10 @@ class InputHandler:
         Returns:
             True if event was handled, False otherwise
         """
-        if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_controller.camera_mode == "3D":
+        if (
+            button == arcade.MOUSE_BUTTON_RIGHT
+            and self.camera_controller.camera_mode == "3D"
+        ):
             # Activate mouse-look in 3D mode
             self.camera_controller.activate_mouse_look(x, y, window)
             return True
@@ -155,7 +158,9 @@ class InputHandler:
                 )
 
             # Check if there's a token at the click position
-            if grid_pos and self.game_state.board.is_valid_position(grid_pos[0], grid_pos[1]):
+            if grid_pos and self.game_state.board.is_valid_position(
+                grid_pos[0], grid_pos[1]
+            ):
                 for player in self.game_state.players.values():
                     for token_id in player.token_ids:
                         token = self.game_state.get_token(token_id)
@@ -172,14 +177,16 @@ class InputHandler:
 
             # Check corner menu if open (UI-based menu) - do this before indicator check
             if self.deployment_controller.menu_open and current_player:
-                reserve_counts = self.game_state.get_reserve_token_counts(current_player.id)
+                reserve_counts = self.game_state.get_reserve_token_counts(
+                    current_player.id
+                )
                 selected_health = self.deployment_controller.handle_menu_click(
                     (x, y), current_player, reserve_counts
                 )
                 if selected_health:
                     # Clear any existing token selection to prevent conflicts
                     self.selected_token_id = None
-                    self.valid_moves = []
+                    self.valid_moves = set()
                     self.renderer_2d.update_selection_visuals(
                         self.selected_token_id, self.valid_moves, self.game_state
                     )
@@ -189,7 +196,9 @@ class InputHandler:
             if (
                 not clicked_on_token
                 and not self.deployment_controller.menu_open
-                and self.deployment_controller.is_click_on_indicator(x, y, current_player)
+                and self.deployment_controller.is_click_on_indicator(
+                    x, y, current_player
+                )
             ):
                 if current_player and self.turn_phase == TurnPhase.MOVEMENT:
                     self.deployment_controller.open_menu()
@@ -226,7 +235,10 @@ class InputHandler:
         Returns:
             True if event was handled, False otherwise
         """
-        if button == arcade.MOUSE_BUTTON_RIGHT and self.camera_controller.camera_mode == "3D":
+        if (
+            button == arcade.MOUSE_BUTTON_RIGHT
+            and self.camera_controller.camera_mode == "3D"
+        ):
             # Deactivate mouse-look in 3D mode
             self.camera_controller.deactivate_mouse_look(window)
             return True
@@ -410,7 +422,9 @@ class InputHandler:
                     return token
         return None
 
-    def _handle_token_click(self, clicked_token, current_player, grid_pos: Tuple[int, int]):
+    def _handle_token_click(
+        self, clicked_token, current_player, grid_pos: Tuple[int, int]
+    ):
         """Handle clicking on a token."""
         if clicked_token.player_id == current_player.id:
             self._handle_own_token_click(clicked_token, grid_pos)
@@ -442,7 +456,9 @@ class InputHandler:
             self.renderer_2d.update_selection_visuals(
                 self.selected_token_id, self.valid_moves, self.game_state
             )
-            logger.debug(f"Selected token {clicked_token.id} at {clicked_token.position}")
+            logger.debug(
+                f"Selected token {clicked_token.id} at {clicked_token.position}"
+            )
             logger.debug(f"Valid moves: {len(self.valid_moves)}")
 
     def _handle_enemy_token_click(self, clicked_token):
@@ -473,10 +489,13 @@ class InputHandler:
             grid_pos, current_player.id, self.game_state
         ):
             # Get window context from renderer_3d
-            ctx = self.renderer_3d.ctx if hasattr(self.renderer_3d, 'ctx') else None
+            ctx = getattr(self.renderer_3d, "ctx", None)
+            # Assert selected_deploy_health is not None
+            health = self.deployment_controller.selected_deploy_health
+            assert health is not None
             deployed_token = self.action_handler.execute_deployment(
                 current_player.id,
-                self.deployment_controller.selected_deploy_health,
+                health,
                 grid_pos,
                 ctx,
             )
@@ -485,6 +504,11 @@ class InputHandler:
                 self.deployment_controller.selected_deploy_health = None
                 self.turn_phase = TurnPhase.ACTION
                 logger.info("Deployment complete - you can attack or end turn")
+            else:
+                # In network mode, we assume the action was queued/sent successfully
+                # Clear the UI selection state to prevent double-deploys
+                self.deployment_controller.selected_deploy_health = None
+                logger.debug("Deployment action sent to server - cleared UI state")
         else:
             logger.warning("Cannot deploy outside your corner area")
             self.deployment_controller.selected_deploy_health = None
@@ -522,7 +546,7 @@ class InputHandler:
             return
 
         # Get window context from renderer_3d
-        ctx = self.renderer_3d.ctx if hasattr(self.renderer_3d, 'ctx') else None
+        ctx = getattr(self.renderer_3d, "ctx", None)
 
         # Execute move through action handler
         success, final_position = self.action_handler.execute_move(
@@ -532,7 +556,7 @@ class InputHandler:
         if success:
             # Clear selection
             self.selected_token_id = None
-            self.valid_moves = []
+            self.valid_moves = set()
             self.renderer_2d.update_selection_visuals(
                 self.selected_token_id, self.valid_moves, self.game_state
             )
@@ -559,7 +583,7 @@ class InputHandler:
         if success:
             # Clear selection and move to end turn phase
             self.selected_token_id = None
-            self.valid_moves = []
+            self.valid_moves = set()
             self.renderer_2d.update_selection_visuals(
                 self.selected_token_id, self.valid_moves, self.game_state
             )
@@ -570,7 +594,7 @@ class InputHandler:
         if self.selected_token_id:
             logger.debug("Cancelled token selection")
             self.selected_token_id = None
-            self.valid_moves = []
+            self.valid_moves = set()
             self.renderer_2d.update_selection_visuals(
                 self.selected_token_id, self.valid_moves, self.game_state
             )
@@ -582,7 +606,7 @@ class InputHandler:
         """Handle end turn action."""
         # Clear selection
         self.selected_token_id = None
-        self.valid_moves = []
+        self.valid_moves = set()
 
         # Execute end turn through action handler
         self.action_handler.execute_end_turn(self.mystery_animations)

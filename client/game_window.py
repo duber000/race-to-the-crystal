@@ -16,8 +16,10 @@ from client.game_action_handler import GameActionHandler
 from client.input_handler import InputHandler
 from client.renderer_2d import Renderer2D
 from client.renderer_3d import Renderer3D
+from client.sprites.board_sprite import create_board_shapes
 from client.ui.arcade_ui import UIManager
 from client.ui.chat_widget import ChatWidget
+from client.network_client import NetworkClient
 from game.combat import CombatSystem
 from game.game_state import GameState
 from game.movement import MovementSystem
@@ -67,6 +69,7 @@ class GameView(arcade.View):
         self.game_state = game_state
         self.is_network_game = is_network_game
         self.network_client = network_client
+        self.window.ctx  # Ensure context is available
         self.start_in_3d = start_in_3d
 
         # Systems
@@ -168,12 +171,10 @@ class GameView(arcade.View):
         if self.is_network_game:
             chat_width = CHAT_WIDGET_WIDTH
             chat_height = CHAT_WIDGET_HEIGHT
-            # Position on left side, avoiding corner deployment menus
-            # Bottom-left deployment: y=60 (center), extends to ~y=140 (top)
-            # Top-left deployment: y=560 (center), starts at ~y=500 (bottom)
-            # Safe zone: y=200 to y=500
             chat_x = CHAT_WIDGET_X
             chat_y = CHAT_WIDGET_Y
+            # Assert network_client is not None since we are in a network game
+            assert self.network_client is not None
             self.chat_widget = ChatWidget(
                 network_client=self.network_client,
                 x=chat_x,
@@ -219,14 +220,14 @@ class GameView(arcade.View):
         )
 
         # Set up camera to fit entire board in view
-        self.camera_controller.setup_initial_view(self.window.width, self.window.height)
+        self.camera_controller.setup_initial_view(self.window.width, self.window.height)  # type: ignore
 
         # Load and play background music (only if not already loaded)
         if not self.audio_manager.background_music:
             self.audio_manager.load_background_music()
 
         # Build initial UI
-        self.ui_manager.rebuild_visuals(self.game_state)
+        self.ui_manager.rebuild_visuals(self.game_state)  # type: ignore
 
         logger.info("Window setup complete")
 
@@ -273,10 +274,10 @@ class GameView(arcade.View):
 
         # Instructions (check if input_handler exists)
         if self.input_handler:
-            if self.deployment_controller.selected_deploy_health:
-                instruction = f"Selected {self.deployment_controller.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"
+            if self.deployment_controller.selected_deploy_health:  # type: ignore
+                instruction = f"Selected {self.deployment_controller.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"  # type: ignore
             elif self.input_handler.turn_phase == TurnPhase.MOVEMENT:
-                if self.camera_controller.camera_mode == "3D":
+                if self.camera_controller.camera_mode == "3D":  # type: ignore
                     instruction = "Click a token to select, then move OR attack (not both) | Right-click + drag to look around"
                 else:
                     instruction = (
@@ -299,7 +300,7 @@ class GameView(arcade.View):
         # Draw corner indicator for deployment area
         current_player = self.game_state.get_current_player()
         if current_player:
-            self.deployment_controller.draw_indicator(current_player)
+            self.deployment_controller.draw_indicator(current_player)  # type: ignore
 
     def on_draw(self):
         """
@@ -314,9 +315,9 @@ class GameView(arcade.View):
         # Clear the window (color buffer and depth buffer)
         self.clear()
 
-        if self.camera_controller.camera_mode == "2D":
+        if self.camera_controller.camera_mode == "2D":  # type: ignore
             # 2D top-down rendering
-            self.renderer_2d.draw(self.camera_controller.camera_2d)
+            self.renderer_2d.draw(self.camera_controller.camera_2d)  # type: ignore
         else:
             # 3D first-person rendering - enable depth test and blending
             self.window.ctx.enable(self.window.ctx.DEPTH_TEST)
@@ -325,19 +326,19 @@ class GameView(arcade.View):
 
             if self.renderer_3d.is_available():
                 # Update camera to follow controlled token
-                self.camera_controller.update_3d_camera(self.game_state)
+                self.camera_controller.update_3d_camera(self.game_state)  # type: ignore
 
                 # Draw 3D rendering
-                self.renderer_3d.draw(self.camera_controller.camera_3d)
+                self.renderer_3d.draw(self.camera_controller.camera_3d)  # type: ignore
 
             # Reset state for UI
             self.window.ctx.disable(self.window.ctx.DEPTH_TEST)
 
         # Draw UI (no camera transform) - always in 2D
-        with self.camera_controller.ui_camera.activate():
+        with self.camera_controller.ui_camera.activate():  # type: ignore
             self.ui_sprites.draw()
             self._draw_hud()
-            self.ui_manager.draw()
+            self.ui_manager.draw()  # type: ignore
 
         # Draw chat widget (in UI space)
         if self.chat_widget:
@@ -347,14 +348,14 @@ class GameView(arcade.View):
         # Draw corner menu if open (in UI space around R hexagon)
         # Works in both 2D and 3D modes
         # Draw deployment menu if open
-        if self.deployment_controller.menu_open:
-            with self.camera_controller.ui_camera.activate():
+        if self.deployment_controller.menu_open:  # type: ignore
+            with self.camera_controller.ui_camera.activate():  # type: ignore
                 current_player = self.game_state.get_current_player()
                 if current_player:
                     reserve_counts = self.game_state.get_reserve_token_counts(
                         current_player.id
                     )
-                    self.deployment_controller.draw_menu(current_player, reserve_counts)
+                    self.deployment_controller.draw_menu(current_player, reserve_counts)  # type: ignore
 
     def on_update(self, delta_time: float):
         """
@@ -390,14 +391,32 @@ class GameView(arcade.View):
         # Update 3D mystery animations if there are any active
         self.renderer_3d.update_mystery_animations(self.mystery_animations)
 
-        # Rebuild board shapes every frame to animate generator lines and mystery squares
-        if self.camera_controller.camera_mode == "2D":
-            self.renderer_2d.create_board_sprites(
-                self.game_state.board,
-                self.game_state.generators,
-                self.game_state.crystal,
-                self.mystery_animations,
+        # Recreate board shapes every frame to update animations (glowing lines, crystal pulse)
+        # Check if board data is valid before animating
+        renderer_board = getattr(self.renderer_2d, "board", None)
+        renderer_generators = getattr(self.renderer_2d, "generators", None)
+        renderer_crystal = getattr(self.renderer_2d, "crystal", None)
+        renderer_mystery = getattr(self.renderer_2d, "mystery_animations", None)
+
+        if (
+            renderer_board is not None
+            and renderer_generators is not None
+            and renderer_crystal is not None
+            and renderer_mystery is not None
+        ):
+            # Board data is valid, animate
+            crystal_pos = (
+                self.renderer_2d.crystal.position if self.renderer_2d.crystal else None
             )
+            self.renderer_2d.board_shapes = create_board_shapes(
+                self.renderer_2d.board,  # type: ignore
+                generators=self.renderer_2d.generators,  # type: ignore
+                crystal_pos=crystal_pos,
+                mystery_animations=self.mystery_animations,
+            )
+        else:
+            # Board data missing, animation loop skipped
+            pass
 
     def on_resize(self, width: int, height: int):
         """

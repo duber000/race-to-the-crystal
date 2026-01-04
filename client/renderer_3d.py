@@ -32,6 +32,9 @@ class Renderer3D:
         self.tokens_3d: List[Token3D] = []
         self.shader_3d = None  # Shared OpenGL shader program
 
+        # OpenGL context (set by GameView during initialization)
+        self.ctx = None
+
     def create(
         self,
         game_state,
@@ -50,6 +53,9 @@ class Renderer3D:
             True if 3D rendering was successfully initialized, False otherwise
         """
         try:
+            # Store OpenGL context
+            self.ctx = ctx
+
             # Clean up old 3D board if it exists
             if self.board_3d is not None:
                 self.board_3d.cleanup()
