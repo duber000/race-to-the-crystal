@@ -11,6 +11,9 @@ TOKEN_HEALTH_VALUES = [10, 8, 6, 4]
 TOKENS_PER_HEALTH_VALUE = 5  # 5 tokens of each health value = 20 total per player
 TOKENS_PER_PLAYER = 20
 
+# UI Configuration
+UI_HEALTH_VALUES = [2, 4, 6, 8, 10, 12]  # Health values that may be displayed in UI
+
 # Movement Configuration
 TOKEN_MOVEMENT_RANGE = 2  # All tokens move 2 spaces
 

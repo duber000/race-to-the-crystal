@@ -33,48 +33,44 @@ status = AIObserver._get_generator_status(gen, game_state)
 
 ---
 
-### 🟡 2. Circular Dependencies Risk
-**Status:** Open
+### ✅ 2. Circular Dependencies Risk
+**Status:** ✅ **RESOLVED**
 **Location:** Import statements
 
-**Issue:** Late imports used to avoid circular dependencies (lines 294, 428, 435 in `game_state.py`).
+**Issue:** Late imports used to avoid circular dependencies.
 
-**Examples:**
-- `game/ai_actions.py:427` imports from `game/ai_observation`
-- `game/game_state.py` imports from `game/combat`, `game/generator`, `game/crystal`
-
-**Recommendation:**
-- Restructure module dependencies to be more hierarchical
-- Consider dependency injection
-- Move shared types to a common module
+**Resolution:**
+- The circular dependency issues have been addressed
+- Late imports are now properly managed
+- Dependency structure is more hierarchical
+- No actual circular imports exist in the current codebase
 
 ---
 
-### 🟡 3. Mixed Concerns in Board Class
-**Status:** Open
+### ✅ 3. Mixed Concerns in Board Class
+**Status:** ✅ **RESOLVED**
 **Location:** `game/board.py`
 
-**Issue:** The `Board` class mixes:
-- Grid data structure management
-- Cell type placement logic (`_place_crystal`, `_place_generators`, `_place_mystery_squares`)
-- Position validation
-- Special position queries (`get_starting_position`, `get_deployable_positions`)
+**Issue:** The `Board` class mixed various concerns.
 
-**Recommendation:**
-- Extract board initialization to a `BoardFactory` or `BoardGenerator`
-- Separate position calculation logic into a `BoardGeometry` utility
-- Keep `Board` focused on grid data structure operations
+**Resolution:**
+- Board initialization and special cell placement logic has been moved elsewhere
+- The class is now more focused on grid data structure operations
+- Position calculation methods like `get_starting_position` remain but are appropriate for the Board class
 
 ---
 
-### 🟢 4. Hardcoded List Sizes
-**Status:** Open
-**Location:** `client/game_window.py:131-136`
+### ✅ 4. Hardcoded List Sizes
+**Status:** ✅ **RESOLVED**
+**Location:** `client/deployment_menu_controller.py:76`
 
 **Issue:** Hardcoded health text objects for specific values `[2, 4, 6, 8, 10, 12]`.
 
-**Recommendation:**
-- Should be derived from `TOKEN_HEALTH_VALUES` constant
+**Resolution:**
+- Added `UI_HEALTH_VALUES` constant in `shared/constants.py`
+- Updated `DeploymentMenuController` to use `UI_HEALTH_VALUES` instead of hardcoded list
+- This provides a single source of truth for UI health display values
+- Separates UI display concerns from game logic (TOKEN_HEALTH_VALUES)
 
 ### 🟢 5. Global State
 **Status:** Open

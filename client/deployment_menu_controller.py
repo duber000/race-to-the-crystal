@@ -18,6 +18,7 @@ from shared.constants import (
     HUD_HEIGHT,
     MENU_OPTION_CLICK_RADIUS,
     PLAYER_COLORS,
+    UI_HEALTH_VALUES,
 )
 from shared.corner_layout import get_ui_corner_config
 from shared.logging_config import setup_logger
@@ -61,7 +62,7 @@ class DeploymentMenuController:
             "R", 0, 0, (255, 255, 255), font_size=24, bold=True, anchor_x="center"
         )
 
-        # Health text objects (health values are 2, 4, 6, 8, 10, 12)
+        # Health text objects (for UI display of health values)
         self.health_texts = {
             health: arcade.Text(
                 str(health),
@@ -73,7 +74,7 @@ class DeploymentMenuController:
                 anchor_x="center",
                 anchor_y="center",
             )
-            for health in [2, 4, 6, 8, 10, 12]
+            for health in UI_HEALTH_VALUES
         }
 
         # Count text objects will be created dynamically as needed
