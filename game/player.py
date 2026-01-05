@@ -2,7 +2,7 @@
 Player state and management.
 """
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Self
 
 from shared.enums import PlayerColor
 from shared.types import TokenID, PlayerID
@@ -25,10 +25,10 @@ class Player:
     id: PlayerID
     name: str
     color: PlayerColor
-    token_ids: List[TokenID] = field(default_factory=list)
+    token_ids: list[TokenID] = field(default_factory=list)
     is_ready: bool = False
     is_active: bool = True
-    team: Optional[int] = None
+    team: int | None = None
 
     @property
     def alive_token_count(self) -> int:
@@ -92,7 +92,7 @@ class Player:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Player":
+    def from_dict(cls, data: dict) -> Self:
         """Create player from dictionary."""
         return cls(
             id=data["id"],

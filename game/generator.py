@@ -2,6 +2,7 @@
 Generator capture mechanics.
 """
 from dataclasses import dataclass, field
+from typing import Self
 
 from shared.constants import (
     GENERATOR_CAPTURE_TOKENS_REQUIRED,
@@ -171,7 +172,7 @@ class Generator:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Generator":
+    def from_dict(cls, data: dict) -> Self:
         """Create generator from dictionary."""
         return cls(
             id=data["id"],

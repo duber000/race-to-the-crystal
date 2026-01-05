@@ -3,6 +3,7 @@ Central game state management.
 """
 
 from dataclasses import dataclass, field
+from typing import Self
 import json
 
 from shared.enums import CellType, GamePhase, PlayerColor, TurnPhase
@@ -504,7 +505,7 @@ class GameState:
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_dict(cls, data: dict) -> "GameState":
+    def from_dict(cls, data: dict) -> Self:
         """Create game state from dictionary.
 
         """
@@ -531,12 +532,12 @@ class GameState:
         return state
 
     @classmethod
-    def from_json(cls, json_str: str) -> "GameState":
+    def from_json(cls, json_str: str) -> Self:
         """Create game state from JSON string."""
         return cls.from_dict(json.loads(json_str))
 
     @classmethod
-    def create_game(cls, num_players: int) -> "GameState":
+    def create_game(cls, num_players: int) -> Self:
         """
         Create a new game state with the specified number of players.
 
