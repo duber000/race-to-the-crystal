@@ -5,7 +5,6 @@ This module provides structured action classes and an executor that validates
 and executes actions with detailed feedback for AI players.
 """
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Optional
 from game.game_state import GameState
 from game.movement import MovementSystem
 from game.combat import CombatSystem
@@ -43,7 +42,7 @@ class ActionResult:
     """
     success: bool
     message: str
-    data: Optional[Dict] = None
+    data: dict | None = None
 
     def __iter__(self):
         """Allow tuple unpacking for backward compatibility."""
@@ -75,9 +74,9 @@ class MoveAction(AIAction):
         destination: Target (x, y) position
     """
     token_id: TokenID
-    destination: Tuple[int, int]
+    destination: tuple[int, int]
 
-    def __init__(self, token_id: TokenID, destination: Tuple[int, int]):
+    def __init__(self, token_id: TokenID, destination: tuple[int, int]):
         super().__init__(action_type="MOVE")
         self.token_id = token_id
         self.destination = destination
@@ -125,9 +124,9 @@ class DeployAction(AIAction):
         position: Deployment (x, y) position
     """
     health_value: int
-    position: Tuple[int, int]
+    position: tuple[int, int]
 
-    def __init__(self, health_value: int, position: Tuple[int, int]):
+    def __init__(self, health_value: int, position: tuple[int, int]):
         super().__init__(action_type="DEPLOY")
         self.health_value = health_value
         self.position = position
@@ -188,17 +187,18 @@ class AIActionExecutor:
             current_name = current_player.name if current_player else "Unknown"
             return ValidationResult(False, f"Cannot act: Not your turn (current: {current_name})")
 
-        # Validate based on action type
-        if isinstance(action, MoveAction):
-            return self._validate_move(action, game_state, player_id)
-        elif isinstance(action, AttackAction):
-            return self._validate_attack(action, game_state, player_id)
-        elif isinstance(action, DeployAction):
-            return self._validate_deploy(action, game_state, player_id)
-        elif isinstance(action, EndTurnAction):
-            return self._validate_end_turn(action, game_state, player_id)
-        else:
-            return ValidationResult(False, f"Unknown action type: {type(action).__name__}")
+        # Validate based on action type using pattern matching
+        match action:
+            case MoveAction():
+                return self._validate_move(action, game_state, player_id)
+            case AttackAction():
+                return self._validate_attack(action, game_state, player_id)
+            case DeployAction():
+                return self._validate_deploy(action, game_state, player_id)
+            case EndTurnAction():
+                return self._validate_end_turn(action, game_state, player_id)
+            case _:
+                return ValidationResult(False, f"Unknown action type: {type(action).__name__}")
 
     def execute_action(
         self,
@@ -222,17 +222,18 @@ class AIActionExecutor:
         if not validation.is_valid:
             return ActionResult(False, validation.message, None)
 
-        # Execute based on action type
-        if isinstance(action, MoveAction):
-            return self._execute_move(action, game_state, player_id)
-        elif isinstance(action, AttackAction):
-            return self._execute_attack(action, game_state, player_id)
-        elif isinstance(action, DeployAction):
-            return self._execute_deploy(action, game_state, player_id)
-        elif isinstance(action, EndTurnAction):
-            return self._execute_end_turn(action, game_state, player_id)
-        else:
-            return ActionResult(False, f"Unknown action type: {type(action).__name__}", None)
+        # Execute based on action type using pattern matching
+        match action:
+            case MoveAction():
+                return self._execute_move(action, game_state, player_id)
+            case AttackAction():
+                return self._execute_attack(action, game_state, player_id)
+            case DeployAction():
+                return self._execute_deploy(action, game_state, player_id)
+            case EndTurnAction():
+                return self._execute_end_turn(action, game_state, player_id)
+            case _:
+                return ActionResult(False, f"Unknown action type: {type(action).__name__}", None)
 
     # --- MOVE ACTION ---
 
@@ -248,8 +249,7 @@ class AIActionExecutor:
             return ValidationResult(False, f"Cannot move: Wrong phase (currently in {game_state.turn_phase.name})")
 
         # Check token exists
-        token = game_state.get_token(action.token_id)
-        if not token:
+        if not (token := game_state.get_token(action.token_id)):
             return ValidationResult(False, f"Cannot move: Token #{action.token_id} does not exist")
 
         # Check token ownership
@@ -343,8 +343,7 @@ class AIActionExecutor:
             return ValidationResult(False, f"Cannot attack: Wrong phase (currently in {game_state.turn_phase.name})")
 
         # Check attacker exists
-        attacker = game_state.get_token(action.attacker_id)
-        if not attacker:
+        if not (attacker := game_state.get_token(action.attacker_id)):
             return ValidationResult(False, f"Cannot attack: Attacker token #{action.attacker_id} does not exist")
 
         # Check attacker ownership
@@ -358,8 +357,7 @@ class AIActionExecutor:
             return ValidationResult(False, f"Cannot attack: Attacker #{action.attacker_id} is dead")
 
         # Check defender exists
-        defender = game_state.get_token(action.defender_id)
-        if not defender:
+        if not (defender := game_state.get_token(action.defender_id)):
             return ValidationResult(False, f"Cannot attack: Defender token #{action.defender_id} does not exist")
 
         # Check defender is not owned by attacker
@@ -452,8 +450,7 @@ class AIActionExecutor:
             return ValidationResult(False, f"Cannot deploy: Position ({x},{y}) is already occupied")
 
         # Check position is a valid deployment location (corner + adjacent)
-        player = game_state.get_player(player_id)
-        if not player:
+        if not (player := game_state.get_player(player_id)):
             return ValidationResult(False, "Cannot deploy: Player not found")
 
         from game.ai_observation import AIObserver

@@ -2,7 +2,7 @@
 Generator capture mechanics.
 """
 from dataclasses import dataclass, field
-from typing import Optional, List, Tuple
+from typing import Self
 
 from shared.constants import (
     GENERATOR_CAPTURE_TOKENS_REQUIRED,
@@ -29,9 +29,9 @@ class Generator:
         is_disabled: Whether this generator has been disabled
     """
     id: int
-    position: Tuple[int, int]
-    capturing_player_id: Optional[PlayerID] = None
-    capture_token_ids: List[TokenID] = field(default_factory=list)
+    position: tuple[int, int]
+    capturing_player_id: PlayerID | None = None
+    capture_token_ids: list[TokenID] = field(default_factory=list)
     turns_held: int = 0
     is_disabled: bool = False
 
@@ -50,7 +50,7 @@ class Generator:
         """How much this generator reduces crystal requirements when disabled."""
         return GENERATOR_TOKEN_REDUCTION
 
-    def _count_tokens_by_player(self, tokens_at_position: List[Tuple[TokenID, PlayerID]]) -> dict[PlayerID, List[TokenID]]:
+    def _count_tokens_by_player(self, tokens_at_position: list[tuple[TokenID, PlayerID]]) -> dict[PlayerID, list[TokenID]]:
         """
         Group tokens by their controlling player.
 
@@ -60,14 +60,14 @@ class Generator:
         Returns:
             Dictionary mapping player_id to list of their token_ids
         """
-        player_token_counts: dict[PlayerID, List[TokenID]] = {}
+        player_token_counts: dict[PlayerID, list[TokenID]] = {}
         for token_id, player_id in tokens_at_position:
             if player_id not in player_token_counts:
                 player_token_counts[player_id] = []
             player_token_counts[player_id].append(token_id)
         return player_token_counts
 
-    def _find_dominant_player(self, player_token_counts: dict[PlayerID, List[TokenID]]) -> Tuple[Optional[PlayerID], int]:
+    def _find_dominant_player(self, player_token_counts: dict[PlayerID, list[TokenID]]) -> tuple[PlayerID | None, int]:
         """
         Determine which player has the most tokens, if any.
 
@@ -77,7 +77,7 @@ class Generator:
         Returns:
             Tuple of (dominant_player_id, token_count). Returns (None, count) if contested.
         """
-        dominant_player: Optional[PlayerID] = None
+        dominant_player: PlayerID | None = None
         dominant_count = 0
 
         for player_id, token_ids in player_token_counts.items():
@@ -91,9 +91,9 @@ class Generator:
 
     def _process_capture_logic(
         self,
-        dominant_player: Optional[PlayerID],
+        dominant_player: PlayerID | None,
         dominant_count: int,
-        player_token_counts: dict[PlayerID, List[TokenID]]
+        player_token_counts: dict[PlayerID, list[TokenID]]
     ) -> bool:
         """
         Update capture state based on dominant player and token count.
@@ -124,7 +124,7 @@ class Generator:
 
         return False
 
-    def update_capture_status(self, tokens_at_position: List[Tuple[TokenID, PlayerID]]) -> bool:
+    def update_capture_status(self, tokens_at_position: list[tuple[TokenID, PlayerID]]) -> bool:
         """
         Update generator capture status based on tokens at this position.
 
@@ -151,7 +151,7 @@ class Generator:
             self.turns_held = 0
             self.capture_token_ids.clear()
 
-    def get_capture_progress(self) -> Tuple[int, int]:
+    def get_capture_progress(self) -> tuple[int, int]:
         """
         Get capture progress.
 
@@ -172,7 +172,7 @@ class Generator:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Generator":
+    def from_dict(cls, data: dict) -> Self:
         """Create generator from dictionary."""
         return cls(
             id=data["id"],
@@ -192,7 +192,7 @@ class GeneratorManager:
     """Manages all generators in the game."""
 
     @staticmethod
-    def create_generators(positions: List[Tuple[int, int]]) -> List[Generator]:
+    def create_generators(positions: list[tuple[int, int]]) -> list[Generator]:
         """
         Create generators at specified positions.
 
@@ -209,9 +209,9 @@ class GeneratorManager:
 
     @staticmethod
     def update_all_generators(
-        generators: List[Generator],
-        tokens_by_position: dict[Tuple[int, int], List[Tuple[TokenID, PlayerID]]]
-    ) -> List[int]:
+        generators: list[Generator],
+        tokens_by_position: dict[tuple[int, int], list[tuple[TokenID, PlayerID]]]
+    ) -> list[int]:
         """
         Update all generators based on token positions.
 
@@ -234,7 +234,7 @@ class GeneratorManager:
         return newly_disabled
 
     @staticmethod
-    def count_disabled_generators(generators: List[Generator]) -> int:
+    def count_disabled_generators(generators: list[Generator]) -> int:
         """
         Count how many generators are disabled.
 
@@ -248,9 +248,9 @@ class GeneratorManager:
 
     @staticmethod
     def get_generator_at_position(
-        generators: List[Generator],
-        position: Tuple[int, int]
-    ) -> Optional[Generator]:
+        generators: list[Generator],
+        position: tuple[int, int]
+    ) -> Generator | None:
         """
         Find generator at a specific position.
 

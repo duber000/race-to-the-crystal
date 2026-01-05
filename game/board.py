@@ -3,7 +3,7 @@ Game board and cell representation.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, List, Dict
+from typing import Self
 import random
 
 from shared.enums import CellType
@@ -28,9 +28,9 @@ class Cell:
         occupants: List of token IDs currently occupying this cell
     """
 
-    position: Tuple[int, int]
+    position: tuple[int, int]
     cell_type: CellType = CellType.NORMAL
-    occupants: List[TokenID] = field(default_factory=list)
+    occupants: list[TokenID] = field(default_factory=list)
 
     def is_occupied(self) -> bool:
         """Check if this cell is occupied by any token."""
@@ -58,7 +58,7 @@ class Cell:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Cell":
+    def from_dict(cls, data: dict) -> Self:
         """Create cell from dictionary."""
         return cls(
             position=tuple(data["position"]),
@@ -80,7 +80,7 @@ class Board:
 
     width: int = BOARD_WIDTH
     height: int = BOARD_HEIGHT
-    grid: List[List[Cell]] = field(default_factory=list)
+    grid: list[list[Cell]] = field(default_factory=list)
 
     def __post_init__(self):
         """Initialize the board grid if not provided."""
@@ -178,7 +178,7 @@ class Board:
 
                 attempts += 1
 
-    def get_cell(self, x: int, y: int) -> Optional[Cell]:
+    def get_cell(self, x: int, y: int) -> Cell | None:
         """
         Get cell at position (x, y).
 
@@ -193,7 +193,7 @@ class Board:
             return None
         return self.grid[y][x]
 
-    def get_cell_at(self, position: Tuple[int, int]) -> Optional[Cell]:
+    def get_cell_at(self, position: tuple[int, int]) -> Cell | None:
         """
         Get cell at position.
 
@@ -209,7 +209,7 @@ class Board:
         """Check if position is within board bounds."""
         return 0 <= x < self.width and 0 <= y < self.height
 
-    def add_occupant(self, position: Tuple[int, int], token_id: TokenID) -> None:
+    def add_occupant(self, position: tuple[int, int], token_id: TokenID) -> None:
         """
         Add a token as an occupant of a cell.
 
@@ -217,11 +217,10 @@ class Board:
             position: (x, y) position
             token_id: ID of token to add
         """
-        cell = self.get_cell_at(position)
-        if cell and token_id not in cell.occupants:
+        if (cell := self.get_cell_at(position)) and token_id not in cell.occupants:
             cell.occupants.append(token_id)
 
-    def remove_occupant(self, position: Tuple[int, int], token_id: TokenID) -> None:
+    def remove_occupant(self, position: tuple[int, int], token_id: TokenID) -> None:
         """
         Remove a token from a cell's occupants.
 
@@ -229,11 +228,10 @@ class Board:
             position: (x, y) position
             token_id: ID of token to remove
         """
-        cell = self.get_cell_at(position)
-        if cell and token_id in cell.occupants:
+        if (cell := self.get_cell_at(position)) and token_id in cell.occupants:
             cell.occupants.remove(token_id)
 
-    def set_occupant(self, position: Tuple[int, int], token_id: Optional[TokenID]) -> None:
+    def set_occupant(self, position: tuple[int, int], token_id: TokenID) -> None:
         """
         Add a token as occupant of a cell (backwards compatible).
 
@@ -245,7 +243,7 @@ class Board:
             self.add_occupant(position, token_id)
 
     def clear_occupant(
-        self, position: Tuple[int, int], token_id: Optional[TokenID] = None
+        self, position: tuple[int, int], token_id: TokenID | None = None
     ) -> None:
         """
         Clear occupant(s) from a cell.
@@ -254,14 +252,13 @@ class Board:
             position: (x, y) position
             token_id: Specific token to remove, or None to clear all
         """
-        cell = self.get_cell_at(position)
-        if cell:
+        if cell := self.get_cell_at(position):
             if token_id is not None:
                 self.remove_occupant(position, token_id)
             else:
                 cell.occupants.clear()
 
-    def get_starting_position(self, player_index: int) -> Tuple[int, int]:
+    def get_starting_position(self, player_index: int) -> tuple[int, int]:
         """
         Get the starting corner position for a player.
 
@@ -279,7 +276,7 @@ class Board:
         ]
         return corners[player_index % 4]
 
-    def get_deployable_positions(self, player_index: int) -> List[Tuple[int, int]]:
+    def get_deployable_positions(self, player_index: int) -> list[tuple[int, int]]:
         """
         Get valid deployment positions for a player (3x3 area extending from corner into board).
 
@@ -294,11 +291,11 @@ class Board:
         config = get_board_corner_config(player_index)
         return config.get_deployable_positions()
 
-    def get_crystal_position(self) -> Tuple[int, int]:
+    def get_crystal_position(self) -> tuple[int, int]:
         """Get the position of the power crystal."""
         return (self.width // 2, self.height // 2)
 
-    def get_generator_positions(self) -> List[Tuple[int, int]]:
+    def get_generator_positions(self) -> list[tuple[int, int]]:
         """Get positions of all generators."""
         generators = []
         for y in range(self.height):
@@ -307,7 +304,7 @@ class Board:
                     generators.append((x, y))
         return generators
 
-    def get_mystery_positions(self) -> List[Tuple[int, int]]:
+    def get_mystery_positions(self) -> list[tuple[int, int]]:
         """Get positions of all mystery squares."""
         mystery = []
         for y in range(self.height):
@@ -325,7 +322,7 @@ class Board:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Board":
+    def from_dict(cls, data: dict) -> Self:
         """Create board from dictionary."""
         board = cls(width=data["width"], height=data["height"])
         board.grid = [

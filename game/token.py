@@ -2,7 +2,7 @@
 Token entity representing a player's game piece.
 """
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Self
 
 from shared.constants import TOKEN_HEALTH_VALUES
 from shared.types import TokenID, PlayerID
@@ -26,7 +26,7 @@ class Token:
     player_id: PlayerID
     health: int
     max_health: int
-    position: Tuple[int, int]
+    position: tuple[int, int]
     is_alive: bool = True
     is_deployed: bool = False
 
@@ -94,7 +94,7 @@ class Token:
         """Restore token to full health."""
         self.health = self.max_health
 
-    def move_to(self, new_position: Tuple[int, int]) -> None:
+    def move_to(self, new_position: tuple[int, int]) -> None:
         """
         Move token to a new position.
 
@@ -103,7 +103,7 @@ class Token:
         """
         self.position = new_position
 
-    def distance_to(self, other_position: Tuple[int, int]) -> int:
+    def distance_to(self, other_position: tuple[int, int]) -> int:
         """
         Calculate Manhattan distance to another position.
 
@@ -115,7 +115,7 @@ class Token:
         """
         return abs(self.position[0] - other_position[0]) + abs(self.position[1] - other_position[1])
 
-    def is_adjacent_to(self, other_position: Tuple[int, int]) -> bool:
+    def is_adjacent_to(self, other_position: tuple[int, int]) -> bool:
         """
         Check if this token is adjacent to a position (for combat).
         Adjacent includes 8 directions (orthogonal + diagonal).
@@ -143,7 +143,7 @@ class Token:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Token":
+    def from_dict(cls, data: dict) -> Self:
         """Create token from dictionary."""
         return cls(
             id=data["id"],
