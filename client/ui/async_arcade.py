@@ -1,10 +1,11 @@
 """Asyncio integration for Arcade game loop.
 
-Allows running asyncio tasks alongside Arcade's game loop.
+Allows running asyncio tasks alongside Arcade's game loop using threading.
 """
 
 import arcade
 import asyncio
+import threading
 import logging
 from typing import Optional
 
@@ -13,74 +14,85 @@ logger = logging.getLogger(__name__)
 
 class AsyncArcadeScheduler:
     """
-    Scheduler that integrates asyncio with Arcade's game loop.
+    Scheduler that integrates asyncio with Arcade's game loop using threading.
 
-    Allows async network operations to run alongside arcade.run().
+    Runs asyncio event loop in a separate thread, allowing async network
+    operations to run alongside Arcade's synchronous game loop without blocking.
     """
 
     def __init__(self):
         """Initialize the async scheduler."""
         self.loop: Optional[asyncio.AbstractEventLoop] = None
+        self.thread: Optional[threading.Thread] = None
         self.running = False
 
     def start(self):
-        """Start the async scheduler."""
+        """Start the async scheduler in a separate thread."""
         if self.running:
             logger.info("Async scheduler already running")
             return
 
-        # Get or create event loop
-        try:
-            self.loop = asyncio.get_running_loop()
-            logger.info("Using existing running event loop")
-        except RuntimeError:
-            self.loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.loop)
-            logger.info("Created new event loop")
+        # Create a new event loop for the background thread
+        self.loop = asyncio.new_event_loop()
+
+        # Start the event loop in a daemon thread
+        self.thread = threading.Thread(
+            target=self._run_event_loop,
+            name="AsyncArcadeScheduler",
+            daemon=True
+        )
+        self.thread.start()
 
         self.running = True
-        logger.info(f"Async scheduler started with loop: {self.loop}")
+        logger.info(f"Async scheduler started in thread {self.thread.name}")
+
+    def _run_event_loop(self):
+        """Run the event loop in the background thread."""
+        asyncio.set_event_loop(self.loop)
+        logger.info(f"Event loop running in thread {threading.current_thread().name}")
+        try:
+            self.loop.run_forever()
+        except Exception as e:
+            logger.error(f"Error in event loop thread: {e}", exc_info=True)
+        finally:
+            self.loop.close()
+            logger.info("Event loop closed")
 
     def stop(self):
         """Stop the async scheduler."""
+        if not self.running:
+            return
+
         self.running = False
+
+        if self.loop:
+            # Stop the event loop from the background thread
+            self.loop.call_soon_threadsafe(self.loop.stop)
+
+        if self.thread and self.thread.is_alive():
+            # Wait for thread to finish (with timeout)
+            self.thread.join(timeout=2.0)
+
         logger.info("Async scheduler stopped")
 
     def update(self, delta_time: float):
         """
         Update function to be called from Arcade's on_update.
 
-        Processes async tasks.
+        With the threading approach, this is a no-op since the event loop
+        runs independently in its own thread.
 
         Args:
             delta_time: Time since last update
         """
-        if not self.running:
-            logger.debug("Async scheduler not running, skipping update")
-            return
-
-        if not self.loop:
-            logger.warning("Async scheduler has no event loop!")
-            return
-
-        # Run pending async tasks for a short time
-        # This allows network operations to progress
-        try:
-            # Create a short sleep task to allow I/O processing
-            # This gives async tasks (including network I/O) time to progress
-            async def tick():
-                await asyncio.sleep(0)  # Yield control to let other tasks run
-                await asyncio.sleep(0.001)  # Small delay to allow I/O
-
-            # Run the tick, which processes I/O and ready callbacks
-            self.loop.run_until_complete(tick())
-
-        except Exception as e:
-            logger.error(f"Error in async scheduler: {e}", exc_info=True)
+        # No-op: The event loop runs independently in its thread
+        pass
 
     def create_task(self, coro):
         """
-        Create an async task.
+        Create an async task in the background event loop.
+
+        This is thread-safe and can be called from Arcade's main thread.
 
         Args:
             coro: Coroutine to run
@@ -88,14 +100,17 @@ class AsyncArcadeScheduler:
         Returns:
             asyncio.Task
         """
-        if not self.loop:
-            logger.info("Loop not started, starting now...")
+        if not self.running or not self.loop:
+            logger.warning("Scheduler not running, starting now...")
             self.start()
 
-        logger.info(f"Creating task for coroutine: {coro}")
-        task = self.loop.create_task(coro)
-        logger.info(f"Task created: {task}")
-        return task
+        logger.debug(f"Scheduling coroutine from thread {threading.current_thread().name}: {coro}")
+
+        # Use asyncio.run_coroutine_threadsafe for thread-safe task creation
+        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+
+        logger.debug(f"Task scheduled: {future}")
+        return future
 
 
 # Global scheduler instance
@@ -117,27 +132,29 @@ def get_async_scheduler() -> AsyncArcadeScheduler:
 
 def schedule_async(coro):
     """
-    Schedule an async coroutine to run.
+    Schedule an async coroutine to run in the background event loop.
+
+    This is thread-safe and can be called from Arcade's main thread.
 
     Args:
         coro: Coroutine to run
 
     Returns:
-        asyncio.Task
+        concurrent.futures.Future wrapping the task
     """
-    logger.info(f"schedule_async called with: {coro}")
+    logger.debug(f"schedule_async called with: {coro}")
     scheduler = get_async_scheduler()
-    logger.info(f"Got scheduler: {scheduler}, running={scheduler.running}")
-    task = scheduler.create_task(coro)
-    logger.info(f"schedule_async returning task: {task}")
-    return task
+    future = scheduler.create_task(coro)
+    logger.debug(f"schedule_async returning future: {future}")
+    return future
 
 
 class AsyncWindow(arcade.Window):
     """
-    Arcade Window with built-in asyncio support.
+    Arcade Window with built-in asyncio support via threading.
 
-    Automatically runs async tasks alongside the game loop.
+    Automatically starts an asyncio event loop in a background thread,
+    allowing async tasks to run alongside the game loop without blocking.
     """
 
     def __init__(self, *args, **kwargs):
@@ -147,20 +164,19 @@ class AsyncWindow(arcade.Window):
         # Use the global async scheduler (shared with schedule_async)
         self.async_scheduler = get_async_scheduler()
         self.async_scheduler.start()
-        logger.info(f"AsyncWindow initialized with global scheduler: {self.async_scheduler}")
+        logger.info(f"AsyncWindow initialized with threaded scheduler")
 
     def on_update(self, delta_time: float):
         """
         Update the window.
-
-        Processes both game logic and async tasks.
 
         Args:
             delta_time: Time since last update
         """
         super().on_update(delta_time)
 
-        # Process async tasks
+        # No need to manually update the scheduler - it runs in its own thread
+        # This call is a no-op but kept for compatibility
         self.async_scheduler.update(delta_time)
 
     def close(self):
@@ -173,30 +189,8 @@ def run_with_asyncio():
     """
     Run arcade with asyncio integration.
 
-    Use this instead of arcade.run() when you need async support.
+    With the threading approach, this is just an alias for arcade.run()
+    since the async event loop runs in a separate thread.
     """
-    # Get the asyncio event loop
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    # Start arcade
-    # Arcade will handle the main loop
+    # The async scheduler runs in its own thread, so just run arcade normally
     arcade.run()
-
-    # Clean up
-    try:
-        # Cancel remaining tasks
-        pending = asyncio.all_tasks(loop)
-        for task in pending:
-            task.cancel()
-
-        # Run until tasks are cancelled
-        if pending:
-            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-    except Exception as e:
-        logger.error(f"Error cleaning up async tasks: {e}")
-    finally:
-        loop.close()

@@ -5,6 +5,7 @@ Handles connection to game server and message exchange.
 """
 import asyncio
 import logging
+import time
 from typing import Optional, Callable, Awaitable, Dict, List
 
 from network.connection import Connection
@@ -114,14 +115,7 @@ class NetworkClient:
             )
 
             # Start message receive loop
-            # Get the current event loop (set by AsyncWindow's scheduler)
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                # Fallback: get or create event loop
-                loop = asyncio.get_event_loop()
-
-            loop.create_task(self._message_loop())
+            asyncio.create_task(self._message_loop())
 
             return True
 
@@ -385,7 +379,7 @@ class NetworkClient:
 
         msg = NetworkMessage(
             type=MessageType.LEAVE_GAME,
-            timestamp=asyncio.get_event_loop().time(),
+            timestamp=time.time(),
             player_id=self.player_id,
             data={"game_id": self.game_id}
         )
