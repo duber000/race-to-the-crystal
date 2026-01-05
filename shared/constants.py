@@ -87,8 +87,18 @@ FPS_TARGET = 60
 WALL_HEIGHT = 50.0  # Height of vertical grid walls in 3D mode
 TOKEN_HEIGHT_3D = 25.0  # Height of 3D hexagonal prism tokens
 CAMERA_FOV = 75.0  # Field of view in degrees (wide for Battlezone feel)
+
+# Camera modes: Overview vs First-Person
+CAMERA_OVERVIEW_PITCH = -60.0  # Pitch for overview mode (looking down)
+CAMERA_FIRST_PERSON_PITCH = -15.0  # Pitch for first-person mode (looking forward/slightly down)
+CAMERA_OVERVIEW_HEIGHT = 150.0  # Height for overview mode
+CAMERA_FIRST_PERSON_HEIGHT = 30.0  # Height for first-person mode (token eye level)
+CAMERA_FIRST_PERSON_OFFSET = -20.0  # Distance behind token in first-person mode
+
+# Legacy constants (kept for initial camera setup)
 CAMERA_HEIGHT_ABOVE_TOKEN = 100.0  # Eye height above token (high for better overview)
 CAMERA_FORWARD_OFFSET = -50.0  # Distance behind token (negative = behind, farther back for better view)
+
 CAMERA_NEAR_PLANE = 1.0  # Near clipping plane
 CAMERA_FAR_PLANE = 2000.0  # Far clipping plane (board is 768x768)
 

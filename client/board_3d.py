@@ -64,6 +64,16 @@ class Board3D:
         self.deployment_zones_vao = None
         self.deployment_zones_vbo = None
 
+        # Hover indicator VAO (shows which cell mouse is over)
+        self.hover_vao = None
+        self.hover_vbo = None
+        self.hover_position = None  # (x, y) grid coordinates
+
+        # Valid move indicators VAO (shows where selected token can move)
+        self.valid_moves_vao = None
+        self.valid_moves_vbo = None
+        self.valid_moves = set()  # Set of (x, y) grid coordinates
+
         # Shader program
         self.shader_program = None
 
@@ -514,6 +524,95 @@ class Board3D:
                 [BufferDescription(self.deployment_zones_vbo, "3f", ["in_position"])]
             )
 
+    def update_hover_indicator(self, hover_position):
+        """
+        Update hover indicator geometry for the cell under the mouse.
+
+        Args:
+            hover_position: (x, y) grid coordinates or None
+        """
+        self.hover_position = hover_position
+
+        if hover_position is None:
+            self.hover_vao = None
+            self.hover_vbo = None
+            return
+
+        x, y = hover_position
+        center_x = x * CELL_SIZE + CELL_SIZE / 2
+        center_y = y * CELL_SIZE + CELL_SIZE / 2
+
+        # Create a wireframe square slightly above the ground
+        height = 2.0
+        size = CELL_SIZE * 0.9
+        half_size = size / 2
+
+        vertices = [
+            # Bottom square (at height)
+            center_x - half_size, center_y - half_size, height,
+            center_x + half_size, center_y - half_size, height,
+
+            center_x + half_size, center_y - half_size, height,
+            center_x + half_size, center_y + half_size, height,
+
+            center_x + half_size, center_y + half_size, height,
+            center_x - half_size, center_y + half_size, height,
+
+            center_x - half_size, center_y + half_size, height,
+            center_x - half_size, center_y - half_size, height,
+        ]
+
+        vertices_array = np.array(vertices, dtype=np.float32)
+        self.hover_vbo = self.ctx.buffer(data=vertices_array.tobytes())
+        self.hover_vao = self.ctx.geometry(
+            [BufferDescription(self.hover_vbo, "3f", ["in_position"])]
+        )
+
+    def update_valid_moves(self, valid_moves):
+        """
+        Update valid move indicators geometry.
+
+        Args:
+            valid_moves: Set of (x, y) grid coordinates where token can move
+        """
+        self.valid_moves = valid_moves
+
+        if not valid_moves:
+            self.valid_moves_vao = None
+            self.valid_moves_vbo = None
+            return
+
+        vertices = []
+        height = 1.0  # Slightly below hover indicator
+        size = CELL_SIZE * 0.8
+        half_size = size / 2
+
+        for grid_x, grid_y in valid_moves:
+            center_x = grid_x * CELL_SIZE + CELL_SIZE / 2
+            center_y = grid_y * CELL_SIZE + CELL_SIZE / 2
+
+            # Wireframe square for each valid move
+            vertices.extend([
+                # Bottom square
+                center_x - half_size, center_y - half_size, height,
+                center_x + half_size, center_y - half_size, height,
+
+                center_x + half_size, center_y - half_size, height,
+                center_x + half_size, center_y + half_size, height,
+
+                center_x + half_size, center_y + half_size, height,
+                center_x - half_size, center_y + half_size, height,
+
+                center_x - half_size, center_y + half_size, height,
+                center_x - half_size, center_y - half_size, height,
+            ])
+
+        vertices_array = np.array(vertices, dtype=np.float32)
+        self.valid_moves_vbo = self.ctx.buffer(data=vertices_array.tobytes())
+        self.valid_moves_vao = self.ctx.geometry(
+            [BufferDescription(self.valid_moves_vbo, "3f", ["in_position"])]
+        )
+
     def draw(self, camera_3d):
         """
         Render the 3D wireframe grid and special cells.
@@ -580,6 +679,22 @@ class Board3D:
             self.shader_program["glow_intensity"] = 1.2
             self.deployment_zones_vao.render(self.shader_program, mode=self.ctx.LINES)
 
+        # Draw valid move indicators (green wireframes)
+        if self.valid_moves_vao:
+            self.shader_program["base_color"] = np.array(
+                [0.0, 1.0, 0.0, 0.7], dtype=np.float32  # Green
+            )
+            self.shader_program["glow_intensity"] = 1.8
+            self.valid_moves_vao.render(self.shader_program, mode=self.ctx.LINES)
+
+        # Draw hover indicator (white wireframe, brightest)
+        if self.hover_vao:
+            self.shader_program["base_color"] = np.array(
+                [1.0, 1.0, 1.0, 0.9], dtype=np.float32  # White
+            )
+            self.shader_program["glow_intensity"] = 2.5
+            self.hover_vao.render(self.shader_program, mode=self.ctx.LINES)
+
     def cleanup(self):
         """Release all OpenGL resources to prevent memory leaks."""
         # Clear all buffer references - Arcade handles cleanup via garbage collection
@@ -595,3 +710,7 @@ class Board3D:
         self.gen_crystal_lines_vao = None
         self.deployment_zones_vbo = None
         self.deployment_zones_vao = None
+        self.hover_vbo = None
+        self.hover_vao = None
+        self.valid_moves_vbo = None
+        self.valid_moves_vao = None

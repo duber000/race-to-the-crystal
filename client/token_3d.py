@@ -112,13 +112,14 @@ class Token3D:
             ]
         )
 
-    def draw(self, camera_3d, shader_program):
+    def draw(self, camera_3d, shader_program, is_selected: bool = False):
         """
         Draw token at its world position.
 
         Args:
             camera_3d: FirstPersonCamera3D instance
             shader_program: Compiled shader program
+            is_selected: Whether this token is currently selected (shows brighter glow)
         """
         # Create model matrix (translate to interpolated render position)
         world_x = self.render_x
@@ -135,8 +136,17 @@ class Token3D:
         shader_program["projection"] = camera_3d.get_projection_matrix().T.flatten()
         shader_program["view"] = camera_3d.get_view_matrix().T.flatten()
         shader_program["model"] = model_matrix.T.flatten()
-        shader_program["base_color"] = self.color
-        shader_program["glow_intensity"] = 2.5  # Brighter glow for tokens
+        
+        # Change color and glow for selected tokens
+        if is_selected:
+            # Use bright white/yellow for selected tokens
+            shader_program["base_color"] = np.array([1.0, 1.0, 0.3, 0.9], dtype=np.float32)
+            glow_intensity = 20.0
+        else:
+            shader_program["base_color"] = self.color
+            glow_intensity = 2.5
+        
+        shader_program["glow_intensity"] = glow_intensity
 
         # Render as lines
         self.vao.render(shader_program, mode=self.ctx.LINES)

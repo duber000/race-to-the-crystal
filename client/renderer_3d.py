@@ -35,6 +35,9 @@ class Renderer3D:
 
         # OpenGL context (set by GameView during initialization)
         self.ctx = None
+        
+        # Selection state for highlighting selected token
+        self.selected_token_id: Optional[TokenID] = None
 
     def create(
         self,
@@ -244,6 +247,18 @@ class Renderer3D:
         if self.board_3d:
             self.board_3d.update_generator_lines()
 
+    def update_selection_visuals(self, selected_token_id: Optional[TokenID], valid_moves: set) -> None:
+        """
+        Update selection and valid move indicators in 3D mode.
+
+        Args:
+            selected_token_id: ID of selected token (None if no selection)
+            valid_moves: Set of (x, y) grid coordinates where token can move
+        """
+        self.selected_token_id = selected_token_id
+        if self.board_3d:
+            self.board_3d.update_valid_moves(valid_moves)
+
     def draw(self, camera_3d) -> None:
         """
         Draw all 3D rendering elements.
@@ -258,7 +273,8 @@ class Renderer3D:
             # Draw 3D tokens
             for token_3d in self.tokens_3d:
                 if token_3d.token.is_alive:
-                    token_3d.draw(camera_3d, self.shader_3d)
+                    is_selected = token_3d.token.id == self.selected_token_id
+                    token_3d.draw(camera_3d, self.shader_3d, is_selected=is_selected)
 
     def is_available(self) -> bool:
         """

@@ -14,6 +14,11 @@ from shared.constants import (
     CAMERA_FAR_PLANE,
     CAMERA_HEIGHT_ABOVE_TOKEN,
     CAMERA_FORWARD_OFFSET,
+    CAMERA_OVERVIEW_PITCH,
+    CAMERA_FIRST_PERSON_PITCH,
+    CAMERA_OVERVIEW_HEIGHT,
+    CAMERA_FIRST_PERSON_HEIGHT,
+    CAMERA_FIRST_PERSON_OFFSET,
 )
 
 
@@ -40,12 +45,12 @@ class FirstPersonCamera3D:
         # Camera position (world coordinates, in pixels)
         # Start above board center for initial overview
         self.position = np.array(
-            [12 * CELL_SIZE, 12 * CELL_SIZE, 150.0], dtype=np.float32
+            [12 * CELL_SIZE, 12 * CELL_SIZE, CAMERA_OVERVIEW_HEIGHT], dtype=np.float32
         )
 
         # Camera orientation (Euler angles in degrees)
         self.yaw = 0.0  # Rotation around Z axis (left/right look)
-        self.pitch = -60.0  # Rotation around X axis (up/down look, negative = down, steep for overview)
+        self.pitch = CAMERA_OVERVIEW_PITCH  # Rotation around X axis (up/down look, negative = down, steep for overview)
         self.roll = 0.0  # Rotation around Y axis (tilt)
 
         # Movement parameters
@@ -144,7 +149,12 @@ class FirstPersonCamera3D:
         return view
 
     def follow_token(
-        self, token_position: Tuple[int, int], token_rotation: float = 0.0
+        self,
+        token_position: Tuple[int, int],
+        token_rotation: float = 0.0,
+        pitch: float = CAMERA_FIRST_PERSON_PITCH,
+        height: float = CAMERA_FIRST_PERSON_HEIGHT,
+        offset: float = CAMERA_FIRST_PERSON_OFFSET,
     ):
         """
         Position camera to follow a token in first-person view.
@@ -152,23 +162,26 @@ class FirstPersonCamera3D:
         Args:
             token_position: Grid position (x, y) of token
             token_rotation: Direction token is facing (degrees), 0 = right, 90 = up
+            pitch: Camera pitch angle (degrees), negative = looking down
+            height: Height above token position
+            offset: Distance behind token (negative = behind)
         """
         # Convert grid position to world coordinates (center of cell)
         world_x = token_position[0] * CELL_SIZE + CELL_SIZE / 2
         world_y = token_position[1] * CELL_SIZE + CELL_SIZE / 2
 
-        # Calculate camera position relative to token
-        # Eye is behind and above token
+        # Set camera orientation
         self.yaw = token_rotation
+        self.pitch = pitch
 
         # Calculate offset in the direction opposite to where token faces
         offset_angle = np.radians(token_rotation + 180)  # Behind the token
-        offset_x = self.forward_offset * np.cos(offset_angle)
-        offset_y = self.forward_offset * np.sin(offset_angle)
+        offset_x = offset * np.cos(offset_angle)
+        offset_y = offset * np.sin(offset_angle)
 
         self.position[0] = world_x + offset_x
         self.position[1] = world_y + offset_y
-        self.position[2] = self.height_above_token
+        self.position[2] = height
 
     def rotate(
         self, yaw_delta: float = 0.0, pitch_delta: float = 0.0, roll_delta: float = 0.0

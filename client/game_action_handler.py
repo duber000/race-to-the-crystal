@@ -144,6 +144,9 @@ class GameActionHandler:
                 sprite.update_health()  # Refresh health display (for mystery heal)
                 break
 
+        # Sync 3D token positions
+        self.renderer_3d.sync_tokens(self.game_state, ctx)
+
         # Update UI to reflect state changes
         self.ui_manager.rebuild_visuals(self.game_state)
 

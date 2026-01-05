@@ -19,6 +19,9 @@ from shared.constants import (
     CELL_SIZE,
     HUD_HEIGHT,
     MOUSE_LOOK_SENSITIVITY,
+    CAMERA_FIRST_PERSON_PITCH,
+    CAMERA_FIRST_PERSON_HEIGHT,
+    CAMERA_FIRST_PERSON_OFFSET,
 )
 from shared.logging_config import setup_logger
 from shared.types import TokenID
@@ -191,9 +194,14 @@ class CameraController:
                 next_index = 0
 
         self.controlled_token_id = alive_tokens[next_index]
+
+        # Reset camera pitch to first-person default when switching tokens
+        self.camera_3d.pitch = CAMERA_FIRST_PERSON_PITCH
+
         token = game_state.get_token(self.controlled_token_id)
         if token:
             logger.debug(f"Switched to token {self.controlled_token_id} at {token.position}")
+            logger.info(f"Following token {self.controlled_token_id} - use Q/E to rotate, right-click+drag for free look")
         else:
             logger.debug(f"Switched to token {self.controlled_token_id} (token not found)")
 
@@ -214,7 +222,14 @@ class CameraController:
         if self.controlled_token_id:
             token = game_state.get_token(self.controlled_token_id)
             if token and token.is_alive:
-                self.camera_3d.follow_token(token.position, self.token_rotation)
+                # Preserve current pitch during rotation
+                self.camera_3d.follow_token(
+                    token.position,
+                    self.token_rotation,
+                    pitch=self.camera_3d.pitch,
+                    height=CAMERA_FIRST_PERSON_HEIGHT,
+                    offset=CAMERA_FIRST_PERSON_OFFSET,
+                )
                 logger.debug(
                     f"Camera rotation: {self.token_rotation}, "
                     f"following token {token.id} at {token.position}"
@@ -245,7 +260,14 @@ class CameraController:
         if self.controlled_token_id:
             token = game_state.get_token(self.controlled_token_id)
             if token and token.is_alive:
-                self.camera_3d.follow_token(token.position, self.token_rotation)
+                # Preserve current pitch during rotation
+                self.camera_3d.follow_token(
+                    token.position,
+                    self.token_rotation,
+                    pitch=self.camera_3d.pitch,
+                    height=CAMERA_FIRST_PERSON_HEIGHT,
+                    offset=CAMERA_FIRST_PERSON_OFFSET,
+                )
                 logger.debug(
                     f"Camera rotation: {self.token_rotation}, "
                     f"following token {token.id} at {token.position}"
@@ -274,7 +296,14 @@ class CameraController:
         if self.controlled_token_id:
             token = game_state.get_token(self.controlled_token_id)
             if token and token.is_alive:
-                self.camera_3d.follow_token(token.position, self.token_rotation)
+                # Use current camera pitch (allows mouse-look pitch to persist)
+                self.camera_3d.follow_token(
+                    token.position,
+                    self.token_rotation,
+                    pitch=self.camera_3d.pitch,
+                    height=CAMERA_FIRST_PERSON_HEIGHT,
+                    offset=CAMERA_FIRST_PERSON_OFFSET,
+                )
 
     def handle_mouse_motion(
         self, x: int, y: int, dx: int, dy: int, window
@@ -373,7 +402,7 @@ class CameraController:
         )
 
         if intersection:
-            world_x, world_y, _ = intersection
+            world_x, world_y = intersection
             grid_x, grid_y = self.camera_3d.world_to_grid(world_x, world_y)
             return (grid_x, grid_y)
 

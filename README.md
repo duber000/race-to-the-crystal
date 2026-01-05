@@ -107,9 +107,8 @@ See [NETWORK.md](docs/NETWORK.md) for complete network multiplayer documentation
 
 #### 3D Mode Controls
 - **Right Mouse Button + Move**: Mouse-look (free camera rotation)
-- **Q/E**: Rotate camera left/right
+- **Q/E**: Rotate camera left/right (after pressing TAB to select a token)
 - **TAB**: Cycle through your tokens
-- **Arrow Keys / WASD**: Pan camera position
 - **+/-** or **Mouse Scroll**: Adjust field of view
 - **Mouse Click**: Select tokens, move, attack, deploy
 
