@@ -338,12 +338,17 @@ class MenuGameWindow(AsyncWindow):
 
         # Extract initial game state if provided
         initial_state = None
+        local_player_id = None
         if "initial_game_state" in game_data:
             from game.game_state import GameState
             try:
                 game_state_dict = game_data["initial_game_state"]
                 logger.info(f"Game state dict has keys: {list(game_state_dict.keys())}")
                 logger.info(f"Tokens in dict: {len(game_state_dict.get('tokens', {}))}")
+
+                # Extract the local player ID (perspective_player_id is the game player ID like "player_0")
+                local_player_id = game_state_dict.get("perspective_player_id")
+                logger.info(f"Extracted local_player_id from perspective_player_id: {local_player_id}")
 
                 initial_state = GameState.from_dict(game_state_dict)
                 logger.info(f"Received initial game state with {len(initial_state.players)} players, {len(initial_state.tokens)} tokens")
@@ -354,6 +359,7 @@ class MenuGameWindow(AsyncWindow):
         self.network_game_view = NetworkGameView(
             self.network_client,
             initial_state,
+            local_player_id=local_player_id,
             music_enabled=self.main_menu.music_enabled,
         )
 

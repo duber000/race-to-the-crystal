@@ -54,6 +54,7 @@ class GameView(arcade.View):
         start_in_3d: bool = False,
         is_network_game: bool = False,
         network_client: Optional["NetworkClient"] = None,
+        local_player_id: Optional[str] = None,
         music_enabled: bool = True,
     ):
         """
@@ -64,6 +65,7 @@ class GameView(arcade.View):
             start_in_3d: Whether to start in 3D mode
             is_network_game: Whether this is a network game (enables chat)
             network_client: Network client for chat functionality (network games only)
+            local_player_id: Game player ID for local player (e.g., "player_0")
             music_enabled: Whether background music/hums should start enabled
         """
         super().__init__()
@@ -72,6 +74,7 @@ class GameView(arcade.View):
         self.game_state = game_state
         self.is_network_game = is_network_game
         self.network_client = network_client
+        self.local_player_id = local_player_id
         self.window.ctx  # Ensure context is available
         self.start_in_3d = start_in_3d
         self.music_enabled = music_enabled
@@ -140,9 +143,10 @@ class GameView(arcade.View):
         arcade.set_background_color(BACKGROUND_COLOR)
 
         # Initialize components that need window dimensions
-        local_player_id = self.network_client.player_id if self.network_client else None
+        # Use local_player_id from init (for network games), otherwise None (for single player)
+        logger.info(f"GameView.on_show_view: is_network_game={self.is_network_game}, local_player_id={self.local_player_id}")
         self.camera_controller = CameraController(
-            self.window.width, self.window.height, self.start_in_3d, local_player_id
+            self.window.width, self.window.height, self.start_in_3d, self.local_player_id
         )
         self.ui_manager = UIManager(self.window.width, self.window.height)
         self.deployment_controller = DeploymentMenuController(
