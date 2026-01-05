@@ -24,7 +24,7 @@ Race to the Crystal is a strategy game where players compete to capture a centra
 - **OpenGL** for 3D wireframe graphics and shaders
 - **BFS pathfinding** for token movement
 - **JSON serialization** for game state management
-- **199 unit tests** using pytest with 100% pass rate
+- **276 unit tests** using pytest with 100% pass rate
 
 ## How to Play
 

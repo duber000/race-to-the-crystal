@@ -186,7 +186,7 @@ Constants, enums, and configuration objects shared between game logic and render
 **Important:** When changing game rules, update constants in `shared/constants.py` rather than hardcoding values.
 
 #### `tests/` - Unit Tests
-268 pytest tests covering all game mechanics. Tests use pure game logic without rendering.
+276 pytest tests covering all game mechanics. Tests use pure game logic without rendering.
 
 ### Game State Flow
 
@@ -258,7 +258,7 @@ The game is designed to be playable by AI without visual rendering:
 
 ### Testing Strategy
 
-The project has 268 unit tests organized by game system:
+The project has 276 unit tests organized by game system:
 
 - `test_board.py`: Grid and cell management
 - `test_token.py`: Token state and behavior
@@ -296,13 +296,50 @@ This codebase follows strict quality standards to maintain readability and maint
 
 4. **Return Value Objects**:
    - Use dataclasses for complex return types instead of tuples
-   - Example: `ActionResult(success, message, data)` instead of `Tuple[bool, str, Optional[Dict]]`
+   - Example: `ActionResult(success, message, data)` instead of `tuple[bool, str, dict | None]`
    - Self-documenting and prevents positional argument errors
 
 5. **Delegation Pattern**:
    - Delegate responsibilities to focused, single-purpose classes
    - Example: `GameView` delegates to `CameraController`, `InputHandler`, `Renderer2D`, etc.
    - Each controller has a clear, focused responsibility
+
+6. **Modern Python Features** (Python 3.9-3.14):
+   - **Type Hints** (PEP 604, PEP 585): Use `T | None` instead of `Optional[T]`, `tuple[int, int]` instead of `Tuple[int, int]`
+   - **Self Type** (PEP 673): Use `Self` for classmethod returns instead of forward references
+   - **Pattern Matching** (PEP 634): Use `match-case` for action dispatching instead of if-elif chains
+   - **Walrus Operator** (PEP 572): Use `:=` for cleaner conditional assignments
+   - **TypeAlias** (PEP 613): Explicit type alias annotations for better IDE support
+
+   **Examples:**
+   ```python
+   # Modern type hints (Python 3.9+)
+   def get_token(token_id: int) -> Token | None:  # Not Optional[Token]
+       return self.tokens.get(token_id)
+
+   def get_position(self) -> tuple[int, int]:  # Not Tuple[int, int]
+       return (self.x, self.y)
+
+   # Self type for classmethods (Python 3.11+)
+   from typing import Self
+
+   @classmethod
+   def from_dict(cls, data: dict) -> Self:  # Not "GameState"
+       return cls(**data)
+
+   # Pattern matching (Python 3.10+)
+   match action:
+       case MoveAction():
+           return self._validate_move(action, game_state, player_id)
+       case AttackAction():
+           return self._validate_attack(action, game_state, player_id)
+       case _:
+           return ValidationResult(False, "Unknown action type")
+
+   # Walrus operator (Python 3.8+)
+   if token := game_state.tokens.get(token_id):
+       return token.health
+   ```
 
 ### Game Logic Modifications
 
