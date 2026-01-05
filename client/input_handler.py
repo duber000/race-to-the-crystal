@@ -645,15 +645,39 @@ class InputHandler:
         """
         Try to attack a target token.
 
+        If multiple enemy tokens are stacked on the same cell, 
+        attacks the topmost one (first in the occupants list).
+
         Args:
-            target_token: Token to attack
+            target_token: Token to attack (or position with stacked tokens)
         """
         if self.selected_token_id is None:
             return
 
+        # Get the attacker to find player ID
+        attacker = self.game_state.get_token(self.selected_token_id)
+        if not attacker:
+            return
+
+        # Get cell at target position
+        cell = self.game_state.board.get_cell_at(target_token.position)
+        if not cell or not cell.occupants:
+            return
+
+        # Find the first enemy token at this position
+        defender_id = None
+        for token_id in cell.occupants:
+            token = self.game_state.get_token(token_id)
+            if token and token.player_id != attacker.player_id and token.is_alive:
+                defender_id = token_id
+                break
+
+        if defender_id is None:
+            return
+
         # Execute attack through action handler
         success = self.action_handler.execute_attack(
-            self.selected_token_id, target_token.id
+            self.selected_token_id, defender_id
         )
 
         if success:

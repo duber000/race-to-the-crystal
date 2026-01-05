@@ -106,11 +106,19 @@ See [NETWORK.md](docs/NETWORK.md) for complete network multiplayer documentation
 - **Mouse Click**: Select tokens, move, attack, deploy
 
 #### 3D Mode Controls
+- **TAB**: Cycle through your tokens (zooms to first-person view)
+- **Q/E**: Rotate camera left/right (15° increments)
 - **Right Mouse Button + Move**: Mouse-look (free camera rotation)
-- **Q/E**: Rotate camera left/right (after pressing TAB to select a token)
-- **TAB**: Cycle through your tokens
 - **+/-** or **Mouse Scroll**: Adjust field of view
 - **Mouse Click**: Select tokens, move, attack, deploy
+
+**Camera Modes:**
+- **Overview**: High bird's-eye view of entire board (initial state)
+- **First-Person**: Token eye-level view (after pressing TAB)
+
+**Visual Feedback:**
+- **White wireframe**: Shows which cell your mouse is hovering over
+- **Green wireframes**: Show valid move destinations for selected token
 
 #### Common Controls (Both Modes)
 - **V**: Toggle between 2D and 3D view modes
@@ -165,6 +173,7 @@ race-to-the-crystal/
 For detailed documentation:
 - **Game Rules**: [docs/GAME.md](docs/GAME.md)
 - **Network Multiplayer**: [docs/NETWORK.md](docs/NETWORK.md)
+- **3D Mode**: [docs/3D.md](docs/3D.md) - Camera system, visual feedback, and development guide
 - **Development Guide**: [CLAUDE.md](CLAUDE.md)
 
 ### Running Tests

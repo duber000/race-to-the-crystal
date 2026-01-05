@@ -140,8 +140,9 @@ class GameView(arcade.View):
         arcade.set_background_color(BACKGROUND_COLOR)
 
         # Initialize components that need window dimensions
+        local_player_id = self.network_client.player_id if self.network_client else None
         self.camera_controller = CameraController(
-            self.window.width, self.window.height, self.start_in_3d
+            self.window.width, self.window.height, self.start_in_3d, local_player_id
         )
         self.ui_manager = UIManager(self.window.width, self.window.height)
         self.deployment_controller = DeploymentMenuController(

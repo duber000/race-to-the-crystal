@@ -43,7 +43,7 @@ class CameraController:
     - Camera rotation controls (Q/E keys)
     """
 
-    def __init__(self, window_width: int, window_height: int, start_in_3d: bool = False):
+    def __init__(self, window_width: int, window_height: int, start_in_3d: bool = False, local_player_id: Optional[str] = None):
         """
         Initialize camera controller.
 
@@ -51,6 +51,7 @@ class CameraController:
             window_width: Window width in pixels
             window_height: Window height in pixels
             start_in_3d: Whether to start in 3D mode
+            local_player_id: ID of local player (for network games)
         """
         # 2D Camera system
         self.camera_2d = arcade.camera.Camera2D()
@@ -65,6 +66,9 @@ class CameraController:
 
         # Camera mode
         self.camera_mode = "3D" if start_in_3d else "2D"
+
+        # Local player tracking (for network games)
+        self.local_player_id = local_player_id
 
         # Mouse-look state for 3D mode
         self.mouse_look_active = False
@@ -169,14 +173,19 @@ class CameraController:
         Returns:
             New controlled token ID or None
         """
-        current_player = game_state.get_current_player()
-        if not current_player:
+        # Use local player ID if set (network mode), otherwise use current turn player
+        if self.local_player_id:
+            player = game_state.players.get(self.local_player_id)
+        else:
+            player = game_state.get_current_player()
+
+        if not player:
             return None
 
-        # Get all alive deployed tokens for current player
+        # Get all alive deployed tokens for the player
         alive_tokens = [
             token.id
-            for token in game_state.get_player_tokens(current_player.id)
+            for token in game_state.get_player_tokens(player.id)
             if token.is_alive and token.is_deployed
         ]
 
@@ -187,7 +196,7 @@ class CameraController:
         # Find next token
         next_index = 0
         if alive_tokens:
-            if self.controlled_token_id is not None:
+            if self.controlled_token_id is not None and self.controlled_token_id in alive_tokens:
                 current_index = alive_tokens.index(self.controlled_token_id)
                 next_index = (current_index + 1) % len(alive_tokens)
             else:

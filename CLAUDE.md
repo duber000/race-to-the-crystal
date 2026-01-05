@@ -32,12 +32,13 @@ uv run race-to-the-crystal --3d 2
 - **Mouse Click**: Select tokens, move, attack, deploy
 
 **3D Mode:**
+- **TAB**: Cycle through your tokens (zooms to first-person view)
+- **Q/E**: Rotate camera left/right (15° increments)
 - **Right Mouse Button + Move**: Mouse-look (free camera rotation)
-- **Q/E**: Rotate camera left/right
-- **TAB**: Cycle through your tokens
 - **Arrow Keys / WASD**: Pan camera position
 - **+/-** or **Mouse Scroll**: Adjust field of view
 - **Mouse Click**: Select tokens, move, attack, deploy
+- **Visual Feedback**: White wireframe shows hovered cell, green wireframes show valid moves
 
 **Common (Both Modes):**
 - **V**: Toggle between 2D and 3D view modes
@@ -159,14 +160,37 @@ All Arcade/OpenGL rendering code. Consumes `GameState` but never modifies game l
 
 **Dual rendering modes:**
 - **2D**: Top-down Tron-style vector graphics with glow effects
-- **3D**: First-person Battlezone-style wireframe graphics
+- **3D**: First-person Battlezone-style wireframe graphics with dual camera modes
 - Toggle between modes with 'V' key during gameplay
 - Start in 3D mode directly with `--3d` command-line flag
 
-**Visual features:**
+**3D Camera System:**
+The 3D mode features two distinct camera perspectives:
+
+- **Overview Mode** (initial state):
+  - Position: 150 units above board center
+  - Pitch: -60° (looking steeply down)
+  - Provides bird's-eye strategic view of entire battlefield
+
+- **First-Person Mode** (after TAB):
+  - Position: 20 units behind token, 30 units above ground
+  - Pitch: -15° (looking forward/slightly down)
+  - Immersive token eye-level perspective
+  - Press TAB to cycle through your tokens
+  - Q/E to rotate camera, Right-click+drag for mouse-look
+
+**3D Visual Feedback:**
+- **Hover Indicator**: White glowing wireframe on cell under mouse (ray casting)
+- **Valid Moves**: Green glowing wireframes show valid move destinations
+- **Real-time Updates**: Both indicators update every frame for responsive feedback
+- **Layered Rendering**: Hover (height=2.0) renders above valid moves (height=1.0)
+
+**2D/3D Common Visual features:**
 - Flowing animated lines connect active generators to the crystal
 - Enhanced generator glow effects
 - Lines automatically disappear when generators are captured
+
+See [docs/3D.md](docs/3D.md) for complete 3D mode documentation including camera architecture, controls, and development guide.
 
 #### `shared/` - Shared Definitions
 Constants, enums, and configuration objects shared between game logic and rendering.
@@ -174,6 +198,9 @@ Constants, enums, and configuration objects shared between game logic and render
 **Key files:**
 - `enums.py`: GamePhase, TurnPhase, PlayerColor, CellType, etc.
 - `constants.py`: All numeric constants (board size, token counts, capture requirements, colors)
+  - **3D Camera Constants**: `CAMERA_OVERVIEW_PITCH`, `CAMERA_FIRST_PERSON_PITCH`, `CAMERA_OVERVIEW_HEIGHT`, `CAMERA_FIRST_PERSON_HEIGHT`, `CAMERA_FIRST_PERSON_OFFSET`
+  - **Camera Behavior**: `CAMERA_ROTATION_INCREMENT` (15°), `MOUSE_LOOK_SENSITIVITY` (0.3)
+  - **Projection**: `CAMERA_FOV` (75°), `CAMERA_NEAR_PLANE`, `CAMERA_FAR_PLANE`
 - `corner_layout.py`: Corner position configurations for player deployment areas
   - `BoardCornerConfig`: Board-space corner deployment logic (3x3 deployment zones)
   - `UICornerConfig`: UI-space corner indicator and menu positioning

@@ -199,7 +199,6 @@ class Token3D:
 
     def cleanup(self):
         """Release OpenGL resources."""
-        if self.vbo:
-            self.vbo.delete()
-        if self.vao:
-            self.vao.delete()
+        # Clear buffer references - Arcade handles cleanup via garbage collection
+        self.vbo = None
+        self.vao = None
