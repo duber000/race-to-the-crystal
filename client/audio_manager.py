@@ -52,6 +52,7 @@ class AudioManager:
         # Sound effects
         self.sound_effects_volume = SOUND_EFFECTS_VOLUME
         self.sound_effects: dict = {}
+        self.sound_effect_players: list = []  # Keep references to playing sound effects
         self._load_sound_effects()
 
     def load_background_music(self) -> None:
@@ -261,7 +262,12 @@ class AudioManager:
         """Play the sliding sound effect for token movement."""
         if "sliding" in self.sound_effects and self.sound_effects["sliding"]:
             try:
-                self.sound_effects["sliding"].play(self.sound_effects_volume)
+                player = self.sound_effects["sliding"].play(self.sound_effects_volume)
+                # Keep a reference to prevent garbage collection
+                if player:
+                    self.sound_effect_players.append(player)
+                    if len(self.sound_effect_players) > 20:
+                        self.sound_effect_players.pop(0)
                 logger.debug("Playing sliding sound effect")
             except Exception as e:
                 logger.error(f"Error playing sliding sound: {e}")
@@ -270,7 +276,12 @@ class AudioManager:
         """Play the mystery bing sound effect for landing on mystery squares."""
         if "mystery_bing" in self.sound_effects and self.sound_effects["mystery_bing"]:
             try:
-                self.sound_effects["mystery_bing"].play(self.sound_effects_volume)
+                player = self.sound_effects["mystery_bing"].play(self.sound_effects_volume)
+                # Keep a reference to prevent garbage collection
+                if player:
+                    self.sound_effect_players.append(player)
+                    if len(self.sound_effect_players) > 20:
+                        self.sound_effect_players.pop(0)
                 logger.debug("Playing mystery bing sound effect")
             except Exception as e:
                 logger.error(f"Error playing mystery bing sound: {e}")
@@ -279,7 +290,13 @@ class AudioManager:
         """Play the generator explosion sound effect for capturing generators."""
         if "generator_explosion" in self.sound_effects and self.sound_effects["generator_explosion"]:
             try:
-                self.sound_effects["generator_explosion"].play(self.sound_effects_volume)
+                player = self.sound_effects["generator_explosion"].play(self.sound_effects_volume)
+                # Keep a reference to prevent garbage collection
+                if player:
+                    self.sound_effect_players.append(player)
+                    # Clean up old players to prevent memory leak
+                    if len(self.sound_effect_players) > 20:
+                        self.sound_effect_players.pop(0)
                 logger.debug("Playing generator explosion sound effect")
             except Exception as e:
                 logger.error(f"Error playing generator explosion sound: {e}")
@@ -288,7 +305,12 @@ class AudioManager:
         """Play the crystal shatter sound effect for capturing the crystal."""
         if "crystal_shatter" in self.sound_effects and self.sound_effects["crystal_shatter"]:
             try:
-                self.sound_effects["crystal_shatter"].play(self.sound_effects_volume)
+                player = self.sound_effects["crystal_shatter"].play(self.sound_effects_volume)
+                # Keep a reference to prevent garbage collection
+                if player:
+                    self.sound_effect_players.append(player)
+                    if len(self.sound_effect_players) > 20:
+                        self.sound_effect_players.pop(0)
                 logger.debug("Playing crystal shatter sound effect")
             except Exception as e:
                 logger.error(f"Error playing crystal shatter sound: {e}")
@@ -297,7 +319,12 @@ class AudioManager:
         """Play the flushing sound effect for defeating enemy tokens."""
         if "flushing" in self.sound_effects and self.sound_effects["flushing"]:
             try:
-                self.sound_effects["flushing"].play(self.sound_effects_volume)
+                player = self.sound_effects["flushing"].play(self.sound_effects_volume)
+                # Keep a reference to prevent garbage collection
+                if player:
+                    self.sound_effect_players.append(player)
+                    if len(self.sound_effect_players) > 20:
+                        self.sound_effect_players.pop(0)
                 logger.debug("Playing flushing sound effect")
             except Exception as e:
                 logger.error(f"Error playing flushing sound: {e}")
@@ -337,6 +364,16 @@ class AudioManager:
                 player.delete()
         self.generator_hum_players.clear()
         self.generator_hums.clear()
+
+        # Stop and delete all sound effect players
+        for player in self.sound_effect_players:
+            if player:
+                try:
+                    player.pause()
+                    player.delete()
+                except Exception:
+                    pass
+        self.sound_effect_players.clear()
 
         # Clear sound effects
         self.sound_effects.clear()

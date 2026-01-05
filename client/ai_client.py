@@ -235,44 +235,82 @@ class AIPlayer(NetworkClient):
         return self._action_dict_to_ai_action(action_dict)
 
     def _choose_aggressive_action(self, actions):
-        """Choose aggressive action (prioritize attacks)."""
-        # Prioritize attacks
-        attacks = [a for a in actions if a["type"] == "ATTACK"]
-        if attacks:
-            # Choose attack that will kill if possible
-            killing_attacks = [a for a in attacks if a.get("will_kill", False)]
-            if killing_attacks:
-                action_dict = random.choice(killing_attacks)
-            else:
-                action_dict = random.choice(attacks)
-            return self._action_dict_to_ai_action(action_dict)
-
-        # Otherwise prioritize moves toward center
-        moves = [a for a in actions if a["type"] == "MOVE"]
-        if moves:
-            # Simple heuristic: move toward center (12, 12)
-            action_dict = random.choice(moves)
-            return self._action_dict_to_ai_action(action_dict)
-
-        # Deploy or end turn
-        return self._choose_random_action(actions)
+         """Choose aggressive action (prioritize attacks and moving toward objectives)."""
+         # Prioritize attacks
+         attacks = [a for a in actions if a["type"] == "ATTACK"]
+         if attacks:
+             # Choose attack that will kill if possible
+             killing_attacks = [a for a in attacks if a.get("will_kill", False)]
+             if killing_attacks:
+                 action_dict = random.choice(killing_attacks)
+             else:
+                 action_dict = random.choice(attacks)
+             return self._action_dict_to_ai_action(action_dict)
+    
+         # Prioritize moves toward objectives (crystal or generators)
+         moves = [a for a in actions if a["type"] == "MOVE"]
+         if moves:
+             # Score each move by proximity to crystal (center at 12, 12)
+             best_move = None
+             best_score = float('inf')
+             
+             for move in moves:
+                 # Get first valid destination for this move
+                 dest = tuple(move["valid_destinations"][0])
+                 
+                 # Manhattan distance to crystal at (12, 12)
+                 dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
+                 
+                 # Lower distance = better score
+                 if dist_to_crystal < best_score:
+                     best_score = dist_to_crystal
+                     best_move = move
+             
+             if best_move:
+                 return self._action_dict_to_ai_action(best_move)
+             return self._action_dict_to_ai_action(random.choice(moves))
+    
+         # Deploy or end turn
+         return self._choose_random_action(actions)
 
     def _choose_defensive_action(self, actions):
-        """Choose defensive action (prioritize safe moves)."""
-        # Prioritize deployment over attacks
-        deploys = [a for a in actions if a["type"] == "DEPLOY"]
-        if deploys and random.random() > 0.5:
-            action_dict = random.choice(deploys)
-            return self._action_dict_to_ai_action(action_dict)
-
-        # Then attacks
-        attacks = [a for a in actions if a["type"] == "ATTACK"]
-        if attacks and random.random() > 0.3:
-            action_dict = random.choice(attacks)
-            return self._action_dict_to_ai_action(action_dict)
-
-        # Otherwise random action
-        return self._choose_random_action(actions)
+         """Choose defensive action (prioritize deployment and safe movement toward objectives)."""
+         # Prioritize deployment to build up forces
+         deploys = [a for a in actions if a["type"] == "DEPLOY"]
+         if deploys and random.random() > 0.5:
+             action_dict = random.choice(deploys)
+             return self._action_dict_to_ai_action(action_dict)
+    
+         # Then prioritize safe moves toward crystal
+         moves = [a for a in actions if a["type"] == "MOVE"]
+         if moves:
+             # Score each move by proximity to crystal (center at 12, 12)
+             best_move = None
+             best_score = float('inf')
+             
+             for move in moves:
+                 # Get first valid destination for this move
+                 dest = tuple(move["valid_destinations"][0])
+                 
+                 # Manhattan distance to crystal at (12, 12)
+                 dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
+                 
+                 # Lower distance = better score
+                 if dist_to_crystal < best_score:
+                     best_score = dist_to_crystal
+                     best_move = move
+             
+             if best_move:
+                 return self._action_dict_to_ai_action(best_move)
+         
+         # Then opportunistic attacks if no good moves
+         attacks = [a for a in actions if a["type"] == "ATTACK"]
+         if attacks and random.random() > 0.3:
+             action_dict = random.choice(attacks)
+             return self._action_dict_to_ai_action(action_dict)
+    
+         # Otherwise random action
+         return self._choose_random_action(actions)
 
     def _action_dict_to_ai_action(self, action_dict):
         """

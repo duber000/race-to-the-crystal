@@ -434,6 +434,12 @@ class InputHandler:
         if not self._handle_menu_state():
             return  # Menu just opened, don't process clicks
 
+        # If token is selected for movement and click is on a valid move destination,
+        # move the token there even if the destination cell has tokens on it (stacking on generators/crystal)
+        if self.selected_token_id and grid_pos in self.valid_moves:
+            self._try_move_selected_token(grid_pos)
+            return
+
         # Find token at clicked position
         clicked_token = self._find_token_at_position(grid_pos)
 
