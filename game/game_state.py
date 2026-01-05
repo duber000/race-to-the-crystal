@@ -3,7 +3,6 @@ Central game state management.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
 import json
 
 from shared.enums import CellType, GamePhase, PlayerColor, TurnPhase
@@ -39,21 +38,21 @@ class GameState:
     """
 
     board: Board = field(default_factory=Board)
-    players: Dict[PlayerID, Player] = field(default_factory=dict)
-    tokens: Dict[TokenID, Token] = field(default_factory=dict)
-    generators: List = field(
+    players: dict[PlayerID, Player] = field(default_factory=dict)
+    tokens: dict[TokenID, Token] = field(default_factory=dict)
+    generators: list = field(
         default_factory=list
-    )  # Will be List[Generator] when created
-    crystal: Optional["Crystal"] = None  # Will be Crystal object when created
-    current_turn_player_id: Optional[PlayerID] = None
+    )  # Will be list[Generator] when created
+    crystal: "Crystal | None" = None  # Will be Crystal object when created
+    current_turn_player_id: PlayerID | None = None
     turn_number: int = 0
     phase: GamePhase = GamePhase.SETUP
     turn_phase: TurnPhase = TurnPhase.MOVEMENT
-    winner_id: Optional[PlayerID] = None
+    winner_id: PlayerID | None = None
     _next_token_id: int = 0
 
     @property
-    def current_player_id(self) -> Optional[PlayerID]:
+    def current_player_id(self) -> PlayerID | None:
         """Alias for current_turn_player_id."""
         return self.current_turn_player_id
 
@@ -83,7 +82,7 @@ class GameState:
         if player_id in self.players:
             del self.players[player_id]
 
-    def create_tokens_for_player(self, player_id: PlayerID) -> List[Token]:
+    def create_tokens_for_player(self, player_id: PlayerID) -> list[Token]:
         """
         Create all tokens for a player in reserve (not deployed to board).
 
@@ -122,11 +121,11 @@ class GameState:
 
         return tokens
 
-    def get_token(self, token_id: TokenID) -> Optional[Token]:
+    def get_token(self, token_id: TokenID) -> Token | None:
         """Get token by ID."""
         return self.tokens.get(token_id)
 
-    def get_reserve_tokens(self, player_id: PlayerID) -> List[Token]:
+    def get_reserve_tokens(self, player_id: PlayerID) -> list[Token]:
         """
         Get all tokens in reserve (not deployed) for a player.
 
@@ -164,8 +163,8 @@ class GameState:
         return counts
 
     def deploy_token(
-        self, player_id: PlayerID, health_value: int, position: Tuple[int, int]
-    ) -> Optional[Token]:
+        self, player_id: PlayerID, health_value: int, position: tuple[int, int]
+    ) -> Token | None:
         """
         Deploy a token from reserve to the board.
 
@@ -189,11 +188,11 @@ class GameState:
 
         return None
 
-    def get_player(self, player_id: PlayerID) -> Optional[Player]:
+    def get_player(self, player_id: PlayerID) -> Player | None:
         """Get player by ID."""
         return self.players.get(player_id)
 
-    def get_current_player(self) -> Optional[Player]:
+    def get_current_player(self) -> Player | None:
         """Get the current player whose turn it is."""
         if self.current_turn_player_id:
             return self.get_player(self.current_turn_player_id)
@@ -201,7 +200,7 @@ class GameState:
             return self.get_player(self.current_player_id)
         return None
 
-    def get_tokens_at_position(self, position: tuple) -> List[Token]:
+    def get_tokens_at_position(self, position: tuple) -> list[Token]:
         """
         Get all tokens at a specific position.
 
@@ -215,7 +214,7 @@ class GameState:
             t for t in self.tokens.values() if t.position == position and t.is_alive
         ]
 
-    def get_player_tokens(self, player_id: PlayerID) -> List[Token]:
+    def get_player_tokens(self, player_id: PlayerID) -> list[Token]:
         """
         Get all alive, deployed tokens for a player.
 
@@ -412,11 +411,11 @@ class GameState:
         # Reset turn phase to MOVEMENT for next player
         self.turn_phase = TurnPhase.MOVEMENT
 
-    def _update_generators_and_crystal(self) -> Tuple[List[int], bool]:
+    def _update_generators_and_crystal(self) -> tuple[list[int], bool]:
         """
         Update generator capture status and check crystal win condition.
         Called at the end of each turn.
-        
+
         Returns:
             Tuple of (newly_disabled_generator_ids, crystal_captured)
         """
@@ -458,7 +457,7 @@ class GameState:
 
         return newly_disabled, crystal_captured
 
-    def check_win_condition(self) -> Optional[str]:
+    def check_win_condition(self) -> str | None:
         """
         Check if any player has won the game.
 
