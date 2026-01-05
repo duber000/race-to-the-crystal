@@ -8,6 +8,7 @@ import asyncio
 import threading
 import logging
 from typing import Optional
+import pyglet.clock
 
 logger = logging.getLogger(__name__)
 
@@ -183,6 +184,33 @@ class AsyncWindow(arcade.Window):
         """Close the window and stop async tasks."""
         self.async_scheduler.stop()
         super().close()
+
+
+def schedule_on_main_thread(callback, *args, **kwargs):
+    """
+    Schedule a callback to run on Arcade's main thread at a safe time.
+
+    Use this when you need to update UI elements from an async context
+    (background thread). OpenGL operations must happen on the main thread.
+
+    This uses Pyglet's schedule_once to ensure the callback runs exactly
+    once on the main thread, safely between frames.
+
+    Args:
+        callback: Function to call on main thread
+        *args: Positional arguments for callback
+        **kwargs: Keyword arguments for callback
+    """
+    def wrapper(delta_time):
+        try:
+            callback(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in scheduled callback {callback.__name__}: {e}", exc_info=True)
+
+    # Use Pyglet's schedule_once for safe one-time execution on main thread
+    # Delay of 0 means "next frame" which is safe for OpenGL operations
+    pyglet.clock.schedule_once(wrapper, 0)
+    logger.debug(f"Scheduled {callback.__name__} on main thread")
 
 
 def run_with_asyncio():

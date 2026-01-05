@@ -10,7 +10,7 @@ from typing import Optional, Callable, Dict
 
 from client.game_window import GameView
 from client.network_client import NetworkClient
-from client.ui.async_arcade import schedule_async
+from client.ui.async_arcade import schedule_async, schedule_on_main_thread
 from game.game_state import GameState
 from game.ai_actions import MoveAction, AttackAction, DeployAction, EndTurnAction
 from network.messages import MessageType
@@ -350,69 +350,80 @@ class NetworkGameView(arcade.View):
 
         try:
             # Use GameState.from_dict() to properly deserialize
-            self.game_state = GameState.from_dict(game_state_data)
+            game_state = GameState.from_dict(game_state_data)
             logger.info(
-                f"Game state deserialized - Players: {len(self.game_state.players)}, Tokens: {len(self.game_state.tokens)}"
+                f"Game state deserialized - Players: {len(game_state.players)}, Tokens: {len(game_state.tokens)}"
             )
 
-            # Update game view to use new state
-            if self.game_view:
-                logger.info("Updating game view with new state")
-
-                self.game_view.game_state = self.game_state
-
-                # Sync tokens instead of full setup (preserves/triggers animations)
-                self.game_view.renderer_2d.sync_tokens(self.game_state)
-
-                # Sync 3D tokens
-                if hasattr(self.game_view.renderer_3d, "sync_tokens"):
-                    self.game_view.renderer_3d.sync_tokens(
-                        self.game_state, self.game_view.window.ctx
-                    )
-
-                # We still need to recreate board sprites for generator/crystal updates
-                # but we don't want to nuke the tokens
-                self.game_view.renderer_2d.create_board_sprites(
-                    self.game_state.board,
-                    self.game_state.generators,
-                    self.game_state.crystal,
-                    self.game_view.mystery_animations,
-                )
-
-                # Rebuild UI
-                self.game_view.ui_manager.rebuild_visuals(self.game_state)
-
-                # Update InputHandler reference
-                if self.game_view.input_handler:
-                    self.game_view.input_handler.game_state = self.game_state
-                    self.game_view.action_handler.game_state = self.game_state
-
-                # Sync the InputHandler's local turn_phase with the server's game_state.turn_phase
-                if self.game_view.input_handler:
-                    self.game_view.input_handler.turn_phase = self.game_state.turn_phase
-                    logger.info(
-                        f"Synced turn_phase to {self.game_state.turn_phase.name}"
-                    )
-
-                # Re-hook the game state methods since we just replaced the game state object
-                self._hook_game_state_methods()
-                logger.info("Re-hooked game state methods after state update")
-            else:
-                logger.warning(
-                    "No game view exists yet - will be created with this state"
-                )
+            # Schedule UI updates on main thread
+            schedule_on_main_thread(self._update_full_state_ui, game_state)
 
         except Exception as e:
             logger.error(f"Failed to deserialize game state: {e}", exc_info=True)
 
         self.waiting_for_server = False
 
+    def _update_full_state_ui(self, game_state):
+        """Update UI after receiving full state (runs on main thread)."""
+        self.game_state = game_state
+
+        # Update game view to use new state
+        if self.game_view:
+            logger.info("Updating game view with new state")
+
+            self.game_view.game_state = self.game_state
+
+            # Sync tokens instead of full setup (preserves/triggers animations)
+            self.game_view.renderer_2d.sync_tokens(self.game_state)
+
+            # Sync 3D tokens
+            if hasattr(self.game_view.renderer_3d, "sync_tokens"):
+                self.game_view.renderer_3d.sync_tokens(
+                    self.game_state, self.game_view.window.ctx
+                )
+
+            # We still need to recreate board sprites for generator/crystal updates
+            # but we don't want to nuke the tokens
+            self.game_view.renderer_2d.create_board_sprites(
+                self.game_state.board,
+                self.game_state.generators,
+                self.game_state.crystal,
+                self.game_view.mystery_animations,
+            )
+
+            # Rebuild UI
+            self.game_view.ui_manager.rebuild_visuals(self.game_state)
+
+            # Update InputHandler reference
+            if self.game_view.input_handler:
+                self.game_view.input_handler.game_state = self.game_state
+                self.game_view.action_handler.game_state = self.game_state
+
+            # Sync the InputHandler's local turn_phase with the server's game_state.turn_phase
+            if self.game_view.input_handler:
+                self.game_view.input_handler.turn_phase = self.game_state.turn_phase
+                logger.info(
+                    f"Synced turn_phase to {self.game_state.turn_phase.name}"
+                )
+
+            # Re-hook the game state methods since we just replaced the game state object
+            self._hook_game_state_methods()
+            logger.info("Re-hooked game state methods after state update")
+        else:
+            logger.warning(
+                "No game view exists yet - will be created with this state"
+            )
+
     async def _handle_state_update(self, message):
         """Handle STATE_UPDATE message with delta changes."""
         logger.info("Received state update from server")
         self.waiting_for_server = False
 
-        # Refresh display
+        # Schedule UI refresh on main thread
+        schedule_on_main_thread(self._update_state_update_ui)
+
+    def _update_state_update_ui(self):
+        """Update UI after state update (runs on main thread)."""
         if self.game_view:
             self.game_view.setup()
 
@@ -463,28 +474,19 @@ class NetworkGameView(arcade.View):
         reason = data.get("reason", "Unknown reason")
 
         logger.warning(f"Action rejected by server: {action_type} - {reason}")
-        
-        # Rollback client-side prediction if this was a move action
-        if action_type == "MOVE" and self._pending_move_rollback:
-            self._rollback_move_prediction()
-            self._pending_move_rollback = None
-        
+        logger.error(f"ACTION REJECTED: {action_type} - {reason}")
+
         self.waiting_for_server = False
 
-        # Show error message to player
-        error_message = f"Invalid Action!\n\n{action_type} was rejected:\n{reason}"
+        # Schedule rollback on main thread if needed
+        if action_type == "MOVE" and self._pending_move_rollback:
+            schedule_on_main_thread(self._handle_invalid_action_ui)
 
-        # Create a simple error dialog
-        message_box = arcade.gui.UIMessageBox(
-            width=400, height=200, message_text=error_message, buttons=["OK"]
-        )
-
-        # Add to current view's UI manager if available
-        if self.game_view and hasattr(self.game_view, "manager"):
-            # Game view doesn't have a UI manager, so we'll need to create one
-            # For now, just log it prominently
-            logger.error(f"ACTION REJECTED: {action_type} - {reason}")
-            # TODO: Add UI manager to GameView for displaying error dialogs
+    def _handle_invalid_action_ui(self):
+        """Handle invalid action UI updates (runs on main thread)."""
+        if self._pending_move_rollback:
+            self._rollback_move_prediction()
+            self._pending_move_rollback = None
 
     async def _handle_game_won(self, message):
         """Handle GAME_WON message."""
@@ -494,7 +496,11 @@ class NetworkGameView(arcade.View):
 
         logger.info(f"Game ended! Winner: {winner_name}")
 
-        # Notify callback
+        # Schedule callback on main thread
+        schedule_on_main_thread(self._update_game_won_ui, winner_name)
+
+    def _update_game_won_ui(self, winner_name):
+        """Update UI after game won (runs on main thread)."""
         if self.on_game_end:
             self.on_game_end(winner_name)
 
@@ -507,7 +513,14 @@ class NetworkGameView(arcade.View):
 
         logger.info(f"Chat message from {player_name}: {chat_message}")
 
-        # Add message to chat widget if available
+        # Schedule chat update on main thread
+        schedule_on_main_thread(
+            self._update_chat_ui,
+            player_name, chat_message, player_id
+        )
+
+    def _update_chat_ui(self, player_name, chat_message, player_id):
+        """Update UI after chat message (runs on main thread)."""
         if self.game_view and self.game_view.chat_widget:
             self.game_view.chat_widget.add_message(player_name, chat_message, player_id)
 
@@ -515,7 +528,11 @@ class NetworkGameView(arcade.View):
         """Handle disconnect from server."""
         logger.warning("Disconnected from server")
 
-        # Notify callback
+        # Schedule callback on main thread
+        schedule_on_main_thread(self._update_disconnect_ui)
+
+    def _update_disconnect_ui(self):
+        """Update UI after disconnect (runs on main thread)."""
         if self.on_disconnect:
             self.on_disconnect()
 
