@@ -19,6 +19,7 @@ from client.renderer_3d import Renderer3D
 from client.sprites.board_sprite import create_board_shapes
 from client.ui.arcade_ui import UIManager
 from client.ui.chat_widget import ChatWidget
+from client.ui.victory_view import VictoryViewSimple
 from client.network_client import NetworkClient
 from game.combat import CombatSystem
 from game.game_state import GameState
@@ -32,7 +33,7 @@ from shared.constants import (
     MYSTERY_ANIMATION_DURATION,
     PLAYER_COLORS,
 )
-from shared.enums import TurnPhase
+from shared.enums import TurnPhase, GamePhase
 from shared.logging_config import setup_logger
 
 # Set up logger for this module
@@ -126,9 +127,10 @@ class GameView(arcade.View):
         # Mystery square coin flip animations
         # Dict mapping (x, y) position to animation progress (0.0 to 1.0)
         self.mystery_animations = {}  # {(x, y): progress}
-        self.mystery_animation_duration = (
-            MYSTERY_ANIMATION_DURATION  # Duration in seconds
-        )
+        self.mystery_animation_duration = MYSTERY_ANIMATION_DURATION  # Duration in seconds
+        
+        # Victory screen tracking
+        self.victory_shown = False
 
         # Background color will be set in on_show_view()
 
@@ -332,6 +334,15 @@ class GameView(arcade.View):
                 # Update camera to follow controlled token
                 self.camera_controller.update_3d_camera(self.game_state)  # type: ignore
 
+                # Update hover and valid move indicators for 3D
+                if self.renderer_3d.board_3d:
+                    self.renderer_3d.board_3d.update_hover_indicator(
+                        self.input_handler.hovered_grid_pos
+                    )
+                    self.renderer_3d.board_3d.update_valid_moves(
+                        self.input_handler.valid_moves
+                    )
+
                 # Draw 3D rendering
                 self.renderer_3d.draw(self.camera_controller.camera_3d)  # type: ignore
 
@@ -368,6 +379,18 @@ class GameView(arcade.View):
         Args:
             delta_time: Time since last update in seconds
         """
+        # Check if game has ended
+        if not self.victory_shown and self.game_state.phase == GamePhase.ENDED:
+            self.victory_shown = True
+            winner = self.game_state.get_winner()
+            if winner:
+                winner_name = winner.name
+                # Create and show victory view
+                victory_view = VictoryViewSimple(winner_name)
+                victory_view.on_return_to_menu = self._on_victory_return_to_menu
+                self.window.show_view(victory_view)
+                return
+        
         # Update animations
         self.renderer_2d.update(delta_time)
         self.renderer_3d.update(delta_time)
@@ -538,3 +561,10 @@ class GameView(arcade.View):
             return
 
         self.input_handler.handle_text(text, self.chat_widget)
+    
+    def _on_victory_return_to_menu(self):
+        """Handle returning to main menu from victory screen."""
+        # Close the current view and return to main menu
+        from client.menu_main import MainMenu
+        main_menu = MainMenu()
+        self.window.show_view(main_menu)
