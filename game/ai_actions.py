@@ -249,8 +249,7 @@ class AIActionExecutor:
             return ValidationResult(False, f"Cannot move: Wrong phase (currently in {game_state.turn_phase.name})")
 
         # Check token exists
-        token = game_state.get_token(action.token_id)
-        if not token:
+        if not (token := game_state.get_token(action.token_id)):
             return ValidationResult(False, f"Cannot move: Token #{action.token_id} does not exist")
 
         # Check token ownership
@@ -344,8 +343,7 @@ class AIActionExecutor:
             return ValidationResult(False, f"Cannot attack: Wrong phase (currently in {game_state.turn_phase.name})")
 
         # Check attacker exists
-        attacker = game_state.get_token(action.attacker_id)
-        if not attacker:
+        if not (attacker := game_state.get_token(action.attacker_id)):
             return ValidationResult(False, f"Cannot attack: Attacker token #{action.attacker_id} does not exist")
 
         # Check attacker ownership
@@ -359,8 +357,7 @@ class AIActionExecutor:
             return ValidationResult(False, f"Cannot attack: Attacker #{action.attacker_id} is dead")
 
         # Check defender exists
-        defender = game_state.get_token(action.defender_id)
-        if not defender:
+        if not (defender := game_state.get_token(action.defender_id)):
             return ValidationResult(False, f"Cannot attack: Defender token #{action.defender_id} does not exist")
 
         # Check defender is not owned by attacker
@@ -453,8 +450,7 @@ class AIActionExecutor:
             return ValidationResult(False, f"Cannot deploy: Position ({x},{y}) is already occupied")
 
         # Check position is a valid deployment location (corner + adjacent)
-        player = game_state.get_player(player_id)
-        if not player:
+        if not (player := game_state.get_player(player_id)):
             return ValidationResult(False, "Cannot deploy: Player not found")
 
         from game.ai_observation import AIObserver

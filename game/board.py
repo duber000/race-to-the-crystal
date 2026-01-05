@@ -217,8 +217,7 @@ class Board:
             position: (x, y) position
             token_id: ID of token to add
         """
-        cell = self.get_cell_at(position)
-        if cell and token_id not in cell.occupants:
+        if (cell := self.get_cell_at(position)) and token_id not in cell.occupants:
             cell.occupants.append(token_id)
 
     def remove_occupant(self, position: tuple[int, int], token_id: TokenID) -> None:
@@ -229,8 +228,7 @@ class Board:
             position: (x, y) position
             token_id: ID of token to remove
         """
-        cell = self.get_cell_at(position)
-        if cell and token_id in cell.occupants:
+        if (cell := self.get_cell_at(position)) and token_id in cell.occupants:
             cell.occupants.remove(token_id)
 
     def set_occupant(self, position: tuple[int, int], token_id: TokenID) -> None:
@@ -245,7 +243,7 @@ class Board:
             self.add_occupant(position, token_id)
 
     def clear_occupant(
-        self, position: tuple[int, int], token_id: TokenID| None = None
+        self, position: tuple[int, int], token_id: TokenID | None = None
     ) -> None:
         """
         Clear occupant(s) from a cell.
@@ -254,8 +252,7 @@ class Board:
             position: (x, y) position
             token_id: Specific token to remove, or None to clear all
         """
-        cell = self.get_cell_at(position)
-        if cell:
+        if cell := self.get_cell_at(position):
             if token_id is not None:
                 self.remove_occupant(position, token_id)
             else:

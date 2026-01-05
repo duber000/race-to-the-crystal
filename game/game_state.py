@@ -248,8 +248,7 @@ class GameState:
         Returns:
             True if move was successful
         """
-        token = self.get_token(token_id)
-        if not token or not token.is_alive:
+        if not (token := self.get_token(token_id)) or not token.is_alive:
             return False
 
         # Clear old position (remove specific token)
@@ -270,16 +269,14 @@ class GameState:
         Args:
             token_id: ID of token to remove
         """
-        token = self.get_token(token_id)
-        if not token:
+        if not (token := self.get_token(token_id)):
             return
 
         # Clear from board (remove specific token)
         self.board.clear_occupant(token.position, token_id)
 
         # Remove from player
-        player = self.get_player(token.player_id)
-        if player:
+        if player := self.get_player(token.player_id):
             player.remove_token(token_id)
 
         # Mark as not alive
