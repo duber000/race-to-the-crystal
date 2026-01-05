@@ -246,30 +246,33 @@ class AIPlayer(NetworkClient):
              else:
                  action_dict = random.choice(attacks)
              return self._action_dict_to_ai_action(action_dict)
-    
+
          # Prioritize moves toward objectives (crystal or generators)
          moves = [a for a in actions if a["type"] == "MOVE"]
          if moves:
              # Score each move by proximity to crystal (center at 12, 12)
              best_move = None
+             best_dest = None
              best_score = float('inf')
-             
+
              for move in moves:
-                 # Get first valid destination for this move
-                 dest = tuple(move["valid_destinations"][0])
-                 
-                 # Manhattan distance to crystal at (12, 12)
-                 dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
-                 
-                 # Lower distance = better score
-                 if dist_to_crystal < best_score:
-                     best_score = dist_to_crystal
-                     best_move = move
-             
+                 # Evaluate ALL valid destinations for this move
+                 for dest_list in move["valid_destinations"]:
+                     dest = tuple(dest_list)
+
+                     # Manhattan distance to crystal at (12, 12)
+                     dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
+
+                     # Lower distance = better score
+                     if dist_to_crystal < best_score:
+                         best_score = dist_to_crystal
+                         best_move = move
+                         best_dest = dest
+
              if best_move:
-                 return self._action_dict_to_ai_action(best_move)
+                 return self._action_dict_to_ai_action(best_move, best_dest)
              return self._action_dict_to_ai_action(random.choice(moves))
-    
+
          # Deploy or end turn
          return self._choose_random_action(actions)
 
@@ -280,44 +283,48 @@ class AIPlayer(NetworkClient):
          if deploys and random.random() > 0.5:
              action_dict = random.choice(deploys)
              return self._action_dict_to_ai_action(action_dict)
-    
+
          # Then prioritize safe moves toward crystal
          moves = [a for a in actions if a["type"] == "MOVE"]
          if moves:
              # Score each move by proximity to crystal (center at 12, 12)
              best_move = None
+             best_dest = None
              best_score = float('inf')
-             
+
              for move in moves:
-                 # Get first valid destination for this move
-                 dest = tuple(move["valid_destinations"][0])
-                 
-                 # Manhattan distance to crystal at (12, 12)
-                 dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
-                 
-                 # Lower distance = better score
-                 if dist_to_crystal < best_score:
-                     best_score = dist_to_crystal
-                     best_move = move
-             
+                 # Evaluate ALL valid destinations for this move
+                 for dest_list in move["valid_destinations"]:
+                     dest = tuple(dest_list)
+
+                     # Manhattan distance to crystal at (12, 12)
+                     dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
+
+                     # Lower distance = better score
+                     if dist_to_crystal < best_score:
+                         best_score = dist_to_crystal
+                         best_move = move
+                         best_dest = dest
+
              if best_move:
-                 return self._action_dict_to_ai_action(best_move)
-         
+                 return self._action_dict_to_ai_action(best_move, best_dest)
+
          # Then opportunistic attacks if no good moves
          attacks = [a for a in actions if a["type"] == "ATTACK"]
          if attacks and random.random() > 0.3:
              action_dict = random.choice(attacks)
              return self._action_dict_to_ai_action(action_dict)
-    
+
          # Otherwise random action
          return self._choose_random_action(actions)
 
-    def _action_dict_to_ai_action(self, action_dict):
+    def _action_dict_to_ai_action(self, action_dict, destination=None):
         """
         Convert action dictionary to AIAction object.
 
         Args:
             action_dict: Action dictionary from AIObserver
+            destination: Optional specific destination for MOVE actions
 
         Returns:
             AIAction object
@@ -325,9 +332,11 @@ class AIPlayer(NetworkClient):
         action_type = action_dict["type"]
 
         if action_type == "MOVE":
+            # Use provided destination if available, otherwise choose first valid dest
+            dest = destination if destination else tuple(action_dict["valid_destinations"][0])
             return MoveAction(
                 token_id=action_dict["token_id"],
-                destination=tuple(action_dict["valid_destinations"][0])  # Choose first valid dest
+                destination=dest
             )
 
         elif action_type == "ATTACK":

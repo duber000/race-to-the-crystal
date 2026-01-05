@@ -69,6 +69,7 @@ class CameraController:
 
         # Local player tracking (for network games)
         self.local_player_id = local_player_id
+        logger.info(f"CameraController initialized with local_player_id={local_player_id}")
 
         # Mouse-look state for 3D mode
         self.mouse_look_active = False
@@ -175,11 +176,17 @@ class CameraController:
         """
         # Use local player ID if set (network mode), otherwise use current turn player
         if self.local_player_id:
+            logger.info(f"Using local_player_id: {self.local_player_id}")
+            logger.info(f"Available player IDs in game_state: {list(game_state.players.keys())}")
             player = game_state.players.get(self.local_player_id)
+            logger.info(f"Found player: {player.name if player else None}")
         else:
+            logger.info("No local_player_id, using current turn player")
             player = game_state.get_current_player()
+            logger.info(f"Current player: {player.name if player else None}")
 
         if not player:
+            logger.warning("No player found to cycle tokens")
             return None
 
         # Get all alive deployed tokens for the player
