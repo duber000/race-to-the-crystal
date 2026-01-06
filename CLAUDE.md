@@ -22,6 +22,10 @@ uv run race-to-the-crystal --3d
 # Run with custom player count
 uv run race-to-the-crystal 2
 uv run race-to-the-crystal --3d 2
+
+# Run web-based 3D view (FastAPI + Babylon.js)
+uv run race-web-server
+# Then open http://localhost:8000 in your browser
 ```
 
 **Game Controls:**
@@ -211,6 +215,38 @@ Constants, enums, and configuration objects shared between game logic and render
 - `logging_config.py`: Centralized logging configuration
 
 **Important:** When changing game rules, update constants in `shared/constants.py` rather than hardcoding values.
+
+#### `web_server/` - Web-Based 3D View (FastAPI + Babylon.js)
+Alternative 3D rendering using web technologies. Provides browser-based multiplayer viewing.
+
+**Architecture:**
+- **FastAPI Backend** (`main.py`): REST API and WebSocket server for game state management
+  - REST endpoints: `/api/game/state`, `/api/game/new`, `/api/game/action`
+  - WebSocket: `/ws/game` for real-time bidirectional updates
+  - Uses existing `GameState` serialization (`to_dict()`, `to_json()`)
+  - Executes actions via `AIActionExecutor` for consistency
+- **Babylon.js Frontend** (`static/game_client.js`): Browser-based 3D renderer
+  - Wireframe graphics matching Tron/Battlezone aesthetic
+  - Hexagonal prism tokens with player colors
+  - Special cells: generators (cubes), crystal (pyramid)
+  - Glow layer for visual effects
+  - ArcRotateCamera for overview perspective
+  - WebSocket client for real-time synchronization
+
+**Key features:**
+- No modifications to game logic required
+- Browser-based multiplayer viewing capability
+- Real-time game state synchronization
+- Smooth animations for token movement
+- HUD with turn info and player status
+
+**Running the web server:**
+```bash
+uv run race-web-server
+# Open http://localhost:8000 in browser
+```
+
+See `web_server/README.md` for detailed documentation, API examples, and integration guide.
 
 #### `tests/` - Unit Tests
 276 pytest tests covering all game mechanics. Tests use pure game logic without rendering.

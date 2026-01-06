@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Race to the Crystal - 3D Web View</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0ff;
+            overflow: hidden;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100vh;
+            display: block;
+            outline: none;
+        }
+
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0ff;
+            padding: 15px;
+            font-size: 14px;
+            z-index: 100;
+            min-width: 250px;
+        }
+
+        #hud h2 {
+            margin-bottom: 10px;
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+        }
+
+        #hud .status-line {
+            margin: 5px 0;
+        }
+
+        #hud .player-info {
+            margin: 10px 0;
+            padding: 5px;
+            border-left: 3px solid #0ff;
+            padding-left: 10px;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0ff;
+            padding: 15px;
+            font-size: 12px;
+            z-index: 100;
+        }
+
+        #controls h3 {
+            margin-bottom: 8px;
+            color: #0ff;
+        }
+
+        #controls ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #controls li {
+            margin: 3px 0;
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0f0;
+            color: #0f0;
+            font-size: 12px;
+            z-index: 100;
+        }
+
+        .connection-status.disconnected {
+            border-color: #f00;
+            color: #f00;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+
+    <div id="hud">
+        <h2>Race to the Crystal</h2>
+        <div class="status-line">Turn: <span id="turnNumber">0</span></div>
+        <div class="status-line">Phase: <span id="gamePhase">Setup</span></div>
+        <div class="status-line">Current Player: <span id="currentPlayer">-</span></div>
+        <div id="playersList"></div>
+    </div>
+
+    <div id="controls">
+        <h3>Controls</h3>
+        <ul>
+            <li><strong>Mouse:</strong> Click to select/move tokens</li>
+            <li><strong>WASD / Arrows:</strong> Pan camera</li>
+            <li><strong>Q/E:</strong> Rotate camera left/right</li>
+            <li><strong>+/-:</strong> Zoom in/out</li>
+            <li><strong>Tab:</strong> Cycle tokens</li>
+            <li><strong>Space:</strong> End turn</li>
+            <li><strong>R:</strong> New game</li>
+        </ul>
+    </div>
+
+    <div id="connectionStatus" class="connection-status">Connected</div>
+
+    <!-- Babylon.js 8 from CDN -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+
+    <!-- Main game client script -->
+    <script src="/static/game_client.js"></script>
+</body>
+</html>
