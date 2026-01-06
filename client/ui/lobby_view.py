@@ -65,6 +65,9 @@ class LobbyView(arcade.View):
         # Background thread puts messages here, on_update() processes them
         self._message_queue: Queue = Queue()
 
+        # UI update flag - set when data changes, text updates deferred to next frame
+        self._needs_text_update = False
+
         # Chat widget (will be created in setup)
         self.chat_widget: Optional[ChatWidget] = None
 
@@ -195,8 +198,14 @@ class LobbyView(arcade.View):
 
     def on_update(self, delta_time: float):
         """Update the lobby view."""
+        # Apply deferred text updates from previous frame (if needed)
+        # This ensures text GL resources are created before drawing
+        if self._needs_text_update:
+            self._needs_text_update = False
+            self._apply_text_updates()
+
         # Poll message queue and process all pending messages
-        # This runs on main thread, so all UI updates are safe
+        # This updates data and sets _needs_text_update flag
         while not self._message_queue.empty():
             try:
                 message = self._message_queue.get_nowait()
@@ -211,6 +220,19 @@ class LobbyView(arcade.View):
         # Update copy feedback timer
         if self.copy_feedback_timer > 0:
             self.copy_feedback_timer -= delta_time
+
+    def _apply_text_updates(self):
+        """Apply text updates (deferred to avoid OpenGL timing issues)."""
+        # Update title
+        if self.title_text:
+            self.title_text.text = f"LOBBY: {self.game_name}"
+
+        # Update game ID
+        if self.game_id_text and self.network_client.game_id:
+            self.game_id_text.text = f"Game ID: {self.network_client.game_id}"
+
+        # Rebuild player list
+        self._update_player_list()
 
     def on_draw(self):
         """Render the lobby."""
@@ -359,10 +381,6 @@ class LobbyView(arcade.View):
             self.network_client.game_id = game_id
             logger.info(f"Game ID set: {game_id}")
 
-            # Update game ID display
-            if self.game_id_text:
-                self.game_id_text.text = f"Game ID: {game_id}"
-
         # Update lobby info
         self.game_name = data.get("game_name", "Lobby")
         self.max_players = data.get("max_players", 4)
@@ -381,12 +399,8 @@ class LobbyView(arcade.View):
 
         logger.info(f"Lobby created: {self.game_name} with {len(self.players)} player(s), max {self.max_players}")
 
-        # Update title text
-        if self.title_text:
-            self.title_text.text = f"LOBBY: {self.game_name}"
-
-        # Update player list
-        self._update_player_list()
+        # Mark text for update on next frame
+        self._needs_text_update = True
 
     def _handle_player_joined(self, message):
         """Handle PLAYER_JOINED message (main thread)."""
@@ -414,7 +428,7 @@ class LobbyView(arcade.View):
                 "is_ready": False,
                 "color_index": color_index
             }
-            self._update_player_list()
+            self._needs_text_update = True
 
     def _handle_player_left(self, message):
         """Handle PLAYER_LEFT message (main thread)."""
@@ -425,7 +439,7 @@ class LobbyView(arcade.View):
             player_name = self.players[player_id].get("player_name", "Unknown")
             logger.info(f"Player left: {player_name}")
             del self.players[player_id]
-            self._update_player_list()
+            self._needs_text_update = True
 
     def _handle_ready_update(self, message):
         """Handle READY message (main thread)."""
@@ -436,7 +450,7 @@ class LobbyView(arcade.View):
         if player_id and player_id in self.players:
             logger.info(f"Player ready update: {player_id[:8]} = {is_ready}")
             self.players[player_id]["is_ready"] = is_ready
-            self._update_player_list()
+            self._needs_text_update = True
 
     def _handle_game_start(self, message):
         """Handle START_GAME message (main thread)."""
@@ -479,10 +493,6 @@ class LobbyView(arcade.View):
                 self.network_client.game_id = game_id
                 logger.info(f"Game ID set from FULL_STATE: {game_id}")
 
-                # Update game ID display
-                if self.game_id_text:
-                    self.game_id_text.text = f"Game ID: {game_id}"
-
             self.game_name = lobby_data.get("game_name", "Lobby")
             self.max_players = lobby_data.get("max_players", 4)
             players_list = lobby_data.get("players", [])
@@ -498,12 +508,8 @@ class LobbyView(arcade.View):
                         "color_index": player_info.get("color_index", 0)
                     }
 
-            # Update title text
-            if self.title_text:
-                self.title_text.text = f"LOBBY: {self.game_name}"
-
-            # Update player list
-            self._update_player_list()
+            # Mark text for update on next frame
+            self._needs_text_update = True
 
     def _handle_chat_message(self, message):
         """Handle CHAT message (main thread)."""
