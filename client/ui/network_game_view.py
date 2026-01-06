@@ -104,8 +104,15 @@ class NetworkGameView(arcade.View):
             music_enabled=self.music_enabled,
         )
 
-        # Show the game view within the same window
-        self.window.show_view(self.game_view)
+        # DON'T switch views - keep NetworkGameView as the active view
+        # so on_update() continues to poll the message queue
+        # The game view will be rendered through delegation
+
+        # Set the window reference for the game view
+        self.game_view.window = self.window
+
+        # Initialize the game view (calls its on_show_view internally)
+        self.game_view.on_show_view()
 
         # Override game view's action execution
         # Intercept actions and send to server instead
@@ -115,75 +122,14 @@ class NetworkGameView(arcade.View):
 
     def _hook_game_view(self):
         """
-        Hook into GameView to intercept actions.
+        Hook into GameView and GameState to intercept actions.
 
         Replaces local action execution with network sending.
         """
         if not self.game_view:
             return
 
-        # Store original methods
-        original_on_mouse_press = self.game_view.on_mouse_press
-        original_on_key_press = self.game_view.on_key_press
-
-        # Create wrapped versions that send to server
-        def network_on_mouse_press(x, y, button, modifiers):
-            """Intercept mouse press and send action to server."""
-            # Call original to update UI state (selection, etc.)
-            original_on_mouse_press(x, y, button, modifiers)
-
-            # Check if an action was generated
-            # This is a simplified approach - in reality we'd need to detect
-            # what action the player is trying to make
-            # For now, we'll let the original GameWindow handle input
-            # and intercept at the game_state level
-
-        def network_on_key_press(symbol, modifiers):
-            """Intercept key press (like Space for end turn)."""
-            if symbol == arcade.key.SPACE or symbol == arcade.key.ENTER:
-                # End turn
-                logger.info(
-                    f"Space/Enter pressed. waiting_for_server={self.waiting_for_server}"
-                )
-                if not self.waiting_for_server:
-                    logger.info("Sending END_TURN to server...")
-                    schedule_async(self._send_end_turn())
-                    self.waiting_for_server = True
-                else:
-                    logger.info("Already waiting for server, ignoring key press")
-                return
-
-            # Pass through other keys
-            original_on_key_press(symbol, modifiers)
-
-        # Store original _handle_end_turn (now in InputHandler)
-        if not self.game_view.input_handler:
-            logger.warning("InputHandler not yet initialized, skipping end turn hook")
-            return
-
-        original_handle_end_turn = self.game_view.input_handler._handle_end_turn
-
-        def network_handle_end_turn():
-            """Intercept _handle_end_turn to prevent local turn advancement."""
-            logger.info("InputHandler._handle_end_turn() called - intercepting!")
-            if not self.waiting_for_server:
-                logger.info(
-                    "Sending END_TURN to server instead of advancing locally..."
-                )
-                schedule_async(self._send_end_turn())
-                self.waiting_for_server = True
-                # Clear selection like the original does
-                if self.game_view.input_handler:
-                    self.game_view.input_handler.selected_token_id = None
-                    self.game_view.input_handler.valid_moves = []
-            else:
-                logger.info("Already waiting for server, ignoring _handle_end_turn")
-
-        # Replace methods
-        self.game_view.on_key_press = network_on_key_press
-        self.game_view.input_handler._handle_end_turn = network_handle_end_turn
-
-        # Hook game state methods
+        # Hook game state methods to intercept move/attack/deploy/end_turn
         self._hook_game_state_methods()
 
     def _hook_game_state_methods(self):
@@ -314,6 +260,51 @@ class NetworkGameView(arcade.View):
 
         # Queue message for processing on main thread (thread-safe)
         self._message_queue.put(message)
+
+    def on_draw(self):
+        """
+        Draw the game (delegates to game view).
+
+        NetworkGameView stays as active view to keep polling message queue,
+        so all drawing is delegated to the embedded game_view.
+        """
+        if self.game_view:
+            self.game_view.on_draw()
+
+    def on_resize(self, width: int, height: int):
+        """Delegate resize to game view."""
+        if self.game_view:
+            self.game_view.on_resize(width, height)
+
+    def on_mouse_motion(self, x: int, y: int, dx: int, dy: int):
+        """Delegate mouse motion to game view."""
+        if self.game_view:
+            self.game_view.on_mouse_motion(x, y, dx, dy)
+
+    def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
+        """Delegate mouse press to game view."""
+        if self.game_view:
+            self.game_view.on_mouse_press(x, y, button, modifiers)
+
+    def on_mouse_release(self, x: int, y: int, button: int, modifiers: int):
+        """Delegate mouse release to game view."""
+        if self.game_view:
+            self.game_view.on_mouse_release(x, y, button, modifiers)
+
+    def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
+        """Delegate mouse scroll to game view."""
+        if self.game_view:
+            self.game_view.on_mouse_scroll(x, y, scroll_x, scroll_y)
+
+    def on_key_press(self, symbol: int, modifiers: int):
+        """Delegate key press to game view."""
+        if self.game_view:
+            self.game_view.on_key_press(symbol, modifiers)
+
+    def on_text(self, text: str):
+        """Delegate text input to game view."""
+        if self.game_view:
+            self.game_view.on_text(text)
 
     def on_update(self, delta_time: float):
         """
