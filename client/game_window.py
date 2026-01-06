@@ -51,7 +51,6 @@ class GameView(arcade.View):
     def __init__(
         self,
         game_state: GameState,
-        start_in_3d: bool = False,
         is_network_game: bool = False,
         network_client: Optional["NetworkClient"] = None,
         local_player_id: Optional[str] = None,
@@ -62,7 +61,6 @@ class GameView(arcade.View):
 
         Args:
             game_state: The game state to render
-            start_in_3d: Whether to start in 3D mode
             is_network_game: Whether this is a network game (enables chat)
             network_client: Network client for chat functionality (network games only)
             local_player_id: Game player ID for local player (e.g., "player_0")
@@ -76,7 +74,6 @@ class GameView(arcade.View):
         self.network_client = network_client
         self.local_player_id = local_player_id
         self.window.ctx  # Ensure context is available
-        self.start_in_3d = start_in_3d
         self.music_enabled = music_enabled
 
         # Systems
@@ -148,7 +145,7 @@ class GameView(arcade.View):
         # Use local_player_id from init (for network games), otherwise None (for single player)
         logger.info(f"GameView.on_show_view: is_network_game={self.is_network_game}, local_player_id={self.local_player_id}")
         self.camera_controller = CameraController(
-            self.window.width, self.window.height, self.start_in_3d, self.local_player_id
+            self.window.width, self.window.height, False, self.local_player_id
         )
         self.ui_manager = UIManager(self.window.width, self.window.height)
         self.deployment_controller = DeploymentMenuController(

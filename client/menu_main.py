@@ -102,15 +102,14 @@ class MenuGameWindow(AsyncWindow):
 
         logger.warning(f"Error dialog: {title} - {message}")
 
-    def _start_local_game(self, num_players: int, start_in_3d: bool):
+    def _start_local_game(self, num_players: int):
         """
         Start a local hot-seat game.
 
         Args:
             num_players: Number of players (2-4)
-            start_in_3d: Whether to start in 3D mode
         """
-        logger.info(f"Starting local game: {num_players} players, 3D={start_in_3d}")
+        logger.info(f"Starting local game: {num_players} players")
 
         # Set up game state
         game_state = setup_game_state(num_players)
@@ -118,7 +117,6 @@ class MenuGameWindow(AsyncWindow):
         # Create game view (now using View architecture)
         game_view = GameView(
             game_state,
-            start_in_3d=start_in_3d,
             music_enabled=self.main_menu.music_enabled,
         )
 

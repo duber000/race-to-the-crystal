@@ -369,27 +369,6 @@ class InputHandler:
                     self.deployment_controller.open_menu()
                 return True
 
-        # 3D View controls
-        elif symbol == arcade.key.V:
-            # Toggle between 2D and 3D views (only if 3D rendering is available)
-            self.camera_controller.toggle_mode(self.renderer_3d.is_available())
-            return True
-
-        elif symbol == arcade.key.TAB and self.camera_controller.camera_mode == "3D":
-            # Cycle to next token
-            self.camera_controller.cycle_controlled_token(self.game_state)
-            return True
-
-        elif symbol == arcade.key.Q and not (modifiers & arcade.key.MOD_CTRL):
-            # Rotate camera left (only in 3D mode, and not Ctrl+Q which is quit)
-            self.camera_controller.rotate_camera_left(self.game_state)
-            return True
-
-        elif symbol == arcade.key.E:
-            # Rotate camera right (only in 3D mode)
-            self.camera_controller.rotate_camera_right(self.game_state)
-            return True
-
         # Quit
         elif symbol == arcade.key.Q and (modifiers & arcade.key.MOD_CTRL):
             window.close()

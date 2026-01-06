@@ -48,7 +48,6 @@ class MainMenuView(arcade.View):
 
         # Settings (defaults)
         self.num_players = 4
-        self.start_in_3d = False
         self.music_enabled = True
 
         # Visual elements
@@ -170,7 +169,7 @@ class MainMenuView(arcade.View):
         """Handle local game button click."""
         logger.info("Local game selected")
         if self.on_local_game:
-            self.on_local_game(self.num_players, self.start_in_3d)
+            self.on_local_game(self.num_players)
 
     def _on_host_game_click(self, event):
         """Handle host game button click."""
@@ -294,14 +293,6 @@ class SettingsView(arcade.View):
         player_4_button.on_click = lambda e: self._set_players(4)
         v_box.add(player_4_button)
 
-        # Camera mode toggle
-        toggle_mode_button = arcade.gui.UIFlatButton(
-            text="Toggle Camera Mode (2D/3D)",
-            **button_style
-        )
-        toggle_mode_button.on_click = self._toggle_camera_mode
-        v_box.add(toggle_mode_button)
-
         # Music toggle
         toggle_music_button = arcade.gui.UIFlatButton(
             text="Toggle Music",
@@ -357,12 +348,6 @@ class SettingsView(arcade.View):
         """Set number of players."""
         self.main_menu.num_players = num_players
         logger.info(f"Players set to {num_players}")
-        self.setup()  # Refresh UI
-
-    def _toggle_camera_mode(self, event):
-        """Toggle between 2D and 3D starting mode."""
-        self.main_menu.start_in_3d = not self.main_menu.start_in_3d
-        logger.info(f"Camera mode set to {'3D' if self.main_menu.start_in_3d else '2D'}")
         self.setup()  # Refresh UI
 
     def _toggle_music(self, event):

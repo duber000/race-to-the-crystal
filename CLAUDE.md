@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Race to the Crystal is a Python-based multiplayer strategy game with GPU-accelerated vector graphics. Players compete on a 24x24 grid to capture a central crystal while managing tokens, generators, and strategic resources. The game features both 2D top-down and 3D first-person views using Arcade/OpenGL rendering.
+Race to the Crystal is a Python-based multiplayer strategy game with GPU-accelerated vector graphics. Players compete on a 24x24 grid to capture a central crystal while managing tokens, generators, and strategic resources. The game features:
+- **2D Desktop Client**: Top-down view using Arcade/OpenGL rendering
+- **3D Web Client**: Browser-based 3D view using FastAPI backend and Babylon.js rendering
 
 ## Development Commands
 
@@ -16,12 +18,8 @@ uv sync
 # Run game (2D mode)
 uv run race-to-the-crystal
 
-# Run game in 3D mode
-uv run race-to-the-crystal --3d
-
 # Run with custom player count
 uv run race-to-the-crystal 2
-uv run race-to-the-crystal --3d 2
 
 # Run web-based 3D view (FastAPI + Babylon.js)
 uv run race-web-server
@@ -29,23 +27,9 @@ uv run race-web-server
 ```
 
 **Game Controls:**
-
-**2D Mode:**
 - **Arrow Keys / WASD**: Pan camera view
 - **+/-** or **Mouse Scroll**: Zoom in/out
 - **Mouse Click**: Select tokens, move, attack, deploy
-
-**3D Mode:**
-- **TAB**: Cycle through your tokens (zooms to first-person view)
-- **Q/E**: Rotate camera left/right (15° increments)
-- **Right Mouse Button + Move**: Mouse-look (free camera rotation)
-- **Arrow Keys / WASD**: Pan camera position
-- **+/-** or **Mouse Scroll**: Adjust field of view
-- **Mouse Click**: Select tokens, move, attack, deploy
-- **Visual Feedback**: White wireframe shows hovered cell, green wireframes show valid moves
-
-**Common (Both Modes):**
-- **V**: Toggle between 2D and 3D view modes
 - **R**: Open Deployment Menu
 - **Space/Enter**: End turn
 - **Escape**: Cancel action
