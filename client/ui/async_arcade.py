@@ -7,9 +7,7 @@ import arcade
 import asyncio
 import threading
 import logging
-from typing import Optional, Callable, Any
-from queue import Queue
-import pyglet.clock
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -188,52 +186,10 @@ class AsyncWindow(arcade.Window):
         super().close()
 
 
-# Global queue for UI updates from background threads
-_ui_update_queue: Queue = Queue()
-_queue_processor_scheduled = False
-
-
-def schedule_on_main_thread(callback: Callable, *args, **kwargs):
-    """
-    Schedule a callback to run on Arcade's main thread at a safe time.
-
-    Use this when you need to update UI elements from an async context
-    (background thread). OpenGL operations must happen on the main thread.
-
-    This queues the callback and processes it during the update phase
-    (between frames), not during draw operations, preventing OpenGL errors.
-
-    Args:
-        callback: Function to call on main thread
-        *args: Positional arguments for callback
-        **kwargs: Keyword arguments for callback
-    """
-    global _queue_processor_scheduled
-
-    # Add callback to queue (thread-safe)
-    _ui_update_queue.put((callback, args, kwargs))
-    logger.debug(f"Queued {callback.__name__} for main thread execution")
-
-    # Ensure processor is scheduled (only schedule once)
-    if not _queue_processor_scheduled:
-        _queue_processor_scheduled = True
-        # Schedule processor to run on next update cycle
-        pyglet.clock.schedule_interval(_process_ui_update_queue, 1/60)
-
-
-def _process_ui_update_queue(delta_time: float):
-    """
-    Process queued UI updates on the main thread.
-
-    This runs during the update phase, safely between draw operations.
-    """
-    # Process all queued updates
-    while not _ui_update_queue.empty():
-        try:
-            callback, args, kwargs = _ui_update_queue.get_nowait()
-            callback(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"Error processing queued UI update: {e}", exc_info=True)
+# NOTE: For UI updates from async handlers, use the polling pattern:
+# 1. Async handler: Put message data into a Queue
+# 2. View's on_update(): Poll queue and update UI directly
+# This keeps all OpenGL/UI operations on the main thread naturally.
 
 
 def run_with_asyncio():

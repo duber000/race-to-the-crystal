@@ -8,9 +8,10 @@ import arcade.gui
 import logging
 import pyperclip
 from typing import Optional, Callable, Dict, List
+from queue import Queue
 
 from client.network_client import NetworkClient
-from client.ui.async_arcade import schedule_async, schedule_on_main_thread
+from client.ui.async_arcade import schedule_async
 from client.ui.chat_widget import ChatWidget
 from network.messages import MessageType
 from shared.constants import BACKGROUND_COLOR, PLAYER_COLORS
@@ -60,8 +61,9 @@ class LobbyView(arcade.View):
         self.status_text = None
         self.player_texts: List[arcade.Text] = []
 
-        # UI refresh flag (set by async handlers, processed in on_update)
-        self._needs_ui_refresh = False
+        # Message queue for polling pattern (thread-safe)
+        # Background thread puts messages here, on_update() processes them
+        self._message_queue: Queue = Queue()
 
         # Chat widget (will be created in setup)
         self.chat_widget: Optional[ChatWidget] = None
@@ -193,10 +195,14 @@ class LobbyView(arcade.View):
 
     def on_update(self, delta_time: float):
         """Update the lobby view."""
-        # Process pending UI refreshes from async handlers
-        if self._needs_ui_refresh:
-            self._needs_ui_refresh = False
-            self._refresh_ui_texts()
+        # Poll message queue and process all pending messages
+        # This runs on main thread, so all UI updates are safe
+        while not self._message_queue.empty():
+            try:
+                message = self._message_queue.get_nowait()
+                self._process_message(message)
+            except Exception as e:
+                logger.error(f"Error processing queued message: {e}", exc_info=True)
 
         # Update chat widget
         if self.chat_widget:
@@ -205,19 +211,6 @@ class LobbyView(arcade.View):
         # Update copy feedback timer
         if self.copy_feedback_timer > 0:
             self.copy_feedback_timer -= delta_time
-
-    def _refresh_ui_texts(self):
-        """Refresh all text objects. Called from on_update when data changes."""
-        # Update title text
-        if self.title_text:
-            self.title_text.text = f"LOBBY: {self.game_name}"
-
-        # Update game ID text
-        if self.game_id_text and self.network_client.game_id:
-            self.game_id_text.text = f"Game ID: {self.network_client.game_id}"
-
-        # Rebuild player list
-        self._update_player_list()
 
     def on_draw(self):
         """Render the lobby."""
@@ -305,53 +298,59 @@ class LobbyView(arcade.View):
 
     async def _handle_network_message(self, message):
         """
-        Handle incoming network messages.
+        Handle incoming network messages (runs on background thread).
+
+        Just queues messages for processing on main thread.
 
         Args:
             message: NetworkMessage from server
         """
-        logger.debug(f"Lobby received: {message.type.value}")
+        logger.debug(f"Lobby received: {message.type.value}, queuing for processing")
 
+        # Queue message for processing on main thread (thread-safe)
+        self._message_queue.put(message)
+
+    def _process_message(self, message):
+        """
+        Process a network message (runs on main thread).
+
+        All UI updates happen here, safely on the main thread.
+
+        Args:
+            message: NetworkMessage from server
+        """
         try:
             if message.type == MessageType.CREATE_GAME:
-                # Game created - initialize lobby state with host player
-                await self._handle_create_game(message)
+                self._handle_create_game(message)
 
             elif message.type == MessageType.PLAYER_JOINED:
-                # New player joined
-                await self._handle_player_joined(message)
+                self._handle_player_joined(message)
 
             elif message.type == MessageType.PLAYER_LEFT:
-                # Player left
-                await self._handle_player_left(message)
+                self._handle_player_left(message)
 
             elif message.type == MessageType.READY:
-                # Player ready status changed
-                await self._handle_ready_update(message)
+                self._handle_ready_update(message)
 
             elif message.type == MessageType.START_GAME:
-                # Game is starting
-                await self._handle_game_start(message)
+                self._handle_game_start(message)
 
             elif message.type == MessageType.FULL_STATE:
-                # Full state update (includes lobby info)
-                await self._handle_full_state(message)
+                self._handle_full_state(message)
 
             elif message.type == MessageType.CHAT:
-                # Chat message
-                await self._handle_chat_message(message)
+                self._handle_chat_message(message)
 
             elif message.type == MessageType.ERROR:
-                # Error message
                 data = message.data or {}
                 error_msg = data.get("error", "Unknown error")
                 logger.error(f"Server error: {error_msg}")
 
         except Exception as e:
-            logger.error(f"Error handling lobby message: {e}", exc_info=True)
+            logger.error(f"Error processing message {message.type.value}: {e}", exc_info=True)
 
-    async def _handle_create_game(self, message):
-        """Handle CREATE_GAME response - initialize lobby with host player."""
+    def _handle_create_game(self, message):
+        """Handle CREATE_GAME response - initialize lobby with host player (main thread)."""
         data = message.data or {}
 
         # Extract and store game ID
@@ -360,48 +359,37 @@ class LobbyView(arcade.View):
             self.network_client.game_id = game_id
             logger.info(f"Game ID set: {game_id}")
 
+            # Update game ID display
+            if self.game_id_text:
+                self.game_id_text.text = f"Game ID: {game_id}"
+
         # Update lobby info
-        game_name = data.get("game_name", "Lobby")
-        max_players = data.get("max_players", 4)
+        self.game_name = data.get("game_name", "Lobby")
+        self.max_players = data.get("max_players", 4)
         players_list = data.get("players", [])
 
-        # Build player dict
-        players = {}
+        # Clear and populate player list
+        self.players.clear()
         for player_info in players_list:
             player_id = player_info.get("player_id")
             if player_id:
-                players[player_id] = {
+                self.players[player_id] = {
                     "player_name": player_info.get("player_name", "Unknown"),
                     "is_ready": player_info.get("is_ready", False),
                     "color_index": player_info.get("color_index", 0)
                 }
 
-        logger.info(f"Lobby created: {game_name} with {len(players)} player(s), max {max_players}")
+        logger.info(f"Lobby created: {self.game_name} with {len(self.players)} player(s), max {self.max_players}")
 
-        # Schedule UI updates on main thread
-        schedule_on_main_thread(
-            self._update_create_game_ui,
-            game_id, game_name, max_players, players
-        )
+        # Update title text
+        if self.title_text:
+            self.title_text.text = f"LOBBY: {self.game_name}"
 
-    def _update_create_game_ui(self, game_id, game_name, max_players, players):
-        """Update data after CREATE_GAME (runs on main thread, defers UI refresh)."""
-        # Check if view is still active
-        if not hasattr(self, 'window') or self.window is None:
-            logger.warning("View no longer active, skipping UI update")
-            return
+        # Update player list
+        self._update_player_list()
 
-        # Update lobby state data
-        self.game_name = game_name
-        self.max_players = max_players
-        self.players.clear()
-        self.players.update(players)
-
-        # Request UI refresh on next update cycle
-        self._needs_ui_refresh = True
-
-    async def _handle_player_joined(self, message):
-        """Handle PLAYER_JOINED message."""
+    def _handle_player_joined(self, message):
+        """Handle PLAYER_JOINED message (main thread)."""
         data = message.data or {}
         player_id = data.get("player_id")
         player_name = data.get("player_name", "Unknown")
@@ -421,58 +409,43 @@ class LobbyView(arcade.View):
 
         if player_id:
             logger.info(f"Player joined: {player_name}")
-            schedule_on_main_thread(
-                self._update_player_joined_ui,
-                player_id, player_name, color_index
-            )
+            self.players[player_id] = {
+                "player_name": player_name,
+                "is_ready": False,
+                "color_index": color_index
+            }
+            self._update_player_list()
 
-    def _update_player_joined_ui(self, player_id, player_name, color_index):
-        """Update data after PLAYER_JOINED (runs on main thread, defers UI refresh)."""
-        if not hasattr(self, 'window') or self.window is None:
-            return
-        self.players[player_id] = {
-            "player_name": player_name,
-            "is_ready": False,
-            "color_index": color_index
-        }
-        self._needs_ui_refresh = True
-
-    async def _handle_player_left(self, message):
-        """Handle PLAYER_LEFT message."""
+    def _handle_player_left(self, message):
+        """Handle PLAYER_LEFT message (main thread)."""
         data = message.data or {}
         player_id = data.get("player_id")
 
         if player_id and player_id in self.players:
             player_name = self.players[player_id].get("player_name", "Unknown")
             logger.info(f"Player left: {player_name}")
-            schedule_on_main_thread(self._update_player_left_ui, player_id)
-
-    def _update_player_left_ui(self, player_id):
-        """Update data after PLAYER_LEFT (runs on main thread, defers UI refresh)."""
-        if player_id in self.players:
             del self.players[player_id]
-            self._needs_ui_refresh = True
+            self._update_player_list()
 
-    async def _handle_ready_update(self, message):
-        """Handle READY message."""
+    def _handle_ready_update(self, message):
+        """Handle READY message (main thread)."""
         data = message.data or {}
         player_id = data.get("player_id")
         is_ready = data.get("ready", False)
 
         if player_id and player_id in self.players:
             logger.info(f"Player ready update: {player_id[:8]} = {is_ready}")
-            schedule_on_main_thread(self._update_ready_ui, player_id, is_ready)
-
-    def _update_ready_ui(self, player_id, is_ready):
-        """Update data after READY message (runs on main thread, defers UI refresh)."""
-        if player_id in self.players:
             self.players[player_id]["is_ready"] = is_ready
-            self._needs_ui_refresh = True
+            self._update_player_list()
 
-    async def _handle_game_start(self, message):
-        """Handle START_GAME message."""
+    def _handle_game_start(self, message):
+        """Handle START_GAME message (main thread)."""
         logger.info("Game starting!")
         self.game_started = True
+
+        # Update status text
+        if self.status_text:
+            self.status_text.text = "Game starting..."
 
         # Prepare callback data
         data = message.data or {}
@@ -480,21 +453,12 @@ class LobbyView(arcade.View):
             data["initial_game_state"] = self.pending_game_state
             logger.info("Passing pending game state to NetworkGameView")
 
-        # Schedule UI update on main thread
-        schedule_on_main_thread(self._update_game_start_ui, data)
-
-    def _update_game_start_ui(self, data):
-        """Update UI after START_GAME (runs on main thread)."""
-        # Update status text
-        if self.status_text:
-            self.status_text.text = "Game starting..."
-
-        # Notify callback (this triggers view change, so it's safe)
+        # Notify callback (this triggers view change)
         if self.on_game_start:
             self.on_game_start(data)
 
-    async def _handle_full_state(self, message):
-        """Handle FULL_STATE message."""
+    def _handle_full_state(self, message):
+        """Handle FULL_STATE message (main thread)."""
         data = message.data or {}
         game_state_data = data.get("game_state", {})
         lobby_data = data.get("lobby", {})
@@ -515,60 +479,41 @@ class LobbyView(arcade.View):
                 self.network_client.game_id = game_id
                 logger.info(f"Game ID set from FULL_STATE: {game_id}")
 
-            game_name = lobby_data.get("game_name", "Lobby")
-            max_players = lobby_data.get("max_players", 4)
+                # Update game ID display
+                if self.game_id_text:
+                    self.game_id_text.text = f"Game ID: {game_id}"
+
+            self.game_name = lobby_data.get("game_name", "Lobby")
+            self.max_players = lobby_data.get("max_players", 4)
             players_list = lobby_data.get("players", [])
 
-            # Build player dict
-            players = {}
+            # Clear and populate player list
+            self.players.clear()
             for player_info in players_list:
                 player_id = player_info.get("player_id")
                 if player_id:
-                    players[player_id] = {
+                    self.players[player_id] = {
                         "player_name": player_info.get("player_name", "Unknown"),
                         "is_ready": player_info.get("is_ready", False),
                         "color_index": player_info.get("color_index", 0)
                     }
 
-            # Schedule UI update on main thread
-            schedule_on_main_thread(
-                self._update_full_state_ui,
-                game_id, game_name, max_players, players
-            )
+            # Update title text
+            if self.title_text:
+                self.title_text.text = f"LOBBY: {self.game_name}"
 
-    def _update_full_state_ui(self, game_id, game_name, max_players, players):
-        """Update data after FULL_STATE (runs on main thread, defers UI refresh)."""
-        # Check if view is still active
-        if not hasattr(self, 'window') or self.window is None:
-            logger.warning("View no longer active, skipping UI update")
-            return
+            # Update player list
+            self._update_player_list()
 
-        # Update lobby state data
-        self.game_name = game_name
-        self.max_players = max_players
-        self.players.clear()
-        self.players.update(players)
-
-        # Request UI refresh on next update cycle
-        self._needs_ui_refresh = True
-
-    async def _handle_chat_message(self, message):
-        """Handle CHAT message."""
+    def _handle_chat_message(self, message):
+        """Handle CHAT message (main thread)."""
         data = message.data or {}
         player_name = data.get("player_name", "Unknown")
         chat_text = data.get("message", "")
 
-        if chat_text:
+        if chat_text and self.chat_widget:
             logger.debug(f"Chat from {player_name}: {chat_text}")
-            schedule_on_main_thread(
-                self._update_chat_ui,
-                player_name, chat_text, message.player_id
-            )
-
-    def _update_chat_ui(self, player_name, chat_text, player_id):
-        """Update UI after CHAT message (runs on main thread)."""
-        if self.chat_widget:
-            self.chat_widget.add_message(player_name, chat_text, player_id)
+            self.chat_widget.add_message(player_name, chat_text, message.player_id)
 
     def _on_copy_game_id_click(self, event):
         """Handle copy game ID button click."""
