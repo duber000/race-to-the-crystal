@@ -61,8 +61,9 @@ class GameBrowserView(arcade.View):
         self.loading = True
         self.error_message: Optional[str] = None
 
-        # UI update flag - set when data changes, UI rebuilt on next frame
-        self._needs_ui_rebuild = False
+        # UI update flags
+        self._needs_ui_rebuild = False  # Set when UI needs rebuilding
+        self._needs_initial_setup = False  # Set when initial setup needed
 
         # UI elements
         self.title_text = None
@@ -176,7 +177,8 @@ class GameBrowserView(arcade.View):
 
     def on_show_view(self):
         """Called when this view is shown."""
-        self.setup()
+        # Defer setup to on_update to ensure GL context is ready
+        self._needs_initial_setup = True
         self.manager.enable()
         arcade.set_background_color(BACKGROUND_COLOR)
 
@@ -187,6 +189,13 @@ class GameBrowserView(arcade.View):
 
     def on_update(self, delta_time):
         """Update the view each frame."""
+        # Perform initial setup if needed (deferred from on_show_view)
+        # This ensures GL context is fully ready before creating text objects
+        if self._needs_initial_setup:
+            self._needs_initial_setup = False
+            self.setup()
+            logger.info("Deferred initial setup completed")
+
         # Apply deferred UI rebuilds on main thread
         if self._needs_ui_rebuild:
             self._needs_ui_rebuild = False

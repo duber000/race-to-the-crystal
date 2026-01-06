@@ -65,8 +65,9 @@ class LobbyView(arcade.View):
         # Background thread puts messages here, on_update() processes them
         self._message_queue: Queue = Queue()
 
-        # UI update flag - set when data changes, text updates deferred to next frame
-        self._needs_text_update = False
+        # UI update flags
+        self._needs_text_update = False  # Set when text needs updating
+        self._needs_initial_setup = False  # Set when initial setup needed
 
         # Chat widget (will be created in setup)
         self.chat_widget: Optional[ChatWidget] = None
@@ -187,7 +188,8 @@ class LobbyView(arcade.View):
 
     def on_show_view(self):
         """Called when this view is shown."""
-        self.setup()
+        # Defer setup to on_update to ensure GL context is ready
+        self._needs_initial_setup = True
         self.manager.enable()
         arcade.set_background_color(BACKGROUND_COLOR)
         logger.info("Lobby view shown")
@@ -198,6 +200,13 @@ class LobbyView(arcade.View):
 
     def on_update(self, delta_time: float):
         """Update the lobby view."""
+        # Perform initial setup if needed (deferred from on_show_view)
+        # This ensures GL context is fully ready before creating text objects
+        if self._needs_initial_setup:
+            self._needs_initial_setup = False
+            self.setup()
+            logger.info("Deferred initial setup completed")
+
         # Apply deferred text updates from previous frame (if needed)
         # This ensures text GL resources are created before drawing
         if self._needs_text_update:
