@@ -405,6 +405,9 @@ class GameView(arcade.View):
         if self.chat_widget:
             self.chat_widget.update(delta_time)
 
+        # Process pending mystery animations (start when token arrives)
+        self.action_handler.process_pending_mystery_animations(self.mystery_animations)
+
         # Update mystery square coin flip animations
         positions_to_remove = []
         for position, progress in self.mystery_animations.items():
