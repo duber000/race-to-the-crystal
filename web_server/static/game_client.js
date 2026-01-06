@@ -98,6 +98,7 @@ class GameClient {
         this.camera.lowerRadiusLimit = 200;
         this.camera.upperRadiusLimit = 1500;
         this.camera.wheelPrecision = 50;
+        this.camera.panningSensibility = 50; // Enable panning with mouse
 
         // First-person camera (inactive initially)
         this.firstPersonCamera = new BABYLON.UniversalCamera(
@@ -106,11 +107,12 @@ class GameClient {
             this.scene
         );
         this.firstPersonCamera.setTarget(new BABYLON.Vector3(boardCenterX, boardCenterY, 0));
-        this.firstPersonCamera.speed = 2;
+        this.firstPersonCamera.speed = 5;
         this.firstPersonCamera.keysUp = [87]; // W
         this.firstPersonCamera.keysDown = [83]; // S
         this.firstPersonCamera.keysLeft = [65]; // A
         this.firstPersonCamera.keysRight = [68]; // D
+        this.firstPersonCamera.angularSensibility = 2000; // Mouse look sensitivity
 
         // Set active camera
         this.scene.activeCamera = this.camera;
@@ -532,13 +534,19 @@ class GameClient {
     // Enhancement #5: First-person camera mode
     toggleCameraMode() {
         if (this.cameraMode === "overview") {
+            // Switch to first-person
             this.cameraMode = "firstperson";
+            this.camera.detachControl(this.canvas);
             this.scene.activeCamera = this.firstPersonCamera;
-            console.log("Switched to first-person camera");
+            this.firstPersonCamera.attachControl(this.canvas, true);
+            console.log("Switched to first-person camera (WASD to move, mouse to look)");
         } else {
+            // Switch to overview
             this.cameraMode = "overview";
+            this.firstPersonCamera.detachControl(this.canvas);
             this.scene.activeCamera = this.camera;
-            console.log("Switched to overview camera");
+            this.camera.attachControl(this.canvas, true);
+            console.log("Switched to overview camera (drag to rotate, scroll to zoom)");
         }
     }
 
