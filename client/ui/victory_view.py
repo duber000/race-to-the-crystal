@@ -315,13 +315,13 @@ class VictoryView(arcade.View):
 
         # Draw confetti particles
         for particle in self.particles:
-            arcade.draw_rectangle_filled(
+            arcade.draw_rect_outline(
                 particle["x"],
                 particle["y"],
                 particle["size"],
                 particle["size"] * 2,
                 particle["color"],
-                particle["rotation"]
+                3
             )
 
         # Draw title
@@ -488,13 +488,13 @@ class VictoryViewSimple(arcade.View):
 
         # Draw confetti particles
         for particle in self.particles:
-            arcade.draw_rectangle_filled(
+            arcade.draw_rect_outline(
                 particle["x"],
                 particle["y"],
                 particle["size"],
                 particle["size"] * 2,
                 particle["color"],
-                particle["rotation"]
+                3
             )
 
         # Draw victory text

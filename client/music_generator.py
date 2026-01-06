@@ -434,7 +434,8 @@ def generate_single_generator_hum(generator_id: int, duration: float, sample_rat
 
     # 4 generator frequencies - slightly detuned for phasing effect
     gen_freqs = [110.0, 116.5, 123.5, 130.8]
-    pulse_rates = [0.5, 0.7, 0.9, 1.1]
+    # Much slower pulse rates for a chill, mellow vibe
+    pulse_rates = [0.25, 0.3, 0.35, 0.4]
 
     freq = gen_freqs[generator_id]
     pulse_rate = pulse_rates[generator_id]
@@ -442,15 +443,15 @@ def generate_single_generator_hum(generator_id: int, duration: float, sample_rat
     for i in range(num_samples):
         t = i / sample_rate
 
-        # Pulsing pattern
-        pulse = 0.5 + 0.5 * math.sin(2 * math.pi * pulse_rate * t)
+        # Slow, mellow pulsing pattern (not frantic)
+        pulse = 0.6 + 0.4 * math.sin(2 * math.pi * pulse_rate * t)
 
-        # Generate hum with harmonics
+        # Generate hum with harmonics (softer)
         hum = pulse * (math.sin(2 * math.pi * freq * t) +
-                      0.3 * math.sin(2 * math.pi * freq * 2 * t))
+                      0.2 * math.sin(2 * math.pi * freq * 2 * t))
 
-        # Convert to sample value - LOUD so it's very noticeable when it drops
-        value = int(0.85 * 32767 * hum)  # Much louder!
+        # Convert to sample value - quieter and more subtle
+        value = int(0.5 * 32767 * hum)  # Reduced from 0.85 for a chiller sound
         value = max(-32768, min(32767, value))
         samples.append(value)
 

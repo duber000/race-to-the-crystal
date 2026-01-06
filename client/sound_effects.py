@@ -99,23 +99,23 @@ def generate_generator_explosion_sound(duration: float = 1.2, sample_rate: int =
         
         # Main explosion - low frequency boom (50-100Hz)
         boom_freq = 75.0 * (1 - t * 0.5)  # Frequency decreases over time
-        boom = 2.0 * math.sin(2 * math.pi * boom_freq * t)
+        boom = 2.5 * math.sin(2 * math.pi * boom_freq * t)
         
         # Add higher frequency components for the explosion "crack"
         crack_freq = 800.0 * math.exp(-t * 3)  # Quickly decaying high frequency
-        crack = 0.8 * math.sin(2 * math.pi * crack_freq * t)
+        crack = 1.2 * math.sin(2 * math.pi * crack_freq * t)
         
         # Add noise for debris and rumble
-        noise = 1.5 * (random.random() * 2 - 1) * math.exp(-t * 1.5)
+        noise = 2.0 * (random.random() * 2 - 1) * math.exp(-t * 1.5)
         
         # Create envelope - quick attack, long sustain
         envelope = min(t * 5, 1.0) * math.exp(-t * 0.8)
         
         # Add distortion for power
         mixed = (boom + crack + noise) * envelope
-        distorted = math.tanh(mixed * 1.5)  # Soft clipping distortion
+        distorted = math.tanh(mixed * 0.8)  # Softer clipping for more amplitude preservation
         
-        value = int(32767 * 0.9 * distorted)
+        value = int(32767 * distorted)
         value = max(-32768, min(32767, value))
         samples.append(value)
     
