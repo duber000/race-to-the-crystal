@@ -155,7 +155,7 @@ class AsyncWindow(arcade.Window):
     """
     Arcade Window with built-in asyncio support via threading.
 
-    Automatically starts an asyncio event loop in a background thread,
+    Starts an asyncio event loop in a background thread when first needed,
     allowing async tasks to run alongside the game loop without blocking.
     """
 
@@ -164,9 +164,10 @@ class AsyncWindow(arcade.Window):
         super().__init__(*args, **kwargs)
 
         # Use the global async scheduler (shared with schedule_async)
+        # Don't start it immediately - wait until it's actually needed
+        # This prevents interference with OpenGL context initialization
         self.async_scheduler = get_async_scheduler()
-        self.async_scheduler.start()
-        logger.info(f"AsyncWindow initialized with threaded scheduler")
+        logger.info(f"AsyncWindow initialized (scheduler will start on demand)")
 
     def on_update(self, delta_time: float):
         """
