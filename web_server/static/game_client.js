@@ -48,7 +48,7 @@ class GameClient {
         this.websocket = null;
 
         // Player settings
-        this.localPlayerId = 0; // Which player this client controls
+        this.localPlayerId = "player_0"; // Which player this client controls
 
         // Selection and interaction state
         this.selectedTokenId = null;
@@ -859,9 +859,9 @@ class GameClient {
                 case '3':
                 case '4':
                     // Switch local player ID (Enhancement #10)
-                    const playerId = parseInt(event.key) - 1;
-                    this.localPlayerId = playerId;
-                    console.log("Switched to player", playerId);
+                    const playerIndex = parseInt(event.key) - 1;
+                    this.localPlayerId = `player_${playerIndex}`;
+                    console.log("Switched to player", this.localPlayerId);
                     break;
             }
         });

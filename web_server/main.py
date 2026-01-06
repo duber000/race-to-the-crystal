@@ -33,21 +33,34 @@ class GameManager:
 
     def create_new_game(self, num_players: int = 2) -> GameState:
         """Create a new game with specified number of players."""
+        from game.generator import Generator
+        from game.crystal import Crystal
+
         self.game_state = GameState()
+        num_players = max(2, min(4, num_players))
 
         # Add players
         colors = [PlayerColor.CYAN, PlayerColor.MAGENTA, PlayerColor.YELLOW, PlayerColor.GREEN]
         for i in range(num_players):
-            player_id = i
+            player_id = f"player_{i}"
             self.game_state.add_player(player_id, f"Player {i+1}", colors[i])
-            self.game_state.create_tokens_for_player(player_id)
 
-        # Initialize game
-        from game.board import Board
-        self.game_state.board = Board.from_grid_size(24, 24)
-        self.game_state.initialize_game()
+        # Start the game (creates tokens and auto-deploys starting tokens)
+        self.game_state.start_game()
+
+        # Initialize generators
+        generator_positions = self.game_state.board.get_generator_positions()
+        for i, pos in enumerate(generator_positions):
+            generator = Generator(id=i, position=pos)
+            self.game_state.generators.append(generator)
+
+        # Initialize crystal
+        crystal_pos = self.game_state.board.get_crystal_position()
+        self.game_state.crystal = Crystal(position=crystal_pos)
+
+        # Set game to playing
         self.game_state.phase = GamePhase.PLAYING
-        self.game_state.current_turn_player_id = 0
+        self.game_state.current_turn_player_id = "player_0"
 
         logger.info(f"Created new game with {num_players} players")
         return self.game_state
