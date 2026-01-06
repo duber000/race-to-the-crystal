@@ -134,6 +134,8 @@ class GameView(arcade.View):
         
         # Victory screen tracking
         self.victory_shown = False
+        self.victory_delay = 0.0  # Delay before showing victory screen to let final effects play
+        self.victory_delay_duration = 2.0  # Wait 2 seconds for sounds/animations to finish
 
         # Background color will be set in on_show_view()
 
@@ -386,15 +388,19 @@ class GameView(arcade.View):
         """
         # Check if game has ended
         if not self.victory_shown and self.game_state.phase == GamePhase.ENDED:
-            self.victory_shown = True
-            winner = self.game_state.get_winner()
-            if winner:
-                winner_name = winner.name
-                # Create and show victory view
-                victory_view = VictoryViewSimple(winner_name)
-                victory_view.on_return_to_menu = self._on_victory_return_to_menu
-                self.window.show_view(victory_view)
-                return
+            # Start countdown to victory screen (let final effects play first)
+            self.victory_delay += delta_time
+            
+            if self.victory_delay >= self.victory_delay_duration:
+                self.victory_shown = True
+                winner = self.game_state.get_winner()
+                if winner:
+                    winner_name = winner.name
+                    # Create and show victory view
+                    victory_view = VictoryViewSimple(winner_name)
+                    victory_view.on_return_to_menu = self._on_victory_return_to_menu
+                    self.window.show_view(victory_view)
+                    return
         
         # Update animations
         self.renderer_2d.update(delta_time)
