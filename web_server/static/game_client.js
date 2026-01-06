@@ -22,12 +22,13 @@ const WALL_HEIGHT = 40;
 const TOKEN_HEIGHT = 20;
 
 // Colors (matching Python PLAYER_COLORS)
-const PLAYER_COLORS = {
-    RED: new BABYLON.Color3(1, 0, 0),
-    BLUE: new BABYLON.Color3(0, 0, 1),
-    GREEN: new BABYLON.Color3(0, 1, 0),
-    YELLOW: new BABYLON.Color3(1, 1, 0)
-};
+// Indexed by PlayerColor enum: CYAN=0, MAGENTA=1, YELLOW=2, GREEN=3
+const PLAYER_COLORS = [
+    new BABYLON.Color3(0, 1, 1),      // Cyan - Player 1
+    new BABYLON.Color3(1, 0, 1),      // Magenta - Player 2
+    new BABYLON.Color3(1, 1, 0),      // Yellow - Player 3
+    new BABYLON.Color3(0, 1, 0)       // Green - Player 4
+];
 
 const CYAN_GLOW = new BABYLON.Color3(0, 0.78, 0.78);
 const ORANGE_GLOW = new BABYLON.Color3(1, 0.65, 0);
@@ -405,9 +406,8 @@ class GameClient {
 
         // Create or update tokens
         for (const player of Object.values(gameState.players)) {
-            // Get player color
-            const colorKey = Object.keys(PLAYER_COLORS)[player.color];
-            const playerColor = PLAYER_COLORS[colorKey] || PLAYER_COLORS.RED;
+            // Get player color (indexed by PlayerColor enum value)
+            const playerColor = PLAYER_COLORS[player.color] || PLAYER_COLORS[0];
 
             for (const tokenId of player.token_ids) {
                 const token = gameState.tokens[tokenId];

@@ -36,7 +36,7 @@ class GameManager:
         self.game_state = GameState()
 
         # Add players
-        colors = [PlayerColor.RED, PlayerColor.BLUE, PlayerColor.GREEN, PlayerColor.YELLOW]
+        colors = [PlayerColor.CYAN, PlayerColor.MAGENTA, PlayerColor.YELLOW, PlayerColor.GREEN]
         for i in range(num_players):
             player_id = i
             self.game_state.add_player(player_id, f"Player {i+1}", colors[i])
