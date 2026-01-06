@@ -539,6 +539,11 @@ class GameClient {
             this.camera.detachControl(this.canvas);
             this.scene.activeCamera = this.firstPersonCamera;
             this.firstPersonCamera.attachControl(this.canvas, true);
+
+            // Ensure canvas has focus for keyboard input
+            this.canvas.focus();
+            this.canvas.setAttribute('tabindex', '1');
+
             console.log("Switched to first-person camera (WASD to move, mouse to look)");
         } else {
             // Switch to overview
@@ -546,6 +551,10 @@ class GameClient {
             this.firstPersonCamera.detachControl(this.canvas);
             this.scene.activeCamera = this.camera;
             this.camera.attachControl(this.canvas, true);
+
+            // Ensure canvas has focus
+            this.canvas.focus();
+
             console.log("Switched to overview camera (drag to rotate, scroll to zoom)");
         }
     }
