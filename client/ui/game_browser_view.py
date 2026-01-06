@@ -61,6 +61,9 @@ class GameBrowserView(arcade.View):
         self.loading = True
         self.error_message: Optional[str] = None
 
+        # UI update flag - set when data changes, UI rebuilt on next frame
+        self._needs_ui_rebuild = False
+
         # UI elements
         self.title_text = None
         self.status_text = None
@@ -182,6 +185,13 @@ class GameBrowserView(arcade.View):
 
         logger.info("Game browser view shown")
 
+    def on_update(self, delta_time):
+        """Update the view each frame."""
+        # Apply deferred UI rebuilds on main thread
+        if self._needs_ui_rebuild:
+            self._needs_ui_rebuild = False
+            self.setup()  # Safe to rebuild UI on main thread
+
     def on_hide_view(self):
         """Called when this view is hidden."""
         self.manager.disable()
@@ -219,7 +229,7 @@ class GameBrowserView(arcade.View):
             logger.info("=== Starting _load_games ===")
             self.loading = True
             self.error_message = None
-            self.setup()  # Refresh UI
+            self._needs_ui_rebuild = True  # Defer UI rebuild to main thread
 
             # Create network client
             logger.info("Creating network client...")
@@ -233,7 +243,7 @@ class GameBrowserView(arcade.View):
             if not success:
                 self.error_message = "Failed to connect to server"
                 self.loading = False
-                self.setup()
+                self._needs_ui_rebuild = True  # Defer UI rebuild to main thread
                 logger.error("Connection failed")
                 return
 
@@ -250,14 +260,14 @@ class GameBrowserView(arcade.View):
                 logger.info(f"Loaded {len(self.games)} games")
 
             self.loading = False
-            self.setup()  # Refresh UI with games
+            self._needs_ui_rebuild = True  # Defer UI rebuild to main thread
             logger.info("=== Finished _load_games ===")
 
         except Exception as e:
             logger.error(f"Error loading games: {e}", exc_info=True)
             self.error_message = str(e)
             self.loading = False
-            self.setup()
+            self._needs_ui_rebuild = True  # Defer UI rebuild to main thread
 
     def _on_join_game(self, game_id: str):
         """
