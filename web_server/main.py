@@ -2,7 +2,8 @@
 FastAPI web server for Race to the Crystal.
 
 Provides REST API and WebSocket endpoints for game state management
-and serves the Babylon.js 3D frontend.
+and serves the Babylon.js 3D frontend with Mercure real-time updates
+and Vulcain resource preloading.
 """
 
 import json
@@ -10,7 +11,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Response
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -24,17 +25,23 @@ from game.ai_actions import (
 )
 from shared.enums import PlayerColor, GamePhase
 from shared.logging_config import setup_logger
+from web_server.mercure_publisher import MercureConfig, MercurePublisher
 
 logger = setup_logger(__name__)
 
 
 class GameManager:
-    """Manages game state and WebSocket connections."""
+    """Manages game state, WebSocket connections, and Mercure publishing."""
 
     def __init__(self):
         self.game_state: GameState | None = None
         self.websocket_clients: list[WebSocket] = []
         self.action_executor = AIActionExecutor()
+
+        # Initialize Mercure publisher
+        mercure_config = MercureConfig.from_env()
+        self.mercure = MercurePublisher(mercure_config)
+        self.game_id = "default_game"  # For single-game mode
 
     def create_new_game(self, num_players: int = 2) -> GameState:
         """Create a new game with specified number of players."""
@@ -75,14 +82,21 @@ class GameManager:
         logger.info(f"Created new game with {num_players} players")
         return self.game_state
 
-    async def broadcast_state(self):
-        """Broadcast game state to all connected WebSocket clients."""
+    async def broadcast_state(self, action_type: str | None = None):
+        """
+        Broadcast game state to all connected clients via WebSocket and Mercure.
+
+        Args:
+            action_type: Optional action type that triggered this update
+        """
         if not self.game_state:
             return
 
+        state_dict = self.game_state.to_dict()
         state_json = self.game_state.to_json()
-        disconnected = []
 
+        # Broadcast via WebSocket (fallback for non-Mercure clients)
+        disconnected = []
         for client in self.websocket_clients:
             try:
                 await client.send_text(state_json)
@@ -93,6 +107,14 @@ class GameManager:
         # Remove disconnected clients
         for client in disconnected:
             self.websocket_clients.remove(client)
+
+        # Publish via Mercure for real-time updates
+        if self.mercure.enabled:
+            update_data = {"state": state_dict, "type": "state_update"}
+            if action_type:
+                update_data["last_action"] = action_type
+
+            await self.mercure.publish_game_state(self.game_id, update_data)
 
     def execute_action(
         self, action_data: dict[str, Any]
@@ -143,6 +165,7 @@ async def lifespan(app: FastAPI):
     logger.info("FastAPI server started")
     yield
     # Shutdown
+    await game_manager.mercure.close()
     logger.info("FastAPI server shutting down")
 
 
@@ -160,14 +183,36 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
 @app.get("/")
-async def root():
-    """Serve the main game page."""
+async def root(response: Response):
+    """Serve the main game page with Vulcain resource preloading headers."""
+    # Add Vulcain Link headers for resource preloading
+    vulcain_links = [
+        '</static/game_client.js>; rel="preload"; as="script"',
+        '</static/babylon.js>; rel="preload"; as="script"',
+        '</api/game/state>; rel="preload"; as="fetch"',
+        '</api/config>; rel="preload"; as="fetch"',
+    ]
+
+    response.headers["Link"] = ", ".join(vulcain_links)
+
     html_file = Path(__file__).parent / "templates" / "index.html"
     if html_file.exists():
         return FileResponse(html_file)
     return HTMLResponse(
         content="<h1>Race to the Crystal</h1><p>3D view coming soon!</p>"
     )
+
+
+@app.get("/api/config")
+async def get_config():
+    """Get client configuration including Mercure hub URL."""
+    return {
+        "mercure_hub_url": game_manager.mercure.config.hub_url,
+        "mercure_topic": f"{game_manager.mercure.config.topic_prefix}/{game_manager.game_id}",
+        "mercure_enabled": game_manager.mercure.enabled,
+        "api_version": "1.0.0",
+        "features": ["mercure", "vulcain", "websocket_fallback", "babylon3d"],
+    }
 
 
 @app.get("/api/game/state")
@@ -193,12 +238,13 @@ async def create_new_game(num_players: int = 2):
 
 @app.post("/api/game/action")
 async def execute_action(action: dict[str, Any]):
-    """Execute a game action."""
+    """Execute a game action and broadcast via Mercure."""
     success, message, data = game_manager.execute_action(action)
 
     if success:
-        # Broadcast updated state to all clients
-        await game_manager.broadcast_state()
+        # Broadcast updated state to all clients with action type
+        action_type = action.get("type", "unknown")
+        await game_manager.broadcast_state(action_type=action_type)
 
     return {"success": success, "message": message, "data": data}
 
@@ -236,8 +282,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 )
 
                 if success:
-                    # Broadcast updated state
-                    await game_manager.broadcast_state()
+                    # Broadcast updated state with action type
+                    action_type = action_data.get("type", "unknown")
+                    await game_manager.broadcast_state(action_type=action_type)
 
             except json.JSONDecodeError:
                 await websocket.send_json({"type": "error", "message": "Invalid JSON"})
