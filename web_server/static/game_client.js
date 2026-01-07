@@ -62,6 +62,8 @@ class GameClient {
         this.cameraPitch = -15; // Camera pitch angle
         this.mouseLookActive = false;
         this.lastMousePosition = { x: 0, y: 0 };
+        this.isPanning = false; // Right-click drag panning state
+        this.lastPanPosition = { x: 0, y: 0 };
 
         // Deployment menu state
         this.deploymentMenuOpen = false;
@@ -98,28 +100,35 @@ class GameClient {
         const boardCenterX = (BOARD_WIDTH / 2) * CELL_SIZE;
         const boardCenterY = (BOARD_HEIGHT / 2) * CELL_SIZE;
 
-        // Overview camera
+        // Overview camera (looking down at board from above)
+        // In Babylon.js: X and Z are horizontal, Y is vertical (up)
+        // Board is in XZ plane at Y=0, camera positioned above looking down
         this.camera = new BABYLON.ArcRotateCamera(
             "overviewCamera",
-            -Math.PI / 2,  // Alpha (rotation around Y axis)
-            Math.PI / 4,   // Beta (angle from vertical)
-            800,           // Radius (distance from target)
-            new BABYLON.Vector3(boardCenterX, boardCenterY, 0),
+            Math.PI / 4,      // Alpha (rotation around Y axis, 45 degrees for diagonal view)
+            Math.PI / 3,      // Beta (angle from vertical, ~60 degrees for overhead view)
+            500,              // Radius (distance from target)
+            new BABYLON.Vector3(boardCenterX, 0, boardCenterY),  // Look at board center at ground level (Y=0)
             this.scene
         );
         this.camera.attachControl(this.canvas, true);
-        this.camera.lowerRadiusLimit = 200;
+        this.camera.lowerRadiusLimit = 300;
         this.camera.upperRadiusLimit = 1500;
-        this.camera.wheelPrecision = 150; // Increased from 50 to 150 (3x faster zoom)
-        this.camera.panningSensibility = 50; // Enable panning with mouse
+        this.camera.wheelPrecision = 5; // Very fast zoom (10x faster)
+        // Lock camera rotation to keep board stationary (prevent spinning)
+        this.camera.lowerAlphaLimit = 0;
+        this.camera.upperAlphaLimit = 0;
+        this.camera.lowerBetaLimit = Math.PI / 3;
+        this.camera.upperBetaLimit = Math.PI / 3;
 
         // First-person camera (inactive initially, token-locked)
         this.firstPersonCamera = new BABYLON.UniversalCamera(
             "firstPersonCamera",
-            new BABYLON.Vector3(boardCenterX, boardCenterY - 100, 150),
+            // In Babylon.js: Y is up, so (x, y, z) means (horizontal, vertical, horizontal)
+            new BABYLON.Vector3(boardCenterX, boardCenterY + 150, boardCenterX - 100),
             this.scene
         );
-        this.firstPersonCamera.setTarget(new BABYLON.Vector3(boardCenterX, boardCenterY, 0));
+        this.firstPersonCamera.setTarget(new BABYLON.Vector3(boardCenterX, 0, boardCenterY));
         // Disable keyboard controls (camera is token-locked)
         this.firstPersonCamera.keysUp = [];
         this.firstPersonCamera.keysDown = [];
@@ -133,7 +142,7 @@ class GameClient {
         // Ambient light for visibility
         const ambientLight = new BABYLON.HemisphericLight(
             "ambientLight",
-            new BABYLON.Vector3(0, 0, 1),
+            new BABYLON.Vector3(0, 1, 0),  // Pointing up (Y is vertical in Babylon.js)
             this.scene
         );
         ambientLight.intensity = 0.3;
@@ -156,14 +165,16 @@ class GameClient {
         for (let x = 0; x <= BOARD_WIDTH; x++) {
             for (let y = 0; y <= BOARD_HEIGHT; y++) {
                 const worldX = x * CELL_SIZE;
-                const worldY = y * CELL_SIZE;
+                const worldZ = y * CELL_SIZE;  // Use Z for horizontal Y (depth)
 
+                // In Babylon.js: X and Z are horizontal, Y is vertical (up)
+                // Swap Python's (x, y, z) to Babylon's (x, z, y)
                 const line = BABYLON.MeshBuilder.CreateLines(
                     `gridLine_${x}_${y}`,
                     {
                         points: [
-                            new BABYLON.Vector3(worldX, worldY, 0),
-                            new BABYLON.Vector3(worldX, worldY, WALL_HEIGHT)
+                            new BABYLON.Vector3(worldX, 0, worldZ),           // Bottom (Y=0)
+                            new BABYLON.Vector3(worldX, WALL_HEIGHT, worldZ)  // Top (Y=height)
                         ]
                     },
                     this.scene
@@ -176,7 +187,7 @@ class GameClient {
         // Horizontal lines at top connecting pillars (parallel to X axis)
         for (let y = 0; y <= BOARD_HEIGHT; y++) {
             for (let x = 0; x < BOARD_WIDTH; x++) {
-                const worldY = y * CELL_SIZE;
+                const worldZ = y * CELL_SIZE;
                 const x1 = x * CELL_SIZE;
                 const x2 = (x + 1) * CELL_SIZE;
 
@@ -184,8 +195,8 @@ class GameClient {
                     `hLineX_${x}_${y}`,
                     {
                         points: [
-                            new BABYLON.Vector3(x1, worldY, WALL_HEIGHT),
-                            new BABYLON.Vector3(x2, worldY, WALL_HEIGHT)
+                            new BABYLON.Vector3(x1, WALL_HEIGHT, worldZ),
+                            new BABYLON.Vector3(x2, WALL_HEIGHT, worldZ)
                         ]
                     },
                     this.scene
@@ -199,15 +210,15 @@ class GameClient {
         for (let x = 0; x <= BOARD_WIDTH; x++) {
             for (let y = 0; y < BOARD_HEIGHT; y++) {
                 const worldX = x * CELL_SIZE;
-                const y1 = y * CELL_SIZE;
-                const y2 = (y + 1) * CELL_SIZE;
+                const z1 = y * CELL_SIZE;
+                const z2 = (y + 1) * CELL_SIZE;
 
                 const line = BABYLON.MeshBuilder.CreateLines(
                     `hLineY_${x}_${y}`,
                     {
                         points: [
-                            new BABYLON.Vector3(worldX, y1, WALL_HEIGHT),
-                            new BABYLON.Vector3(worldX, y2, WALL_HEIGHT)
+                            new BABYLON.Vector3(worldX, WALL_HEIGHT, z1),
+                            new BABYLON.Vector3(worldX, WALL_HEIGHT, z2)
                         ]
                     },
                     this.scene
@@ -234,14 +245,15 @@ class GameClient {
          if (gameState.generators) {
              gameState.generators.forEach(gen => {
                  const centerX = gen.position[0] * CELL_SIZE + CELL_SIZE / 2;
-                 const centerY = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
+                 const centerZ = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
                  const cube = BABYLON.MeshBuilder.CreateBox(
                      `generator_${gen.position[0]}_${gen.position[1]}`,
                      { size: CELL_SIZE * 0.6, height: WALL_HEIGHT * 0.6 },
                      this.scene
                  );
-                 cube.position = new BABYLON.Vector3(centerX, centerY, WALL_HEIGHT * 0.3);
+                 // In Babylon.js: Y is up, so position is (x, y, z)
+                 cube.position = new BABYLON.Vector3(centerX, WALL_HEIGHT * 0.3, centerZ);
 
                  const material = new BABYLON.StandardMaterial("generatorMat", this.scene);
                  material.emissiveColor = ORANGE_GLOW;
@@ -261,7 +273,7 @@ class GameClient {
          // Create crystal (magenta diamond/pyramid)
          if (gameState.crystal) {
              const centerX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
-             const centerY = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
+             const centerZ = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
              const pyramid = BABYLON.MeshBuilder.CreateCylinder(
                  "crystal",
@@ -273,7 +285,8 @@ class GameClient {
                  },
                  this.scene
              );
-             pyramid.position = new BABYLON.Vector3(centerX, centerY, WALL_HEIGHT * 0.4);
+             // In Babylon.js: Y is up, so position is (x, y, z)
+             pyramid.position = new BABYLON.Vector3(centerX, WALL_HEIGHT * 0.4, centerZ);
 
              const material = new BABYLON.StandardMaterial("crystalMat", this.scene);
              material.emissiveColor = MAGENTA_GLOW;
@@ -292,7 +305,7 @@ class GameClient {
                      const cell = gameState.board.grid[y][x];
                      if (cell.cell_type === 4) {  // MYSTERY = 4
                          const centerX = x * CELL_SIZE + CELL_SIZE / 2;
-                         const centerY = y * CELL_SIZE + CELL_SIZE / 2;
+                         const centerZ = y * CELL_SIZE + CELL_SIZE / 2;
 
                          // Create a wireframe torus to represent mystery square
                          const ring = BABYLON.MeshBuilder.CreateTorus(
@@ -304,8 +317,10 @@ class GameClient {
                              },
                              this.scene
                          );
-                         ring.position = new BABYLON.Vector3(centerX, centerY, WALL_HEIGHT * 0.5);
-                         ring.rotation.x = Math.PI / 2; // Rotate to lay flat
+                         // In Babylon.js: Y is up, so position is (x, y, z)
+                         ring.position = new BABYLON.Vector3(centerX, WALL_HEIGHT * 0.5, centerZ);
+                         // Rotate to lay flat on ground (rotate around X axis)
+                         ring.rotation.z = Math.PI / 2;
 
                          const material = new BABYLON.StandardMaterial("mysteryMat", this.scene);
                          material.emissiveColor = CYAN_GLOW;
@@ -326,15 +341,15 @@ class GameClient {
         if (!gameState.generators || !gameState.crystal) return;
 
         const crystalX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
-        const crystalY = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
-        const crystalZ = WALL_HEIGHT * 0.8;
+        const crystalZ = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
+        const crystalY = WALL_HEIGHT * 0.8;
 
         gameState.generators.forEach(gen => {
             if (gen.is_disabled) return; // Don't draw lines for disabled generators
 
             const genX = gen.position[0] * CELL_SIZE + CELL_SIZE / 2;
-            const genY = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
-            const genZ = WALL_HEIGHT * 0.6;
+            const genZ = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
+            const genY = WALL_HEIGHT * 0.6;
 
             // Create flowing line
             const points = [
@@ -357,7 +372,7 @@ class GameClient {
     createToken3D(token, playerColor) {
         // Create hexagonal prism token
         const worldX = token.position[0] * CELL_SIZE + CELL_SIZE / 2;
-        const worldY = token.position[1] * CELL_SIZE + CELL_SIZE / 2;
+        const worldZ = token.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
         // Create hexagonal prism
         const hexagon = BABYLON.MeshBuilder.CreateCylinder(
@@ -369,7 +384,8 @@ class GameClient {
             },
             this.scene
         );
-        hexagon.position = new BABYLON.Vector3(worldX, worldY, TOKEN_HEIGHT / 2);
+        // In Babylon.js: Y is up, so position is (x, y, z)
+        hexagon.position = new BABYLON.Vector3(worldX, TOKEN_HEIGHT / 2, worldZ);
 
         // Apply player color material
         const material = new BABYLON.StandardMaterial(`tokenMat_${token.id}`, this.scene);
@@ -467,7 +483,7 @@ class GameClient {
                         // Update existing token position
                         const tokenData = this.tokens3D.get(tokenId);
                         const worldX = token.position[0] * CELL_SIZE + CELL_SIZE / 2;
-                        const worldY = token.position[1] * CELL_SIZE + CELL_SIZE / 2;
+                        const worldZ = token.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
                         // Animate movement
                         BABYLON.Animation.CreateAndStartAnimation(
@@ -477,7 +493,7 @@ class GameClient {
                             30,
                             10,
                             tokenData.mesh.position,
-                            new BABYLON.Vector3(worldX, worldY, TOKEN_HEIGHT / 2),
+                            new BABYLON.Vector3(worldX, TOKEN_HEIGHT / 2, worldZ),
                             BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
                         );
 
@@ -490,7 +506,7 @@ class GameClient {
                                 30,
                                 10,
                                 tokenData.healthLabel.position,
-                                new BABYLON.Vector3(worldX, worldY, TOKEN_HEIGHT + 10),
+                                new BABYLON.Vector3(worldX, TOKEN_HEIGHT + 10, worldZ),
                                 BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
                             );
 
@@ -528,7 +544,7 @@ class GameClient {
         if (gridX === null || gridY === null) return;
 
         const centerX = gridX * CELL_SIZE + CELL_SIZE / 2;
-        const centerY = gridY * CELL_SIZE + CELL_SIZE / 2;
+        const centerZ = gridY * CELL_SIZE + CELL_SIZE / 2;
         const height = 2.0;
         const size = CELL_SIZE * 0.9;
 
@@ -537,7 +553,8 @@ class GameClient {
             { width: size, height: size },
             this.scene
         );
-        square.position = new BABYLON.Vector3(centerX, centerY, height);
+        // In Babylon.js: Y is up, so position is (x, y, z)
+        square.position = new BABYLON.Vector3(centerX, height, centerZ);
 
         const material = new BABYLON.StandardMaterial("hoverMat", this.scene);
         material.emissiveColor = WHITE_GLOW;
@@ -561,14 +578,15 @@ class GameClient {
 
         moves.forEach(([gridX, gridY]) => {
             const centerX = gridX * CELL_SIZE + CELL_SIZE / 2;
-            const centerY = gridY * CELL_SIZE + CELL_SIZE / 2;
+            const centerZ = gridY * CELL_SIZE + CELL_SIZE / 2;
 
             const square = BABYLON.MeshBuilder.CreateGround(
                 `validMove_${gridX}_${gridY}`,
                 { width: size, height: size },
                 this.scene
             );
-            square.position = new BABYLON.Vector3(centerX, centerY, height);
+            // In Babylon.js: Y is up, so position is (x, y, z)
+            square.position = new BABYLON.Vector3(centerX, height, centerZ);
 
             const material = new BABYLON.StandardMaterial("validMoveMat", this.scene);
             material.emissiveColor = GREEN_GLOW;
@@ -615,7 +633,7 @@ class GameClient {
             console.log("✓ FIRST-PERSON MODE (Token-Locked Camera)");
             console.log("  TAB - Cycle through your tokens");
             console.log("  Q/E - Rotate camera left/right");
-            console.log("  Right-click + drag - Free look");
+            console.log("  Right-click + drag - Mouse look");
             console.log("==============================================");
         } else {
             // Switch to overview
@@ -629,7 +647,7 @@ class GameClient {
 
             console.log("==============================================");
             console.log("✓ OVERVIEW MODE (Bird's Eye View)");
-            console.log("  Drag - Rotate camera");
+            console.log("  Right-click + drag - Pan around board");
             console.log("  Scroll - Zoom in/out");
             console.log("==============================================");
         }
@@ -738,8 +756,8 @@ class GameClient {
 
         // Token position in world coordinates
         const tokenX = token.position[0] * CELL_SIZE + CELL_SIZE / 2;
-        const tokenY = token.position[1] * CELL_SIZE + CELL_SIZE / 2;
-        const tokenZ = TOKEN_HEIGHT / 2;
+        const tokenZ = token.position[1] * CELL_SIZE + CELL_SIZE / 2;
+        const tokenY = TOKEN_HEIGHT / 2;
 
         // Camera offset from token (behind and above)
         const offset = 100; // Distance behind token
@@ -750,9 +768,10 @@ class GameClient {
         const pitchRad = (this.cameraPitch * Math.PI) / 180;
 
         // Calculate camera position (behind and above token)
-        const camX = tokenX - Math.sin(yawRad) * offset * Math.cos(pitchRad);
-        const camY = tokenY - Math.cos(yawRad) * offset * Math.cos(pitchRad);
-        const camZ = tokenZ + height + Math.sin(pitchRad) * offset;
+        // In Babylon.js: Forward is -Z, so we adjust the offsets
+        const camX = tokenX + Math.sin(yawRad) * offset * Math.cos(pitchRad);
+        const camZ = tokenZ + Math.cos(yawRad) * offset * Math.cos(pitchRad);
+        const camY = tokenY + height + Math.sin(pitchRad) * offset;
 
         // Update camera position
         this.firstPersonCamera.position.x = camX;
@@ -760,10 +779,10 @@ class GameClient {
         this.firstPersonCamera.position.z = camZ;
 
         // Point camera at token (more reliable than manual rotation)
-        this.firstPersonCamera.setTarget(new BABYLON.Vector3(tokenX, tokenY, tokenZ + 10));
+        this.firstPersonCamera.setTarget(new BABYLON.Vector3(tokenX, tokenY + 10, tokenZ));
 
         // Debug output (only occasionally to avoid spam)
-        if (Math.random() < 0.05) { // 5% of the time
+        if (Math.random() < 0.01) { // 1% of the time
             console.log("Camera update:", {
                 tokenPos: [token.position[0], token.position[1]],
                 yawDeg: this.tokenRotation,
@@ -789,6 +808,27 @@ class GameClient {
         this.mouseLookActive = false;
         this.canvas.style.cursor = 'default';
         console.log("Mouse-look deactivated");
+    }
+
+    // Handle right-click drag panning in overview mode
+    handlePan(dx, dy) {
+        if (this.cameraMode !== "overview") return;
+
+        const panSpeed = 0.5; // Adjust pan speed
+
+        // Get camera right and forward vectors (ignoring Y component)
+        const right = this.camera.getDirection(BABYLON.Vector3.Right());
+        right.y = 0;
+        right.normalize();
+
+        const forward = this.camera.getDirection(BABYLON.Vector3.Forward());
+        forward.y = 0;
+        forward.normalize();
+
+        // Move camera target based on mouse movement
+        // dx moves left/right, dy moves up/down on screen
+        this.camera.target.addInPlace(right.scale(-dx * panSpeed));
+        this.camera.target.addInPlace(forward.scale(dy * panSpeed));
     }
 
     // Handle mouse motion for mouse-look
@@ -863,6 +903,8 @@ class GameClient {
     updateGameState(gameState) {
         console.log("==================================================");
         console.log("✓ Updating game state");
+        console.log("  - Current turn:", gameState.current_turn_player_id);
+        console.log("  - Your player:", this.localPlayerId);
         console.log("  - Generators:", gameState.generators?.length || 0);
         console.log("  - Crystal:", gameState.crystal ? 'YES' : 'NO');
         console.log("  - Tokens:", Object.keys(gameState.tokens || {}).length);
@@ -943,6 +985,7 @@ class GameClient {
     sendAction(action) {
         if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
             action.player_id = this.localPlayerId;
+            console.log("Sending action:", action.type, "for", action.player_id);
             this.websocket.send(JSON.stringify(action));
         } else {
             console.error("WebSocket not connected");
@@ -1091,10 +1134,10 @@ class GameClient {
 
                     if (pickResult.hit && pickResult.pickedPoint) {
                         const x = pickResult.pickedPoint.x;
-                        const y = pickResult.pickedPoint.y;
+                        const z = pickResult.pickedPoint.z;  // In Babylon.js: z is the horizontal depth coordinate
 
                         const gridX = Math.floor(x / CELL_SIZE);
-                        const gridY = Math.floor(y / CELL_SIZE);
+                        const gridY = Math.floor(z / CELL_SIZE);  // Use z instead of y
 
                         if (gridX >= 0 && gridX < BOARD_WIDTH && gridY >= 0 && gridY < BOARD_HEIGHT) {
                             this.hoveredCell = [gridX, gridY];
@@ -1119,13 +1162,33 @@ class GameClient {
                         this.handleClick(this.hoveredCell[0], this.hoveredCell[1]);
                     }
                 } else if (pointerInfo.event.button === 2) { // Right click
-                    // Activate mouse-look in first-person mode
-                    this.activateMouseLook(pointerInfo.event.clientX, pointerInfo.event.clientY);
+                    // In overview mode: start panning
+                    if (this.cameraMode === "overview") {
+                        this.isPanning = true;
+                        this.lastPanPosition = { x: pointerInfo.event.clientX, y: pointerInfo.event.clientY };
+                        this.canvas.style.cursor = 'grabbing';
+                    } else {
+                        // In first-person mode: activate mouse-look
+                        this.activateMouseLook(pointerInfo.event.clientX, pointerInfo.event.clientY);
+                    }
                 }
             } else if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
                 if (pointerInfo.event.button === 2) { // Right click release
-                    // Deactivate mouse-look
-                    this.deactivateMouseLook();
+                    if (this.cameraMode === "overview") {
+                        // Stop panning
+                        this.isPanning = false;
+                        this.canvas.style.cursor = 'default';
+                    } else {
+                        // Deactivate mouse-look
+                        this.deactivateMouseLook();
+                    }
+                }
+            } else if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERMOVE) {
+                // Handle panning in overview mode
+                if (this.isPanning && this.cameraMode === "overview") {
+                    const dx = pointerInfo.event.movementX || 0;
+                    const dy = pointerInfo.event.movementY || 0;
+                    this.handlePan(dx, dy);
                 }
             }
         });
