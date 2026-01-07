@@ -50,9 +50,9 @@ Unified Game Server (port 8888)
 
 #### Phase 4: Update Web Client
 - ✅ Change WebSocket connection from `ws://localhost:8000` to `ws://localhost:8888`
-- ⚠️ Implement lobby join/create UI in web client (TODO - web client needs UI updates)
-- ⚠️ Add player name input and connection UI (TODO - web client needs UI updates)
-- ⚠️ Handle network game lifecycle (lobby → game → end) (TODO - web client needs updates)
+- ✅ Implement lobby join/create UI in web client
+- ✅ Add player name input and connection UI
+- ✅ Handle network game lifecycle (lobby → game → end)
 
 #### Phase 5: Update Lobby System
 - ✅ Extend `server/lobby.py` to track client types (TCP vs WebSocket)

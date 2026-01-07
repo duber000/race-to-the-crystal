@@ -5,6 +5,7 @@ Handles WebSocket connections from Babylon.js web clients,
 integrating with the main game server for lobby and game actions.
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -302,7 +303,7 @@ class WebSocketHandler:
         await self._broadcast_to_lobby(client.game_id, ready_event)
 
     async def _handle_start_game(self, client: WebSocketClient, data: dict) -> None:
-        """Handle start game request from web client."""
+        """Handle start game request from web client with automatic AI player filling."""
         if not self.game_server or not client.game_id:
             await self._send_error(client, "Not in a game")
             return
@@ -316,7 +317,66 @@ class WebSocketHandler:
             await self._send_error(client, "Only host can start game")
             return
 
-        self.game_server.lobby_manager.start_game(client.game_id)
+        # Check if we need to spawn AI players to fill empty slots
+        ai_needed = lobby.get_ai_needed_count()
+
+        if ai_needed > 0:
+            logger.info(
+                f"Spawning {ai_needed} AI player{'s' if ai_needed > 1 else ''} "
+                f"for game {lobby.game_id[:8]}"
+            )
+
+            # Spawn AI clients
+            spawned = await self.game_server.ai_spawner.spawn_ai_for_game(
+                game_id=lobby.game_id,
+                num_ai=ai_needed,
+                host="localhost",
+                port=self.game_server.port,
+            )
+
+            if not spawned:
+                logger.warning(
+                    f"Failed to spawn AI players for game {lobby.game_id[:8]}, "
+                    "continuing with current players"
+                )
+            else:
+                # Wait for AI to join and ready up (with timeout)
+                timeout = 10.0  # 10 seconds
+                start_time = time.time()
+
+                logger.info(f"Waiting for {len(spawned)} AI player(s) to join...")
+
+                while time.time() - start_time < timeout:
+                    # Refresh lobby to check player count and ready status
+                    lobby = self.game_server.lobby_manager.get_lobby(lobby.game_id)
+
+                    if not lobby:
+                        logger.error("Lobby disappeared while waiting for AI")
+                        await self._send_error(client, "Lobby error")
+                        return
+
+                    # Check if all players are ready
+                    if lobby.all_players_ready():
+                        logger.info(
+                            f"All {len(lobby.players)} players ready "
+                            f"(including {len(spawned)} AI)"
+                        )
+                        break
+
+                    await asyncio.sleep(0.2)
+                else:
+                    # Timeout reached
+                    logger.warning(
+                        f"Timeout waiting for AI players to join game {lobby.game_id[:8]}"
+                    )
+
+        # Try to start the game
+        lobby = self.game_server.lobby_manager.start_game(client.game_id)
+        if not lobby:
+            await self._send_error(client, "Cannot start game (not all players ready)")
+            return
+
+        # Create game session
         game_session = self.game_server.game_coordinator.create_game(lobby)
         self.game_server.lobby_manager.set_game_in_progress(client.game_id)
 

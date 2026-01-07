@@ -36,10 +36,20 @@ const MAGENTA_GLOW = new BABYLON.Color3(1, 0, 1);
 const WHITE_GLOW = new BABYLON.Color3(1, 1, 1);
 const GREEN_GLOW = new BABYLON.Color3(0, 1, 0);
 
+// Connection State Machine
+const STATE = {
+    DISCONNECTED: 'DISCONNECTED',
+    CONNECTING: 'CONNECTING',
+    CONNECTED: 'CONNECTED',
+    IN_LOBBY: 'IN_LOBBY',
+    GAME_STARTING: 'GAME_STARTING',
+    IN_GAME: 'IN_GAME'
+};
+
 class GameClient {
     constructor() {
         this.canvas = document.getElementById('renderCanvas');
-        this.engine = new BABYLON.Engine(this.canvas, true);
+        this.engine = null; // Defer initialization until game starts
         this.scene = null;
         this.camera = null;
         this.firstPersonCamera = null;
@@ -47,8 +57,20 @@ class GameClient {
         this.gameState = null;
         this.websocket = null;
 
+        // Connection state
+        this.connectionState = STATE.DISCONNECTED;
+        this.playerName = null;
+        this.playerId = null; // Assigned by server on CONNECT_ACK
+
+        // Lobby state
+        this.currentGameId = null;
+        this.currentLobby = null; // {game_id, game_name, host_player_id, players[], max_players, status}
+        this.isHost = false;
+        this.isReady = false;
+        this.availableGames = [];
+
         // Player settings
-        this.localPlayerId = "player_0"; // Which player this client controls
+        this.localPlayerId = null; // Will be determined from server mapping
 
         // Selection and interaction state
         this.selectedTokenId = null;
@@ -82,13 +104,115 @@ class GameClient {
         this.sounds = {};
         this.musicPlaying = true;
 
-        // Initialize
-        this.initScene();
-        this.connectWebSocket();
-        this.setupEventListeners();
+        // Scene initialization flag
+        this.sceneInitialized = false;
+
+        // Initialize lobby screens (don't init scene or connect yet)
+        this.setupConnectionScreen();
+        this.setupLobbyBrowserScreen();
+        this.setupWaitingRoomScreen();
         this.loadSounds();
-        this.startRenderLoop();
+
+        // Show connection screen
+        this.updateUI();
     }
+
+    // ==========================================================================
+    // State Machine Methods
+    // ==========================================================================
+
+    setState(newState) {
+        console.log(`State transition: ${this.connectionState} → ${newState}`);
+        this.connectionState = newState;
+        this.updateUI();
+    }
+
+    updateUI() {
+        // Hide all screens
+        document.getElementById('connection-screen').style.display = 'none';
+        document.getElementById('lobby-browser-screen').style.display = 'none';
+        document.getElementById('waiting-room-screen').style.display = 'none';
+        this.canvas.style.display = 'none';
+
+        // Hide HUD and controls until in game
+        const hud = document.getElementById('hud');
+        const controls = document.getElementById('controls');
+        const connectionStatus = document.getElementById('connectionStatus');
+
+        if (hud) hud.style.display = 'none';
+        if (controls) controls.style.display = 'none';
+        if (connectionStatus) connectionStatus.style.display = 'none';
+
+        // Show appropriate screen based on state
+        switch(this.connectionState) {
+            case STATE.DISCONNECTED:
+                document.getElementById('connection-screen').style.display = 'block';
+                break;
+
+            case STATE.CONNECTING:
+                document.getElementById('connection-screen').style.display = 'block';
+                break;
+
+            case STATE.CONNECTED:
+                document.getElementById('lobby-browser-screen').style.display = 'block';
+                this.requestGameList();
+                break;
+
+            case STATE.IN_LOBBY:
+                document.getElementById('waiting-room-screen').style.display = 'block';
+                this.renderWaitingRoom();
+                break;
+
+            case STATE.GAME_STARTING:
+                // Transitioning to game - keep lobby screen briefly
+                document.getElementById('waiting-room-screen').style.display = 'block';
+                break;
+
+            case STATE.IN_GAME:
+                this.canvas.style.display = 'block';
+                if (hud) hud.style.display = 'block';
+                if (controls) controls.style.display = 'block';
+                if (connectionStatus) connectionStatus.style.display = 'block';
+
+                if (!this.sceneInitialized) {
+                    this.initGame();
+                }
+                break;
+        }
+    }
+
+    initGame() {
+        console.log("Initializing game...");
+        // Create Babylon.js engine
+        this.engine = new BABYLON.Engine(this.canvas, true);
+
+        // Initialize scene
+        this.initScene();
+
+        // Load sound effects now that scene exists
+        try {
+            this.sounds.move = new BABYLON.Sound("move", null, this.scene);
+            this.sounds.attack = new BABYLON.Sound("attack", null, this.scene);
+            this.sounds.capture = new BABYLON.Sound("capture", null, this.scene);
+            this.sounds.deploy = new BABYLON.Sound("deploy", null, this.scene);
+            console.log("Sound effects loaded (silent placeholders)");
+        } catch (e) {
+            console.warn("Sound loading failed:", e);
+        }
+
+        // Set up event listeners for game
+        this.setupEventListeners();
+
+        // Start render loop
+        this.startRenderLoop();
+
+        this.sceneInitialized = true;
+        console.log("Game initialized successfully");
+    }
+
+    // ==========================================================================
+    // Scene Initialization (Babylon.js)
+    // ==========================================================================
 
     initScene() {
         console.log("Initializing scene...");
@@ -851,17 +975,9 @@ class GameClient {
 
     // Enhancement #9: Load sound effects
     loadSounds() {
-        // Note: These are placeholders. In production, you'd load actual sound files
-        try {
-            // Create silent sounds as placeholders
-            this.sounds.move = new BABYLON.Sound("move", null, this.scene);
-            this.sounds.attack = new BABYLON.Sound("attack", null, this.scene);
-            this.sounds.capture = new BABYLON.Sound("capture", null, this.scene);
-            this.sounds.deploy = new BABYLON.Sound("deploy", null, this.scene);
-            console.log("Sound effects loaded (silent placeholders)");
-        } catch (e) {
-            console.warn("Sound loading failed:", e);
-        }
+        // Note: Sound loading deferred until scene is initialized
+        // Sounds will be created when game starts
+        console.log("Sound loading deferred until game start");
     }
 
     playSound(soundName) {
@@ -901,6 +1017,12 @@ class GameClient {
     }
 
     updateGameState(gameState) {
+        // Only update if in game
+        if (this.connectionState !== STATE.IN_GAME) {
+            console.log("Not in game state, ignoring game state update");
+            return;
+        }
+
         console.log("==================================================");
         console.log("✓ Updating game state");
         console.log("  - Current turn:", gameState.current_turn_player_id);
@@ -931,70 +1053,504 @@ class GameClient {
         }
     }
 
-    connectWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const port = window.location.port || '8888';
-        const wsUrl = `${protocol}//${window.location.hostname}:${port}/ws`;
+    // ==========================================================================
+    // Connection Flow
+    // ==========================================================================
 
-        console.log("==================================================");
-        console.log("Connecting to WebSocket:", wsUrl);
-        console.log("==================================================");
+    setupConnectionScreen() {
+        document.getElementById('connect-btn').addEventListener('click', () => {
+            const name = document.getElementById('player-name-input').value.trim();
+            const host = document.getElementById('server-host-input').value.trim();
+            const port = document.getElementById('server-port-input').value.trim();
+
+            if (!name) {
+                this.showConnectionError('Please enter your name');
+                return;
+            }
+
+            this.playerName = name;
+            this.connectToServer(host, port);
+        });
+
+        // Allow Enter key to connect
+        document.getElementById('player-name-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('connect-btn').click();
+            }
+        });
+    }
+
+    connectToServer(host, port) {
+        this.setState(STATE.CONNECTING);
+        this.showConnectionStatus('Connecting to server...');
+
+        const wsUrl = `ws://${host}:${port}/ws`;
+        console.log(`Connecting to ${wsUrl}...`);
+
         this.websocket = new WebSocket(wsUrl);
 
         this.websocket.onopen = () => {
-            console.log("✓ WebSocket connected successfully");
-            document.getElementById('connectionStatus').textContent = 'Connected';
-            document.getElementById('connectionStatus').classList.remove('disconnected');
+            console.log('✓ WebSocket connected');
+            // Send CONNECT message
+            this.sendMessage({
+                type: 'CONNECT',
+                player_name: this.playerName,
+                client_type: 'WEB_BROWSER'
+            });
         };
 
         this.websocket.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-
-                // Handle different message types
-                if (data.type === "action_result") {
-                    console.log("Action result:", data);
-                    if (data.success) {
-                        // Play appropriate sound
-                        // this.playSound('move'); // Would play based on action type
-                    }
-                } else {
-                    // Game state update
-                    this.updateGameState(data);
-                }
+                this.handleMessage(data);
             } catch (error) {
-                console.error("Error parsing message:", error);
+                console.error('Error parsing message:', error);
             }
         };
 
         this.websocket.onerror = (error) => {
-            console.error("WebSocket error:", error);
-            document.getElementById('connectionStatus').textContent = 'Error';
-            document.getElementById('connectionStatus').classList.add('disconnected');
+            console.error('WebSocket error:', error);
+            this.showConnectionError('Connection failed');
+            this.setState(STATE.DISCONNECTED);
         };
 
         this.websocket.onclose = () => {
-            console.log("WebSocket disconnected");
-            document.getElementById('connectionStatus').textContent = 'Disconnected';
-            document.getElementById('connectionStatus').classList.add('disconnected');
-
-            // Attempt to reconnect after 3 seconds
-            setTimeout(() => this.connectWebSocket(), 3000);
+            console.log('WebSocket disconnected');
+            this.handleDisconnect();
         };
     }
 
-    sendAction(action) {
+    sendMessage(message) {
         if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-            action.player_id = this.localPlayerId;
-            console.log("Sending action:", action.type, "for", action.player_id);
+            this.websocket.send(JSON.stringify(message));
+            console.log('Sent:', message.type);
+        } else {
+            console.error('WebSocket not connected');
+        }
+    }
+
+    showConnectionStatus(message) {
+        const statusMsg = document.getElementById('connection-status-msg');
+        if (statusMsg) {
+            statusMsg.textContent = message;
+            statusMsg.style.color = '#0ff';
+        }
+    }
+
+    showConnectionError(message) {
+        const errorMsg = document.getElementById('connection-error');
+        if (errorMsg) {
+            errorMsg.textContent = message;
+        }
+    }
+
+    handleDisconnect() {
+        console.log('Handling disconnect...');
+
+        // Clean up state
+        this.playerId = null;
+        this.currentGameId = null;
+        this.currentLobby = null;
+        this.isHost = false;
+        this.isReady = false;
+        this.availableGames = [];
+
+        // Return to connection screen
+        this.setState(STATE.DISCONNECTED);
+        this.showConnectionStatus('Disconnected from server');
+    }
+
+    disconnect() {
+        if (this.websocket) {
+            this.websocket.close();
+        }
+    }
+
+    // ==========================================================================
+    // Message Router
+    // ==========================================================================
+
+    handleMessage(data) {
+        console.log('Received message:', data.type);
+
+        switch(data.type) {
+            case 'CONNECT_ACK':
+                this.handleConnectAck(data);
+                break;
+            case 'GAME_LIST':
+                this.handleGameList(data);
+                break;
+            case 'CREATE_GAME':
+                this.handleCreateGame(data);
+                break;
+            case 'JOIN_GAME':
+                this.handleJoinGame(data);
+                break;
+            case 'PLAYER_JOINED':
+                this.handlePlayerJoined(data);
+                break;
+            case 'PLAYER_LEFT':
+                this.handlePlayerLeft(data);
+                break;
+            case 'READY':
+                this.handleReadyBroadcast(data);
+                break;
+            case 'START_GAME':
+                this.handleStartGame(data);
+                break;
+            case 'FULL_STATE':
+                this.handleFullState(data);
+                break;
+            case 'ERROR':
+                this.handleError(data);
+                break;
+            default:
+                console.warn('Unknown message type:', data.type);
+        }
+    }
+
+    handleConnectAck(data) {
+        this.playerId = data.player_id;
+        console.log(`✓ Connected as ${this.playerName} (ID: ${this.playerId})`);
+        this.setState(STATE.CONNECTED);
+    }
+
+    handleError(data) {
+        console.error('Server error:', data.error || data.message);
+        alert(`Error: ${data.error || data.message}`);
+    }
+
+    sendAction(action) {
+        if (this.connectionState !== STATE.IN_GAME) {
+            console.warn('Not in game, ignoring action');
+            return;
+        }
+
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            action.player_id = this.playerId;
+            console.log("Sending action:", action.type);
             this.websocket.send(JSON.stringify(action));
         } else {
             console.error("WebSocket not connected");
         }
     }
 
+    // ==========================================================================
+    // Lobby Browser
+    // ==========================================================================
+
+    setupLobbyBrowserScreen() {
+        document.getElementById('create-game-btn').addEventListener('click', () => {
+            const gameName = prompt('Enter game name:', 'My Game');
+            if (gameName && gameName.trim()) {
+                this.createGame(gameName.trim(), 4);
+            }
+        });
+
+        document.getElementById('refresh-games-btn').addEventListener('click', () => {
+            this.requestGameList();
+        });
+
+        document.getElementById('disconnect-btn').addEventListener('click', () => {
+            this.disconnect();
+        });
+    }
+
+    requestGameList() {
+        this.sendMessage({
+            type: 'LIST_GAMES',
+            player_id: this.playerId
+        });
+    }
+
+    handleGameList(data) {
+        this.availableGames = data.games || [];
+        console.log(`Received ${this.availableGames.length} games`);
+        this.renderGameList();
+    }
+
+    renderGameList() {
+        const container = document.getElementById('game-list-container');
+        const noGamesMsg = document.getElementById('no-games-msg');
+
+        container.innerHTML = '';
+
+        if (this.availableGames.length === 0) {
+            noGamesMsg.style.display = 'block';
+            return;
+        }
+
+        noGamesMsg.style.display = 'none';
+
+        this.availableGames.forEach(game => {
+            const gameDiv = document.createElement('div');
+            gameDiv.className = 'game-item';
+
+            const gameInfo = document.createElement('div');
+            gameInfo.className = 'game-info';
+            gameInfo.innerHTML = `
+                <strong>${game.game_name || game.name}</strong>
+                <span>Players: ${game.num_players || 0}/${game.max_players || 4}</span>
+                <span>Status: ${game.status || 'waiting'}</span>
+            `;
+
+            const joinBtn = document.createElement('button');
+            joinBtn.textContent = 'Join';
+            joinBtn.addEventListener('click', () => {
+                this.joinGame(game.game_id);
+            });
+
+            gameDiv.appendChild(gameInfo);
+            gameDiv.appendChild(joinBtn);
+            container.appendChild(gameDiv);
+        });
+    }
+
+    createGame(gameName, maxPlayers) {
+        console.log(`Creating game: ${gameName}`);
+        this.sendMessage({
+            type: 'CREATE_GAME',
+            player_id: this.playerId,
+            game_name: gameName,
+            max_players: maxPlayers
+        });
+    }
+
+    handleCreateGame(data) {
+        console.log('Game created:', data.game_id);
+        this.currentGameId = data.game_id;
+        this.currentLobby = {
+            game_id: data.game_id,
+            game_name: data.game_name,
+            host_player_id: data.host_player_id,
+            players: data.players || [],
+            max_players: data.max_players,
+            status: data.status
+        };
+        this.isHost = true;
+        this.setState(STATE.IN_LOBBY);
+    }
+
+    joinGame(gameId) {
+        console.log(`Joining game: ${gameId}`);
+        this.sendMessage({
+            type: 'JOIN_GAME',
+            player_id: this.playerId,
+            game_id: gameId
+        });
+    }
+
+    handleJoinGame(data) {
+        console.log('Joined game:', data.game_id);
+        this.currentGameId = data.game_id;
+        this.currentLobby = {
+            game_id: data.game_id,
+            game_name: data.game_name,
+            host_player_id: data.host_player_id,
+            players: data.players || [],
+            max_players: data.max_players,
+            status: data.status
+        };
+        this.isHost = (this.playerId === data.host_player_id);
+        this.setState(STATE.IN_LOBBY);
+    }
+
+    // ==========================================================================
+    // Waiting Room
+    // ==========================================================================
+
+    setupWaitingRoomScreen() {
+        document.getElementById('ready-btn').addEventListener('click', () => {
+            this.toggleReady();
+        });
+
+        document.getElementById('start-game-btn').addEventListener('click', () => {
+            this.startGame();
+        });
+
+        document.getElementById('leave-lobby-btn').addEventListener('click', () => {
+            this.leaveLobby();
+        });
+    }
+
+    renderWaitingRoom() {
+        if (!this.currentLobby) {
+            console.warn('No lobby data to render');
+            return;
+        }
+
+        // Update game name
+        document.getElementById('lobby-game-name').textContent = this.currentLobby.game_name;
+
+        // Render player list
+        this.renderLobbyPlayerList();
+
+        // Show/hide start button (host only)
+        const startBtn = document.getElementById('start-game-btn');
+        startBtn.style.display = this.isHost ? 'block' : 'none';
+
+        // Update ready button
+        this.updateReadyButton();
+    }
+
+    renderLobbyPlayerList() {
+        const container = document.getElementById('lobby-players');
+        container.innerHTML = '<h3>Players:</h3>';
+
+        if (!this.currentLobby || !this.currentLobby.players) {
+            return;
+        }
+
+        this.currentLobby.players.forEach((player, index) => {
+            const playerDiv = document.createElement('div');
+            playerDiv.className = 'lobby-player';
+
+            const isHost = player.player_id === this.currentLobby.host_player_id;
+            const isYou = player.player_id === this.playerId;
+            const readyText = player.is_ready ? ' [READY]' : '';
+            const hostLabel = isHost ? ' (Host)' : '';
+            const youLabel = isYou ? ' (YOU)' : '';
+
+            // Color-code by player color index
+            const color = this.getPlayerColor(player.color_index);
+
+            playerDiv.innerHTML = `
+                <span style="color: ${color};">
+                    ${player.player_name}${hostLabel}${youLabel}${readyText}
+                </span>
+            `;
+
+            container.appendChild(playerDiv);
+        });
+    }
+
+    getPlayerColor(colorIndex) {
+        const colors = ['#0ff', '#f0f', '#ff0', '#0f0']; // Cyan, Magenta, Yellow, Green
+        return colors[colorIndex] || '#fff';
+    }
+
+    updateReadyButton() {
+        const readyBtn = document.getElementById('ready-btn');
+        readyBtn.textContent = this.isReady ? 'Unready' : 'Ready';
+        readyBtn.style.backgroundColor = this.isReady ? '#080' : '#000';
+    }
+
+    toggleReady() {
+        this.isReady = !this.isReady;
+        console.log(`Setting ready status to: ${this.isReady}`);
+        this.sendMessage({
+            type: 'READY',
+            player_id: this.playerId,
+            game_id: this.currentGameId,
+            ready: this.isReady
+        });
+        this.updateReadyButton();
+    }
+
+    startGame() {
+        if (!this.isHost) {
+            alert('Only the host can start the game');
+            return;
+        }
+
+        // Check if all players ready
+        const allReady = this.currentLobby.players.every(p => p.is_ready);
+        if (!allReady) {
+            alert('Cannot start game! All players must be ready.');
+            return;
+        }
+
+        console.log('Starting game...');
+        this.sendMessage({
+            type: 'START_GAME',
+            player_id: this.playerId,
+            game_id: this.currentGameId
+        });
+    }
+
+    leaveLobby() {
+        console.log('Leaving lobby...');
+        this.sendMessage({
+            type: 'LEAVE_GAME',
+            player_id: this.playerId,
+            game_id: this.currentGameId
+        });
+
+        this.currentGameId = null;
+        this.currentLobby = null;
+        this.isHost = false;
+        this.isReady = false;
+        this.setState(STATE.CONNECTED);
+    }
+
+    handlePlayerJoined(data) {
+        console.log(`Player joined: ${data.player_name}`);
+
+        if (data.lobby) {
+            this.currentLobby.players = data.lobby.players;
+            this.renderLobbyPlayerList();
+        }
+    }
+
+    handlePlayerLeft(data) {
+        console.log(`Player left: ${data.player_id}`);
+
+        // Update player list
+        if (this.currentLobby) {
+            this.currentLobby.players = this.currentLobby.players.filter(
+                p => p.player_id !== data.player_id
+            );
+            this.renderLobbyPlayerList();
+
+            // If host left, return to browser
+            if (data.player_id === this.currentLobby.host_player_id) {
+                alert('Host left the game. Returning to lobby.');
+                this.leaveLobby();
+            }
+        }
+    }
+
+    handleReadyBroadcast(data) {
+        console.log('Ready status updated:', data);
+
+        // Update player list with new ready statuses
+        if (data.lobby && data.lobby.players) {
+            this.currentLobby.players = data.lobby.players;
+            this.renderLobbyPlayerList();
+        }
+    }
+
+    handleStartGame(data) {
+        console.log('Game starting!');
+        this.setState(STATE.GAME_STARTING);
+        // Wait for FULL_STATE to actually start
+    }
+
+    handleFullState(data) {
+        console.log('Received FULL_STATE');
+
+        if (this.connectionState !== STATE.IN_GAME) {
+            // Transition to game
+            this.setState(STATE.IN_GAME);
+
+            // Extract local player ID from server mapping
+            if (data.perspective_player_id) {
+                this.localPlayerId = data.perspective_player_id;
+                console.log(`Local player ID: ${this.localPlayerId}`);
+            }
+        }
+
+        // Update game state
+        if (data.game_state) {
+            this.updateGameState(data.game_state);
+        }
+    }
+
     // Enhancement #1: Click-based token selection and movement
     handleClick(gridX, gridY) {
+        // Only handle clicks in game
+        if (this.connectionState !== STATE.IN_GAME) return;
+
         if (!this.gameState || this.gameState.current_turn_player_id !== this.localPlayerId) {
             return; // Not our turn
         }

@@ -19,7 +19,7 @@ class ServerRunner:
     """Handles server startup and graceful shutdown."""
 
     def __init__(
-        self, host: str, port: int, unified: bool = False, http_port: int = 8080
+        self, host: str, port: int, unified: bool = False, http_port: int = 8081
     ):
         """
         Initialize server runner.
@@ -109,8 +109,8 @@ def main():
     parser.add_argument(
         "--http-port",
         type=int,
-        default=8080,
-        help="HTTP/WebSocket port for unified server (default: 8080)",
+        default=8081,
+        help="HTTP/WebSocket port for unified server (default: 8081)",
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 

@@ -917,7 +917,7 @@ class GameServer:
 
         return app
 
-    async def start_aiohttp_server(self, port: int = 8080) -> None:
+    async def start_aiohttp_server(self, port: int = 8081) -> None:
         """Start the aiohttp HTTP/WebSocket server."""
         from aiohttp import web
 
@@ -943,7 +943,7 @@ class GameServer:
             logger.info("HTTP/WebSocket server stopped")
 
     async def start_unified_server(
-        self, tcp_port: int = 8888, http_port: int = 8080
+        self, tcp_port: int = 8888, http_port: int = 8081
     ) -> None:
         """
         Start both TCP and HTTP/WebSocket servers.
@@ -966,7 +966,7 @@ class GameServer:
         async with tcp_server:
             await tcp_server.serve_forever()
 
-    def run_unified_server(self, tcp_port: int = 8888, http_port: int = 8080) -> None:
+    def run_unified_server(self, tcp_port: int = 8888, http_port: int = 8081) -> None:
         """
         Run both TCP and HTTP/WebSocket servers (blocking).
 
