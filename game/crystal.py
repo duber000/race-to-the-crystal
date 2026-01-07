@@ -1,6 +1,7 @@
 """
 Crystal capture and win condition logic.
 """
+
 from dataclasses import dataclass, field
 from typing import Self
 
@@ -26,6 +27,7 @@ class Crystal:
         turns_held: Number of consecutive turns held by current player
         base_tokens_required: Base number of tokens required to hold crystal
     """
+
     position: tuple[int, int]
     holding_player_id: PlayerID | None = None
     holding_token_ids: list[TokenID] = field(default_factory=list)
@@ -53,7 +55,9 @@ class Crystal:
         required = self.base_tokens_required - reduction
         return max(1, required)
 
-    def _count_tokens_by_player(self, tokens_at_position: list[tuple[TokenID, PlayerID]]) -> dict[PlayerID, list[TokenID]]:
+    def _count_tokens_by_player(
+        self, tokens_at_position: list[tuple[TokenID, PlayerID]]
+    ) -> dict[PlayerID, list[TokenID]]:
         """
         Group tokens by their controlling player.
 
@@ -70,7 +74,9 @@ class Crystal:
             player_token_counts[player_id].append(token_id)
         return player_token_counts
 
-    def _find_dominant_player(self, player_token_counts: dict[PlayerID, list[TokenID]]) -> tuple[PlayerID | None, int]:
+    def _find_dominant_player(
+        self, player_token_counts: dict[PlayerID, list[TokenID]]
+    ) -> tuple[PlayerID | None, int]:
         """
         Determine which player has the most tokens, if any.
 
@@ -97,7 +103,7 @@ class Crystal:
         dominant_player: PlayerID | None,
         dominant_count: int,
         required_tokens: int,
-        player_token_counts: dict[PlayerID, list[TokenID]]
+        player_token_counts: dict[PlayerID, list[TokenID]],
     ) -> PlayerID | None:
         """
         Update crystal holding state and check for win condition.
@@ -131,7 +137,7 @@ class Crystal:
     def update_capture_status(
         self,
         tokens_at_position: list[tuple[TokenID, PlayerID]],
-        disabled_generators: int
+        disabled_generators: int,
     ) -> PlayerID | None:
         """
         Update crystal capture status based on tokens at this position.
@@ -146,10 +152,14 @@ class Crystal:
         self.holding_token_ids.clear()
 
         player_token_counts = self._count_tokens_by_player(tokens_at_position)
-        dominant_player, dominant_count = self._find_dominant_player(player_token_counts)
+        dominant_player, dominant_count = self._find_dominant_player(
+            player_token_counts
+        )
         required_tokens = self.get_tokens_required(disabled_generators)
 
-        return self._process_win_logic(dominant_player, dominant_count, required_tokens, player_token_counts)
+        return self._process_win_logic(
+            dominant_player, dominant_count, required_tokens, player_token_counts
+        )
 
     def reset_capture(self) -> None:
         """Reset capture progress."""
@@ -176,7 +186,10 @@ class Crystal:
         Returns:
             Tuple of (current_tokens, required_tokens)
         """
-        return (len(self.holding_token_ids), self.get_tokens_required(disabled_generators))
+        return (
+            len(self.holding_token_ids),
+            self.get_tokens_required(disabled_generators),
+        )
 
     def is_contested(self) -> bool:
         """Check if crystal is currently contested."""
@@ -229,7 +242,7 @@ class CrystalManager:
     def check_win_condition(
         crystal: Crystal,
         tokens_at_position: list[tuple[TokenID, PlayerID]],
-        disabled_generators: int
+        disabled_generators: int,
     ) -> PlayerID | None:
         """
         Check if win condition is met and update crystal status.
@@ -245,10 +258,7 @@ class CrystalManager:
         return crystal.update_capture_status(tokens_at_position, disabled_generators)
 
     @staticmethod
-    def get_capture_status_message(
-        crystal: Crystal,
-        disabled_generators: int
-    ) -> str:
+    def get_capture_status_message(crystal: Crystal, disabled_generators: int) -> str:
         """
         Get a human-readable status message for the crystal.
 
@@ -262,7 +272,9 @@ class CrystalManager:
         if not crystal.holding_player_id:
             return "Crystal is unclaimed"
 
-        current_tokens, required_tokens = crystal.get_token_requirement(disabled_generators)
+        current_tokens, required_tokens = crystal.get_token_requirement(
+            disabled_generators
+        )
         turns_held, turns_required = crystal.get_capture_progress()
 
         return (

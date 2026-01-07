@@ -5,19 +5,19 @@ This module provides functions to make the game state observable to AI players
 (like Claude) without requiring visual rendering. All functions produce
 human-readable text descriptions of the game state.
 """
-from typing import Dict, List, Tuple, Optional
+
+from typing import Dict, List, Tuple
 from game.game_state import GameState
-from game.token import Token
 from game.movement import MovementSystem
 from game.combat import CombatSystem
-from shared.enums import GamePhase, TurnPhase, PlayerColor, CellType
+from shared.enums import GamePhase, TurnPhase, PlayerColor
 from shared.constants import (
     BOARD_WIDTH,
     BOARD_HEIGHT,
     CRYSTAL_BASE_TOKENS_REQUIRED,
     GENERATOR_TOKEN_REDUCTION,
 )
-from shared.types import TokenID, PlayerID
+from shared.types import PlayerID
 
 
 class AIObserver:
@@ -135,9 +135,11 @@ class AIObserver:
 
             turn_indicator = "YOUR TURN" if is_your_turn else "WAITING"
             player_name = current_player.name if current_player else "Unknown"
-            player_color = AIObserver.COLOR_NAMES.get(
-                current_player.color, "Unknown"
-            ) if current_player else "Unknown"
+            player_color = (
+                AIObserver.COLOR_NAMES.get(current_player.color, "Unknown")
+                if current_player
+                else "Unknown"
+            )
 
             lines.append(
                 f"TURN {game_state.turn_number} - {turn_indicator} "
@@ -197,8 +199,7 @@ class AIObserver:
     ) -> None:
         """Add enemy token information."""
         enemy_players = [
-            p for pid, p in game_state.players.items()
-            if pid != perspective_player_id
+            p for pid, p in game_state.players.items() if pid != perspective_player_id
         ]
         if not enemy_players:
             return
@@ -211,9 +212,7 @@ class AIObserver:
                 if tid in game_state.tokens and game_state.tokens[tid].is_deployed
             ]
             color_name = AIObserver.COLOR_NAMES.get(enemy.color, "Unknown")
-            lines.append(
-                f"  {enemy.name} ({color_name}): {len(enemy_tokens)} deployed"
-            )
+            lines.append(f"  {enemy.name} ({color_name}): {len(enemy_tokens)} deployed")
             for token in sorted(enemy_tokens, key=lambda t: t.id):
                 x, y = token.position
                 lines.append(
@@ -239,7 +238,7 @@ class AIObserver:
         disabled_gens = sum(1 for g in game_state.generators if g.is_disabled)
         tokens_required = max(
             1,
-            CRYSTAL_BASE_TOKENS_REQUIRED - (disabled_gens * GENERATOR_TOKEN_REDUCTION)
+            CRYSTAL_BASE_TOKENS_REQUIRED - (disabled_gens * GENERATOR_TOKEN_REDUCTION),
         )
 
         lines.append("CRYSTAL:")
@@ -263,9 +262,7 @@ class AIObserver:
         lines.append("")
 
     @staticmethod
-    def get_board_map(
-        game_state: GameState, perspective_player_id: PlayerID
-    ) -> str:
+    def get_board_map(game_state: GameState, perspective_player_id: PlayerID) -> str:
         """
         Generate ASCII art map of the board.
 
@@ -298,8 +295,10 @@ class AIObserver:
         game_state: GameState, perspective_player_id: PlayerID
     ) -> list:
         """Create and populate the board grid with symbols."""
-        board_grid = [[AIObserver.SYMBOL_EMPTY for _ in range(BOARD_WIDTH)]
-                      for _ in range(BOARD_HEIGHT)]
+        board_grid = [
+            [AIObserver.SYMBOL_EMPTY for _ in range(BOARD_WIDTH)]
+            for _ in range(BOARD_HEIGHT)
+        ]
 
         AIObserver._mark_special_cells(board_grid, game_state)
         AIObserver._place_tokens_on_grid(board_grid, game_state, perspective_player_id)
@@ -313,7 +312,7 @@ class AIObserver:
         if game_state.generators:
             for i, gen in enumerate(game_state.generators):
                 x, y = gen.position
-                board_grid[y][x] = f"{i+1}"
+                board_grid[y][x] = f"{i + 1}"
 
         # Crystal
         if game_state.crystal:
@@ -397,9 +396,7 @@ class AIObserver:
         lines.append("")
 
     @staticmethod
-    def list_available_actions(
-        game_state: GameState, player_id: PlayerID
-    ) -> Dict:
+    def list_available_actions(game_state: GameState, player_id: PlayerID) -> Dict:
         """
         Return structured dictionary of all valid actions for current turn phase.
 
@@ -449,17 +446,19 @@ class AIObserver:
                 token, game_state.board, tokens_dict=game_state.tokens
             )
             if valid_moves:
-                actions.append({
-                    "type": "MOVE",
-                    "token_id": token.id,
-                    "token_position": list(token.position),
-                    "token_health": f"{token.health}/{token.max_health}",
-                    "valid_destinations": [list(pos) for pos in valid_moves],
-                    "description": (
-                        f"Move token #{token.id} ({token.max_health}hp) "
-                        f"from ({token.position[0]},{token.position[1]})"
-                    ),
-                })
+                actions.append(
+                    {
+                        "type": "MOVE",
+                        "token_id": token.id,
+                        "token_position": list(token.position),
+                        "token_health": f"{token.health}/{token.max_health}",
+                        "valid_destinations": [list(pos) for pos in valid_moves],
+                        "description": (
+                            f"Move token #{token.id} ({token.max_health}hp) "
+                            f"from ({token.position[0]},{token.position[1]})"
+                        ),
+                    }
+                )
 
     @staticmethod
     def _add_deployment_actions(
@@ -474,21 +473,24 @@ class AIObserver:
             if reserve_counts[health_value] > 0:
                 # Check which corner positions are actually available
                 available_corners = [
-                    pos for pos in corner_positions
-                    if game_state.board.get_cell_at(pos) and
-                       not game_state.board.get_cell_at(pos).is_occupied()
+                    pos
+                    for pos in corner_positions
+                    if game_state.board.get_cell_at(pos)
+                    and not game_state.board.get_cell_at(pos).is_occupied()
                 ]
                 if available_corners:
-                    actions.append({
-                        "type": "DEPLOY",
-                        "health_value": health_value,
-                        "positions": [list(pos) for pos in available_corners],
-                        "remaining": reserve_counts[health_value],
-                        "description": (
-                            f"Deploy {health_value}hp token from reserve "
-                            f"({reserve_counts[health_value]} remaining)"
-                        ),
-                    })
+                    actions.append(
+                        {
+                            "type": "DEPLOY",
+                            "health_value": health_value,
+                            "positions": [list(pos) for pos in available_corners],
+                            "remaining": reserve_counts[health_value],
+                            "description": (
+                                f"Deploy {health_value}hp token from reserve "
+                                f"({reserve_counts[health_value]} remaining)"
+                            ),
+                        }
+                    )
 
     @staticmethod
     def _add_attack_actions(
@@ -501,33 +503,39 @@ class AIObserver:
                 damage = token.health // 2
                 will_kill = CombatSystem.would_kill(token, target)
                 target_player = game_state.get_player(target.player_id)
-                target_color = AIObserver.COLOR_NAMES.get(
-                    target_player.color, "Unknown"
-                ) if target_player else "Unknown"
+                target_color = (
+                    AIObserver.COLOR_NAMES.get(target_player.color, "Unknown")
+                    if target_player
+                    else "Unknown"
+                )
 
-                actions.append({
-                    "type": "ATTACK",
-                    "attacker_id": token.id,
-                    "attacker_position": list(token.position),
-                    "defender_id": target.id,
-                    "defender_position": list(target.position),
-                    "defender_owner": target_color,
-                    "damage": damage,
-                    "will_kill": will_kill,
-                    "description": (
-                        f"Attack token #{target.id} ({target_color}) "
-                        f"with token #{token.id} for {damage} damage"
-                        f"{' (KILL)' if will_kill else ''}"
-                    ),
-                })
+                actions.append(
+                    {
+                        "type": "ATTACK",
+                        "attacker_id": token.id,
+                        "attacker_position": list(token.position),
+                        "defender_id": target.id,
+                        "defender_position": list(target.position),
+                        "defender_owner": target_color,
+                        "damage": damage,
+                        "will_kill": will_kill,
+                        "description": (
+                            f"Attack token #{target.id} ({target_color}) "
+                            f"with token #{token.id} for {damage} damage"
+                            f"{' (KILL)' if will_kill else ''}"
+                        ),
+                    }
+                )
 
     @staticmethod
     def _add_end_turn_action(actions: list) -> None:
         """Add end turn action."""
-        actions.append({
-            "type": "END_TURN",
-            "description": "End your turn",
-        })
+        actions.append(
+            {
+                "type": "END_TURN",
+                "description": "End your turn",
+            }
+        )
 
     @staticmethod
     def explain_victory_conditions(game_state: GameState) -> str:
@@ -548,10 +556,12 @@ class AIObserver:
         disabled_gens = sum(1 for g in game_state.generators if g.is_disabled)
         tokens_required = max(
             1,
-            CRYSTAL_BASE_TOKENS_REQUIRED - (disabled_gens * GENERATOR_TOKEN_REDUCTION)
+            CRYSTAL_BASE_TOKENS_REQUIRED - (disabled_gens * GENERATOR_TOKEN_REDUCTION),
         )
 
-        lines.append(f"Win by holding the crystal with {tokens_required} tokens for 3 consecutive turns")
+        lines.append(
+            f"Win by holding the crystal with {tokens_required} tokens for 3 consecutive turns"
+        )
         lines.append(f"  Base requirement: {CRYSTAL_BASE_TOKENS_REQUIRED} tokens")
         if disabled_gens > 0:
             lines.append(
@@ -572,11 +582,17 @@ class AIObserver:
                     if player:
                         color_name = AIObserver.COLOR_NAMES.get(player.color, "Unknown")
                         # Get turns held for this player (from crystal holding_player_id)
-                        turns_held = crystal.turns_held if crystal.holding_player_id == pid else 0
+                        turns_held = (
+                            crystal.turns_held
+                            if crystal.holding_player_id == pid
+                            else 0
+                        )
                         progress = f"{count}/{tokens_required} tokens, held for {turns_held}/3 turns"
 
                         if count >= tokens_required and turns_held >= 3:
-                            lines.append(f"  {player.name} ({color_name}): {progress} ✓ WINNING!")
+                            lines.append(
+                                f"  {player.name} ({color_name}): {progress} ✓ WINNING!"
+                            )
                         elif count >= tokens_required:
                             lines.append(
                                 f"  {player.name} ({color_name}): {progress} "
@@ -634,7 +650,9 @@ class AIObserver:
         sections.append(AIObserver.get_board_map(game_state, perspective_player_id))
 
         # Available actions
-        actions_data = AIObserver.list_available_actions(game_state, perspective_player_id)
+        actions_data = AIObserver.list_available_actions(
+            game_state, perspective_player_id
+        )
         sections.append("AVAILABLE ACTIONS:")
         if actions_data["actions"]:
             for i, action in enumerate(actions_data["actions"], 1):

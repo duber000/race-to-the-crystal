@@ -51,7 +51,9 @@ class LobbyView(arcade.View):
         self.players: Dict[str, Dict] = {}  # player_id -> player_info
         self.is_ready = False
         self.game_started = False
-        self.pending_game_state = None  # Store FULL_STATE that arrives before game view is ready
+        self.pending_game_state = (
+            None  # Store FULL_STATE that arrives before game view is ready
+        )
 
         # UI elements
         self.title_text = None
@@ -93,7 +95,7 @@ class LobbyView(arcade.View):
             arcade.color.CYAN,
             font_size=32,
             anchor_x="center",
-            bold=True
+            bold=True,
         )
 
         # Game ID display
@@ -104,7 +106,7 @@ class LobbyView(arcade.View):
             self.window.height - 120,
             arcade.color.GRAY,
             font_size=14,
-            anchor_x="center"
+            anchor_x="center",
         )
 
         # Copy feedback text (shown briefly after copying)
@@ -115,7 +117,7 @@ class LobbyView(arcade.View):
             arcade.color.GREEN,
             font_size=12,
             anchor_x="center",
-            bold=True
+            bold=True,
         )
 
         # Status text
@@ -126,7 +128,7 @@ class LobbyView(arcade.View):
             self.window.height - 170,
             arcade.color.WHITE,
             font_size=16,
-            anchor_x="center"
+            anchor_x="center",
         )
 
         # Create button layout
@@ -152,8 +154,7 @@ class LobbyView(arcade.View):
         # Start game button (host only)
         if self.is_host:
             self.start_button = arcade.gui.UIFlatButton(
-                text="Start Game",
-                **button_style
+                text="Start Game", **button_style
             )
             self.start_button.on_click = self._on_start_click
             v_box.add(self.start_button)
@@ -166,10 +167,7 @@ class LobbyView(arcade.View):
         # Position buttons at bottom
         self.manager.add(
             arcade.gui.UIAnchorLayout(
-                anchor_x="center_x",
-                anchor_y="bottom",
-                children=[v_box],
-                align_y=50
+                anchor_x="center_x", anchor_y="bottom", children=[v_box], align_y=50
             )
         )
 
@@ -179,11 +177,7 @@ class LobbyView(arcade.View):
         # Create chat widget
         if self.window:
             self.chat_widget = ChatWidget(
-                self.network_client,
-                x=10,
-                y=120,
-                width=400,
-                height=250
+                self.network_client, x=10, y=120, width=400, height=250
             )
 
     def on_show_view(self):
@@ -294,7 +288,7 @@ class LobbyView(arcade.View):
             arcade.color.WHITE,
             font_size=20,
             anchor_x="center",
-            bold=True
+            bold=True,
         )
         self.player_texts.append(title)
 
@@ -313,7 +307,11 @@ class LobbyView(arcade.View):
 
             # Format: "Player Name [READY]" or "Player Name"
             ready_status = " [READY]" if is_ready else ""
-            host_marker = " (Host)" if player_id == self.network_client.player_id and self.is_host else ""
+            host_marker = (
+                " (Host)"
+                if player_id == self.network_client.player_id and self.is_host
+                else ""
+            )
             text_content = f"{name}{host_marker}{ready_status}"
 
             player_text = arcade.Text(
@@ -322,7 +320,7 @@ class LobbyView(arcade.View):
                 y_pos,
                 color,
                 font_size=18,
-                anchor_x="center"
+                anchor_x="center",
             )
             self.player_texts.append(player_text)
             y_pos -= 35
@@ -378,7 +376,9 @@ class LobbyView(arcade.View):
                 logger.error(f"Server error: {error_msg}")
 
         except Exception as e:
-            logger.error(f"Error processing message {message.type.value}: {e}", exc_info=True)
+            logger.error(
+                f"Error processing message {message.type.value}: {e}", exc_info=True
+            )
 
     def _handle_create_game(self, message):
         """Handle CREATE_GAME response - initialize lobby with host player (main thread)."""
@@ -403,10 +403,12 @@ class LobbyView(arcade.View):
                 self.players[player_id] = {
                     "player_name": player_info.get("player_name", "Unknown"),
                     "is_ready": player_info.get("is_ready", False),
-                    "color_index": player_info.get("color_index", 0)
+                    "color_index": player_info.get("color_index", 0),
                 }
 
-        logger.info(f"Lobby created: {self.game_name} with {len(self.players)} player(s), max {self.max_players}")
+        logger.info(
+            f"Lobby created: {self.game_name} with {len(self.players)} player(s), max {self.max_players}"
+        )
 
         # Mark text for update on next frame
         self._needs_text_update = True
@@ -435,7 +437,7 @@ class LobbyView(arcade.View):
             self.players[player_id] = {
                 "player_name": player_name,
                 "is_ready": False,
-                "color_index": color_index
+                "color_index": color_index,
             }
             self._needs_text_update = True
 
@@ -490,7 +492,9 @@ class LobbyView(arcade.View):
         # it's for the game view, not the lobby. Store it for NetworkGameView.
         # Check if game_state has the "tokens" field which indicates it's actual game state
         if game_state_data and "tokens" in game_state_data:
-            logger.info("Lobby view received game FULL_STATE - storing for NetworkGameView")
+            logger.info(
+                "Lobby view received game FULL_STATE - storing for NetworkGameView"
+            )
             self.pending_game_state = game_state_data
             return  # Don't process as lobby update
 
@@ -514,7 +518,7 @@ class LobbyView(arcade.View):
                     self.players[player_id] = {
                         "player_name": player_info.get("player_name", "Unknown"),
                         "is_ready": player_info.get("is_ready", False),
-                        "color_index": player_info.get("color_index", 0)
+                        "color_index": player_info.get("color_index", 0),
                     }
 
             # Mark text for update on next frame
@@ -550,9 +554,7 @@ class LobbyView(arcade.View):
         logger.info(f"Setting ready status: {self.is_ready}")
 
         # Send ready message to server
-        schedule_async(
-            self.network_client.set_ready(self.is_ready)
-        )
+        schedule_async(self.network_client.set_ready(self.is_ready))
 
         # Update button text
         self.ready_button.text = "Unready" if self.is_ready else "Ready"
@@ -565,9 +567,7 @@ class LobbyView(arcade.View):
         logger.info("Host starting game...")
 
         # Check if all players are ready
-        all_ready = all(
-            p.get("is_ready", False) for p in self.players.values()
-        )
+        all_ready = all(p.get("is_ready", False) for p in self.players.values())
 
         if not all_ready:
             logger.warning("Not all players are ready")
@@ -580,10 +580,7 @@ class LobbyView(arcade.View):
             message = f"Cannot start game!\n\nWaiting for players to be ready:\n{', '.join(not_ready_players)}"
 
             message_box = arcade.gui.UIMessageBox(
-                width=400,
-                height=200,
-                message_text=message,
-                buttons=["OK"]
+                width=400, height=200, message_text=message, buttons=["OK"]
             )
             self.manager.add(message_box)
             return
@@ -601,7 +598,7 @@ class LobbyView(arcade.View):
             type=MessageType.START_GAME,
             timestamp=time.time(),
             player_id=self.network_client.player_id,
-            data={"game_id": self.network_client.game_id}
+            data={"game_id": self.network_client.game_id},
         )
         await self.network_client.connection.send_message(msg)
 

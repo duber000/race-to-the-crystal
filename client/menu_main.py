@@ -5,28 +5,28 @@ This is the new primary entry point that provides a main menu
 for choosing between local and network games.
 """
 
-import sys
 import arcade
 import arcade.gui
-import asyncio
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from client.ui.main_menu import MainMenuView, SettingsView, NetworkSetupView
 from client.ui.lobby_view import LobbyView
 from client.ui.network_game_view import NetworkGameView
-from client.ui.victory_view import VictoryView, VictoryViewSimple
+from client.ui.victory_view import VictoryViewSimple
 from client.ui.game_browser_view import GameBrowserView
 from client.ui.async_arcade import AsyncWindow, schedule_async
 from client.client_main import setup_game_state
 from client.game_window import GameView
+
+if TYPE_CHECKING:
+    from client.game_window import GameView as GameWindow
 from client.network_client import NetworkClient
 from network.messages import ClientType
 from shared.constants import DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class MenuGameWindow(AsyncWindow):
             DEFAULT_WINDOW_WIDTH,
             DEFAULT_WINDOW_HEIGHT,
             "Race to the Crystal",
-            resizable=True
+            resizable=True,
         )
 
         # Create menu views
@@ -71,7 +71,7 @@ class MenuGameWindow(AsyncWindow):
         self.network_client: Optional[NetworkClient] = None
 
         # Game window reference (when game is active)
-        self.game_window: Optional[GameWindow] = None
+        self.game_window: Optional["GameWindow"] = None
 
         logger.info("Menu game window initialized with async support")
 
@@ -90,14 +90,11 @@ class MenuGameWindow(AsyncWindow):
         """
         # Create a simple error dialog using arcade.gui
         message_box = arcade.gui.UIMessageBox(
-            width=400,
-            height=200,
-            message_text=message,
-            buttons=["OK"]
+            width=400, height=200, message_text=message, buttons=["OK"]
         )
 
         # Add the message box to the current view's UI manager
-        if hasattr(self.current_view, 'manager'):
+        if hasattr(self.current_view, "manager"):
             self.current_view.manager.add(message_box)
 
         logger.warning(f"Error dialog: {title} - {message}")
@@ -151,7 +148,7 @@ class MenuGameWindow(AsyncWindow):
         host: str,
         port: int,
         game_name: Optional[str],
-        max_players: int = 4
+        max_players: int = 4,
     ):
         """
         Start hosting a network game.
@@ -170,7 +167,9 @@ class MenuGameWindow(AsyncWindow):
 
         # Create network client and connect
         schedule_async(
-            self._connect_and_create_game(player_name, host, port, game_name or "My Game", max_players)
+            self._connect_and_create_game(
+                player_name, host, port, game_name or "My Game", max_players
+            )
         )
 
     def _start_join_game(
@@ -179,7 +178,7 @@ class MenuGameWindow(AsyncWindow):
         host: str,
         port: int,
         game_name: Optional[str],
-        max_players: int = 4
+        max_players: int = 4,
     ):
         """
         Join a network game.
@@ -191,9 +190,7 @@ class MenuGameWindow(AsyncWindow):
             game_name: Not used for joining (None)
             max_players: Not used for joining
         """
-        logger.info(
-            f"Showing game browser: player={player_name}, {host}:{port}"
-        )
+        logger.info(f"Showing game browser: player={player_name}, {host}:{port}")
 
         # Show game browser to select which game to join
         browser_view = GameBrowserView(player_name, host, port, self.main_menu)
@@ -257,7 +254,7 @@ class MenuGameWindow(AsyncWindow):
         host: str,
         port: int,
         game_name: str,
-        max_players: int = 4
+        max_players: int = 4,
     ):
         """
         Connect to server and create a game.
@@ -281,14 +278,18 @@ class MenuGameWindow(AsyncWindow):
                 logger.error("Failed to connect to server")
                 self._show_error_dialog(
                     "Connection Failed",
-                    f"Could not connect to server at {host}:{port}\n\nPlease check the server address and try again."
+                    f"Could not connect to server at {host}:{port}\n\nPlease check the server address and try again.",
                 )
                 self.show_view(self.main_menu)
                 return
 
             # Create game
-            logger.info(f"Creating game '{game_name}' with max {max_players} players...")
-            success = await self.network_client.create_game(game_name, max_players=max_players)
+            logger.info(
+                f"Creating game '{game_name}' with max {max_players} players..."
+            )
+            success = await self.network_client.create_game(
+                game_name, max_players=max_players
+            )
 
             if not success:
                 logger.error("Failed to create game")
@@ -339,6 +340,7 @@ class MenuGameWindow(AsyncWindow):
         local_player_id = None
         if "initial_game_state" in game_data:
             from game.game_state import GameState
+
             try:
                 game_state_dict = game_data["initial_game_state"]
                 logger.info(f"Game state dict has keys: {list(game_state_dict.keys())}")
@@ -346,12 +348,18 @@ class MenuGameWindow(AsyncWindow):
 
                 # Extract the local player ID (perspective_player_id is the game player ID like "player_0")
                 local_player_id = game_state_dict.get("perspective_player_id")
-                logger.info(f"Extracted local_player_id from perspective_player_id: {local_player_id}")
+                logger.info(
+                    f"Extracted local_player_id from perspective_player_id: {local_player_id}"
+                )
 
                 initial_state = GameState.from_dict(game_state_dict)
-                logger.info(f"Received initial game state with {len(initial_state.players)} players, {len(initial_state.tokens)} tokens")
+                logger.info(
+                    f"Received initial game state with {len(initial_state.players)} players, {len(initial_state.tokens)} tokens"
+                )
             except Exception as e:
-                logger.error(f"Failed to deserialize initial game state: {e}", exc_info=True)
+                logger.error(
+                    f"Failed to deserialize initial game state: {e}", exc_info=True
+                )
 
         # Create network game view with initial state
         self.network_game_view = NetworkGameView(
@@ -400,7 +408,7 @@ class MenuGameWindow(AsyncWindow):
 
         self._show_error_dialog(
             "Connection Lost",
-            "You have been disconnected from the network game.\n\nReturning to main menu."
+            "You have been disconnected from the network game.\n\nReturning to main menu.",
         )
         self.show_view(self.main_menu)
 

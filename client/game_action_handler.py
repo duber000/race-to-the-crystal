@@ -56,10 +56,12 @@ class GameActionHandler:
         self.renderer_3d = renderer_3d
         self.ui_manager = ui_manager
         self.audio_manager = audio_manager
-        
+
         # Track mystery animations that should start after token movement completes
         # Maps token_id -> (target_position, should_play_sound)
-        self.pending_mystery_animations: Dict[TokenID, Tuple[Tuple[int, int], bool]] = {}
+        self.pending_mystery_animations: Dict[
+            TokenID, Tuple[Tuple[int, int], bool]
+        ] = {}
 
     def process_pending_mystery_animations(
         self, mystery_animations: Dict[Tuple[int, int], float]
@@ -75,21 +77,24 @@ class GameActionHandler:
         """
         completed_tokens = []
 
-        for token_id, (target_pos, should_play_sound) in self.pending_mystery_animations.items():
+        for token_id, (
+            target_pos,
+            should_play_sound,
+        ) in self.pending_mystery_animations.items():
             # Find the token sprite to check if it's still moving
             token_sprite = None
             for sprite in self.renderer_2d.token_sprites:
-                if hasattr(sprite, 'token') and sprite.token.id == token_id:
+                if hasattr(sprite, "token") and sprite.token.id == token_id:
                     token_sprite = sprite
                     break
-            
+
             if token_sprite and not token_sprite.is_moving:
                 # Token has finished moving, start the mystery animation
                 mystery_animations[target_pos] = 0.0
-                
+
                 if should_play_sound:
                     self.audio_manager.play_mystery_bing_sound()
-                
+
                 logger.info(f"🎲 Coin flip started at {target_pos}!")
                 completed_tokens.append(token_id)
 
@@ -143,7 +148,9 @@ class GameActionHandler:
             # Queue mystery animation to start after token movement completes
             # This ensures the spin happens when the token arrives, not before
             self.pending_mystery_animations[token_id] = (target_cell, True)
-            logger.info(f"🎲 Queued mystery animation for token {token_id} at {target_cell}")
+            logger.info(
+                f"🎲 Queued mystery animation for token {token_id} at {target_cell}"
+            )
 
             # Get player's index for potential teleport to deployment area
             current_player = self.game_state.get_current_player()
@@ -260,7 +267,9 @@ class GameActionHandler:
         deployed_token = self.game_state.deploy_token(player_id, health, position)
 
         if not deployed_token:
-            logger.warning(f"Cannot deploy to {position} - position occupied or invalid")
+            logger.warning(
+                f"Cannot deploy to {position} - position occupied or invalid"
+            )
             return None
 
         logger.info(f"Deployed {health}hp token to {position}")
@@ -284,7 +293,9 @@ class GameActionHandler:
 
         return deployed_token
 
-    def execute_end_turn(self, mystery_animations: Dict[Tuple[int, int], float]) -> None:
+    def execute_end_turn(
+        self, mystery_animations: Dict[Tuple[int, int], float]
+    ) -> None:
         """
         Execute end turn action.
 
@@ -298,7 +309,9 @@ class GameActionHandler:
         logger.info(f"Ending turn for {current_player.name}")
 
         # Get the current generator and crystal state before ending turn
-        newly_disabled_generators, crystal_captured = self.game_state._update_generators_and_crystal()
+        newly_disabled_generators, crystal_captured = (
+            self.game_state._update_generators_and_crystal()
+        )
 
         # Play sound effects for newly captured generators
         if newly_disabled_generators:
@@ -319,7 +332,9 @@ class GameActionHandler:
 
         next_player = self.game_state.get_current_player()
         if next_player:
-            logger.info(f"Turn {self.game_state.turn_number}: {next_player.name}'s turn")
+            logger.info(
+                f"Turn {self.game_state.turn_number}: {next_player.name}'s turn"
+            )
 
         # Rebuild board shapes to update generator lines (when generators are captured)
         self.renderer_2d.create_board_sprites(

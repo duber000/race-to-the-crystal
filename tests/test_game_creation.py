@@ -1,6 +1,7 @@
 """
 Unit tests for GameState.create_game() method.
 """
+
 import pytest
 from game.game_state import GameState
 from shared.enums import PlayerColor
@@ -16,11 +17,11 @@ class TestGameCreation:
         assert len(game_state.players) == 2
         assert "player_0" in game_state.players
         assert "player_1" in game_state.players
-        
+
         # Check player properties
         player_0 = game_state.players["player_0"]
         player_1 = game_state.players["player_1"]
-        
+
         assert player_0.name == "Player 1"
         assert player_0.color == PlayerColor.CYAN
         assert player_1.name == "Player 2"
@@ -35,7 +36,7 @@ class TestGameCreation:
         assert "player_1" in game_state.players
         assert "player_2" in game_state.players
         assert "player_3" in game_state.players
-        
+
         # Check player colors
         assert game_state.players["player_0"].color == PlayerColor.CYAN
         assert game_state.players["player_1"].color == PlayerColor.MAGENTA
@@ -44,10 +45,14 @@ class TestGameCreation:
 
     def test_create_game_invalid_player_count(self):
         """Test that invalid player counts raise ValueError."""
-        with pytest.raises(ValueError, match="Number of players must be between 2 and 4"):
+        with pytest.raises(
+            ValueError, match="Number of players must be between 2 and 4"
+        ):
             GameState.create_game(1)
-        
-        with pytest.raises(ValueError, match="Number of players must be between 2 and 4"):
+
+        with pytest.raises(
+            ValueError, match="Number of players must be between 2 and 4"
+        ):
             GameState.create_game(5)
 
     def test_create_game_initial_state(self):

@@ -3,6 +3,7 @@ TCP Connection wrapper for Race to the Crystal networking.
 
 Provides async connection management with message framing.
 """
+
 import asyncio
 import logging
 from typing import Optional, Callable, Awaitable
@@ -25,7 +26,7 @@ class Connection:
         self,
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
-        connection_id: str = "unknown"
+        connection_id: str = "unknown",
     ):
         """
         Initialize connection.
@@ -43,8 +44,10 @@ class Connection:
 
         # Get remote address
         try:
-            peername = writer.get_extra_info('peername')
-            self.remote_address = f"{peername[0]}:{peername[1]}" if peername else "unknown"
+            peername = writer.get_extra_info("peername")
+            self.remote_address = (
+                f"{peername[0]}:{peername[1]}" if peername else "unknown"
+            )
         except Exception:
             self.remote_address = "unknown"
 
@@ -61,7 +64,9 @@ class Connection:
             True if sent successfully, False if connection closed
         """
         if self.closed:
-            logger.warning(f"Attempted to send on closed connection {self.connection_id}")
+            logger.warning(
+                f"Attempted to send on closed connection {self.connection_id}"
+            )
             return False
 
         try:
@@ -105,7 +110,7 @@ class Connection:
 
                 if message_bytes:
                     # We have a complete message
-                    json_str = message_bytes.decode('utf-8')
+                    json_str = message_bytes.decode("utf-8")
                     message = NetworkMessage.from_json(json_str)
 
                     logger.debug(
@@ -131,8 +136,7 @@ class Connection:
             return None
 
     async def start_message_loop(
-        self,
-        handler: Callable[[NetworkMessage], Awaitable[None]]
+        self, handler: Callable[[NetworkMessage], Awaitable[None]]
     ) -> None:
         """
         Start an async loop that receives messages and calls handler.
@@ -158,7 +162,7 @@ class Connection:
                 except Exception as e:
                     logger.error(
                         f"Error in message handler for {self.connection_id}: {e}",
-                        exc_info=True
+                        exc_info=True,
                     )
 
         except Exception as e:
@@ -206,7 +210,9 @@ class ConnectionPool:
             connection: Connection object
         """
         self.connections[connection_id] = connection
-        logger.info(f"Added connection to pool: {connection_id} (total: {len(self.connections)})")
+        logger.info(
+            f"Added connection to pool: {connection_id} (total: {len(self.connections)})"
+        )
 
     def remove_connection(self, connection_id: str) -> Optional[Connection]:
         """
@@ -239,9 +245,7 @@ class ConnectionPool:
         return self.connections.get(connection_id)
 
     async def broadcast(
-        self,
-        message: NetworkMessage,
-        exclude: Optional[set[str]] = None
+        self, message: NetworkMessage, exclude: Optional[set[str]] = None
     ) -> int:
         """
         Broadcast a message to all connections (optionally excluding some).

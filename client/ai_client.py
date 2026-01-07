@@ -4,11 +4,11 @@ AI Client for Race to the Crystal.
 An autonomous AI player that connects to the server and plays the game
 using the AIObserver and AIActionExecutor.
 """
+
 import asyncio
 import argparse
 import logging
 import random
-from typing import Optional
 
 from client.network_client import NetworkClient
 from network.messages import MessageType, ClientType
@@ -71,7 +71,7 @@ class AIPlayer(NetworkClient):
             # Turn changed
             data = message.data or {}
             current_player_id = data.get("current_player_id")
-            self.my_turn = (current_player_id == self.player_id)
+            self.my_turn = current_player_id == self.player_id
 
             if self.my_turn:
                 logger.info("My turn!")
@@ -118,7 +118,9 @@ class AIPlayer(NetworkClient):
 
             # Get perspective player ID
             perspective_player_id = state_dict.get("perspective_player_id")
-            logger.info(f"State update - perspective_player: {perspective_player_id}, current_turn: {game_state.current_turn_player_id}, game_phase: {game_state.phase.name}, turn_phase: {game_state.turn_phase.name}")
+            logger.info(
+                f"State update - perspective_player: {perspective_player_id}, current_turn: {game_state.current_turn_player_id}, game_phase: {game_state.phase.name}, turn_phase: {game_state.turn_phase.name}"
+            )
 
             # Check if game is active (handle case where AI joins game already in progress)
             if game_state.phase == GamePhase.PLAYING:
@@ -127,11 +129,13 @@ class AIPlayer(NetworkClient):
 
             # Log situation report (for debugging)
             if logger.isEnabledFor(logging.DEBUG):
-                report = AIObserver.get_situation_report(game_state, perspective_player_id)
+                report = AIObserver.get_situation_report(
+                    game_state, perspective_player_id
+                )
                 logger.debug(f"\n{report}")
 
             # Check if it's our turn
-            self.my_turn = (game_state.current_turn_player_id == perspective_player_id)
+            self.my_turn = game_state.current_turn_player_id == perspective_player_id
             logger.info(f"my_turn={self.my_turn}, game_active={self.game_active}")
 
             if self.my_turn and self.game_active:
@@ -171,23 +175,28 @@ class AIPlayer(NetworkClient):
             game_state = GameState.from_dict(state_dict)
             perspective_player_id = state_dict.get("perspective_player_id")
 
-            logger.info(f"Taking turn for player_id: {perspective_player_id}, current_turn: {game_state.current_turn_player_id}, phase: {game_state.turn_phase.name}")
+            logger.info(
+                f"Taking turn for player_id: {perspective_player_id}, current_turn: {game_state.current_turn_player_id}, phase: {game_state.turn_phase.name}"
+            )
 
             # Get available actions
             actions_data = AIObserver.list_available_actions(
-                game_state,
-                perspective_player_id
+                game_state, perspective_player_id
             )
 
             actions = actions_data.get("actions", [])
             logger.info(f"Found {len(actions)} available actions")
 
             if not actions:
-                logger.warning(f"No available actions. Phase: {actions_data.get('phase')}")
+                logger.warning(
+                    f"No available actions. Phase: {actions_data.get('phase')}"
+                )
                 return
 
             # Choose an action based on strategy
-            chosen_action = self._choose_action(actions, game_state, perspective_player_id)
+            chosen_action = self._choose_action(
+                actions, game_state, perspective_player_id
+            )
 
             if not chosen_action:
                 logger.warning("No action chosen")
@@ -235,88 +244,88 @@ class AIPlayer(NetworkClient):
         return self._action_dict_to_ai_action(action_dict)
 
     def _choose_aggressive_action(self, actions):
-         """Choose aggressive action (prioritize attacks and moving toward objectives)."""
-         # Prioritize attacks
-         attacks = [a for a in actions if a["type"] == "ATTACK"]
-         if attacks:
-             # Choose attack that will kill if possible
-             killing_attacks = [a for a in attacks if a.get("will_kill", False)]
-             if killing_attacks:
-                 action_dict = random.choice(killing_attacks)
-             else:
-                 action_dict = random.choice(attacks)
-             return self._action_dict_to_ai_action(action_dict)
+        """Choose aggressive action (prioritize attacks and moving toward objectives)."""
+        # Prioritize attacks
+        attacks = [a for a in actions if a["type"] == "ATTACK"]
+        if attacks:
+            # Choose attack that will kill if possible
+            killing_attacks = [a for a in attacks if a.get("will_kill", False)]
+            if killing_attacks:
+                action_dict = random.choice(killing_attacks)
+            else:
+                action_dict = random.choice(attacks)
+            return self._action_dict_to_ai_action(action_dict)
 
-         # Prioritize moves toward objectives (crystal or generators)
-         moves = [a for a in actions if a["type"] == "MOVE"]
-         if moves:
-             # Score each move by proximity to crystal (center at 12, 12)
-             best_move = None
-             best_dest = None
-             best_score = float('inf')
+        # Prioritize moves toward objectives (crystal or generators)
+        moves = [a for a in actions if a["type"] == "MOVE"]
+        if moves:
+            # Score each move by proximity to crystal (center at 12, 12)
+            best_move = None
+            best_dest = None
+            best_score = float("inf")
 
-             for move in moves:
-                 # Evaluate ALL valid destinations for this move
-                 for dest_list in move["valid_destinations"]:
-                     dest = tuple(dest_list)
+            for move in moves:
+                # Evaluate ALL valid destinations for this move
+                for dest_list in move["valid_destinations"]:
+                    dest = tuple(dest_list)
 
-                     # Manhattan distance to crystal at (12, 12)
-                     dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
+                    # Manhattan distance to crystal at (12, 12)
+                    dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
 
-                     # Lower distance = better score
-                     if dist_to_crystal < best_score:
-                         best_score = dist_to_crystal
-                         best_move = move
-                         best_dest = dest
+                    # Lower distance = better score
+                    if dist_to_crystal < best_score:
+                        best_score = dist_to_crystal
+                        best_move = move
+                        best_dest = dest
 
-             if best_move:
-                 return self._action_dict_to_ai_action(best_move, best_dest)
-             return self._action_dict_to_ai_action(random.choice(moves))
+            if best_move:
+                return self._action_dict_to_ai_action(best_move, best_dest)
+            return self._action_dict_to_ai_action(random.choice(moves))
 
-         # Deploy or end turn
-         return self._choose_random_action(actions)
+        # Deploy or end turn
+        return self._choose_random_action(actions)
 
     def _choose_defensive_action(self, actions):
-         """Choose defensive action (prioritize deployment and safe movement toward objectives)."""
-         # Prioritize deployment to build up forces
-         deploys = [a for a in actions if a["type"] == "DEPLOY"]
-         if deploys and random.random() > 0.5:
-             action_dict = random.choice(deploys)
-             return self._action_dict_to_ai_action(action_dict)
+        """Choose defensive action (prioritize deployment and safe movement toward objectives)."""
+        # Prioritize deployment to build up forces
+        deploys = [a for a in actions if a["type"] == "DEPLOY"]
+        if deploys and random.random() > 0.5:
+            action_dict = random.choice(deploys)
+            return self._action_dict_to_ai_action(action_dict)
 
-         # Then prioritize safe moves toward crystal
-         moves = [a for a in actions if a["type"] == "MOVE"]
-         if moves:
-             # Score each move by proximity to crystal (center at 12, 12)
-             best_move = None
-             best_dest = None
-             best_score = float('inf')
+        # Then prioritize safe moves toward crystal
+        moves = [a for a in actions if a["type"] == "MOVE"]
+        if moves:
+            # Score each move by proximity to crystal (center at 12, 12)
+            best_move = None
+            best_dest = None
+            best_score = float("inf")
 
-             for move in moves:
-                 # Evaluate ALL valid destinations for this move
-                 for dest_list in move["valid_destinations"]:
-                     dest = tuple(dest_list)
+            for move in moves:
+                # Evaluate ALL valid destinations for this move
+                for dest_list in move["valid_destinations"]:
+                    dest = tuple(dest_list)
 
-                     # Manhattan distance to crystal at (12, 12)
-                     dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
+                    # Manhattan distance to crystal at (12, 12)
+                    dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
 
-                     # Lower distance = better score
-                     if dist_to_crystal < best_score:
-                         best_score = dist_to_crystal
-                         best_move = move
-                         best_dest = dest
+                    # Lower distance = better score
+                    if dist_to_crystal < best_score:
+                        best_score = dist_to_crystal
+                        best_move = move
+                        best_dest = dest
 
-             if best_move:
-                 return self._action_dict_to_ai_action(best_move, best_dest)
+            if best_move:
+                return self._action_dict_to_ai_action(best_move, best_dest)
 
-         # Then opportunistic attacks if no good moves
-         attacks = [a for a in actions if a["type"] == "ATTACK"]
-         if attacks and random.random() > 0.3:
-             action_dict = random.choice(attacks)
-             return self._action_dict_to_ai_action(action_dict)
+        # Then opportunistic attacks if no good moves
+        attacks = [a for a in actions if a["type"] == "ATTACK"]
+        if attacks and random.random() > 0.3:
+            action_dict = random.choice(attacks)
+            return self._action_dict_to_ai_action(action_dict)
 
-         # Otherwise random action
-         return self._choose_random_action(actions)
+        # Otherwise random action
+        return self._choose_random_action(actions)
 
     def _action_dict_to_ai_action(self, action_dict, destination=None):
         """
@@ -333,23 +342,24 @@ class AIPlayer(NetworkClient):
 
         if action_type == "MOVE":
             # Use provided destination if available, otherwise choose first valid dest
-            dest = destination if destination else tuple(action_dict["valid_destinations"][0])
-            return MoveAction(
-                token_id=action_dict["token_id"],
-                destination=dest
+            dest = (
+                destination
+                if destination
+                else tuple(action_dict["valid_destinations"][0])
             )
+            return MoveAction(token_id=action_dict["token_id"], destination=dest)
 
         elif action_type == "ATTACK":
             return AttackAction(
                 attacker_id=action_dict["attacker_id"],
-                defender_id=action_dict["defender_id"]
+                defender_id=action_dict["defender_id"],
             )
 
         elif action_type == "DEPLOY":
             positions = action_dict["positions"]
             return DeployAction(
                 health_value=action_dict["health_value"],
-                position=tuple(positions[0])  # Choose first valid position
+                position=tuple(positions[0]),  # Choose first valid position
             )
 
         elif action_type == "END_TURN":
@@ -360,64 +370,49 @@ class AIPlayer(NetworkClient):
 
 async def main():
     """Main entry point for AI client."""
-    parser = argparse.ArgumentParser(
-        description="Race to the Crystal - AI Client"
-    )
+    parser = argparse.ArgumentParser(description="Race to the Crystal - AI Client")
     parser.add_argument(
         "--host",
         type=str,
         default="localhost",
-        help="Server hostname (default: localhost)"
+        help="Server hostname (default: localhost)",
     )
     parser.add_argument(
-        "--port",
-        type=int,
-        default=8888,
-        help="Server port (default: 8888)"
+        "--port", type=int, default=8888, help="Server port (default: 8888)"
     )
     parser.add_argument(
         "--name",
         type=str,
         default=None,
-        help="AI player name (default: AI_Player_<random>)"
+        help="AI player name (default: AI_Player_<random>)",
     )
     parser.add_argument(
         "--strategy",
         type=str,
         choices=["random", "aggressive", "defensive"],
         default="random",
-        help="AI strategy (default: random)"
+        help="AI strategy (default: random)",
     )
     parser.add_argument(
-        "--create",
-        type=str,
-        default=None,
-        help="Create a new game with this name"
+        "--create", type=str, default=None, help="Create a new game with this name"
     )
     parser.add_argument(
-        "--join",
-        type=str,
-        default=None,
-        help="Join existing game by ID"
+        "--join", type=str, default=None, help="Join existing game by ID"
     )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug logging"
-    )
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     args = parser.parse_args()
 
     # Configure logging
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
     # Generate player name if not provided
     if not args.name:
         import random
+
         args.name = f"AI_Player_{random.randint(1000, 9999)}"
 
     # Create AI player

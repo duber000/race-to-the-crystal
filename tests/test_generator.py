@@ -1,7 +1,7 @@
 """
 Unit tests for Generator class and GeneratorManager.
 """
-import pytest
+
 from game.generator import Generator, GeneratorManager
 
 
@@ -184,7 +184,7 @@ class TestGenerator:
             capturing_player_id="p1",
             capture_token_ids=[1, 2, 3],
             turns_held=1,
-            is_disabled=False
+            is_disabled=False,
         )
 
         data = gen.to_dict()
@@ -232,10 +232,12 @@ class TestGeneratorManager:
         # Set up token positions
         tokens_by_position = {
             (5, 5): [(1, "p1"), (2, "p1")],  # Gen 0 - sufficient for capture
-            (10, 10): [(3, "p2")],           # Gen 1 - insufficient
+            (10, 10): [(3, "p2")],  # Gen 1 - insufficient
         }
 
-        newly_disabled = GeneratorManager.update_all_generators(generators, tokens_by_position)
+        newly_disabled = GeneratorManager.update_all_generators(
+            generators, tokens_by_position
+        )
 
         assert len(newly_disabled) == 0  # None disabled yet (first turn)
         assert generators[0].capturing_player_id == "p1"
@@ -251,11 +253,15 @@ class TestGeneratorManager:
         tokens_by_position = {(5, 5): tokens}
 
         # Turn 1
-        newly_disabled = GeneratorManager.update_all_generators(generators, tokens_by_position)
+        newly_disabled = GeneratorManager.update_all_generators(
+            generators, tokens_by_position
+        )
         assert len(newly_disabled) == 0
 
         # Turn 2
-        newly_disabled = GeneratorManager.update_all_generators(generators, tokens_by_position)
+        newly_disabled = GeneratorManager.update_all_generators(
+            generators, tokens_by_position
+        )
         assert len(newly_disabled) == 1
         assert 0 in newly_disabled
         assert generators[0].is_disabled is True

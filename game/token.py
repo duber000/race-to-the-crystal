@@ -1,6 +1,7 @@
 """
 Token entity representing a player's game piece.
 """
+
 from dataclasses import dataclass
 from typing import Self
 
@@ -22,6 +23,7 @@ class Token:
         is_alive: Whether the token is still in play
         is_deployed: Whether the token has been deployed to the board
     """
+
     id: TokenID
     player_id: PlayerID
     health: int
@@ -113,7 +115,9 @@ class Token:
         Returns:
             Manhattan distance (for grid-based movement)
         """
-        return abs(self.position[0] - other_position[0]) + abs(self.position[1] - other_position[1])
+        return abs(self.position[0] - other_position[0]) + abs(
+            self.position[1] - other_position[1]
+        )
 
     def is_adjacent_to(self, other_position: tuple[int, int]) -> bool:
         """

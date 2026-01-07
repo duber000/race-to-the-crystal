@@ -1,6 +1,7 @@
 """
 Tests for network protocol and message handling.
 """
+
 import time
 import pytest
 
@@ -18,7 +19,7 @@ class TestNetworkMessage:
             type=MessageType.CONNECT,
             timestamp=time.time(),
             player_id="test-player",
-            data={"player_name": "TestPlayer"}
+            data={"player_name": "TestPlayer"},
         )
 
         json_str = msg.to_json()
@@ -42,7 +43,7 @@ class TestNetworkMessage:
             type=MessageType.MOVE,
             timestamp=time.time(),
             player_id="player-123",
-            data={"token_id": 5, "destination": [10, 12]}
+            data={"token_id": 5, "destination": [10, 12]},
         )
 
         json_str = original.to_json()
@@ -137,7 +138,7 @@ class TestProtocolHandler:
             type=MessageType.MOVE,
             timestamp=time.time(),
             player_id="test",
-            data={"token_id": 5, "destination": [10, 12]}
+            data={"token_id": 5, "destination": [10, 12]},
         )
 
         action = handler.message_to_action(msg)
@@ -153,7 +154,7 @@ class TestProtocolHandler:
             type=MessageType.ATTACK,
             timestamp=time.time(),
             player_id="test",
-            data={"attacker_id": 3, "defender_id": 7}
+            data={"attacker_id": 3, "defender_id": 7},
         )
 
         action = handler.message_to_action(msg)
@@ -181,9 +182,9 @@ class TestProtocolHandler:
         """Test creating HEARTBEAT_ACK message."""
         handler = ProtocolHandler()
         timestamp = time.time()
-        
+
         msg = handler.create_heartbeat_ack(timestamp)
-        
+
         assert msg.type == MessageType.HEARTBEAT_ACK
         assert msg.timestamp == timestamp
         assert msg.player_id is None
@@ -202,7 +203,7 @@ class TestMessageFraming:
         assert len(framed) == 4 + len(json_str)
 
         # First 4 bytes should be length
-        length = int.from_bytes(framed[:4], byteorder='big')
+        length = int.from_bytes(framed[:4], byteorder="big")
         assert length == len(json_str)
 
     def test_parse_complete_frame(self):
@@ -213,8 +214,8 @@ class TestMessageFraming:
         message_bytes, remaining = MessageFraming.parse_frame(framed)
 
         assert message_bytes is not None
-        assert message_bytes.decode('utf-8') == json_str
-        assert remaining == b''
+        assert message_bytes.decode("utf-8") == json_str
+        assert remaining == b""
 
     def test_parse_incomplete_frame(self):
         """Test parsing incomplete data."""
@@ -222,7 +223,7 @@ class TestMessageFraming:
         framed = MessageFraming.frame_message(json_str)
 
         # Only send first half
-        partial = framed[:len(framed)//2]
+        partial = framed[: len(framed) // 2]
 
         message_bytes, remaining = MessageFraming.parse_frame(partial)
 
@@ -243,17 +244,17 @@ class TestMessageFraming:
 
         # Parse first message
         msg1_bytes, remaining = MessageFraming.parse_frame(data)
-        assert msg1_bytes.decode('utf-8') == json1
+        assert msg1_bytes.decode("utf-8") == json1
 
         # Parse second message from remaining data
         msg2_bytes, final_remaining = MessageFraming.parse_frame(remaining)
-        assert msg2_bytes.decode('utf-8') == json2
-        assert final_remaining == b''
+        assert msg2_bytes.decode("utf-8") == json2
+        assert final_remaining == b""
 
     def test_parse_partial_length_prefix(self):
         """Test parsing with incomplete length prefix."""
         # Less than 4 bytes
-        data = b'\x00\x00'
+        data = b"\x00\x00"
 
         message_bytes, remaining = MessageFraming.parse_frame(data)
 

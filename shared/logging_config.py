@@ -18,7 +18,7 @@ def setup_logger(
     name: str,
     level: int = logging.INFO,
     format_string: Optional[str] = None,
-    add_console_handler: bool = True
+    add_console_handler: bool = True,
 ) -> logging.Logger:
     """
     Set up a logger with consistent formatting.

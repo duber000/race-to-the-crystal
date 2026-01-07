@@ -1,7 +1,7 @@
 """
 Unit tests for Crystal class and CrystalManager.
 """
-import pytest
+
 from game.crystal import Crystal, CrystalManager
 
 
@@ -239,7 +239,9 @@ class TestCrystal:
         assert crystal.is_contested() is False
 
         # Equal tokens from two players - contested
-        tokens_contested = [(i, "p1") for i in range(6)] + [(i + 6, "p2") for i in range(6)]
+        tokens_contested = [(i, "p1") for i in range(6)] + [
+            (i + 6, "p2") for i in range(6)
+        ]
         crystal2 = Crystal(position=(12, 12))
         crystal2.update_capture_status(tokens_contested, disabled_generators=0)
         # Note: is_contested checks if holding_player_id is None AND there are tokens
@@ -253,7 +255,7 @@ class TestCrystal:
             holding_player_id="p1",
             holding_token_ids=[1, 2, 3],
             turns_held=2,
-            base_tokens_required=12
+            base_tokens_required=12,
         )
 
         data = crystal.to_dict()
@@ -288,7 +290,9 @@ class TestCrystalManager:
         tokens = [(i, "p1") for i in range(12)]
 
         # First turn - no win yet
-        winner = CrystalManager.check_win_condition(crystal, tokens, disabled_generators=0)
+        winner = CrystalManager.check_win_condition(
+            crystal, tokens, disabled_generators=0
+        )
         assert winner is None
 
     def test_check_win_condition_win(self):
@@ -299,7 +303,9 @@ class TestCrystalManager:
         # Hold for 3 turns
         CrystalManager.check_win_condition(crystal, tokens, disabled_generators=0)
         CrystalManager.check_win_condition(crystal, tokens, disabled_generators=0)
-        winner = CrystalManager.check_win_condition(crystal, tokens, disabled_generators=0)
+        winner = CrystalManager.check_win_condition(
+            crystal, tokens, disabled_generators=0
+        )
 
         assert winner == "p1"
 
@@ -307,7 +313,9 @@ class TestCrystalManager:
         """Test status message for unclaimed crystal."""
         crystal = CrystalManager.create_crystal((12, 12))
 
-        message = CrystalManager.get_capture_status_message(crystal, disabled_generators=0)
+        message = CrystalManager.get_capture_status_message(
+            crystal, disabled_generators=0
+        )
         assert "unclaimed" in message.lower()
 
     def test_get_capture_status_message_claimed(self):
@@ -317,7 +325,9 @@ class TestCrystalManager:
 
         crystal.update_capture_status(tokens, disabled_generators=0)
 
-        message = CrystalManager.get_capture_status_message(crystal, disabled_generators=0)
+        message = CrystalManager.get_capture_status_message(
+            crystal, disabled_generators=0
+        )
         assert "p1" in message
         assert "12/12" in message
         assert "1/3" in message

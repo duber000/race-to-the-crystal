@@ -3,9 +3,9 @@ Tests for GameView initialization to prevent AttributeError issues.
 
 Note: These tests require an active display/window and are skipped in headless environments.
 """
+
 import pytest
 import arcade
-from unittest.mock import Mock, MagicMock
 from game.game_state import GameState
 from client.game_window import GameView
 
@@ -24,7 +24,7 @@ def _can_create_window():
 
 requires_display = pytest.mark.skipif(
     not _can_create_window(),
-    reason="Requires display/window (skipped in headless environment)"
+    reason="Requires display/window (skipped in headless environment)",
 )
 
 
@@ -54,12 +54,12 @@ class TestGameViewInitialization:
             arcade_window.show_view(game_view)
 
             # Verify that critical attributes are set after on_show_view()
-            assert hasattr(game_view, 'camera_controller')
+            assert hasattr(game_view, "camera_controller")
             assert game_view.camera_controller is not None
-            assert hasattr(game_view.camera_controller, 'camera_mode')
-            assert hasattr(game_view.camera_controller, 'mouse_look_active')
-            assert hasattr(game_view, 'renderer_3d')
-            assert hasattr(game_view, 'ui_manager')
+            assert hasattr(game_view.camera_controller, "camera_mode")
+            assert hasattr(game_view.camera_controller, "mouse_look_active")
+            assert hasattr(game_view, "renderer_3d")
+            assert hasattr(game_view, "ui_manager")
 
             # Verify attribute values
             assert game_view.camera_controller.camera_mode == "2D"
@@ -82,15 +82,27 @@ class TestGameViewInitialization:
             # These should not raise AttributeError even when called before on_show_view()
             # The event handlers check for input_handler existence before accessing it
             game_view.on_resize(800, 600)  # Should handle missing ui_manager gracefully
-            game_view.on_mouse_motion(100, 100, 10, 10)  # Should handle missing input_handler gracefully
-            game_view.on_mouse_press(100, 100, 1, 0)  # Should handle missing input_handler gracefully
-            game_view.on_mouse_release(100, 100, 1, 0)  # Should handle missing input_handler gracefully
-            game_view.on_mouse_scroll(100, 100, 0, 1.0)  # Should handle missing input_handler gracefully
-            game_view.on_key_press(ord('v'), 0)  # Should handle missing input_handler gracefully
+            game_view.on_mouse_motion(
+                100, 100, 10, 10
+            )  # Should handle missing input_handler gracefully
+            game_view.on_mouse_press(
+                100, 100, 1, 0
+            )  # Should handle missing input_handler gracefully
+            game_view.on_mouse_release(
+                100, 100, 1, 0
+            )  # Should handle missing input_handler gracefully
+            game_view.on_mouse_scroll(
+                100, 100, 0, 1.0
+            )  # Should handle missing input_handler gracefully
+            game_view.on_key_press(
+                ord("v"), 0
+            )  # Should handle missing input_handler gracefully
             game_view.on_text("a")  # Should handle missing input_handler gracefully
 
         except AttributeError as e:
-            pytest.fail(f"Event handler failed with AttributeError before on_show_view: {e}")
+            pytest.fail(
+                f"Event handler failed with AttributeError before on_show_view: {e}"
+            )
 
 
 if __name__ == "__main__":

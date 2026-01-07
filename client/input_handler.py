@@ -5,7 +5,7 @@ This module handles all input events (mouse, keyboard, text) and coordinates
 with other controllers to execute game actions.
 """
 
-from typing import List, Optional, Set, Tuple
+from typing import Optional, Set, Tuple
 
 import arcade
 
@@ -193,14 +193,22 @@ class InputHandler:
                             break
                     if clicked_on_token:
                         break
-            
+
             # In 3D first-person mode, if raycasting found nothing AND we have a controlled token,
             # assume the user is clicking on the controlled token (looking directly at it)
-            if not clicked_on_token and self.camera_controller.camera_mode == "3D" and grid_pos is None:
+            if (
+                not clicked_on_token
+                and self.camera_controller.camera_mode == "3D"
+                and grid_pos is None
+            ):
                 controlled_token_id = self.camera_controller.controlled_token_id
                 if controlled_token_id is not None:
                     controlled_token = self.game_state.get_token(controlled_token_id)
-                    if controlled_token and controlled_token.is_alive and controlled_token.is_deployed:
+                    if (
+                        controlled_token
+                        and controlled_token.is_alive
+                        and controlled_token.is_deployed
+                    ):
                         # Use controlled token's position for clicking in first-person view
                         grid_pos = controlled_token.position
                         clicked_on_token = True
@@ -221,7 +229,9 @@ class InputHandler:
                         self.selected_token_id, self.valid_moves, self.game_state
                     )
                     # Clear 3D visuals
-                    self.renderer_3d.update_selection_visuals(self.selected_token_id, self.valid_moves)
+                    self.renderer_3d.update_selection_visuals(
+                        self.selected_token_id, self.valid_moves
+                    )
                     return True
 
             # Check if clicking on R hexagon to open menu - but NOT if clicking on a token
@@ -492,7 +502,9 @@ class InputHandler:
                 self.selected_token_id, self.valid_moves, self.game_state
             )
             # Also update 3D visuals
-            self.renderer_3d.update_selection_visuals(self.selected_token_id, self.valid_moves)
+            self.renderer_3d.update_selection_visuals(
+                self.selected_token_id, self.valid_moves
+            )
             logger.debug(
                 f"Selected token {clicked_token.id} at {clicked_token.position}"
             )
@@ -515,7 +527,9 @@ class InputHandler:
 
     def _try_move_selected_token(self, grid_pos: Tuple[int, int]):
         """Try to move selected token to grid position."""
-        logger.info(f"_try_move_selected_token called with {grid_pos}, selected_token={self.selected_token_id}, valid_moves={self.valid_moves}")
+        logger.info(
+            f"_try_move_selected_token called with {grid_pos}, selected_token={self.selected_token_id}, valid_moves={self.valid_moves}"
+        )
         if grid_pos in self.valid_moves:
             logger.info(f"Direct move to {grid_pos}")
             self._try_move_to_cell(grid_pos)
@@ -525,15 +539,21 @@ class InputHandler:
             if self.camera_controller.camera_mode == "3D" and self.valid_moves:
                 nearest_move = min(
                     self.valid_moves,
-                    key=lambda pos: (pos[0] - grid_pos[0])**2 + (pos[1] - grid_pos[1])**2
+                    key=lambda pos: (pos[0] - grid_pos[0]) ** 2
+                    + (pos[1] - grid_pos[1]) ** 2,
                 )
-                distance = ((nearest_move[0] - grid_pos[0])**2 + (nearest_move[1] - grid_pos[1])**2) ** 0.5
+                distance = (
+                    (nearest_move[0] - grid_pos[0]) ** 2
+                    + (nearest_move[1] - grid_pos[1]) ** 2
+                ) ** 0.5
                 # If nearest valid move is close (within 2 cells), use it
                 if distance < 2.0:
-                    logger.info(f"Fuzzy move: raycasted {grid_pos}, using nearest {nearest_move} (distance: {distance:.1f})")
+                    logger.info(
+                        f"Fuzzy move: raycasted {grid_pos}, using nearest {nearest_move} (distance: {distance:.1f})"
+                    )
                     self._try_move_to_cell(nearest_move)
                     return
-            
+
             logger.warning(f"Cannot move to {grid_pos} - not a valid move")
 
     def _try_deploy_token(self, grid_pos: Tuple[int, int], current_player):
@@ -614,7 +634,9 @@ class InputHandler:
                 self.selected_token_id, self.valid_moves, self.game_state
             )
             # Clear 3D visuals
-            self.renderer_3d.update_selection_visuals(self.selected_token_id, self.valid_moves)
+            self.renderer_3d.update_selection_visuals(
+                self.selected_token_id, self.valid_moves
+            )
 
             # Can't attack after moving - go directly to end turn phase
             self.turn_phase = TurnPhase.END_TURN
@@ -624,7 +646,7 @@ class InputHandler:
         """
         Try to attack a target token.
 
-        If multiple enemy tokens are stacked on the same cell, 
+        If multiple enemy tokens are stacked on the same cell,
         attacks the topmost one (first in the occupants list).
 
         Args:
@@ -667,7 +689,9 @@ class InputHandler:
                 self.selected_token_id, self.valid_moves, self.game_state
             )
             # Clear 3D visuals
-            self.renderer_3d.update_selection_visuals(self.selected_token_id, self.valid_moves)
+            self.renderer_3d.update_selection_visuals(
+                self.selected_token_id, self.valid_moves
+            )
             self.turn_phase = TurnPhase.END_TURN
 
     def _handle_cancel(self):
@@ -680,7 +704,9 @@ class InputHandler:
                 self.selected_token_id, self.valid_moves, self.game_state
             )
             # Clear 3D visuals
-            self.renderer_3d.update_selection_visuals(self.selected_token_id, self.valid_moves)
+            self.renderer_3d.update_selection_visuals(
+                self.selected_token_id, self.valid_moves
+            )
         else:
             # Let deployment controller handle its own cancel logic
             self.deployment_controller.cancel_selection()

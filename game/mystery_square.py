@@ -1,6 +1,7 @@
 """
 Mystery square random event handling.
 """
+
 from dataclasses import dataclass
 import random
 from typing import Tuple, TYPE_CHECKING
@@ -26,6 +27,7 @@ class MysteryEventResult:
         old_health: Token's health before event
         new_health: Token's health after event
     """
+
     effect: MysteryEffect
     token_id: TokenID
     old_position: Tuple[int, int]
@@ -57,9 +59,7 @@ class MysterySquareSystem:
 
     @staticmethod
     def trigger_mystery_event(
-        token: Token,
-        board: "Board",
-        player_index: int
+        token: Token, board: "Board", player_index: int
     ) -> MysteryEventResult:
         """
         Trigger mystery square effect for a token.
@@ -87,7 +87,6 @@ class MysterySquareSystem:
             # Heads: Heal to full health
             token.heal_to_full()
             effect = MysteryEffect.HEAL
-            new_position = old_position  # Position unchanged
         else:
             # Tails: Teleport back to deployment area
             # Find first empty cell in deployment area
@@ -106,7 +105,6 @@ class MysterySquareSystem:
 
             token.move_to(teleport_position)
             effect = MysteryEffect.TELEPORT
-            new_position = teleport_position
 
         return MysteryEventResult(
             effect=effect,

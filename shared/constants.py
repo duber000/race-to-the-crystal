@@ -90,14 +90,18 @@ CAMERA_FOV = 75.0  # Field of view in degrees (wide for Battlezone feel)
 
 # Camera modes: Overview vs First-Person
 CAMERA_OVERVIEW_PITCH = -60.0  # Pitch for overview mode (looking down)
-CAMERA_FIRST_PERSON_PITCH = -15.0  # Pitch for first-person mode (looking forward/slightly down)
+CAMERA_FIRST_PERSON_PITCH = (
+    -15.0
+)  # Pitch for first-person mode (looking forward/slightly down)
 CAMERA_OVERVIEW_HEIGHT = 150.0  # Height for overview mode
 CAMERA_FIRST_PERSON_HEIGHT = 30.0  # Height for first-person mode (token eye level)
 CAMERA_FIRST_PERSON_OFFSET = -20.0  # Distance behind token in first-person mode
 
 # Legacy constants (kept for initial camera setup)
 CAMERA_HEIGHT_ABOVE_TOKEN = 100.0  # Eye height above token (high for better overview)
-CAMERA_FORWARD_OFFSET = -50.0  # Distance behind token (negative = behind, farther back for better view)
+CAMERA_FORWARD_OFFSET = (
+    -50.0
+)  # Distance behind token (negative = behind, farther back for better view)
 
 CAMERA_NEAR_PLANE = 1.0  # Near clipping plane
 CAMERA_FAR_PLANE = 2000.0  # Far clipping plane (board is 768x768)
@@ -125,13 +129,18 @@ MOUSE_LOOK_SENSITIVITY = 0.2  # Mouse sensitivity for 3D camera look-around
 
 # Audio Configuration
 BACKGROUND_MUSIC_VOLUME = 0.9  # Volume for background music (0.0 to 1.0)
-GENERATOR_HUM_VOLUME = 0.4  # Volume for generator hum audio (0.0 to 1.0) - reduced for chill vibe
+GENERATOR_HUM_VOLUME = (
+    0.4  # Volume for generator hum audio (0.0 to 1.0) - reduced for chill vibe
+)
 SOUND_EFFECTS_VOLUME = 0.8  # Volume for game sound effects (0.0 to 1.0)
 
 # Animation Configuration (extends existing ANIMATION_SPEED)
 MYSTERY_ANIMATION_DURATION = 1.0  # Duration of mystery square animation (seconds)
 
 # Board Generation Configuration
-MYSTERY_PLACEMENT_MAX_ATTEMPTS = 100  # Max attempts to place mystery squares per quadrant
-MYSTERY_PLACEMENT_EDGE_MARGIN = 2  # Margin from board edges when placing mystery squares
-
+MYSTERY_PLACEMENT_MAX_ATTEMPTS = (
+    100  # Max attempts to place mystery squares per quadrant
+)
+MYSTERY_PLACEMENT_EDGE_MARGIN = (
+    2  # Margin from board edges when placing mystery squares
+)

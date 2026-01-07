@@ -10,7 +10,7 @@ from typing import Optional, Callable, Dict, List
 
 from client.network_client import NetworkClient
 from client.ui.async_arcade import schedule_async
-from network.messages import MessageType, ClientType
+from network.messages import ClientType
 from shared.constants import BACKGROUND_COLOR
 
 logger = logging.getLogger(__name__)
@@ -28,11 +28,7 @@ class GameBrowserView(arcade.View):
     """
 
     def __init__(
-        self,
-        player_name: str,
-        host: str,
-        port: int,
-        main_menu_view: arcade.View
+        self, player_name: str, host: str, port: int, main_menu_view: arcade.View
     ):
         """
         Initialize game browser view.
@@ -87,11 +83,13 @@ class GameBrowserView(arcade.View):
             arcade.color.CYAN,
             font_size=32,
             anchor_x="center",
-            bold=True
+            bold=True,
         )
 
         # Status text
-        status = "Loading games..." if self.loading else f"Found {len(self.games)} game(s)"
+        status = (
+            "Loading games..." if self.loading else f"Found {len(self.games)} game(s)"
+        )
         if self.error_message:
             status = f"Error: {self.error_message}"
 
@@ -101,9 +99,9 @@ class GameBrowserView(arcade.View):
             self.window.height - 130,
             arcade.color.WHITE,
             font_size=16,
-            anchor_x="center"
+            anchor_x="center",
         )
-        
+
         # No games message text
         self.no_games_text = arcade.Text(
             "No games available. Create a game from 'Host Network Game'.",
@@ -112,7 +110,7 @@ class GameBrowserView(arcade.View):
             arcade.color.GRAY,
             font_size=14,
             anchor_x="center",
-            anchor_y="center"
+            anchor_y="center",
         )
 
         # Create button layout
@@ -137,10 +135,7 @@ class GameBrowserView(arcade.View):
                 button_text = f"{game_name} ({num_players}/{max_players}) - {status}"
 
                 # Create button for this game
-                game_button = arcade.gui.UIFlatButton(
-                    text=button_text,
-                    **button_style
-                )
+                game_button = arcade.gui.UIFlatButton(text=button_text, **button_style)
 
                 # Use closure to capture game_id
                 def make_join_handler(gid):
@@ -151,27 +146,20 @@ class GameBrowserView(arcade.View):
 
         # Refresh button
         refresh_button = arcade.gui.UIFlatButton(
-            text="Refresh Game List",
-            **button_style
+            text="Refresh Game List", **button_style
         )
         refresh_button.on_click = self._on_refresh_click
         v_box.add(refresh_button)
 
         # Back button
-        back_button = arcade.gui.UIFlatButton(
-            text="Back to Menu",
-            **button_style
-        )
+        back_button = arcade.gui.UIFlatButton(text="Back to Menu", **button_style)
         back_button.on_click = self._on_back_click
         v_box.add(back_button)
 
         # Center the layout
         self.manager.add(
             arcade.gui.UIAnchorLayout(
-                anchor_x="center_x",
-                anchor_y="center_y",
-                children=[v_box],
-                align_y=-50
+                anchor_x="center_x", anchor_y="center_y", children=[v_box], align_y=-50
             )
         )
 

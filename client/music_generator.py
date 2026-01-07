@@ -61,7 +61,10 @@ class TechnoMusicGenerator:
             amplitude = 0.95 * math.exp(-t * 8)
             # Add some click/attack at the beginning for punch
             click = 0.3 * math.exp(-t * 100) * math.sin(2 * math.pi * 2000 * t)
-            value = int(amplitude * 32767 * math.sin(2 * math.pi * frequency * t) + click * 32767)
+            value = int(
+                amplitude * 32767 * math.sin(2 * math.pi * frequency * t)
+                + click * 32767
+            )
             # Clamp to valid range
             value = max(-32768, min(32767, value))
             samples.append(value)
@@ -82,8 +85,6 @@ class TechnoMusicGenerator:
         self, notes: List[float], duration: float = 0.5
     ) -> array.array:
         """Generate a bassline with filter sweep using saw-like waves."""
-        total_samples = int(self.sample_rate * duration)
-        samples_per_note = total_samples // len(notes)
         samples = array.array("h")
         for note_idx, freq in enumerate(notes):
             note_samples = int(self.sample_rate * (duration / len(notes)))
@@ -94,12 +95,16 @@ class TechnoMusicGenerator:
                 # Layered synth sound with harmonics for richer tone
                 fundamental = math.sin(2 * math.pi * freq * t)
                 harmonic = 0.4 * math.sin(2 * math.pi * freq * 2 * t)
-                subharmonic = 0.2 * math.sin(2 * math.pi * freq * 0.5 * t)  # Deep sub-bass
-                value = int(0.85 * 32767 * (fundamental + harmonic + subharmonic) * envelope)
+                subharmonic = 0.2 * math.sin(
+                    2 * math.pi * freq * 0.5 * t
+                )  # Deep sub-bass
+                value = int(
+                    0.85 * 32767 * (fundamental + harmonic + subharmonic) * envelope
+                )
                 value = max(-32768, min(32767, value))
                 samples.append(value)
         return samples
-    
+
     def _generate_arpeggio(
         self, notes: List[float], duration: float = 0.5, speed: int = 4
     ) -> array.array:
@@ -117,7 +122,9 @@ class TechnoMusicGenerator:
                     # Add harmonics for richer electronic sound
                     fundamental = math.sin(2 * math.pi * freq * t)
                     harmonic = 0.4 * math.sin(2 * math.pi * freq * 1.5 * t)
-                    value = int(0.5 * 32767 * (fundamental + harmonic) * envelope)  # Doubled amplitude
+                    value = int(
+                        0.5 * 32767 * (fundamental + harmonic) * envelope
+                    )  # Doubled amplitude
                     samples.append(value)
         return samples
 
@@ -128,10 +135,10 @@ class TechnoMusicGenerator:
 
         # 4 generator frequencies - slightly detuned for phasing effect
         gen_freqs = [
-            110.0,   # A2 - Generator 1
-            116.5,   # A#2 - Generator 2 (slightly sharp)
-            123.5,   # B2 - Generator 3
-            130.8,   # C3 - Generator 4
+            110.0,  # A2 - Generator 1
+            116.5,  # A#2 - Generator 2 (slightly sharp)
+            123.5,  # B2 - Generator 3
+            130.8,  # C3 - Generator 4
         ]
 
         # Add crystal resonance frequency (higher pitch, ethereal)
@@ -147,23 +154,35 @@ class TechnoMusicGenerator:
             pulse4 = 0.5 + 0.5 * math.sin(2 * math.pi * 1.1 * t)  # Fast pulse
 
             # Generate each generator hum with harmonics and techno-style processing
-            hum1 = pulse1 * (math.sin(2 * math.pi * gen_freqs[0] * t) +
-                            0.3 * math.sin(2 * math.pi * gen_freqs[0] * 2 * t) +
-                            0.1 * math.sin(2 * math.pi * gen_freqs[0] * 4 * t))  # More harmonics
-            hum2 = pulse2 * (math.sin(2 * math.pi * gen_freqs[1] * t) +
-                            0.3 * math.sin(2 * math.pi * gen_freqs[1] * 2 * t) +
-                            0.1 * math.sin(2 * math.pi * gen_freqs[1] * 4 * t))
-            hum3 = pulse3 * (math.sin(2 * math.pi * gen_freqs[2] * t) +
-                            0.3 * math.sin(2 * math.pi * gen_freqs[2] * 2 * t) +
-                            0.1 * math.sin(2 * math.pi * gen_freqs[2] * 4 * t))
-            hum4 = pulse4 * (math.sin(2 * math.pi * gen_freqs[3] * t) +
-                            0.3 * math.sin(2 * math.pi * gen_freqs[3] * 2 * t) +
-                            0.1 * math.sin(2 * math.pi * gen_freqs[3] * 4 * t))
+            hum1 = pulse1 * (
+                math.sin(2 * math.pi * gen_freqs[0] * t)
+                + 0.3 * math.sin(2 * math.pi * gen_freqs[0] * 2 * t)
+                + 0.1 * math.sin(2 * math.pi * gen_freqs[0] * 4 * t)
+            )  # More harmonics
+            hum2 = pulse2 * (
+                math.sin(2 * math.pi * gen_freqs[1] * t)
+                + 0.3 * math.sin(2 * math.pi * gen_freqs[1] * 2 * t)
+                + 0.1 * math.sin(2 * math.pi * gen_freqs[1] * 4 * t)
+            )
+            hum3 = pulse3 * (
+                math.sin(2 * math.pi * gen_freqs[2] * t)
+                + 0.3 * math.sin(2 * math.pi * gen_freqs[2] * 2 * t)
+                + 0.1 * math.sin(2 * math.pi * gen_freqs[2] * 4 * t)
+            )
+            hum4 = pulse4 * (
+                math.sin(2 * math.pi * gen_freqs[3] * t)
+                + 0.3 * math.sin(2 * math.pi * gen_freqs[3] * 2 * t)
+                + 0.1 * math.sin(2 * math.pi * gen_freqs[3] * 4 * t)
+            )
 
             # Add crystal resonance that builds over time
-            crystal_pulse = 0.3 + 0.2 * math.sin(2 * math.pi * 0.2 * t)  # Slow building pulse
-            crystal_harmonic = crystal_pulse * (0.2 * math.sin(2 * math.pi * crystal_freq * t) +
-                                              0.1 * math.sin(2 * math.pi * crystal_freq * 1.5 * t))
+            crystal_pulse = 0.3 + 0.2 * math.sin(
+                2 * math.pi * 0.2 * t
+            )  # Slow building pulse
+            crystal_harmonic = crystal_pulse * (
+                0.2 * math.sin(2 * math.pi * crystal_freq * t)
+                + 0.1 * math.sin(2 * math.pi * crystal_freq * 1.5 * t)
+            )
 
             # Mix all 4 generators with crystal resonance
             mixed_hum = (hum1 + hum2 + hum3 + hum4) / 4.0 + crystal_harmonic
@@ -190,80 +209,100 @@ class TechnoMusicGenerator:
         """Generate a crystal-inspired arpeggio that represents the crystal's energy."""
         samples = array.array("h")
         num_samples = int(self.sample_rate * duration)
-        
+
         # Crystal-inspired notes - high, ethereal, and shimmering
         crystal_notes = [880.0, 1046.5, 1174.7, 1318.5]  # A5, C6, D6, E6
-        
+
         for i in range(num_samples):
             t = i / self.sample_rate
-            
+
             # Create a fast, shimmering arpeggio pattern
             arpeggio_speed = 8  # 8th notes
             note_idx = int((t * arpeggio_speed) % len(crystal_notes))
             freq = crystal_notes[note_idx]
-            
+
             # Add harmonics for a crystal-like shimmer
             fundamental = math.sin(2 * math.pi * freq * t)
             harmonic1 = 0.4 * math.sin(2 * math.pi * freq * 1.5 * t)
             harmonic2 = 0.2 * math.sin(2 * math.pi * freq * 2.0 * t)
             harmonic3 = 0.1 * math.sin(2 * math.pi * freq * 3.0 * t)
-            
+
             # Add envelope for staccato feel
             envelope = math.exp(-t * 12)
-            
+
             # Mix with volume that builds over time
             build_factor = min(1.0, t * 0.5)  # Gradually build volume
-            value = int(0.4 * 32767 * (fundamental + harmonic1 + harmonic2 + harmonic3) * envelope * build_factor)
+            value = int(
+                0.4
+                * 32767
+                * (fundamental + harmonic1 + harmonic2 + harmonic3)
+                * envelope
+                * build_factor
+            )
             value = max(-32768, min(32767, value))
             samples.append(value)
-        
+
         return samples
 
-    def _generate_techno_synth_lead(self, notes: List[float], duration: float) -> array.array:
+    def _generate_techno_synth_lead(
+        self, notes: List[float], duration: float
+    ) -> array.array:
         """Generate a techno-style synth lead with filter sweep."""
         samples = array.array("h")
         num_samples = int(self.sample_rate * duration)
         samples_per_note = num_samples // len(notes)
-        
+
         for note_idx, freq in enumerate(notes):
             for i in range(samples_per_note):
                 t = i / self.sample_rate
-                
+
                 # Create a sawtooth-like wave with harmonics
                 saw = 0.0
                 for harmonic in range(1, 10):
                     saw += math.sin(2 * math.pi * freq * harmonic * t) / harmonic
-                
+
                 # Add filter sweep effect
-                filter_cutoff = 0.5 + 0.5 * math.sin(2 * math.pi * 0.5 * t)  # Slow sweep
+                filter_cutoff = 0.5 + 0.5 * math.sin(
+                    2 * math.pi * 0.5 * t
+                )  # Slow sweep
                 filtered_saw = saw * filter_cutoff
-                
+
                 # Add envelope
                 envelope = math.exp(-t * 6)
-                
+
                 # Distortion for techno edge
                 distorted = self._techno_distortion(filtered_saw, 0.8)
-                
+
                 value = int(0.5 * 32767 * distorted * envelope)
                 value = max(-32768, min(32767, value))
                 samples.append(value)
-        
+
         return samples
 
     def generate_track(self) -> array.array:
         """Generate a full techno track with intro, buildup, drop, and outro."""
         full_track = array.array("h")
-        
+
         num_measures = int(self.duration / self.measure_duration)
-        
+
         # Define track structure with 4-measure sections
         intro_measures = 4
         buildup1_measures = 4
         drop_measures = 4
         buildup2_measures = 4
         final_drop_measures = 4
-        outro_measures = max(1, num_measures - (intro_measures + buildup1_measures + drop_measures + buildup2_measures + final_drop_measures))
-        
+        outro_measures = max(
+            1,
+            num_measures
+            - (
+                intro_measures
+                + buildup1_measures
+                + drop_measures
+                + buildup2_measures
+                + final_drop_measures
+            ),
+        )
+
         section_order = [
             ("intro", intro_measures),
             ("buildup1", buildup1_measures),
@@ -272,66 +311,90 @@ class TechnoMusicGenerator:
             ("final_drop", final_drop_measures),
             ("outro", outro_measures),
         ]
-        
+
         measure_idx = 0
         for section_name, section_measures in section_order:
             for local_measure in range(section_measures):
-                self._add_measure(full_track, measure_idx, section_name, measure_idx % 4)
+                self._add_measure(
+                    full_track, measure_idx, section_name, measure_idx % 4
+                )
                 measure_idx += 1
                 if len(full_track) >= self.num_samples:
                     break
             if len(full_track) >= self.num_samples:
                 break
-        
+
         # Trim to exact duration
-        return full_track[:self.num_samples]
-    
-    def _add_measure(self, track: array.array, measure_idx: int, section: str, pattern_offset: int) -> None:
+        return full_track[: self.num_samples]
+
+    def _add_measure(
+        self, track: array.array, measure_idx: int, section: str, pattern_offset: int
+    ) -> None:
         """Add a single measure to the track based on the section type."""
         measure_start = len(track)
 
         # Initialize measure with bass (NO generator hums - they're separate tracks)
         bass_patterns = [
-            [55.0, 55.0, 82.4, 55.0],      # A1, E2, A1
-            [55.0, 73.4, 65.4, 55.0],      # A1, D#2, C2, A1
-            [49.0, 55.0, 73.4, 55.0],      # B0, A1, D#2, A1
-            [55.0, 55.0, 98.0, 55.0],      # A1, G#2, A1
+            [55.0, 55.0, 82.4, 55.0],  # A1, E2, A1
+            [55.0, 73.4, 65.4, 55.0],  # A1, D#2, C2, A1
+            [49.0, 55.0, 73.4, 55.0],  # B0, A1, D#2, A1
+            [55.0, 55.0, 98.0, 55.0],  # A1, G#2, A1
         ]
         bass_pattern = bass_patterns[pattern_offset % len(bass_patterns)]
         bass = self._generate_synth_bass(bass_pattern, self.measure_duration)
         track.extend(bass)
-        
+
         # Layer drums with variation based on section - ALL WITH POWERFUL KICKS
         if section == "intro":
             # Sparse kicks, minimal hats
-            self._layer_drum(track, measure_start, "kick", [0, 2], 0.30)  # Every other beat
+            self._layer_drum(
+                track, measure_start, "kick", [0, 2], 0.30
+            )  # Every other beat
             self._layer_drum(track, measure_start, "hat", [1, 1.5, 3, 3.5], 0.08)
 
         elif section == "buildup1":
             # More kicks, building rhythm
-            self._layer_drum(track, measure_start, "kick", [0, 1, 2, 3], 0.30)  # Four on the floor!
+            self._layer_drum(
+                track, measure_start, "kick", [0, 1, 2, 3], 0.30
+            )  # Four on the floor!
             self._layer_drum(track, measure_start, "hat", [0.5, 1.5, 2.5, 3.5], 0.08)
 
         elif section == "drop":
             # POWERFUL four-on-the-floor kick pattern
-            self._layer_drum(track, measure_start, "kick", [0, 1, 2, 3], 0.35)  # Strong kicks!
+            self._layer_drum(
+                track, measure_start, "kick", [0, 1, 2, 3], 0.35
+            )  # Strong kicks!
             self._layer_drum(track, measure_start, "hat", [0.5, 1.5, 2.5, 3.5], 0.10)
 
         elif section == "buildup2":
             # Building intensity
             self._layer_drum(track, measure_start, "kick", [0, 1, 2, 3], 0.32)
-            self._layer_drum(track, measure_start, "hat", [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75], 0.10)
+            self._layer_drum(
+                track,
+                measure_start,
+                "hat",
+                [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75],
+                0.10,
+            )
 
         elif section == "final_drop":
             # MAXIMUM POWER - dense kick pattern
-            self._layer_drum(track, measure_start, "kick", [0, 1, 2, 3], 0.38)  # BOOM BOOM BOOM BOOM
-            self._layer_drum(track, measure_start, "hat", [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75], 0.12)
+            self._layer_drum(
+                track, measure_start, "kick", [0, 1, 2, 3], 0.38
+            )  # BOOM BOOM BOOM BOOM
+            self._layer_drum(
+                track,
+                measure_start,
+                "hat",
+                [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75],
+                0.12,
+            )
 
         elif section == "outro":
             # Fade out rhythm
             self._layer_drum(track, measure_start, "kick", [0, 2], 0.25)
             self._layer_drum(track, measure_start, "hat", [1, 3], 0.06)
-        
+
         # Layer synth elements that vary by section
         if section == "intro":
             # Minimal synth intro
@@ -362,19 +425,28 @@ class TechnoMusicGenerator:
             synth_notes = [220.0, 246.9]
             synth = self._generate_arpeggio(synth_notes, self.measure_duration, speed=1)
             self._blend_layer(track, measure_start, synth, 0.15)
-        
+
         # Add crystal arpeggio layer - builds throughout the track
         if section in ["buildup1", "drop", "buildup2", "final_drop"]:
             crystal_arp = self._generate_crystal_arpeggio(self.measure_duration)
             self._blend_layer(track, measure_start, crystal_arp, 0.30)
-        
+
         # Add techno synth lead in key sections
         if section in ["drop", "final_drop"]:
             lead_notes = [261.6, 293.7, 329.6, 349.2]  # C4, D4, E4, F4
-            lead_synth = self._generate_techno_synth_lead(lead_notes, self.measure_duration)
+            lead_synth = self._generate_techno_synth_lead(
+                lead_notes, self.measure_duration
+            )
             self._blend_layer(track, measure_start, lead_synth, 0.35)
-    
-    def _layer_drum(self, track: array.array, measure_start: int, drum_type: str, beat_offsets: List[float], kick_duration: float) -> None:
+
+    def _layer_drum(
+        self,
+        track: array.array,
+        measure_start: int,
+        drum_type: str,
+        beat_offsets: List[float],
+        kick_duration: float,
+    ) -> None:
         """Add drum hits at specific beat offsets within a measure."""
         for beat_offset in beat_offsets:
             beat_sample = int(beat_offset * self.beat_duration * self.sample_rate)
@@ -387,15 +459,19 @@ class TechnoMusicGenerator:
 
             for i, sample in enumerate(drum):
                 if start_sample + i < len(track):
-                    track[start_sample + i] = self._saturate_add(track[start_sample + i], sample, 0.85)
-    
-    def _blend_layer(self, track: array.array, start: int, layer: array.array, volume: float) -> None:
+                    track[start_sample + i] = self._saturate_add(
+                        track[start_sample + i], sample, 0.85
+                    )
+
+    def _blend_layer(
+        self, track: array.array, start: int, layer: array.array, volume: float
+    ) -> None:
         """Blend a synth layer into the track with volume control."""
         for i, sample in enumerate(layer):
             idx = start + i
             if idx < len(track):
                 track[idx] = self._saturate_add(track[idx], int(sample * volume), 0.85)
-    
+
     def _saturate_add(self, original: int, addition: int, blend: float) -> int:
         """Add with soft clipping to prevent distortion."""
         mixed = int(original * (1 - blend) + addition * blend)
@@ -417,7 +493,9 @@ class TechnoMusicGenerator:
         print(f"Generated techno track: {filename}")
 
 
-def generate_single_generator_hum(generator_id: int, duration: float, sample_rate: int = 44100) -> array.array:
+def generate_single_generator_hum(
+    generator_id: int, duration: float, sample_rate: int = 44100
+) -> array.array:
     """
     Generate a single generator hum track.
 
@@ -447,8 +525,10 @@ def generate_single_generator_hum(generator_id: int, duration: float, sample_rat
         pulse = 0.6 + 0.4 * math.sin(2 * math.pi * pulse_rate * t)
 
         # Generate hum with harmonics (softer)
-        hum = pulse * (math.sin(2 * math.pi * freq * t) +
-                      0.2 * math.sin(2 * math.pi * freq * 2 * t))
+        hum = pulse * (
+            math.sin(2 * math.pi * freq * t)
+            + 0.2 * math.sin(2 * math.pi * freq * 2 * t)
+        )
 
         # Convert to sample value - quieter and more subtle
         value = int(0.5 * 32767 * hum)  # Reduced from 0.85 for a chiller sound

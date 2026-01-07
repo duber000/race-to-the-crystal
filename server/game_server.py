@@ -9,12 +9,14 @@ import asyncio
 import logging
 import time
 import uuid
-from typing import Dict, Optional, Set
+from typing import Dict, Optional
+
+import aiohttp
 
 from network.connection import Connection, ConnectionPool
 from network.protocol import ProtocolHandler, NetworkMessage
 from network.messages import MessageType, ClientType
-from server.lobby import LobbyManager, GameStatus
+from server.lobby import LobbyManager, GameStatus, GameLobby
 from server.game_coordinator import GameCoordinator
 from server.ai_spawner import AISpawner
 from server.websocket_handler import WebSocketHandler
@@ -69,6 +71,7 @@ class GameServer:
         # Server state
         self.running = False
         self.server = None
+        self.aiohttp_runner = None
 
         logger.info(f"Game server initialized on {host}:{port}")
 
@@ -310,20 +313,23 @@ class GameServer:
 
         # Notify other players that player reconnected
         if game_session:
+            lobby = self.lobby_manager.get_lobby(saved_game_id)
+            reconnect_name = lobby.players.get(player_id, {}).get("name", "Unknown") if lobby else "Unknown"
             reconnect_msg = NetworkMessage(
                 type=MessageType.PLAYER_RECONNECTED,
                 timestamp=time.time(),
-                data={"player_id": player_id, "player_name": player_name},
+                data={"player_id": player_id, "player_name": reconnect_name},
             )
             await self._broadcast_to_game(saved_game_id, reconnect_msg)
         elif saved_game_id:
             # Still in lobby
             lobby = self.lobby_manager.get_lobby(saved_game_id)
             if lobby:
+                reconnect_name = lobby.players.get(player_id, {}).get("name", "Unknown")
                 reconnect_msg = NetworkMessage(
                     type=MessageType.PLAYER_RECONNECTED,
                     timestamp=time.time(),
-                    data={"player_id": player_id, "player_name": player_name},
+                    data={"player_id": player_id, "player_name": reconnect_name},
                 )
                 await self._broadcast_to_lobby(saved_game_id, reconnect_msg)
 
@@ -388,7 +394,6 @@ class GameServer:
             if lobby:
                 player_name = lobby.players.get(player_id, {}).get("name", "Unknown")
                 game_id = lobby.game_id
-                in_active_game = lobby.status == GameStatus.IN_PROGRESS
 
             # Remove from lobby/game and client type tracking
             self.lobby_manager.remove_player_from_all(player_id)
@@ -899,9 +904,8 @@ class GameServer:
         for player_id in game_session.network_to_game_id.keys():
             await self._send_to_player(player_id, message)
 
-    def _create_aiohttp_app(self) -> "aiohttp.Application":
+    def _create_aiohttp_app(self) -> aiohttp.web.Application:
         """Create aiohttp application for HTTP/WebSocket server."""
-        import aiohttp
 
         http_handler = HTTPHandler()
         app = http_handler.create_app()
@@ -970,7 +974,6 @@ class GameServer:
             tcp_port: Port for TCP game server
             http_port: Port for HTTP/WebSocket server
         """
-        import aiohttp
 
         try:
             asyncio.run(self.start_unified_server(tcp_port, http_port))

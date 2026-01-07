@@ -314,7 +314,9 @@ class GameState:
 
         return True
 
-    def _auto_deploy_starting_tokens(self, player_id: PlayerID, player_index: int) -> None:
+    def _auto_deploy_starting_tokens(
+        self, player_id: PlayerID, player_index: int
+    ) -> None:
         """
         Automatically deploy tokens to starting corner positions at game start.
 
@@ -480,9 +482,7 @@ class GameState:
         self.phase = GamePhase.ENDED
 
     def to_dict(self) -> dict:
-        """Convert game state to dictionary for serialization.
-
-        """
+        """Convert game state to dictionary for serialization."""
         return {
             "schema_version": SERIALIZATION_VERSION,
             "board": self.board.to_dict(),
@@ -503,9 +503,7 @@ class GameState:
 
     @classmethod
     def from_dict(cls, data: dict) -> Self:
-        """Create game state from dictionary.
-
-        """
+        """Create game state from dictionary."""
         state = cls()
         state.board = Board.from_dict(data["board"])
         state.players = {
@@ -555,12 +553,12 @@ class GameState:
             PlayerColor.CYAN,
             PlayerColor.MAGENTA,
             PlayerColor.YELLOW,
-            PlayerColor.GREEN
+            PlayerColor.GREEN,
         ]
 
         for i in range(num_players):
             player_id = f"player_{i}"
-            player_name = f"Player {i+1}"
+            player_name = f"Player {i + 1}"
             player_color = player_colors[i]
 
             game_state.add_player(player_id, player_name, player_color)

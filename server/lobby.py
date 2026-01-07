@@ -3,10 +3,11 @@ Lobby management for Race to the Crystal multiplayer.
 
 Handles game creation, player joining, ready status, and game starting.
 """
+
 import uuid
 import logging
 import re
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -18,12 +19,13 @@ logger = logging.getLogger(__name__)
 # Security constants for input validation
 MAX_GAME_NAME_LENGTH = 50
 MAX_PLAYER_NAME_LENGTH = 30
-ALLOWED_GAME_NAME_CHARS = r'^[a-zA-Z0-9_\- \.]+$'
-ALLOWED_PLAYER_NAME_CHARS = r'^[a-zA-Z0-9_\- \.]+$'
+ALLOWED_GAME_NAME_CHARS = r"^[a-zA-Z0-9_\- \.]+$"
+ALLOWED_PLAYER_NAME_CHARS = r"^[a-zA-Z0-9_\- \.]+$"
 
 
 class GameStatus(Enum):
     """Status of a game in the lobby."""
+
     WAITING = "WAITING"  # Waiting for players
     READY = "READY"  # All players ready, can start
     STARTING = "STARTING"  # Game is being started
@@ -34,6 +36,7 @@ class GameStatus(Enum):
 @dataclass
 class PlayerInfo:
     """Information about a player in the lobby."""
+
     player_id: str
     player_name: str
     client_type: ClientType
@@ -54,89 +57,92 @@ class PlayerInfo:
 def validate_game_name(game_name: str) -> bool:
     """
     Validate game name for security and compatibility.
-    
+
     Args:
         game_name: Game name to validate
-        
+
     Returns:
         True if valid, False otherwise
-        
+
     Raises:
         ValueError: If game name is invalid with specific reason
     """
     if not game_name or not game_name.strip():
         raise ValueError("Game name cannot be empty")
-    
+
     if len(game_name) > MAX_GAME_NAME_LENGTH:
         raise ValueError(f"Game name too long (max {MAX_GAME_NAME_LENGTH} characters)")
-    
+
     if not re.match(ALLOWED_GAME_NAME_CHARS, game_name):
         raise ValueError(
-            f"Game name contains invalid characters. "
-            f"Allowed: alphanumeric, spaces, underscores, hyphens, and periods"
+            "Game name contains invalid characters. "
+            "Allowed: alphanumeric, spaces, underscores, hyphens, and periods"
         )
-    
+
     # Additional security checks
     if ".." in game_name:  # Prevent directory traversal patterns
         raise ValueError("Game name cannot contain '..' sequence")
-    
+
     if game_name.strip() != game_name:  # Prevent leading/trailing whitespace
         raise ValueError("Game name cannot have leading or trailing whitespace")
-    
+
     # Check for control characters and other unsafe characters
-    import string
+
     control_chars = set(chr(i) for i in range(32))  # ASCII control characters
-    unsafe_chars = set(';&|$><`\\')  # Shell metacharacters
-    
+    unsafe_chars = set(";&|$><`\\")  # Shell metacharacters
+
     for char in game_name:
         if char in control_chars or char in unsafe_chars:
             raise ValueError(f"Game name contains unsafe character: '{char}'")
-    
+
     return True
 
 
 def validate_player_name(player_name: str) -> bool:
     """
     Validate player name for security and compatibility.
-    
+
     Args:
         player_name: Player name to validate
-        
+
     Returns:
         True if valid, False otherwise
-        
+
     Raises:
         ValueError: If player name is invalid with specific reason
     """
     if not player_name or not player_name.strip():
         raise ValueError("Player name cannot be empty")
-    
+
     if len(player_name) > MAX_PLAYER_NAME_LENGTH:
-        raise ValueError(f"Player name too long (max {MAX_PLAYER_NAME_LENGTH} characters)")
-    
+        raise ValueError(
+            f"Player name too long (max {MAX_PLAYER_NAME_LENGTH} characters)"
+        )
+
     if not re.match(ALLOWED_PLAYER_NAME_CHARS, player_name):
         raise ValueError(
-            f"Player name contains invalid characters. "
-            f"Allowed: alphanumeric, spaces, underscores, hyphens, and periods"
+            "Player name contains invalid characters. "
+            "Allowed: alphanumeric, spaces, underscores, hyphens, and periods"
         )
-    
+
     if player_name.strip() != player_name:
         raise ValueError("Player name cannot have leading or trailing whitespace")
-    
+
     # Check for control characters and other unsafe characters
     control_chars = set(chr(i) for i in range(32))  # ASCII control characters
-    unsafe_chars = set(';&|$><`\\')  # Shell metacharacters
-    
+    unsafe_chars = set(";&|$><`\\")  # Shell metacharacters
+
     for char in player_name:
         if char in control_chars or char in unsafe_chars:
             raise ValueError(f"Player name contains unsafe character: '{char}'")
-    
+
     return True
 
 
 @dataclass
 class GameLobby:
     """Represents a game lobby that players can join."""
+
     game_id: str
     game_name: str
     host_player_id: str
@@ -146,10 +152,7 @@ class GameLobby:
     status: GameStatus = GameStatus.WAITING
 
     def add_player(
-        self,
-        player_id: str,
-        player_name: str,
-        client_type: ClientType
+        self, player_id: str, player_name: str, client_type: ClientType
     ) -> bool:
         """
         Add a player to the lobby.
@@ -161,7 +164,7 @@ class GameLobby:
 
         Returns:
             True if player added successfully, False if lobby is full
-            
+
         Raises:
             ValueError: If player name is invalid
         """
@@ -187,7 +190,7 @@ class GameLobby:
             player_id=player_id,
             player_name=player_name,
             client_type=client_type,
-            color_index=color_index
+            color_index=color_index,
         )
 
         self.players[player_id] = player_info
@@ -269,9 +272,9 @@ class GameLobby:
             True if game can start (all ready, min players met, waiting status)
         """
         return (
-            self.status == GameStatus.WAITING and
-            self.all_players_ready() and
-            len(self.players) >= self.min_players
+            self.status == GameStatus.WAITING
+            and self.all_players_ready()
+            and len(self.players) >= self.min_players
         )
 
     def get_ai_needed_count(self) -> int:
@@ -330,7 +333,7 @@ class LobbyManager:
         player_name: str,
         game_name: str,
         client_type: ClientType,
-        max_players: int = 4
+        max_players: int = 4,
     ) -> GameLobby:
         """
         Create a new game lobby.
@@ -344,7 +347,7 @@ class LobbyManager:
 
         Returns:
             Created GameLobby
-            
+
         Raises:
             ValueError: If game name or player name is invalid
         """
@@ -362,7 +365,7 @@ class LobbyManager:
             game_id=game_id,
             game_name=game_name,
             host_player_id=player_id,
-            max_players=max_players
+            max_players=max_players,
         )
 
         # Add host as first player
@@ -370,7 +373,9 @@ class LobbyManager:
 
         self.lobbies[game_id] = lobby
 
-        logger.info(f"Created lobby '{game_name}' (ID: {game_id}) hosted by {player_name}")
+        logger.info(
+            f"Created lobby '{game_name}' (ID: {game_id}) hosted by {player_name}"
+        )
 
         return lobby
 
@@ -402,11 +407,7 @@ class LobbyManager:
         return None
 
     def join_lobby(
-        self,
-        game_id: str,
-        player_id: str,
-        player_name: str,
-        client_type: ClientType
+        self, game_id: str, player_id: str, player_name: str, client_type: ClientType
     ) -> Optional[GameLobby]:
         """
         Join an existing lobby.
@@ -546,8 +547,8 @@ class LobbyManager:
         available = [
             lobby.to_dict()
             for lobby in self.lobbies.values()
-            if lobby.status == GameStatus.WAITING and
-               len(lobby.players) < lobby.max_players
+            if lobby.status == GameStatus.WAITING
+            and len(lobby.players) < lobby.max_players
         ]
 
         return available

@@ -108,7 +108,7 @@ def main():
         DEFAULT_WINDOW_WIDTH,
         DEFAULT_WINDOW_HEIGHT,
         "Race to the Crystal - Local Hot-Seat Game",
-        resizable=True
+        resizable=True,
     )
 
     # Create and show game view

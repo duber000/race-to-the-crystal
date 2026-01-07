@@ -1,6 +1,75 @@
-# Race to the Crystal - Web 3D View
+# Race to the Crystal - Web 3D Client
 
-This module provides a web-based 3D viewer for Race to the Crystal using FastAPI and Babylon.js 8.
+This module provides a web-based 3D client for Race to the Crystal using Babylon.js 8.
+
+## Migration Notice
+
+**The standalone FastAPI server is now deprecated.** Use the unified game server instead, which supports both desktop and web clients:
+
+```bash
+# Old (deprecated):
+uv run race-web-server
+
+# New (recommended):
+uv run race-unified-server
+# Then open http://localhost:8080 in your browser
+```
+
+The unified server provides the same web client functionality with added benefits:
+- Desktop and web clients can play together in the same game
+- Single source of truth for game state
+- Better resource efficiency
+- Unified deployment
+
+See the [Unified Server Architecture](#unified-server-architecture) section below.
+
+## Unified Server Architecture
+
+The unified server (`server/game_server.py`) combines the HTTP/WebSocket server with the TCP game server on a single process:
+
+```
+Unified Game Server (started with --unified flag)
+├── TCP Handler (port 8888)
+│   └── Desktop Arcade clients
+├── HTTP/WebSocket Handler (port 8080)
+│   ├── Static file serving (HTML/JS/CSS)
+│   └── WebSocket connections for web clients
+└── Game Coordinator
+    └── Shared GameState for all connected clients
+```
+
+### Starting the Unified Server
+
+```bash
+# Default: TCP on 8888, HTTP/WebSocket on 8080
+uv run race-unified-server
+
+# Or explicitly:
+uv run race-server --unified
+
+# Custom ports:
+uv run race-server --unified --port 8888 --http-port 8080
+
+# With debug logging:
+uv run race-server --unified --debug
+```
+
+### Advantages Over Standalone FastAPI Server
+
+1. **Mixed Client Support**: Desktop clients connecting via TCP and web clients connecting via WebSocket can play in the same game
+2. **Single GameState**: No duplication - one source of truth for game state
+3. **Automatic Synchronization**: All clients receive updates via their respective protocols
+4. **Easier Deployment**: Single server process instead of two separate services
+5. **Resource Efficiency**: Shared game sessions and elimination of redundant broadcasts
+
+### Web Client Connection
+
+When using the unified server, the web client's WebSocket connects to:
+```javascript
+const ws = new WebSocket('ws://localhost:8080/ws');
+```
+
+The server handles the protocol translation internally, so the web client works identically to the standalone FastAPI version.
 
 ## Architecture
 
@@ -62,19 +131,27 @@ The web client (`web_server/static/game_client.js`) implements:
    - `uvicorn[standard]>=0.32.0`
    - `websockets>=13.0`
 
-## Running the Server
+## Running the Web Client
 
-Start the FastAPI server:
+### Recommended: Unified Server (Supports Desktop + Web Clients)
 
 ```bash
-# Using the installed script
+uv run race-unified-server
+# Open http://localhost:8080 in your browser
+```
+
+### Deprecated: Standalone FastAPI Server
+
+```bash
+# Old method - not recommended
 uv run race-web-server
+# Open http://localhost:8000 in your browser
 
 # Or directly with uvicorn
 uv run uvicorn web_server.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-The server will start on `http://localhost:8000`
+The standalone server will start on `http://localhost:8000`, but it cannot support desktop clients.
 
 ## Usage
 

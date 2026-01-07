@@ -4,7 +4,8 @@ AI Action Classes and Execution - Execute AI player actions with validation.
 This module provides structured action classes and an executor that validates
 and executes actions with detailed feedback for AI players.
 """
-from dataclasses import dataclass, field
+
+from dataclasses import dataclass
 from game.game_state import GameState
 from game.movement import MovementSystem
 from game.combat import CombatSystem
@@ -22,6 +23,7 @@ class ValidationResult:
         is_valid: True if action can be executed
         message: Success message or detailed error explanation
     """
+
     is_valid: bool
     message: str
 
@@ -40,6 +42,7 @@ class ActionResult:
         message: Detailed description of what happened
         data: Optional dict with action-specific results
     """
+
     success: bool
     message: str
     data: dict | None = None
@@ -57,6 +60,7 @@ class AIAction:
     Attributes:
         action_type: String identifier for the action type
     """
+
     action_type: str
 
     def to_dict(self) -> dict:
@@ -73,6 +77,7 @@ class MoveAction(AIAction):
         token_id: ID of token to move
         destination: Target (x, y) position
     """
+
     token_id: TokenID
     destination: tuple[int, int]
 
@@ -98,6 +103,7 @@ class AttackAction(AIAction):
         attacker_id: ID of attacking token
         defender_id: ID of defending token
     """
+
     attacker_id: TokenID
     defender_id: TokenID
 
@@ -123,6 +129,7 @@ class DeployAction(AIAction):
         health_value: Health value of token to deploy (10, 8, 6, or 4)
         position: Deployment (x, y) position
     """
+
     health_value: int
     position: tuple[int, int]
 
@@ -161,10 +168,7 @@ class AIActionExecutor:
     """
 
     def validate_action(
-        self,
-        action: AIAction,
-        game_state: GameState,
-        player_id: PlayerID
+        self, action: AIAction, game_state: GameState, player_id: PlayerID
     ) -> ValidationResult:
         """
         Validate action without executing it.
@@ -185,7 +189,9 @@ class AIActionExecutor:
         if game_state.current_turn_player_id != player_id:
             current_player = game_state.get_current_player()
             current_name = current_player.name if current_player else "Unknown"
-            return ValidationResult(False, f"Cannot act: Not your turn (current: {current_name})")
+            return ValidationResult(
+                False, f"Cannot act: Not your turn (current: {current_name})"
+            )
 
         # Validate based on action type using pattern matching
         match action:
@@ -198,13 +204,12 @@ class AIActionExecutor:
             case EndTurnAction():
                 return self._validate_end_turn(action, game_state, player_id)
             case _:
-                return ValidationResult(False, f"Unknown action type: {type(action).__name__}")
+                return ValidationResult(
+                    False, f"Unknown action type: {type(action).__name__}"
+                )
 
     def execute_action(
-        self,
-        action: AIAction,
-        game_state: GameState,
-        player_id: PlayerID
+        self, action: AIAction, game_state: GameState, player_id: PlayerID
     ) -> ActionResult:
         """
         Validate and execute an action.
@@ -233,50 +238,62 @@ class AIActionExecutor:
             case EndTurnAction():
                 return self._execute_end_turn(action, game_state, player_id)
             case _:
-                return ActionResult(False, f"Unknown action type: {type(action).__name__}", None)
+                return ActionResult(
+                    False, f"Unknown action type: {type(action).__name__}", None
+                )
 
     # --- MOVE ACTION ---
 
     def _validate_move(
-        self,
-        action: MoveAction,
-        game_state: GameState,
-        player_id: PlayerID
+        self, action: MoveAction, game_state: GameState, player_id: PlayerID
     ) -> ValidationResult:
         """Validate a move action."""
         # Check phase
         if game_state.turn_phase != TurnPhase.MOVEMENT:
-            return ValidationResult(False, f"Cannot move: Wrong phase (currently in {game_state.turn_phase.name})")
+            return ValidationResult(
+                False,
+                f"Cannot move: Wrong phase (currently in {game_state.turn_phase.name})",
+            )
 
         # Check token exists
         if not (token := game_state.get_token(action.token_id)):
-            return ValidationResult(False, f"Cannot move: Token #{action.token_id} does not exist")
+            return ValidationResult(
+                False, f"Cannot move: Token #{action.token_id} does not exist"
+            )
 
         # Check token ownership
         if token.player_id != player_id:
-            return ValidationResult(False, f"Cannot move: Token #{action.token_id} does not belong to you")
+            return ValidationResult(
+                False, f"Cannot move: Token #{action.token_id} does not belong to you"
+            )
 
         # Check token is deployed
         if not token.is_deployed:
-            return ValidationResult(False, f"Cannot move: Token #{action.token_id} is not deployed")
+            return ValidationResult(
+                False, f"Cannot move: Token #{action.token_id} is not deployed"
+            )
 
         # Check token is alive
         if not token.is_alive:
-            return ValidationResult(False, f"Cannot move: Token #{action.token_id} is dead")
+            return ValidationResult(
+                False, f"Cannot move: Token #{action.token_id} is dead"
+            )
 
         # Check destination is valid
-        valid_moves = MovementSystem.get_valid_moves(token, game_state.board, tokens_dict=game_state.tokens)
+        valid_moves = MovementSystem.get_valid_moves(
+            token, game_state.board, tokens_dict=game_state.tokens
+        )
         if action.destination not in valid_moves:
             x, y = action.destination
-            return ValidationResult(False, f"Cannot move: Destination ({x},{y}) is not reachable from token's position")
+            return ValidationResult(
+                False,
+                f"Cannot move: Destination ({x},{y}) is not reachable from token's position",
+            )
 
         return ValidationResult(True, "Move is valid")
 
     def _execute_move(
-        self,
-        action: MoveAction,
-        game_state: GameState,
-        player_id: PlayerID
+        self, action: MoveAction, game_state: GameState, player_id: PlayerID
     ) -> ActionResult:
         """Execute a move action."""
         token = game_state.get_token(action.token_id)
@@ -310,7 +327,7 @@ class AIActionExecutor:
                     token, game_state.board, player_index
                 )
 
-                message += f"\n→ Token landed on a MYSTERY square!"
+                message += "\n→ Token landed on a MYSTERY square!"
                 result_data["mystery_triggered"] = True
                 result_data["mystery_effect"] = mystery_result.effect.name
 
@@ -332,55 +349,75 @@ class AIActionExecutor:
     # --- ATTACK ACTION ---
 
     def _validate_attack(
-        self,
-        action: AttackAction,
-        game_state: GameState,
-        player_id: PlayerID
+        self, action: AttackAction, game_state: GameState, player_id: PlayerID
     ) -> ValidationResult:
         """Validate an attack action."""
         # Check phase
         if game_state.turn_phase != TurnPhase.ACTION:
-            return ValidationResult(False, f"Cannot attack: Wrong phase (currently in {game_state.turn_phase.name})")
+            return ValidationResult(
+                False,
+                f"Cannot attack: Wrong phase (currently in {game_state.turn_phase.name})",
+            )
 
         # Check attacker exists
         if not (attacker := game_state.get_token(action.attacker_id)):
-            return ValidationResult(False, f"Cannot attack: Attacker token #{action.attacker_id} does not exist")
+            return ValidationResult(
+                False,
+                f"Cannot attack: Attacker token #{action.attacker_id} does not exist",
+            )
 
         # Check attacker ownership
         if attacker.player_id != player_id:
-            return ValidationResult(False, f"Cannot attack: Attacker #{action.attacker_id} does not belong to you")
+            return ValidationResult(
+                False,
+                f"Cannot attack: Attacker #{action.attacker_id} does not belong to you",
+            )
 
         # Check attacker is deployed and alive
         if not attacker.is_deployed:
-            return ValidationResult(False, f"Cannot attack: Attacker #{action.attacker_id} is not deployed")
+            return ValidationResult(
+                False, f"Cannot attack: Attacker #{action.attacker_id} is not deployed"
+            )
         if not attacker.is_alive:
-            return ValidationResult(False, f"Cannot attack: Attacker #{action.attacker_id} is dead")
+            return ValidationResult(
+                False, f"Cannot attack: Attacker #{action.attacker_id} is dead"
+            )
 
         # Check defender exists
         if not (defender := game_state.get_token(action.defender_id)):
-            return ValidationResult(False, f"Cannot attack: Defender token #{action.defender_id} does not exist")
+            return ValidationResult(
+                False,
+                f"Cannot attack: Defender token #{action.defender_id} does not exist",
+            )
 
         # Check defender is not owned by attacker
         if defender.player_id == player_id:
-            return ValidationResult(False, f"Cannot attack: Cannot attack your own token #{action.defender_id}")
+            return ValidationResult(
+                False,
+                f"Cannot attack: Cannot attack your own token #{action.defender_id}",
+            )
 
         # Check defender is deployed and alive
         if not defender.is_deployed:
-            return ValidationResult(False, f"Cannot attack: Defender #{action.defender_id} is not deployed")
+            return ValidationResult(
+                False, f"Cannot attack: Defender #{action.defender_id} is not deployed"
+            )
         if not defender.is_alive:
-            return ValidationResult(False, f"Cannot attack: Defender #{action.defender_id} is already dead")
+            return ValidationResult(
+                False, f"Cannot attack: Defender #{action.defender_id} is already dead"
+            )
 
         # Check tokens are adjacent
         if not CombatSystem.can_attack(attacker, defender):
-            return ValidationResult(False, f"Cannot attack: Defender #{action.defender_id} is not adjacent to attacker")
+            return ValidationResult(
+                False,
+                f"Cannot attack: Defender #{action.defender_id} is not adjacent to attacker",
+            )
 
         return ValidationResult(True, "Attack is valid")
 
     def _execute_attack(
-        self,
-        action: AttackAction,
-        game_state: GameState,
-        player_id: PlayerID
+        self, action: AttackAction, game_state: GameState, player_id: PlayerID
     ) -> ActionResult:
         """Execute an attack action."""
         attacker = game_state.get_token(action.attacker_id)
@@ -391,7 +428,7 @@ class AIActionExecutor:
         will_kill = damage >= defender.health
 
         # Execute combat
-        outcome = CombatSystem.resolve_combat(attacker, defender)
+        CombatSystem.resolve_combat(attacker, defender)
 
         # Build result message
         defender_player = game_state.get_player(defender.player_id)
@@ -420,54 +457,64 @@ class AIActionExecutor:
     # --- DEPLOY ACTION ---
 
     def _validate_deploy(
-        self,
-        action: DeployAction,
-        game_state: GameState,
-        player_id: PlayerID
+        self, action: DeployAction, game_state: GameState, player_id: PlayerID
     ) -> ValidationResult:
         """Validate a deploy action."""
         # Check phase
         if game_state.turn_phase != TurnPhase.MOVEMENT:
-            return ValidationResult(False, f"Cannot deploy: Wrong phase (currently in {game_state.turn_phase.name})")
+            return ValidationResult(
+                False,
+                f"Cannot deploy: Wrong phase (currently in {game_state.turn_phase.name})",
+            )
 
         # Check health value is valid
         if action.health_value not in [10, 8, 6, 4]:
-            return ValidationResult(False, f"Cannot deploy: Invalid health value {action.health_value} (must be 10, 8, 6, or 4)")
+            return ValidationResult(
+                False,
+                f"Cannot deploy: Invalid health value {action.health_value} (must be 10, 8, 6, or 4)",
+            )
 
         # Check player has tokens of this type in reserve
         reserve_counts = game_state.get_reserve_token_counts(player_id)
         if reserve_counts[action.health_value] <= 0:
-            return ValidationResult(False, f"Cannot deploy: No {action.health_value}hp tokens in reserve")
+            return ValidationResult(
+                False, f"Cannot deploy: No {action.health_value}hp tokens in reserve"
+            )
 
         # Check position is valid (in bounds)
         x, y = action.position
         if not game_state.board.is_valid_position(x, y):
-            return ValidationResult(False, f"Cannot deploy: Position ({x},{y}) is out of bounds")
+            return ValidationResult(
+                False, f"Cannot deploy: Position ({x},{y}) is out of bounds"
+            )
 
         # Check position is not occupied
         cell = game_state.board.get_cell_at(action.position)
         if cell and cell.is_occupied():
-            return ValidationResult(False, f"Cannot deploy: Position ({x},{y}) is already occupied")
+            return ValidationResult(
+                False, f"Cannot deploy: Position ({x},{y}) is already occupied"
+            )
 
         # Check position is a valid deployment location (corner + adjacent)
         if not (player := game_state.get_player(player_id)):
             return ValidationResult(False, "Cannot deploy: Player not found")
 
         from game.ai_observation import AIObserver
+
         valid_positions = AIObserver._get_deployable_positions(
             game_state.board, player.color.value
         )
 
         if action.position not in valid_positions:
-            return ValidationResult(False, f"Cannot deploy: Position ({x},{y}) is not a valid deployment location")
+            return ValidationResult(
+                False,
+                f"Cannot deploy: Position ({x},{y}) is not a valid deployment location",
+            )
 
         return ValidationResult(True, "Deployment is valid")
 
     def _execute_deploy(
-        self,
-        action: DeployAction,
-        game_state: GameState,
-        player_id: PlayerID
+        self, action: DeployAction, game_state: GameState, player_id: PlayerID
     ) -> ActionResult:
         """Execute a deploy action."""
         # Deploy the token
@@ -483,7 +530,9 @@ class AIActionExecutor:
         # Check remaining reserve
         reserve_counts = game_state.get_reserve_token_counts(player_id)
         remaining = reserve_counts[action.health_value]
-        message += f"\n→ {remaining} × {action.health_value}hp tokens remaining in reserve"
+        message += (
+            f"\n→ {remaining} × {action.health_value}hp tokens remaining in reserve"
+        )
 
         result_data = {
             "new_token_id": token.id,
@@ -501,24 +550,20 @@ class AIActionExecutor:
     # --- END TURN ACTION ---
 
     def _validate_end_turn(
-        self,
-        action: EndTurnAction,
-        game_state: GameState,
-        player_id: PlayerID
+        self, action: EndTurnAction, game_state: GameState, player_id: PlayerID
     ) -> ValidationResult:
         """Validate an end turn action."""
         # Can end turn in both MOVEMENT and ACTION phases
         # This allows players to "pass" without taking an action
         if game_state.turn_phase not in [TurnPhase.MOVEMENT, TurnPhase.ACTION]:
-            return ValidationResult(False, f"Cannot end turn: Invalid phase ({game_state.turn_phase.name})")
+            return ValidationResult(
+                False, f"Cannot end turn: Invalid phase ({game_state.turn_phase.name})"
+            )
 
         return ValidationResult(True, "Can end turn")
 
     def _execute_end_turn(
-        self,
-        action: EndTurnAction,
-        game_state: GameState,
-        player_id: PlayerID
+        self, action: EndTurnAction, game_state: GameState, player_id: PlayerID
     ) -> ActionResult:
         """Execute an end turn action."""
         # Update generators/crystal capture before advancing the turn
@@ -531,7 +576,7 @@ class AIActionExecutor:
         new_player = game_state.get_current_player()
         new_player_name = new_player.name if new_player else "Unknown"
 
-        message = f"✓ Turn ended"
+        message = "✓ Turn ended"
         message += f"\n→ Turn {game_state.turn_number} begins"
         message += f"\n→ Current player: {new_player_name}"
 

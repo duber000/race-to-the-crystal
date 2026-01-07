@@ -4,8 +4,10 @@ Demo: How Claude (or any AI) would use the AI Observation API
 This script demonstrates the complete workflow for an AI player using the
 observation module to play Race to the Crystal.
 """
+
 import sys
-sys.path.insert(0, '/home/user/race-to-the-crystal')
+
+sys.path.insert(0, "/home/user/race-to-the-crystal")
 
 from game.game_state import GameState
 from game.generator import Generator

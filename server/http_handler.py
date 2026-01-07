@@ -32,7 +32,8 @@ class HTTPHandler:
         """
         if static_dir is None:
             # Default to web_server/static relative to project root
-            project_root = Path(__file__).parent.parent.parent
+            # server/http_handler.py -> server/ -> project_root/
+            project_root = Path(__file__).parent.parent
             static_dir = project_root / "web_server" / "static"
 
         self.static_dir = Path(static_dir)

@@ -12,6 +12,7 @@ from shared.constants import BACKGROUND_COLOR
 
 try:
     import pyperclip
+
     CLIPBOARD_AVAILABLE = True
 except ImportError:
     CLIPBOARD_AVAILABLE = False
@@ -71,7 +72,7 @@ class MainMenuView(arcade.View):
             arcade.color.CYAN,
             font_size=48,
             anchor_x="center",
-            bold=True
+            bold=True,
         )
 
         self.version_text = arcade.Text(
@@ -80,7 +81,7 @@ class MainMenuView(arcade.View):
             self.window.height - 150,
             arcade.color.WHITE,
             font_size=16,
-            anchor_x="center"
+            anchor_x="center",
         )
 
         # Button styling
@@ -93,41 +94,32 @@ class MainMenuView(arcade.View):
 
         # Local Game button
         local_game_button = arcade.gui.UIFlatButton(
-            text="Local Hot-Seat Game",
-            **button_style
+            text="Local Hot-Seat Game", **button_style
         )
         local_game_button.on_click = self._on_local_game_click
         v_box.add(local_game_button)
 
         # Host Network Game button
         host_game_button = arcade.gui.UIFlatButton(
-            text="Host Network Game",
-            **button_style
+            text="Host Network Game", **button_style
         )
         host_game_button.on_click = self._on_host_game_click
         v_box.add(host_game_button)
 
         # Join Network Game button
         join_game_button = arcade.gui.UIFlatButton(
-            text="Join Network Game",
-            **button_style
+            text="Join Network Game", **button_style
         )
         join_game_button.on_click = self._on_join_game_click
         v_box.add(join_game_button)
 
         # Settings button
-        settings_button = arcade.gui.UIFlatButton(
-            text="Settings",
-            **button_style
-        )
+        settings_button = arcade.gui.UIFlatButton(text="Settings", **button_style)
         settings_button.on_click = self._on_settings_click
         v_box.add(settings_button)
 
         # Quit button
-        quit_button = arcade.gui.UIFlatButton(
-            text="Quit",
-            **button_style
-        )
+        quit_button = arcade.gui.UIFlatButton(text="Quit", **button_style)
         quit_button.on_click = self._on_quit_click
         v_box.add(quit_button)
 
@@ -137,7 +129,7 @@ class MainMenuView(arcade.View):
                 anchor_x="center_x",
                 anchor_y="center_y",
                 children=[v_box],
-                align_y=-50  # Offset down a bit from center
+                align_y=-50,  # Offset down a bit from center
             )
         )
 
@@ -236,7 +228,7 @@ class SettingsView(arcade.View):
             arcade.color.CYAN,
             font_size=36,
             anchor_x="center",
-            bold=True
+            bold=True,
         )
 
         # Create settings labels
@@ -250,7 +242,7 @@ class SettingsView(arcade.View):
             y_pos,
             arcade.color.WHITE,
             font_size=20,
-            anchor_x="center"
+            anchor_x="center",
         )
 
         # Camera mode setting
@@ -261,7 +253,7 @@ class SettingsView(arcade.View):
             y_pos - spacing,
             arcade.color.WHITE,
             font_size=20,
-            anchor_x="center"
+            anchor_x="center",
         )
 
         # Music setting
@@ -272,7 +264,7 @@ class SettingsView(arcade.View):
             y_pos - spacing * 2,
             arcade.color.WHITE,
             font_size=20,
-            anchor_x="center"
+            anchor_x="center",
         )
 
         # Create button layout
@@ -295,8 +287,7 @@ class SettingsView(arcade.View):
 
         # Music toggle
         toggle_music_button = arcade.gui.UIFlatButton(
-            text="Toggle Music",
-            **button_style
+            text="Toggle Music", **button_style
         )
         toggle_music_button.on_click = self._toggle_music
         v_box.add(toggle_music_button)
@@ -309,10 +300,7 @@ class SettingsView(arcade.View):
         # Center the button box
         self.manager.add(
             arcade.gui.UIAnchorLayout(
-                anchor_x="center_x",
-                anchor_y="center_y",
-                children=[v_box],
-                align_y=-100
+                anchor_x="center_x", anchor_y="center_y", children=[v_box], align_y=-100
             )
         )
 
@@ -388,7 +376,9 @@ class NetworkSetupView(arcade.View):
         self.max_players_dropdown = None
 
         # Callbacks
-        self.on_start_network_game: Optional[Callable[[str, str, int, Optional[str], int], None]] = None
+        self.on_start_network_game: Optional[
+            Callable[[str, str, int, Optional[str], int], None]
+        ] = None
 
         logger.info(f"Network setup view created (host={is_host})")
 
@@ -405,7 +395,7 @@ class NetworkSetupView(arcade.View):
             arcade.color.CYAN,
             font_size=32,
             anchor_x="center",
-            bold=True
+            bold=True,
         )
 
         # Create vertical layout
@@ -413,75 +403,51 @@ class NetworkSetupView(arcade.View):
 
         # Player name input
         player_name_label = arcade.gui.UILabel(
-            text="Your Name:",
-            width=300,
-            font_size=16
+            text="Your Name:", width=300, font_size=16
         )
         v_box.add(player_name_label)
 
         self.player_name_input = arcade.gui.UIInputText(
-            width=300,
-            height=40,
-            font_size=16,
-            text="Player"
+            width=300, height=40, font_size=16, text="Player"
         )
         v_box.add(self.player_name_input)
 
         # Server host input (only for joining)
         if not self.is_host:
             server_label = arcade.gui.UILabel(
-                text="Server Address:",
-                width=300,
-                font_size=16
+                text="Server Address:", width=300, font_size=16
             )
             v_box.add(server_label)
 
             self.server_host_input = arcade.gui.UIInputText(
-                width=300,
-                height=40,
-                font_size=16,
-                text="localhost"
+                width=300, height=40, font_size=16, text="localhost"
             )
             v_box.add(self.server_host_input)
 
         # Port input (for both)
-        port_label = arcade.gui.UILabel(
-            text="Port:",
-            width=300,
-            font_size=16
-        )
+        port_label = arcade.gui.UILabel(text="Port:", width=300, font_size=16)
         v_box.add(port_label)
 
         self.server_port_input = arcade.gui.UIInputText(
-            width=300,
-            height=40,
-            font_size=16,
-            text="8888"
+            width=300, height=40, font_size=16, text="8888"
         )
         v_box.add(self.server_port_input)
 
         # Game name (only for hosting)
         if self.is_host:
             game_name_label = arcade.gui.UILabel(
-                text="Game Name:",
-                width=300,
-                font_size=16
+                text="Game Name:", width=300, font_size=16
             )
             v_box.add(game_name_label)
 
             self.game_name_input = arcade.gui.UIInputText(
-                width=300,
-                height=40,
-                font_size=16,
-                text="My Game"
+                width=300, height=40, font_size=16, text="My Game"
             )
             v_box.add(self.game_name_input)
 
             # Max players dropdown
             max_players_label = arcade.gui.UILabel(
-                text="Max Players:",
-                width=300,
-                font_size=16
+                text="Max Players:", width=300, font_size=16
             )
             v_box.add(max_players_label)
 
@@ -489,26 +455,20 @@ class NetworkSetupView(arcade.View):
                 default="4 Players",
                 options=["2 Players", "3 Players", "4 Players"],
                 width=300,
-                height=40
+                height=40,
             )
             v_box.add(self.max_players_dropdown)
 
         # Buttons
         start_text = "Create Game" if self.is_host else "Join Game"
         start_button = arcade.gui.UIFlatButton(
-            text=start_text,
-            width=300,
-            height=50,
-            font_size=18
+            text=start_text, width=300, height=50, font_size=18
         )
         start_button.on_click = self._on_start_click
         v_box.add(start_button)
 
         back_button = arcade.gui.UIFlatButton(
-            text="Back to Menu",
-            width=300,
-            height=50,
-            font_size=18
+            text="Back to Menu", width=300, height=50, font_size=18
         )
         back_button.on_click = self._on_back_click
         v_box.add(back_button)
@@ -516,10 +476,7 @@ class NetworkSetupView(arcade.View):
         # Center the layout
         self.manager.add(
             arcade.gui.UIAnchorLayout(
-                anchor_x="center_x",
-                anchor_y="center_y",
-                children=[v_box],
-                align_y=-50
+                anchor_x="center_x", anchor_y="center_y", children=[v_box], align_y=-50
             )
         )
 
@@ -568,9 +525,13 @@ class NetworkSetupView(arcade.View):
 
         # Get the currently focused input field
         focused_widget = None
-        for widget in [self.player_name_input, self.server_host_input,
-                      self.server_port_input, self.game_name_input]:
-            if widget and hasattr(widget, '_active') and widget._active:
+        for widget in [
+            self.player_name_input,
+            self.server_host_input,
+            self.server_port_input,
+            self.game_name_input,
+        ]:
+            if widget and hasattr(widget, "_active") and widget._active:
                 focused_widget = widget
                 break
 
@@ -595,7 +556,7 @@ class NetworkSetupView(arcade.View):
                     # Replace the current text with pasted text
                     focused_widget.text = pasted_text
                     # Move caret to end
-                    if hasattr(focused_widget, 'caret'):
+                    if hasattr(focused_widget, "caret"):
                         focused_widget.caret.position = len(pasted_text)
                     logger.info(f"Pasted from clipboard: {pasted_text}")
             except Exception as e:
@@ -608,7 +569,7 @@ class NetworkSetupView(arcade.View):
                 try:
                     pyperclip.copy(text_to_cut)
                     focused_widget.text = ""
-                    if hasattr(focused_widget, 'caret'):
+                    if hasattr(focused_widget, "caret"):
                         focused_widget.caret.position = 0
                     logger.info(f"Cut to clipboard: {text_to_cut}")
                 except Exception as e:
@@ -630,14 +591,20 @@ class NetworkSetupView(arcade.View):
             max_players_text = self.max_players_dropdown.value
             max_players = int(max_players_text.split()[0])  # Extract first number
 
-            logger.info(f"Starting host: {player_name}, port {port}, game '{game_name}', max_players={max_players}")
+            logger.info(
+                f"Starting host: {player_name}, port {port}, game '{game_name}', max_players={max_players}"
+            )
             if self.on_start_network_game:
-                self.on_start_network_game(player_name, "localhost", port, game_name, max_players)
+                self.on_start_network_game(
+                    player_name, "localhost", port, game_name, max_players
+                )
         else:
             host = self.server_host_input.text.strip() or "localhost"
             logger.info(f"Starting join: {player_name}, {host}:{port}")
             if self.on_start_network_game:
-                self.on_start_network_game(player_name, host, port, None, 4)  # max_players not used for join
+                self.on_start_network_game(
+                    player_name, host, port, None, 4
+                )  # max_players not used for join
 
     def _on_back_click(self, event):
         """Return to main menu."""

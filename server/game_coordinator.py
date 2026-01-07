@@ -4,17 +4,14 @@ Game Coordinator for Race to the Crystal server.
 Manages running game instances, executes actions, and coordinates
 game state synchronization.
 """
+
 import logging
 from typing import Dict, Optional, List, Tuple
 
 from game.game_state import GameState
-from game.player import Player
-from game.ai_actions import AIAction, AIActionExecutor, ActionResult
+from game.ai_actions import AIAction, AIActionExecutor
 from game.ai_observation import AIObserver
-from server.lobby import GameLobby, PlayerInfo
-from shared.enums import PlayerColor
-from network.protocol import ProtocolHandler, NetworkMessage
-from network.messages import MessageType
+from server.lobby import GameLobby
 from game.generator import GeneratorManager
 from game.crystal import CrystalManager
 
@@ -73,10 +70,7 @@ class GameSession:
             lobby: GameLobby with player information
         """
         # Get players sorted by color index (join order)
-        sorted_players = sorted(
-            lobby.players.values(),
-            key=lambda p: p.color_index
-        )
+        sorted_players = sorted(lobby.players.values(), key=lambda p: p.color_index)
 
         # Map network player IDs to game player IDs
         for i, player_info in enumerate(sorted_players):
@@ -108,16 +102,16 @@ class GameSession:
         """
         if not self.game_state.generators:
             gen_positions = self.game_state.board.get_generator_positions()
-            self.game_state.generators = GeneratorManager.create_generators(gen_positions)
+            self.game_state.generators = GeneratorManager.create_generators(
+                gen_positions
+            )
 
         if not self.game_state.crystal:
             crystal_pos = self.game_state.board.get_crystal_position()
             self.game_state.crystal = CrystalManager.create_crystal(crystal_pos)
 
     def execute_action(
-        self,
-        network_player_id: str,
-        action: AIAction
+        self, network_player_id: str, action: AIAction
     ) -> Tuple[bool, str, Optional[Dict]]:
         """
         Execute a game action for a player.
@@ -136,9 +130,7 @@ class GameSession:
 
         # Execute action using AIActionExecutor
         success, message, result_data = self.executor.execute_action(
-            action,
-            self.game_state,
-            game_player_id
+            action, self.game_state, game_player_id
         )
 
         if success:
@@ -206,6 +198,7 @@ class GameSession:
     def is_game_over(self) -> bool:
         """Check if game has ended."""
         from shared.enums import GamePhase
+
         return self.game_state.phase == GamePhase.ENDED
 
     def get_winner_network_id(self) -> Optional[str]:
@@ -251,8 +244,7 @@ class GameCoordinator:
             self.player_to_game[player_id] = lobby.game_id
 
         logger.info(
-            f"Created game session {lobby.game_id} with "
-            f"{len(lobby.players)} players"
+            f"Created game session {lobby.game_id} with {len(lobby.players)} players"
         )
 
         return game_session
@@ -286,9 +278,7 @@ class GameCoordinator:
         return self.active_games.get(game_id)
 
     def execute_action(
-        self,
-        player_id: str,
-        action: AIAction
+        self, player_id: str, action: AIAction
     ) -> Tuple[bool, str, Optional[Dict], Optional[GameSession]]:
         """
         Execute an action for a player in their current game.
@@ -324,8 +314,7 @@ class GameCoordinator:
 
         # Remove player mappings
         players_to_remove = [
-            pid for pid, gid in self.player_to_game.items()
-            if gid == game_id
+            pid for pid, gid in self.player_to_game.items() if gid == game_id
         ]
 
         for player_id in players_to_remove:

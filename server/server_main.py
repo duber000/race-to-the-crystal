@@ -140,5 +140,16 @@ def main():
         logger.info("Server stopped by user")
 
 
+def main_unified():
+    """Entry point for unified server (defaults to --unified flag)."""
+    import sys
+
+    # Insert --unified flag if not already present
+    if "--unified" not in sys.argv:
+        sys.argv.insert(1, "--unified")
+
+    main()
+
+
 if __name__ == "__main__":
     main()

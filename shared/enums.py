@@ -1,11 +1,13 @@
 """
 Enumerations for game types and states.
 """
+
 from enum import Enum, auto
 
 
 class CellType(Enum):
     """Types of cells on the game board."""
+
     NORMAL = auto()
     GENERATOR = auto()
     CRYSTAL = auto()
@@ -15,20 +17,23 @@ class CellType(Enum):
 
 class GamePhase(Enum):
     """Phases of the game."""
-    SETUP = auto()          # Players joining, not started
-    PLAYING = auto()        # Game in progress
-    ENDED = auto()          # Game finished, winner declared
+
+    SETUP = auto()  # Players joining, not started
+    PLAYING = auto()  # Game in progress
+    ENDED = auto()  # Game finished, winner declared
 
 
 class TurnPhase(Enum):
     """Phases within a single turn."""
-    MOVEMENT = auto()       # Player can move tokens
-    ACTION = auto()         # Player can attack or capture
-    END_TURN = auto()       # Turn ending, validation and updates
+
+    MOVEMENT = auto()  # Player can move tokens
+    ACTION = auto()  # Player can attack or capture
+    END_TURN = auto()  # Turn ending, validation and updates
 
 
 class PlayerColor(Enum):
     """Player color identifiers."""
+
     CYAN = 0
     MAGENTA = 1
     YELLOW = 2
@@ -37,6 +42,7 @@ class PlayerColor(Enum):
 
 class MessageType(Enum):
     """Network message types."""
+
     # Connection messages
     CONNECT = "CONNECT"
     DISCONNECT = "DISCONNECT"
@@ -75,12 +81,14 @@ class MessageType(Enum):
 
 class MysteryEffect(Enum):
     """Effects from mystery squares."""
-    HEAL = auto()           # Heal to full health
-    TELEPORT = auto()       # Teleport back to start
+
+    HEAL = auto()  # Heal to full health
+    TELEPORT = auto()  # Teleport back to start
 
 
 class CombatResult(Enum):
     """Results of combat."""
-    HIT = auto()            # Attack hit, defender damaged
-    KILLED = auto()         # Attack killed defender
-    INVALID = auto()        # Invalid attack attempt
+
+    HIT = auto()  # Attack hit, defender damaged
+    KILLED = auto()  # Attack killed defender
+    INVALID = auto()  # Invalid attack attempt

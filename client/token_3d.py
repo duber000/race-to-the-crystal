@@ -136,16 +136,18 @@ class Token3D:
         shader_program["projection"] = camera_3d.get_projection_matrix().T.flatten()
         shader_program["view"] = camera_3d.get_view_matrix().T.flatten()
         shader_program["model"] = model_matrix.T.flatten()
-        
+
         # Change color and glow for selected tokens
         if is_selected:
             # Use bright white/yellow for selected tokens
-            shader_program["base_color"] = np.array([1.0, 1.0, 0.3, 0.9], dtype=np.float32)
+            shader_program["base_color"] = np.array(
+                [1.0, 1.0, 0.3, 0.9], dtype=np.float32
+            )
             glow_intensity = 20.0
         else:
             shader_program["base_color"] = self.color
             glow_intensity = 2.5
-        
+
         shader_program["glow_intensity"] = glow_intensity
 
         # Render as lines

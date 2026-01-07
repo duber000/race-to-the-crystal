@@ -1,7 +1,7 @@
 """
 Unit tests for AI Action execution module.
 """
-import pytest
+
 from game.game_state import GameState
 from game.generator import Generator
 from game.crystal import Crystal
@@ -11,10 +11,8 @@ from game.ai_actions import (
     AttackAction,
     DeployAction,
     EndTurnAction,
-    ValidationResult,
-    ActionResult,
 )
-from shared.enums import PlayerColor, GamePhase, TurnPhase
+from shared.enums import PlayerColor, TurnPhase
 
 
 def create_test_game(num_players: int = 2) -> GameState:
@@ -286,7 +284,7 @@ class TestAttackActionExecution:
         executor = AIActionExecutor()
 
         attacker = game_state.deploy_token("player_0", 8, (5, 5))  # 8hp = 4 damage
-        defender = game_state.deploy_token("player_1", 10, (5, 6))   # 10hp
+        defender = game_state.deploy_token("player_1", 10, (5, 6))  # 10hp
         game_state.turn_phase = TurnPhase.ACTION
 
         action = AttackAction(attacker_id=attacker.id, defender_id=defender.id)
@@ -302,7 +300,9 @@ class TestAttackActionExecution:
         executor = AIActionExecutor()
 
         attacker = game_state.deploy_token("player_0", 10, (5, 5))  # 10hp = 5 damage
-        defender = game_state.deploy_token("player_1", 4, (5, 6))   # 4hp (will be killed)
+        defender = game_state.deploy_token(
+            "player_1", 4, (5, 6)
+        )  # 4hp (will be killed)
         game_state.turn_phase = TurnPhase.ACTION
 
         action = AttackAction(attacker_id=attacker.id, defender_id=defender.id)
@@ -490,8 +490,10 @@ class TestEndTurnActionExecution:
 
         assert success
         # Turn should have advanced or player changed
-        assert (game_state.turn_number > initial_turn or
-                game_state.current_turn_player_id != initial_player)
+        assert (
+            game_state.turn_number > initial_turn
+            or game_state.current_turn_player_id != initial_player
+        )
 
     def test_end_turn_advances_turn_number(self):
         """Test that ending turn eventually advances turn number."""
@@ -548,7 +550,9 @@ class TestEdgeCases:
         game_state.turn_phase = TurnPhase.MOVEMENT
 
         action = DeployAction(health_value=10, position=(0, 0))
-        is_valid, msg = executor.validate_action(action, game_state, "nonexistent_player")
+        is_valid, msg = executor.validate_action(
+            action, game_state, "nonexistent_player"
+        )
 
         assert not is_valid
         assert "not your turn" in msg.lower()

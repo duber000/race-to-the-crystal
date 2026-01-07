@@ -89,6 +89,7 @@ class Renderer2D:
         # Network play currently sends generators/crystal as empty/None.
         # Fall back to board metadata so animations still run.
         if crystal is None and hasattr(board, "get_crystal_position"):
+
             class _DummyCrystal:
                 def __init__(self, pos: Tuple[int, int]):
                     self.position = pos
@@ -98,6 +99,7 @@ class Renderer2D:
             self.crystal = crystal
 
         if (not generators) and hasattr(board, "get_generator_positions"):
+
             class _DummyGenerator:
                 def __init__(self, pos: Tuple[int, int]):
                     self.position = pos
@@ -188,12 +190,16 @@ class Renderer2D:
                         current_grid_x != token.position[0]
                         or current_grid_y != token.position[1]
                     ):
-                        logger.debug(f"Animating token {token_id} from ({current_grid_x},{current_grid_y}) to ({token.position[0]},{token.position[1]})")
+                        logger.debug(
+                            f"Animating token {token_id} from ({current_grid_x},{current_grid_y}) to ({token.position[0]},{token.position[1]})"
+                        )
                         sprite.update_position(
                             token.position[0], token.position[1], instant=False
                         )
                     else:
-                        logger.debug(f"Token {token_id} already at target position ({token.position[0]},{token.position[1]})")
+                        logger.debug(
+                            f"Token {token_id} already at target position ({token.position[0]},{token.position[1]})"
+                        )
                 else:
                     # Create new sprite
                     sprite = TokenSprite(token, player_color)

@@ -6,7 +6,7 @@ Provides a chat overlay that can be added to any game view.
 import arcade
 import arcade.gui
 import logging
-from typing import Optional, Callable, List
+from typing import Optional, List
 from dataclasses import dataclass
 import time
 
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ChatMessage:
     """Represents a single chat message."""
+
     player_name: str
     message: str
     timestamp: float
@@ -39,7 +40,7 @@ class ChatWidget:
         x: float,
         y: float,
         width: float = 400,
-        height: float = 250
+        height: float = 250,
     ):
         """
         Initialize chat widget.
@@ -76,22 +77,26 @@ class ChatWidget:
         self.text_color = arcade.color.WHITE
         self.input_bg_color = (30, 30, 30, 220)
         self.border_color = arcade.color.CYAN
-        
+
         # Text objects for performance
-        self.input_text_obj = arcade.Text("", self.x + 15, 0, self.text_color, font_size=12)
+        self.input_text_obj = arcade.Text(
+            "", self.x + 15, 0, self.text_color, font_size=12
+        )
         self.help_text_obj = arcade.Text(
-            "Press Enter to chat...", 
-            self.x + 15, 
-            0, 
+            "Press Enter to chat...",
+            self.x + 15,
+            0,
             (150, 150, 150),
             font_size=12,
-            italic=True
+            italic=True,
         )
         self.message_texts = []  # Will store message text objects
 
         logger.info("Chat widget created")
 
-    def add_message(self, player_name: str, message: str, player_id: Optional[PlayerID] = None):
+    def add_message(
+        self, player_name: str, message: str, player_id: Optional[PlayerID] = None
+    ):
         """
         Add a chat message to the history.
 
@@ -104,14 +109,14 @@ class ChatWidget:
             player_name=player_name,
             message=message,
             timestamp=time.time(),
-            player_id=player_id
+            player_id=player_id,
         )
 
         self.messages.append(chat_msg)
 
         # Keep only recent messages
         if len(self.messages) > self.max_messages:
-            self.messages = self.messages[-self.max_messages:]
+            self.messages = self.messages[-self.max_messages :]
 
         # Auto-scroll to bottom
         self.scroll_offset = max(0, len(self.messages) - self.visible_messages)
@@ -200,7 +205,7 @@ class ChatWidget:
                 type=MessageType.CHAT,
                 timestamp=time.time(),
                 player_id=self.network_client.player_id,
-                data={"message": message}
+                data={"message": message},
             )
 
             await self.network_client.connection.send_message(chat_msg)
@@ -236,7 +241,7 @@ class ChatWidget:
             self.x + self.width,  # right
             self.y,  # bottom
             self.y + self.height,  # top
-            self.background_color
+            self.background_color,
         )
 
         # Draw border (using lrbt API for Arcade 3.0+)
@@ -246,7 +251,7 @@ class ChatWidget:
             self.y,  # bottom
             self.y + self.height,  # top
             self.border_color,
-            2
+            2,
         )
 
         # Draw messages
@@ -274,7 +279,7 @@ class ChatWidget:
                     self.text_color,
                     font_size=12,
                     width=self.width - 20,
-                    multiline=False
+                    multiline=False,
                 )
                 self.message_texts.append(message_text)
             else:
@@ -299,7 +304,7 @@ class ChatWidget:
             input_right,  # right
             input_y,  # bottom
             input_y + input_height,  # top
-            self.input_bg_color
+            self.input_bg_color,
         )
 
         # Input border (highlighted if active)
@@ -310,7 +315,7 @@ class ChatWidget:
             input_y,  # bottom
             input_y + input_height,  # top
             border_color,
-            2
+            2,
         )
 
         # Draw input text

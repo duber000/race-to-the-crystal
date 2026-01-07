@@ -1,6 +1,7 @@
 """
 Player state and management.
 """
+
 from dataclasses import dataclass, field
 from typing import Self
 
@@ -22,6 +23,7 @@ class Player:
         is_active: Whether player is still in the game
         team: Optional team identifier for team games
     """
+
     id: PlayerID
     name: str
     color: PlayerColor

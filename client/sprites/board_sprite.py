@@ -10,15 +10,19 @@ from arcade.shape_list import (
     create_line,
 )
 import math
+import time
+
 from game.board import Board
 from shared.constants import CELL_SIZE, BOARD_WIDTH, BOARD_HEIGHT
 from shared.enums import CellType
 
 
-def _draw_generator_to_crystal_lines(shape_list: ShapeElementList, generators, crystal_pos):
+def _draw_generator_to_crystal_lines(
+    shape_list: ShapeElementList, generators, crystal_pos
+):
     """
     Draw animated flowing lines from each active generator to the crystal.
-    
+
     Args:
         shape_list: ShapeElementList to add lines to
         generators: List of Generator objects
@@ -26,64 +30,71 @@ def _draw_generator_to_crystal_lines(shape_list: ShapeElementList, generators, c
     """
     crystal_center_x = crystal_pos[0] * CELL_SIZE + CELL_SIZE / 2
     crystal_center_y = crystal_pos[1] * CELL_SIZE + CELL_SIZE / 2
-    
+
     # Use global time for animation (frame counter would work too)
     # We'll use a simple time-based animation
-    import time
+
     time_val = time.time()
-    
+
     for gen in generators:
         # Skip disabled generators
         if gen.is_disabled:
             continue
-            
+
         gen_x = gen.position[0] * CELL_SIZE + CELL_SIZE / 2
         gen_y = gen.position[1] * CELL_SIZE + CELL_SIZE / 2
-        
+
         # Draw multiple flowing segments with pulsing glow
         segments = 12
-        segment_length = 1.0 / segments
-        
+
         # Animate flow by offsetting the segments
         flow_offset = (time_val * 2.0) % 1.0  # Flow speed
-        
+
         for i in range(segments):
             # Calculate segment position
             t1 = (i / segments + flow_offset) % 1.0
             t2 = ((i + 1) / segments + flow_offset) % 1.0
-            
+
             # Linear interpolation along the line
             x1 = gen_x + (crystal_center_x - gen_x) * t1
             y1 = gen_y + (crystal_center_y - gen_y) * t1
             x2 = gen_x + (crystal_center_x - gen_x) * t2
             y2 = gen_y + (crystal_center_y - gen_y) * t2
-            
+
             # Calculate brightness based on position (flowing effect)
             brightness = abs(math.sin((t1 + flow_offset) * math.pi)) * 200 + 55
             alpha = int(brightness)
-            
+
             # Draw glow layers for each segment
             for glow_offset in range(2, 0, -1):
-                glow_alpha = int(alpha * (0.3 ** glow_offset))
+                glow_alpha = int(alpha * (0.3**glow_offset))
                 if glow_alpha > 10:
                     line = create_line(
-                        x1, y1, x2, y2,
+                        x1,
+                        y1,
+                        x2,
+                        y2,
                         (255, 165, 0, glow_alpha),  # Orange glow
-                        glow_offset + 1
+                        glow_offset + 1,
                     )
                     shape_list.append(line)
-            
+
             # Main bright segment
             if alpha > 20:
                 line = create_line(
-                    x1, y1, x2, y2,
+                    x1,
+                    y1,
+                    x2,
+                    y2,
                     (255, 200, 0, alpha),  # Bright orange
-                    2
+                    2,
                 )
                 shape_list.append(line)
 
 
-def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery_animations=None) -> ShapeElementList:
+def create_board_shapes(
+    board: Board, generators=None, crystal_pos=None, mystery_animations=None
+) -> ShapeElementList:
     """
     Create a shape list for the game board with vector arcade aesthetics.
 
@@ -192,11 +203,12 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery
 
                 elif cell_type == CellType.CRYSTAL:
                     # Draw crystal as wireframe diamond with pulsing glow animation
-                    import time
                     size = CELL_SIZE * 0.5
 
                     # Pulsing animation - slower and more subtle than flowing lines
-                    pulse = math.sin(time.time() * 1.5) * 0.3 + 0.7  # Oscillates between 0.4 and 1.0
+                    pulse = (
+                        math.sin(time.time() * 1.5) * 0.3 + 0.7  # noqa: F823
+                    )  # Oscillates between 0.4 and 1.0
 
                     # Multiple glow layers for intense pulsing effect
                     for i in range(8, 0, -1):
@@ -223,7 +235,9 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery
                             shape_list.append(line)
 
                     # Bright main diamond with slight pulse
-                    main_alpha = int(255 * (0.8 + pulse * 0.2))  # Subtle pulse for main shape
+                    main_alpha = int(
+                        255 * (0.8 + pulse * 0.2)
+                    )  # Subtle pulse for main shape
                     points = [
                         (center_x, center_y + size),
                         (center_x + size, center_y),
@@ -333,8 +347,16 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery
                         for seg in range(qm_segments + 1):
                             # Arc from 180 degrees to 0 degrees (left to right)
                             angle = math.pi + (seg / qm_segments) * math.pi
-                            px = center_x + (qm_size * 0.5 + (qm_size * 0.5) * math.cos(angle)) * scale_x
-                            py = center_y + (qm_size * 0.3) + (qm_size * 0.5) * math.sin(angle)
+                            px = (
+                                center_x
+                                + (qm_size * 0.5 + (qm_size * 0.5) * math.cos(angle))
+                                * scale_x
+                            )
+                            py = (
+                                center_y
+                                + (qm_size * 0.3)
+                                + (qm_size * 0.5) * math.sin(angle)
+                            )
                             qm_points.append((px, py))
 
                         # Draw the curve
@@ -366,7 +388,11 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery
                         dot_points = []
                         for seg in range(dot_segments + 1):
                             angle = (seg / dot_segments) * 2 * math.pi
-                            px = center_x + (qm_size * 0.5 + dot_radius * math.cos(angle)) * scale_x
+                            px = (
+                                center_x
+                                + (qm_size * 0.5 + dot_radius * math.cos(angle))
+                                * scale_x
+                            )
                             py = center_y - qm_size * 0.5 + dot_radius * math.sin(angle)
                             dot_points.append((px, py))
 
@@ -387,10 +413,10 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery
 
     # Draw deployment zone indicators (3x3 corners)
     deployment_zones = [
-        (0, 0, 3, 3),      # Top-left (0,0) to (2,2)
-        (21, 0, 3, 3),     # Top-right (21,0) to (23,2)
-        (0, 21, 3, 3),     # Bottom-left (0,21) to (2,23)
-        (21, 21, 3, 3),    # Bottom-right (21,21) to (23,23)
+        (0, 0, 3, 3),  # Top-left (0,0) to (2,2)
+        (21, 0, 3, 3),  # Top-right (21,0) to (23,2)
+        (0, 21, 3, 3),  # Bottom-left (0,21) to (2,23)
+        (21, 21, 3, 3),  # Bottom-right (21,21) to (23,23)
     ]
 
     for zone_x, zone_y, zone_w, zone_h in deployment_zones:
@@ -405,7 +431,7 @@ def create_board_shapes(board: Board, generators=None, crystal_pos=None, mystery
 
         # Deployment zone color: subtle yellow/white glow
         zone_color = (255, 255, 150, 120)  # Semi-transparent yellow
-        glow_color = (255, 255, 150, 40)   # Very faint glow
+        glow_color = (255, 255, 150, 40)  # Very faint glow
 
         # Draw glow layers first
         for offset in range(3, 0, -1):

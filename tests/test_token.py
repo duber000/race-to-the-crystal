@@ -1,7 +1,7 @@
 """
 Unit tests for Token class.
 """
-import pytest
+
 from game.token import Token
 
 
@@ -11,11 +11,7 @@ class TestToken:
     def test_token_creation(self):
         """Test creating a token."""
         token = Token(
-            id=1,
-            player_id="player1",
-            health=10,
-            max_health=10,
-            position=(5, 5)
+            id=1, player_id="player1", health=10, max_health=10, position=(5, 5)
         )
         assert token.id == 1
         assert token.player_id == "player1"
@@ -26,7 +22,9 @@ class TestToken:
 
     def test_movement_range(self):
         """Test movement range based on current health: 7+ hp move 1, 6 or less move 2."""
-        token_10 = Token(id=1, player_id="p1", health=10, max_health=10, position=(0, 0))
+        token_10 = Token(
+            id=1, player_id="p1", health=10, max_health=10, position=(0, 0)
+        )
         token_8 = Token(id=2, player_id="p1", health=8, max_health=8, position=(0, 0))
         token_6 = Token(id=4, player_id="p1", health=6, max_health=6, position=(0, 0))
         token_4 = Token(id=5, player_id="p1", health=4, max_health=4, position=(0, 0))
@@ -58,7 +56,9 @@ class TestToken:
 
     def test_attack_power(self):
         """Test attack power calculation (health // 2)."""
-        token_10 = Token(id=1, player_id="p1", health=10, max_health=10, position=(0, 0))
+        token_10 = Token(
+            id=1, player_id="p1", health=10, max_health=10, position=(0, 0)
+        )
         token_8 = Token(id=2, player_id="p1", health=8, max_health=8, position=(0, 0))
         token_6 = Token(id=3, player_id="p1", health=6, max_health=6, position=(0, 0))
         token_4 = Token(id=4, player_id="p1", health=4, max_health=4, position=(0, 0))
@@ -156,7 +156,7 @@ class TestToken:
             health=6,
             max_health=10,
             position=(3, 4),
-            is_alive=True
+            is_alive=True,
         )
 
         data = token.to_dict()
@@ -175,7 +175,7 @@ class TestToken:
             "health": 6,
             "max_health": 10,
             "position": [3, 4],
-            "is_alive": True
+            "is_alive": True,
         }
 
         token = Token.from_dict(data)
@@ -194,7 +194,7 @@ class TestToken:
             health=4,
             max_health=8,
             position=(10, 20),
-            is_alive=True
+            is_alive=True,
         )
 
         data = original.to_dict()

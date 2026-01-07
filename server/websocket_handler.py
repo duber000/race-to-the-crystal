@@ -5,15 +5,14 @@ Handles WebSocket connections from Babylon.js web clients,
 integrating with the main game server for lobby and game actions.
 """
 
-import asyncio
 import json
 import logging
 import time
 import uuid
-from typing import Dict, Optional, Set
+from typing import Dict, Optional
 from dataclasses import dataclass, field
 
-from aiohttp import WSMessage, WSMsgType, web
+from aiohttp import WSMsgType, web
 
 from network.messages import MessageType, ClientType
 from network.protocol import NetworkMessage, ProtocolHandler
@@ -159,13 +158,6 @@ class WebSocketHandler:
         client.player_id = client_id
         client.player_name = player_name
         client.client_type = ClientType.WEB_BROWSER
-
-        session_data = {
-            "player_id": client_id,
-            "player_name": player_name,
-            "client_type": ClientType.WEB_BROWSER.value,
-            "server_version": "1.0.0",
-        }
 
         response = {
             "type": "CONNECT_ACK",
@@ -398,8 +390,6 @@ class WebSocketHandler:
         chat_message = data.get("message", "")
         if not chat_message:
             return
-
-        lobby = self.game_server.lobby_manager.get_lobby_by_player(client.player_id)
 
         chat_event = {
             "type": "CHAT",

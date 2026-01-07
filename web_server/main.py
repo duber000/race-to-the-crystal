@@ -5,7 +5,6 @@ Provides REST API and WebSocket endpoints for game state management
 and serves the Babylon.js 3D frontend.
 """
 
-import asyncio
 import json
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -16,7 +15,13 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from game.game_state import GameState
-from game.ai_actions import AIActionExecutor, MoveAction, AttackAction, DeployAction, EndTurnAction
+from game.ai_actions import (
+    AIActionExecutor,
+    MoveAction,
+    AttackAction,
+    DeployAction,
+    EndTurnAction,
+)
 from shared.enums import PlayerColor, GamePhase
 from shared.logging_config import setup_logger
 
@@ -40,10 +45,15 @@ class GameManager:
         num_players = max(2, min(4, num_players))
 
         # Add players
-        colors = [PlayerColor.CYAN, PlayerColor.MAGENTA, PlayerColor.YELLOW, PlayerColor.GREEN]
+        colors = [
+            PlayerColor.CYAN,
+            PlayerColor.MAGENTA,
+            PlayerColor.YELLOW,
+            PlayerColor.GREEN,
+        ]
         for i in range(num_players):
             player_id = f"player_{i}"
-            self.game_state.add_player(player_id, f"Player {i+1}", colors[i])
+            self.game_state.add_player(player_id, f"Player {i + 1}", colors[i])
 
         # Start the game (creates tokens and auto-deploys starting tokens)
         self.game_state.start_game()
@@ -84,7 +94,9 @@ class GameManager:
         for client in disconnected:
             self.websocket_clients.remove(client)
 
-    def execute_action(self, action_data: dict[str, Any]) -> tuple[bool, str, dict | None]:
+    def execute_action(
+        self, action_data: dict[str, Any]
+    ) -> tuple[bool, str, dict | None]:
         """Execute a game action and return result."""
         if not self.game_state:
             return False, "No active game", None
@@ -97,17 +109,17 @@ class GameManager:
         if action_type == "move":
             action = MoveAction(
                 token_id=action_data["token_id"],
-                destination=tuple(action_data["destination"])
+                destination=tuple(action_data["destination"]),
             )
         elif action_type == "attack":
             action = AttackAction(
                 attacker_id=action_data["attacker_id"],
-                target_id=action_data["target_id"]
+                target_id=action_data["target_id"],
             )
         elif action_type == "deploy":
             action = DeployAction(
                 token_id=action_data["token_id"],
-                position=tuple(action_data["position"])
+                position=tuple(action_data["position"]),
             )
         elif action_type == "end_turn":
             action = EndTurnAction()
@@ -139,7 +151,7 @@ app = FastAPI(
     title="Race to the Crystal Web API",
     description="REST API and WebSocket server for Race to the Crystal game",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Mount static files
@@ -153,7 +165,9 @@ async def root():
     html_file = Path(__file__).parent / "templates" / "index.html"
     if html_file.exists():
         return FileResponse(html_file)
-    return HTMLResponse(content="<h1>Race to the Crystal</h1><p>3D view coming soon!</p>")
+    return HTMLResponse(
+        content="<h1>Race to the Crystal</h1><p>3D view coming soon!</p>"
+    )
 
 
 @app.get("/api/game/state")
@@ -168,7 +182,9 @@ async def get_game_state():
 async def create_new_game(num_players: int = 2):
     """Create a new game."""
     if num_players < 2 or num_players > 4:
-        raise HTTPException(status_code=400, detail="Number of players must be between 2 and 4")
+        raise HTTPException(
+            status_code=400, detail="Number of players must be between 2 and 4"
+        )
 
     game_state = game_manager.create_new_game(num_players)
     await game_manager.broadcast_state()
@@ -184,11 +200,7 @@ async def execute_action(action: dict[str, Any]):
         # Broadcast updated state to all clients
         await game_manager.broadcast_state()
 
-    return {
-        "success": success,
-        "message": message,
-        "data": data
-    }
+    return {"success": success, "message": message, "data": data}
 
 
 @app.websocket("/ws/game")
@@ -214,22 +226,21 @@ async def websocket_endpoint(websocket: WebSocket):
                 success, message, result_data = game_manager.execute_action(action_data)
 
                 # Send response
-                await websocket.send_json({
-                    "type": "action_result",
-                    "success": success,
-                    "message": message,
-                    "data": result_data
-                })
+                await websocket.send_json(
+                    {
+                        "type": "action_result",
+                        "success": success,
+                        "message": message,
+                        "data": result_data,
+                    }
+                )
 
                 if success:
                     # Broadcast updated state
                     await game_manager.broadcast_state()
 
             except json.JSONDecodeError:
-                await websocket.send_json({
-                    "type": "error",
-                    "message": "Invalid JSON"
-                })
+                await websocket.send_json({"type": "error", "message": "Invalid JSON"})
 
     except WebSocketDisconnect:
         logger.info("WebSocket client disconnected")
@@ -239,6 +250,7 @@ async def websocket_endpoint(websocket: WebSocket):
 def run_server():
     """Run the FastAPI server with uvicorn."""
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
 
 
