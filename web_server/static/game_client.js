@@ -110,7 +110,7 @@ class GameClient {
         this.camera.attachControl(this.canvas, true);
         this.camera.lowerRadiusLimit = 200;
         this.camera.upperRadiusLimit = 1500;
-        this.camera.wheelPrecision = 50;
+        this.camera.wheelPrecision = 150; // Increased from 50 to 150 (3x faster zoom)
         this.camera.panningSensibility = 50; // Enable panning with mouse
 
         // First-person camera (inactive initially, token-locked)
@@ -222,70 +222,106 @@ class GameClient {
     }
 
     createSpecialCells(gameState) {
-        // Remove old special cell meshes
-        this.specialCellMeshes.forEach(mesh => mesh.dispose());
-        this.specialCellMeshes = [];
+         // Remove old special cell meshes
+         this.specialCellMeshes.forEach(mesh => mesh.dispose());
+         this.specialCellMeshes = [];
 
-        // Remove old generator lines
-        this.generatorLines.forEach(mesh => mesh.dispose());
-        this.generatorLines = [];
+         // Remove old generator lines
+         this.generatorLines.forEach(mesh => mesh.dispose());
+         this.generatorLines = [];
 
-        // Create generators (orange cubes)
-        if (gameState.generators) {
-            gameState.generators.forEach(gen => {
-                const centerX = gen.position[0] * CELL_SIZE + CELL_SIZE / 2;
-                const centerY = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
+         // Create generators (orange cubes)
+         if (gameState.generators) {
+             gameState.generators.forEach(gen => {
+                 const centerX = gen.position[0] * CELL_SIZE + CELL_SIZE / 2;
+                 const centerY = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
-                const cube = BABYLON.MeshBuilder.CreateBox(
-                    `generator_${gen.position[0]}_${gen.position[1]}`,
-                    { size: CELL_SIZE * 0.6, height: WALL_HEIGHT * 0.6 },
-                    this.scene
-                );
-                cube.position = new BABYLON.Vector3(centerX, centerY, WALL_HEIGHT * 0.3);
+                 const cube = BABYLON.MeshBuilder.CreateBox(
+                     `generator_${gen.position[0]}_${gen.position[1]}`,
+                     { size: CELL_SIZE * 0.6, height: WALL_HEIGHT * 0.6 },
+                     this.scene
+                 );
+                 cube.position = new BABYLON.Vector3(centerX, centerY, WALL_HEIGHT * 0.3);
 
-                const material = new BABYLON.StandardMaterial("generatorMat", this.scene);
-                material.emissiveColor = ORANGE_GLOW;
-                material.wireframe = true;
-                material.alpha = gen.is_disabled ? 0.3 : 0.8;
-                cube.material = material;
+                 const material = new BABYLON.StandardMaterial("generatorMat", this.scene);
+                 material.emissiveColor = ORANGE_GLOW;
+                 material.wireframe = true;
+                 material.alpha = gen.is_disabled ? 0.3 : 0.8;
+                 cube.material = material;
 
-                this.specialCellMeshes.push(cube);
-            });
+                 this.specialCellMeshes.push(cube);
+             });
 
-            // Create generator-to-crystal flowing lines (Enhancement #6)
-            if (gameState.crystal) {
-                this.createGeneratorLines(gameState);
-            }
-        }
+             // Create generator-to-crystal flowing lines (Enhancement #6)
+             if (gameState.crystal) {
+                 this.createGeneratorLines(gameState);
+             }
+         }
 
-        // Create crystal (magenta diamond/pyramid)
-        if (gameState.crystal) {
-            const centerX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
-            const centerY = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
+         // Create crystal (magenta diamond/pyramid)
+         if (gameState.crystal) {
+             const centerX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
+             const centerY = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
-            const pyramid = BABYLON.MeshBuilder.CreateCylinder(
-                "crystal",
-                {
-                    diameterTop: 0,
-                    diameterBottom: CELL_SIZE,
-                    height: WALL_HEIGHT * 0.8,
-                    tessellation: 4
-                },
-                this.scene
-            );
-            pyramid.position = new BABYLON.Vector3(centerX, centerY, WALL_HEIGHT * 0.4);
+             const pyramid = BABYLON.MeshBuilder.CreateCylinder(
+                 "crystal",
+                 {
+                     diameterTop: 0,
+                     diameterBottom: CELL_SIZE,
+                     height: WALL_HEIGHT * 0.8,
+                     tessellation: 4
+                 },
+                 this.scene
+             );
+             pyramid.position = new BABYLON.Vector3(centerX, centerY, WALL_HEIGHT * 0.4);
 
-            const material = new BABYLON.StandardMaterial("crystalMat", this.scene);
-            material.emissiveColor = MAGENTA_GLOW;
-            material.wireframe = true;
-            material.alpha = 0.9;
-            pyramid.material = material;
+             const material = new BABYLON.StandardMaterial("crystalMat", this.scene);
+             material.emissiveColor = MAGENTA_GLOW;
+             material.wireframe = true;
+             material.alpha = 0.9;
+             pyramid.material = material;
 
-            this.specialCellMeshes.push(pyramid);
-        }
-    }
+             this.specialCellMeshes.push(pyramid);
+         }
 
-    // Enhancement #6: Generator-to-crystal flowing lines
+         // Create mystery squares (cyan rings)
+         // Cell types: NORMAL=1, GENERATOR=2, CRYSTAL=3, MYSTERY=4, START=5
+         if (gameState.board && gameState.board.grid) {
+             for (let y = 0; y < gameState.board.grid.length; y++) {
+                 for (let x = 0; x < gameState.board.grid[y].length; x++) {
+                     const cell = gameState.board.grid[y][x];
+                     if (cell.cell_type === 4) {  // MYSTERY = 4
+                         const centerX = x * CELL_SIZE + CELL_SIZE / 2;
+                         const centerY = y * CELL_SIZE + CELL_SIZE / 2;
+
+                         // Create a wireframe torus to represent mystery square
+                         const ring = BABYLON.MeshBuilder.CreateTorus(
+                             `mystery_${x}_${y}`,
+                             {
+                                 diameter: CELL_SIZE * 0.7,
+                                 thickness: 3,
+                                 tessellation: 16
+                             },
+                             this.scene
+                         );
+                         ring.position = new BABYLON.Vector3(centerX, centerY, WALL_HEIGHT * 0.5);
+                         ring.rotation.x = Math.PI / 2; // Rotate to lay flat
+
+                         const material = new BABYLON.StandardMaterial("mysteryMat", this.scene);
+                         material.emissiveColor = CYAN_GLOW;
+                         material.wireframe = true;
+                         material.alpha = 0.6;
+                         ring.material = material;
+
+                         this.glowLayer.addIncludedOnlyMesh(ring);
+                         this.specialCellMeshes.push(ring);
+                     }
+                 }
+             }
+         }
+     }
+
+     // Enhancement #6: Generator-to-crystal flowing lines
     createGeneratorLines(gameState) {
         if (!gameState.generators || !gameState.crystal) return;
 
@@ -1117,9 +1153,13 @@ class GameClient {
                     this.updateValidMoveIndicators(null);
                     break;
                 case 'escape':
-                    // Cancel action
+                    // Cancel action or close menu
                     event.preventDefault();
-                    this.cancelAction();
+                    if (this.deploymentMenuOpen) {
+                        this.toggleDeploymentMenu();
+                    } else {
+                        this.cancelAction();
+                    }
                     break;
                 case 'r':
                     // Toggle deployment menu
@@ -1162,6 +1202,50 @@ class GameClient {
                     this.localPlayerId = `player_${playerIndex}`;
                     console.log("Switched to player", this.localPlayerId);
                     break;
+                case 'w':
+                case 'arrowup':
+                    // Move camera forward
+                    event.preventDefault();
+                    this.moveCameraForward();
+                    break;
+                case 's':
+                case 'arrowdown':
+                    // Move camera backward
+                    event.preventDefault();
+                    this.moveCameraBackward();
+                    break;
+                case 'a':
+                case 'arrowleft':
+                    // Move camera left
+                    event.preventDefault();
+                    this.moveCameraLeft();
+                    break;
+                case 'd':
+                case 'arrowright':
+                    // Move camera right
+                    event.preventDefault();
+                    this.moveCameraRight();
+                    break;
+                case '+':
+                case '=':
+                    // Increase FOV (zoom out)
+                    event.preventDefault();
+                    this.adjustFOV(15); // Increased from 5 to 15 for faster FOV adjustment
+                    break;
+                case '-':
+                case '_':
+                    // Decrease FOV (zoom in)
+                    event.preventDefault();
+                    this.adjustFOV(-15); // Increased from 5 to 15 for faster FOV adjustment
+                    break;
+            }
+        });
+
+        // Handle Ctrl+Q for quit
+        window.addEventListener('keydown', (event) => {
+            if (event.ctrlKey && event.key.toLowerCase() === 'q') {
+                event.preventDefault();
+                this.quitGame();
             }
         });
 
@@ -1198,6 +1282,108 @@ class GameClient {
         }
     }
 
+    // Move camera forward (W/ArrowUp)
+    moveCameraForward() {
+        if (this.cameraMode === "overview") {
+            const moveAmount = 50;
+            const forward = this.camera.getDirection(BABYLON.Vector3.Forward());
+            forward.y = 0; // Keep movement horizontal
+            forward.normalize();
+            forward.scaleInPlace(moveAmount);
+            this.camera.target.addInPlace(forward);
+        } else if (this.cameraMode === "firstperson") {
+            const moveAmount = 20;
+            const forward = this.firstPersonCamera.getDirection(BABYLON.Vector3.Forward());
+            forward.y = 0; // Keep movement horizontal
+            forward.normalize();
+            forward.scaleInPlace(moveAmount);
+            this.firstPersonCamera.position.addInPlace(forward);
+            this.firstPersonCamera.setTarget(this.firstPersonCamera.position.clone().add(this.firstPersonCamera.getDirection(BABYLON.Vector3.Forward())));
+        }
+    }
+
+    // Move camera backward (S/ArrowDown)
+    moveCameraBackward() {
+        if (this.cameraMode === "overview") {
+            const moveAmount = 50;
+            const forward = this.camera.getDirection(BABYLON.Vector3.Forward());
+            forward.y = 0; // Keep movement horizontal
+            forward.normalize();
+            forward.scaleInPlace(-moveAmount);
+            this.camera.target.addInPlace(forward);
+        } else if (this.cameraMode === "firstperson") {
+            const moveAmount = 20;
+            const forward = this.firstPersonCamera.getDirection(BABYLON.Vector3.Forward());
+            forward.y = 0; // Keep movement horizontal
+            forward.normalize();
+            forward.scaleInPlace(-moveAmount);
+            this.firstPersonCamera.position.addInPlace(forward);
+            this.firstPersonCamera.setTarget(this.firstPersonCamera.position.clone().add(this.firstPersonCamera.getDirection(BABYLON.Vector3.Forward())));
+        }
+    }
+
+    // Move camera left (A/ArrowLeft)
+    moveCameraLeft() {
+        if (this.cameraMode === "overview") {
+            const moveAmount = 50;
+            const right = this.camera.getDirection(BABYLON.Vector3.Right());
+            right.y = 0; // Keep movement horizontal
+            right.normalize();
+            right.scaleInPlace(-moveAmount);
+            this.camera.target.addInPlace(right);
+        } else if (this.cameraMode === "firstperson") {
+            const moveAmount = 20;
+            const right = this.firstPersonCamera.getDirection(BABYLON.Vector3.Right());
+            right.y = 0; // Keep movement horizontal
+            right.normalize();
+            right.scaleInPlace(-moveAmount);
+            this.firstPersonCamera.position.addInPlace(right);
+            this.firstPersonCamera.setTarget(this.firstPersonCamera.position.clone().add(this.firstPersonCamera.getDirection(BABYLON.Vector3.Forward())));
+        }
+    }
+
+    // Move camera right (D/ArrowRight)
+    moveCameraRight() {
+        if (this.cameraMode === "overview") {
+            const moveAmount = 50;
+            const right = this.camera.getDirection(BABYLON.Vector3.Right());
+            right.y = 0; // Keep movement horizontal
+            right.normalize();
+            right.scaleInPlace(moveAmount);
+            this.camera.target.addInPlace(right);
+        } else if (this.cameraMode === "firstperson") {
+            const moveAmount = 20;
+            const right = this.firstPersonCamera.getDirection(BABYLON.Vector3.Right());
+            right.y = 0; // Keep movement horizontal
+            right.normalize();
+            right.scaleInPlace(moveAmount);
+            this.firstPersonCamera.position.addInPlace(right);
+            this.firstPersonCamera.setTarget(this.firstPersonCamera.position.clone().add(this.firstPersonCamera.getDirection(BABYLON.Vector3.Forward())));
+        }
+    }
+
+    // Adjust FOV (+/- keys)
+    adjustFOV(change) {
+        if (this.cameraMode === "overview") {
+            this.camera.fov += change * 0.01;
+            this.camera.fov = Math.max(0.1, Math.min(1.5, this.camera.fov));
+            console.log("FOV adjusted to:", this.camera.fov);
+        } else if (this.cameraMode === "firstperson") {
+            this.firstPersonCamera.fov += change * 0.01;
+            this.firstPersonCamera.fov = Math.max(0.1, Math.min(1.5, this.firstPersonCamera.fov));
+            console.log("FOV adjusted to:", this.firstPersonCamera.fov);
+        }
+    }
+
+    // Quit game (Ctrl+Q)
+    quitGame() {
+        console.log("Quitting game...");
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            this.websocket.close();
+        }
+        alert("Game quit. You can close this window.");
+    }
+
     // Cancel current action/selection (ESC key)
     cancelAction() {
         if (this.selectedTokenId) {
@@ -1217,8 +1403,14 @@ class GameClient {
 
     // Toggle deployment menu (R key)
     toggleDeploymentMenu() {
-        if (!this.gameState || this.gameState.current_turn_player_id !== this.localPlayerId) {
-            return; // Not our turn
+        if (!this.gameState) {
+            console.log("No game state");
+            return;
+        }
+        if (this.gameState.current_turn_player_id !== this.localPlayerId) {
+            console.log(`Not your turn. Current turn: ${this.gameState.current_turn_player_id}, You are: ${this.localPlayerId}`);
+            console.log("Press 1-4 to switch which player you control");
+            return;
         }
 
         if (this.turnPhase !== "MOVEMENT") {
@@ -1228,14 +1420,65 @@ class GameClient {
 
         this.deploymentMenuOpen = !this.deploymentMenuOpen;
         if (this.deploymentMenuOpen) {
-            console.log("Deployment menu opened - Click a corner cell to deploy a token");
-            // In a full implementation, show UI for selecting token type (10hp, 8hp, 6hp, 4hp)
-            // For now, just set a default
-            this.selectedDeployHealth = 10;
+            this.showDeploymentUI();
         } else {
-            console.log("Deployment menu closed");
+            this.hideDeploymentUI();
             this.selectedDeployHealth = null;
         }
+    }
+
+    showDeploymentUI() {
+        // Remove any existing menu
+        const existing = document.getElementById('deployment-menu');
+        if (existing) existing.remove();
+
+        // Create deployment menu
+        const menu = document.createElement('div');
+        menu.id = 'deployment-menu';
+        menu.style.position = 'fixed';
+        menu.style.top = '50%';
+        menu.style.left = '50%';
+        menu.style.transform = 'translate(-50%, -50%)';
+        menu.style.backgroundColor = '#000080';
+        menu.style.border = '2px solid #00FFFF';
+        menu.style.padding = '20px';
+        menu.style.zIndex = '1000';
+        menu.style.fontFamily = 'monospace';
+        menu.style.color = '#00FFFF';
+        menu.style.textAlign = 'center';
+
+        menu.innerHTML = `
+            <div style="margin-bottom: 20px; font-size: 16px; font-weight: bold;">
+                SELECT TOKEN TO DEPLOY
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                <button class="deploy-btn" data-health="10" style="padding: 10px; background: #000080; border: 1px solid #00FFFF; color: #00FFFF; cursor: pointer; font-size: 14px;">10 HP</button>
+                <button class="deploy-btn" data-health="8" style="padding: 10px; background: #000080; border: 1px solid #00FFFF; color: #00FFFF; cursor: pointer; font-size: 14px;">8 HP</button>
+                <button class="deploy-btn" data-health="6" style="padding: 10px; background: #000080; border: 1px solid #00FFFF; color: #00FFFF; cursor: pointer; font-size: 14px;">6 HP</button>
+                <button class="deploy-btn" data-health="4" style="padding: 10px; background: #000080; border: 1px solid #00FFFF; color: #00FFFF; cursor: pointer; font-size: 14px;">4 HP</button>
+            </div>
+            <div style="margin-top: 20px; font-size: 12px;">
+                Click a button then click a corner cell to deploy
+            </div>
+        `;
+
+        document.body.appendChild(menu);
+
+        // Add button listeners
+        menu.querySelectorAll('.deploy-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.selectedDeployHealth = parseInt(e.target.getAttribute('data-health'));
+                console.log(`Selected ${this.selectedDeployHealth} HP token for deployment`);
+                // Highlight the selected button
+                menu.querySelectorAll('.deploy-btn').forEach(b => b.style.backgroundColor = '#000080');
+                e.target.style.backgroundColor = '#008080';
+            });
+        });
+    }
+
+    hideDeploymentUI() {
+        const menu = document.getElementById('deployment-menu');
+        if (menu) menu.remove();
     }
 }
 
