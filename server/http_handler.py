@@ -1,0 +1,113 @@
+"""
+HTTP Handler for Race to the Crystal web server.
+
+Serves static files (HTML, JS, CSS) for the web client.
+"""
+
+import logging
+from pathlib import Path
+from typing import Optional
+
+from aiohttp import web
+
+
+logger = logging.getLogger(__name__)
+
+
+class HTTPHandler:
+    """
+    Handles HTTP requests for static file serving.
+
+    Provides routes for:
+    - / -> index.html
+    - /static/* -> static files from web_server/static/
+    """
+
+    def __init__(self, static_dir: Optional[Path] = None):
+        """
+        Initialize HTTP handler.
+
+        Args:
+            static_dir: Directory containing static files
+        """
+        if static_dir is None:
+            # Default to web_server/static relative to project root
+            project_root = Path(__file__).parent.parent.parent
+            static_dir = project_root / "web_server" / "static"
+
+        self.static_dir = Path(static_dir)
+        self.templates_dir = self.static_dir.parent / "templates"
+
+        logger.info(f"HTTP handler initialized with static dir: {self.static_dir}")
+
+    def create_app(self) -> web.Application:
+        """
+        Create aiohttp application with routes.
+
+        Returns:
+            Configured web application
+        """
+        app = web.Application()
+
+        app.router.add_get("/", self.handle_index)
+        app.router.add_get("/index.html", self.handle_index)
+        app.router.add_get("/game", self.handle_game)
+        app.router.add_get("/game.html", self.handle_game)
+
+        app.router.add_static("/static", self.static_dir, follow_symlinks=True)
+
+        return app
+
+    async def handle_index(self, request: web.Request) -> web.FileResponse:
+        """Serve the main index.html page."""
+        index_file = self.templates_dir / "index.html"
+
+        if index_file.exists():
+            return web.FileResponse(index_file)
+
+        logger.error(f"index.html not found at {index_file}")
+        return web.Response(
+            text="<html><body><h1>Race to the Crystal</h1>"
+            "<p>Web server running. Open /game for the 3D client.</p>"
+            "</body></html>",
+            content_type="text/html",
+        )
+
+    async def handle_game(self, request: web.Request) -> web.FileResponse:
+        """Serve the game page."""
+        game_file = self.templates_dir / "index.html"
+
+        if game_file.exists():
+            return web.FileResponse(game_file)
+
+        logger.error(f"game.html not found at {game_file}")
+        return web.Response(
+            text="<html><body><h1>Race to the Crystal - 3D Game</h1>"
+            "<p>Game client loading...</p>"
+            "</body></html>",
+            content_type="text/html",
+        )
+
+    @property
+    def static_path(self) -> Path:
+        """Get the static file directory path."""
+        return self.static_dir
+
+    @property
+    def templates_path(self) -> Path:
+        """Get the templates directory path."""
+        return self.templates_dir
+
+
+def create_app(static_dir: Optional[Path] = None) -> web.Application:
+    """
+    Create and configure aiohttp application.
+
+    Args:
+        static_dir: Directory containing static files
+
+    Returns:
+        Configured web application
+    """
+    handler = HTTPHandler(static_dir)
+    return handler.create_app()

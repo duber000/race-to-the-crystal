@@ -18,12 +18,14 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "websockets>=13.0",
+    "aiohttp>=3.9.0",
 ]
 
 [project.scripts]
 race-to-the-crystal = "client.menu_main:main"
 race-direct = "client.client_main:main"
 race-server = "server.server_main:main"
+race-unified-server = "server.server_main:main"
 race-web-server = "web_server.main:run_server"
 race-ai-client = "client.ai_client:run_ai_client"
 test = "pytest:main"

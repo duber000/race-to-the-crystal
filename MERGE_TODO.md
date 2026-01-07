@@ -2,7 +2,7 @@
 
 ## Goal: Enable 3D Web Client to Join Network Games
 
-Currently the 3D web client (FastAPI + Babylon.js) runs on port 8000 and creates isolated local games, while the network game server runs on port 8888 with TCP connections for desktop clients.
+Currently the 3D web client (FastAPI + Babylon.js) runs on port 8000 games, while the network game server runs and creates isolated local on port 8888 with TCP connections for desktop clients.
 
 ## Option 3: Unified Server (Full Integration) ⭐ SELECTED
 
@@ -30,50 +30,50 @@ Unified Game Server (port 8888)
 ### Implementation Tasks
 
 #### Phase 1: Add WebSocket Support to Game Server
-- [ ] Add WebSocket endpoint to `server/game_server.py`
-- [ ] Create `server/websocket_handler.py` for web client connections
-- [ ] Handle WebSocket authentication and player registration
-- [ ] Broadcast game state updates to WebSocket clients
-- [ ] Parse WebSocket messages for game actions
+- ✅ Add WebSocket endpoint to `server/game_server.py`
+- ✅ Create `server/websocket_handler.py` for web client connections
+- ✅ Handle WebSocket authentication and player registration
+- ✅ Broadcast game state updates to WebSocket clients
+- ✅ Parse WebSocket messages for game actions
 
 #### Phase 2: Add HTTP/Static File Serving
-- [ ] Add HTTP server capability (using `aiohttp` or embed FastAPI)
-- [ ] Serve static files from `web_server/static/` and `web_server/templates/`
-- [ ] Add `/` route to serve `index.html`
-- [ ] Add `/static/` route for JavaScript/CSS files
+- ✅ Add HTTP server capability (using `aiohttp`)
+- ✅ Serve static files from `web_server/static/` and `web_server/templates/`
+- ✅ Add `/` route to serve `index.html`
+- ✅ Add `/static/` route for JavaScript/CSS files
 
 #### Phase 3: Unify Protocol
-- [ ] Create common message format for both TCP and WebSocket
-- [ ] Update `shared/enums.py` with `ClientType.WEB_BROWSER`
-- [ ] Ensure game state serialization works for both client types
-- [ ] Handle player ID mapping (web clients use string IDs like "player_0")
+- ✅ Create common message format for both TCP and WebSocket
+- ✅ Update `shared/enums.py` with `ClientType.WEB_BROWSER`
+- ✅ Ensure game state serialization works for both client types
+- ✅ Handle player ID mapping (web clients use string IDs like "player_0")
 
 #### Phase 4: Update Web Client
-- [ ] Change WebSocket connection from `ws://localhost:8000` to `ws://localhost:8888`
-- [ ] Implement lobby join/create UI in web client
-- [ ] Add player name input and connection UI
-- [ ] Handle network game lifecycle (lobby → game → end)
+- ✅ Change WebSocket connection from `ws://localhost:8000` to `ws://localhost:8888`
+- ⚠️ Implement lobby join/create UI in web client (TODO - web client needs UI updates)
+- ⚠️ Add player name input and connection UI (TODO - web client needs UI updates)
+- ⚠️ Handle network game lifecycle (lobby → game → end) (TODO - web client needs updates)
 
 #### Phase 5: Update Lobby System
-- [ ] Extend `server/lobby.py` to track client types (TCP vs WebSocket)
-- [ ] Allow mixed lobbies (desktop + web clients)
-- [ ] Update lobby state broadcasts for both protocols
-- [ ] Handle ready/unready from web clients
+- ✅ Extend `server/lobby.py` to track client types (TCP vs WebSocket)
+- ✅ Allow mixed lobbies (desktop + web clients)
+- ✅ Update lobby state broadcasts for both protocols
+- ✅ Handle ready/unready from web clients
 
 #### Phase 6: Testing & Integration
-- [ ] Test mixed games (desktop + web clients)
-- [ ] Verify state synchronization across all clients
-- [ ] Test reconnection handling for web clients
-- [ ] Performance testing with multiple connections
-- [ ] Update documentation with unified server usage
+- ⏳ Test mixed games (desktop + web clients)
+- ⏳ Verify state synchronization across all clients
+- ⏳ Test reconnection handling for web clients
+- ⏳ Performance testing with multiple connections
+- ⏳ Update documentation with unified server usage
 
 #### Phase 7: Migration & Cleanup
-- [ ] Deprecate standalone FastAPI server (`web_server/main.py`)
-- [ ] Update `pyproject.toml` scripts
-  - `race-server` → unified server
-  - Remove `race-web-server` (or alias to `race-server`)
-- [ ] Update `CLAUDE.md` and `web_server/README.md`
-- [ ] Migration guide for existing deployments
+- ⏳ Deprecate standalone FastAPI server (`web_server/main.py`)
+- ⏳ Update `pyproject.toml` scripts
+  - `race-server` → unified server (supports `--unified` flag)
+  - Remove `race-web-server` (or alias to `race-server --unified`)
+- ⏳ Update `CLAUDE.md` and `web_server/README.md`
+- ⏳ Migration guide for existing deployments
 
 ### Technical Decisions
 
@@ -129,8 +129,7 @@ dependencies = [
 ### Files to Create
 - `server/websocket_handler.py` - WebSocket connection handler
 - `server/http_handler.py` - Static file serving
-- `server/static/` - Symlink to `web_server/static/`
-- `server/templates/` - Symlink to `web_server/templates/`
+- `server/server_main.py` - Updated with --unified and --http-port options
 
 ### Backward Compatibility
 - Desktop clients continue to work unchanged (TCP on port 8888)
@@ -162,3 +161,15 @@ Keep FastAPI server, make it proxy to game server.
 - Start with Phase 1 (WebSocket support) as proof of concept
 - Can incrementally migrate features from `web_server/main.py`
 - Keep backward compatibility throughout migration
+
+### Running the Unified Server
+```bash
+# Run unified server (TCP on 8888, HTTP/WebSocket on 8080)
+uv run race-server --unified
+
+# Or run TCP-only server (original behavior)
+uv run race-server
+
+# Access web client at http://localhost:8080/
+# WebSocket endpoint: ws://localhost:8080/ws
+```

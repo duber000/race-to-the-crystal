@@ -3,6 +3,7 @@ Network Message Type Definitions.
 
 Defines all message types used in client-server communication.
 """
+
 from enum import Enum
 
 
@@ -62,5 +63,7 @@ class MessageType(Enum):
 
 class ClientType(Enum):
     """Type of client connecting to server."""
+
     HUMAN = "HUMAN"  # Human player with GUI
     AI = "AI"  # AI agent player
+    WEB_BROWSER = "WEB_BROWSER"  # Web browser client (Babylon.js)

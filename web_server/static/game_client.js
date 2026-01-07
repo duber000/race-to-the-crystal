@@ -933,7 +933,8 @@ class GameClient {
 
     connectWebSocket() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/game`;
+        const port = window.location.port || '8888';
+        const wsUrl = `${protocol}//${window.location.hostname}:${port}/ws`;
 
         console.log("==================================================");
         console.log("Connecting to WebSocket:", wsUrl);

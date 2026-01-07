@@ -4,6 +4,7 @@ TCP Game Server for Race to the Crystal.
 Main server that handles client connections, lobby management,
 and game coordination.
 """
+
 import asyncio
 import logging
 import time
@@ -16,11 +17,12 @@ from network.messages import MessageType, ClientType
 from server.lobby import LobbyManager, GameStatus
 from server.game_coordinator import GameCoordinator
 from server.ai_spawner import AISpawner
+from server.websocket_handler import WebSocketHandler
+from server.http_handler import HTTPHandler
 
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -75,9 +77,7 @@ class GameServer:
         self.running = True
 
         self.server = await asyncio.start_server(
-            self._handle_new_connection,
-            self.host,
-            self.port
+            self._handle_new_connection, self.host, self.port
         )
 
         addr = self.server.sockets[0].getsockname()
@@ -105,9 +105,7 @@ class GameServer:
         logger.info("Server stopped")
 
     async def _handle_new_connection(
-        self,
-        reader: asyncio.StreamReader,
-        writer: asyncio.StreamWriter
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         """
         Handle a new TCP connection.
@@ -127,7 +125,7 @@ class GameServer:
         try:
             initial_msg = await asyncio.wait_for(
                 connection.receive_message(),
-                timeout=10.0  # 10 second timeout for initial connect
+                timeout=10.0,  # 10 second timeout for initial connect
             )
 
             if not initial_msg:
@@ -140,9 +138,13 @@ class GameServer:
             if initial_msg.type == MessageType.CONNECT:
                 player_id = await self._handle_connect(connection, initial_msg, conn_id)
             elif initial_msg.type == MessageType.RECONNECT:
-                player_id = await self._handle_reconnect(connection, initial_msg, conn_id)
+                player_id = await self._handle_reconnect(
+                    connection, initial_msg, conn_id
+                )
             else:
-                logger.warning(f"Invalid initial message type from {conn_id}: {initial_msg.type}")
+                logger.warning(
+                    f"Invalid initial message type from {conn_id}: {initial_msg.type}"
+                )
                 await connection.close()
                 return
 
@@ -165,10 +167,7 @@ class GameServer:
             self.connection_pool.remove_connection(conn_id)
 
     async def _handle_connect(
-        self,
-        connection: Connection,
-        message: NetworkMessage,
-        conn_id: str
+        self, connection: Connection, message: NetworkMessage, conn_id: str
     ) -> Optional[str]:
         """
         Handle initial CONNECT message.
@@ -209,17 +208,13 @@ class GameServer:
         await connection.send_message(ack_msg)
 
         logger.info(
-            f"Player connected: {player_name} ({client_type.value}) "
-            f"ID: {player_id[:8]}"
+            f"Player connected: {player_name} ({client_type.value}) ID: {player_id[:8]}"
         )
 
         return player_id
 
     async def _handle_reconnect(
-        self,
-        connection: Connection,
-        message: NetworkMessage,
-        conn_id: str
+        self, connection: Connection, message: NetworkMessage, conn_id: str
     ) -> Optional[str]:
         """
         Handle RECONNECT message from a returning player.
@@ -236,7 +231,9 @@ class GameServer:
         data = message.data or {}
         game_id = data.get("game_id")
 
-        logger.info(f"Reconnection attempt from {player_id[:8] if player_id else 'unknown'}")
+        logger.info(
+            f"Reconnection attempt from {player_id[:8] if player_id else 'unknown'}"
+        )
 
         # Validate player_id
         if not player_id:
@@ -316,7 +313,7 @@ class GameServer:
             reconnect_msg = NetworkMessage(
                 type=MessageType.PLAYER_RECONNECTED,
                 timestamp=time.time(),
-                data={"player_id": player_id, "player_name": player_name}
+                data={"player_id": player_id, "player_name": player_name},
             )
             await self._broadcast_to_game(saved_game_id, reconnect_msg)
         elif saved_game_id:
@@ -326,7 +323,7 @@ class GameServer:
                 reconnect_msg = NetworkMessage(
                     type=MessageType.PLAYER_RECONNECTED,
                     timestamp=time.time(),
-                    data={"player_id": player_id, "player_name": player_name}
+                    data={"player_id": player_id, "player_name": player_name},
                 )
                 await self._broadcast_to_lobby(saved_game_id, reconnect_msg)
 
@@ -357,7 +354,9 @@ class GameServer:
                 "game_id": lobby.game_id if lobby else None,
                 "game_session": game_session,
             }
-            logger.info(f"Player {player_id[:8]} marked for reconnection (timeout in {self.reconnect_timeout}s)")
+            logger.info(
+                f"Player {player_id[:8]} marked for reconnection (timeout in {self.reconnect_timeout}s)"
+            )
 
             # Notify other players that player disconnected but can reconnect
             if lobby:
@@ -366,7 +365,11 @@ class GameServer:
                 disconnect_msg = NetworkMessage(
                     type=MessageType.PLAYER_DISCONNECTED,
                     timestamp=time.time(),
-                    data={"player_id": player_id, "player_name": player_name, "can_reconnect": True}
+                    data={
+                        "player_id": player_id,
+                        "player_name": player_name,
+                        "can_reconnect": True,
+                    },
                 )
 
                 if game_session:
@@ -398,7 +401,7 @@ class GameServer:
                 disconnect_msg = NetworkMessage(
                     type=MessageType.PLAYER_LEFT,
                     timestamp=time.time(),
-                    data={"player_id": player_id, "player_name": player_name}
+                    data={"player_id": player_id, "player_name": player_name},
                 )
 
                 if lobby and lobby.status == GameStatus.IN_PROGRESS:
@@ -410,11 +413,7 @@ class GameServer:
                     # Was in lobby
                     await self._broadcast_to_lobby(game_id, disconnect_msg)
 
-    async def _handle_message(
-        self,
-        player_id: str,
-        message: NetworkMessage
-    ) -> None:
+    async def _handle_message(self, player_id: str, message: NetworkMessage) -> None:
         """
         Route and handle a message from a player.
 
@@ -451,7 +450,12 @@ class GameServer:
                 await self._handle_start_game(player_id, message)
 
             # Game actions
-            elif message.type in [MessageType.MOVE, MessageType.ATTACK, MessageType.DEPLOY, MessageType.END_TURN]:
+            elif message.type in [
+                MessageType.MOVE,
+                MessageType.ATTACK,
+                MessageType.DEPLOY,
+                MessageType.END_TURN,
+            ]:
                 await self._handle_game_action(player_id, message)
 
             # Chat
@@ -462,7 +466,9 @@ class GameServer:
                 logger.warning(f"Unhandled message type: {message.type.value}")
 
         except Exception as e:
-            logger.error(f"Error handling message {message.type.value}: {e}", exc_info=True)
+            logger.error(
+                f"Error handling message {message.type.value}: {e}", exc_info=True
+            )
             await self._send_error(player_id, f"Server error: {e}")
 
     async def _handle_heartbeat(self, player_id: str, message: NetworkMessage) -> None:
@@ -472,7 +478,9 @@ class GameServer:
             ack_msg = self.protocol.create_heartbeat_ack(message.timestamp)
             await connection.send_message(ack_msg)
 
-    async def _handle_create_game(self, player_id: str, message: NetworkMessage) -> None:
+    async def _handle_create_game(
+        self, player_id: str, message: NetworkMessage
+    ) -> None:
         """Handle CREATE_GAME request."""
         data = message.data or {}
         game_name = data.get("game_name", "New Game")
@@ -489,7 +497,7 @@ class GameServer:
                 player_name=player_name,
                 game_name=game_name,
                 client_type=client_type,
-                max_players=max_players
+                max_players=max_players,
             )
         except ValueError as e:
             logger.warning(f"Invalid game creation attempt by {player_id}: {e}")
@@ -501,7 +509,7 @@ class GameServer:
             type=MessageType.CREATE_GAME,
             timestamp=message.timestamp,
             player_id=player_id,
-            data=lobby.to_dict()
+            data=lobby.to_dict(),
         )
 
         await self._send_to_player(player_id, response)
@@ -521,7 +529,9 @@ class GameServer:
 
         # Join lobby with validation
         try:
-            lobby = self.lobby_manager.join_lobby(game_id, player_id, player_name, client_type)
+            lobby = self.lobby_manager.join_lobby(
+                game_id, player_id, player_name, client_type
+            )
         except ValueError as e:
             logger.warning(f"Invalid join attempt by {player_id}: {e}")
             await self._send_error(player_id, f"Invalid player name: {e}")
@@ -536,7 +546,7 @@ class GameServer:
             type=MessageType.JOIN_GAME,
             timestamp=message.timestamp,
             player_id=player_id,
-            data=lobby.to_dict()
+            data=lobby.to_dict(),
         )
         await self._send_to_player(player_id, response)
 
@@ -548,8 +558,8 @@ class GameServer:
                 "game_id": game_id,
                 "player_id": player_id,
                 "player_name": player_name,
-                "lobby": lobby.to_dict()
-            }
+                "lobby": lobby.to_dict(),
+            },
         )
         await self._broadcast_to_lobby(game_id, join_event)
 
@@ -569,7 +579,7 @@ class GameServer:
             type=MessageType.LEAVE_GAME,
             timestamp=message.timestamp,
             player_id=player_id,
-            data={"game_id": game_id}
+            data={"game_id": game_id},
         )
         await self._send_to_player(player_id, response)
 
@@ -577,7 +587,7 @@ class GameServer:
         leave_event = NetworkMessage(
             type=MessageType.PLAYER_LEFT,
             timestamp=message.timestamp,
-            data={"game_id": game_id, "player_id": player_id}
+            data={"game_id": game_id, "player_id": player_id},
         )
         await self._broadcast_to_lobby(game_id, leave_event)
 
@@ -589,7 +599,7 @@ class GameServer:
             type=MessageType.GAME_LIST,
             timestamp=time.time(),
             player_id=player_id,
-            data={"games": available_lobbies}
+            data={"games": available_lobbies},
         )
 
         await self._send_to_player(player_id, response)
@@ -614,8 +624,8 @@ class GameServer:
                 "game_id": lobby.game_id,
                 "player_id": player_id,
                 "ready": is_ready,
-                "lobby": lobby.to_dict()
-            }
+                "lobby": lobby.to_dict(),
+            },
         )
         await self._broadcast_to_lobby(lobby.game_id, ready_event)
 
@@ -645,7 +655,7 @@ class GameServer:
                 game_id=lobby.game_id,
                 num_ai=ai_needed,
                 host="localhost",  # AI clients connect to localhost
-                port=self.port
+                port=self.port,
             )
 
             if not spawned:
@@ -687,7 +697,9 @@ class GameServer:
         # Try to start the game
         lobby = self.lobby_manager.start_game(lobby.game_id)
         if not lobby:
-            await self._send_error(player_id, "Cannot start game (not all players ready)")
+            await self._send_error(
+                player_id, "Cannot start game (not all players ready)"
+            )
             return
 
         # Create game session
@@ -702,7 +714,9 @@ class GameServer:
             state_dict = game_session.get_game_state_for_player(net_player_id)
             logger.info(f"  -> Sending FULL_STATE to player {net_player_id}")
 
-            state_msg = self.protocol.create_full_state_message(state_dict, net_player_id)
+            state_msg = self.protocol.create_full_state_message(
+                state_dict, net_player_id
+            )
             await self._send_to_player(net_player_id, state_msg)
             logger.info(f"  -> FULL_STATE sent to player {net_player_id}")
 
@@ -710,13 +724,15 @@ class GameServer:
         start_event = NetworkMessage(
             type=MessageType.START_GAME,
             timestamp=message.timestamp,
-            data={"game_id": lobby.game_id}
+            data={"game_id": lobby.game_id},
         )
         await self._broadcast_to_lobby(lobby.game_id, start_event)
 
         logger.info(f"Started game {lobby.game_id} ({lobby.game_name})")
 
-    async def _handle_game_action(self, player_id: str, message: NetworkMessage) -> None:
+    async def _handle_game_action(
+        self, player_id: str, message: NetworkMessage
+    ) -> None:
         """Handle game action (MOVE, ATTACK, DEPLOY, END_TURN)."""
         # Convert message to action
         action = self.protocol.message_to_action(message)
@@ -744,14 +760,22 @@ class GameServer:
 
     async def _broadcast_game_state(self, game_session) -> None:
         """Broadcast updated game state to all players in a game."""
-        logger.info(f"Broadcasting game state to {len(game_session.network_to_game_id)} players in game {game_session.game_id}")
-        logger.info(f"  Game state before broadcast - current_turn: {game_session.game_state.current_turn_player_id}, turn_phase: {game_session.game_state.turn_phase.name}, turn_number: {game_session.game_state.turn_number}")
+        logger.info(
+            f"Broadcasting game state to {len(game_session.network_to_game_id)} players in game {game_session.game_id}"
+        )
+        logger.info(
+            f"  Game state before broadcast - current_turn: {game_session.game_state.current_turn_player_id}, turn_phase: {game_session.game_state.turn_phase.name}, turn_number: {game_session.game_state.turn_number}"
+        )
         for net_player_id in game_session.network_to_game_id.keys():
             state_dict = game_session.get_game_state_for_player(net_player_id)
             if state_dict:
-                logger.info(f"  State dict for {net_player_id[:8]}: turn_phase={state_dict.get('turn_phase')}")
+                logger.info(
+                    f"  State dict for {net_player_id[:8]}: turn_phase={state_dict.get('turn_phase')}"
+                )
 
-            state_msg = self.protocol.create_full_state_message(state_dict, net_player_id)
+            state_msg = self.protocol.create_full_state_message(
+                state_dict, net_player_id
+            )
             logger.info(f"  -> Sending FULL_STATE to player {net_player_id[:8]}...")
             await self._send_to_player(net_player_id, state_msg)
             logger.info(f"  -> FULL_STATE sent to player {net_player_id[:8]}")
@@ -822,9 +846,7 @@ class GameServer:
 
         # Create chat message to broadcast
         chat_msg = self.protocol.create_chat_message(
-            player_id,
-            player_name,
-            chat_message
+            player_id, player_name, chat_message
         )
 
         # Broadcast to all players in the game/lobby
@@ -835,16 +857,23 @@ class GameServer:
         """Send a message to a specific player."""
         connection = self.player_connections.get(player_id)
         if not connection:
-            logger.warning(f"Cannot send {message.type.value} to {player_id[:8]}: No connection found")
+            logger.warning(
+                f"Cannot send {message.type.value} to {player_id[:8]}: No connection found"
+            )
             return False
 
         try:
             result = await connection.send_message(message)
             if not result:
-                logger.warning(f"Failed to send {message.type.value} to {player_id[:8]}")
+                logger.warning(
+                    f"Failed to send {message.type.value} to {player_id[:8]}"
+                )
             return result
         except Exception as e:
-            logger.error(f"Error sending {message.type.value} to {player_id[:8]}: {e}", exc_info=True)
+            logger.error(
+                f"Error sending {message.type.value} to {player_id[:8]}: {e}",
+                exc_info=True,
+            )
             return False
 
     async def _send_error(self, player_id: str, error_msg: str) -> None:
@@ -869,3 +898,83 @@ class GameServer:
 
         for player_id in game_session.network_to_game_id.keys():
             await self._send_to_player(player_id, message)
+
+    def _create_aiohttp_app(self) -> "aiohttp.Application":
+        """Create aiohttp application for HTTP/WebSocket server."""
+        import aiohttp
+
+        http_handler = HTTPHandler()
+        app = http_handler.create_app()
+
+        ws_handler = WebSocketHandler(self)
+        app.router.add_get("/ws", ws_handler.handle_websocket)
+
+        app["game_server"] = self
+
+        return app
+
+    async def start_aiohttp_server(self, port: int = 8080) -> None:
+        """Start the aiohttp HTTP/WebSocket server."""
+        from aiohttp import web
+
+        logger.info(f"Starting HTTP/WebSocket server on port {port}")
+
+        app = self._create_aiohttp_app()
+        self.aiohttp_runner = web.AppRunner(app)
+        await self.aiohttp_runner.setup()
+
+        site = web.TCPSite(self.aiohttp_runner, "0.0.0.0", port)
+        await site.start()
+
+        logger.info(f"HTTP/WebSocket server running on http://0.0.0.0:{port}")
+        logger.info(f"  WebSocket endpoint: ws://0.0.0.0:{port}/ws")
+        logger.info(f"  Static files: http://0.0.0.0:{port}/static/")
+
+    async def stop_aiohttp_server(self) -> None:
+        """Stop the aiohttp HTTP/WebSocket server."""
+        if self.aiohttp_runner:
+            logger.info("Stopping HTTP/WebSocket server...")
+            await self.aiohttp_runner.cleanup()
+            self.aiohttp_runner = None
+            logger.info("HTTP/WebSocket server stopped")
+
+    async def start_unified_server(
+        self, tcp_port: int = 8888, http_port: int = 8080
+    ) -> None:
+        """
+        Start both TCP and HTTP/WebSocket servers.
+
+        Args:
+            tcp_port: Port for TCP game server
+            http_port: Port for HTTP/WebSocket server
+        """
+        self.running = True
+
+        tcp_server = await asyncio.start_server(
+            self._handle_new_connection, self.host, tcp_port
+        )
+
+        addr = tcp_server.sockets[0].getsockname()
+        logger.info(f"TCP Game Server listening on {addr[0]}:{addr[1]}")
+
+        await self.start_aiohttp_server(http_port)
+
+        async with tcp_server:
+            await tcp_server.serve_forever()
+
+    def run_unified_server(self, tcp_port: int = 8888, http_port: int = 8080) -> None:
+        """
+        Run both TCP and HTTP/WebSocket servers (blocking).
+
+        Args:
+            tcp_port: Port for TCP game server
+            http_port: Port for HTTP/WebSocket server
+        """
+        import aiohttp
+
+        try:
+            asyncio.run(self.start_unified_server(tcp_port, http_port))
+        except KeyboardInterrupt:
+            logger.info("Server interrupted by user")
+        finally:
+            asyncio.run(self.stop())
