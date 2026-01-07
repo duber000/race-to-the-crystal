@@ -56,6 +56,17 @@ class GameClient {
         this.hoveredCell = null;
         this.turnPhase = "MOVEMENT"; // "MOVEMENT" or "ACTION"
 
+        // 3D camera control state
+        this.controlledTokenId = null; // Token camera follows in 3D mode
+        this.tokenRotation = 0; // Camera rotation around token (in degrees)
+        this.cameraPitch = -15; // Camera pitch angle
+        this.mouseLookActive = false;
+        this.lastMousePosition = { x: 0, y: 0 };
+
+        // Deployment menu state
+        this.deploymentMenuOpen = false;
+        this.selectedDeployHealth = null;
+
         // 3D objects
         this.board3D = [];
         this.tokens3D = new Map();
@@ -67,6 +78,7 @@ class GameClient {
 
         // Sound effects
         this.sounds = {};
+        this.musicPlaying = true;
 
         // Initialize
         this.initScene();
@@ -77,6 +89,7 @@ class GameClient {
     }
 
     initScene() {
+        console.log("Initializing scene...");
         // Create scene with black background
         this.scene = new BABYLON.Scene(this.engine);
         this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
@@ -100,18 +113,18 @@ class GameClient {
         this.camera.wheelPrecision = 50;
         this.camera.panningSensibility = 50; // Enable panning with mouse
 
-        // First-person camera (inactive initially)
+        // First-person camera (inactive initially, token-locked)
         this.firstPersonCamera = new BABYLON.UniversalCamera(
             "firstPersonCamera",
             new BABYLON.Vector3(boardCenterX, boardCenterY - 100, 150),
             this.scene
         );
         this.firstPersonCamera.setTarget(new BABYLON.Vector3(boardCenterX, boardCenterY, 0));
-        this.firstPersonCamera.speed = 5;
-        this.firstPersonCamera.keysUp = [87]; // W
-        this.firstPersonCamera.keysDown = [83]; // S
-        this.firstPersonCamera.keysLeft = [65]; // A
-        this.firstPersonCamera.keysRight = [68]; // D
+        // Disable keyboard controls (camera is token-locked)
+        this.firstPersonCamera.keysUp = [];
+        this.firstPersonCamera.keysDown = [];
+        this.firstPersonCamera.keysLeft = [];
+        this.firstPersonCamera.keysRight = [];
         this.firstPersonCamera.angularSensibility = 2000; // Mouse look sensitivity
 
         // Set active camera
@@ -531,20 +544,43 @@ class GameClient {
         });
     }
 
-    // Enhancement #5: First-person camera mode
+    // Enhancement #5: First-person camera mode (token-locked)
     toggleCameraMode() {
         if (this.cameraMode === "overview") {
             // Switch to first-person
             this.cameraMode = "firstperson";
             this.camera.detachControl(this.canvas);
             this.scene.activeCamera = this.firstPersonCamera;
+
+            // Attach control but disable all default inputs (we handle everything manually)
             this.firstPersonCamera.attachControl(this.canvas, true);
+
+            // Remove all default input handlers (keyboard/mouse)
+            if (this.firstPersonCamera.inputs) {
+                this.firstPersonCamera.inputs.clear();
+                console.log("  ✓ Cleared camera default inputs");
+            } else {
+                console.log("  ✗ Warning: camera.inputs not available");
+            }
 
             // Ensure canvas has focus for keyboard input
             this.canvas.focus();
             this.canvas.setAttribute('tabindex', '1');
 
-            console.log("Switched to first-person camera (WASD to move, mouse to look)");
+            // Auto-select first token when entering first-person mode
+            if (this.controlledTokenId === null || this.controlledTokenId === undefined) {
+                this.cycleControlledToken();
+            } else {
+                // Update camera immediately
+                this.updateFirstPersonCamera();
+            }
+
+            console.log("==============================================");
+            console.log("✓ FIRST-PERSON MODE (Token-Locked Camera)");
+            console.log("  TAB - Cycle through your tokens");
+            console.log("  Q/E - Rotate camera left/right");
+            console.log("  Right-click + drag - Free look");
+            console.log("==============================================");
         } else {
             // Switch to overview
             this.cameraMode = "overview";
@@ -555,8 +591,186 @@ class GameClient {
             // Ensure canvas has focus
             this.canvas.focus();
 
-            console.log("Switched to overview camera (drag to rotate, scroll to zoom)");
+            console.log("==============================================");
+            console.log("✓ OVERVIEW MODE (Bird's Eye View)");
+            console.log("  Drag - Rotate camera");
+            console.log("  Scroll - Zoom in/out");
+            console.log("==============================================");
         }
+    }
+
+    // Cycle to next controlled token (TAB key)
+    cycleControlledToken() {
+        console.log("TAB pressed - Cycling to next token (mode:", this.cameraMode, ")");
+
+        if (!this.gameState) {
+            console.log("  ✗ No game state");
+            return;
+        }
+
+        const player = this.gameState.players[this.localPlayerId];
+        if (!player) {
+            console.log("  ✗ No player found for", this.localPlayerId);
+            console.log("    Available players:", Object.keys(this.gameState.players));
+            return;
+        }
+
+        // Get all alive deployed tokens for the player
+        const aliveTokens = player.token_ids
+            .map(id => this.gameState.tokens[id])
+            .filter(token => token && token.is_alive && token.is_deployed)
+            .map(token => token.id);
+        
+        console.log("  Player token IDs:", player.token_ids.length, "→", aliveTokens.length, "alive/deployed");
+
+        if (aliveTokens.length === 0) {
+            console.log("  ✗ No alive tokens to control");
+            return;
+        }
+
+        // Find next token
+        let nextIndex = 0;
+        if (this.controlledTokenId !== null && this.controlledTokenId !== undefined && aliveTokens.includes(this.controlledTokenId)) {
+            const currentIndex = aliveTokens.indexOf(this.controlledTokenId);
+            nextIndex = (currentIndex + 1) % aliveTokens.length;
+        }
+
+        this.controlledTokenId = aliveTokens[nextIndex];
+        this.cameraPitch = -15; // Reset pitch when switching tokens
+
+        const token = this.gameState.tokens[this.controlledTokenId];
+        if (token) {
+            console.log(`  ✓ Now following token ${this.controlledTokenId} at (${token.position[0]}, ${token.position[1]})`);
+            this.updateFirstPersonCamera();
+        }
+    }
+
+    // Rotate camera left (Q key)
+    rotateCameraLeft() {
+        console.log("Q pressed - Rotating left (mode:", this.cameraMode, ")");
+        if (this.cameraMode !== "firstperson") {
+            console.log("  ✗ Not in first-person mode, ignoring");
+            return;
+        }
+        const oldRot = this.tokenRotation;
+        this.tokenRotation -= 15; // 15 degree increments
+        console.log("  ✓ Rotation:", oldRot, "→", this.tokenRotation);
+        console.log("  Camera before:", this.firstPersonCamera.rotation.y);
+        this.updateFirstPersonCamera();
+        console.log("  Camera after:", this.firstPersonCamera.rotation.y);
+    }
+
+    // Rotate camera right (E key)
+    rotateCameraRight() {
+        console.log("E pressed - Rotating right (mode:", this.cameraMode, ")");
+        if (this.cameraMode !== "firstperson") {
+            console.log("  ✗ Not in first-person mode, ignoring");
+            return;
+        }
+        const oldRot = this.tokenRotation;
+        this.tokenRotation += 15; // 15 degree increments
+        console.log("  ✓ Rotation:", oldRot, "→", this.tokenRotation);
+        console.log("  Camera before:", this.firstPersonCamera.rotation.y);
+        this.updateFirstPersonCamera();
+        console.log("  Camera after:", this.firstPersonCamera.rotation.y);
+    }
+
+    // Update first-person camera to follow controlled token
+    updateFirstPersonCamera() {
+        if (this.cameraMode !== "firstperson") {
+            console.log("❌ Not in firstperson mode, returning");
+            return;
+        }
+        if (this.controlledTokenId === null || this.controlledTokenId === undefined) {
+            console.log("❌ No controlled token ID, returning");
+            return;
+        }
+        if (!this.gameState) {
+            console.log("❌ No game state, returning");
+            return;
+        }
+
+        const token = this.gameState.tokens[this.controlledTokenId];
+        if (!token) {
+            console.log("❌ Token not found:", this.controlledTokenId);
+            return;
+        }
+        if (!token.is_alive) {
+            console.log("❌ Token dead:", this.controlledTokenId);
+            return;
+        }
+
+        // Token position in world coordinates
+        const tokenX = token.position[0] * CELL_SIZE + CELL_SIZE / 2;
+        const tokenY = token.position[1] * CELL_SIZE + CELL_SIZE / 2;
+        const tokenZ = TOKEN_HEIGHT / 2;
+
+        // Camera offset from token (behind and above)
+        const offset = 100; // Distance behind token
+        const height = 30; // Height above token
+
+        // Convert rotation to radians (note: tokenRotation is in degrees)
+        const yawRad = (this.tokenRotation * Math.PI) / 180;
+        const pitchRad = (this.cameraPitch * Math.PI) / 180;
+
+        // Calculate camera position (behind and above token)
+        const camX = tokenX - Math.sin(yawRad) * offset * Math.cos(pitchRad);
+        const camY = tokenY - Math.cos(yawRad) * offset * Math.cos(pitchRad);
+        const camZ = tokenZ + height + Math.sin(pitchRad) * offset;
+
+        // Update camera position
+        this.firstPersonCamera.position.x = camX;
+        this.firstPersonCamera.position.y = camY;
+        this.firstPersonCamera.position.z = camZ;
+
+        // Point camera at token (more reliable than manual rotation)
+        this.firstPersonCamera.setTarget(new BABYLON.Vector3(tokenX, tokenY, tokenZ + 10));
+
+        // Debug output (only occasionally to avoid spam)
+        if (Math.random() < 0.05) { // 5% of the time
+            console.log("Camera update:", {
+                tokenPos: [token.position[0], token.position[1]],
+                yawDeg: this.tokenRotation,
+                pitchDeg: this.cameraPitch,
+                camPos: [camX.toFixed(1), camY.toFixed(1), camZ.toFixed(1)],
+                camRot: [(this.firstPersonCamera.rotation.x * 180 / Math.PI).toFixed(1),
+                         (this.firstPersonCamera.rotation.y * 180 / Math.PI).toFixed(1)]
+            });
+        }
+    }
+
+    // Activate mouse-look (right-click)
+    activateMouseLook(x, y) {
+        if (this.cameraMode !== "firstperson") return;
+        this.mouseLookActive = true;
+        this.lastMousePosition = { x, y };
+        this.canvas.style.cursor = 'none';
+        console.log("Mouse-look activated (right-click + drag to look around)");
+    }
+
+    // Deactivate mouse-look (release right-click)
+    deactivateMouseLook() {
+        this.mouseLookActive = false;
+        this.canvas.style.cursor = 'default';
+        console.log("Mouse-look deactivated");
+    }
+
+    // Handle mouse motion for mouse-look
+    handleMouseMotion(dx, dy) {
+        if (!this.mouseLookActive || this.cameraMode !== "firstperson") {
+            return false;
+        }
+
+        // Update rotation based on mouse movement
+        const sensitivity = 0.3;
+        this.tokenRotation += dx * sensitivity;
+        this.cameraPitch -= dy * sensitivity;
+
+        // Clamp pitch to prevent flipping
+        this.cameraPitch = Math.max(-89, Math.min(89, this.cameraPitch));
+
+        this.updateFirstPersonCamera();
+        return true;
     }
 
     // Enhancement #9: Load sound effects
@@ -611,12 +825,21 @@ class GameClient {
     }
 
     updateGameState(gameState) {
-        console.log("Updating game state", gameState);
+        console.log("==================================================");
+        console.log("✓ Updating game state");
+        console.log("  - Generators:", gameState.generators?.length || 0);
+        console.log("  - Crystal:", gameState.crystal ? 'YES' : 'NO');
+        console.log("  - Tokens:", Object.keys(gameState.tokens || {}).length);
+        console.log("  - Players:", Object.keys(gameState.players || {}).length);
+        console.log("==================================================");
+
         this.gameState = gameState;
         this.turnPhase = gameState.turn_phase || "MOVEMENT";
 
         // Update 3D scene
+        console.log("Creating special cells (generators & crystal)...");
         this.createSpecialCells(gameState);
+        console.log("Creating/updating tokens...");
         this.updateTokens(gameState);
 
         // Update HUD
@@ -634,11 +857,13 @@ class GameClient {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws/game`;
 
+        console.log("==================================================");
         console.log("Connecting to WebSocket:", wsUrl);
+        console.log("==================================================");
         this.websocket = new WebSocket(wsUrl);
 
         this.websocket.onopen = () => {
-            console.log("WebSocket connected");
+            console.log("✓ WebSocket connected successfully");
             document.getElementById('connectionStatus').textContent = 'Connected';
             document.getElementById('connectionStatus').classList.remove('disconnected');
         };
@@ -811,31 +1036,41 @@ class GameClient {
     }
 
     setupEventListeners() {
-        // Mouse movement for hover effect
+        // Mouse movement for hover effect and mouse-look
         this.scene.onPointerObservable.add((pointerInfo) => {
             if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERMOVE) {
-                const pickResult = this.scene.pick(
-                    this.scene.pointerX,
-                    this.scene.pointerY
-                );
+                // Handle mouse-look if active
+                if (this.mouseLookActive) {
+                    const dx = pointerInfo.event.movementX || 0;
+                    const dy = pointerInfo.event.movementY || 0;
+                    this.handleMouseMotion(dx, dy);
+                }
 
-                if (pickResult.hit && pickResult.pickedPoint) {
-                    const x = pickResult.pickedPoint.x;
-                    const y = pickResult.pickedPoint.y;
+                // Update hover indicator (skip if mouse-look active)
+                if (!this.mouseLookActive) {
+                    const pickResult = this.scene.pick(
+                        this.scene.pointerX,
+                        this.scene.pointerY
+                    );
 
-                    const gridX = Math.floor(x / CELL_SIZE);
-                    const gridY = Math.floor(y / CELL_SIZE);
+                    if (pickResult.hit && pickResult.pickedPoint) {
+                        const x = pickResult.pickedPoint.x;
+                        const y = pickResult.pickedPoint.y;
 
-                    if (gridX >= 0 && gridX < BOARD_WIDTH && gridY >= 0 && gridY < BOARD_HEIGHT) {
-                        this.hoveredCell = [gridX, gridY];
-                        this.updateHoverIndicator(gridX, gridY);
+                        const gridX = Math.floor(x / CELL_SIZE);
+                        const gridY = Math.floor(y / CELL_SIZE);
+
+                        if (gridX >= 0 && gridX < BOARD_WIDTH && gridY >= 0 && gridY < BOARD_HEIGHT) {
+                            this.hoveredCell = [gridX, gridY];
+                            this.updateHoverIndicator(gridX, gridY);
+                        } else {
+                            this.hoveredCell = null;
+                            this.updateHoverIndicator(null, null);
+                        }
                     } else {
                         this.hoveredCell = null;
                         this.updateHoverIndicator(null, null);
                     }
-                } else {
-                    this.hoveredCell = null;
-                    this.updateHoverIndicator(null, null);
                 }
             }
         });
@@ -847,40 +1082,92 @@ class GameClient {
                     if (this.hoveredCell) {
                         this.handleClick(this.hoveredCell[0], this.hoveredCell[1]);
                     }
+                } else if (pointerInfo.event.button === 2) { // Right click
+                    // Activate mouse-look in first-person mode
+                    this.activateMouseLook(pointerInfo.event.clientX, pointerInfo.event.clientY);
+                }
+            } else if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
+                if (pointerInfo.event.button === 2) { // Right click release
+                    // Deactivate mouse-look
+                    this.deactivateMouseLook();
                 }
             }
         });
 
         // Keyboard controls
         window.addEventListener('keydown', (event) => {
-            switch(event.key.toLowerCase()) {
+            const key = event.key.toLowerCase();
+            console.log("Key pressed:", event.key, "->", key, "| Camera mode:", this.cameraMode);
+
+            switch(key) {
                 case ' ':
                     // End turn
+                    event.preventDefault();
                     this.sendAction({ type: 'end_turn' });
                     this.selectedTokenId = null;
                     this.validMoves = new Set();
                     this.updateValidMoveIndicators(null);
                     break;
-                case 'r':
-                    // New game
-                    fetch('/api/game/new?num_players=2', { method: 'POST' })
-                        .then(response => response.json())
-                        .then(data => console.log("New game created:", data));
+                case 'enter':
+                    // End turn (alternative to Space)
+                    event.preventDefault();
+                    this.sendAction({ type: 'end_turn' });
+                    this.selectedTokenId = null;
+                    this.validMoves = new Set();
+                    this.updateValidMoveIndicators(null);
                     break;
-                case 'c':
-                    // Toggle camera mode (Enhancement #5)
+                case 'escape':
+                    // Cancel action
+                    event.preventDefault();
+                    this.cancelAction();
+                    break;
+                case 'r':
+                    // Toggle deployment menu
+                    event.preventDefault();
+                    this.toggleDeploymentMenu();
+                    break;
+                case 'v':
+                    // Toggle camera mode
+                    event.preventDefault();
                     this.toggleCameraMode();
+                    break;
+                case 'tab':
+                    // Cycle controlled token in first-person mode
+                    event.preventDefault();
+                    if (this.cameraMode === "firstperson") {
+                        this.cycleControlledToken();
+                    }
+                    break;
+                case 'q':
+                    // Rotate camera left
+                    event.preventDefault();
+                    this.rotateCameraLeft();
+                    break;
+                case 'e':
+                    // Rotate camera right
+                    event.preventDefault();
+                    this.rotateCameraRight();
+                    break;
+                case 'm':
+                    // Toggle music
+                    event.preventDefault();
+                    this.toggleMusic();
                     break;
                 case '1':
                 case '2':
                 case '3':
                 case '4':
-                    // Switch local player ID (Enhancement #10)
+                    // Switch local player ID
                     const playerIndex = parseInt(event.key) - 1;
                     this.localPlayerId = `player_${playerIndex}`;
                     console.log("Switched to player", this.localPlayerId);
                     break;
             }
+        });
+
+        // Prevent context menu on right-click
+        this.canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
         });
 
         // Handle window resize
@@ -892,9 +1179,63 @@ class GameClient {
     startRenderLoop() {
         this.engine.runRenderLoop(() => {
             if (this.scene) {
+                // Update first-person camera to follow token
+                this.updateFirstPersonCamera();
                 this.scene.render();
             }
         });
+    }
+
+    // Toggle music (M key)
+    toggleMusic() {
+        this.musicPlaying = !this.musicPlaying;
+        if (this.musicPlaying) {
+            console.log("Music enabled");
+            // Resume sounds if we had actual audio
+        } else {
+            console.log("Music muted");
+            // Pause sounds if we had actual audio
+        }
+    }
+
+    // Cancel current action/selection (ESC key)
+    cancelAction() {
+        if (this.selectedTokenId) {
+            console.log("Cancelled token selection");
+            this.selectedTokenId = null;
+            this.validMoves = new Set();
+            this.updateValidMoveIndicators(null);
+        } else if (this.selectedDeployHealth) {
+            console.log("Cancelled deployment selection");
+            this.selectedDeployHealth = null;
+            this.deploymentMenuOpen = false;
+        } else if (this.deploymentMenuOpen) {
+            console.log("Closed deployment menu");
+            this.deploymentMenuOpen = false;
+        }
+    }
+
+    // Toggle deployment menu (R key)
+    toggleDeploymentMenu() {
+        if (!this.gameState || this.gameState.current_turn_player_id !== this.localPlayerId) {
+            return; // Not our turn
+        }
+
+        if (this.turnPhase !== "MOVEMENT") {
+            console.log("Can only deploy during MOVEMENT phase");
+            return;
+        }
+
+        this.deploymentMenuOpen = !this.deploymentMenuOpen;
+        if (this.deploymentMenuOpen) {
+            console.log("Deployment menu opened - Click a corner cell to deploy a token");
+            // In a full implementation, show UI for selecting token type (10hp, 8hp, 6hp, 4hp)
+            // For now, just set a default
+            this.selectedDeployHealth = 10;
+        } else {
+            console.log("Deployment menu closed");
+            this.selectedDeployHealth = null;
+        }
     }
 }
 
