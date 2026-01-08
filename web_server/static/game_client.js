@@ -906,18 +906,6 @@ class GameClient {
 
         // Point camera at token (more reliable than manual rotation)
         this.firstPersonCamera.setTarget(new BABYLON.Vector3(tokenX, tokenY + 10, tokenZ));
-
-        // Debug output (only occasionally to avoid spam)
-        if (Math.random() < 0.01) { // 1% of the time
-            console.log("Camera update:", {
-                tokenPos: [token.position[0], token.position[1]],
-                yawDeg: this.tokenRotation,
-                pitchDeg: this.cameraPitch,
-                camPos: [camX.toFixed(1), camY.toFixed(1), camZ.toFixed(1)],
-                camRot: [(this.firstPersonCamera.rotation.x * 180 / Math.PI).toFixed(1),
-                         (this.firstPersonCamera.rotation.y * 180 / Math.PI).toFixed(1)]
-            });
-        }
     }
 
     // Activate mouse-look (right-click)
@@ -1255,6 +1243,9 @@ class GameClient {
             case 'ERROR':
                 this.handleError(data);
                 break;
+            case 'INVALID_ACTION':
+                this.handleInvalidAction(data);
+                break;
             default:
                 console.warn('Unknown message type:', data.type);
         }
@@ -1269,6 +1260,38 @@ class GameClient {
     handleError(data) {
         console.error('Server error:', data.error || data.message);
         alert(`Error: ${data.error || data.message}`);
+    }
+
+    handleInvalidAction(data) {
+        const message = data.message || data.error || 'Invalid action';
+        console.warn('Invalid action:', message);
+        // Show brief error message in HUD instead of alert
+        this.showActionError(message);
+    }
+
+    showActionError(message) {
+        // Create temporary error display
+        const errorDiv = document.createElement('div');
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '50%';
+        errorDiv.style.left = '50%';
+        errorDiv.style.transform = 'translate(-50%, -50%)';
+        errorDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+        errorDiv.style.color = '#fff';
+        errorDiv.style.padding = '20px';
+        errorDiv.style.borderRadius = '10px';
+        errorDiv.style.fontFamily = 'monospace';
+        errorDiv.style.fontSize = '16px';
+        errorDiv.style.zIndex = '9999';
+        errorDiv.style.textAlign = 'center';
+        errorDiv.textContent = message;
+
+        document.body.appendChild(errorDiv);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            errorDiv.remove();
+        }, 3000);
     }
 
     sendAction(action) {
