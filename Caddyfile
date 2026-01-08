@@ -6,6 +6,12 @@ http://:80 {
     # Proxy Mercure SSE requests to the Mercure container (with anonymous access via JWT query param)
     reverse_proxy /.well-known/mercure* race-mercure:3000 {
         header_up Host {http.request.header.Host}
+
+        # CORS headers for EventSource (Server-Sent Events)
+        header_down Access-Control-Allow-Origin *
+        header_down Access-Control-Allow-Methods "GET, POST, OPTIONS"
+        header_down Access-Control-Allow-Headers "Authorization, Content-Type, Cache-Control"
+        header_down Access-Control-Expose-Headers "Link"
     }
 
     # Proxy to FastAPI backend
