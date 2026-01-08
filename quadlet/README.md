@@ -39,11 +39,18 @@ systemctl --user daemon-reload
 systemctl --user enable --now game-api.service caddy.service mercure.service
 ```
 
+## Container Names (DNS)
+
+Podman's internal DNS resolves container names:
+- `race-game-api` - Game API server (listens on port 8080 internally)
+- `race-caddy` - Caddy reverse proxy
+- `race-mercure` - Mercure SSE hub
+
 ## Ports
 
 - **Caddy**: http://127.0.0.1:8880 (internal port 80)
-- **Game API**: http://game-api:8080 (internal), http://127.0.0.1:8888 (TCP desktop clients)
-- **Mercure**: http://mercure:3000 (internal SSE hub)
+- **Game API**: http://race-game-api:8080 (internal), http://127.0.0.1:8888 (TCP desktop clients)
+- **Mercure**: http://race-mercure:3000 (internal SSE hub)
 
 ## Service Management
 
@@ -63,14 +70,17 @@ systemctl --user stop game-api.service caddy.service mercure.service
 
 ## Troubleshooting
 
+### DNS Resolution
+Verify containers can resolve each other:
+```bash
+podman exec race-caddy nslookup race-game-api
+```
+
 ### Services not found
 If systemd can't find the services, ensure the quadlet generator is working:
 ```bash
 /usr/libexec/podman/quadlet -user -dryrun
 ```
-
-### Port conflicts
-Caddy defaults to ports 8880/8444 to avoid conflicts with game-api's internal ports. Update `PublishPort` in caddy.container if needed.
 
 ### Permission denied on caddy binary
 Ensure the caddy binary is executable:

@@ -1,16 +1,18 @@
+# Development local configuration JWT with anonymous access
+ANONYMOUS_JWT=eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJtZXJjdXJlIjogeyJzdWJzY3JpYmUiOiBbIioiXSwgImFub255bW91cyI6IHRydWV9LCAiaWF0IjogMTc2Nzg0NTgyNywgImV4cCI6IDE3Njc5MzIyMjd9.7nHSMg4Vdtln3ejFVUN5UpsFgnZ37bq0AsH9YSHo6UA
+
 # Development/local configuration
-:80 {
+http://:80 {
     # Enable Vulcain push/preload support
     vulcain
 
-    # Setup the Mercure Hub for real-time updates
-    mercure {
-        publisher_jwt {$MERCURE_PUBLISHER_JWT}
-        subscriber_jwt {$MERCURE_SUBSCRIBER_JWT}
+    # Proxy Mercure SSE requests to the Mercure container (with anonymous access via JWT query param)
+    reverse_proxy /.well-known/mercure* race-mercure:3000 {
+        header_up Host {http.request.header.Host}
     }
 
     # Proxy to FastAPI backend
-    reverse_proxy game-api:8080 {
+    reverse_proxy race-game-api:8080 {
         # Preserve original host header
         header_up Host {http.request.header.Host}
         header_up X-Real-IP {http.request.remote.host}
@@ -19,34 +21,8 @@
     }
 
     # WebSocket support for real-time game updates
-    reverse_proxy /ws* game-api:8080 {
+    reverse_proxy /ws* race-game-api:8080 {
         header_up Connection "upgrade"
         header_up Upgrade "websocket"
     }
-
-    # Desktop TCP client connection (if needed)
-    # Note: TCP traffic typically routed separately outside Caddy
-    # This is HTTP/WebSocket only
 }
-
-# Production configuration (uncomment and customize)
-# game.yourdomain.com {
-#     vulcain
-#
-#     mercure {
-#         publisher_jwt {$MERCURE_PUBLISHER_JWT}
-#         subscriber_jwt {$MERCURE_SUBSCRIBER_JWT}
-#     }
-#
-#     reverse_proxy game-api:8080 {
-#         header_up Host {http.request.header.Host}
-#         header_up X-Real-IP {http.request.remote.host}
-#         header_up X-Forwarded-For {http.request.remote.host}
-#         header_up X-Forwarded-Proto {http.request.proto}
-#     }
-#
-#     reverse_proxy /ws* game-api:8080 {
-#         header_up Connection "upgrade"
-#         header_up Upgrade "websocket"
-#     }
-# }

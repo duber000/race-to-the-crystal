@@ -45,6 +45,10 @@ class HTTPHandler:
         self.mercure_hub_url = os.getenv(
             "MERCURE_HUB_URL", "http://localhost:3000/.well-known/mercure"
         )
+        # Public URL for browser (goes through Caddy reverse proxy)
+        self.mercure_public_url = os.getenv(
+            "MERCURE_PUBLIC_URL", "http://127.0.0.1:8880/.well-known/mercure"
+        )
         self.mercure_topic_prefix = os.getenv(
             "MERCURE_TOPIC_PREFIX", "https://api.game.com/game"
         )
@@ -70,7 +74,9 @@ class HTTPHandler:
 
         return app
 
-    def _add_vulcain_headers(self, response: web.Response, game_id: str | None = None) -> None:
+    def _add_vulcain_headers(
+        self, response: web.Response, game_id: str | None = None
+    ) -> None:
         """
         Add Vulcain Link headers for resource preloading.
 
@@ -152,8 +158,10 @@ class HTTPHandler:
 
         config = {
             "mercure_enabled": mercure_enabled,
-            "mercure_hub_url": self.mercure_hub_url,
-            "mercure_topic": f"{self.mercure_topic_prefix}/{game_id}" if game_id else self.mercure_topic_prefix,
+            "mercure_hub_url": self.mercure_public_url,
+            "mercure_topic": f"{self.mercure_topic_prefix}/{game_id}"
+            if game_id
+            else self.mercure_topic_prefix,
         }
 
         return web.json_response(config)
