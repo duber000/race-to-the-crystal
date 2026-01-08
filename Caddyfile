@@ -1,6 +1,3 @@
-# Development local configuration JWT with anonymous access
-ANONYMOUS_JWT=eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJtZXJjdXJlIjogeyJzdWJzY3JpYmUiOiBbIioiXSwgImFub255bW91cyI6IHRydWV9LCAiaWF0IjogMTc2Nzg0NTgyNywgImV4cCI6IDE3Njc5MzIyMjd9.7nHSMg4Vdtln3ejFVUN5UpsFgnZ37bq0AsH9YSHo6UA
-
 # Development/local configuration
 http://:80 {
     # Enable Vulcain push/preload support

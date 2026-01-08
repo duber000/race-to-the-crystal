@@ -1689,7 +1689,7 @@ class GameClient {
             if (tokenAtCell && !this.isOurToken(tokenAtCell.id)) {
                 if (this.turnPhase === "ACTION") {
                     this.sendAction({
-                        type: 'attack',
+                        type: 'ATTACK',
                         attacker_id: this.selectedTokenId,
                         target_id: tokenAtCell.id
                     });
@@ -1705,7 +1705,7 @@ class GameClient {
             const moveKey = `${gridX},${gridY}`;
             if (this.validMoves.has(moveKey)) {
                 this.sendAction({
-                    type: 'move',
+                    type: 'MOVE',
                     token_id: this.selectedTokenId,
                     destination: [gridX, gridY]
                 });
@@ -1862,7 +1862,7 @@ class GameClient {
                 case ' ':
                     // End turn
                     event.preventDefault();
-                    this.sendAction({ type: 'end_turn' });
+                    this.sendAction({ type: 'END_TURN' });
                     this.selectedTokenId = null;
                     this.validMoves = new Set();
                     this.updateValidMoveIndicators(null);
@@ -1870,7 +1870,7 @@ class GameClient {
                 case 'enter':
                     // End turn (alternative to Space)
                     event.preventDefault();
-                    this.sendAction({ type: 'end_turn' });
+                    this.sendAction({ type: 'END_TURN' });
                     this.selectedTokenId = null;
                     this.validMoves = new Set();
                     this.updateValidMoveIndicators(null);
@@ -1986,8 +1986,10 @@ class GameClient {
     startRenderLoop() {
         this.engine.runRenderLoop(() => {
             if (this.scene) {
-                // Update first-person camera to follow token
-                this.updateFirstPersonCamera();
+                // Only update first-person camera when in first-person mode
+                if (this.cameraMode === "firstperson") {
+                    this.updateFirstPersonCamera();
+                }
                 this.scene.render();
             }
         });
