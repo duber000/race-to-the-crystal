@@ -97,8 +97,10 @@ class WebSocketHandler:
             logger.error(f"WebSocket handler error for {client_id}: {e}", exc_info=True)
         finally:
             await self._handle_disconnect(client)
-            if client_id in self.clients:
-                del self.clients[client_id]
+            # Remove client using player_id if set, otherwise use client_id
+            cleanup_id = client.player_id if client.player_id else client_id
+            if cleanup_id in self.clients:
+                del self.clients[cleanup_id]
 
         return ws
 
@@ -154,22 +156,32 @@ class WebSocketHandler:
             return
 
         player_name = data.get("player_name", "WebPlayer")
-        client_id = str(uuid.uuid4())
+        player_id = str(uuid.uuid4())
 
-        client.player_id = client_id
+        # Update client with player info
+        client.player_id = player_id
         client.player_name = player_name
         client.client_type = ClientType.WEB_BROWSER
 
+        # Re-register client with player_id as key (remove old client_id key)
+        old_client_id = client.client_id
+        if old_client_id in self.clients:
+            del self.clients[old_client_id]
+        self.clients[player_id] = client
+
+        # Register client type with game server for mixed-client support
+        self.game_server.player_client_types[player_id] = ClientType.WEB_BROWSER
+
         response = {
             "type": "CONNECT_ACK",
-            "player_id": client_id,
+            "player_id": player_id,
             "player_name": player_name,
             "client_type": "WEB_BROWSER",
             "server_version": "1.0.0",
         }
 
         await client.websocket.send_json(response)
-        logger.info(f"WebSocket player connected: {player_name} ({client_id[:8]})")
+        logger.info(f"WebSocket player connected: {player_name} ({player_id[:8]})")
 
     async def _handle_create_game(self, client: WebSocketClient, data: dict) -> None:
         """Handle create game request from web client."""
@@ -198,6 +210,7 @@ class WebSocketHandler:
                 "max_players": lobby.max_players,
                 "current_players": len(lobby.players),
                 "status": lobby.status.value,
+                "players": lobby.get_player_list(),
             }
             await client.websocket.send_json(response)
             logger.info(f"WebSocket player created game: {lobby.game_name}")
@@ -237,6 +250,7 @@ class WebSocketHandler:
             "max_players": lobby.max_players,
             "current_players": len(lobby.players),
             "status": lobby.status.value,
+            "players": lobby.get_player_list(),
         }
         await client.websocket.send_json(response)
 
@@ -245,6 +259,7 @@ class WebSocketHandler:
             "game_id": game_id,
             "player_id": client.player_id,
             "player_name": client.player_name,
+            "lobby": lobby.to_dict(),
         }
         await self._broadcast_to_lobby(game_id, join_event, exclude_client=client)
 
@@ -303,95 +318,22 @@ class WebSocketHandler:
         await self._broadcast_to_lobby(client.game_id, ready_event)
 
     async def _handle_start_game(self, client: WebSocketClient, data: dict) -> None:
-        """Handle start game request from web client with automatic AI player filling."""
+        """Handle start game request from web client - delegates to main server."""
         if not self.game_server or not client.game_id:
             await self._send_error(client, "Not in a game")
             return
 
-        lobby = self.game_server.lobby_manager.get_player_lobby(client.player_id)
-        if not lobby:
-            await self._send_error(client, "Not in a lobby")
-            return
+        # Create NetworkMessage and delegate to main TCP server's handler
+        # This ensures consistent behavior and proper broadcasting to all client types
+        message = NetworkMessage(
+            type=MessageType.START_GAME,
+            timestamp=time.time(),
+            player_id=client.player_id,
+            data={"game_id": client.game_id},
+        )
 
-        if client.player_id != lobby.host_player_id:
-            await self._send_error(client, "Only host can start game")
-            return
-
-        # Check if we need to spawn AI players to fill empty slots
-        ai_needed = lobby.get_ai_needed_count()
-
-        if ai_needed > 0:
-            logger.info(
-                f"Spawning {ai_needed} AI player{'s' if ai_needed > 1 else ''} "
-                f"for game {lobby.game_id[:8]}"
-            )
-
-            # Spawn AI clients
-            spawned = await self.game_server.ai_spawner.spawn_ai_for_game(
-                game_id=lobby.game_id,
-                num_ai=ai_needed,
-                host="localhost",
-                port=self.game_server.port,
-            )
-
-            if not spawned:
-                logger.warning(
-                    f"Failed to spawn AI players for game {lobby.game_id[:8]}, "
-                    "continuing with current players"
-                )
-            else:
-                # Wait for AI to join and ready up (with timeout)
-                timeout = 10.0  # 10 seconds
-                start_time = time.time()
-
-                logger.info(f"Waiting for {len(spawned)} AI player(s) to join...")
-
-                while time.time() - start_time < timeout:
-                    # Refresh lobby to check player count and ready status
-                    lobby = self.game_server.lobby_manager.get_lobby(lobby.game_id)
-
-                    if not lobby:
-                        logger.error("Lobby disappeared while waiting for AI")
-                        await self._send_error(client, "Lobby error")
-                        return
-
-                    # Check if all players are ready
-                    if lobby.all_players_ready():
-                        logger.info(
-                            f"All {len(lobby.players)} players ready "
-                            f"(including {len(spawned)} AI)"
-                        )
-                        break
-
-                    await asyncio.sleep(0.2)
-                else:
-                    # Timeout reached
-                    logger.warning(
-                        f"Timeout waiting for AI players to join game {lobby.game_id[:8]}"
-                    )
-
-        # Try to start the game
-        lobby = self.game_server.lobby_manager.start_game(client.game_id)
-        if not lobby:
-            await self._send_error(client, "Cannot start game (not all players ready)")
-            return
-
-        # Create game session
-        game_session = self.game_server.game_coordinator.create_game(lobby)
-        self.game_server.lobby_manager.set_game_in_progress(client.game_id)
-
-        for net_player_id in lobby.players.keys():
-            state_dict = game_session.get_game_state_for_player(net_player_id)
-            if self.clients.get(net_player_id):
-                ws_client = self.clients[net_player_id]
-                response = {"type": "FULL_STATE", "game_state": state_dict}
-                await ws_client.websocket.send_json(response)
-            else:
-                msg = self.protocol.create_full_state_message(state_dict, net_player_id)
-                await self.game_server._send_to_player(net_player_id, msg)
-
-        start_event = {"type": "START_GAME", "game_id": client.game_id}
-        await self._broadcast_to_lobby(client.game_id, start_event)
+        # Delegate to main server's start game handler (which handles AI spawning & broadcasting)
+        await self.game_server._handle_start_game(client.player_id, message)
 
     async def _handle_game_action(self, client: WebSocketClient, data: dict) -> None:
         """Handle game action from web client."""
@@ -474,7 +416,9 @@ class WebSocketHandler:
             )
             lobby = self.game_server.lobby_manager.get_lobby_by_player(client.player_id)
 
+            # Clean up game server tracking
             self.game_server.player_connections.pop(client.player_id, None)
+            self.game_server.player_client_types.pop(client.player_id, None)
             self.game_server.lobby_manager.remove_player_from_all(client.player_id)
             self.game_server.game_coordinator.remove_player(client.player_id)
 

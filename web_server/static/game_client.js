@@ -1407,21 +1407,31 @@ class GameClient {
 
             const isHost = player.player_id === this.currentLobby.host_player_id;
             const isYou = player.player_id === this.playerId;
-            const readyText = player.is_ready ? ' [READY]' : '';
             const hostLabel = isHost ? ' (Host)' : '';
             const youLabel = isYou ? ' (YOU)' : '';
 
             // Color-code by player color index
             const color = this.getPlayerColor(player.color_index);
 
+            // Ready status with visual indicator
+            let readyIndicator = '';
+            if (player.is_ready) {
+                readyIndicator = '<span style="color: #0f0; font-weight: bold;"> ✓ READY</span>';
+            } else {
+                readyIndicator = '<span style="color: #f80; font-weight: bold;"> ✗ NOT READY</span>';
+            }
+
             playerDiv.innerHTML = `
                 <span style="color: ${color};">
-                    ${player.player_name}${hostLabel}${youLabel}${readyText}
-                </span>
+                    ${player.player_name}${hostLabel}${youLabel}
+                </span>${readyIndicator}
             `;
 
             container.appendChild(playerDiv);
         });
+
+        // Update start button state after rendering player list
+        this.updateStartButtonState();
     }
 
     getPlayerColor(colorIndex) {
@@ -1435,6 +1445,33 @@ class GameClient {
         readyBtn.style.backgroundColor = this.isReady ? '#080' : '#000';
     }
 
+    updateStartButtonState() {
+        if (!this.isHost) return;
+
+        const startBtn = document.getElementById('start-game-btn');
+        if (!startBtn || !this.currentLobby) return;
+
+        // Check if all players are ready
+        const allReady = this.currentLobby.players.every(p => p.is_ready);
+        const minPlayers = this.currentLobby.players.length >= (this.currentLobby.min_players || 2);
+
+        if (allReady && minPlayers) {
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
+            startBtn.style.cursor = 'pointer';
+            startBtn.title = 'All players ready - click to start!';
+        } else {
+            startBtn.disabled = true;
+            startBtn.style.opacity = '0.5';
+            startBtn.style.cursor = 'not-allowed';
+            if (!allReady) {
+                startBtn.title = 'Waiting for all players to be ready...';
+            } else {
+                startBtn.title = `Need at least ${this.currentLobby.min_players || 2} players`;
+            }
+        }
+    }
+
     toggleReady() {
         this.isReady = !this.isReady;
         console.log(`Setting ready status to: ${this.isReady}`);
@@ -1445,6 +1482,8 @@ class GameClient {
             ready: this.isReady
         });
         this.updateReadyButton();
+        // Update start button state in case this player is the last one to ready up
+        this.updateStartButtonState();
     }
 
     startGame() {
@@ -1453,10 +1492,14 @@ class GameClient {
             return;
         }
 
-        // Check if all players ready
+        // Check if all players are ready
         const allReady = this.currentLobby.players.every(p => p.is_ready);
         if (!allReady) {
-            alert('Cannot start game! All players must be ready.');
+            const notReadyPlayers = this.currentLobby.players
+                .filter(p => !p.is_ready)
+                .map(p => p.player_name)
+                .join(', ');
+            alert(`Cannot start game! Not all players are ready.\n\nWaiting for: ${notReadyPlayers}`);
             return;
         }
 
@@ -1522,8 +1565,12 @@ class GameClient {
 
     handleStartGame(data) {
         console.log('Game starting!');
-        this.setState(STATE.GAME_STARTING);
-        // Wait for FULL_STATE to actually start
+        // Only transition to GAME_STARTING if we haven't already received FULL_STATE
+        // If we're already IN_GAME, stay there (FULL_STATE arrived first)
+        if (this.connectionState !== STATE.IN_GAME) {
+            this.setState(STATE.GAME_STARTING);
+        }
+        // Wait for FULL_STATE to actually start the game rendering
     }
 
     handleFullState(data) {
@@ -1534,8 +1581,9 @@ class GameClient {
             this.setState(STATE.IN_GAME);
 
             // Extract local player ID from server mapping
-            if (data.perspective_player_id) {
-                this.localPlayerId = data.perspective_player_id;
+            // perspective_player_id is inside game_state
+            if (data.game_state && data.game_state.perspective_player_id) {
+                this.localPlayerId = data.game_state.perspective_player_id;
                 console.log(`Local player ID: ${this.localPlayerId}`);
             }
         }

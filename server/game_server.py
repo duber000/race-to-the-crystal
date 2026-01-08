@@ -72,6 +72,7 @@ class GameServer:
         self.running = False
         self.server = None
         self.aiohttp_runner = None
+        self.websocket_handler = None  # Set when aiohttp server starts
 
         logger.info(f"Game server initialized on {host}:{port}")
 
@@ -859,27 +860,51 @@ class GameServer:
             await self._broadcast_to_lobby(lobby.game_id, chat_msg)
 
     async def _send_to_player(self, player_id: str, message: NetworkMessage) -> bool:
-        """Send a message to a specific player."""
+        """Send a message to a specific player (TCP or WebSocket)."""
+        # Try TCP connection first
         connection = self.player_connections.get(player_id)
-        if not connection:
-            logger.warning(
-                f"Cannot send {message.type.value} to {player_id[:8]}: No connection found"
-            )
-            return False
-
-        try:
-            result = await connection.send_message(message)
-            if not result:
-                logger.warning(
-                    f"Failed to send {message.type.value} to {player_id[:8]}"
+        if connection:
+            try:
+                result = await connection.send_message(message)
+                if not result:
+                    logger.warning(
+                        f"Failed to send {message.type.value} to {player_id[:8]}"
+                    )
+                return result
+            except Exception as e:
+                logger.error(
+                    f"Error sending {message.type.value} to {player_id[:8]}: {e}",
+                    exc_info=True,
                 )
-            return result
-        except Exception as e:
-            logger.error(
-                f"Error sending {message.type.value} to {player_id[:8]}: {e}",
-                exc_info=True,
-            )
-            return False
+                return False
+
+        # Try WebSocket connection
+        if self.websocket_handler:
+            ws_client = self.websocket_handler.clients.get(player_id)
+            if ws_client:
+                try:
+                    # Convert NetworkMessage to dict for WebSocket
+                    msg_dict = {
+                        "type": message.type.value,
+                        "timestamp": message.timestamp,
+                        "player_id": message.player_id,
+                    }
+                    if message.data:
+                        msg_dict.update(message.data)
+
+                    await ws_client.websocket.send_json(msg_dict)
+                    return True
+                except Exception as e:
+                    logger.error(
+                        f"Error sending {message.type.value} to WebSocket {player_id[:8]}: {e}",
+                        exc_info=True,
+                    )
+                    return False
+
+        logger.warning(
+            f"Cannot send {message.type.value} to {player_id[:8]}: No connection found (TCP or WebSocket)"
+        )
+        return False
 
     async def _send_error(self, player_id: str, error_msg: str) -> None:
         """Send an error message to a player."""
@@ -910,8 +935,8 @@ class GameServer:
         http_handler = HTTPHandler()
         app = http_handler.create_app()
 
-        ws_handler = WebSocketHandler(self)
-        app.router.add_get("/ws", ws_handler.handle_websocket)
+        self.websocket_handler = WebSocketHandler(self)
+        app.router.add_get("/ws", self.websocket_handler.handle_websocket)
 
         app["game_server"] = self
 
