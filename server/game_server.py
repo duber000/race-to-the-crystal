@@ -21,6 +21,7 @@ from server.game_coordinator import GameCoordinator
 from server.ai_spawner import AISpawner
 from server.websocket_handler import WebSocketHandler
 from server.http_handler import HTTPHandler
+from server.mercure_publisher import MercurePublisher, MercureConfig
 
 
 logging.basicConfig(
@@ -65,6 +66,10 @@ class GameServer:
         self.game_coordinator = GameCoordinator()
         self.ai_spawner = AISpawner()
 
+        # Mercure publisher for real-time updates
+        mercure_config = MercureConfig.from_env()
+        self.mercure_publisher = MercurePublisher(mercure_config)
+
         # Protocol handler
         self.protocol = ProtocolHandler()
 
@@ -97,6 +102,9 @@ class GameServer:
 
         # Cleanup all AI processes
         await self.ai_spawner.cleanup_all()
+
+        # Close Mercure publisher
+        await self.mercure_publisher.close()
 
         # Close all connections
         await self.connection_pool.close_all()
@@ -772,6 +780,19 @@ class GameServer:
         logger.info(
             f"  Game state before broadcast - current_turn: {game_session.game_state.current_turn_player_id}, turn_phase: {game_session.game_state.turn_phase.name}, turn_number: {game_session.game_state.turn_number}"
         )
+
+        # Publish to Mercure hub for web clients using SSE
+        # Use a generic state dict suitable for all players
+        if game_session.network_to_game_id:
+            # Get first player's state as representative (all get same public state)
+            first_player = next(iter(game_session.network_to_game_id.keys()))
+            mercure_state = game_session.get_game_state_for_player(first_player)
+            if mercure_state:
+                await self.mercure_publisher.publish_game_state(
+                    game_session.game_id, mercure_state
+                )
+
+        # Send to individual players via WebSocket/TCP
         for net_player_id in game_session.network_to_game_id.keys():
             state_dict = game_session.get_game_state_for_player(net_player_id)
             if state_dict:

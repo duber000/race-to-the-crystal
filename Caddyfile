@@ -1,0 +1,52 @@
+# Development/local configuration
+:80 {
+    # Enable Vulcain push/preload support
+    vulcain
+
+    # Setup the Mercure Hub for real-time updates
+    mercure {
+        publisher_jwt {$MERCURE_PUBLISHER_JWT}
+        subscriber_jwt {$MERCURE_SUBSCRIBER_JWT}
+    }
+
+    # Proxy to FastAPI backend
+    reverse_proxy game-api:8080 {
+        # Preserve original host header
+        header_up Host {http.request.header.Host}
+        header_up X-Real-IP {http.request.remote.host}
+        header_up X-Forwarded-For {http.request.remote.host}
+        header_up X-Forwarded-Proto {http.request.proto}
+    }
+
+    # WebSocket support for real-time game updates
+    reverse_proxy /ws* game-api:8080 {
+        header_up Connection "upgrade"
+        header_up Upgrade "websocket"
+    }
+
+    # Desktop TCP client connection (if needed)
+    # Note: TCP traffic typically routed separately outside Caddy
+    # This is HTTP/WebSocket only
+}
+
+# Production configuration (uncomment and customize)
+# game.yourdomain.com {
+#     vulcain
+#
+#     mercure {
+#         publisher_jwt {$MERCURE_PUBLISHER_JWT}
+#         subscriber_jwt {$MERCURE_SUBSCRIBER_JWT}
+#     }
+#
+#     reverse_proxy game-api:8080 {
+#         header_up Host {http.request.header.Host}
+#         header_up X-Real-IP {http.request.remote.host}
+#         header_up X-Forwarded-For {http.request.remote.host}
+#         header_up X-Forwarded-Proto {http.request.proto}
+#     }
+#
+#     reverse_proxy /ws* game-api:8080 {
+#         header_up Connection "upgrade"
+#         header_up Upgrade "websocket"
+#     }
+# }

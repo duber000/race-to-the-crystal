@@ -56,6 +56,8 @@ class GameClient {
         this.cameraMode = "overview"; // "overview" or "firstperson"
         this.gameState = null;
         this.websocket = null;
+        this.mercureClient = null; // Mercure client for SSE updates
+        this.useMercure = false; // Whether Mercure is enabled
 
         // Connection state
         this.connectionState = STATE.DISCONNECTED;
@@ -1080,9 +1082,12 @@ class GameClient {
         });
     }
 
-    connectToServer(host, port) {
+    async connectToServer(host, port) {
         this.setState(STATE.CONNECTING);
         this.showConnectionStatus('Connecting to server...');
+
+        // Try to initialize Mercure first
+        await this.initMercure();
 
         const wsUrl = `ws://${host}:${port}/ws`;
         console.log(`Connecting to ${wsUrl}...`);
@@ -1120,6 +1125,44 @@ class GameClient {
         };
     }
 
+    async initMercure() {
+        try {
+            this.mercureClient = new MercureClient();
+            const mercureReady = await this.mercureClient.init();
+
+            if (mercureReady) {
+                this.useMercure = true;
+                console.log('✓ Mercure client initialized - will use SSE for state updates');
+            } else {
+                console.log('⚠ Mercure disabled - using WebSocket for all updates');
+                this.useMercure = false;
+            }
+        } catch (error) {
+            console.error('Failed to initialize Mercure:', error);
+            this.useMercure = false;
+        }
+    }
+
+    subscribeMercure() {
+        if (!this.useMercure || !this.mercureClient || !this.currentGameId) {
+            return;
+        }
+
+        console.log(`Subscribing to Mercure for game ${this.currentGameId}...`);
+
+        this.mercureClient.subscribe((update) => {
+            console.log('✓ Mercure update received');
+            // Handle as FULL_STATE message
+            this.handleFullState({ state: update });
+        });
+    }
+
+    unsubscribeMercure() {
+        if (this.mercureClient && this.mercureClient.isConnected()) {
+            this.mercureClient.disconnect();
+        }
+    }
+
     sendMessage(message) {
         if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
             this.websocket.send(JSON.stringify(message));
@@ -1146,6 +1189,9 @@ class GameClient {
 
     handleDisconnect() {
         console.log('Handling disconnect...');
+
+        // Unsubscribe from Mercure
+        this.unsubscribeMercure();
 
         // Clean up state
         this.playerId = null;
@@ -1199,7 +1245,12 @@ class GameClient {
                 this.handleStartGame(data);
                 break;
             case 'FULL_STATE':
-                this.handleFullState(data);
+                // Skip WebSocket FULL_STATE if Mercure is handling it
+                if (!this.useMercure || !this.mercureClient?.isConnected()) {
+                    this.handleFullState(data);
+                } else {
+                    console.log('⚠ Skipping WebSocket FULL_STATE (using Mercure)');
+                }
                 break;
             case 'ERROR':
                 this.handleError(data);
@@ -1565,6 +1616,10 @@ class GameClient {
 
     handleStartGame(data) {
         console.log('Game starting!');
+
+        // Subscribe to Mercure for game state updates if enabled
+        this.subscribeMercure();
+
         // Only transition to GAME_STARTING if we haven't already received FULL_STATE
         // If we're already IN_GAME, stay there (FULL_STATE arrived first)
         if (this.connectionState !== STATE.IN_GAME) {

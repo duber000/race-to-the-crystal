@@ -1,0 +1,27 @@
+[Unit]
+Description=Race to the Crystal - FastAPI Game Backend
+Documentation=https://github.com/duber000/race-to-the-crystal
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/race-to-the-crystal:latest
+ContainerName=race-game-api
+Network=game-net.network
+
+# Environment configuration
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=TCP_PORT=8888
+Environment=HTTP_PORT=8080
+Environment=MERCURE_HUB_URL=http://mercure:3000/.well-known/mercure
+Environment=MERCURE_PUBLISHER_JWT=dev_key
+Environment=MERCURE_TOPIC_PREFIX=https://api.game.local/game
+
+[Service]
+Type=notify
+Restart=unless-stopped
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

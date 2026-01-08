@@ -1,0 +1,27 @@
+[Unit]
+Description=Mercure Hub - Server-Sent Events Service
+Documentation=https://mercure.rocks
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/dunglas/mercure:latest
+ContainerName=race-mercure
+Network=game-net.network
+
+# Mercure configuration
+Environment=SERVER_NAME=:3000
+Environment=MERCURE_PUBLISHER_JWT_KEY=dev_secret_key
+Environment=MERCURE_SUBSCRIBER_JWT_KEY=dev_secret_key
+Environment=MERCURE_EXTRA_DIRECTIVES=cors_origins
+Environment=MERCURE_EXTRA_DIRECTIVES=http://localhost
+Environment=MERCURE_EXTRA_DIRECTIVES=http://127.0.0.1
+Environment=MERCURE_EXTRA_DIRECTIVES=anonymous
+
+[Service]
+Type=notify
+Restart=unless-stopped
+RestartSec=5s
+
+[Install]
+WantedBy=default.target
