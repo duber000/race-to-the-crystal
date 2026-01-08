@@ -1233,12 +1233,9 @@ class GameClient {
                 this.handleStartGame(data);
                 break;
             case 'FULL_STATE':
-                // Skip WebSocket FULL_STATE if Mercure is handling it
-                if (!this.useMercure || !this.mercureClient?.isConnected()) {
-                    this.handleFullState(data);
-                } else {
-                    console.log('⚠ Skipping WebSocket FULL_STATE (using Mercure)');
-                }
+                // Always process WebSocket FULL_STATE - it's a direct response to our actions
+                // Mercure is for broadcasting state changes to OTHER players
+                this.handleFullState(data);
                 break;
             case 'ERROR':
                 this.handleError(data);
