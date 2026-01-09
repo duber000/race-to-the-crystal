@@ -324,8 +324,9 @@ class GameClient {
                 this.cameraController.rotateCameraRight();
                 break;
             case 'toggle_music':
-                this.musicPlaying = !this.musicPlaying;
-                console.log(this.musicPlaying ? "Music enabled" : "Music muted");
+                if (this.renderer) {
+                    this.renderer.toggleMusic();
+                }
                 break;
             case 'camera_forward':
                 this.cameraController.moveCameraForward();

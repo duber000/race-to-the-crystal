@@ -45,6 +45,13 @@ class Renderer3D {
 
         this.audioContext = null;
         this.soundsEnabled = true;
+
+        // Background music and generator hums
+        this.backgroundMusic = null;
+        this.generatorHums = [];
+        this.musicVolume = 0.3;
+        this.humVolume = 0.2;
+        this.musicEnabled = true;
     }
 
     // ==========================================================================
@@ -202,17 +209,56 @@ class Renderer3D {
         this.generatorMeshes.clear();
         this.crystalMesh = null;
 
-        this.generatorLines.forEach((mesh) => mesh.dispose());
-        this.generatorLines = [];
+        // Dispose old generator line segments
+        this.generatorLineMeshes.forEach((lineData) => {
+            if (lineData.segments) {
+                lineData.segments.forEach(seg => {
+                    if (seg) seg.dispose();
+                });
+            }
+        });
+        this.generatorLineMeshes = [];
 
         if (gameState.generators) {
             gameState.generators.forEach((gen) => {
                 const centerX = gen.position[0] * CELL_SIZE + CELL_SIZE / 2;
                 const centerZ = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
+                const baseSize = CELL_SIZE * 0.6;
+                const baseHeight = WALL_HEIGHT * 0.6;
+                const cubes = [];
+
+                // Create 10 glow layers (enhanced from original single box)
+                for (let i = 10; i > 0; i--) {
+                    const glowSize = baseSize + (i * 5); // Larger glow spread
+                    const glowHeight = baseHeight + (i * 3);
+                    const glowAlpha = (150 / (i + 0.5)) / 255; // Increased base alpha
+
+                    const glowCube = BABYLON.MeshBuilder.CreateBox(
+                        `generator_glow_${gen.position[0]}_${gen.position[1]}_${i}`,
+                        { size: glowSize, height: glowHeight },
+                        this.scene,
+                    );
+                    glowCube.position = new BABYLON.Vector3(
+                        centerX,
+                        WALL_HEIGHT * 0.3,
+                        centerZ,
+                    );
+
+                    const glowMaterial = new BABYLON.StandardMaterial(`genGlowMat_${i}`, this.scene);
+                    glowMaterial.emissiveColor = ORANGE_GLOW;
+                    glowMaterial.wireframe = true;
+                    glowMaterial.alpha = gen.is_disabled ? glowAlpha * 0.3 : glowAlpha * 0.8;
+                    glowCube.material = glowMaterial;
+
+                    this.specialCellMeshes.push(glowCube);
+                    cubes.push(glowCube);
+                }
+
+                // Main bright cube
                 const cube = BABYLON.MeshBuilder.CreateBox(
                     `generator_${gen.position[0]}_${gen.position[1]}`,
-                    { size: CELL_SIZE * 0.6, height: WALL_HEIGHT * 0.6 },
+                    { size: baseSize, height: baseHeight },
                     this.scene,
                 );
                 cube.position = new BABYLON.Vector3(
@@ -224,12 +270,15 @@ class Renderer3D {
                 const material = new BABYLON.StandardMaterial("generatorMat", this.scene);
                 material.emissiveColor = ORANGE_GLOW;
                 material.wireframe = true;
-                material.alpha = gen.is_disabled ? 0.3 : 0.8;
+                material.alpha = gen.is_disabled ? 0.3 : 1.0; // Brighter main cube
                 cube.material = material;
 
                 this.specialCellMeshes.push(cube);
+                cubes.push(cube);
+
                 this.generatorMeshes.set(`${gen.position[0]},${gen.position[1]}`, {
                     mesh: cube,
+                    glowMeshes: cubes,
                     position: gen.position,
                     isDisabled: gen.is_disabled,
                     lastOwner: null,
@@ -245,17 +294,45 @@ class Renderer3D {
             const centerX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
             const centerZ = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
+            // Make crystal MUCH taller and span 2x2 cells (4 squares)
+            const crystalBase = CELL_SIZE * 2.5;  // Spans 2.5 cells diameter
+            const crystalHeight = WALL_HEIGHT * 3.0;  // 3x taller than original
+
+            // Create multiple glow layers for the crystal
+            const glowLayers = 6;
+            for (let i = glowLayers; i > 0; i--) {
+                const glowBase = crystalBase + (i * 8);
+                const glowHeight = crystalHeight + (i * 6);
+                const glowAlpha = (120 / (i + 1)) / 255;
+
+                const glowPyramid = BABYLON.MeshBuilder.CreateCylinder(
+                    `crystal_glow_${i}`,
+                    { diameterTop: 0, diameterBottom: glowBase, height: glowHeight, tessellation: 4 },
+                    this.scene,
+                );
+                glowPyramid.position = new BABYLON.Vector3(centerX, glowHeight / 2, centerZ);
+
+                const glowMaterial = new BABYLON.StandardMaterial(`crystalGlowMat_${i}`, this.scene);
+                glowMaterial.emissiveColor = MAGENTA_GLOW;
+                glowMaterial.wireframe = true;
+                glowMaterial.alpha = glowAlpha;
+                glowPyramid.material = glowMaterial;
+
+                this.specialCellMeshes.push(glowPyramid);
+            }
+
+            // Main bright pyramid
             const pyramid = BABYLON.MeshBuilder.CreateCylinder(
                 "crystal",
-                { diameterTop: 0, diameterBottom: CELL_SIZE, height: WALL_HEIGHT * 0.8, tessellation: 4 },
+                { diameterTop: 0, diameterBottom: crystalBase, height: crystalHeight, tessellation: 4 },
                 this.scene,
             );
-            pyramid.position = new BABYLON.Vector3(centerX, WALL_HEIGHT * 0.4, centerZ);
+            pyramid.position = new BABYLON.Vector3(centerX, crystalHeight / 2, centerZ);
 
             const material = new BABYLON.StandardMaterial("crystalMat", this.scene);
             material.emissiveColor = MAGENTA_GLOW;
             material.wireframe = true;
-            material.alpha = 0.9;
+            material.alpha = 1.0;  // Full brightness for main crystal
             pyramid.material = material;
 
             this.specialCellMeshes.push(pyramid);
@@ -302,7 +379,7 @@ class Renderer3D {
 
         const crystalX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
         const crystalZ = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
-        const crystalY = WALL_HEIGHT * 0.8;
+        const crystalY = WALL_HEIGHT * 2.5;  // Connect to top of taller crystal
 
         gameState.generators.forEach((gen) => {
             if (gen.is_disabled) return;
@@ -311,20 +388,13 @@ class Renderer3D {
             const genZ = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
             const genY = WALL_HEIGHT * 0.6;
 
-            const points = [
-                new BABYLON.Vector3(genX, genY, genZ),
-                new BABYLON.Vector3(crystalX, crystalY, crystalZ),
-            ];
-
-            const line = BABYLON.MeshBuilder.CreateDashedLines(
-                `genLine_${gen.position[0]}_${gen.position[1]}`,
-                { points: points, dashSize: 10, gapSize: 5, dashNb: 20 },
-                this.scene,
-            );
-            line.color = ORANGE_GLOW;
-
-            this.generatorLines.push(line);
-            this.generatorLineMeshes.push(line);
+            // Create data structure for animated flowing segments
+            this.generatorLineMeshes.push({
+                genX, genY, genZ,
+                crystalX, crystalY, crystalZ,
+                genPosition: gen.position,
+                segments: []
+            });
         });
     }
 
@@ -568,10 +638,59 @@ class Renderer3D {
     }
 
     updateAnimations() {
-        this.generatorLineMeshes.forEach((line) => {
-            if (line.material && line.material.alpha !== undefined) {
-                const flowOffset = (this.animationTime * 2) % 1;
-                line.dashOffset = flowOffset * 10;
+        // Update flowing generator line segments
+        this.generatorLineMeshes.forEach((lineData) => {
+            if (!lineData.genX) return; // Skip if not initialized properly
+
+            // Dispose old segments
+            if (lineData.segments) {
+                lineData.segments.forEach(seg => {
+                    if (seg) seg.dispose();
+                });
+                lineData.segments = [];
+            }
+
+            // Create 12 flowing segments with pulsing glow
+            const segments = 12;
+            const flowOffset = (this.animationTime * 2.0) % 1.0; // Flow speed
+
+            for (let i = 0; i < segments; i++) {
+                // Calculate segment position along the line
+                const t1 = (i / segments + flowOffset) % 1.0;
+                const t2 = ((i + 1) / segments + flowOffset) % 1.0;
+
+                // Linear interpolation along the line
+                const x1 = lineData.genX + (lineData.crystalX - lineData.genX) * t1;
+                const y1 = lineData.genY + (lineData.crystalY - lineData.genY) * t1;
+                const z1 = lineData.genZ + (lineData.crystalZ - lineData.genZ) * t1;
+
+                const x2 = lineData.genX + (lineData.crystalX - lineData.genX) * t2;
+                const y2 = lineData.genY + (lineData.crystalY - lineData.genY) * t2;
+                const z2 = lineData.genZ + (lineData.crystalZ - lineData.genZ) * t2;
+
+                // Calculate brightness based on position (flowing effect)
+                const brightness = Math.abs(Math.sin((t1 + flowOffset) * Math.PI)) * 0.8 + 0.2;
+
+                // Create segment line
+                const points = [
+                    new BABYLON.Vector3(x1, y1, z1),
+                    new BABYLON.Vector3(x2, y2, z2)
+                ];
+
+                const line = BABYLON.MeshBuilder.CreateLines(
+                    `genSegment_${i}_${Date.now()}`,
+                    { points: points },
+                    this.scene
+                );
+
+                // Set color with brightness
+                const color = ORANGE_GLOW.clone();
+                color.r *= brightness;
+                color.g *= brightness;
+                color.b *= brightness;
+                line.color = color;
+
+                lineData.segments.push(line);
             }
         });
 
@@ -604,10 +723,20 @@ class Renderer3D {
 
         const crystal = this.scene.getMeshByName("crystal");
         if (crystal) {
-            const pulse = 1 + 0.05 * Math.sin(this.animationTime * 2);
+            const pulse = 1 + 0.15 * Math.sin(this.animationTime * 2); // Increased from 0.05 to 0.15 for more visible pulse
             crystal.scaling.x = pulse;
             crystal.scaling.z = pulse;
             crystal.rotation.y = this.animationTime * 0.5;
+
+            // Apply same pulse and rotation to glow layers
+            for (let i = 1; i <= 6; i++) {
+                const glowLayer = this.scene.getMeshByName(`crystal_glow_${i}`);
+                if (glowLayer) {
+                    glowLayer.scaling.x = pulse;
+                    glowLayer.scaling.z = pulse;
+                    glowLayer.rotation.y = this.animationTime * 0.5;
+                }
+            }
         }
 
         if (this.confettiParticles.length > 0) {
@@ -635,15 +764,18 @@ class Renderer3D {
             const ring = this.scene.getMeshByName(`mystery_${x}_${y}`);
 
             if (ring) {
-                const spinProgress = Math.min(progress * 2, 1.0);
-                const pulseProgress = Math.max(0, (progress - 0.5) * 2);
+                // 3D coin-flip animation with perspective scaling (3 full spins)
+                const rotationAngle = progress * 3 * 2 * Math.PI;
 
-                ring.rotation.y = spinProgress * Math.PI * 4;
+                // Horizontal perspective scaling (coin flip effect)
+                const scaleX = Math.abs(Math.cos(rotationAngle));
 
-                const scale = 1 + 0.3 * Math.sin(pulseProgress * Math.PI);
-                ring.scaling.x = scale;
-                ring.scaling.z = scale;
+                ring.rotation.y = rotationAngle;
+                ring.scaling.x = scaleX; // Horizontal scale creates coin-flip perspective
+                ring.scaling.z = 1;      // Keep vertical scale constant
 
+                // Pulse brightness during animation
+                const pulseProgress = Math.max(0, (progress - 0.3) * 1.5);
                 if (ring.material && ring.material.emissiveColor) {
                     const brightness = 0.6 + 0.4 * Math.sin(pulseProgress * Math.PI);
                     ring.material.emissiveColor.r = CYAN_GLOW.r * brightness;
@@ -724,23 +856,59 @@ class Renderer3D {
                 }
             }
 
+            // Stop generator hum when captured
             if (gen.is_disabled && !genMeshData.isDisabled) {
                 this.triggerExplosion(gen.position, ORANGE_GLOW);
                 this.playSound("capture");
+
+                const genIndex = gameState.generators.indexOf(gen);
+                if (genIndex >= 0 && genIndex < this.generatorHums.length) {
+                    const hum = this.generatorHums[genIndex];
+                    if (hum && this.musicEnabled) {
+                        hum.pause();
+                        hum.currentTime = 0;
+                        console.log(`Generator ${genIndex} disabled - hum stopped`);
+                    }
+                }
             }
 
             if (dominantPlayer && playerCounts[dominantPlayer] >= 2 && !gen.is_disabled) {
                 const color = playerColors[dominantPlayer] || ORANGE_GLOW;
                 genMeshData.mesh.material.emissiveColor = color;
                 genMeshData.mesh.material.alpha = 1.0;
+                // Update glow layers too
+                if (genMeshData.glowMeshes) {
+                    genMeshData.glowMeshes.forEach(glowMesh => {
+                        if (glowMesh && glowMesh.material) {
+                            glowMesh.material.emissiveColor = color;
+                        }
+                    });
+                }
                 genMeshData.lastOwner = dominantPlayer;
             } else if (gen.is_disabled) {
                 genMeshData.mesh.material.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
                 genMeshData.mesh.material.alpha = 0.3;
+                // Update glow layers too
+                if (genMeshData.glowMeshes) {
+                    genMeshData.glowMeshes.forEach(glowMesh => {
+                        if (glowMesh && glowMesh.material) {
+                            glowMesh.material.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                            glowMesh.material.alpha *= 0.3;
+                        }
+                    });
+                }
                 genMeshData.lastOwner = null;
             } else {
                 genMeshData.mesh.material.emissiveColor = ORANGE_GLOW;
                 genMeshData.mesh.material.alpha = 0.8;
+                // Update glow layers too
+                if (genMeshData.glowMeshes) {
+                    genMeshData.glowMeshes.forEach(glowMesh => {
+                        if (glowMesh && glowMesh.material) {
+                            glowMesh.material.emissiveColor = ORANGE_GLOW;
+                        }
+                    });
+                }
                 genMeshData.lastOwner = null;
             }
 
@@ -905,6 +1073,96 @@ class Renderer3D {
     loadSounds() {
         this.audioContext = null;
         this.soundsEnabled = true;
+
+        // Load background music
+        this.loadBackgroundMusic();
+
+        // Load 4 generator hum tracks
+        this.loadGeneratorHums();
+    }
+
+    loadBackgroundMusic() {
+        try {
+            this.backgroundMusic = new Audio('assets/music/techno.mp3');
+            this.backgroundMusic.loop = true;
+            this.backgroundMusic.volume = this.musicVolume;
+
+            // Try to play, but handle autoplay restrictions
+            const playPromise = this.backgroundMusic.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log("Background music playing");
+                }).catch(e => {
+                    console.log("Background music autoplay blocked, will start on user interaction");
+                    // Add click listener to start music on first interaction
+                    document.addEventListener('click', () => {
+                        if (this.backgroundMusic && this.musicEnabled) {
+                            this.backgroundMusic.play().catch(() => {});
+                        }
+                    }, { once: true });
+                });
+            }
+        } catch (e) {
+            console.error("Error loading background music:", e);
+        }
+    }
+
+    loadGeneratorHums() {
+        for (let i = 0; i < 4; i++) {
+            try {
+                const hum = new Audio(`assets/music/generator_${i}_hum.wav`);
+                hum.loop = true;
+                hum.volume = this.humVolume;
+
+                // Try to play immediately
+                const playPromise = hum.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log(`Generator ${i} hum playing`);
+                    }).catch(e => {
+                        console.log(`Generator ${i} hum autoplay blocked`);
+                        // Will be started by user interaction trigger
+                        document.addEventListener('click', () => {
+                            if (this.musicEnabled) {
+                                hum.play().catch(() => {});
+                            }
+                        }, { once: true });
+                    });
+                }
+
+                this.generatorHums.push(hum);
+            } catch (e) {
+                console.error(`Error loading generator ${i} hum:`, e);
+                this.generatorHums.push(null);
+            }
+        }
+    }
+
+    toggleMusic() {
+        this.musicEnabled = !this.musicEnabled;
+
+        if (this.musicEnabled) {
+            // Resume music
+            if (this.backgroundMusic) {
+                this.backgroundMusic.play().catch(e => console.log("Music play failed:", e));
+            }
+            // Resume active generator hums
+            this.generatorHums.forEach((hum) => {
+                if (hum && hum.paused) {
+                    hum.play().catch(() => {});
+                }
+            });
+        } else {
+            // Pause all audio
+            if (this.backgroundMusic) {
+                this.backgroundMusic.pause();
+            }
+            this.generatorHums.forEach(hum => {
+                if (hum) hum.pause();
+            });
+        }
+
+        console.log(this.musicEnabled ? "Music enabled" : "Music disabled");
     }
 
     getAudioContext() {
@@ -1126,6 +1384,20 @@ class Renderer3D {
     // ==========================================================================
 
     dispose() {
+        // Stop and cleanup audio
+        if (this.backgroundMusic) {
+            this.backgroundMusic.pause();
+            this.backgroundMusic = null;
+        }
+
+        this.generatorHums.forEach(hum => {
+            if (hum) {
+                hum.pause();
+            }
+        });
+        this.generatorHums = [];
+
+        // Cleanup 3D resources
         this.tokens3D.forEach((tokenData) => {
             if (tokenData.mesh) tokenData.mesh.dispose();
             if (tokenData.healthLabel) tokenData.healthLabel.dispose();
@@ -1135,7 +1407,7 @@ class Renderer3D {
         this.specialCellMeshes.forEach((mesh) => mesh.dispose());
         this.specialCellMeshes = [];
 
-        this.validMoveMeshes.forEach((mesh) => mesh.dispose());
+        this.validMoveMeshes.forEach((mesh) => mesh.dispose();
         this.validMoveMeshes = [];
 
         if (this.hoverMesh) this.hoverMesh.dispose();
