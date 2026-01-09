@@ -1700,16 +1700,18 @@ class GameClient {
         // Check if we're in deployment mode
         if (this.selectedDeployHealth !== null) {
             // User has selected a health value and is clicking to deploy
+            const health = this.selectedDeployHealth;
             this.sendAction({
                 type: 'DEPLOY',
-                health_value: this.selectedDeployHealth,
+                health_value: health,
                 position: [gridX, gridY]
             });
             this.playSound('deploy');
             this.selectedDeployHealth = null;
             this.deploymentMenuOpen = false;
             this.hideDeploymentUI();
-            console.log(`Deployed ${this.selectedDeployHealth}HP token at (${gridX}, ${gridY})`);
+            this.hideDeploymentIndicator();
+            console.log(`Deployed ${health}HP token at (${gridX}, ${gridY})`);
             return;
         }
 
@@ -2228,9 +2230,11 @@ class GameClient {
             console.log("Cancelled deployment selection");
             this.selectedDeployHealth = null;
             this.deploymentMenuOpen = false;
+            this.hideDeploymentIndicator();
         } else if (this.deploymentMenuOpen) {
             console.log("Closed deployment menu");
             this.deploymentMenuOpen = false;
+            this.hideDeploymentUI();
         }
     }
 
@@ -2314,11 +2318,47 @@ class GameClient {
             btn.addEventListener('click', (e) => {
                 this.selectedDeployHealth = parseInt(e.target.getAttribute('data-health'));
                 console.log(`Selected ${this.selectedDeployHealth} HP token for deployment`);
-                // Highlight the selected button
-                menu.querySelectorAll('.deploy-btn').forEach(b => b.style.backgroundColor = '#000080');
-                e.target.style.backgroundColor = '#008080';
+
+                // Hide the main menu and show a small indicator instead
+                this.hideDeploymentUI();
+                this.showDeploymentIndicator(this.selectedDeployHealth);
             });
         });
+    }
+
+    showDeploymentIndicator(health) {
+        // Remove any existing indicator
+        const existing = document.getElementById('deployment-indicator');
+        if (existing) existing.remove();
+
+        // Create small indicator in corner
+        const indicator = document.createElement('div');
+        indicator.id = 'deployment-indicator';
+        indicator.style.position = 'fixed';
+        indicator.style.top = '50%';
+        indicator.style.left = '50%';
+        indicator.style.transform = 'translate(-50%, -50%)';
+        indicator.style.backgroundColor = 'rgba(0, 128, 128, 0.9)';
+        indicator.style.border = '2px solid #00FFFF';
+        indicator.style.padding = '15px 30px';
+        indicator.style.zIndex = '1000';
+        indicator.style.fontFamily = 'monospace';
+        indicator.style.color = '#00FFFF';
+        indicator.style.fontSize = '18px';
+        indicator.style.fontWeight = 'bold';
+        indicator.style.textAlign = 'center';
+        indicator.style.pointerEvents = 'none'; // Don't block mouse events
+        indicator.innerHTML = `
+            Deploying: ${health}HP<br>
+            <span style="font-size: 12px;">Click a corner cell to place</span>
+        `;
+
+        document.body.appendChild(indicator);
+    }
+
+    hideDeploymentIndicator() {
+        const indicator = document.getElementById('deployment-indicator');
+        if (indicator) indicator.remove();
     }
 
     hideDeploymentUI() {
