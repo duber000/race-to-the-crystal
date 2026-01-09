@@ -1083,7 +1083,7 @@ class Renderer3D {
 
     loadBackgroundMusic() {
         try {
-            this.backgroundMusic = new Audio('assets/music/techno.mp3');
+            this.backgroundMusic = new Audio('/static/assets/music/techno.mp3');
             this.backgroundMusic.loop = true;
             this.backgroundMusic.volume = this.musicVolume;
 
@@ -1110,7 +1110,7 @@ class Renderer3D {
     loadGeneratorHums() {
         for (let i = 0; i < 4; i++) {
             try {
-                const hum = new Audio(`assets/music/generator_${i}_hum.wav`);
+                const hum = new Audio(`/static/assets/music/generator_${i}_hum.wav`);
                 hum.loop = true;
                 hum.volume = this.humVolume;
 
