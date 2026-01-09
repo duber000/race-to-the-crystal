@@ -117,6 +117,16 @@ class GameClient {
         this.hoverMesh = null;
         this.generatorLines = [];
         this.healthLabels = new Map();
+        this.mysteryRings = [];  // Store mystery rings for animation
+        this.generatorLineMeshes = [];  // Store generator lines for animation
+        this.mysteryAnimations = new Map();  // {positionKey: progress}
+        this.generatorMeshes = new Map();  // Store generator meshes for color updates
+        this.crystalMesh = null;  // Crystal mesh reference
+        this.explosionParticles = [];  // Explosion particle effects
+
+        // Animation state
+        this.animationTime = 0;
+        this.confettiParticles = [];
 
         // Sound effects
         this.sounds = {};
@@ -207,16 +217,8 @@ class GameClient {
         // Initialize scene
         this.initScene();
 
-        // Load sound effects now that scene exists
-        try {
-            this.sounds.move = new BABYLON.Sound("move", null, this.scene);
-            this.sounds.attack = new BABYLON.Sound("attack", null, this.scene);
-            this.sounds.capture = new BABYLON.Sound("capture", null, this.scene);
-            this.sounds.deploy = new BABYLON.Sound("deploy", null, this.scene);
-            console.log("Sound effects loaded (silent placeholders)");
-        } catch (e) {
-            console.warn("Sound loading failed:", e);
-        }
+        // Load sound effects
+        this.loadSounds();
 
         // Set up event listeners for game
         this.setupEventListeners();
@@ -372,12 +374,31 @@ class GameClient {
 
         this.board3D = boardMeshes;
         console.log("Board created with", boardMeshes.length, "meshes");
+
+        // Create invisible ground plane for picking empty cells
+        const ground = BABYLON.MeshBuilder.CreateGround(
+            "boardGround",
+            { width: BOARD_WIDTH * CELL_SIZE, height: BOARD_HEIGHT * CELL_SIZE },
+            this.scene
+        );
+        ground.position.x = (BOARD_WIDTH * CELL_SIZE) / 2 - (CELL_SIZE / 2);
+        ground.position.z = (BOARD_HEIGHT * CELL_SIZE) / 2 - (CELL_SIZE / 2);
+        ground.position.y = 0.01; // Slightly above zero to avoid z-fighting with grid
+
+        const groundMat = new BABYLON.StandardMaterial("groundMat", this.scene);
+        groundMat.alpha = 0; // Invisible
+        ground.material = groundMat;
+        ground.isPickable = true;
+
+        this.board3D.push(ground);
     }
 
     createSpecialCells(gameState) {
          // Remove old special cell meshes
          this.specialCellMeshes.forEach(mesh => mesh.dispose());
          this.specialCellMeshes = [];
+         this.generatorMeshes.clear();
+         this.crystalMesh = null;
 
          // Remove old generator lines
          this.generatorLines.forEach(mesh => mesh.dispose());
@@ -404,6 +425,12 @@ class GameClient {
                  cube.material = material;
 
                  this.specialCellMeshes.push(cube);
+                 this.generatorMeshes.set(`${gen.position[0]},${gen.position[1]}`, {
+                     mesh: cube,
+                     position: gen.position,
+                     isDisabled: gen.is_disabled,
+                     lastOwner: null
+                 });
              });
 
              // Create generator-to-crystal flowing lines (Enhancement #6)
@@ -437,6 +464,11 @@ class GameClient {
              pyramid.material = material;
 
              this.specialCellMeshes.push(pyramid);
+             this.crystalMesh = {
+                 mesh: pyramid,
+                 position: gameState.crystal.position,
+                 tokenCounts: {}
+             };
          }
 
          // Create mystery squares (cyan rings)
@@ -464,14 +496,15 @@ class GameClient {
                          // Rotate to lay flat on ground (rotate around X axis)
                          ring.rotation.z = Math.PI / 2;
 
-                         const material = new BABYLON.StandardMaterial("mysteryMat", this.scene);
-                         material.emissiveColor = CYAN_GLOW;
-                         material.wireframe = true;
-                         material.alpha = 0.6;
-                         ring.material = material;
+                          const material = new BABYLON.StandardMaterial("mysteryMat", this.scene);
+                          material.emissiveColor = CYAN_GLOW.clone();
+                          material.wireframe = true;
+                          material.alpha = 0.6;
+                          ring.material = material;
 
-                         this.glowLayer.addIncludedOnlyMesh(ring);
-                         this.specialCellMeshes.push(ring);
+                          this.glowLayer.addIncludedOnlyMesh(ring);
+                          this.specialCellMeshes.push(ring);
+                          this.mysteryRings.push(ring);
                      }
                  }
              }
@@ -493,21 +526,26 @@ class GameClient {
             const genZ = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
             const genY = WALL_HEIGHT * 0.6;
 
-            // Create flowing line
+            // Create dashed line for flowing effect
             const points = [
                 new BABYLON.Vector3(genX, genY, genZ),
                 new BABYLON.Vector3(crystalX, crystalY, crystalZ)
             ];
 
-            const line = BABYLON.MeshBuilder.CreateLines(
+            const line = BABYLON.MeshBuilder.CreateDashedLines(
                 `genLine_${gen.position[0]}_${gen.position[1]}`,
-                { points: points },
+                {
+                    points: points,
+                    dashSize: 10,
+                    gapSize: 5,
+                    dashNb: 20
+                },
                 this.scene
             );
             line.color = ORANGE_GLOW;
-            line.alpha = 0.6;
 
             this.generatorLines.push(line);
+            this.generatorLineMeshes.push(line);
         });
     }
 
@@ -979,19 +1017,264 @@ class GameClient {
         return true;
     }
 
-    // Enhancement #9: Load sound effects
+    // Enhancement #9: Load sound effects using Web Audio API
     loadSounds() {
-        // Note: Sound loading deferred until scene is initialized
-        // Sounds will be created when game starts
-        console.log("Sound loading deferred until game start");
+        console.log("Setting up Web Audio API for sound effects");
+        // Create AudioContext on demand (browsers require user interaction first)
+        this.audioContext = null;
+        this.soundsEnabled = true;
+    }
+
+    getAudioContext() {
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return this.audioContext;
     }
 
     playSound(soundName) {
-        if (this.sounds[soundName]) {
-            try {
-                this.sounds[soundName].play();
-            } catch (e) {
-                // Silently fail if sound playback fails
+        if (!this.soundsEnabled) return;
+
+        try {
+            const ctx = this.getAudioContext();
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+            this.synthesizeSound(soundName, ctx);
+        } catch (e) {
+            // Silently fail if sound playback fails
+        }
+    }
+
+    synthesizeSound(soundName, ctx) {
+        const now = ctx.currentTime;
+
+        switch (soundName) {
+            case 'move':
+                this.playSlidingSound(ctx, now);
+                break;
+            case 'attack':
+                this.playFlushingSound(ctx, now);
+                break;
+            case 'capture':
+                this.playGeneratorExplosionSound(ctx, now);
+                break;
+            case 'crystal':
+                this.playCrystalShatterSound(ctx, now);
+                break;
+            case 'mystery':
+                this.playMysteryBingSound(ctx, now);
+                break;
+            case 'deploy':
+            default:
+                this.playDeploySound(ctx, now);
+                break;
+        }
+    }
+
+    playSlidingSound(ctx, now) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(1000, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.5);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2000, now);
+        filter.frequency.exponentialRampToValueAtTime(500, now + 0.5);
+
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.5);
+    }
+
+    playFlushingSound(ctx, now) {
+        const duration = 2.0;
+
+        const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseData.length; i++) {
+            noiseData[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.setValueAtTime(800, now);
+        noiseFilter.frequency.exponentialRampToValueAtTime(100, now + duration);
+        noiseFilter.Q.value = 1;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.setValueAtTime(0.2, now + duration * 0.7);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(gain);
+        gain.connect(ctx.destination);
+
+        noise.start(now);
+        noise.stop(now + duration);
+    }
+
+    playGeneratorExplosionSound(ctx, now) {
+        const duration = 1.2;
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + duration);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + duration);
+
+        // Add noise burst
+        const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseData.length; i++) {
+            noiseData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.1));
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.4, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+        noise.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        noise.start(now);
+    }
+
+    playCrystalShatterSound(ctx, now) {
+        const duration = 1.5;
+
+        for (let i = 0; i < 10; i++) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            const freq = 2000 + Math.random() * 6000;
+            const decay = 0.5 + Math.random() * 2.0;
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now);
+
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + decay);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(now);
+            osc.stop(now + decay);
+        }
+
+        // Initial break noise
+        const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseData.length; i++) {
+            noiseData[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.2, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+        noise.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        noise.start(now);
+    }
+
+    playMysteryBingSound(ctx, now) {
+        const duration = 0.3;
+        const mainFreq = 1500;
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(mainFreq, now);
+
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + duration);
+
+        // Add harmonics for metallic quality
+        [1.8, 2.5, 3.2].forEach((mult, idx) => {
+            const harm = ctx.createOscillator();
+            const harmGain = ctx.createGain();
+            harm.type = 'sine';
+            harm.frequency.setValueAtTime(mainFreq * mult, now);
+            harmGain.gain.setValueAtTime(0.1 * (3 - idx) / 3, now);
+            harmGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            harm.connect(harmGain);
+            harmGain.connect(ctx.destination);
+            harm.start(now);
+            harm.stop(now + duration);
+        });
+    }
+
+    playDeploySound(ctx, now) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.2);
+    }
+
+    updateTokenSelectionGlow() {
+        // Reset all tokens to normal glow
+        this.tokens3D.forEach((tokenData, tokenId) => {
+            if (tokenData.mesh && tokenData.mesh.material) {
+                tokenData.mesh.material.emissiveColor = tokenData.color;
+                tokenData.mesh.material.alpha = 0.9;
+                tokenData.mesh.scaling = new BABYLON.Vector3(1, 1, 1);
+            }
+        });
+
+        // Highlight selected token
+        if (this.selectedTokenId !== null) {
+            const selectedData = this.tokens3D.get(this.selectedTokenId);
+            if (selectedData && selectedData.mesh && selectedData.mesh.material) {
+                selectedData.mesh.material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+                selectedData.mesh.material.alpha = 1.0;
+                selectedData.mesh.scaling = new BABYLON.Vector3(1.2, 1.2, 1.2);
             }
         }
     }
@@ -1042,6 +1325,12 @@ class GameClient {
         this.gameState = gameState;
         this.turnPhase = gameState.turn_phase || TurnPhase.MOVEMENT;
 
+        // Check for mystery square landings and trigger animations
+        this.checkMysteryLandings(gameState);
+
+        // Update generator and crystal colors based on token presence
+        this.updateSpecialCellColors(gameState);
+
         // Update 3D scene
         console.log("Creating special cells (generators & crystal)...");
         this.createSpecialCells(gameState);
@@ -1056,6 +1345,7 @@ class GameClient {
             this.selectedTokenId = null;
             this.validMoves = new Set();
             this.updateValidMoveIndicators(null);
+            this.updateTokenSelectionGlow();
         }
     }
 
@@ -1723,6 +2013,7 @@ class GameClient {
             if (tokenAtCell && this.isOurToken(tokenAtCell.id)) {
                 this.selectedTokenId = tokenAtCell.id;
                 this.updateValidMoves(tokenAtCell);
+                this.updateTokenSelectionGlow();
                 this.playSound('deploy');
                 console.log("Selected token:", tokenAtCell.id);
             }
@@ -1735,6 +2026,7 @@ class GameClient {
                 this.selectedTokenId = null;
                 this.validMoves = new Set();
                 this.updateValidMoveIndicators(null);
+                this.updateTokenSelectionGlow();
                 console.log("Deselected token");
                 return;
             }
@@ -1751,7 +2043,24 @@ class GameClient {
                     this.selectedTokenId = null;
                     this.validMoves = new Set();
                     this.updateValidMoveIndicators(null);
+                    this.updateTokenSelectionGlow();
                 }
+                return;
+            }
+
+            // Check if clicking on a valid move destination
+            const moveKey = `${gridX},${gridY}`;
+            if (this.validMoves.has(moveKey)) {
+                this.sendAction({
+                    type: 'MOVE',
+                    token_id: this.selectedTokenId,
+                    destination: [gridX, gridY]
+                });
+                this.playSound('move');
+                this.selectedTokenId = null;
+                this.validMoves = new Set();
+                this.updateValidMoveIndicators(null);
+                this.updateTokenSelectionGlow();
                 return;
             }
 
@@ -1928,8 +2237,19 @@ class GameClient {
         this.scene.onPointerObservable.add((pointerInfo) => {
             if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
                 if (pointerInfo.event.button === 0) { // Left click
-                    if (this.hoveredCell) {
-                        this.handleClick(this.hoveredCell[0], this.hoveredCell[1]);
+                    // Always pick fresh from event coordinates - don't rely on hoveredCell
+                    const pickResult = this.scene.pick(
+                        pointerInfo.event.clientX,
+                        pointerInfo.event.clientY
+                    );
+                    if (pickResult.hit && pickResult.pickedPoint) {
+                        const x = pickResult.pickedPoint.x;
+                        const z = pickResult.pickedPoint.z;
+                        const gridX = Math.floor(x / CELL_SIZE);
+                        const gridY = Math.floor(z / CELL_SIZE);
+                        if (gridX >= 0 && gridX < BOARD_WIDTH && gridY >= 0 && gridY < BOARD_HEIGHT) {
+                            this.handleClick(gridX, gridY);
+                        }
                     }
                 } else if (pointerInfo.event.button === 2) { // Right click
                     // In overview mode: start panning
@@ -1976,6 +2296,7 @@ class GameClient {
                     this.selectedTokenId = null;
                     this.validMoves = new Set();
                     this.updateValidMoveIndicators(null);
+                    this.updateTokenSelectionGlow();
                     break;
                 case 'enter':
                     // End turn (alternative to Space)
@@ -1984,6 +2305,7 @@ class GameClient {
                     this.selectedTokenId = null;
                     this.validMoves = new Set();
                     this.updateValidMoveIndicators(null);
+                    this.updateTokenSelectionGlow();
                     break;
                 case 'escape':
                     // Cancel action or close menu
@@ -2096,6 +2418,12 @@ class GameClient {
     startRenderLoop() {
         this.engine.runRenderLoop(() => {
             if (this.scene) {
+                // Update animation time
+                this.animationTime += 0.016;  // ~60fps
+
+                // Update all animations
+                this.updateAnimations();
+
                 // Only update first-person camera when in first-person mode
                 if (this.cameraMode === "firstperson") {
                     this.updateFirstPersonCamera();
@@ -2103,6 +2431,372 @@ class GameClient {
                 this.scene.render();
             }
         });
+    }
+
+    updateAnimations() {
+        // Animate generator lines (flowing dashes)
+        this.generatorLineMeshes.forEach(line => {
+            if (line.material && line.material.alpha !== undefined) {
+                const flowOffset = (this.animationTime * 2) % 1;
+                line.dashOffset = flowOffset * 10;
+                if (line.material.updateDashOffset) {
+                    line.material.updateDashOffset(flowOffset * 10);
+                }
+            }
+        });
+
+        // Animate mystery rings (coin flip when active, pulsing when idle)
+        this.mysteryRings.forEach(ring => {
+            // Get position key for this ring
+            const name = ring.name;
+            const match = name.match(/mystery_(\d+)_(\d+)/);
+            if (!match) return;
+
+            const x = parseInt(match[1]);
+            const y = parseInt(match[2]);
+            const posKey = `${x},${y}`;
+            const animationProgress = this.mysteryAnimations.get(posKey);
+
+            if (animationProgress !== undefined) {
+                // Coin flip animation in progress - handled by updateMysteryAnimations
+                return;
+            }
+
+            // Idle pulsing
+            if (ring.material && ring.material.emissiveColor) {
+                const pulse = 0.4 + 0.2 * Math.sin(this.animationTime * 4);
+                ring.material.emissiveColor.r = CYAN_GLOW.r * pulse;
+                ring.material.emissiveColor.g = CYAN_GLOW.g * pulse;
+                ring.material.emissiveColor.b = CYAN_GLOW.b * pulse;
+                ring.scaling.x = 1 + 0.1 * Math.sin(this.animationTime * 3);
+                ring.scaling.z = 1 + 0.1 * Math.sin(this.animationTime * 3);
+            }
+        });
+
+        // Update coin flip animations
+        this.updateMysteryAnimations();
+
+        // Update explosion particles
+        this.updateExplosionParticles();
+
+        // Animate crystal (pulse)
+        const crystal = this.scene.getMeshByName("crystal");
+        if (crystal) {
+            const pulse = 1 + 0.05 * Math.sin(this.animationTime * 2);
+            crystal.scaling.x = pulse;
+            crystal.scaling.z = pulse;
+            crystal.rotation.y = this.animationTime * 0.5;
+        }
+
+        // Animate confetti particles
+        if (this.confettiParticles.length > 0) {
+            this.confettiParticles.forEach(p => {
+                p.mesh.position.x += p.vx * 0.016;
+                p.mesh.position.y += p.vy * 0.016;
+                p.mesh.position.z += p.vz * 0.016;
+                p.vy -= 50 * 0.016;  // Gravity
+                p.mesh.rotation.x += p.rotX * 0.016;
+                p.mesh.rotation.y += p.rotY * 0.016;
+
+                // Reset if below ground
+                if (p.mesh.position.y < 0) {
+                    p.mesh.position.y = 200;
+                    p.mesh.position.x = Math.random() * BOARD_WIDTH * CELL_SIZE;
+                    p.mesh.position.z = Math.random() * BOARD_HEIGHT * CELL_SIZE;
+                    p.vy = -50 - Math.random() * 50;
+                }
+            });
+        }
+    }
+
+    checkMysteryLandings(gameState) {
+        // Check if any tokens just landed on mystery squares
+        if (!gameState.tokens || !gameState.board) return;
+
+        for (const token of Object.values(gameState.tokens)) {
+            if (!token.is_deployed || !token.is_alive) continue;
+
+            const posKey = `${token.position[0]},${token.position[1]}`;
+
+            // Check if this position is a mystery square
+            const isMystery = this.isMysterySquare(token.position[0], token.position[1], gameState);
+            if (isMystery && !this.mysteryAnimations.has(posKey)) {
+                // Token landed on mystery square - start animation
+                this.mysteryAnimations.set(posKey, 0.0);
+                console.log(`Token ${token.id} landed on mystery square at ${posKey}`);
+                this.playSound('mystery');
+            }
+        }
+
+        // Clean up completed animations
+        for (const [posKey, progress] of this.mysteryAnimations) {
+            if (progress >= 1.0) {
+                this.mysteryAnimations.delete(posKey);
+            }
+        }
+    }
+
+    isMysterySquare(x, y, gameState) {
+        if (!gameState.board || !gameState.board.grid) return false;
+        if (y < 0 || y >= gameState.board.grid.length) return false;
+        if (x < 0 || x >= gameState.board.grid[y].length) return false;
+        return gameState.board.grid[y][x].cell_type === 4;  // MYSTERY = 4
+    }
+
+    updateSpecialCellColors(gameState) {
+        if (!gameState.tokens || !gameState.generators) return;
+
+        // Get player colors
+        const playerColors = this.getPlayerColors(gameState);
+
+        // Check each generator
+        gameState.generators.forEach(gen => {
+            const posKey = `${gen.position[0]},${gen.position[1]}`;
+            const genMeshData = this.generatorMeshes.get(posKey);
+            if (!genMeshData) return;
+
+            // Count tokens by player at this generator
+            const tokensHere = [];
+            for (const token of Object.values(gameState.tokens)) {
+                if (!token.is_deployed || !token.is_alive) continue;
+                if (token.position[0] === gen.position[0] && token.position[1] === gen.position[1]) {
+                    tokensHere.push(token);
+                }
+            }
+
+            // Determine dominant player
+            let dominantPlayer = null;
+            let maxCount = 0;
+            const playerCounts = {};
+            for (const token of tokensHere) {
+                // Find which player owns this token
+                for (const [playerId, player] of Object.entries(gameState.players || {})) {
+                    if (player.token_ids && player.token_ids.includes(token.id)) {
+                        playerCounts[playerId] = (playerCounts[playerId] || 0) + 1;
+                        if (playerCounts[playerId] > maxCount) {
+                            maxCount = playerCounts[playerId];
+                            dominantPlayer = playerId;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Check if generator just got disabled
+            if (gen.is_disabled && !genMeshData.isDisabled) {
+                // Generator was destroyed - explosion!
+                this.triggerExplosion(gen.position, ORANGE_GLOW);
+                this.playSound('capture');
+                console.log(`Generator at ${posKey} destroyed!`);
+            }
+
+            // Update generator color
+            if (dominantPlayer && playerCounts[dominantPlayer] >= 2 && !gen.is_disabled) {
+                const color = playerColors[dominantPlayer] || ORANGE_GLOW;
+                genMeshData.mesh.material.emissiveColor = color;
+                genMeshData.mesh.material.alpha = 1.0;
+                genMeshData.lastOwner = dominantPlayer;
+            } else if (gen.is_disabled) {
+                genMeshData.mesh.material.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                genMeshData.mesh.material.alpha = 0.3;
+                genMeshData.lastOwner = null;
+            } else {
+                genMeshData.mesh.material.emissiveColor = ORANGE_GLOW;
+                genMeshData.mesh.material.alpha = 0.8;
+                genMeshData.lastOwner = null;
+            }
+
+            // Update disabled state tracking
+            genMeshData.isDisabled = gen.is_disabled;
+        });
+
+        // Update crystal color and token count
+        if (this.crystalMesh && gameState.crystal) {
+            const tokensAtCrystal = [];
+            for (const token of Object.values(gameState.tokens)) {
+                if (!token.is_deployed || !token.is_alive) continue;
+                if (token.position[0] === gameState.crystal.position[0] &&
+                    token.position[1] === gameState.crystal.position[1]) {
+                    tokensAtCrystal.push(token);
+                }
+            }
+
+            // Count by player
+            const crystalCounts = {};
+            let dominantPlayer = null;
+            let maxCount = 0;
+            for (const token of tokensAtCrystal) {
+                for (const [playerId, player] of Object.entries(gameState.players || {})) {
+                    if (player.token_ids && player.token_ids.includes(token.id)) {
+                        crystalCounts[playerId] = (crystalCounts[playerId] || 0) + 1;
+                        if (crystalCounts[playerId] > maxCount) {
+                            maxCount = crystalCounts[playerId];
+                            dominantPlayer = playerId;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Update crystal color based on dominant player
+            if (dominantPlayer && crystalCounts[dominantPlayer] >= 2) {
+                const color = playerColors[dominantPlayer] || MAGENTA_GLOW;
+                this.crystalMesh.mesh.material.emissiveColor = color;
+            } else {
+                this.crystalMesh.mesh.material.emissiveColor = MAGENTA_GLOW;
+            }
+
+            // Update crystal token counts
+            this.crystalMesh.tokenCounts = crystalCounts;
+        }
+    }
+
+    getPlayerColors(gameState) {
+        const colors = {};
+        const colorValues = [
+            new BABYLON.Color3(1, 0, 0),      // Red - Player 0
+            new BABYLON.Color3(0, 0, 1),      // Blue - Player 1
+            new BABYLON.Color3(0, 1, 0),      // Green - Player 2
+            new BABYLON.Color3(1, 1, 0),      // Yellow - Player 3
+        ];
+
+        for (const [playerId, player] of Object.entries(gameState.players || {})) {
+            const colorIndex = parseInt(playerId.split('_')[1]) || 0;
+            colors[playerId] = colorValues[colorIndex % colorValues.length];
+        }
+        return colors;
+    }
+
+    triggerExplosion(position, color) {
+        const centerX = position[0] * CELL_SIZE + CELL_SIZE / 2;
+        const centerZ = position[1] * CELL_SIZE + CELL_SIZE / 2;
+
+        // Create particle burst
+        for (let i = 0; i < 30; i++) {
+            const size = 2 + Math.random() * 4;
+            const particle = BABYLON.MeshBuilder.CreateBox(
+                `explosion_${Date.now()}_${i}`,
+                { size: size },
+                this.scene
+            );
+
+            particle.position = new BABYLON.Vector3(
+                centerX + (Math.random() - 0.5) * CELL_SIZE * 0.5,
+                WALL_HEIGHT * 0.3 + Math.random() * CELL_SIZE * 0.3,
+                centerZ + (Math.random() - 0.5) * CELL_SIZE * 0.5
+            );
+
+            const material = new BABYLON.StandardMaterial("explosionMat", this.scene);
+            material.emissiveColor = color;
+            material.disableLighting = true;
+            particle.material = material;
+
+            this.explosionParticles.push({
+                mesh: particle,
+                vx: (Math.random() - 0.5) * 100,
+                vy: 50 + Math.random() * 100,
+                vz: (Math.random() - 0.5) * 100,
+                life: 1.0
+            });
+        }
+    }
+
+    updateExplosionParticles() {
+        for (let i = this.explosionParticles.length - 1; i >= 0; i--) {
+            const p = this.explosionParticles[i];
+            p.life -= 0.016;
+
+            p.mesh.position.x += p.vx * 0.016;
+            p.mesh.position.y += p.vy * 0.016;
+            p.mesh.position.z += p.vz * 0.016;
+            p.vy -= 150 * 0.016;  // Gravity
+
+            // Fade out
+            p.mesh.material.alpha = p.life;
+
+            if (p.life <= 0) {
+                p.mesh.dispose();
+                this.explosionParticles.splice(i, 1);
+            }
+        }
+    }
+
+    updateMysteryAnimations() {
+        // Update all active mystery animations (coin flip spinning)
+        this.mysteryAnimations.forEach((progress, posKey) => {
+            const [x, y] = posKey.split(',').map(Number);
+            const ring = this.scene.getMeshByName(`mystery_${x}_${y}`);
+
+            if (ring) {
+                // Coin flip animation: spin around Y axis then scale pulse
+                const spinProgress = Math.min(progress * 2, 1.0);  // Spin in first half
+                const pulseProgress = Math.max(0, (progress - 0.5) * 2);  // Pulse in second half
+
+                // Spin effect
+                ring.rotation.y = spinProgress * Math.PI * 4;
+
+                // Scale pulse
+                const scale = 1 + 0.3 * Math.sin(pulseProgress * Math.PI);
+                ring.scaling.x = scale;
+                ring.scaling.z = scale;
+
+                // Brightness pulse
+                if (ring.material && ring.material.emissiveColor) {
+                    const brightness = 0.6 + 0.4 * Math.sin(pulseProgress * Math.PI);
+                    ring.material.emissiveColor.r = CYAN_GLOW.r * brightness;
+                    ring.material.emissiveColor.g = CYAN_GLOW.g * brightness;
+                    ring.material.emissiveColor.b = CYAN_GLOW.b * brightness;
+                }
+            }
+
+            // Update progress
+            this.mysteryAnimations.set(posKey, progress + 0.016);  // ~60fps
+        });
+    }
+
+    triggerVictoryEffect() {
+        // Create confetti particles
+        const colors = [
+            new BABYLON.Color3(1, 0, 0),    // Red
+            new BABYLON.Color3(0, 1, 0),    // Green
+            new BABYLON.Color3(0, 0, 1),    // Blue
+            new BABYLON.Color3(1, 1, 0),    // Yellow
+            new BABYLON.Color3(1, 0, 1),    // Magenta
+            new BABYLON.Color3(0, 1, 1),    // Cyan
+        ];
+
+        for (let i = 0; i < 100; i++) {
+            const size = 2 + Math.random() * 3;
+            const confetti = BABYLON.MeshBuilder.CreateBox(
+                `confetti_${i}`,
+                { size: size },
+                this.scene
+            );
+
+            confetti.position = new BABYLON.Vector3(
+                Math.random() * BOARD_WIDTH * CELL_SIZE,
+                100 + Math.random() * 100,
+                Math.random() * BOARD_HEIGHT * CELL_SIZE
+            );
+
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const material = new BABYLON.StandardMaterial(`confettiMat_${i}`, this.scene);
+            material.emissiveColor = color;
+            material.disableLighting = true;
+            confetti.material = material;
+
+            this.confettiParticles.push({
+                mesh: confetti,
+                vx: (Math.random() - 0.5) * 20,
+                vy: -50 - Math.random() * 50,
+                vz: (Math.random() - 0.5) * 20,
+                rotX: Math.random() * 5,
+                rotY: Math.random() * 5,
+            });
+        }
+
+        // Play crystal shatter sound
+        this.playSound('crystal');
     }
 
     // Toggle music (M key)
@@ -2226,6 +2920,7 @@ class GameClient {
             this.selectedTokenId = null;
             this.validMoves = new Set();
             this.updateValidMoveIndicators(null);
+            this.updateTokenSelectionGlow();
         } else if (this.selectedDeployHealth) {
             console.log("Cancelled deployment selection");
             this.selectedDeployHealth = null;
@@ -2316,6 +3011,7 @@ class GameClient {
         // Add button listeners
         menu.querySelectorAll('.deploy-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent click from reaching canvas
                 this.selectedDeployHealth = parseInt(e.target.getAttribute('data-health'));
                 console.log(`Selected ${this.selectedDeployHealth} HP token for deployment`);
 
