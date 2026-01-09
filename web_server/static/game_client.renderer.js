@@ -1407,7 +1407,7 @@ class Renderer3D {
         this.specialCellMeshes.forEach((mesh) => mesh.dispose());
         this.specialCellMeshes = [];
 
-        this.validMoveMeshes.forEach((mesh) => mesh.dispose();
+        this.validMoveMeshes.forEach((mesh) => mesh.dispose());
         this.validMoveMeshes = [];
 
         if (this.hoverMesh) this.hoverMesh.dispose();
