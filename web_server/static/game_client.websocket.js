@@ -148,6 +148,13 @@ class WebSocketClient {
                     status: data.status,
                 };
                 this.isHost = true;
+
+                // Sync local ready state with server
+                const myPlayerInCreate = this.currentLobby.players.find(p => p.player_id === this.playerId);
+                if (myPlayerInCreate) {
+                    this.isReady = myPlayerInCreate.is_ready;
+                }
+
                 this.connectionState = STATE.IN_LOBBY;
                 this.emit('lobby_joined', { lobby: this.currentLobby, isHost: true });
                 break;
@@ -164,6 +171,13 @@ class WebSocketClient {
                     status: data.status,
                 };
                 this.isHost = this.playerId === data.host_player_id;
+
+                // Sync local ready state with server
+                const myPlayerInJoin = this.currentLobby.players.find(p => p.player_id === this.playerId);
+                if (myPlayerInJoin) {
+                    this.isReady = myPlayerInJoin.is_ready;
+                }
+
                 this.connectionState = STATE.IN_LOBBY;
                 this.emit('lobby_joined', { lobby: this.currentLobby, isHost: this.isHost });
                 break;
@@ -194,6 +208,13 @@ class WebSocketClient {
                 console.log("Ready status updated:", data);
                 if (data.lobby && data.lobby.players) {
                     this.currentLobby.players = data.lobby.players;
+
+                    // Sync local ready state with server
+                    const myPlayer = data.lobby.players.find(p => p.player_id === this.playerId);
+                    if (myPlayer) {
+                        this.isReady = myPlayer.is_ready;
+                    }
+
                     this.emit('lobby_updated', { lobby: this.currentLobby });
                 }
                 break;
