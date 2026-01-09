@@ -273,6 +273,21 @@
     <!-- Lobby Browser Screen -->
     <div id="lobby-browser-screen" style="display: none;">
         <h2>GAME LOBBY</h2>
+
+        <!-- Join by Game ID Section -->
+        <div style="margin-bottom: 20px; padding: 15px; border: 2px solid #0ff; background: rgba(0, 255, 255, 0.05);">
+            <h3 style="margin-bottom: 10px; font-size: 14px;">Join by Game ID:</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="join-game-id-input" placeholder="Enter game ID or short ID"
+                    style="flex: 1; background: #000; border: 2px solid #0ff; color: #0ff; padding: 10px; font-family: 'Courier New', monospace; font-size: 12px;">
+                <button id="join-by-id-btn"
+                    style="background: #000; border: 2px solid #0ff; color: #0ff; padding: 10px 20px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 12px; text-transform: uppercase;">
+                    Join
+                </button>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 10px; font-size: 14px; text-align: center;">Or browse available games:</h3>
         <div id="game-list-container"></div>
         <div id="no-games-msg" style="display: none;">No games available. Create one!</div>
         <div class="button-container">

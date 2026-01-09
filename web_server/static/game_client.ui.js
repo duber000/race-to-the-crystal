@@ -146,10 +146,7 @@ class UIManager {
 
     setupLobbyBrowserHandlers(createGame, refreshGames, disconnect) {
         document.getElementById("create-game-btn").addEventListener("click", () => {
-            const gameName = prompt("Enter game name:", "My Game");
-            if (gameName && gameName.trim()) {
-                createGame(gameName.trim(), 4);
-            }
+            this.showCreateGameDialog(createGame);
         });
 
         document.getElementById("refresh-games-btn").addEventListener("click", () => {
@@ -159,6 +156,126 @@ class UIManager {
         document.getElementById("disconnect-btn").addEventListener("click", () => {
             disconnect();
         });
+
+        // Join by game ID handler
+        const joinByIdBtn = document.getElementById("join-by-id-btn");
+        const joinByIdInput = document.getElementById("join-game-id-input");
+
+        const handleJoinById = () => {
+            const gameId = joinByIdInput.value.trim();
+            if (gameId && this.onJoinGame) {
+                this.onJoinGame(gameId);
+                joinByIdInput.value = "";
+            }
+        };
+
+        joinByIdBtn.addEventListener("click", handleJoinById);
+        joinByIdInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                handleJoinById();
+            }
+        });
+    }
+
+    showCreateGameDialog(createGame) {
+        // Create dialog overlay
+        const overlay = document.createElement("div");
+        overlay.id = "create-game-dialog-overlay";
+        overlay.style.position = "fixed";
+        overlay.style.top = "0";
+        overlay.style.left = "0";
+        overlay.style.width = "100%";
+        overlay.style.height = "100%";
+        overlay.style.background = "rgba(0, 0, 0, 0.8)";
+        overlay.style.zIndex = "3000";
+        overlay.style.display = "flex";
+        overlay.style.alignItems = "center";
+        overlay.style.justifyContent = "center";
+
+        const dialog = document.createElement("div");
+        dialog.style.background = "rgba(0, 0, 0, 0.95)";
+        dialog.style.border = "3px solid #0ff";
+        dialog.style.padding = "30px";
+        dialog.style.fontFamily = "'Courier New', monospace";
+        dialog.style.color = "#0ff";
+        dialog.style.boxShadow = "0 0 30px #0ff";
+        dialog.style.minWidth = "400px";
+
+        dialog.innerHTML = `
+            <h2 style="text-align: center; margin-bottom: 20px; text-shadow: 0 0 15px #0ff;">CREATE GAME</h2>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">Game Name:</label>
+                <input type="text" id="dialog-game-name" value="My Game" maxlength="50"
+                    style="width: 100%; background: #000; border: 2px solid #0ff; color: #0ff; padding: 10px; font-family: 'Courier New', monospace; font-size: 14px;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px;">Number of Players:</label>
+                <select id="dialog-player-count"
+                    style="width: 100%; background: #000; border: 2px solid #0ff; color: #0ff; padding: 10px; font-family: 'Courier New', monospace; font-size: 14px;">
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4" selected>4 Players</option>
+                </select>
+            </div>
+            <div style="text-align: center; font-size: 12px; margin-bottom: 20px; color: #0aa;">
+                AI players will fill empty slots when you start the game
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="dialog-create-btn"
+                    style="background: #000; border: 2px solid #0ff; color: #0ff; padding: 12px 24px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 14px; text-transform: uppercase;">
+                    Create
+                </button>
+                <button id="dialog-cancel-btn"
+                    style="background: #000; border: 2px solid #0ff; color: #0ff; padding: 12px 24px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 14px; text-transform: uppercase;">
+                    Cancel
+                </button>
+            </div>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        // Add hover effects
+        const buttons = [dialog.querySelector("#dialog-create-btn"), dialog.querySelector("#dialog-cancel-btn")];
+        buttons.forEach(btn => {
+            btn.addEventListener("mouseenter", () => {
+                btn.style.background = "#0ff";
+                btn.style.color = "#000";
+                btn.style.boxShadow = "0 0 20px #0ff";
+            });
+            btn.addEventListener("mouseleave", () => {
+                btn.style.background = "#000";
+                btn.style.color = "#0ff";
+                btn.style.boxShadow = "none";
+            });
+        });
+
+        // Handle create button
+        dialog.querySelector("#dialog-create-btn").addEventListener("click", () => {
+            const gameName = dialog.querySelector("#dialog-game-name").value.trim();
+            const playerCount = parseInt(dialog.querySelector("#dialog-player-count").value);
+
+            if (gameName) {
+                createGame(gameName, playerCount);
+                overlay.remove();
+            }
+        });
+
+        // Handle cancel button
+        dialog.querySelector("#dialog-cancel-btn").addEventListener("click", () => {
+            overlay.remove();
+        });
+
+        // Handle escape key
+        overlay.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                overlay.remove();
+            }
+        });
+
+        // Focus game name input
+        dialog.querySelector("#dialog-game-name").focus();
+        dialog.querySelector("#dialog-game-name").select();
     }
 
     // ==========================================================================
@@ -172,6 +289,45 @@ class UIManager {
         }
 
         document.getElementById("lobby-game-name").textContent = lobby.game_name;
+
+        // Display game ID for sharing (add if not exists)
+        let gameIdDisplay = document.getElementById("lobby-game-id");
+        if (!gameIdDisplay) {
+            gameIdDisplay = document.createElement("div");
+            gameIdDisplay.id = "lobby-game-id";
+            gameIdDisplay.style.textAlign = "center";
+            gameIdDisplay.style.fontSize = "12px";
+            gameIdDisplay.style.marginBottom = "15px";
+            gameIdDisplay.style.padding = "10px";
+            gameIdDisplay.style.background = "rgba(0, 255, 255, 0.1)";
+            gameIdDisplay.style.border = "1px solid #0ff";
+            gameIdDisplay.style.cursor = "pointer";
+            gameIdDisplay.style.userSelect = "all";
+            gameIdDisplay.title = "Click to copy game ID";
+
+            const titleElement = document.getElementById("lobby-game-name");
+            titleElement.after(gameIdDisplay);
+
+            // Add click to copy functionality
+            gameIdDisplay.addEventListener("click", () => {
+                const gameId = gameIdDisplay.getAttribute("data-game-id");
+                navigator.clipboard.writeText(gameId).then(() => {
+                    const originalText = gameIdDisplay.innerHTML;
+                    gameIdDisplay.innerHTML = `<span style="color: #0f0;">✓ Copied to clipboard!</span>`;
+                    setTimeout(() => {
+                        gameIdDisplay.innerHTML = originalText;
+                    }, 2000);
+                }).catch(() => {
+                    console.error("Failed to copy game ID");
+                });
+            });
+        }
+
+        // Update game ID display
+        const shortId = lobby.game_id.substring(0, 8);
+        gameIdDisplay.innerHTML = `Game ID: <strong>${shortId}</strong> (click to copy full ID)`;
+        gameIdDisplay.setAttribute("data-game-id", lobby.game_id);
+
         this.renderLobbyPlayerList(lobby, isHost);
 
         const startBtn = document.getElementById("start-game-btn");
@@ -182,7 +338,9 @@ class UIManager {
 
     renderLobbyPlayerList(lobby, isHost) {
         const container = document.getElementById("lobby-players");
-        container.innerHTML = "<h3>Players:</h3>";
+        const playerCount = lobby.players ? lobby.players.length : 0;
+        const maxPlayers = lobby.max_players || 4;
+        container.innerHTML = `<h3>Players (${playerCount}/${maxPlayers}):</h3>`;
 
         if (!lobby || !lobby.players) {
             return;
@@ -242,7 +400,12 @@ class UIManager {
             startBtn.disabled = false;
             startBtn.style.opacity = "1";
             startBtn.style.cursor = "pointer";
-            startBtn.title = "All players ready - click to start!";
+            const emptySlots = (lobby.max_players || 4) - lobby.players.length;
+            if (emptySlots > 0) {
+                startBtn.title = `Start game (${emptySlots} AI player${emptySlots > 1 ? 's' : ''} will fill empty slots)`;
+            } else {
+                startBtn.title = "All players ready - click to start!";
+            }
         } else {
             startBtn.disabled = true;
             startBtn.style.opacity = "0.5";

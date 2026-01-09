@@ -73,6 +73,7 @@ class GameClient {
         });
 
         this.wsClient.on('game_list', (data) => {
+            this.ui.onJoinGame = (gameId) => this.wsClient.joinGame(gameId);
             this.ui.renderGameList(data.games);
         });
 
