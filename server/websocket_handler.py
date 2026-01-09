@@ -353,6 +353,7 @@ class WebSocketHandler:
             "attacker_id": data.get("attacker_id"),
             "target_id": data.get("target_id"),
             "position": data.get("position"),
+            "health_value": data.get("health_value"),
             "player_id": client.player_id,
         }
 

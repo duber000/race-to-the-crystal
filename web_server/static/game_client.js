@@ -12,6 +12,15 @@
  * 8. Health value text labels
  * 9. Sound effects
  * 10. Multi-player support with player ID selection
+ *
+ * @filesize Current: ~2,328 lines | Limit: 3,000 lines
+ * @refactor When this file exceeds 3,000 lines, split into modules:
+ *   - WebSocketClient (network, lobby, messages)
+ *   - CameraController (overview + first-person)
+ *   - InputHandler (mouse, keyboard)
+ *   - Renderer3D (scene, tokens, board)
+ *   - GameActionHandler (move, attack, deploy)
+ *   - UIManager (HUD, menus)
  */
 
 // Constants (matching Python constants)
@@ -29,6 +38,13 @@ const PLAYER_COLORS = [
     new BABYLON.Color3(1, 1, 0),      // Yellow - Player 3
     new BABYLON.Color3(0, 1, 0)       // Green - Player 4
 ];
+
+// TurnPhase enum values (matching Python shared/enums.py)
+const TurnPhase = {
+    MOVEMENT: 1,
+    ACTION: 2,
+    END_TURN: 3
+};
 
 const CYAN_GLOW = new BABYLON.Color3(0, 0.78, 0.78);
 const ORANGE_GLOW = new BABYLON.Color3(1, 0.65, 0);
@@ -78,7 +94,7 @@ class GameClient {
         this.selectedTokenId = null;
         this.validMoves = new Set();
         this.hoveredCell = null;
-        this.turnPhase = "MOVEMENT"; // "MOVEMENT" or "ACTION"
+        this.turnPhase = TurnPhase.MOVEMENT; // TurnPhase enum value (1=MOVEMENT, 2=ACTION, 3=END_TURN)
 
         // 3D camera control state
         this.controlledTokenId = null; // Token camera follows in 3D mode
@@ -1024,7 +1040,7 @@ class GameClient {
         console.log("==================================================");
 
         this.gameState = gameState;
-        this.turnPhase = gameState.turn_phase || "MOVEMENT";
+        this.turnPhase = gameState.turn_phase || TurnPhase.MOVEMENT;
 
         // Update 3D scene
         console.log("Creating special cells (generators & crystal)...");
@@ -1681,6 +1697,22 @@ class GameClient {
         const cell = this.getCellAt(gridX, gridY);
         if (!cell) return;
 
+        // Check if we're in deployment mode
+        if (this.selectedDeployHealth !== null) {
+            // User has selected a health value and is clicking to deploy
+            this.sendAction({
+                type: 'DEPLOY',
+                health_value: this.selectedDeployHealth,
+                position: [gridX, gridY]
+            });
+            this.playSound('deploy');
+            this.selectedDeployHealth = null;
+            this.deploymentMenuOpen = false;
+            this.hideDeploymentUI();
+            console.log(`Deployed ${this.selectedDeployHealth}HP token at (${gridX}, ${gridY})`);
+            return;
+        }
+
         // Check if clicking on a token
         const tokenAtCell = this.getTokenAt(gridX, gridY);
 
@@ -1707,7 +1739,7 @@ class GameClient {
 
             // Check if clicking on an enemy token (attack)
             if (tokenAtCell && !this.isOurToken(tokenAtCell.id)) {
-                if (this.turnPhase === "ACTION") {
+                if (this.turnPhase === TurnPhase.ACTION) {
                     this.sendAction({
                         type: 'ATTACK',
                         attacker_id: this.selectedTokenId,
@@ -1766,23 +1798,79 @@ class GameClient {
     }
 
     updateValidMoves(token) {
-        // Calculate valid moves (simplified - would need proper pathfinding)
+        // BFS pathfinding that matches server logic
+        // Tokens CANNOT jump over other tokens in their path
         this.validMoves = new Set();
 
         const moveRange = token.health >= 7 ? 1 : 2;
-        const [x, y] = token.position;
+        const start = token.position;
+        const visited = new Set();
+        visited.add(`${start[0]},${start[1]}`);
 
-        for (let dx = -moveRange; dx <= moveRange; dx++) {
-            for (let dy = -moveRange; dy <= moveRange; dy++) {
-                if (dx === 0 && dy === 0) continue;
-                if (Math.abs(dx) + Math.abs(dy) > moveRange) continue;
+        // BFS queue: [[x, y], distance]
+        const queue = [[start, 0]];
 
-                const newX = x + dx;
-                const newY = y + dy;
+        // 8 directions (orthogonal + diagonal)
+        const directions = [
+            [-1, -1], [-1, 0], [-1, 1],
+            [0, -1],           [0, 1],
+            [1, -1],  [1, 0],  [1, 1]
+        ];
 
-                if (newX >= 0 && newX < BOARD_WIDTH && newY >= 0 && newY < BOARD_HEIGHT) {
-                    this.validMoves.add(`${newX},${newY}`);
+        while (queue.length > 0) {
+            const [[x, y], distance] = queue.shift();
+
+            // Don't explore beyond movement range
+            if (distance >= moveRange) {
+                continue;
+            }
+
+            // Check all 8 directions
+            for (const [dx, dy] of directions) {
+                const nx = x + dx;
+                const ny = y + dy;
+                const posKey = `${nx},${ny}`;
+
+                // Check if already visited
+                if (visited.has(posKey)) {
+                    continue;
                 }
+
+                // Check bounds
+                if (nx < 0 || nx >= BOARD_WIDTH || ny < 0 || ny >= BOARD_HEIGHT) {
+                    continue;
+                }
+
+                // Check if cell is occupied by a token
+                const tokenAtCell = this.getTokenAt(nx, ny);
+                if (tokenAtCell) {
+                    // Enemy token blocks movement entirely
+                    if (!this.isOurToken(tokenAtCell.id)) {
+                        continue; // Can't move through or onto enemy tokens
+                    }
+
+                    // Friendly token - check cell type
+                    // Note: We don't have cell type info easily accessible in client
+                    // For now, assume friendly tokens block on normal cells
+                    // Server will do final validation
+                    const cell = this.gameState?.board?.grid?.[ny]?.[nx];
+                    const isGeneratorOrCrystal = cell?.cell_type === 2 || cell?.cell_type === 3; // GENERATOR=2, CRYSTAL=3
+
+                    if (!isGeneratorOrCrystal) {
+                        continue; // Can't move through friendly tokens on normal cells
+                    }
+                }
+
+                // Mark as visited
+                visited.add(posKey);
+
+                // Add to valid moves (but not starting position)
+                if (nx !== start[0] || ny !== start[1]) {
+                    this.validMoves.add(posKey);
+                }
+
+                // Continue exploring from this cell
+                queue.push([[nx, ny], distance + 1]);
             }
         }
 
@@ -2148,6 +2236,14 @@ class GameClient {
 
     // Toggle deployment menu (R key)
     toggleDeploymentMenu() {
+        console.log("=== DEPLOYMENT MENU DEBUG ===");
+        console.log("  gameState exists:", !!this.gameState);
+        console.log("  current_turn_player_id:", this.gameState?.current_turn_player_id);
+        console.log("  localPlayerId:", this.localPlayerId);
+        console.log("  turnPhase:", this.turnPhase);
+        console.log("  gameState.turn_phase:", this.gameState?.turn_phase);
+        console.log("  deploymentMenuOpen:", this.deploymentMenuOpen);
+
         if (!this.gameState) {
             console.log("No game state");
             return;
@@ -2158,12 +2254,16 @@ class GameClient {
             return;
         }
 
-        if (this.turnPhase !== "MOVEMENT") {
-            console.log("Can only deploy during MOVEMENT phase");
+        if (this.turnPhase !== TurnPhase.MOVEMENT) {
+            const phaseName = this.turnPhase === TurnPhase.ACTION ? "ACTION" :
+                             this.turnPhase === TurnPhase.END_TURN ? "END_TURN" :
+                             "UNKNOWN";
+            console.log("Can only deploy during MOVEMENT phase - current phase:", phaseName, `(${this.turnPhase})`);
             return;
         }
 
         this.deploymentMenuOpen = !this.deploymentMenuOpen;
+        console.log("  Opening menu:", this.deploymentMenuOpen);
         if (this.deploymentMenuOpen) {
             this.showDeploymentUI();
         } else {
