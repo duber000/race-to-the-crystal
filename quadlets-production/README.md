@@ -71,7 +71,14 @@ su - gameuser
 git clone <repo-url> ~/race-to-the-crystal
 cd ~/race-to-the-crystal
 
-# Build Caddy image (with Mercure plugin)
+# Build Caddy binary with required modules (if not already built)
+# Note: Pre-built caddy binary is included in the repo
+# Only rebuild if you need to update modules or versions
+# Install xcaddy: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+# Then build:
+# xcaddy build --with github.com/caddy-dns/hetzner@v2.0.0-preview-3 --with github.com/dunglas/mercure/caddy --with github.com/greenpau/caddy-security
+
+# Build Caddy image (with Mercure plugin and Hetzner DNS)
 chmod +x caddy
 podman build -f Dockerfile.caddy -t localhost/race-caddy:latest .
 
@@ -95,6 +102,8 @@ mkdir -p ~/.config/containers/systemd
 cat > ~/.config/containers/systemd/race-secrets.env <<EOF
 MERCURE_PUBLISHER_JWT=$PUBLISHER_JWT
 MERCURE_SUBSCRIBER_JWT=$SUBSCRIBER_JWT
+# Optional: Add Hetzner DNS API token for DNS-01 challenge (if using Hetzner DNS)
+# YOUR_HETZNER_AUTH_API_TOKEN=your_hetzner_api_token_here
 EOF
 
 # Secure the file

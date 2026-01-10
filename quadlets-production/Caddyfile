@@ -9,6 +9,13 @@ your-domain.com:8880 {
     # Caddy automatically provisions Let's Encrypt certificates
     # Cert files stored in mounted /data volume
 
+    # Optional: Use DNS-01 challenge with Hetzner DNS (recommended for non-standard ports)
+    # Uncomment and add YOUR_HETZNER_AUTH_API_TOKEN to race-secrets.env if using Hetzner DNS
+    # tls {
+    #     dns hetzner {env.YOUR_HETZNER_AUTH_API_TOKEN}
+    #     propagation_delay 30s
+    # }
+
     # Embedded Mercure Hub configuration
     mercure {
         # JWT authentication keys from environment variables
