@@ -128,7 +128,9 @@ class CameraController {
     }
 
     activateMouseLook(x, y) {
-        if (this.cameraMode !== "firstperson") return;
+        if (this.cameraMode !== "firstperson") {
+            return;
+        }
         this.mouseLookActive = true;
         this.lastMousePosition = { x, y };
         this.canvas.style.cursor = "none";

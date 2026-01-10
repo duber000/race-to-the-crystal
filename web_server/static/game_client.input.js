@@ -15,12 +15,13 @@
  */
 
 class InputHandler {
-    constructor(scene, canvas, cameraController, gameState, connectionState) {
+    constructor(scene, canvas, cameraController, gameState, connectionState, engine) {
         this.scene = scene;
         this.canvas = canvas;
         this.cameraController = cameraController;
         this.gameState = gameState;
         this.connectionState = connectionState;
+        this.engine = engine;
 
         this.isPanning = false;
         this.lastPanPosition = { x: 0, y: 0 };
@@ -49,6 +50,10 @@ class InputHandler {
     }
 
     setupPointerListeners() {
+        this.canvas.addEventListener("click", () => {
+            this.canvas.focus();
+        });
+
         this.scene.onPointerObservable.add((pointerInfo) => {
             switch (pointerInfo.type) {
                 case BABYLON.PointerEventTypes.POINTERMOVE:
@@ -65,24 +70,6 @@ class InputHandler {
 
         this.canvas.addEventListener("contextmenu", (e) => {
             e.preventDefault();
-        });
-
-        this.canvas.addEventListener("mousedown", (e) => {
-            if (e.button === 2) {
-                this.cameraController.activateMouseLook(e.clientX, e.clientY);
-            }
-        });
-
-        this.canvas.addEventListener("mouseup", (e) => {
-            if (e.button === 2) {
-                this.cameraController.deactivateMouseLook();
-            }
-        });
-
-        this.canvas.addEventListener("mousemove", (e) => {
-            if (this.cameraController.mouseLookActive) {
-                this.cameraController.handleMouseMotion(e.movementX, e.movementY);
-            }
         });
     }
 

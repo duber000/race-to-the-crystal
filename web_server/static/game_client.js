@@ -129,7 +129,6 @@ class GameClient {
     }
 
     updateUIState(state) {
-        console.log(`[GameClient] updateUIState called with state: ${state}`);
         switch (state) {
             case STATE.DISCONNECTED:
                 this.ui.showScreen('disconnected');
@@ -148,10 +147,8 @@ class GameClient {
                 this.ui.showScreen('game_starting');
                 break;
             case STATE.IN_GAME:
-                console.log("[GameClient] Transitioning to IN_GAME state...");
                 this.ui.showScreen('in_game');
                 this.initGameModules();
-                console.log("[GameClient] ✓ IN_GAME transition complete");
                 break;
             default:
                 console.warn(`[GameClient] Unknown state: ${state}`);
@@ -160,31 +157,36 @@ class GameClient {
 
     setupLobbyBrowserHandlers() {
         this.ui.setupLobbyBrowserHandlers(
-            (gameName) => this.wsClient.createGame(gameName, 4),
-            () => this.wsClient.requestGameList(),
-            () => this.wsClient.disconnect()
+            (gameName, playerCount) => {
+                if (!this.wsClient) {
+                    alert("Connection error: WebSocket client not found. Please reconnect.");
+                    return;
+                }
+                this.wsClient.createGame(gameName, playerCount || 4);
+            },
+            () => {
+                if (!this.wsClient) {
+                    return;
+                }
+                this.wsClient.requestGameList();
+            },
+            () => {
+                if (!this.wsClient) {
+                    return;
+                }
+                this.wsClient.disconnect();
+            }
         );
     }
 
     handleFullState(data) {
-        console.log("[GameClient] handleFullState called");
-        console.log(`[GameClient] Current connection state: ${this.wsClient.getConnectionState()}`);
-
         if (this.wsClient.getConnectionState() !== STATE.IN_GAME) {
-            console.log("[GameClient] First FULL_STATE - initializing game");
-
-            // Update WebSocket client's connection state
             this.wsClient.connectionState = STATE.IN_GAME;
-            console.log(`[GameClient] Updated connection state to: ${STATE.IN_GAME}`);
-
             this.updateUIState(STATE.IN_GAME);
 
             if (data.game_state && data.game_state.perspective_player_id) {
                 this.localPlayerId = data.game_state.perspective_player_id;
-                console.log(`Local player ID: ${this.localPlayerId}`);
             }
-        } else {
-            console.log("[GameClient] Subsequent FULL_STATE - already in game");
         }
 
         if (data.game_state) {
@@ -193,8 +195,6 @@ class GameClient {
     }
 
     initGameModules() {
-        console.log("Initializing game modules...");
-
         this.renderer = new Renderer3D(this.canvas);
         this.renderer.initScene();
         this.renderer.loadSounds();
@@ -213,27 +213,25 @@ class GameClient {
             this.canvas,
             this.cameraController,
             () => this.gameState,
-            () => this.wsClient.getConnectionState()
+            () => this.wsClient.getConnectionState(),
+            this.renderer.engine
         );
-
-        this.inputHandler.setupEventListeners();
-        this.setupInputHandlers();
 
         this.renderer.setCameraUpdateCallback(() => {
             if (this.cameraController.cameraMode === "firstperson" && this.gameState && this.controlledTokenId) {
                 const token = this.gameState.tokens[this.controlledTokenId];
-                if (token && token.is_alive && token.is_deployed) {
-                    console.log("Updating camera for token:", this.controlledTokenId, "at", token.position);
+                if (token) {
                     this.cameraController.updateFirstPersonCamera(token);
-                } else {
-                    console.log("Token not valid:", this.controlledTokenId, token);
                 }
             }
         });
 
         this.renderer.startRenderLoop();
 
-        console.log("Game modules initialized");
+        requestAnimationFrame(() => {
+            this.inputHandler.setupEventListeners();
+            this.setupInputHandlers();
+        });
     }
 
     setupInputHandlers() {
@@ -246,17 +244,15 @@ class GameClient {
         });
 
         this.inputHandler.on('keydown', (data) => {
-            this.handleKeyDown(data.key);
+            this.handleKeyDown(data);
         });
     }
 
     updateGameState(gameState) {
         if (this.wsClient.getConnectionState() !== STATE.IN_GAME) {
-            console.log("Not in game state, ignoring game state update");
             return;
         }
 
-        console.log("Updating game state...");
         this.gameState = gameState;
         this.turnPhase = gameState.turn_phase || TurnPhase.MOVEMENT;
 
@@ -280,7 +276,6 @@ class GameClient {
             this.wsClient.deployToken(health, [gridX, gridY]);
             this.renderer.playSound("deploy");
             this.ui.clearSelection();
-            console.log(`Deployed ${health}HP token at (${gridX}, ${gridY})`);
             return;
         }
 
@@ -292,7 +287,6 @@ class GameClient {
                 this.updateValidMoves(tokenAtCell);
                 this.renderer.updateTokenSelectionGlow(this.selectedTokenId);
                 this.renderer.playSound("deploy");
-                console.log("Selected token:", tokenAtCell.id);
             }
         } else {
             const selectedToken = this.gameState.tokens[this.selectedTokenId];
@@ -302,7 +296,6 @@ class GameClient {
                 this.validMoves = new Set();
                 this.renderer.updateValidMoveIndicators(null);
                 this.renderer.updateTokenSelectionGlow(null);
-                console.log("Deselected token");
                 return;
             }
 
@@ -331,7 +324,8 @@ class GameClient {
         }
     }
 
-    handleKeyDown(key) {
+    handleKeyDown(data) {
+        const key = data.key;
         switch (key) {
             case 'end_turn':
                 this.wsClient.endTurn();
@@ -349,14 +343,9 @@ class GameClient {
             case 'camera_toggle':
                 this.renderer.camera = this.cameraController.toggleCameraMode();
                 if (this.cameraController.cameraMode === "firstperson") {
-                    console.log("Entering first-person mode");
                     const aliveTokens = this.getAliveTokens();
-                    console.log("Alive tokens:", aliveTokens.length);
                     if (aliveTokens.length > 0) {
                         this.controlledTokenId = aliveTokens[0].id;
-                        console.log("Auto-selected token:", this.controlledTokenId);
-                    } else {
-                        console.log("No alive tokens to select!");
                     }
                 }
                 break;
@@ -364,7 +353,6 @@ class GameClient {
                 const newTokenId = this.cameraController.cycleControlledToken(this.getAliveTokens());
                 if (newTokenId) {
                     this.controlledTokenId = newTokenId;
-                    console.log("Cycled to token:", this.controlledTokenId);
                 }
                 break;
             case 'rotate_left':
@@ -400,9 +388,8 @@ class GameClient {
                 this.quitGame();
                 break;
             case 'switch_player':
-                if (key.playerIndex !== undefined) {
-                    this.localPlayerId = `player_${key.playerIndex}`;
-                    console.log("Switched to player", this.localPlayerId);
+                if (data.playerIndex !== undefined) {
+                    this.localPlayerId = `player_${data.playerIndex}`;
                 }
                 break;
         }
@@ -491,8 +478,14 @@ class GameClient {
 
     toggleDeploymentMenu() {
         if (!this.gameState) return;
-        if (this.gameState.current_turn_player_id !== this.localPlayerId) return;
-        if (this.turnPhase !== TurnPhase.MOVEMENT) return;
+        if (this.gameState.current_turn_player_id !== this.localPlayerId) {
+            this.ui.showActionError("Not your turn!");
+            return;
+        }
+        if (this.turnPhase !== TurnPhase.MOVEMENT) {
+            this.ui.showActionError("Can only deploy during movement phase!");
+            return;
+        }
 
         this.ui.toggleDeploymentMenu(!this.ui.isDeploymentMenuOpen());
     }
@@ -528,7 +521,6 @@ class GameClient {
     }
 
     quitGame() {
-        console.log("Quitting game...");
         if (this.wsClient) {
             this.wsClient.disconnect();
         }

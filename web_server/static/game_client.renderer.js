@@ -22,7 +22,6 @@ class Renderer3D {
         this.canvas = canvas;
         this.engine = null;
         this.scene = null;
-        this.camera = null;
         this.glowLayer = null;
 
         this.board3D = [];
@@ -59,40 +58,15 @@ class Renderer3D {
     // ==========================================================================
 
     initScene() {
-        console.log("Initializing scene...");
         this.engine = new BABYLON.Engine(this.canvas, true);
 
         this.scene = new BABYLON.Scene(this.engine);
         this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
 
-        this.initCameras();
         this.initLights();
         this.createBoard();
 
-        console.log("Scene initialized");
         return this.scene;
-    }
-
-    initCameras() {
-        const boardCenterX = (BOARD_WIDTH / 2) * CELL_SIZE;
-        const boardCenterY = (BOARD_HEIGHT / 2) * CELL_SIZE;
-
-        this.camera = new BABYLON.ArcRotateCamera(
-            "overviewCamera",
-            Math.PI / 4,
-            Math.PI / 3,
-            500,
-            new BABYLON.Vector3(boardCenterX, 0, boardCenterY),
-            this.scene,
-        );
-        this.camera.attachControl(this.canvas, true);
-        this.camera.lowerRadiusLimit = 300;
-        this.camera.upperRadiusLimit = 1500;
-        this.camera.wheelPrecision = 5;
-        this.camera.lowerAlphaLimit = 0;
-        this.camera.upperAlphaLimit = 0;
-        this.camera.lowerBetaLimit = Math.PI / 3;
-        this.camera.upperBetaLimit = Math.PI / 3;
     }
 
     initLights() {

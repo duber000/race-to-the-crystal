@@ -115,7 +115,11 @@ class WebSocketClient {
             this.websocket.send(JSON.stringify(message));
             console.log("Sent:", message.type);
         } else {
-            console.error("WebSocket not connected");
+            const state = this.websocket ? this.websocket.readyState : 'null';
+            const stateNames = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
+            const stateName = this.websocket ? stateNames[this.websocket.readyState] : 'null';
+            console.error(`WebSocket not connected! Current state: ${state} (${stateName})`);
+            console.error(`Connection state: ${this.connectionState}`);
         }
     }
 
