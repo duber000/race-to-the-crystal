@@ -211,7 +211,7 @@ class GeneratorManager:
     def update_all_generators(
         generators: list[Generator],
         tokens_by_position: dict[tuple[int, int], list[tuple[TokenID, PlayerID]]]
-    ) -> list[int]:
+    ) -> tuple[list[int], dict[int, PlayerID]]:
         """
         Update all generators based on token positions.
 
@@ -220,18 +220,20 @@ class GeneratorManager:
             tokens_by_position: Dictionary mapping positions to (token_id, player_id) lists
 
         Returns:
-            List of generator IDs that were just disabled
+            Tuple of (newly_disabled_generator_ids, {generator_id: capturing_player_id})
         """
         newly_disabled = []
+        capturing_players = {}
 
         for generator in generators:
             tokens_at_gen = tokens_by_position.get(generator.position, [])
             was_disabled = generator.update_capture_status(tokens_at_gen)
 
-            if was_disabled:
+            if was_disabled and generator.capturing_player_id:
                 newly_disabled.append(generator.id)
+                capturing_players[generator.id] = generator.capturing_player_id
 
-        return newly_disabled
+        return newly_disabled, capturing_players
 
     @staticmethod
     def count_disabled_generators(generators: list[Generator]) -> int:

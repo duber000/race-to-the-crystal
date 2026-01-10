@@ -235,7 +235,7 @@ class TestGeneratorManager:
             (10, 10): [(3, "p2")],           # Gen 1 - insufficient
         }
 
-        newly_disabled = GeneratorManager.update_all_generators(generators, tokens_by_position)
+        newly_disabled, capturing_players = GeneratorManager.update_all_generators(generators, tokens_by_position)
 
         assert len(newly_disabled) == 0  # None disabled yet (first turn)
         assert generators[0].capturing_player_id == "p1"
@@ -251,13 +251,15 @@ class TestGeneratorManager:
         tokens_by_position = {(5, 5): tokens}
 
         # Turn 1
-        newly_disabled = GeneratorManager.update_all_generators(generators, tokens_by_position)
+        newly_disabled, capturing_players = GeneratorManager.update_all_generators(generators, tokens_by_position)
         assert len(newly_disabled) == 0
 
         # Turn 2
-        newly_disabled = GeneratorManager.update_all_generators(generators, tokens_by_position)
+        newly_disabled, capturing_players = GeneratorManager.update_all_generators(generators, tokens_by_position)
         assert len(newly_disabled) == 1
         assert 0 in newly_disabled
+        assert 0 in capturing_players
+        assert capturing_players[0] == "p1"
         assert generators[0].is_disabled is True
 
     def test_count_disabled_generators(self):

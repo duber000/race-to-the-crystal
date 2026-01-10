@@ -32,6 +32,11 @@ GENERATOR_TOKEN_REDUCTION = (
 CRYSTAL_BASE_TOKENS_REQUIRED = 12
 CRYSTAL_CAPTURE_TURNS_REQUIRED = 3
 
+# Crystal Effects Configuration
+CRYSTAL_EFFECT_INITIAL_DURATION = 4  # Effects last 4 turns initially
+CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR = 1  # Each generator captured reduces duration by 1 turn
+PHANTOM_ENEMIES_COUNT = 3  # Number of phantom tokens to show per player
+
 # Mystery Square Configuration
 MYSTERY_SQUARES_PER_QUADRANT = 2
 TOTAL_MYSTERY_SQUARES = MYSTERY_SQUARES_PER_QUADRANT * 4
