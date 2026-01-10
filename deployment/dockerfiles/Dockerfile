@@ -32,7 +32,7 @@ WORKDIR /app
 
 # Copy project files
 COPY pyproject.toml uv.lock ./
-COPY README.md CLAUDE.md ./
+COPY README.md ./
 
 # Copy source code
 COPY game/ game/
@@ -41,6 +41,7 @@ COPY shared/ shared/
 COPY server/ server/
 COPY network/ network/
 COPY web_server/ web_server/
+COPY docs/ docs/
 
 # Install Python dependencies
 RUN uv sync --frozen

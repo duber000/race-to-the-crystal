@@ -1,60 +1,17 @@
-# CLAUDE.md
+# CLAUDE.md - Developer Guide
 
-This file provides guidance to coding agents when working with code in this repository.
+This file provides technical guidance for Claude Code when working with this repository.
 
-## Project Overview
+**For user-facing documentation, see [README.md](README.md).**
 
-Race to the Crystal is a Python-based multiplayer strategy game with GPU-accelerated vector graphics. Players compete on a 24x24 grid to capture a central crystal while managing tokens, generators, and strategic resources. The game features both 2D top-down and 3D first-person views using Arcade/OpenGL rendering.
+## Quick Reference
+
+**Run the game:** See [README.md](README.md#quick-start)
+**Game rules:** See [docs/GAME.md](docs/GAME.md)
+**Network setup:** See [docs/NETWORK.md](docs/NETWORK.md)
+**Web client:** See [docs/WEB.md](docs/WEB.md)
 
 ## Development Commands
-
-### Running the Game
-```bash
-# Install dependencies
-uv sync
-
-# Run game (2D mode)
-uv run race-to-the-crystal
-
-# Run game in 3D mode
-uv run race-to-the-crystal --3d
-
-# Run with custom player count
-uv run race-to-the-crystal 2
-uv run race-to-the-crystal --3d 2
-```
-
-**Game Controls:**
-
-**2D Mode:**
-- **Arrow Keys / WASD**: Pan camera view
-- **+/-** or **Mouse Scroll**: Zoom in/out
-- **Mouse Click**: Select tokens, move, attack, deploy
-
-**3D Mode:**
-- **Right Mouse Button + Move**: Mouse-look (free camera rotation)
-- **Q/E**: Rotate camera left/right
-- **TAB**: Cycle through your tokens
-- **Arrow Keys / WASD**: Pan camera position
-- **+/-** or **Mouse Scroll**: Adjust field of view
-- **Mouse Click**: Select tokens, move, attack, deploy
-
-**Common (Both Modes):**
-- **V**: Toggle between 2D and 3D view modes
-- **R**: Open Deployment Menu
-- **Space/Enter**: End turn
-- **Escape**: Cancel action
-- **Ctrl+Q**: Quit game
-
-**Token Deployment:**
-1. Click your starting corner position (corner cell with tokens)
-2. Select a token type from the menu (10hp, 8hp, 6hp, or 4hp)
-3. Click any empty cell in your corner area (9 cells total) to deploy
-4. Press ESC to cancel at any time
-
-**Note:** Players start with 3 tokens already deployed in their corner, ready to move immediately!
-
-**Note:** The camera automatically zooms to fit the entire 24x24 board in view at startup. Use +/- to zoom further if needed.
 
 ### Testing
 ```bash
@@ -159,14 +116,37 @@ All Arcade/OpenGL rendering code. Consumes `GameState` but never modifies game l
 
 **Dual rendering modes:**
 - **2D**: Top-down Tron-style vector graphics with glow effects
-- **3D**: First-person Battlezone-style wireframe graphics
+- **3D**: First-person Battlezone-style wireframe graphics with dual camera modes
 - Toggle between modes with 'V' key during gameplay
 - Start in 3D mode directly with `--3d` command-line flag
 
-**Visual features:**
+**3D Camera System:**
+The 3D mode features two distinct camera perspectives:
+
+- **Overview Mode** (initial state):
+  - Position: 150 units above board center
+  - Pitch: -60° (looking steeply down)
+  - Provides bird's-eye strategic view of entire battlefield
+
+- **First-Person Mode** (after TAB):
+  - Position: 20 units behind token, 30 units above ground
+  - Pitch: -15° (looking forward/slightly down)
+  - Immersive token eye-level perspective
+  - Press TAB to cycle through your tokens
+  - Q/E to rotate camera, Right-click+drag for mouse-look
+
+**3D Visual Feedback:**
+- **Hover Indicator**: White glowing wireframe on cell under mouse (ray casting)
+- **Valid Moves**: Green glowing wireframes show valid move destinations
+- **Real-time Updates**: Both indicators update every frame for responsive feedback
+- **Layered Rendering**: Hover (height=2.0) renders above valid moves (height=1.0)
+
+**2D/3D Common Visual features:**
 - Flowing animated lines connect active generators to the crystal
 - Enhanced generator glow effects
 - Lines automatically disappear when generators are captured
+
+See [docs/3D.md](docs/3D.md) for complete 3D mode documentation including camera architecture, controls, and development guide.
 
 #### `shared/` - Shared Definitions
 Constants, enums, and configuration objects shared between game logic and rendering.
@@ -174,6 +154,9 @@ Constants, enums, and configuration objects shared between game logic and render
 **Key files:**
 - `enums.py`: GamePhase, TurnPhase, PlayerColor, CellType, etc.
 - `constants.py`: All numeric constants (board size, token counts, capture requirements, colors)
+  - **3D Camera Constants**: `CAMERA_OVERVIEW_PITCH`, `CAMERA_FIRST_PERSON_PITCH`, `CAMERA_OVERVIEW_HEIGHT`, `CAMERA_FIRST_PERSON_HEIGHT`, `CAMERA_FIRST_PERSON_OFFSET`
+  - **Camera Behavior**: `CAMERA_ROTATION_INCREMENT` (15°), `MOUSE_LOOK_SENSITIVITY` (0.3)
+  - **Projection**: `CAMERA_FOV` (75°), `CAMERA_NEAR_PLANE`, `CAMERA_FAR_PLANE`
 - `corner_layout.py`: Corner position configurations for player deployment areas
   - `BoardCornerConfig`: Board-space corner deployment logic (3x3 deployment zones)
   - `UICornerConfig`: UI-space corner indicator and menu positioning
@@ -184,6 +167,88 @@ Constants, enums, and configuration objects shared between game logic and render
 - `logging_config.py`: Centralized logging configuration
 
 **Important:** When changing game rules, update constants in `shared/constants.py` rather than hardcoding values.
+
+#### `server/` - Unified Game Server (TCP + HTTP/WebSocket)
+Central multiplayer game server supporting both desktop and web clients.
+
+**Architecture:**
+The unified server runs on a single process with dual protocol support:
+- **TCP Server** (port 8888): Desktop Arcade clients using asyncio protocol
+- **HTTP/WebSocket Server** (port 8080): Web browser clients using aiohttp
+- **Single GameState**: All clients share one authoritative game state
+
+**Key modules:**
+- `game_server.py`: Main server handling all connections, routing, and coordination
+  - `_handle_new_connection()`: TCP connection handler with CONNECT/RECONNECT protocol
+  - `_handle_message()`: Routes incoming messages to appropriate handlers
+  - `_broadcast_game_state()`: Sends updates to all connected clients
+  - Reconnection support with 5-minute timeout window
+  
+- `lobby.py`: Lobby management for game creation/joining
+  - `LobbyManager`: Tracks available games and player readiness
+  - `GameStatus`: Enum for lobby, playing, and finished states
+  - Supports mixed lobbies (desktop + web clients simultaneously)
+  
+- `game_coordinator.py`: Active game session management
+  - `GameCoordinator`: Manages all running games
+  - `GameSession`: Per-game state wrapping `GameState`
+  - `AIActionExecutor`: Validates and executes player actions
+  
+- `websocket_handler.py`: WebSocket connection handler for web clients
+  - `WebSocketHandler`: Manages client connections and message routing
+  - Protocol translation between WebSocket and internal formats
+  - Handles authentication and player registration
+  
+- `http_handler.py`: HTTP server for static file serving
+  - Serves HTML/CSS/JS frontend from `web_server/static/`
+  - Serves `/static/*` assets
+  - Serves root `/` to load game client
+  
+- `ai_spawner.py`: AI player management
+  - Spawns AI processes for automated players
+  - Manages AI process lifecycle and cleanup
+  - Enables AI testing and demonstration games
+
+**Network Protocol:**
+Uses JSON-based protocol with 34+ message types including:
+- Connection: `CONNECT`, `RECONNECT`, `DISCONNECT`
+- Lobby: `CREATE_GAME`, `JOIN_GAME`, `READY`, `START_GAME`
+- Actions: `MOVE`, `ATTACK`, `DEPLOY`, `END_TURN`
+- Sync: `FULL_STATE`, `GAME_WON`
+- Communication: `CHAT`
+
+**Mixed Client Support:**
+- Desktop clients: TCP on port 8888
+- Web clients: HTTP/WebSocket on port 8080
+- Both types play together in the same game
+- All state updates broadcast to all clients
+
+**See [docs/NETWORK.md](docs/NETWORK.md) for complete protocol documentation.**
+
+#### `network/` - Network Protocol Layer
+Low-level networking implementation for TCP and binary message handling.
+
+**Key modules:**
+- `connection.py`: TCP connection wrapper with async message I/O
+- `protocol.py`: Binary protocol encoding/decoding and message factories
+- `messages.py`: Message type enums and client type tracking
+
+#### `web_server/` - Web Client (Babylon.js)
+Browser-based 3D client using Babylon.js 8 for rendering.
+
+**Architecture:**
+- **Modular JavaScript**: Separate files for rendering, WebSocket, camera, input, UI
+- **Babylon.js Renderer**: Wireframe graphics matching Tron/Battlezone aesthetic
+- **WebSocket Protocol**: Connects to unified server on port 8080
+- **Real-time Sync**: State updates via WebSocket, smooth animations
+
+**Key features:**
+- No modifications to game logic required
+- Plays alongside desktop clients on unified server
+- ArcRotateCamera for overview perspective
+- HUD with turn info and player status
+
+**See [docs/WEB.md](docs/WEB.md) for complete web client documentation.**
 
 #### `tests/` - Unit Tests
 276 pytest tests covering all game mechanics. Tests use pure game logic without rendering.
@@ -409,7 +474,7 @@ This means changes to token positions don't immediately affect capture/win statu
 
 ## Skills Available
 
-This repository has custom agent skills:
+This repository has custom Claude Code skills:
 
 - `/playtesting`: Automated AI gameplay testing to find bugs and verify mechanics
 - `/python`: Python package management using uv
