@@ -92,3 +92,10 @@ class CombatResult(Enum):
     HIT = auto()  # Attack hit, defender damaged
     KILLED = auto()  # Attack killed defender
     INVALID = auto()  # Invalid attack attempt
+
+
+class CrystalEffect(Enum):
+    """Effects applied by the crystal to players."""
+
+    FOG_OF_WAR = auto()  # Players can't see other players' tokens
+    PHANTOM_ENEMIES = auto()  # Players see illusion enemy tokens

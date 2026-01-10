@@ -238,6 +238,53 @@ async def execute_action(action: dict[str, Any]):
     return {"success": success, "message": message, "data": data}
 
 
+@app.post("/api/game/apply-effect")
+async def apply_crystal_effect(
+    player_id: str, effect_type: str, duration: int | None = None
+):
+    """
+    Apply a crystal effect to a player (for testing).
+
+    Args:
+        player_id: Player to affect (e.g., 'player_0')
+        effect_type: Effect type ('fog_of_war' or 'phantom_enemies')
+        duration: Optional duration in turns (defaults to 4)
+    """
+    if not game_manager.game_state:
+        raise HTTPException(status_code=404, detail="No active game")
+
+    from shared.enums import CrystalEffect
+
+    # Parse effect type
+    effect_map = {
+        "fog_of_war": CrystalEffect.FOG_OF_WAR,
+        "phantom_enemies": CrystalEffect.PHANTOM_ENEMIES,
+    }
+
+    effect = effect_map.get(effect_type.lower())
+    if not effect:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid effect type. Must be one of: {list(effect_map.keys())}",
+        )
+
+    # Validate player exists
+    if player_id not in game_manager.game_state.players:
+        raise HTTPException(status_code=404, detail=f"Player {player_id} not found")
+
+    # Apply effect
+    game_manager.game_state.apply_crystal_effect(player_id, effect, duration)
+
+    # Broadcast updated state
+    await game_manager.broadcast_state(action_type="crystal_effect_applied")
+
+    return {
+        "success": True,
+        "message": f"Applied {effect_type} to {player_id}",
+        "duration": duration or 4,
+    }
+
+
 @app.websocket("/ws/game")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time game state updates."""
