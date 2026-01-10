@@ -17,6 +17,7 @@ from game.player import Player
 from game.token import Token
 from game.generator import Generator
 from game.crystal import Crystal
+from game.crystal_effects import CrystalEffectsManager
 
 SERIALIZATION_VERSION = 1
 
@@ -32,6 +33,7 @@ class GameState:
         tokens: Dictionary of token_id -> Token
         generators: List of generator objects
         crystal: The power crystal object
+        crystal_effects: Manager for crystal effects (fog of war, phantom enemies)
         current_turn_player_id: ID of player whose turn it is
         turn_number: Current turn number
         phase: Current game phase
@@ -45,6 +47,7 @@ class GameState:
         default_factory=list
     )  # Will be list[Generator] when created
     crystal: "Crystal | None" = None  # Will be Crystal object when created
+    crystal_effects: CrystalEffectsManager = field(default_factory=CrystalEffectsManager)
     current_turn_player_id: PlayerID | None = None
     turn_number: int = 0
     phase: GamePhase = GamePhase.SETUP
@@ -435,9 +438,13 @@ class GameState:
         # Update generators
         from game.generator import GeneratorManager
 
-        newly_disabled = GeneratorManager.update_all_generators(
+        newly_disabled, capturing_players = GeneratorManager.update_all_generators(
             self.generators, tokens_by_position
         )
+
+        # Reduce crystal effect durations for players who captured generators
+        for generator_id, player_id in capturing_players.items():
+            self.crystal_effects.reduce_effect_durations_for_generator_capture(player_id)
 
         # Update crystal and check for winner
         from game.crystal import CrystalManager
@@ -481,6 +488,72 @@ class GameState:
         self.winner_id = player_id
         self.phase = GamePhase.ENDED
 
+    def apply_crystal_effect(
+        self,
+        player_id: PlayerID,
+        effect_type: "CrystalEffect",
+        duration: int | None = None
+    ) -> None:
+        """
+        Apply a crystal effect to a player.
+
+        Args:
+            player_id: Player to affect
+            effect_type: Type of effect (FOG_OF_WAR or PHANTOM_ENEMIES)
+            duration: Effect duration in turns (uses default if None)
+        """
+        from shared.enums import CrystalEffect
+        self.crystal_effects.apply_effect(player_id, effect_type, self.turn_number, duration)
+
+        # If phantom enemies effect, generate phantom tokens
+        if effect_type == CrystalEffect.PHANTOM_ENEMIES:
+            self.generate_phantom_tokens_for_player(player_id)
+
+    def generate_phantom_tokens_for_player(self, player_id: PlayerID) -> None:
+        """
+        Generate phantom tokens for a player affected by phantom enemies.
+
+        Args:
+            player_id: Player who will see phantom tokens
+        """
+        # Get other players
+        other_players = [pid for pid in self.players.keys() if pid != player_id]
+
+        # Get occupied positions
+        occupied = set()
+        for token in self.tokens.values():
+            if token.is_alive and token.is_deployed:
+                occupied.add(token.position)
+
+        # Generate phantoms
+        self.crystal_effects.generate_phantom_tokens(
+            player_id,
+            other_players,
+            self.board.width,
+            self.board.height,
+            occupied
+        )
+
+    def get_visible_tokens_for_player(self, player_id: PlayerID) -> tuple[list[Token], list]:
+        """
+        Get tokens visible to a specific player (considering fog of war and phantoms).
+
+        Args:
+            player_id: Player viewing the board
+
+        Returns:
+            Tuple of (visible_real_tokens, phantom_tokens)
+        """
+        # Get all alive, deployed tokens
+        all_tokens = [t for t in self.tokens.values() if t.is_alive and t.is_deployed]
+
+        # Filter and get phantoms
+        return self.crystal_effects.get_tokens_for_player_view(
+            player_id,
+            all_tokens,
+            lambda t: t.player_id
+        )
+
     def to_dict(self) -> dict:
         """Convert game state to dictionary for serialization."""
         return {
@@ -490,6 +563,7 @@ class GameState:
             "tokens": {tid: t.to_dict() for tid, t in self.tokens.items()},
             "generators": [g.to_dict() for g in self.generators],
             "crystal": self.crystal.to_dict() if self.crystal else None,
+            "crystal_effects": self.crystal_effects.to_dict(),
             "current_turn_player_id": self.current_turn_player_id,
             "turn_number": self.turn_number,
             "phase": self.phase.value,
@@ -518,6 +592,10 @@ class GameState:
 
         crystal_data = data.get("crystal")
         state.crystal = Crystal.from_dict(crystal_data) if crystal_data else None
+
+        # Crystal effects may be absent in older saves
+        effects_data = data.get("crystal_effects")
+        state.crystal_effects = CrystalEffectsManager.from_dict(effects_data) if effects_data else CrystalEffectsManager()
 
         state.current_turn_player_id = data["current_turn_player_id"]
         state.turn_number = data["turn_number"]
