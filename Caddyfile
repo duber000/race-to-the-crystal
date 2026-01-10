@@ -1,14 +1,20 @@
+{
+    order mercure before respond
+}
+
 # Development/local configuration
 http://:80 {
-    # Proxy Mercure SSE requests to the Mercure container (with anonymous access via JWT query param)
-    reverse_proxy /.well-known/mercure* race-mercure:3000 {
-        header_up Host {http.request.header.Host}
+    # Embedded Mercure Hub configuration
+    mercure {
+        # JWT authentication keys from environment variables
+        publisher_jwt {env.MERCURE_PUBLISHER_JWT}
+        subscriber_jwt {env.MERCURE_SUBSCRIBER_JWT}
 
-        # CORS headers for EventSource (Server-Sent Events)
-        header_down Access-Control-Allow-Origin *
-        header_down Access-Control-Allow-Methods "GET, POST, OPTIONS"
-        header_down Access-Control-Allow-Headers "Authorization, Content-Type, Cache-Control"
-        header_down Access-Control-Expose-Headers "Link"
+        # Allow anonymous subscribers (public updates)
+        anonymous
+
+        # CORS configuration
+        cors_origins *
     }
 
     # Proxy to FastAPI backend
@@ -18,11 +24,5 @@ http://:80 {
         header_up X-Real-IP {http.request.remote.host}
         header_up X-Forwarded-For {http.request.remote.host}
         header_up X-Forwarded-Proto {http.request.proto}
-    }
-
-    # WebSocket support for real-time game updates
-    reverse_proxy /ws* race-game-api:8080 {
-        header_up Connection "upgrade"
-        header_up Upgrade "websocket"
     }
 }

@@ -7,7 +7,6 @@ This directory contains systemd quadlet files for containerized deployment of Ra
 - **game-net.network** - Podman network configuration (game-net)
 - **game-api.container** - FastAPI game server container
 - **caddy.container** - Caddy reverse proxy with Mercure support
-- **mercure.container** - Mercure hub for real-time updates
 
 ## Prerequisites
 
@@ -36,21 +35,19 @@ cp ../Caddyfile ~/.config/containers/systemd/
 
 # Reload systemd and start services
 systemctl --user daemon-reload
-systemctl --user enable --now game-api.service caddy.service mercure.service
+systemctl --user enable --now game-api.service caddy.service
 ```
 
 ## Container Names (DNS)
 
 Podman's internal DNS resolves container names:
 - `race-game-api` - Game API server (listens on port 8080 internally)
-- `race-caddy` - Caddy reverse proxy
-- `race-mercure` - Mercure SSE hub
+- `race-caddy` - Caddy reverse proxy with embedded Mercure
 
 ## Ports
 
 - **Caddy**: http://127.0.0.1:8880 (internal port 80)
 - **Game API**: http://race-game-api:8080 (internal), http://127.0.0.1:8888 (TCP desktop clients)
-- **Mercure**: http://race-mercure:3000 (internal SSE hub)
 
 ## Service Management
 
@@ -65,7 +62,7 @@ journalctl --user -u game-api.service -f
 systemctl --user restart caddy.service
 
 # Stop all services
-systemctl --user stop game-api.service caddy.service mercure.service
+systemctl --user stop game-api.service caddy.service
 ```
 
 ## Troubleshooting
@@ -73,8 +70,8 @@ systemctl --user stop game-api.service caddy.service mercure.service
 ### Check Service Status
 View status of all game services:
 ```bash
-systemctl --user list-units | grep -E "(game-api|mercure|caddy|game-net)"
-systemctl --user status game-api.service caddy.service mercure.service
+systemctl --user list-units | grep -E "(game-api|caddy|game-net)"
+systemctl --user status game-api.service caddy.service
 ```
 
 ### Check Container Logs
@@ -87,7 +84,6 @@ journalctl --user -u caddy.service -f
 # Via podman
 podman logs race-game-api --tail 50
 podman logs race-caddy --tail 50
-podman logs race-mercure --tail 50
 ```
 
 ### Check Container Status
@@ -175,7 +171,6 @@ ss -tlnp | grep -E "(8880|8888|8080)"
 
 **Network Configuration**:
 The game-net network uses 10.89.0.0/24:
-- race-mercure: 10.89.0.2
 - race-game-api: 10.89.0.3
 - race-caddy: 10.89.0.4
 
