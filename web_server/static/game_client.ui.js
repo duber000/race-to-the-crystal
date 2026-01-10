@@ -26,10 +26,17 @@ class UIManager {
     // ==========================================================================
 
     showScreen(screenName) {
+        console.log(`[UI] Switching to screen: ${screenName}`);
+
         document.getElementById("connection-screen").style.display = "none";
         document.getElementById("lobby-browser-screen").style.display = "none";
         document.getElementById("waiting-room-screen").style.display = "none";
-        this.canvas.style.display = "none";
+
+        if (this.canvas) {
+            this.canvas.style.display = "none";
+        } else {
+            console.warn("[UI] Canvas not set!");
+        }
 
         const hud = document.getElementById("hud");
         const controls = document.getElementById("controls");
@@ -43,23 +50,44 @@ class UIManager {
             case 'disconnected':
             case 'connecting':
                 document.getElementById("connection-screen").style.display = "block";
+                console.log("[UI] Showing connection screen");
                 break;
             case 'connected':
                 document.getElementById("lobby-browser-screen").style.display = "block";
+                console.log("[UI] Showing lobby browser");
                 break;
             case 'lobby':
                 document.getElementById("waiting-room-screen").style.display = "block";
+                console.log("[UI] Showing waiting room");
                 break;
             case 'game':
             case 'game_starting':
                 document.getElementById("waiting-room-screen").style.display = "block";
+                console.log("[UI] Showing game starting (waiting room)");
                 break;
             case 'in_game':
-                this.canvas.style.display = "block";
-                if (hud) hud.style.display = "block";
-                if (controls) controls.style.display = "block";
-                if (connectionStatus) connectionStatus.style.display = "block";
+                if (this.canvas) {
+                    this.canvas.style.display = "block";
+                    console.log("[UI] Canvas displayed");
+                } else {
+                    console.error("[UI] Cannot show canvas - not set!");
+                }
+                if (hud) {
+                    hud.style.display = "block";
+                    console.log("[UI] HUD displayed");
+                }
+                if (controls) {
+                    controls.style.display = "block";
+                    console.log("[UI] Controls displayed");
+                }
+                if (connectionStatus) {
+                    connectionStatus.style.display = "block";
+                    console.log("[UI] Connection status displayed");
+                }
+                console.log("[UI] ✓ In-game screen fully displayed");
                 break;
+            default:
+                console.warn(`[UI] Unknown screen: ${screenName}`);
         }
     }
 

@@ -102,7 +102,10 @@ class GameClient {
         });
 
         this.wsClient.on('game_starting', () => {
-            this.updateUIState(STATE.GAME_STARTING);
+            // Only transition to game_starting if not already in game
+            if (this.wsClient.getConnectionState() !== STATE.IN_GAME) {
+                this.updateUIState(STATE.GAME_STARTING);
+            }
         });
 
         this.wsClient.on('full_state', (data) => {
@@ -125,6 +128,7 @@ class GameClient {
     }
 
     updateUIState(state) {
+        console.log(`[GameClient] updateUIState called with state: ${state}`);
         switch (state) {
             case STATE.DISCONNECTED:
                 this.ui.showScreen('disconnected');
@@ -143,9 +147,13 @@ class GameClient {
                 this.ui.showScreen('game_starting');
                 break;
             case STATE.IN_GAME:
+                console.log("[GameClient] Transitioning to IN_GAME state...");
                 this.ui.showScreen('in_game');
                 this.initGameModules();
+                console.log("[GameClient] ✓ IN_GAME transition complete");
                 break;
+            default:
+                console.warn(`[GameClient] Unknown state: ${state}`);
         }
     }
 
@@ -158,13 +166,24 @@ class GameClient {
     }
 
     handleFullState(data) {
+        console.log("[GameClient] handleFullState called");
+        console.log(`[GameClient] Current connection state: ${this.wsClient.getConnectionState()}`);
+
         if (this.wsClient.getConnectionState() !== STATE.IN_GAME) {
+            console.log("[GameClient] First FULL_STATE - initializing game");
+
+            // Update WebSocket client's connection state
+            this.wsClient.connectionState = STATE.IN_GAME;
+            console.log(`[GameClient] Updated connection state to: ${STATE.IN_GAME}`);
+
             this.updateUIState(STATE.IN_GAME);
 
             if (data.game_state && data.game_state.perspective_player_id) {
                 this.localPlayerId = data.game_state.perspective_player_id;
                 console.log(`Local player ID: ${this.localPlayerId}`);
             }
+        } else {
+            console.log("[GameClient] Subsequent FULL_STATE - already in game");
         }
 
         if (data.game_state) {

@@ -222,8 +222,14 @@ class WebSocketClient {
             case "START_GAME":
                 console.log("Game starting!");
                 this.subscribeMercure();
-                this.connectionState = STATE.GAME_STARTING;
-                this.emit('game_starting');
+                // Only update state if not already in game (FULL_STATE may have already arrived)
+                if (this.connectionState !== STATE.IN_GAME) {
+                    this.connectionState = STATE.GAME_STARTING;
+                    this.emit('game_starting');
+                    console.log("State set to GAME_STARTING");
+                } else {
+                    console.log("Already IN_GAME, ignoring START_GAME state change");
+                }
                 break;
 
             case "FULL_STATE":

@@ -87,7 +87,7 @@ class HTTPHandler:
         link_headers = []
 
         # Preload critical JavaScript files
-        link_headers.append('</static/babylon.js>; rel="preload"; as="script"')
+        # Note: babylon.js is loaded from CDN, not /static/, so we don't preload it here
         link_headers.append('</static/game_client.js>; rel="preload"; as="script"')
         link_headers.append('</static/mercure_client.js>; rel="preload"; as="script"')
 
