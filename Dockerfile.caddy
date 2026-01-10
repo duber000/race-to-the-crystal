@@ -1,5 +1,5 @@
-# Race to the Crystal - Caddy with Mercure/Vulcain
-# Uses custom Caddy binary with mercure and vulcain plugins
+# Race to the Crystal - Caddy with Mercure
+# Uses custom Caddy binary with mercure plugin
 
 FROM caddy:2-alpine
 

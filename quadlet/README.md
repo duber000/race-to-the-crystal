@@ -6,12 +6,12 @@ This directory contains systemd quadlet files for containerized deployment of Ra
 
 - **game-net.network** - Podman network configuration (game-net)
 - **game-api.container** - FastAPI game server container
-- **caddy.container** - Caddy reverse proxy with Mercure/Vulcain support
+- **caddy.container** - Caddy reverse proxy with Mercure support
 - **mercure.container** - Mercure hub for real-time updates
 
 ## Prerequisites
 
-1. **Build the Caddy image** (requires custom binary with mercure/vulcain plugins):
+1. **Build the Caddy image** (requires custom binary with mercure plugin):
    ```bash
    chmod +x caddy
    podman build -f Dockerfile.caddy -t localhost/race-caddy:latest .

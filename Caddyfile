@@ -1,8 +1,5 @@
 # Development/local configuration
 http://:80 {
-    # Enable Vulcain push/preload support
-    vulcain
-
     # Proxy Mercure SSE requests to the Mercure container (with anonymous access via JWT query param)
     reverse_proxy /.well-known/mercure* race-mercure:3000 {
         header_up Host {http.request.header.Host}

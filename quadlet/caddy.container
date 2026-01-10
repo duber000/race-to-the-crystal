@@ -1,5 +1,5 @@
 [Unit]
-Description=Caddy Web Server with Mercure and Vulcain Support
+Description=Caddy Web Server with Mercure Support
 Documentation=https://caddyserver.com
 After=network-online.target game-api.service
 Wants=network-online.target

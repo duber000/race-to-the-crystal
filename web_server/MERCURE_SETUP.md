@@ -1,12 +1,10 @@
-# Mercure and Vulcain Integration Guide
+# Mercure Integration Guide
 
-This document explains how to use Mercure and Vulcain with the Race to the Crystal web server for real-time updates and optimized resource loading.
+This document explains how to use Mercure with the Race to the Crystal web server for real-time updates.
 
 ## Overview
 
 **Mercure** is a protocol for pushing data updates to web browsers using Server-Sent Events (SSE). It enables real-time game state updates without the overhead of WebSockets.
-
-**Vulcain** is a protocol for server-side resource preloading using HTTP Link headers. It allows the browser to load resources before JavaScript requests them, improving performance.
 
 ## Architecture
 
@@ -133,17 +131,7 @@ The server will start on `http://localhost:8000`.
    http://localhost:8000/
    ```
 
-2. **Check Vulcain headers:**
-   ```bash
-   curl -I http://localhost:8000/
-   ```
-
-   You should see `Link` headers with `rel="preload"`:
-   ```
-   Link: </static/game_client.js>; rel="preload"; as="script", ...
-   ```
-
-3. **Test Mercure connection:**
+2. **Test Mercure connection:**
 
    Open browser console and check for:
    ```
@@ -151,7 +139,7 @@ The server will start on `http://localhost:8000`.
    ✓ Mercure EventSource connected
    ```
 
-4. **Test real-time updates:**
+3. **Test real-time updates:**
 
    Make a move in the game. You should see:
    ```
@@ -220,18 +208,6 @@ To integrate with the existing Babylon.js client in `game_client.js`:
 
 ## How It Works
 
-### Vulcain Resource Preloading
-
-When you visit `http://localhost:8000/`, the server sends HTTP Link headers:
-
-```http
-Link: </static/game_client.js>; rel="preload"; as="script",
-      </static/babylon.js>; rel="preload"; as="script",
-      </api/game/state>; rel="preload"; as="fetch"
-```
-
-If you're using a Vulcain-compatible CDN or proxy (like Cloudflare with Early Hints), these resources will be pushed to the browser before the HTML is fully parsed, significantly reducing load time.
-
 ### Mercure Real-Time Updates
 
 1. **Game action occurs:**
@@ -269,13 +245,6 @@ If you're using a Vulcain-compatible CDN or proxy (like Cloudflare with Early Hi
 | Fallback | Easy | Complex |
 | Server Resources | Lower | Higher |
 
-### Vulcain Benefits
-
-- **Faster Page Loads:** Resources preloaded before JavaScript runs
-- **HTTP/2 Server Push:** Compatible with modern CDNs
-- **Bandwidth Efficient:** Only preloads what's needed
-- **Simple Integration:** Just add Link headers
-
 ## Troubleshooting
 
 ### Mercure Not Connecting
@@ -294,17 +263,6 @@ If you're using a Vulcain-compatible CDN or proxy (like Cloudflare with Early Hi
    - CORS issues: Make sure Mercure hub allows your origin
    - Network errors: Check firewall/proxy settings
 
-### Vulcain Headers Not Working
-
-1. **Verify headers are sent:**
-   ```bash
-   curl -I http://localhost:8000/
-   ```
-
-2. **Check for Vulcain-compatible proxy:**
-   - Vulcain requires a compatible reverse proxy or CDN
-   - Without it, headers are sent but not acted upon (graceful degradation)
-
 ### Falling Back to WebSocket
 
 If Mercure is not available, the client automatically falls back to WebSocket. To force WebSocket mode, set:
@@ -319,15 +277,13 @@ For production, consider:
 
 1. **Use HTTPS for Mercure hub**
 2. **Set up proper JWT authentication**
-3. **Use a CDN with Vulcain support** (Cloudflare, Fastly, etc.)
-4. **Configure CORS properly**
-5. **Set up monitoring for Mercure connection health**
-6. **Use Redis for multi-instance Mercure coordination**
+3. **Configure CORS properly**
+4. **Set up monitoring for Mercure connection health**
+5. **Use Redis for multi-instance Mercure coordination**
 
 ## Further Reading
 
 - [Mercure Protocol](https://mercure.rocks/)
-- [Vulcain Protocol](https://vulcain.rocks/)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Server-Sent Events (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events)
 

@@ -2,8 +2,7 @@
 FastAPI web server for Race to the Crystal.
 
 Provides REST API and WebSocket endpoints for game state management
-and serves the Babylon.js 3D frontend with Mercure real-time updates
-and Vulcain resource preloading.
+and serves the Babylon.js 3D frontend with Mercure real-time updates.
 """
 
 import json
@@ -11,7 +10,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Response
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -183,18 +182,8 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
 @app.get("/")
-async def root(response: Response):
-    """Serve the main game page with Vulcain resource preloading headers."""
-    # Add Vulcain Link headers for resource preloading
-    vulcain_links = [
-        '</static/game_client.js>; rel="preload"; as="script"',
-        '</static/babylon.js>; rel="preload"; as="script"',
-        '</api/game/state>; rel="preload"; as="fetch"',
-        '</api/config>; rel="preload"; as="fetch"',
-    ]
-
-    response.headers["Link"] = ", ".join(vulcain_links)
-
+async def root():
+    """Serve the main game page."""
     html_file = Path(__file__).parent / "templates" / "index.html"
     if html_file.exists():
         return FileResponse(html_file)
@@ -211,7 +200,7 @@ async def get_config():
         "mercure_topic": f"{game_manager.mercure.config.topic_prefix}/{game_manager.game_id}",
         "mercure_enabled": game_manager.mercure.enabled,
         "api_version": "1.0.0",
-        "features": ["mercure", "vulcain", "websocket_fallback", "babylon3d"],
+        "features": ["mercure", "websocket_fallback", "babylon3d"],
     }
 
 
