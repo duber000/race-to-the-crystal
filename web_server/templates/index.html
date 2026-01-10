@@ -109,6 +109,65 @@
             color: #f00;
         }
 
+        /* Crystal Effects Indicator */
+        #crystal-effects-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 99;
+            pointer-events: none;
+        }
+
+        .effects-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .effect-badge {
+            background: rgba(139, 0, 0, 0.9);
+            border: 2px solid #ff4444;
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .effect-icon {
+            font-size: 18px;
+            filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8));
+        }
+
+        .effect-name {
+            font-weight: bold;
+            flex: 1;
+        }
+
+        .effect-duration {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            color: #ffaaaa;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+                border-color: #ff4444;
+            }
+            50% {
+                box-shadow: 0 0 25px rgba(255, 68, 68, 0.8);
+                border-color: #ff6666;
+            }
+        }
+
         /* Lobby Screens - Tron Aesthetic */
         #connection-screen, #lobby-browser-screen, #waiting-room-screen {
             position: fixed;
@@ -333,6 +392,9 @@
         <div class="status-line">Current Player: <span id="currentPlayer">-</span></div>
         <div id="playersList"></div>
     </div>
+
+    <!-- Crystal Effects Indicator -->
+    <div id="crystal-effects-indicator" style="display: none;"></div>
 
     <div id="controls">
         <h3>Controls</h3>

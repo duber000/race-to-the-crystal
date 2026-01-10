@@ -17,6 +17,11 @@ const TurnPhase = {
     END_TURN: 3,
 };
 
+const CrystalEffect = {
+    FOG_OF_WAR: 1,
+    PHANTOM_ENEMIES: 2,
+};
+
 const CYAN_GLOW = new BABYLON.Color3(0, 0.78, 0.78);
 const ORANGE_GLOW = new BABYLON.Color3(1, 0.65, 0);
 const MAGENTA_GLOW = new BABYLON.Color3(1, 0, 1);

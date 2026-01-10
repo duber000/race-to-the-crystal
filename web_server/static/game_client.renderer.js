@@ -26,6 +26,7 @@ class Renderer3D {
 
         this.board3D = [];
         this.tokens3D = new Map();
+        this.phantomTokens3D = new Map();
         this.specialCellMeshes = [];
         this.validMoveMeshes = [];
         this.hoverMesh = null;
@@ -38,6 +39,9 @@ class Renderer3D {
         this.crystalMesh = null;
         this.explosionParticles = [];
         this.confettiParticles = [];
+
+        // Local player ID for crystal effects filtering
+        this.localPlayerId = null;
 
         this.animationTime = 0;
         this.animationCallbacks = new Map();
@@ -376,19 +380,69 @@ class Renderer3D {
     // Token Rendering
     // ==========================================================================
 
+    /**
+     * Check if local player has a specific crystal effect active
+     */
+    hasEffect(gameState, effectType) {
+        if (!this.localPlayerId || !gameState.crystal_effects) {
+            return false;
+        }
+
+        const playerEffects = gameState.crystal_effects.player_effects?.[this.localPlayerId];
+        if (!playerEffects || !playerEffects.active_effects) {
+            return false;
+        }
+
+        return playerEffects.active_effects.some(
+            (effect) => effect.effect_type === effectType && effect.turns_remaining > 0
+        );
+    }
+
+    /**
+     * Filter tokens based on fog of war effect
+     */
+    filterVisibleTokens(gameState, allTokens) {
+        const hasFog = this.hasEffect(gameState, CrystalEffect.FOG_OF_WAR);
+
+        if (!hasFog) {
+            return allTokens;
+        }
+
+        // With fog of war, only show own tokens
+        return allTokens.filter((token) => token.player_id === this.localPlayerId);
+    }
+
+    /**
+     * Get phantom tokens for local player
+     */
+    getPhantomTokens(gameState) {
+        if (!this.localPlayerId || !gameState.crystal_effects) {
+            return [];
+        }
+
+        const playerEffects = gameState.crystal_effects.player_effects?.[this.localPlayerId];
+        return playerEffects?.phantom_tokens || [];
+    }
+
     updateTokens(gameState) {
-        const existingTokenIds = new Set();
+        // Collect all alive, deployed tokens
+        const allTokens = [];
         for (const player of Object.values(gameState.players)) {
             for (const tokenId of player.token_ids) {
                 const token = gameState.tokens[tokenId];
                 if (token && token.is_alive && token.is_deployed) {
-                    existingTokenIds.add(tokenId);
+                    allTokens.push(token);
                 }
             }
         }
 
+        // Filter visible tokens based on crystal effects
+        const visibleTokens = this.filterVisibleTokens(gameState, allTokens);
+        const visibleTokenIds = new Set(visibleTokens.map((t) => t.id));
+
+        // Remove tokens that are no longer visible
         for (const [tokenId, tokenData] of this.tokens3D) {
-            if (!existingTokenIds.has(tokenId)) {
+            if (!visibleTokenIds.has(tokenId)) {
                 tokenData.mesh.dispose();
                 if (tokenData.healthLabel) {
                     tokenData.healthLabel.dispose();
@@ -397,18 +451,55 @@ class Renderer3D {
             }
         }
 
-        for (const player of Object.values(gameState.players)) {
-            const playerColor = PLAYER_COLORS[player.color] || PLAYER_COLORS[0];
+        // Update or create visible tokens
+        for (const token of visibleTokens) {
+            const player = Object.values(gameState.players).find((p) =>
+                p.token_ids.includes(token.id)
+            );
+            const playerColor = player ? PLAYER_COLORS[player.color] || PLAYER_COLORS[0] : PLAYER_COLORS[0];
 
-            for (const tokenId of player.token_ids) {
-                const token = gameState.tokens[tokenId];
-                if (token && token.is_alive && token.is_deployed) {
-                    if (this.tokens3D.has(tokenId)) {
-                        this.updateTokenPosition(tokenId, token);
-                    } else {
-                        this.createToken3D(token, playerColor);
-                    }
+            if (this.tokens3D.has(token.id)) {
+                this.updateTokenPosition(token.id, token);
+            } else {
+                this.createToken3D(token, playerColor);
+            }
+        }
+
+        // Update phantom tokens
+        this.updatePhantomTokens(gameState);
+    }
+
+    /**
+     * Update phantom tokens based on crystal effects
+     */
+    updatePhantomTokens(gameState) {
+        const phantoms = this.getPhantomTokens(gameState);
+        const phantomIds = new Set(phantoms.map((p) => p.phantom_id));
+
+        // Remove old phantoms
+        for (const [phantomId, phantomData] of this.phantomTokens3D) {
+            if (!phantomIds.has(phantomId)) {
+                phantomData.mesh.dispose();
+                if (phantomData.healthLabel) {
+                    phantomData.healthLabel.dispose();
                 }
+                this.phantomTokens3D.delete(phantomId);
+            }
+        }
+
+        // Create or update phantoms
+        for (const phantom of phantoms) {
+            if (this.phantomTokens3D.has(phantom.phantom_id)) {
+                // Update existing phantom position if needed
+                const phantomData = this.phantomTokens3D.get(phantom.phantom_id);
+                const worldX = phantom.position[0] * CELL_SIZE + CELL_SIZE / 2;
+                const worldZ = phantom.position[1] * CELL_SIZE + CELL_SIZE / 2;
+                phantomData.mesh.position.x = worldX;
+                phantomData.mesh.position.z = worldZ;
+            } else {
+                // Create new phantom
+                const playerColor = PLAYER_COLORS[phantom.apparent_player_id] || PLAYER_COLORS[0];
+                this.createPhantomToken3D(phantom, playerColor);
             }
         }
     }
@@ -440,6 +531,111 @@ class Renderer3D {
         });
 
         return hexagon;
+    }
+
+    /**
+     * Create a phantom token with distinctive visual style
+     */
+    createPhantomToken3D(phantom, playerColor) {
+        const worldX = phantom.position[0] * CELL_SIZE + CELL_SIZE / 2;
+        const worldZ = phantom.position[1] * CELL_SIZE + CELL_SIZE / 2;
+
+        const hexagon = BABYLON.MeshBuilder.CreateCylinder(
+            `phantom_${phantom.phantom_id}`,
+            { diameter: CELL_SIZE * 0.9, height: TOKEN_HEIGHT, tessellation: 6 },
+            this.scene,
+        );
+        hexagon.position = new BABYLON.Vector3(worldX, TOKEN_HEIGHT / 2, worldZ);
+
+        const material = new BABYLON.StandardMaterial(
+            `phantomMat_${phantom.phantom_id}`,
+            this.scene
+        );
+        material.emissiveColor = playerColor;
+        material.wireframe = true;
+        material.alpha = 0.5; // Semi-transparent for phantom effect
+
+        hexagon.material = material;
+
+        // Create health label for phantom
+        const healthLabel = this.createPhantomHealthLabel(phantom, hexagon.position);
+
+        // Add flickering animation to make it look illusory
+        this.addPhantomFlickerAnimation(hexagon, material);
+
+        this.phantomTokens3D.set(phantom.phantom_id, {
+            mesh: hexagon,
+            phantom: phantom,
+            color: playerColor,
+            healthLabel: healthLabel,
+        });
+
+        return hexagon;
+    }
+
+    /**
+     * Create health label for phantom token
+     */
+    createPhantomHealthLabel(phantom, position) {
+        const plane = BABYLON.MeshBuilder.CreatePlane(
+            `phantomHealthLabel_${phantom.phantom_id}`,
+            { width: CELL_SIZE * 0.6, height: CELL_SIZE * 0.3 },
+            this.scene,
+        );
+
+        plane.position = new BABYLON.Vector3(position.x, position.y, position.z + TOKEN_HEIGHT);
+        plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+
+        const texture = new BABYLON.DynamicTexture(
+            `phantomHealthTexture_${phantom.phantom_id}`,
+            { width: 256, height: 128 },
+            this.scene,
+        );
+
+        const ctx = texture.getContext();
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, 256, 128);
+        ctx.font = "bold 80px monospace";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)"; // Semi-transparent text
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`${phantom.apparent_health}hp`, 128, 64);
+        texture.update();
+
+        const material = new BABYLON.StandardMaterial(
+            `phantomHealthMat_${phantom.phantom_id}`,
+            this.scene
+        );
+        material.diffuseTexture = texture;
+        material.emissiveTexture = texture;
+        material.opacityTexture = texture;
+        material.alpha = 0.7;
+        plane.material = material;
+
+        return plane;
+    }
+
+    /**
+     * Add flickering animation to phantom token
+     */
+    addPhantomFlickerAnimation(mesh, material) {
+        const flicker = new BABYLON.Animation(
+            `phantomFlicker_${mesh.name}`,
+            "material.alpha",
+            30,
+            BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+            BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE
+        );
+
+        const keys = [
+            { frame: 0, value: 0.5 },
+            { frame: 15, value: 0.3 },
+            { frame: 30, value: 0.5 },
+        ];
+
+        flicker.setKeys(keys);
+        mesh.animations = [flicker];
+        this.scene.beginAnimation(mesh, 0, 30, true);
     }
 
     createHealthLabel(token, position) {

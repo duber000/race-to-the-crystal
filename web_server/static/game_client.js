@@ -189,6 +189,10 @@ class GameClient {
 
       if (data.game_state && data.game_state.perspective_player_id) {
         this.localPlayerId = data.game_state.perspective_player_id;
+        // Set local player ID on renderer for crystal effects
+        if (this.renderer) {
+          this.renderer.localPlayerId = this.localPlayerId;
+        }
       }
     }
 

@@ -470,6 +470,54 @@ class UIManager {
             `;
             playersList.appendChild(playerDiv);
         }
+
+        // Update crystal effects indicator
+        this.updateCrystalEffectsIndicator(gameState, localPlayerId);
+    }
+
+    /**
+     * Update the crystal effects indicator showing active debuffs
+     */
+    updateCrystalEffectsIndicator(gameState, localPlayerId) {
+        const indicator = document.getElementById("crystal-effects-indicator");
+        if (!indicator) return;
+
+        const playerEffects = gameState.crystal_effects?.player_effects?.[localPlayerId];
+
+        if (!playerEffects || !playerEffects.active_effects || playerEffects.active_effects.length === 0) {
+            indicator.innerHTML = "";
+            indicator.style.display = "none";
+            return;
+        }
+
+        const activeEffects = playerEffects.active_effects.filter(e => e.turns_remaining > 0);
+
+        if (activeEffects.length === 0) {
+            indicator.innerHTML = "";
+            indicator.style.display = "none";
+            return;
+        }
+
+        indicator.style.display = "block";
+
+        let html = '<div class="effects-panel">';
+        for (const effect of activeEffects) {
+            const effectName = effect.effect_type === CrystalEffect.FOG_OF_WAR
+                ? "Fog of War"
+                : "Phantom Enemies";
+            const icon = effect.effect_type === CrystalEffect.FOG_OF_WAR ? "🌫️" : "👻";
+
+            html += `
+                <div class="effect-badge">
+                    <span class="effect-icon">${icon}</span>
+                    <span class="effect-name">${effectName}</span>
+                    <span class="effect-duration">${effect.turns_remaining} turn${effect.turns_remaining !== 1 ? 's' : ''}</span>
+                </div>
+            `;
+        }
+        html += '</div>';
+
+        indicator.innerHTML = html;
     }
 
     // ==========================================================================
