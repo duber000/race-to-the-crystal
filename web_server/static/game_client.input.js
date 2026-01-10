@@ -66,6 +66,24 @@ class InputHandler {
         this.canvas.addEventListener("contextmenu", (e) => {
             e.preventDefault();
         });
+
+        this.canvas.addEventListener("mousedown", (e) => {
+            if (e.button === 2) {
+                this.cameraController.activateMouseLook(e.clientX, e.clientY);
+            }
+        });
+
+        this.canvas.addEventListener("mouseup", (e) => {
+            if (e.button === 2) {
+                this.cameraController.deactivateMouseLook();
+            }
+        });
+
+        this.canvas.addEventListener("mousemove", (e) => {
+            if (this.cameraController.mouseLookActive) {
+                this.cameraController.handleMouseMotion(e.movementX, e.movementY);
+            }
+        });
     }
 
     handlePointerMove(pointerInfo) {
@@ -155,7 +173,6 @@ class InputHandler {
     setupKeyboardListeners() {
         window.addEventListener("keydown", (event) => {
             const key = event.key.toLowerCase();
-            console.log("Key pressed:", event.key, "->", key, "| Camera mode:", this.cameraController.cameraMode);
 
             switch (key) {
                 case " ":

@@ -632,9 +632,16 @@ class Renderer3D {
             if (this.scene) {
                 this.animationTime += 0.016;
                 this.updateAnimations();
+                if (this._cameraUpdateCallback) {
+                    this._cameraUpdateCallback();
+                }
                 this.scene.render();
             }
         });
+    }
+
+    setCameraUpdateCallback(callback) {
+        this._cameraUpdateCallback = callback;
     }
 
     updateAnimations() {

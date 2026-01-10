@@ -65,14 +65,15 @@ class CameraController {
             }
             this.canvas.focus();
             this.canvas.setAttribute("tabindex", "1");
+            return this.firstPersonCamera;
         } else {
             this.cameraMode = "overview";
             this.firstPersonCamera.detachControl(this.canvas);
             this.scene.activeCamera = this.camera;
             this.camera.attachControl(this.canvas, true);
             this.canvas.focus();
+            return this.camera;
         }
-        return this.cameraMode;
     }
 
     updateFirstPersonCamera(token) {

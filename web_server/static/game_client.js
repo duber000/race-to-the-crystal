@@ -27,6 +27,7 @@ class GameClient {
         this.gameState = null;
         this.localPlayerId = null;
         this.selectedTokenId = null;
+        this.controlledTokenId = null;
         this.validMoves = new Set();
         this.turnPhase = TurnPhase.MOVEMENT;
 
@@ -215,7 +216,21 @@ class GameClient {
             () => this.wsClient.getConnectionState()
         );
 
+        this.inputHandler.setupEventListeners();
         this.setupInputHandlers();
+
+        this.renderer.setCameraUpdateCallback(() => {
+            if (this.cameraController.cameraMode === "firstperson" && this.gameState && this.controlledTokenId) {
+                const token = this.gameState.tokens[this.controlledTokenId];
+                if (token && token.is_alive && token.is_deployed) {
+                    console.log("Updating camera for token:", this.controlledTokenId, "at", token.position);
+                    this.cameraController.updateFirstPersonCamera(token);
+                } else {
+                    console.log("Token not valid:", this.controlledTokenId, token);
+                }
+            }
+        });
+
         this.renderer.startRenderLoop();
 
         console.log("Game modules initialized");
@@ -333,9 +348,24 @@ class GameClient {
                 break;
             case 'camera_toggle':
                 this.renderer.camera = this.cameraController.toggleCameraMode();
+                if (this.cameraController.cameraMode === "firstperson") {
+                    console.log("Entering first-person mode");
+                    const aliveTokens = this.getAliveTokens();
+                    console.log("Alive tokens:", aliveTokens.length);
+                    if (aliveTokens.length > 0) {
+                        this.controlledTokenId = aliveTokens[0].id;
+                        console.log("Auto-selected token:", this.controlledTokenId);
+                    } else {
+                        console.log("No alive tokens to select!");
+                    }
+                }
                 break;
             case 'cycle_token':
-                this.cameraController.cycleControlledToken(this.getAliveTokens());
+                const newTokenId = this.cameraController.cycleControlledToken(this.getAliveTokens());
+                if (newTokenId) {
+                    this.controlledTokenId = newTokenId;
+                    console.log("Cycled to token:", this.controlledTokenId);
+                }
                 break;
             case 'rotate_left':
                 this.cameraController.rotateCameraLeft();
