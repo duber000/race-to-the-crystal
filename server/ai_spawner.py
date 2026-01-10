@@ -3,9 +3,9 @@ AI Client Spawning Utility for Race to the Crystal Server.
 
 Handles spawning AI client processes to fill empty player slots.
 """
+
 import asyncio
 import logging
-import sys
 from typing import List, Optional
 from dataclasses import dataclass
 
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SpawnedAI:
     """Information about a spawned AI client process."""
+
     process: asyncio.subprocess.Process
     player_name: str
     strategy: str
@@ -43,7 +44,7 @@ class AISpawner:
         num_ai: int,
         host: str = "localhost",
         port: int = 8888,
-        strategies: Optional[List[str]] = None
+        strategies: Optional[List[str]] = None,
     ) -> List[SpawnedAI]:
         """
         Spawn AI clients to join a specific game.
@@ -81,7 +82,7 @@ class AISpawner:
                     game_id=game_id,
                     host=host,
                     port=port,
-                    strategy=strategy
+                    strategy=strategy,
                 )
 
                 if process:
@@ -97,7 +98,7 @@ class AISpawner:
                         process=process,
                         player_name=ai_name,
                         strategy=strategy,
-                        game_id=game_id
+                        game_id=game_id,
                     )
                     spawned.append(spawned_ai)
                     self.spawned_processes.append(spawned_ai)
@@ -120,12 +121,7 @@ class AISpawner:
         return spawned
 
     async def _spawn_ai_process(
-        self,
-        ai_name: str,
-        game_id: str,
-        host: str,
-        port: int,
-        strategy: str
+        self, ai_name: str, game_id: str, host: str, port: int, strategy: str
     ) -> Optional[asyncio.subprocess.Process]:
         """
         Spawn a single AI client process.
@@ -143,22 +139,28 @@ class AISpawner:
         # Validate inputs for security (defense in depth)
         try:
             # Import validation functions
-            from server.lobby import validate_player_name, validate_game_name
-            
+            from server.lobby import validate_player_name
+
             # Validate AI name
             validate_player_name(ai_name)
-            
+
             # Validate game_id (should be UUID format)
             if not isinstance(game_id, str) or len(game_id) > 50:
-                raise ValueError(f"Invalid game_id length: {len(game_id) if game_id else 0}")
-            
+                raise ValueError(
+                    f"Invalid game_id length: {len(game_id) if game_id else 0}"
+                )
+
             # Additional security checks for command arguments
-            if any(char in ai_name for char in [';', '&', '|', '$', '>', '<', '`', '\\']):
+            if any(
+                char in ai_name for char in [";", "&", "|", "$", ">", "<", "`", "\\"]
+            ):
                 raise ValueError(f"AI name contains unsafe characters: {ai_name}")
-            
-            if any(char in game_id for char in [';', '&', '|', '$', '>', '<', '`', '\\']):
+
+            if any(
+                char in game_id for char in [";", "&", "|", "$", ">", "<", "`", "\\"]
+            ):
                 raise ValueError(f"Game ID contains unsafe characters: {game_id}")
-                
+
         except ValueError as e:
             logger.error(f"Security validation failed for AI spawn: {e}")
             return None
@@ -169,12 +171,19 @@ class AISpawner:
         # Build command to spawn AI client
         # Use uv run to execute the AI client
         cmd = [
-            "uv", "run", "race-ai-client",
-            "--join", str(game_id),  # Ensure string type
-            "--name", str(ai_name),  # Ensure string type
-            "--host", str(host),
-            "--port", str(port),
-            "--strategy", strategy
+            "uv",
+            "run",
+            "race-ai-client",
+            "--join",
+            str(game_id),  # Ensure string type
+            "--name",
+            str(ai_name),  # Ensure string type
+            "--host",
+            str(host),
+            "--port",
+            str(port),
+            "--strategy",
+            strategy,
         ]
 
         try:
@@ -183,7 +192,7 @@ class AISpawner:
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                stdin=asyncio.subprocess.DEVNULL
+                stdin=asyncio.subprocess.DEVNULL,
             )
 
             logger.debug(f"Spawned AI process with PID {process.pid}: {' '.join(cmd)}")
@@ -198,9 +207,7 @@ class AISpawner:
             return None
 
     async def _log_process_output(
-        self,
-        process: asyncio.subprocess.Process,
-        ai_name: str
+        self, process: asyncio.subprocess.Process, ai_name: str
     ) -> None:
         """
         Log output from AI process.
@@ -234,16 +241,14 @@ class AISpawner:
                         break
 
             # Run both readers concurrently
-            await asyncio.gather(
-                read_stdout(),
-                read_stderr(),
-                return_exceptions=True
-            )
+            await asyncio.gather(read_stdout(), read_stderr(), return_exceptions=True)
 
             # Wait for process to complete and log exit code
             await process.wait()
             if process.returncode != 0:
-                logger.error(f"AI process {ai_name} exited with code {process.returncode}")
+                logger.error(
+                    f"AI process {ai_name} exited with code {process.returncode}"
+                )
             else:
                 logger.info(f"AI process {ai_name} exited normally")
 
@@ -292,7 +297,9 @@ class AISpawner:
             self.spawned_processes.remove(spawned_ai)
 
         if to_remove:
-            logger.info(f"Cleaned up {len(to_remove)} AI players for game {game_id[:8]}")
+            logger.info(
+                f"Cleaned up {len(to_remove)} AI players for game {game_id[:8]}"
+            )
 
     async def cleanup_all(self) -> None:
         """Terminate all spawned AI processes."""

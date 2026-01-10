@@ -77,35 +77,23 @@ def main():
 
     # Parse command-line arguments
     num_players = 4
-    start_in_3d = False
-    
+
     for arg in sys.argv[1:]:
-        if arg == "--3d" or arg == "-3d":
-            start_in_3d = True
-        else:
-            try:
-                num_players = int(arg)
-            except ValueError:
-                print(f"Warning: Unknown argument '{arg}', ignoring")
+        try:
+            num_players = int(arg)
+        except ValueError:
+            print(f"Warning: Unknown argument '{arg}', ignoring")
 
     print(f"\nStarting {num_players}-player game...")
-    if start_in_3d:
-        print("(Starting in 3D mode)")
     print("\nControls:")
     print("  Left Click: Select token, then move OR attack (not both)")
     print("  Space / Enter: End turn")
     print("  Escape: Cancel selection")
-    print("  V: Toggle 2D/3D view")
     print("  M: Toggle music on/off")
     print("  Arrow Keys / WASD: Pan camera")
     print("  +/-: Zoom in/out")
     print("  Mouse Wheel: Zoom in/out")
     print("  Ctrl+Q: Quit game")
-    print("\n3D Mode Controls (press V to toggle):")
-    print("  Right Mouse Button + Move: Mouse-look (free camera rotation)")
-    print("  Q/E: Rotate camera left/right")
-    print("  TAB: Cycle through your tokens")
-    print("  (Arrow Keys/WASD pan camera in 3D mode too)")
     print("\nRules:")
     print("  - Fast tokens (4hp, 6hp): Move 2 spaces")
     print("  - Slow tokens (8hp, 10hp): Move 1 space")
@@ -120,11 +108,11 @@ def main():
         DEFAULT_WINDOW_WIDTH,
         DEFAULT_WINDOW_HEIGHT,
         "Race to the Crystal - Local Hot-Seat Game",
-        resizable=True
+        resizable=True,
     )
 
     # Create and show game view
-    game_view = GameView(game_state, start_in_3d=start_in_3d)
+    game_view = GameView(game_state)
     window.show_view(game_view)
 
     # Arcade handles the game loop

@@ -1,0 +1,44 @@
+[Unit]
+Description=Caddy Web Server with Mercure Support (Production)
+Documentation=https://caddyserver.com
+After=network-online.target game-api.service
+Wants=network-online.target
+Wants=game-api.service
+
+[Container]
+Image=localhost/race-caddy:latest
+ContainerName=race-caddy
+Network=game-net.network
+
+# Publish ports (rootless podman - non-privileged ports)
+# Access via: https://your-domain.com:8880
+PublishPort=8880:80
+PublishPort=8444:443
+
+# Secrets loaded from file (created during deployment)
+# File should contain: MERCURE_PUBLISHER_JWT=<secret>
+#                      MERCURE_SUBSCRIBER_JWT=<secret>
+EnvironmentFile=%h/.config/containers/systemd/race-secrets.env
+
+# Mount production Caddyfile
+Volume=%h/.config/containers/systemd/Caddyfile:/etc/caddy/Caddyfile:ro,Z
+
+# Persistent certificate storage (Let's Encrypt)
+Volume=%h/.local/share/containers/systemd/caddy/data:/data,Z
+Volume=%h/.local/share/containers/systemd/caddy/config:/config,Z
+
+# Resource limits (lighter than game-api)
+# Note: MemorySwap and CPUQuota not supported on all podman versions
+Memory=256M
+PidsLimit=50
+
+# Security
+SecurityLabelDisable=false
+
+[Service]
+Type=notify
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

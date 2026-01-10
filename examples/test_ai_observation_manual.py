@@ -3,8 +3,10 @@ Manual test script for AI Observation module.
 
 This script demonstrates the AI observation functionality without requiring pytest.
 """
+
 import sys
-sys.path.insert(0, '/home/user/race-to-the-crystal')
+
+sys.path.insert(0, "/home/user/race-to-the-crystal")
 
 from game.game_state import GameState
 from game.generator import Generator
@@ -100,12 +102,12 @@ def test_available_actions():
     print(f"Phase: {actions_data['phase']}")
     print(f"Number of available actions: {len(actions_data['actions'])}")
     print("\nActions:")
-    for i, action in enumerate(actions_data['actions'][:5], 1):  # Show first 5
+    for i, action in enumerate(actions_data["actions"][:5], 1):  # Show first 5
         print(f"  {i}. {action['description']}")
-    if len(actions_data['actions']) > 5:
+    if len(actions_data["actions"]) > 5:
         print(f"  ... and {len(actions_data['actions']) - 5} more actions")
 
-    assert len(actions_data['actions']) > 0
+    assert len(actions_data["actions"]) > 0
     print("\n✓ Test passed: Action listing works\n")
 
 
@@ -157,10 +159,10 @@ def test_multi_player_game():
     game_state = create_test_game(4)
 
     # Deploy tokens for all players
-    game_state.deploy_token("player_0", 10, (2, 2))    # Cyan
-    game_state.deploy_token("player_1", 8, (21, 2))    # Magenta
-    game_state.deploy_token("player_2", 6, (2, 21))    # Yellow
-    game_state.deploy_token("player_3", 4, (21, 21))   # Green
+    game_state.deploy_token("player_0", 10, (2, 2))  # Cyan
+    game_state.deploy_token("player_1", 8, (21, 2))  # Magenta
+    game_state.deploy_token("player_2", 6, (2, 21))  # Yellow
+    game_state.deploy_token("player_3", 4, (21, 21))  # Green
 
     board_map = AIObserver.get_board_map(game_state, "player_0")
     print(board_map)
@@ -202,6 +204,7 @@ def main():
             print(f"\n✗ Test failed with error: {e}\n")
             failed += 1
             import traceback
+
             traceback.print_exc()
 
     print("\n")

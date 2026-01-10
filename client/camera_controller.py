@@ -43,7 +43,13 @@ class CameraController:
     - Camera rotation controls (Q/E keys)
     """
 
-    def __init__(self, window_width: int, window_height: int, start_in_3d: bool = False, local_player_id: Optional[str] = None):
+    def __init__(
+        self,
+        window_width: int,
+        window_height: int,
+        start_in_3d: bool = False,
+        local_player_id: Optional[str] = None,
+    ):
         """
         Initialize camera controller.
 
@@ -69,7 +75,9 @@ class CameraController:
 
         # Local player tracking (for network games)
         self.local_player_id = local_player_id
-        logger.info(f"CameraController initialized with local_player_id={local_player_id}")
+        logger.info(
+            f"CameraController initialized with local_player_id={local_player_id}"
+        )
 
         # Mouse-look state for 3D mode
         self.mouse_look_active = False
@@ -152,7 +160,9 @@ class CameraController:
         if self.camera_mode == "2D":
             # Trying to enter 3D mode
             if not board_3d_available:
-                logger.error("3D rendering failed to initialize. Cannot switch to 3D mode.")
+                logger.error(
+                    "3D rendering failed to initialize. Cannot switch to 3D mode."
+                )
                 return "2D"
             self.camera_mode = "3D"
             logger.debug(f"Camera mode: {self.camera_mode}")
@@ -177,7 +187,9 @@ class CameraController:
         # Use local player ID if set (network mode), otherwise use current turn player
         if self.local_player_id:
             logger.info(f"Using local_player_id: {self.local_player_id}")
-            logger.info(f"Available player IDs in game_state: {list(game_state.players.keys())}")
+            logger.info(
+                f"Available player IDs in game_state: {list(game_state.players.keys())}"
+            )
             player = game_state.players.get(self.local_player_id)
             logger.info(f"Found player: {player.name if player else None}")
         else:
@@ -203,7 +215,10 @@ class CameraController:
         # Find next token
         next_index = 0
         if alive_tokens:
-            if self.controlled_token_id is not None and self.controlled_token_id in alive_tokens:
+            if (
+                self.controlled_token_id is not None
+                and self.controlled_token_id in alive_tokens
+            ):
                 current_index = alive_tokens.index(self.controlled_token_id)
                 next_index = (current_index + 1) % len(alive_tokens)
             else:
@@ -216,10 +231,16 @@ class CameraController:
 
         token = game_state.get_token(self.controlled_token_id)
         if token:
-            logger.debug(f"Switched to token {self.controlled_token_id} at {token.position}")
-            logger.info(f"Following token {self.controlled_token_id} - use Q/E to rotate, right-click+drag for free look")
+            logger.debug(
+                f"Switched to token {self.controlled_token_id} at {token.position}"
+            )
+            logger.info(
+                f"Following token {self.controlled_token_id} - use Q/E to rotate, right-click+drag for free look"
+            )
         else:
-            logger.debug(f"Switched to token {self.controlled_token_id} (token not found)")
+            logger.debug(
+                f"Switched to token {self.controlled_token_id} (token not found)"
+            )
 
         return self.controlled_token_id
 
@@ -321,9 +342,7 @@ class CameraController:
                     offset=CAMERA_FIRST_PERSON_OFFSET,
                 )
 
-    def handle_mouse_motion(
-        self, x: int, y: int, dx: int, dy: int, window
-    ) -> bool:
+    def handle_mouse_motion(self, x: int, y: int, dx: int, dy: int, window) -> bool:
         """
         Handle mouse motion for mouse-look in 3D mode.
 

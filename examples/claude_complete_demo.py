@@ -7,8 +7,10 @@ This script demonstrates the complete workflow for an AI player:
 3. Choose and execute actions
 4. Handle results and continue playing
 """
+
 import sys
-sys.path.insert(0, '/home/user/race-to-the-crystal')
+
+sys.path.insert(0, "/home/user/race-to-the-crystal")
 
 from game.game_state import GameState
 from game.generator import Generator
@@ -82,7 +84,8 @@ def claude_play_turn(game_state: GameState, player_id: str):
     strategy_reason = ""
 
     deployed_tokens = [
-        t for t in game_state.tokens.values()
+        t
+        for t in game_state.tokens.values()
         if t.player_id == player_id and t.is_deployed
     ]
 
@@ -92,11 +95,13 @@ def claude_play_turn(game_state: GameState, player_id: str):
         if deploy_actions:
             # Deploy strongest available token
             for health in [10, 8, 6, 4]:
-                deploy = next((a for a in deploy_actions if a["health_value"] == health), None)
+                deploy = next(
+                    (a for a in deploy_actions if a["health_value"] == health), None
+                )
                 if deploy:
                     chosen_action = DeployAction(
                         health_value=deploy["health_value"],
-                        position=tuple(deploy["positions"][0])
+                        position=tuple(deploy["positions"][0]),
                     )
                     strategy_reason = f"Deploy {health}hp token to start advancing"
                     break
@@ -109,8 +114,7 @@ def claude_play_turn(game_state: GameState, player_id: str):
             # Prioritize attacks
             attack = attack_actions[0]
             chosen_action = AttackAction(
-                attacker_id=attack["attacker_id"],
-                defender_id=attack["defender_id"]
+                attacker_id=attack["attacker_id"], defender_id=attack["defender_id"]
             )
             strategy_reason = f"Attack enemy token for {attack['damage']} damage"
         elif move_actions:
@@ -118,7 +122,7 @@ def claude_play_turn(game_state: GameState, player_id: str):
             move = move_actions[0]
             chosen_action = MoveAction(
                 token_id=move["token_id"],
-                destination=tuple(move["valid_destinations"][0])
+                destination=tuple(move["valid_destinations"][0]),
             )
             strategy_reason = f"Move token #{move['token_id']} toward objective"
         else:
@@ -139,7 +143,9 @@ def claude_play_turn(game_state: GameState, player_id: str):
     print("=" * 70 + "\n")
 
     # Step 3: Validate action
-    is_valid, validation_msg = executor.validate_action(chosen_action, game_state, player_id)
+    is_valid, validation_msg = executor.validate_action(
+        chosen_action, game_state, player_id
+    )
     print(f"Validation: {'✓ VALID' if is_valid else '✗ INVALID'}")
     print(f"Message: {validation_msg}\n")
 

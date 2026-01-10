@@ -1,6 +1,7 @@
 """
 Combat system and resolution.
 """
+
 from dataclasses import dataclass
 from typing import Optional
 
@@ -20,6 +21,7 @@ class CombatOutcome:
         defender_id: ID of defending token
         defender_killed: Whether defender was killed
     """
+
     result: CombatResult
     damage_dealt: int
     attacker_id: int
@@ -103,8 +105,7 @@ class CombatSystem:
 
     @staticmethod
     def get_attackable_targets(
-        attacker: Token,
-        all_tokens: dict[int, Token]
+        attacker: Token, all_tokens: dict[int, Token]
     ) -> list[Token]:
         """
         Get list of tokens that can be attacked.

@@ -3,6 +3,7 @@ Security validation tests for Race to the Crystal.
 
 Tests input validation to prevent command injection and other security issues.
 """
+
 import pytest
 from server.lobby import validate_game_name, validate_player_name, LobbyManager
 from network.messages import ClientType
@@ -22,7 +23,7 @@ class TestSecurityValidation:
             "A" * 50,  # Max length
             "Test_Game-123.456",
         ]
-        
+
         for name in valid_names:
             assert validate_game_name(name) is True
 
@@ -64,7 +65,7 @@ class TestSecurityValidation:
             "A" * 30,  # Max length
             "Test_Player-123.456",
         ]
-        
+
         for name in valid_names:
             assert validate_player_name(name) is True
 
@@ -101,7 +102,7 @@ class TestLobbySecurity:
     def test_lobby_creation_with_invalid_names(self):
         """Test that lobby creation rejects invalid game names."""
         manager = LobbyManager()
-        
+
         # Test invalid game names
         invalid_game_names = [
             "Game;rm -rf /",
@@ -109,16 +110,16 @@ class TestLobbySecurity:
             "Game|Name",
             "" * 100,  # Too long
         ]
-        
+
         for game_name in invalid_game_names:
             with pytest.raises(ValueError):
                 manager.create_lobby(
                     player_id="test_player",
                     player_name="Test Player",
                     game_name=game_name,
-                    client_type=ClientType.HUMAN
+                    client_type=ClientType.HUMAN,
                 )
-        
+
         # Test invalid player names
         invalid_player_names = [
             "Player;Name",
@@ -126,28 +127,28 @@ class TestLobbySecurity:
             "Player|Name",
             "" * 100,  # Too long
         ]
-        
+
         for player_name in invalid_player_names:
             with pytest.raises(ValueError):
                 manager.create_lobby(
                     player_id="test_player",
                     player_name=player_name,
                     game_name="Valid Game",
-                    client_type=ClientType.HUMAN
+                    client_type=ClientType.HUMAN,
                 )
 
     def test_player_joining_with_invalid_names(self):
         """Test that player joining rejects invalid player names."""
         manager = LobbyManager()
-        
+
         # Create a valid lobby first
         lobby = manager.create_lobby(
             player_id="host_player",
             player_name="Host Player",
             game_name="Valid Game",
-            client_type=ClientType.HUMAN
+            client_type=ClientType.HUMAN,
         )
-        
+
         # Test invalid player names when joining
         invalid_player_names = [
             "Player;Name",
@@ -155,13 +156,13 @@ class TestLobbySecurity:
             "Player|Name",
             "" * 100,  # Too long
         ]
-        
+
         for player_name in invalid_player_names:
             with pytest.raises(ValueError):
                 lobby.add_player(
                     player_id="test_player",
                     player_name=player_name,
-                    client_type=ClientType.HUMAN
+                    client_type=ClientType.HUMAN,
                 )
 
 

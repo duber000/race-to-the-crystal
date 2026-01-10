@@ -11,13 +11,11 @@ from typing import List, Optional
 import arcade
 
 from client.music_generator import generate_techno_music
-from client.sound_effects import (
-    generate_sliding_sound,
-    generate_mystery_bing_sound,
-    generate_generator_explosion_sound,
-    generate_crystal_shatter_sound,
+from shared.constants import (
+    BACKGROUND_MUSIC_VOLUME,
+    GENERATOR_HUM_VOLUME,
+    SOUND_EFFECTS_VOLUME,
 )
-from shared.constants import BACKGROUND_MUSIC_VOLUME, GENERATOR_HUM_VOLUME, SOUND_EFFECTS_VOLUME
 from shared.logging_config import setup_logger
 
 logger = setup_logger(__name__)
@@ -46,7 +44,9 @@ class AudioManager:
 
         # Generator hum tracks (separate audio for each generator)
         self.generator_hums: List[Optional[arcade.Sound]] = []  # List of Sound objects
-        self.generator_hum_players: List[Optional[arcade.Sound]] = []  # List of MediaPlayer objects
+        self.generator_hum_players: List[
+            Optional[arcade.Sound]
+        ] = []  # List of MediaPlayer objects
         self.generator_hum_volume = GENERATOR_HUM_VOLUME
 
         # Sound effects
@@ -73,14 +73,18 @@ class AudioManager:
             # Try MP3 first
             self.background_music = arcade.Sound(music_path, streaming=True)
             if self.background_music:
-                self.music_player = self.background_music.play(self.music_volume, loop=True)
+                self.music_player = self.background_music.play(
+                    self.music_volume, loop=True
+                )
                 logger.info("Background music loaded and playing (looping)")
         except FileNotFoundError:
             # Try WAV format
             try:
                 self.background_music = arcade.Sound(wav_path, streaming=True)
                 if self.background_music:
-                    self.music_player = self.background_music.play(self.music_volume, loop=True)
+                    self.music_player = self.background_music.play(
+                        self.music_volume, loop=True
+                    )
                     logger.info("Background music loaded and playing (looping)")
             except FileNotFoundError:
                 # Generate music if neither file exists
@@ -104,7 +108,7 @@ class AudioManager:
     def _load_sound_effects(self) -> None:
         """Load all sound effects."""
         sound_effects_dir = "client/assets/sounds"
-        
+
         # Define sound effects to load
         sound_effects = {
             "sliding": f"{sound_effects_dir}/sliding.wav",
@@ -113,7 +117,7 @@ class AudioManager:
             "crystal_shatter": f"{sound_effects_dir}/crystal_shatter.wav",
             "flushing": f"{sound_effects_dir}/flushing.wav",
         }
-        
+
         for name, path in sound_effects.items():
             try:
                 if os.path.exists(path):
@@ -156,6 +160,7 @@ class AudioManager:
             except Exception as e:
                 logger.error(f"Error loading generator {gen_id} hum: {e}")
                 import traceback
+
                 traceback.print_exc()
                 self.generator_hums.append(None)
                 self.generator_hum_players.append(None)
@@ -176,7 +181,9 @@ class AudioManager:
                 return
 
             self.load_background_music()
-            self.music_playing = bool(self.music_player or any(self.generator_hum_players))
+            self.music_playing = bool(
+                self.music_player or any(self.generator_hum_players)
+            )
             if self.music_playing:
                 logger.info("Music playing")
             return
@@ -242,7 +249,11 @@ class AudioManager:
                             logger.error(f"  Error stopping hum: {e}")
                     else:
                         logger.debug(f"  Generator {gen_id} active - hum playing")
-                elif not generator.is_disabled and hum_sound and self.generator_hum_players[gen_id] is None:
+                elif (
+                    not generator.is_disabled
+                    and hum_sound
+                    and self.generator_hum_players[gen_id] is None
+                ):
                     # Generator is free and hum was stopped - restart it
                     try:
                         self.generator_hum_players[gen_id] = hum_sound.play(
@@ -253,9 +264,13 @@ class AudioManager:
                         logger.error(f"  Error restarting hum: {e}")
                 elif generator.is_disabled and hum_sound:
                     # Player is None but generator is disabled (already stopped)
-                    logger.debug(f"  Generator {gen_id} disabled but player is None (already stopped)")
+                    logger.debug(
+                        f"  Generator {gen_id} disabled but player is None (already stopped)"
+                    )
                 else:
-                    logger.debug(f"  Generator {gen_id} - player or hum_sound is None, skipping")
+                    logger.debug(
+                        f"  Generator {gen_id} - player or hum_sound is None, skipping"
+                    )
         logger.debug(f"=== Active Generator Hums: {active_hums}/4 ===\n")
 
     def play_sliding_sound(self) -> None:
@@ -276,7 +291,9 @@ class AudioManager:
         """Play the mystery bing sound effect for landing on mystery squares."""
         if "mystery_bing" in self.sound_effects and self.sound_effects["mystery_bing"]:
             try:
-                player = self.sound_effects["mystery_bing"].play(self.sound_effects_volume)
+                player = self.sound_effects["mystery_bing"].play(
+                    self.sound_effects_volume
+                )
                 # Keep a reference to prevent garbage collection
                 if player:
                     self.sound_effect_players.append(player)
@@ -288,9 +305,14 @@ class AudioManager:
 
     def play_generator_explosion_sound(self) -> None:
         """Play the generator explosion sound effect for capturing generators."""
-        if "generator_explosion" in self.sound_effects and self.sound_effects["generator_explosion"]:
+        if (
+            "generator_explosion" in self.sound_effects
+            and self.sound_effects["generator_explosion"]
+        ):
             try:
-                player = self.sound_effects["generator_explosion"].play(self.sound_effects_volume)
+                player = self.sound_effects["generator_explosion"].play(
+                    self.sound_effects_volume
+                )
                 # Keep a reference to prevent garbage collection
                 if player:
                     self.sound_effect_players.append(player)
@@ -303,9 +325,14 @@ class AudioManager:
 
     def play_crystal_shatter_sound(self) -> None:
         """Play the crystal shatter sound effect for capturing the crystal."""
-        if "crystal_shatter" in self.sound_effects and self.sound_effects["crystal_shatter"]:
+        if (
+            "crystal_shatter" in self.sound_effects
+            and self.sound_effects["crystal_shatter"]
+        ):
             try:
-                player = self.sound_effects["crystal_shatter"].play(self.sound_effects_volume)
+                player = self.sound_effects["crystal_shatter"].play(
+                    self.sound_effects_volume
+                )
                 # Keep a reference to prevent garbage collection
                 if player:
                     self.sound_effect_players.append(player)

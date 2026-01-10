@@ -27,7 +27,14 @@ class Board3D:
     Tron/Battlezone aesthetic with transparent glowing lines.
     """
 
-    def __init__(self, board: Board, ctx: arcade.ArcadeContext, generators=None, crystal_pos=None, mystery_animations=None):
+    def __init__(
+        self,
+        board: Board,
+        ctx: arcade.ArcadeContext,
+        generators=None,
+        crystal_pos=None,
+        mystery_animations=None,
+    ):
         """
         Initialize the 3D board renderer.
 
@@ -42,12 +49,14 @@ class Board3D:
         self.ctx = ctx
         self.generators = generators
         self.crystal_pos = crystal_pos
-        self.mystery_animations = mystery_animations if mystery_animations is not None else {}
+        self.mystery_animations = (
+            mystery_animations if mystery_animations is not None else {}
+        )
 
         # Vertex buffers
         self.grid_vbo = None
         self.grid_vao = None
-        
+
         # Special cell VAOs (separate for each type with different colors)
         self.generators_vao = None
         self.generators_vbo = None
@@ -55,7 +64,7 @@ class Board3D:
         self.crystal_vbo = None
         self.mystery_vao = None
         self.mystery_vbo = None
-        
+
         # Generator to crystal lines VAO
         self.gen_crystal_lines_vao = None
         self.gen_crystal_lines_vbo = None
@@ -395,7 +404,11 @@ class Board3D:
         return result
 
     def _create_cylinder_wireframe(
-        self, center_x: float, center_y: float, radius: float, animation_progress: float = 0.0
+        self,
+        center_x: float,
+        center_y: float,
+        radius: float,
+        animation_progress: float = 0.0,
     ) -> list:
         """
         Create wireframe cylinder vertices (circle at bottom and top) with coin flip animation.
@@ -456,10 +469,10 @@ class Board3D:
 
         # Define 3x3 deployment zones for each corner
         deployment_zones = [
-            (0, 0, 3, 3),      # Top-left (0,0) to (2,2)
-            (21, 0, 3, 3),     # Top-right (21,0) to (23,2)
-            (0, 21, 3, 3),     # Bottom-left (0,21) to (2,23)
-            (21, 21, 3, 3),    # Bottom-right (21,21) to (23,23)
+            (0, 0, 3, 3),  # Top-left (0,0) to (2,2)
+            (21, 0, 3, 3),  # Top-right (21,0) to (23,2)
+            (0, 21, 3, 3),  # Bottom-left (0,21) to (2,23)
+            (21, 21, 3, 3),  # Bottom-right (21,21) to (23,23)
         ]
 
         bracket_height = self.wall_height * 0.3  # Bracket height in 3D
@@ -549,17 +562,30 @@ class Board3D:
 
         vertices = [
             # Bottom square (at height)
-            center_x - half_size, center_y - half_size, height,
-            center_x + half_size, center_y - half_size, height,
-
-            center_x + half_size, center_y - half_size, height,
-            center_x + half_size, center_y + half_size, height,
-
-            center_x + half_size, center_y + half_size, height,
-            center_x - half_size, center_y + half_size, height,
-
-            center_x - half_size, center_y + half_size, height,
-            center_x - half_size, center_y - half_size, height,
+            center_x - half_size,
+            center_y - half_size,
+            height,
+            center_x + half_size,
+            center_y - half_size,
+            height,
+            center_x + half_size,
+            center_y - half_size,
+            height,
+            center_x + half_size,
+            center_y + half_size,
+            height,
+            center_x + half_size,
+            center_y + half_size,
+            height,
+            center_x - half_size,
+            center_y + half_size,
+            height,
+            center_x - half_size,
+            center_y + half_size,
+            height,
+            center_x - half_size,
+            center_y - half_size,
+            height,
         ]
 
         vertices_array = np.array(vertices, dtype=np.float32)
@@ -592,20 +618,35 @@ class Board3D:
             center_y = grid_y * CELL_SIZE + CELL_SIZE / 2
 
             # Wireframe square for each valid move
-            vertices.extend([
-                # Bottom square
-                center_x - half_size, center_y - half_size, height,
-                center_x + half_size, center_y - half_size, height,
-
-                center_x + half_size, center_y - half_size, height,
-                center_x + half_size, center_y + half_size, height,
-
-                center_x + half_size, center_y + half_size, height,
-                center_x - half_size, center_y + half_size, height,
-
-                center_x - half_size, center_y + half_size, height,
-                center_x - half_size, center_y - half_size, height,
-            ])
+            vertices.extend(
+                [
+                    # Bottom square
+                    center_x - half_size,
+                    center_y - half_size,
+                    height,
+                    center_x + half_size,
+                    center_y - half_size,
+                    height,
+                    center_x + half_size,
+                    center_y - half_size,
+                    height,
+                    center_x + half_size,
+                    center_y + half_size,
+                    height,
+                    center_x + half_size,
+                    center_y + half_size,
+                    height,
+                    center_x - half_size,
+                    center_y + half_size,
+                    height,
+                    center_x - half_size,
+                    center_y + half_size,
+                    height,
+                    center_x - half_size,
+                    center_y - half_size,
+                    height,
+                ]
+            )
 
         vertices_array = np.array(vertices, dtype=np.float32)
         self.valid_moves_vbo = self.ctx.buffer(data=vertices_array.tobytes())
@@ -630,7 +671,9 @@ class Board3D:
         model_matrix = np.eye(4, dtype=np.float32)
 
         # Set common shader uniforms (transpose for OpenGL column-major format)
-        self.shader_program["projection"] = camera_3d.get_projection_matrix().T.flatten()
+        self.shader_program["projection"] = (
+            camera_3d.get_projection_matrix().T.flatten()
+        )
         self.shader_program["view"] = camera_3d.get_view_matrix().T.flatten()
         self.shader_program["model"] = model_matrix.T.flatten()
 
@@ -662,7 +705,7 @@ class Board3D:
             )
             self.shader_program["glow_intensity"] = 1.8
             self.mystery_vao.render(self.shader_program, mode=self.ctx.LINES)
-        
+
         # Draw generator to crystal connection lines (orange with glow)
         if self.gen_crystal_lines_vao:
             self.shader_program["base_color"] = np.array(
@@ -674,7 +717,8 @@ class Board3D:
         # Draw deployment zone indicators (yellow/white brackets)
         if self.deployment_zones_vao:
             self.shader_program["base_color"] = np.array(
-                [1.0, 1.0, 0.6, 0.5], dtype=np.float32  # Subtle yellow/white
+                [1.0, 1.0, 0.6, 0.5],
+                dtype=np.float32,  # Subtle yellow/white
             )
             self.shader_program["glow_intensity"] = 1.2
             self.deployment_zones_vao.render(self.shader_program, mode=self.ctx.LINES)
@@ -682,7 +726,8 @@ class Board3D:
         # Draw valid move indicators (green wireframes)
         if self.valid_moves_vao:
             self.shader_program["base_color"] = np.array(
-                [0.0, 1.0, 0.0, 0.7], dtype=np.float32  # Green
+                [0.0, 1.0, 0.0, 0.7],
+                dtype=np.float32,  # Green
             )
             self.shader_program["glow_intensity"] = 1.8
             self.valid_moves_vao.render(self.shader_program, mode=self.ctx.LINES)
@@ -690,7 +735,8 @@ class Board3D:
         # Draw hover indicator (white wireframe, brightest)
         if self.hover_vao:
             self.shader_program["base_color"] = np.array(
-                [1.0, 1.0, 1.0, 0.9], dtype=np.float32  # White
+                [1.0, 1.0, 1.0, 0.9],
+                dtype=np.float32,  # White
             )
             self.shader_program["glow_intensity"] = 2.5
             self.hover_vao.render(self.shader_program, mode=self.ctx.LINES)

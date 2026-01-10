@@ -1,0 +1,28 @@
+{
+    order mercure before respond
+}
+
+# Development/local configuration
+http://:80 {
+    # Embedded Mercure Hub configuration
+    mercure {
+        # JWT authentication keys from environment variables
+        publisher_jwt {env.MERCURE_PUBLISHER_JWT}
+        subscriber_jwt {env.MERCURE_SUBSCRIBER_JWT}
+
+        # Allow anonymous subscribers (public updates)
+        anonymous
+
+        # CORS configuration
+        cors_origins *
+    }
+
+    # Proxy to FastAPI backend
+    reverse_proxy race-game-api:8080 {
+        # Preserve original host header
+        header_up Host {http.request.header.Host}
+        header_up X-Real-IP {http.request.remote.host}
+        header_up X-Forwarded-For {http.request.remote.host}
+        header_up X-Forwarded-Proto {http.request.proto}
+    }
+}

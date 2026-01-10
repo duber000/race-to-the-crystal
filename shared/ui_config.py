@@ -21,6 +21,7 @@ class ViewportConfig:
         window_height: Height of the window in pixels
         hud_height: Height of the HUD at top of screen
     """
+
     window_width: int
     window_height: int
     hud_height: int
@@ -39,6 +40,7 @@ class UIStyleConfig:
         indicator_size: Size of corner indicator in pixels
         spacing: Base spacing between menu options in pixels
     """
+
     margin: int
     indicator_size: int
     spacing: float

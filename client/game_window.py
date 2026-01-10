@@ -51,7 +51,6 @@ class GameView(arcade.View):
     def __init__(
         self,
         game_state: GameState,
-        start_in_3d: bool = False,
         is_network_game: bool = False,
         network_client: Optional["NetworkClient"] = None,
         local_player_id: Optional[str] = None,
@@ -62,7 +61,6 @@ class GameView(arcade.View):
 
         Args:
             game_state: The game state to render
-            start_in_3d: Whether to start in 3D mode
             is_network_game: Whether this is a network game (enables chat)
             network_client: Network client for chat functionality (network games only)
             local_player_id: Game player ID for local player (e.g., "player_0")
@@ -76,7 +74,6 @@ class GameView(arcade.View):
         self.network_client = network_client
         self.local_player_id = local_player_id
         self.window.ctx  # Ensure context is available
-        self.start_in_3d = start_in_3d
         self.music_enabled = music_enabled
 
         # Systems
@@ -130,12 +127,18 @@ class GameView(arcade.View):
         # Mystery square coin flip animations
         # Dict mapping (x, y) position to animation progress (0.0 to 1.0)
         self.mystery_animations = {}  # {(x, y): progress}
-        self.mystery_animation_duration = MYSTERY_ANIMATION_DURATION  # Duration in seconds
-        
+        self.mystery_animation_duration = (
+            MYSTERY_ANIMATION_DURATION  # Duration in seconds
+        )
+
         # Victory screen tracking
         self.victory_shown = False
-        self.victory_delay = 0.0  # Delay before showing victory screen to let final effects play
-        self.victory_delay_duration = 2.0  # Wait 2 seconds for sounds/animations to finish
+        self.victory_delay = (
+            0.0  # Delay before showing victory screen to let final effects play
+        )
+        self.victory_delay_duration = (
+            2.0  # Wait 2 seconds for sounds/animations to finish
+        )
 
         # Background color will be set in on_show_view()
 
@@ -146,9 +149,11 @@ class GameView(arcade.View):
 
         # Initialize components that need window dimensions
         # Use local_player_id from init (for network games), otherwise None (for single player)
-        logger.info(f"GameView.on_show_view: is_network_game={self.is_network_game}, local_player_id={self.local_player_id}")
+        logger.info(
+            f"GameView.on_show_view: is_network_game={self.is_network_game}, local_player_id={self.local_player_id}"
+        )
         self.camera_controller = CameraController(
-            self.window.width, self.window.height, self.start_in_3d, self.local_player_id
+            self.window.width, self.window.height, False, self.local_player_id
         )
         self.ui_manager = UIManager(self.window.width, self.window.height)
         self.deployment_controller = DeploymentMenuController(
@@ -390,7 +395,7 @@ class GameView(arcade.View):
         if not self.victory_shown and self.game_state.phase == GamePhase.ENDED:
             # Start countdown to victory screen (let final effects play first)
             self.victory_delay += delta_time
-            
+
             if self.victory_delay >= self.victory_delay_duration:
                 self.victory_shown = True
                 winner = self.game_state.get_winner()
@@ -401,7 +406,7 @@ class GameView(arcade.View):
                     victory_view.on_return_to_menu = self._on_victory_return_to_menu
                     self.window.show_view(victory_view)
                     return
-        
+
         # Update animations
         self.renderer_2d.update(delta_time)
         self.renderer_3d.update(delta_time)
@@ -575,10 +580,11 @@ class GameView(arcade.View):
             return
 
         self.input_handler.handle_text(text, self.chat_widget)
-    
+
     def _on_victory_return_to_menu(self):
         """Handle returning to main menu from victory screen."""
         # Close the current view and return to main menu
         from client.menu_main import MainMenu
+
         main_menu = MainMenu()
         self.window.show_view(main_menu)

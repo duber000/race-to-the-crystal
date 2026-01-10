@@ -1,6 +1,7 @@
 """
 Unit tests for GameState class.
 """
+
 import pytest
 import json
 from game.game_state import GameState
@@ -270,15 +271,23 @@ class TestGameState:
         p1_deployed = state.get_player_tokens("p1")
         p2_deployed = state.get_player_tokens("p2")
 
-        assert len(p1_deployed) == 3, f"Player 1 should have 3 deployed tokens, got {len(p1_deployed)}"
-        assert len(p2_deployed) == 3, f"Player 2 should have 3 deployed tokens, got {len(p2_deployed)}"
+        assert len(p1_deployed) == 3, (
+            f"Player 1 should have 3 deployed tokens, got {len(p1_deployed)}"
+        )
+        assert len(p2_deployed) == 3, (
+            f"Player 2 should have 3 deployed tokens, got {len(p2_deployed)}"
+        )
 
         # Check that 17 tokens remain in reserve for each player
         p1_reserve = state.get_reserve_tokens("p1")
         p2_reserve = state.get_reserve_tokens("p2")
 
-        assert len(p1_reserve) == 17, f"Player 1 should have 17 reserve tokens, got {len(p1_reserve)}"
-        assert len(p2_reserve) == 17, f"Player 2 should have 17 reserve tokens, got {len(p2_reserve)}"
+        assert len(p1_reserve) == 17, (
+            f"Player 1 should have 17 reserve tokens, got {len(p1_reserve)}"
+        )
+        assert len(p2_reserve) == 17, (
+            f"Player 2 should have 17 reserve tokens, got {len(p2_reserve)}"
+        )
 
     def test_end_turn(self):
         """Test ending turn and advancing to next player."""
@@ -408,7 +417,9 @@ class TestGameState:
         # Initialize objectives
         gen_positions = state.board.get_generator_positions()
         state.generators = GeneratorManager.create_generators(gen_positions)
-        state.crystal = CrystalManager.create_crystal(state.board.get_crystal_position())
+        state.crystal = CrystalManager.create_crystal(
+            state.board.get_crystal_position()
+        )
 
         # Simulate some capture progress
         state.generators[0].capturing_player_id = "player_0"

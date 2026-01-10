@@ -29,7 +29,7 @@ class VictoryView(arcade.View):
         self,
         winner_name: str,
         winner_id: Optional[str] = None,
-        game_stats: Optional[Dict] = None
+        game_stats: Optional[Dict] = None,
     ):
         """
         Initialize victory view.
@@ -72,7 +72,7 @@ class VictoryView(arcade.View):
             arcade.color.GOLD,
             font_size=48,
             anchor_x="center",
-            bold=True
+            bold=True,
         )
 
         # Subtitle
@@ -83,9 +83,9 @@ class VictoryView(arcade.View):
             arcade.color.WHITE,
             font_size=24,
             anchor_x="center",
-            italic=True
+            italic=True,
         )
-        
+
         # Victory text objects for the main display
         self.victory_text = arcade.Text(
             f"🏆 {self.winner_name} WINS! 🏆",
@@ -95,9 +95,9 @@ class VictoryView(arcade.View):
             font_size=48,
             anchor_x="center",
             anchor_y="center",
-            bold=True
+            bold=True,
         )
-        
+
         self.congrats_text = arcade.Text(
             "Congratulations!",
             self.window.width // 2,
@@ -106,7 +106,7 @@ class VictoryView(arcade.View):
             font_size=24,
             anchor_x="center",
             anchor_y="center",
-            italic=True
+            italic=True,
         )
 
         # Build statistics display
@@ -123,27 +123,20 @@ class VictoryView(arcade.View):
 
         # Return to menu button
         menu_button = arcade.gui.UIFlatButton(
-            text="Return to Main Menu",
-            **button_style
+            text="Return to Main Menu", **button_style
         )
         menu_button.on_click = self._on_menu_click
         v_box.add(menu_button)
 
         # Quit button
-        quit_button = arcade.gui.UIFlatButton(
-            text="Quit Game",
-            **button_style
-        )
+        quit_button = arcade.gui.UIFlatButton(text="Quit Game", **button_style)
         quit_button.on_click = self._on_quit_click
         v_box.add(quit_button)
 
         # Position buttons at bottom
         self.manager.add(
             arcade.gui.UIAnchorLayout(
-                anchor_x="center_x",
-                anchor_y="bottom",
-                children=[v_box],
-                align_y=50
+                anchor_x="center_x", anchor_y="bottom", children=[v_box], align_y=50
             )
         )
 
@@ -161,7 +154,7 @@ class VictoryView(arcade.View):
             arcade.color.CYAN,
             font_size=28,
             anchor_x="center",
-            bold=True
+            bold=True,
         )
         self.stat_texts.append(stats_title)
 
@@ -174,9 +167,7 @@ class VictoryView(arcade.View):
             if players:
                 # Sort by score (if available)
                 sorted_players = sorted(
-                    players,
-                    key=lambda p: p.get("score", 0),
-                    reverse=True
+                    players, key=lambda p: p.get("score", 0), reverse=True
                 )
 
                 for i, player_data in enumerate(sorted_players):
@@ -202,7 +193,7 @@ class VictoryView(arcade.View):
                         stats_y,
                         color,
                         font_size=18,
-                        anchor_x="center"
+                        anchor_x="center",
                     )
                     self.stat_texts.append(stat_text)
                     stats_y -= 35
@@ -228,7 +219,7 @@ class VictoryView(arcade.View):
                     stats_y,
                     arcade.color.LIGHT_GRAY,
                     font_size=16,
-                    anchor_x="center"
+                    anchor_x="center",
                 )
                 self.stat_texts.append(stat_text)
                 stats_y -= 30
@@ -242,7 +233,7 @@ class VictoryView(arcade.View):
                 arcade.color.GRAY,
                 font_size=18,
                 anchor_x="center",
-                italic=True
+                italic=True,
             )
             self.stat_texts.append(no_stats_text)
 
@@ -321,13 +312,13 @@ class VictoryView(arcade.View):
                 particle["size"],
                 particle["size"] * 2,
                 particle["color"],
-                3
+                3,
             )
 
         # Draw title
         if self.title_text:
             self.title_text.draw()
-        if hasattr(self, 'subtitle_text') and self.subtitle_text:
+        if hasattr(self, "subtitle_text") and self.subtitle_text:
             self.subtitle_text.draw()
 
         # Draw statistics
@@ -385,7 +376,7 @@ class VictoryViewSimple(arcade.View):
             font_size=48,
             anchor_x="center",
             anchor_y="center",
-            bold=True
+            bold=True,
         )
 
         self.congrats_text = arcade.Text(
@@ -396,15 +387,12 @@ class VictoryViewSimple(arcade.View):
             font_size=24,
             anchor_x="center",
             anchor_y="center",
-            italic=True
+            italic=True,
         )
 
         # Create button
         menu_button = arcade.gui.UIFlatButton(
-            text="Return to Main Menu",
-            width=300,
-            height=60,
-            font_size=20
+            text="Return to Main Menu", width=300, height=60, font_size=20
         )
         menu_button.on_click = lambda e: (
             self.on_return_to_menu() if self.on_return_to_menu else None
@@ -415,7 +403,7 @@ class VictoryViewSimple(arcade.View):
                 anchor_x="center_x",
                 anchor_y="bottom",
                 children=[menu_button],
-                align_y=50
+                align_y=50,
             )
         )
 
@@ -494,7 +482,7 @@ class VictoryViewSimple(arcade.View):
                 particle["size"],
                 particle["size"] * 2,
                 particle["color"],
-                3
+                3,
             )
 
         # Draw victory text

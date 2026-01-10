@@ -54,10 +54,10 @@ class UIManager:
                 window_width // 2 - button_width - button_spacing // 2,
                 button_y,
                 button_width,
-                button_height
+                button_height,
             ),
             text="End Turn",
-            color=(0, 255, 0)  # Green
+            color=(0, 255, 0),  # Green
         )
 
         self.buttons["cancel"] = Button(
@@ -65,13 +65,15 @@ class UIManager:
                 window_width // 2 + button_spacing // 2,
                 button_y,
                 button_width,
-                button_height
+                button_height,
             ),
             text="Cancel",
-            color=(255, 0, 255)  # Magenta
+            color=(255, 0, 255),  # Magenta
         )
 
-    def _calculate_layout(self, window_width: int, window_height: int) -> Dict[str, any]:
+    def _calculate_layout(
+        self, window_width: int, window_height: int
+    ) -> Dict[str, any]:
         """
         Calculate UI element positions based on window dimensions.
 
@@ -136,12 +138,16 @@ class UIManager:
         tokens_reserve = {}
         for player in active_players:
             deployed_count = sum(
-                1 for token in game_state.tokens.values()
+                1
+                for token in game_state.tokens.values()
                 if token.player_id == player.id and token.is_deployed and token.is_alive
             )
             reserve_count = sum(
-                1 for token in game_state.tokens.values()
-                if token.player_id == player.id and not token.is_deployed and token.is_alive
+                1
+                for token in game_state.tokens.values()
+                if token.player_id == player.id
+                and not token.is_deployed
+                and token.is_alive
             )
             tokens_deployed[player.id] = deployed_count
             tokens_reserve[player.id] = reserve_count
@@ -152,7 +158,7 @@ class UIManager:
             color = PLAYER_COLORS[player.color.value]
 
             # Determine glow intensity based on current player
-            is_current_player = (player.id == current_player_id)
+            is_current_player = player.id == current_player_id
             glow_intensity = 6 if is_current_player else 3
 
             # Create glow layers (outer to inner)
@@ -164,7 +170,7 @@ class UIManager:
                     panel_width + g * 4,
                     height_per_player - 5 + g * 4,
                     (*color, alpha),
-                    border_width=max(1, 4 - g // 2)
+                    border_width=max(1, 4 - g // 2),
                 )
                 self.panel_shapes.append(glow_rect)
 
@@ -175,18 +181,13 @@ class UIManager:
                 panel_width,
                 height_per_player - 5,
                 color,
-                border_width=3 if is_current_player else 2
+                border_width=3 if is_current_player else 2,
             )
             self.panel_shapes.append(main_rect)
 
             # Player name text
             name_text = arcade.Text(
-                player.name,
-                panel_x + 10,
-                y + 45,
-                color,
-                font_size=24,
-                bold=True
+                player.name, panel_x + 10, y + 45, color, font_size=24, bold=True
             )
             self.text_objects.append(name_text)
 
@@ -198,7 +199,7 @@ class UIManager:
                 panel_x + 10,
                 y + 20,
                 (255, 255, 255),
-                font_size=16
+                font_size=16,
             )
             self.text_objects.append(count_text)
 
@@ -229,7 +230,7 @@ class UIManager:
                 panel_width + g * 2,
                 panel_height + g * 2,
                 (100, 100, 100, alpha),
-                border_width=1
+                border_width=1,
             )
             self.panel_shapes.append(glow_rect)
 
@@ -240,7 +241,7 @@ class UIManager:
             panel_width,
             panel_height,
             (150, 150, 150),
-            border_width=1
+            border_width=1,
         )
         self.panel_shapes.append(main_rect)
 
@@ -251,7 +252,7 @@ class UIManager:
             panel_y + 80,
             (255, 255, 255),
             font_size=24,
-            bold=True
+            bold=True,
         )
         self.text_objects.append(title)
 
@@ -263,7 +264,7 @@ class UIManager:
             panel_x + 10,
             panel_y + 50,
             (255, 255, 255),
-            font_size=18
+            font_size=18,
         )
         self.text_objects.append(status)
 
@@ -275,7 +276,7 @@ class UIManager:
                 panel_x + 10,
                 panel_y + 25,
                 (255, 255, 255),
-                font_size=18
+                font_size=18,
             )
             self.text_objects.append(req_text)
         else:
@@ -284,7 +285,7 @@ class UIManager:
                 panel_x + 10,
                 panel_y + 25,
                 (255, 255, 255),
-                font_size=18
+                font_size=18,
             )
             self.text_objects.append(req_text)
 
@@ -314,18 +315,13 @@ class UIManager:
                     width + g * 4,
                     height + g * 4,
                     (*color, alpha),
-                    border_width=max(1, 3 - g // 2)
+                    border_width=max(1, 3 - g // 2),
                 )
                 self.button_shapes.append(glow_rect)
 
             # Main border
             main_rect = create_rectangle_outline(
-                center_x,
-                center_y,
-                width,
-                height,
-                color,
-                border_width=2
+                center_x, center_y, width, height, color, border_width=2
             )
             self.button_shapes.append(main_rect)
 
@@ -338,7 +334,7 @@ class UIManager:
                 font_size=20,
                 bold=True,
                 anchor_x="center",
-                anchor_y="center"
+                anchor_y="center",
             )
             self.text_objects.append(text_obj)
 
@@ -398,7 +394,9 @@ class UIManager:
         """Rebuild only the button shapes (for hover state changes)."""
         self.button_shapes = ShapeElementList()
         # Remove existing button texts
-        self.text_objects = [t for t in self.text_objects if not self._is_button_text(t)]
+        self.text_objects = [
+            t for t in self.text_objects if not self._is_button_text(t)
+        ]
         # Rebuild button shapes and add new texts
         self._build_button_shapes()
 
@@ -408,7 +406,7 @@ class UIManager:
         for button in self.buttons.values():
             if text_obj.text == button.text:
                 # Also check if it's center-aligned (buttons use center alignment)
-                if (hasattr(text_obj, 'anchor_x') and text_obj.anchor_x == "center"):
+                if hasattr(text_obj, "anchor_x") and text_obj.anchor_x == "center":
                     return True
         return False
 
@@ -432,12 +430,12 @@ class UIManager:
             window_width // 2 - button_width - button_spacing // 2,
             button_y,
             button_width,
-            button_height
+            button_height,
         )
 
         self.buttons["cancel"].rect = (
             window_width // 2 + button_spacing // 2,
             button_y,
             button_width,
-            button_height
+            button_height,
         )

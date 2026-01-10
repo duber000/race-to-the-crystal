@@ -4,11 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Race to the Crystal is a Python-based multiplayer strategy game with GPU-accelerated vector graphics. Players compete on a 24x24 grid to capture a central crystal while managing tokens, generators, and strategic resources. The game features both 2D top-down and 3D first-person views using Arcade/OpenGL rendering.
+Race to the Crystal is a Python-based multiplayer strategy game with GPU-accelerated vector graphics. Players compete on a 24x24 grid to capture a central crystal while managing tokens, generators, and strategic resources. The game features:
+- **2D Desktop Client**: Top-down view using Arcade/OpenGL rendering
+- **3D Web Client**: Browser-based 3D view using FastAPI backend and Babylon.js rendering
 
 ## Development Commands
 
 ### Running the Game
+
+#### Local Single-Player (2D/3D Desktop)
 ```bash
 # Install dependencies
 uv sync
@@ -24,24 +28,41 @@ uv run race-to-the-crystal 2
 uv run race-to-the-crystal --3d 2
 ```
 
-**Game Controls:**
+#### Network Multiplayer (Desktop Clients)
+```bash
+# Terminal 1: Start the TCP game server
+uv run race-server
 
-**2D Mode:**
+# Terminal 2+: Start desktop clients connecting to server
+uv run race-direct
+```
+
+#### Unified Server (Desktop + Web Clients)
+```bash
+# Start unified server (TCP for desktop clients, HTTP/WebSocket for web clients)
+uv run race-unified-server
+
+# Or with explicit flag:
+uv run race-server --unified
+
+# Custom ports:
+uv run race-server --unified --port 8888 --http-port 8080
+
+# Then in browser: open http://localhost:8080
+# Desktop clients connect to: localhost:8888
+```
+
+#### Web-Only (Legacy FastAPI Mode - Deprecated)
+```bash
+# Deprecated: Use unified server instead
+uv run race-web-server
+# Then open http://localhost:8000 in your browser
+```
+
+**Game Controls:**
 - **Arrow Keys / WASD**: Pan camera view
 - **+/-** or **Mouse Scroll**: Zoom in/out
 - **Mouse Click**: Select tokens, move, attack, deploy
-
-**3D Mode:**
-- **TAB**: Cycle through your tokens (zooms to first-person view)
-- **Q/E**: Rotate camera left/right (15° increments)
-- **Right Mouse Button + Move**: Mouse-look (free camera rotation)
-- **Arrow Keys / WASD**: Pan camera position
-- **+/-** or **Mouse Scroll**: Adjust field of view
-- **Mouse Click**: Select tokens, move, attack, deploy
-- **Visual Feedback**: White wireframe shows hovered cell, green wireframes show valid moves
-
-**Common (Both Modes):**
-- **V**: Toggle between 2D and 3D view modes
 - **R**: Open Deployment Menu
 - **Space/Enter**: End turn
 - **Escape**: Cancel action
@@ -211,6 +232,132 @@ Constants, enums, and configuration objects shared between game logic and render
 - `logging_config.py`: Centralized logging configuration
 
 **Important:** When changing game rules, update constants in `shared/constants.py` rather than hardcoding values.
+
+#### `server/` - Unified Game Server (TCP + HTTP/WebSocket)
+Central multiplayer game server supporting both desktop and web clients.
+
+**Architecture:**
+The unified server runs on a single process with dual protocol support:
+- **TCP Server** (port 8888): Desktop Arcade clients using asyncio protocol
+- **HTTP/WebSocket Server** (port 8080): Web browser clients using aiohttp
+- **Single GameState**: All clients share one authoritative game state
+
+**Key modules:**
+- `game_server.py`: Main server handling all connections, routing, and coordination
+  - `_handle_new_connection()`: TCP connection handler with CONNECT/RECONNECT protocol
+  - `_handle_message()`: Routes incoming messages to appropriate handlers
+  - `_broadcast_game_state()`: Sends updates to all connected clients
+  - Reconnection support with 5-minute timeout window
+  
+- `lobby.py`: Lobby management for game creation/joining
+  - `LobbyManager`: Tracks available games and player readiness
+  - `GameStatus`: Enum for lobby, playing, and finished states
+  - Supports mixed lobbies (desktop + web clients simultaneously)
+  
+- `game_coordinator.py`: Active game session management
+  - `GameCoordinator`: Manages all running games
+  - `GameSession`: Per-game state wrapping `GameState`
+  - `AIActionExecutor`: Validates and executes player actions
+  
+- `websocket_handler.py`: WebSocket connection handler for web clients
+  - `WebSocketHandler`: Manages client connections and message routing
+  - Protocol translation between WebSocket and internal formats
+  - Handles authentication and player registration
+  
+- `http_handler.py`: HTTP server for static file serving
+  - Serves HTML/CSS/JS frontend from `web_server/static/`
+  - Serves `/static/*` assets
+  - Serves root `/` to load game client
+  
+- `ai_spawner.py`: AI player management
+  - Spawns AI processes for automated players
+  - Manages AI process lifecycle and cleanup
+  - Enables AI testing and demonstration games
+
+**Network Protocol:**
+Uses JSON-based binary protocol with message types:
+- `CONNECT`: New client joins (includes player name, client type)
+- `RECONNECT`: Returning client resumes session
+- `LOBBY_*`: Lobby state management (list, create, join, ready, start)
+- `FULL_STATE`: Complete game state (sent after actions, broadcasts to all)
+- `MOVE`, `ATTACK`, `DEPLOY`, `END_TURN`: Game actions
+- `GAME_WON`: Win condition met
+- `CHAT`: Player chat messages
+
+**Running the unified server:**
+```bash
+# Run unified server (TCP on 8888, HTTP/WebSocket on 8080)
+uv run race-unified-server
+
+# Or explicitly:
+uv run race-server --unified
+
+# Custom ports:
+uv run race-server --unified --port 8888 --http-port 8080
+
+# With debug logging:
+uv run race-server --unified --debug
+```
+
+**Mixed Client Support:**
+- Desktop clients connect via TCP to port 8888
+- Web clients connect via WebSocket to port 8080
+- Both client types can play in the same game simultaneously
+- All state updates broadcast to all connected clients automatically
+
+#### `network/` - Network Protocol Layer
+Low-level networking implementation for TCP and binary message handling.
+
+**Key modules:**
+- `connection.py`: TCP connection wrapper with async message I/O
+- `protocol.py`: Binary protocol encoding/decoding and message factories
+- `messages.py`: Message type enums and client type tracking
+
+#### `web_server/` - Web Client (FastAPI + Babylon.js - Deprecated)
+Alternative 3D rendering using web technologies. Provides browser-based multiplayer viewing.
+
+**Architecture:**
+- **FastAPI Backend** (`main.py`): REST API and WebSocket server for game state management
+  - REST endpoints: `/api/game/state`, `/api/game/new`, `/api/game/action`
+  - WebSocket: `/ws/game` for real-time bidirectional updates
+  - Uses existing `GameState` serialization (`to_dict()`, `to_json()`)
+  - Executes actions via `AIActionExecutor` for consistency
+- **Babylon.js Frontend** (`static/game_client.js`): Browser-based 3D renderer
+  - Wireframe graphics matching Tron/Battlezone aesthetic
+  - Hexagonal prism tokens with player colors
+  - Special cells: generators (cubes), crystal (pyramid)
+  - Glow layer for visual effects
+  - ArcRotateCamera for overview perspective
+  - WebSocket client for real-time synchronization
+
+**Key features:**
+- No modifications to game logic required
+- Browser-based multiplayer viewing capability
+- Real-time game state synchronization
+- Smooth animations for token movement
+- HUD with turn info and player status
+
+**Running the web server (Deprecated):**
+```bash
+# DEPRECATED: Use unified server instead
+uv run race-web-server
+# Open http://localhost:8000 in browser
+```
+
+**Migration to Unified Server:**
+The standalone FastAPI server is now deprecated. Instead, use the unified server:
+```bash
+# Instead of:
+uv run race-web-server
+
+# Use:
+uv run race-unified-server
+# Open http://localhost:8080 in browser
+```
+
+The unified server provides the same web client functionality but also supports desktop clients connecting simultaneously.
+
+See `web_server/README.md` for migration notes and detailed web client documentation.
 
 #### `tests/` - Unit Tests
 276 pytest tests covering all game mechanics. Tests use pure game logic without rendering.

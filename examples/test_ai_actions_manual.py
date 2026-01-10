@@ -3,8 +3,10 @@ Manual test script for AI Actions module.
 
 This script demonstrates the AI action execution functionality.
 """
+
 import sys
-sys.path.insert(0, '/home/user/race-to-the-crystal')
+
+sys.path.insert(0, "/home/user/race-to-the-crystal")
 
 from game.game_state import GameState
 from game.generator import Generator
@@ -131,8 +133,12 @@ def test_attack_action():
     defender = game_state.deploy_token("player_1", 8, (5, 6))
     game_state.turn_phase = TurnPhase.ACTION
 
-    print(f"Attacker: Token #{attacker.id} at {attacker.position} with {attacker.health}hp")
-    print(f"Defender: Token #{defender.id} at {defender.position} with {defender.health}hp")
+    print(
+        f"Attacker: Token #{attacker.id} at {attacker.position} with {attacker.health}hp"
+    )
+    print(
+        f"Defender: Token #{defender.id} at {defender.position} with {defender.health}hp"
+    )
 
     # Create attack action
     action = AttackAction(attacker_id=attacker.id, defender_id=defender.id)
@@ -297,6 +303,7 @@ def main():
             print(f"\n✗ Test failed with error: {e}\n")
             failed += 1
             import traceback
+
             traceback.print_exc()
 
     print("\n")

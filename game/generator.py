@@ -1,6 +1,7 @@
 """
 Generator capture mechanics.
 """
+
 from dataclasses import dataclass, field
 from typing import Self
 
@@ -28,6 +29,7 @@ class Generator:
         turns_held: Number of consecutive turns held by current player
         is_disabled: Whether this generator has been disabled
     """
+
     id: int
     position: tuple[int, int]
     capturing_player_id: PlayerID | None = None
@@ -50,7 +52,9 @@ class Generator:
         """How much this generator reduces crystal requirements when disabled."""
         return GENERATOR_TOKEN_REDUCTION
 
-    def _count_tokens_by_player(self, tokens_at_position: list[tuple[TokenID, PlayerID]]) -> dict[PlayerID, list[TokenID]]:
+    def _count_tokens_by_player(
+        self, tokens_at_position: list[tuple[TokenID, PlayerID]]
+    ) -> dict[PlayerID, list[TokenID]]:
         """
         Group tokens by their controlling player.
 
@@ -67,7 +71,9 @@ class Generator:
             player_token_counts[player_id].append(token_id)
         return player_token_counts
 
-    def _find_dominant_player(self, player_token_counts: dict[PlayerID, list[TokenID]]) -> tuple[PlayerID | None, int]:
+    def _find_dominant_player(
+        self, player_token_counts: dict[PlayerID, list[TokenID]]
+    ) -> tuple[PlayerID | None, int]:
         """
         Determine which player has the most tokens, if any.
 
@@ -93,7 +99,7 @@ class Generator:
         self,
         dominant_player: PlayerID | None,
         dominant_count: int,
-        player_token_counts: dict[PlayerID, list[TokenID]]
+        player_token_counts: dict[PlayerID, list[TokenID]],
     ) -> bool:
         """
         Update capture state based on dominant player and token count.
@@ -124,7 +130,9 @@ class Generator:
 
         return False
 
-    def update_capture_status(self, tokens_at_position: list[tuple[TokenID, PlayerID]]) -> bool:
+    def update_capture_status(
+        self, tokens_at_position: list[tuple[TokenID, PlayerID]]
+    ) -> bool:
         """
         Update generator capture status based on tokens at this position.
 
@@ -140,9 +148,13 @@ class Generator:
         self.capture_token_ids.clear()
 
         player_token_counts = self._count_tokens_by_player(tokens_at_position)
-        dominant_player, dominant_count = self._find_dominant_player(player_token_counts)
+        dominant_player, dominant_count = self._find_dominant_player(
+            player_token_counts
+        )
 
-        return self._process_capture_logic(dominant_player, dominant_count, player_token_counts)
+        return self._process_capture_logic(
+            dominant_player, dominant_count, player_token_counts
+        )
 
     def reset_capture(self) -> None:
         """Reset capture progress."""
@@ -184,7 +196,11 @@ class Generator:
         )
 
     def __repr__(self) -> str:
-        status = "DISABLED" if self.is_disabled else f"Held {self.turns_held}/{self.required_turns}"
+        status = (
+            "DISABLED"
+            if self.is_disabled
+            else f"Held {self.turns_held}/{self.required_turns}"
+        )
         return f"Generator({self.id}, Pos={self.position}, {status})"
 
 
@@ -210,7 +226,7 @@ class GeneratorManager:
     @staticmethod
     def update_all_generators(
         generators: list[Generator],
-        tokens_by_position: dict[tuple[int, int], list[tuple[TokenID, PlayerID]]]
+        tokens_by_position: dict[tuple[int, int], list[tuple[TokenID, PlayerID]]],
     ) -> list[int]:
         """
         Update all generators based on token positions.
@@ -248,8 +264,7 @@ class GeneratorManager:
 
     @staticmethod
     def get_generator_at_position(
-        generators: list[Generator],
-        position: tuple[int, int]
+        generators: list[Generator], position: tuple[int, int]
     ) -> Generator | None:
         """
         Find generator at a specific position.

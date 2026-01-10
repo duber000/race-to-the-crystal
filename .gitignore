@@ -27,3 +27,12 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Production secrets
+race-secrets.env
+**/race-secrets.env
+*.env
+!*.env.template
+
+caddy
+babylon.js

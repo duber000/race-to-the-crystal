@@ -37,9 +37,7 @@ class AsyncArcadeScheduler:
 
         # Start the event loop in a daemon thread
         self.thread = threading.Thread(
-            target=self._run_event_loop,
-            name="AsyncArcadeScheduler",
-            daemon=True
+            target=self._run_event_loop, name="AsyncArcadeScheduler", daemon=True
         )
         self.thread.start()
 
@@ -104,7 +102,9 @@ class AsyncArcadeScheduler:
             logger.warning("Scheduler not running, starting now...")
             self.start()
 
-        logger.debug(f"Scheduling coroutine from thread {threading.current_thread().name}: {coro}")
+        logger.debug(
+            f"Scheduling coroutine from thread {threading.current_thread().name}: {coro}"
+        )
 
         # Use asyncio.run_coroutine_threadsafe for thread-safe task creation
         future = asyncio.run_coroutine_threadsafe(coro, self.loop)
@@ -165,7 +165,7 @@ class AsyncWindow(arcade.Window):
         # Don't start it immediately - wait until it's actually needed
         # This prevents interference with OpenGL context initialization
         self.async_scheduler = get_async_scheduler()
-        logger.info(f"AsyncWindow initialized (scheduler will start on demand)")
+        logger.info("AsyncWindow initialized (scheduler will start on demand)")
 
     def on_update(self, delta_time: float):
         """

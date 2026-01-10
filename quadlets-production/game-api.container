@@ -1,0 +1,39 @@
+[Unit]
+Description=Race to the Crystal - FastAPI Game Backend (Production)
+Documentation=https://github.com/duber000/race-to-the-crystal
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/race-to-the-crystal:latest
+ContainerName=race-game-api
+Network=game-net.network
+
+# Environment configuration (non-sensitive)
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=TCP_PORT=8888
+Environment=HTTP_PORT=8080
+Environment=MERCURE_HUB_URL=http://race-caddy/.well-known/mercure
+Environment=MERCURE_PUBLIC_URL=https://your-domain.com:8880/.well-known/mercure
+Environment=MERCURE_TOPIC_PREFIX=https://your-domain.com/game
+
+# Secrets loaded from file (created during deployment)
+# File should contain: MERCURE_PUBLISHER_JWT=<secret>
+EnvironmentFile=%h/.config/containers/systemd/race-secrets.env
+
+# Resource limits (4 players max)
+# Note: MemorySwap and CPUQuota not supported on all podman versions
+Memory=1G
+PidsLimit=100
+
+# Security
+SecurityLabelDisable=false
+
+[Service]
+Type=notify
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

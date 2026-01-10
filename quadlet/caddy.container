@@ -1,0 +1,34 @@
+[Unit]
+Description=Caddy Web Server with Mercure Support
+Documentation=https://caddyserver.com
+After=network-online.target game-api.service
+Wants=network-online.target
+Wants=game-api.service
+
+[Container]
+Image=localhost/race-caddy:latest
+ContainerName=race-caddy
+Network=game-net.network
+
+# Publish ports on host (use non-privileged ports for rootless podman)
+PublishPort=8880:80
+PublishPort=8444:443
+
+# Environment for Mercure JWTs
+Environment=MERCURE_PUBLISHER_JWT=dev_secret_key
+Environment=MERCURE_SUBSCRIBER_JWT=dev_secret_key
+
+# Mount Caddyfile configuration (user home directory)
+Volume=%h/.config/containers/systemd/Caddyfile:/etc/caddy/Caddyfile:ro,Z
+
+# Persistent certificate storage
+Volume=%h/.local/share/containers/systemd/caddy/data:/data,Z
+Volume=%h/.local/share/containers/systemd/caddy/config:/config,Z
+
+[Service]
+Type=notify
+Restart=unless-stopped
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

@@ -35,7 +35,7 @@ class Renderer3D:
 
         # OpenGL context (set by GameView during initialization)
         self.ctx = None
-        
+
         # Selection state for highlighting selected token
         self.selected_token_id: Optional[TokenID] = None
 
@@ -81,7 +81,9 @@ class Renderer3D:
 
             # Get generator list (fallback to board positions when missing)
             generators = game_state.generators
-            if (not generators) and hasattr(game_state.board, "get_generator_positions"):
+            if (not generators) and hasattr(
+                game_state.board, "get_generator_positions"
+            ):
                 from types import SimpleNamespace
 
                 generators = [
@@ -179,11 +181,6 @@ class Renderer3D:
 
                     # Update position target (non-instant)
                     # Note: We check against render target, not current position, to avoid interrupting animation
-                    current_grid_x = int(
-                        token_3d.target_x // 32
-                    )  # Using 32 as approximate CELL_SIZE if imported locally
-                    current_grid_y = int(token_3d.target_y // 32)
-
                     # Just update target, Token3D handles interpolation
                     token_3d.update_position(
                         token.position[0], token.position[1], instant=False
@@ -247,7 +244,9 @@ class Renderer3D:
         if self.board_3d:
             self.board_3d.update_generator_lines()
 
-    def update_selection_visuals(self, selected_token_id: Optional[TokenID], valid_moves: set) -> None:
+    def update_selection_visuals(
+        self, selected_token_id: Optional[TokenID], valid_moves: set
+    ) -> None:
         """
         Update selection and valid move indicators in 3D mode.
 

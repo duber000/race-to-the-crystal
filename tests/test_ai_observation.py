@@ -1,7 +1,7 @@
 """
 Unit tests for AI Observation module.
 """
-import pytest
+
 from game.game_state import GameState
 from game.generator import Generator
 from game.crystal import Crystal
@@ -79,10 +79,16 @@ class TestAIObserver:
         game_state = create_test_game(2)
 
         # Note: Tokens are auto-deployed at game start, so we have some already deployed
-        initial_deployed = sum(1 for t in game_state.tokens.values()
-                              if t.player_id == "player_0" and t.is_deployed)
-        initial_reserve = sum(1 for t in game_state.tokens.values()
-                             if t.player_id == "player_0" and not t.is_deployed)
+        initial_deployed = sum(
+            1
+            for t in game_state.tokens.values()
+            if t.player_id == "player_0" and t.is_deployed
+        )
+        initial_reserve = sum(
+            1
+            for t in game_state.tokens.values()
+            if t.player_id == "player_0" and not t.is_deployed
+        )
 
         description = AIObserver.describe_game_state(game_state, "player_0")
 
@@ -97,8 +103,11 @@ class TestAIObserver:
         game_state = create_test_game(2)
 
         # Note: Tokens are auto-deployed at game start
-        enemy_deployed = sum(1 for t in game_state.tokens.values()
-                            if t.player_id == "player_1" and t.is_deployed)
+        enemy_deployed = sum(
+            1
+            for t in game_state.tokens.values()
+            if t.player_id == "player_1" and t.is_deployed
+        )
 
         description = AIObserver.describe_game_state(game_state, "player_0")
 
@@ -175,7 +184,9 @@ class TestAIObserver:
 
         # Should have crystal (C), generators (1,2,3,4), mystery squares (M), corners (*)
         assert " C " in board_map or " c " in board_map  # Crystal (or token on crystal)
-        assert " 1 " in board_map or " C " in board_map or " c " in board_map  # G1 or token
+        assert (
+            " 1 " in board_map or " C " in board_map or " c " in board_map
+        )  # G1 or token
         assert " M " in board_map or " C " in board_map  # Mystery or token
 
     def test_list_available_actions_not_playing(self):
@@ -228,8 +239,7 @@ class TestAIObserver:
 
         # Should have deploy actions for all token types (10, 8, 6, 4)
         deploy_actions = [
-            action for action in actions_data["actions"]
-            if action["type"] == "DEPLOY"
+            action for action in actions_data["actions"] if action["type"] == "DEPLOY"
         ]
 
         assert len(deploy_actions) > 0
@@ -249,14 +259,13 @@ class TestAIObserver:
         game_state.turn_phase = TurnPhase.MOVEMENT
 
         # Deploy a token
-        token = game_state.deploy_token("player_0", 10, (5, 5))
+        game_state.deploy_token("player_0", 10, (5, 5))
 
         actions_data = AIObserver.list_available_actions(game_state, "player_0")
 
         # Should have move actions for the deployed token
         move_actions = [
-            action for action in actions_data["actions"]
-            if action["type"] == "MOVE"
+            action for action in actions_data["actions"] if action["type"] == "MOVE"
         ]
 
         assert len(move_actions) > 0
@@ -289,7 +298,8 @@ class TestAIObserver:
         # Should have attack actions if enemies are adjacent
         if "ATTACK" in action_types:
             attack_actions = [
-                action for action in actions_data["actions"]
+                action
+                for action in actions_data["actions"]
                 if action["type"] == "ATTACK"
             ]
             for action in attack_actions:
@@ -378,10 +388,10 @@ class TestAIObserver:
         game_state = create_test_game(4)
 
         # Deploy tokens for all players
-        game_state.deploy_token("player_0", 10, (5, 5))   # Cyan
-        game_state.deploy_token("player_1", 10, (6, 6))   # Magenta
-        game_state.deploy_token("player_2", 10, (7, 7))   # Yellow
-        game_state.deploy_token("player_3", 10, (8, 8))   # Green
+        game_state.deploy_token("player_0", 10, (5, 5))  # Cyan
+        game_state.deploy_token("player_1", 10, (6, 6))  # Magenta
+        game_state.deploy_token("player_2", 10, (7, 7))  # Yellow
+        game_state.deploy_token("player_3", 10, (8, 8))  # Green
 
         # From player_0's perspective (Cyan)
         board_map = AIObserver.get_board_map(game_state, "player_0")

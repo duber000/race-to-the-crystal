@@ -6,7 +6,7 @@ Integrates GameWindow with NetworkClient for server-authoritative gameplay.
 import arcade
 import arcade.gui
 import logging
-from typing import Optional, Callable, Dict
+from typing import Optional, Callable
 from queue import Queue
 
 from client.game_window import GameView
@@ -15,7 +15,6 @@ from client.ui.async_arcade import schedule_async
 from game.game_state import GameState
 from game.ai_actions import MoveAction, AttackAction, DeployAction, EndTurnAction
 from network.messages import MessageType
-from shared.constants import DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT
 from shared.types import TokenID
 
 logger = logging.getLogger(__name__)
@@ -140,9 +139,6 @@ class NetworkGameView(arcade.View):
         """
         # Store original methods from the current game_state
         original_move_token = self.game_state.move_token
-        original_attack_token = self.game_state.attack_token
-        original_deploy_token = self.game_state.deploy_token
-        original_end_turn = self.game_state.end_turn
 
         def network_move_token(token_id, new_position):
             """Intercept move and send to server with client-side prediction."""
@@ -157,10 +153,10 @@ class NetworkGameView(arcade.View):
                     }
                 else:
                     self._pending_move_rollback = None
-                
+
                 # Apply client-side prediction - update local state immediately
                 success = original_move_token(token_id, new_position)
-                
+
                 if success:
                     schedule_async(self._send_move(token_id, new_position))
                     self.waiting_for_server = True
@@ -237,7 +233,7 @@ class NetworkGameView(arcade.View):
         """Send end turn action to server."""
         logger.info("_send_end_turn() called - creating END_TURN action")
         action = EndTurnAction()
-        logger.info(f"Sending END_TURN action to server via network_client...")
+        logger.info("Sending END_TURN action to server via network_client...")
         success = await self.network_client.send_action(action)
         if not success:
             logger.error("Failed to send end turn action")
@@ -256,7 +252,9 @@ class NetworkGameView(arcade.View):
         Args:
             message: NetworkMessage from server
         """
-        logger.info(f"NetworkGameView received: {message.type.value}, queuing for processing")
+        logger.info(
+            f"NetworkGameView received: {message.type.value}, queuing for processing"
+        )
 
         # Queue message for processing on main thread (thread-safe)
         self._message_queue.put(message)
@@ -361,7 +359,9 @@ class NetworkGameView(arcade.View):
                     self.waiting_for_server = False
 
         except Exception as e:
-            logger.error(f"Error processing message {message.type.value}: {e}", exc_info=True)
+            logger.error(
+                f"Error processing message {message.type.value}: {e}", exc_info=True
+            )
 
     def _handle_full_state(self, message):
         """Handle FULL_STATE message with complete game state (main thread)."""
@@ -447,34 +447,38 @@ class NetworkGameView(arcade.View):
         """Rollback client-side prediction when server rejects a move."""
         if not self._pending_move_rollback:
             return
-            
+
         rollback_info = self._pending_move_rollback
         token_id = rollback_info["token_id"]
         original_position = rollback_info["original_position"]
         original_health = rollback_info["original_health"]
-        
+
         # Get the token and revert its state
         token = self.game_state.get_token(token_id)
         if token:
-            logger.info(f"Rolling back token {token_id} from {token.position} to {original_position}")
-            
+            logger.info(
+                f"Rolling back token {token_id} from {token.position} to {original_position}"
+            )
+
             # Revert position (original_position is a tuple)
             token.position = tuple(original_position)
-            
+
             # Revert health if it changed (e.g., from mystery square)
             if token.health != original_health:
                 token.health = original_health
-                
+
             # Update visuals to reflect rollback
             if self.game_view:
                 # Update 2D renderer
-                if hasattr(self.game_view.renderer_2d, 'sync_tokens'):
+                if hasattr(self.game_view.renderer_2d, "sync_tokens"):
                     self.game_view.renderer_2d.sync_tokens(self.game_state)
-                    
+
                 # Update 3D renderer
-                if hasattr(self.game_view.renderer_3d, 'sync_tokens'):
-                    self.game_view.renderer_3d.sync_tokens(self.game_state, self.game_view.window.ctx)
-                    
+                if hasattr(self.game_view.renderer_3d, "sync_tokens"):
+                    self.game_view.renderer_3d.sync_tokens(
+                        self.game_state, self.game_view.window.ctx
+                    )
+
                 # Clear selection
                 if self.game_view.input_handler:
                     self.game_view.input_handler.selected_token_id = None
@@ -502,7 +506,6 @@ class NetworkGameView(arcade.View):
     def _handle_game_won(self, message):
         """Handle GAME_WON message (main thread)."""
         data = message.data or {}
-        winner_id = data.get("winner_id", "")
         winner_name = data.get("winner_name", "Unknown")
 
         logger.info(f"Game ended! Winner: {winner_name}")
@@ -530,11 +533,9 @@ class NetworkGameView(arcade.View):
 
         # Queue disconnect as a special message for processing on main thread
         from network.protocol import NetworkMessage
+
         disconnect_msg = NetworkMessage(
-            type=MessageType.ERROR,
-            timestamp=0,
-            player_id="",
-            data={"disconnect": True}
+            type=MessageType.ERROR, timestamp=0, player_id="", data={"disconnect": True}
         )
         self._message_queue.put(disconnect_msg)
 

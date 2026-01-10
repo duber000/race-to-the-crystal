@@ -3,6 +3,7 @@ Network client for Race to the Crystal.
 
 Handles connection to game server and message exchange.
 """
+
 import asyncio
 import logging
 import time
@@ -88,15 +89,13 @@ class NetworkClient:
 
             # Send CONNECT message
             connect_msg = self.protocol.create_connect_message(
-                self.player_name,
-                self.client_type
+                self.player_name, self.client_type
             )
             await self.connection.send_message(connect_msg)
 
             # Wait for CONNECT_ACK
             ack_msg = await asyncio.wait_for(
-                self.connection.receive_message(),
-                timeout=5.0
+                self.connection.receive_message(), timeout=5.0
             )
 
             if not ack_msg or ack_msg.type != MessageType.CONNECT_ACK:
@@ -145,8 +144,7 @@ class NetworkClient:
 
             # Open TCP connection
             reader, writer = await asyncio.open_connection(
-                self.server_host,
-                self.server_port
+                self.server_host, self.server_port
             )
 
             # Create new connection wrapper
@@ -154,15 +152,13 @@ class NetworkClient:
 
             # Send RECONNECT message
             reconnect_msg = self.protocol.create_reconnect_message(
-                self.player_id,
-                self.game_id
+                self.player_id, self.game_id
             )
             await self.connection.send_message(reconnect_msg)
 
             # Wait for RECONNECT_ACK or RECONNECT_FAILED
             response_msg = await asyncio.wait_for(
-                self.connection.receive_message(),
-                timeout=5.0
+                self.connection.receive_message(), timeout=5.0
             )
 
             if not response_msg:
@@ -195,7 +191,9 @@ class NetworkClient:
                 return False
 
             else:
-                logger.error(f"Unexpected response to reconnection: {response_msg.type.value}")
+                logger.error(
+                    f"Unexpected response to reconnection: {response_msg.type.value}"
+                )
                 await self.connection.close()
                 return False
 
@@ -282,7 +280,9 @@ class NetworkClient:
                 logger.info("Auto-reconnection successful!")
                 return
 
-        logger.error(f"Auto-reconnection failed after {self.max_reconnect_attempts} attempts")
+        logger.error(
+            f"Auto-reconnection failed after {self.max_reconnect_attempts} attempts"
+        )
         # Call disconnect callback if all attempts failed
         if self.on_disconnect:
             await self.on_disconnect()
@@ -337,10 +337,7 @@ class NetworkClient:
             return False
 
         msg = self.protocol.create_game_message(
-            self.player_id,
-            game_name,
-            max_players,
-            self.player_name
+            self.player_id, game_name, max_players, self.player_name
         )
 
         return await self.connection.send_message(msg)
@@ -381,7 +378,7 @@ class NetworkClient:
             type=MessageType.LEAVE_GAME,
             timestamp=time.time(),
             player_id=self.player_id,
-            data={"game_id": self.game_id}
+            data={"game_id": self.game_id},
         )
 
         success = await self.connection.send_message(msg)
@@ -425,8 +422,7 @@ class NetworkClient:
 
             # Wait for GAME_LIST response
             response = await asyncio.wait_for(
-                self._wait_for_message_type(MessageType.GAME_LIST),
-                timeout=5.0
+                self._wait_for_message_type(MessageType.GAME_LIST), timeout=5.0
             )
 
             if not response:
@@ -446,7 +442,9 @@ class NetworkClient:
             logger.error(f"Error listing games: {e}", exc_info=True)
             return None
 
-    async def _wait_for_message_type(self, message_type: MessageType) -> Optional[NetworkMessage]:
+    async def _wait_for_message_type(
+        self, message_type: MessageType
+    ) -> Optional[NetworkMessage]:
         """
         Wait for a specific message type from the server.
 

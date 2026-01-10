@@ -1,7 +1,7 @@
 """
 Unit tests for MovementSystem class.
 """
-import pytest
+
 from game.movement import MovementSystem
 from game.token import Token
 from game.board import Board
@@ -41,13 +41,17 @@ class TestMovementSystem:
         """Test that tokens can't move through cells occupied by enemy tokens."""
         board = Board(width=10, height=10)
         token = Token(id=1, player_id="p1", health=10, max_health=10, position=(5, 5))
-        enemy_token = Token(id=99, player_id="p2", health=10, max_health=10, position=(6, 5))
+        enemy_token = Token(
+            id=99, player_id="p2", health=10, max_health=10, position=(6, 5)
+        )
 
         # Block path to the right with an enemy token
         board.set_occupant((6, 5), 99)
         tokens_dict = {1: token, 99: enemy_token}
 
-        valid_moves = MovementSystem.get_valid_moves(token, board, tokens_dict=tokens_dict)
+        valid_moves = MovementSystem.get_valid_moves(
+            token, board, tokens_dict=tokens_dict
+        )
 
         # Can't reach the blocked cell itself (enemy token)
         assert (6, 5) not in valid_moves
@@ -60,13 +64,17 @@ class TestMovementSystem:
         """Test that tokens CANNOT stack on normal cells with friendly tokens."""
         board = Board(width=10, height=10)
         token = Token(id=1, player_id="p1", health=10, max_health=10, position=(5, 5))
-        friendly_token = Token(id=99, player_id="p1", health=10, max_health=10, position=(6, 5))
+        friendly_token = Token(
+            id=99, player_id="p1", health=10, max_health=10, position=(6, 5)
+        )
 
         # Friendly token to the right on a normal cell
         board.set_occupant((6, 5), 99)
         tokens_dict = {1: token, 99: friendly_token}
 
-        valid_moves = MovementSystem.get_valid_moves(token, board, tokens_dict=tokens_dict)
+        valid_moves = MovementSystem.get_valid_moves(
+            token, board, tokens_dict=tokens_dict
+        )
 
         # CANNOT reach the friendly token's cell on normal cell (no stacking on normal cells)
         assert (6, 5) not in valid_moves
@@ -81,14 +89,24 @@ class TestMovementSystem:
         # Generator is at (6, 6)
         generator_pos = board.get_generator_positions()[0]
 
-        token = Token(id=1, player_id="p1", health=6, max_health=6, position=(generator_pos[0]-1, generator_pos[1]))
-        friendly_token = Token(id=99, player_id="p1", health=10, max_health=10, position=generator_pos)
+        token = Token(
+            id=1,
+            player_id="p1",
+            health=6,
+            max_health=6,
+            position=(generator_pos[0] - 1, generator_pos[1]),
+        )
+        friendly_token = Token(
+            id=99, player_id="p1", health=10, max_health=10, position=generator_pos
+        )
 
         # Friendly token on the generator
         board.set_occupant(generator_pos, 99)
         tokens_dict = {1: token, 99: friendly_token}
 
-        valid_moves = MovementSystem.get_valid_moves(token, board, tokens_dict=tokens_dict)
+        valid_moves = MovementSystem.get_valid_moves(
+            token, board, tokens_dict=tokens_dict
+        )
 
         # CAN reach the generator cell even with friendly token (stacking allowed on generators)
         assert generator_pos in valid_moves
@@ -205,8 +223,13 @@ class TestMovementSystem:
         import math
 
         assert MovementSystem.get_euclidean_distance((0, 0), (0, 0)) == 0
-        assert MovementSystem.get_euclidean_distance((0, 0), (3, 4)) == 5  # 3-4-5 triangle
-        assert abs(MovementSystem.get_euclidean_distance((0, 0), (1, 1)) - math.sqrt(2)) < 0.001
+        assert (
+            MovementSystem.get_euclidean_distance((0, 0), (3, 4)) == 5
+        )  # 3-4-5 triangle
+        assert (
+            abs(MovementSystem.get_euclidean_distance((0, 0), (1, 1)) - math.sqrt(2))
+            < 0.001
+        )
 
     def test_is_adjacent(self):
         """Test adjacency checking."""
