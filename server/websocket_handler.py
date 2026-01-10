@@ -17,6 +17,8 @@ from aiohttp import WSMsgType, web
 
 from network.messages import MessageType, ClientType
 from network.protocol import NetworkMessage, ProtocolHandler
+from server.rate_limiter import RateLimiter
+from server.lobby import validate_player_name, validate_game_name
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +35,7 @@ class WebSocketClient:
     websocket: web.WebSocketResponse = None
     game_id: Optional[str] = None
     connected_at: float = field(default_factory=time.time)
+    ip_address: Optional[str] = None
 
     def is_in_game(self) -> bool:
         """Check if client is in an active game."""
@@ -58,6 +61,7 @@ class WebSocketHandler:
         self.clients: Dict[str, WebSocketClient] = {}
         self.protocol = ProtocolHandler()
         self._runner = None
+        self.rate_limiter = RateLimiter()
 
     def set_game_server(self, game_server) -> None:
         """Set reference to main game server."""
@@ -73,14 +77,40 @@ class WebSocketHandler:
         Returns:
             WebSocket response for connection
         """
-        ws = web.WebSocketResponse(max_msg_size=10 * 1024 * 1024)
+        # Get client IP address
+        ip_address = request.remote or "unknown"
+        if "X-Real-IP" in request.headers:
+            ip_address = request.headers["X-Real-IP"]
+        elif "X-Forwarded-For" in request.headers:
+            ip_address = request.headers["X-Forwarded-For"].split(",")[0].strip()
+
+        # Check rate limit for connections
+        allowed, error_msg = self.rate_limiter.check_connection(ip_address)
+        if not allowed:
+            logger.warning(f"Rate limited connection from {ip_address}: {error_msg}")
+            # Return error response
+            ws = web.WebSocketResponse(max_msg_size=64 * 1024)  # 64KB limit
+            await ws.prepare(request)
+            await ws.send_json({
+                "type": "ERROR",
+                "message": error_msg
+            })
+            await ws.close()
+            return ws
+
+        # Accept connection with 64KB message size limit (reduced from 10MB)
+        ws = web.WebSocketResponse(max_msg_size=64 * 1024)
         await ws.prepare(request)
 
         client_id = str(uuid.uuid4())
-        client = WebSocketClient(client_id=client_id, websocket=ws)
+        client = WebSocketClient(
+            client_id=client_id,
+            websocket=ws,
+            ip_address=ip_address
+        )
         self.clients[client_id] = client
 
-        logger.info(f"WebSocket client connected: {client_id}")
+        logger.info(f"WebSocket client connected: {client_id} from {ip_address}")
 
         try:
             async for msg in ws:
@@ -97,6 +127,9 @@ class WebSocketHandler:
             logger.error(f"WebSocket handler error for {client_id}: {e}", exc_info=True)
         finally:
             await self._handle_disconnect(client)
+            # Release connection rate limit slot
+            if client.ip_address:
+                self.rate_limiter.release_connection(client.ip_address)
             # Remove client using player_id if set, otherwise use client_id
             cleanup_id = client.player_id if client.player_id else client_id
             if cleanup_id in self.clients:
@@ -156,6 +189,15 @@ class WebSocketHandler:
             return
 
         player_name = data.get("player_name", "WebPlayer")
+
+        # Validate player name
+        try:
+            validate_player_name(player_name)
+        except ValueError as e:
+            await self._send_error(client, f"Invalid player name: {e}")
+            logger.warning(f"Invalid player name rejected: {player_name} - {e}")
+            return
+
         player_id = str(uuid.uuid4())
 
         # Update client with player info
@@ -189,8 +231,27 @@ class WebSocketHandler:
             await self._send_error(client, "Not connected")
             return
 
+        # Check game creation rate limit
+        allowed, error_msg = self.rate_limiter.check_game_creation(client.player_id)
+        if not allowed:
+            await self._send_error(client, error_msg)
+            return
+
         game_name = data.get("game_name", "Web Game")
         max_players = data.get("max_players", 4)
+
+        # Validate game name
+        try:
+            validate_game_name(game_name)
+        except ValueError as e:
+            await self._send_error(client, f"Invalid game name: {e}")
+            logger.warning(f"Invalid game name rejected: {game_name} - {e}")
+            return
+
+        # Validate max_players
+        if not isinstance(max_players, int) or max_players < 2 or max_players > 4:
+            await self._send_error(client, "Invalid max_players: must be between 2 and 4")
+            return
 
         try:
             lobby = self.game_server.lobby_manager.create_lobby(
@@ -339,6 +400,12 @@ class WebSocketHandler:
         """Handle game action from web client."""
         if not self.game_server or not client.player_id:
             await self._send_error(client, "Not connected")
+            return
+
+        # Check action rate limit
+        allowed, error_msg = self.rate_limiter.check_action(client.player_id)
+        if not allowed:
+            await self._send_error(client, error_msg)
             return
 
         msg_type = data.get("type")

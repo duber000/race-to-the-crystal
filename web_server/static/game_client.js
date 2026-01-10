@@ -80,7 +80,8 @@ class GameClient {
 
     this.wsClient.on("lobby_joined", (data) => {
       this.updateUIState(STATE.IN_LOBBY);
-      this.ui.renderWaitingRoom(data.lobby, data.isHost, data.isHost);
+      const isReady = this.wsClient.isPlayerReady();
+      this.ui.renderWaitingRoom(data.lobby, data.isHost, isReady);
       this.setupWaitingRoomHandlers();
     });
 
@@ -298,7 +299,12 @@ class GameClient {
     if (this.selectedTokenId === null) {
       if (tokenAtCell && this.isOurToken(tokenAtCell.id)) {
         this.selectedTokenId = tokenAtCell.id;
-        this.updateValidMoves(tokenAtCell);
+        // Show valid moves in MOVEMENT phase, attack targets in ACTION phase
+        if (this.turnPhase === TurnPhase.MOVEMENT) {
+          this.updateValidMoves(tokenAtCell);
+        } else if (this.turnPhase === TurnPhase.ACTION) {
+          this.updateValidAttackTargets(tokenAtCell);
+        }
         this.renderer.updateTokenSelectionGlow(this.selectedTokenId);
         this.renderer.playSound("deploy");
       }
@@ -440,6 +446,40 @@ class GameClient {
     return player.token_ids
       .map((id) => this.gameState.tokens[id])
       .filter((token) => token && token.is_alive && token.is_deployed);
+  }
+
+  updateValidAttackTargets(token) {
+    this.validMoves = new Set();
+
+    // Find adjacent enemy tokens
+    const [x, y] = token.position;
+    const directions = [
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+      [0, -1],
+      [0, 1],
+      [1, -1],
+      [1, 0],
+      [1, 1],
+    ];
+
+    for (const [dx, dy] of directions) {
+      const nx = x + dx;
+      const ny = y + dy;
+
+      if (nx < 0 || nx >= BOARD_WIDTH || ny < 0 || ny >= BOARD_HEIGHT)
+        continue;
+
+      const enemyToken = this.getTokenAt(nx, ny);
+      if (enemyToken && !this.isOurToken(enemyToken.id)) {
+        this.validMoves.add(`${nx},${ny}`);
+      }
+    }
+
+    this.renderer.updateValidMoveIndicators(
+      this.validMoves.size > 0 ? this.validMoves : null,
+    );
   }
 
   updateValidMoves(token) {
