@@ -6,7 +6,14 @@ from dataclasses import dataclass, field
 from typing import Self
 import json
 
-from shared.enums import CellType, GamePhase, PlayerColor, TurnPhase
+from shared.enums import (
+    CellType,
+    GamePhase,
+    PlayerColor,
+    TurnPhase,
+    CrystalEffect,
+    CrystalEffect,
+)
 from shared.constants import (
     TOKEN_HEALTH_VALUES,
     TOKENS_PER_HEALTH_VALUE,
@@ -47,7 +54,9 @@ class GameState:
         default_factory=list
     )  # Will be list[Generator] when created
     crystal: "Crystal | None" = None  # Will be Crystal object when created
-    crystal_effects: CrystalEffectsManager = field(default_factory=CrystalEffectsManager)
+    crystal_effects: CrystalEffectsManager = field(
+        default_factory=CrystalEffectsManager
+    )
     current_turn_player_id: PlayerID | None = None
     turn_number: int = 0
     phase: GamePhase = GamePhase.SETUP
@@ -389,6 +398,9 @@ class GameState:
         # in the game action handler to allow for sound effects
         # self._update_generators_and_crystal()
 
+        # Update crystal effects (clear expired effects)
+        self.crystal_effects.end_turn_update()
+
         # Get list of active players
         active_players = [
             pid for pid, player in self.players.items() if player.is_active
@@ -444,7 +456,9 @@ class GameState:
 
         # Reduce crystal effect durations for players who captured generators
         for generator_id, player_id in capturing_players.items():
-            self.crystal_effects.reduce_effect_durations_for_generator_capture(player_id)
+            self.crystal_effects.reduce_effect_durations_for_generator_capture(
+                player_id
+            )
 
         # Update crystal and check for winner
         from game.crystal import CrystalManager
@@ -492,7 +506,7 @@ class GameState:
         self,
         player_id: PlayerID,
         effect_type: "CrystalEffect",
-        duration: int | None = None
+        duration: int | None = None,
     ) -> None:
         """
         Apply a crystal effect to a player.
@@ -502,8 +516,9 @@ class GameState:
             effect_type: Type of effect (FOG_OF_WAR or PHANTOM_ENEMIES)
             duration: Effect duration in turns (uses default if None)
         """
-        from shared.enums import CrystalEffect
-        self.crystal_effects.apply_effect(player_id, effect_type, self.turn_number, duration)
+        self.crystal_effects.apply_effect(
+            player_id, effect_type, self.turn_number, duration
+        )
 
         # If phantom enemies effect, generate phantom tokens
         if effect_type == CrystalEffect.PHANTOM_ENEMIES:
@@ -527,14 +542,12 @@ class GameState:
 
         # Generate phantoms
         self.crystal_effects.generate_phantom_tokens(
-            player_id,
-            other_players,
-            self.board.width,
-            self.board.height,
-            occupied
+            player_id, other_players, self.board.width, self.board.height, occupied
         )
 
-    def get_visible_tokens_for_player(self, player_id: PlayerID) -> tuple[list[Token], list]:
+    def get_visible_tokens_for_player(
+        self, player_id: PlayerID
+    ) -> tuple[list[Token], list]:
         """
         Get tokens visible to a specific player (considering fog of war and phantoms).
 
@@ -549,9 +562,7 @@ class GameState:
 
         # Filter and get phantoms
         return self.crystal_effects.get_tokens_for_player_view(
-            player_id,
-            all_tokens,
-            lambda t: t.player_id
+            player_id, all_tokens, lambda t: t.player_id
         )
 
     def to_dict(self) -> dict:
@@ -595,7 +606,11 @@ class GameState:
 
         # Crystal effects may be absent in older saves
         effects_data = data.get("crystal_effects")
-        state.crystal_effects = CrystalEffectsManager.from_dict(effects_data) if effects_data else CrystalEffectsManager()
+        state.crystal_effects = (
+            CrystalEffectsManager.from_dict(effects_data)
+            if effects_data
+            else CrystalEffectsManager()
+        )
 
         state.current_turn_player_id = data["current_turn_player_id"]
         state.turn_number = data["turn_number"]
