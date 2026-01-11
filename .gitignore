@@ -35,4 +35,7 @@ race-secrets.env
 !*.env.template
 
 caddy
+
+# Babylon.js library files (downloaded from CDN)
 babylon.js
+babylonjs.loaders.min.js

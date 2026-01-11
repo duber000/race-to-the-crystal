@@ -29,6 +29,7 @@ class Renderer3D {
         this.phantomTokens3D = new Map();
         this.specialCellMeshes = [];
         this.validMoveMeshes = [];
+        this.validAttackMeshes = [];
         this.hoverMesh = null;
         this.generatorLines = [];
         this.generatorLineMeshes = [];
@@ -790,6 +791,34 @@ class Renderer3D {
             square.material = material;
 
             this.validMoveMeshes.push(square);
+        });
+    }
+
+    updateValidAttackIndicators(attacks) {
+        this.validAttackMeshes.forEach((mesh) => mesh.dispose());
+        this.validAttackMeshes = [];
+
+        if (!attacks || attacks.size === 0) return;
+
+        attacks.forEach((posKey) => {
+            const [gridX, gridY] = posKey.split(',').map(Number);
+            const centerX = gridX * CELL_SIZE + CELL_SIZE / 2;
+            const centerZ = gridY * CELL_SIZE + CELL_SIZE / 2;
+
+            const square = BABYLON.MeshBuilder.CreateGround(
+                `validAttack_${gridX}_${gridY}`,
+                { width: CELL_SIZE * 0.8, height: CELL_SIZE * 0.8 },
+                this.scene,
+            );
+            square.position = new BABYLON.Vector3(centerX, 1.0, centerZ);
+
+            const material = new BABYLON.StandardMaterial("validAttackMat", this.scene);
+            material.emissiveColor = RED_GLOW; // Red for attacks
+            material.wireframe = true;
+            material.alpha = 0.7;
+            square.material = material;
+
+            this.validAttackMeshes.push(square);
         });
     }
 

@@ -323,14 +323,17 @@ class GameClient {
         return;
       }
 
-      if (tokenAtCell && !this.isOurToken(tokenAtCell.id)) {
+       if (tokenAtCell && !this.isOurToken(tokenAtCell.id)) {
         if (this.turnPhase === TurnPhase.ACTION) {
+          console.log(`Attempting attack: ${this.selectedTokenId} -> ${tokenAtCell.id}`);
           this.wsClient.attackToken(this.selectedTokenId, tokenAtCell.id);
           this.renderer.playSound("attack");
           this.selectedTokenId = null;
           this.validMoves = new Set();
           this.renderer.updateValidMoveIndicators(null);
           this.renderer.updateTokenSelectionGlow(null);
+        } else {
+          console.log(`Cannot attack: Wrong phase (currently ${this.turnPhase}, need ACTION)`);
         }
         return;
       }
@@ -481,7 +484,7 @@ class GameClient {
       }
     }
 
-    this.renderer.updateValidMoveIndicators(
+     this.renderer.updateValidAttackIndicators(
       this.validMoves.size > 0 ? this.validMoves : null,
     );
   }

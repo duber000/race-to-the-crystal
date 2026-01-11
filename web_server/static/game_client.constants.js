@@ -27,6 +27,7 @@ const ORANGE_GLOW = new BABYLON.Color3(1, 0.65, 0);
 const MAGENTA_GLOW = new BABYLON.Color3(1, 0, 1);
 const WHITE_GLOW = new BABYLON.Color3(1, 1, 1);
 const GREEN_GLOW = new BABYLON.Color3(0, 1, 0);
+const RED_GLOW = new BABYLON.Color3(1, 0, 0);
 
 const STATE = {
     DISCONNECTED: "DISCONNECTED",

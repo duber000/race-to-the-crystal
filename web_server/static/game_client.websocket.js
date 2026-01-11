@@ -440,7 +440,7 @@ class WebSocketClient {
     this.sendAction({
       type: "ATTACK",
       attacker_id: attackerId,
-      target_id: targetId,
+      defender_id: targetId,
     });
   }
 

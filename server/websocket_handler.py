@@ -418,7 +418,7 @@ class WebSocketHandler:
             "token_id": data.get("token_id"),
             "destination": data.get("destination"),
             "attacker_id": data.get("attacker_id"),
-            "target_id": data.get("target_id"),
+            "defender_id": data.get("defender_id") or data.get("target_id"),
             "position": data.get("position"),
             "health_value": data.get("health_value"),
             "player_id": client.player_id,
@@ -534,16 +534,31 @@ class WebSocketHandler:
         if not self.game_server:
             return
 
+        logger.info(
+            f"[WebSocket] Broadcasting game state to {len(game_session.network_to_game_id)} players"
+        )
+        logger.info(
+            f"[WebSocket] Game state - turn_phase: {game_session.game_state.turn_phase.name}, "
+            f"current_turn: {game_session.game_state.current_turn_player_id}"
+        )
+
         for net_player_id in game_session.network_to_game_id.keys():
             if net_player_id in self.clients:
                 client = self.clients[net_player_id]
                 state_dict = game_session.get_game_state_for_player(net_player_id)
+                logger.info(
+                    f"[WebSocket] Sending state to {net_player_id[:8]} - turn_phase: {state_dict.get('turn_phase')}"
+                )
                 response = {"type": "FULL_STATE", "game_state": state_dict}
                 try:
                     await client.websocket.send_json(response)
+                    logger.info(f"[WebSocket] Successfully sent state to {net_player_id[:8]}")
                 except Exception as e:
                     logger.error(f"Error sending state to client: {e}")
             else:
+                logger.warning(
+                    f"[WebSocket] Player {net_player_id[:8]} not in clients dict, delegating to game_server"
+                )
                 await self.game_server._broadcast_game_state(game_session)
                 break
 

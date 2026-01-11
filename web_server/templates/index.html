@@ -389,6 +389,7 @@
         <h2>Race to the Crystal</h2>
         <div class="status-line">Turn: <span id="turnNumber">0</span></div>
         <div class="status-line">Phase: <span id="gamePhase">Setup</span></div>
+        <div class="status-line">Turn Phase: <span id="turnPhase">MOVEMENT</span></div>
         <div class="status-line">Current Player: <span id="currentPlayer">-</span></div>
         <div id="playersList"></div>
     </div>
@@ -434,9 +435,9 @@
 
     <div id="connectionStatus" class="connection-status">Connected</div>
 
-    <!-- Babylon.js 8 from CDN -->
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <!-- Babylon.js 8 (cached locally) -->
+    <script src="/static/babylon.js"></script>
+    <script src="/static/babylonjs.loaders.min.js"></script>
 
     <!-- Mercure client for SSE updates -->
     <script src="/static/mercure_client.js"></script>

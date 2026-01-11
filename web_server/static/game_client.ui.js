@@ -451,6 +451,15 @@ class UIManager {
     updateHUD(gameState, localPlayerId) {
         document.getElementById("turnNumber").textContent = gameState.turn_number || 0;
         document.getElementById("gamePhase").textContent = gameState.phase || "SETUP";
+        
+        // Display turn phase (MOVEMENT vs ACTION)
+        const turnPhaseMap = {
+            1: "MOVEMENT",
+            2: "ACTION",
+            3: "END_TURN"
+        };
+        const turnPhaseValue = gameState.turn_phase || 1;
+        document.getElementById("turnPhase").textContent = turnPhaseMap[turnPhaseValue] || "MOVEMENT";
 
         if (gameState.current_turn_player_id !== null && gameState.players[gameState.current_turn_player_id]) {
             const currentPlayer = gameState.players[gameState.current_turn_player_id];
