@@ -330,7 +330,7 @@
             <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="20">
         </div>
         <div>
-            <input type="text" id="server-host-input" value="127.0.0.1" placeholder="Server host">
+            <input type="text" id="server-host-input" placeholder="Server host">
         </div>
         <div>
             <input type="text" id="server-port-input" value="8880" placeholder="Server port">
@@ -434,6 +434,16 @@
     </div>
 
     <div id="connectionStatus" class="connection-status">Connected</div>
+
+    <!-- Auto-populate server host with current hostname -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const serverHostInput = document.getElementById('server-host-input');
+            if (serverHostInput && !serverHostInput.value) {
+                serverHostInput.value = window.location.hostname;
+            }
+        });
+    </script>
 
     <!-- Babylon.js 8 (cached locally) -->
     <script src="/static/babylon.js"></script>

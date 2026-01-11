@@ -59,7 +59,9 @@ class WebSocketClient {
     // Initialize Mercure support
     await this.initMercure();
 
-    const wsUrl = `ws://${host}:${port}/ws`;
+    // Use wss:// for HTTPS pages, ws:// for HTTP
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${host}:${port}/ws`;
     console.log(`Connecting to ${wsUrl}...`);
 
     this.websocket = new WebSocket(wsUrl);
