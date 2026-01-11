@@ -320,6 +320,41 @@
             gap: 10px;
             margin-top: 20px;
         }
+
+        #controls .more-controls {
+            margin-top: 10px;
+            border-top: 1px solid #066;
+            padding-top: 10px;
+        }
+
+        #controls .more-controls-header {
+            cursor: pointer;
+            color: #0aa;
+            font-size: 11px;
+            user-select: none;
+        }
+
+        #controls .more-controls-header:hover {
+            color: #0ff;
+        }
+
+        #controls .more-controls-content {
+            display: none;
+            margin-top: 8px;
+        }
+
+        #controls .more-controls-content.expanded {
+            display: block;
+        }
+
+        #controls .gameplay-blurb {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #066;
+            font-size: 11px;
+            line-height: 1.5;
+            color: #0aa;
+        }
     </style>
 </head>
 <body>
@@ -400,37 +435,31 @@
     <div id="controls">
         <h3>Controls</h3>
         <ul>
-            <li><strong>Left Click:</strong> Select token / Move / Attack</li>
-            <li><strong>Right-Click + Drag (Overview):</strong> Pan around board</li>
-            <li><strong>Right-Click + Drag (3D):</strong> Mouse-look</li>
-            <li><strong>Mouse Wheel:</strong> Zoom in/out</li>
-            <li><strong>WASD / Arrow Keys:</strong> Move camera position</li>
-            <li><strong>+/= or -/_:</strong> Adjust field of view (FOV)</li>
+            <li><strong>Left-click:</strong> Select token / Move / Attack</li>
+            <li><strong>Right-click + Drag:</strong> Pan/look around</li>
+            <li><strong>Mouse wheel:</strong> Zoom in/out</li>
             <li><strong>Space / Enter:</strong> End turn</li>
+            <li><strong>R:</strong> Deploy menu</li>
             <li><strong>ESC:</strong> Cancel action</li>
-            <li><strong>V:</strong> Toggle camera (Overview ↔ First-Person)</li>
-            <li><strong>TAB:</strong> Cycle through your tokens (3D)</li>
-            <li><strong>Q / E:</strong> Rotate camera left/right (3D)</li>
-            <li><strong>R:</strong> Open deployment menu</li>
-            <li><strong>M:</strong> Toggle music/sound</li>
-            <li><strong>1-4:</strong> Switch player view</li>
-            <li><strong>Ctrl+Q:</strong> Quit game</li>
         </ul>
-        <h4>Features</h4>
-        <ul style="font-size: 11px;">
-            <li>✓ Token-locked first-person camera</li>
-            <li>✓ Click tokens to select & move</li>
-            <li>✓ Hover highlighting</li>
-            <li>✓ Valid moves shown in green</li>
-            <li>✓ Health labels on tokens</li>
-            <li>✓ Generator→crystal lines</li>
-            <li>✓ Multi-player switching</li>
-            <li>✓ WASD/Arrow camera movement</li>
-            <li>✓ Right-click pan (overview)</li>
-            <li>✓ Right-click mouse-look (3D)</li>
-            <li>✓ FOV adjustment (+/- keys)</li>
-            <li>✓ Quit functionality (Ctrl+Q)</li>
-        </ul>
+        <div class="more-controls">
+            <div class="more-controls-header" onclick="toggleMoreControls()">[+] More Controls</div>
+            <div class="more-controls-content" id="more-controls-content">
+                <ul>
+                    <li><strong>WASD / Arrow Keys:</strong> Move camera position</li>
+                    <li><strong>V:</strong> Toggle camera (Overview ↔ First-Person)</li>
+                    <li><strong>TAB:</strong> Cycle through your tokens (3D)</li>
+                    <li><strong>Q / E:</strong> Rotate camera left/right (3D)</li>
+                    <li><strong>+ / -:</strong> Adjust field of view (FOV)</li>
+                    <li><strong>1-4:</strong> Switch player view</li>
+                    <li><strong>M:</strong> Toggle music/sound</li>
+                    <li><strong>Ctrl+Q:</strong> Quit game</li>
+                </ul>
+            </div>
+        </div>
+        <div class="gameplay-blurb">
+            Deploy tokens to capture generators. Hold the crystal with enough tokens to win. Tokens with lesser health move faster (2 tiles), robust tokens move slower (1 tile).
+        </div>
     </div>
 
     <div id="connectionStatus" class="connection-status">Connected</div>
@@ -472,5 +501,18 @@
 
     <!-- Main game client -->
     <script src="/static/game_client.js"></script>
+
+    <script>
+        function toggleMoreControls() {
+            var content = document.getElementById('more-controls-content');
+            var header = document.querySelector('.more-controls-header');
+            content.classList.toggle('expanded');
+            if (content.classList.contains('expanded')) {
+                header.textContent = '[-] More Controls';
+            } else {
+                header.textContent = '[+] More Controls';
+            }
+        }
+    </script>
 </body>
 </html>
