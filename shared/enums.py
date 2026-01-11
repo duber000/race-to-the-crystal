@@ -40,45 +40,6 @@ class PlayerColor(Enum):
     GREEN = 3
 
 
-class MessageType(Enum):
-    """Network message types."""
-
-    # Connection messages
-    CONNECT = "CONNECT"
-    DISCONNECT = "DISCONNECT"
-    HEARTBEAT = "HEARTBEAT"
-
-    # Lobby messages
-    JOIN_LOBBY = "JOIN_LOBBY"
-    LEAVE_LOBBY = "LEAVE_LOBBY"
-    READY = "READY"
-    START_GAME = "START_GAME"
-
-    # Game action messages
-    MOVE_TOKEN = "MOVE_TOKEN"
-    ATTACK = "ATTACK"
-    CAPTURE_GENERATOR = "CAPTURE_GENERATOR"
-    CAPTURE_CRYSTAL = "CAPTURE_CRYSTAL"
-    END_TURN = "END_TURN"
-
-    # State synchronization messages
-    FULL_STATE = "FULL_STATE"
-    STATE_UPDATE = "STATE_UPDATE"
-    TURN_CHANGE = "TURN_CHANGE"
-
-    # Event messages
-    COMBAT_RESULT = "COMBAT_RESULT"
-    MYSTERY_EVENT = "MYSTERY_EVENT"
-    GENERATOR_CAPTURED = "GENERATOR_CAPTURED"
-    GENERATOR_DISABLED = "GENERATOR_DISABLED"
-    CRYSTAL_CAPTURED = "CRYSTAL_CAPTURED"
-    GAME_WON = "GAME_WON"
-
-    # Error messages
-    INVALID_MOVE = "INVALID_MOVE"
-    ERROR = "ERROR"
-
-
 class MysteryEffect(Enum):
     """Effects from mystery squares."""
 

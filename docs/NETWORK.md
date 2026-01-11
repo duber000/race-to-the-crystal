@@ -220,14 +220,14 @@ All messages follow this JSON structure:
 #### Connection (8 types)
 - `CONNECT`: Initial connection request
 - `CONNECT_ACK`: Server assigns player_id
-- `RECONNECT`: **[Phase 4]** Reconnect with existing player_id
-- `RECONNECT_ACK`: **[Phase 4]** Reconnection successful
-- `RECONNECT_FAILED`: **[Phase 4]** Reconnection failed (timeout/invalid)
+- `RECONNECT`: Reconnect with existing player_id
+- `RECONNECT_ACK`: Reconnection successful
+- `RECONNECT_FAILED`: Reconnection failed (timeout/invalid)
 - `DISCONNECT`: Graceful disconnect
 - `HEARTBEAT`: Keep-alive ping
 - `HEARTBEAT_ACK`: Keep-alive response
 
-#### Lobby (9 types)
+#### Lobby (10 types)
 - `CREATE_GAME`: Create new game lobby
 - `JOIN_GAME`: Join existing lobby
 - `LEAVE_GAME`: Leave lobby
@@ -235,6 +235,8 @@ All messages follow this JSON structure:
 - `GAME_LIST`: Response with game list
 - `PLAYER_JOINED`: Broadcast when player joins
 - `PLAYER_LEFT`: Broadcast when player leaves
+- `PLAYER_RECONNECTED`: Broadcast when player reconnects
+- `PLAYER_DISCONNECTED`: Broadcast when player disconnects
 - `READY`: Set ready status
 - `START_GAME`: Host starts the game
 
@@ -249,7 +251,7 @@ All messages follow this JSON structure:
 - `STATE_UPDATE`: Delta update (future optimization)
 - `TURN_CHANGE`: Turn changed notification
 
-#### Events (9 types)
+#### Events (8 types)
 - `COMBAT_RESULT`: Combat outcome
 - `TOKEN_MOVED`: Token moved event
 - `TOKEN_DEPLOYED`: Token deployed event
@@ -258,12 +260,14 @@ All messages follow this JSON structure:
 - `CRYSTAL_UPDATE`: Crystal capture progress changed
 - `GAME_WON`: Game ended with winner
 - `ERROR`: Server error
-- `INVALID_ACTION`: Action validation failed
 
 #### Communication (1 type)
-- `CHAT`: **[Phase 4]** Chat message from player
+- `CHAT`: Chat message from player
 
-**Total: 34 message types**
+#### Error (1 type)
+- `INVALID_ACTION`: Action validation failed
+
+**Total: 35 message types**
 
 ### TCP Framing
 
