@@ -60,3 +60,6 @@ class CrystalEffect(Enum):
 
     FOG_OF_WAR = auto()  # Players can't see other players' tokens
     PHANTOM_ENEMIES = auto()  # Players see illusion enemy tokens
+    HEAL_BOOST = auto()  # Player's tokens heal some health each turn
+    DAMAGE_BOOST = auto()  # Player deals increased damage
+    SPEED_BOOST = auto()  # Player's tokens move extra spaces

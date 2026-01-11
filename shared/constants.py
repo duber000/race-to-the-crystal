@@ -36,6 +36,10 @@ CRYSTAL_CAPTURE_TURNS_REQUIRED = 3
 CRYSTAL_EFFECT_INITIAL_DURATION = 4  # Effects last 4 turns initially
 CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR = 1  # Each generator captured reduces duration by 1 turn
 PHANTOM_ENEMIES_COUNT = 3  # Number of phantom tokens to show per player
+CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL = 5  # Trigger random crystal effect every N rounds
+CRYSTAL_HEAL_BOOST_AMOUNT = 2  # Health points healed per turn with heal boost
+CRYSTAL_DAMAGE_BOOST_MULTIPLIER = 1.5  # Damage multiplier with damage boost
+CRYSTAL_SPEED_BOOST_AMOUNT = 1  # Extra movement spaces with speed boost
 
 # Mystery Square Configuration
 MYSTERY_SQUARES_PER_QUADRANT = 2

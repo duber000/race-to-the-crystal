@@ -249,6 +249,27 @@ class GameState:
             and self.tokens[tid].is_deployed
         ]
 
+    def get_token_movement_range(self, token: Token) -> int:
+        """
+        Get effective movement range for a token, including crystal effect bonuses.
+
+        Args:
+            token: Token to get movement range for
+
+        Returns:
+            Effective movement range
+        """
+        from shared.constants import CRYSTAL_SPEED_BOOST_AMOUNT
+
+        base_range = token.movement_range
+
+        # Apply speed boost if player has the effect
+        player_effects = self.crystal_effects.get_player_effects(token.player_id)
+        if player_effects.has_effect(CrystalEffect.SPEED_BOOST):
+            return base_range + CRYSTAL_SPEED_BOOST_AMOUNT
+
+        return base_range
+
     def move_token(self, token_id: TokenID, new_position: tuple) -> bool:
         """
         Move a token to a new position.
@@ -306,6 +327,7 @@ class GameState:
             True if attack was successful
         """
         from game.combat import CombatSystem
+        from shared.constants import CRYSTAL_DAMAGE_BOOST_MULTIPLIER
 
         attacker = self.get_token(attacker_id)
         defender = self.get_token(defender_id)
@@ -317,11 +339,19 @@ class GameState:
         if not CombatSystem.can_attack(attacker, defender):
             return False
 
-        # Resolve combat
-        outcome = CombatSystem.resolve_combat(attacker, defender)
+        # Calculate damage with potential boost
+        damage = attacker.attack_power
+
+        # Apply damage boost if attacker's player has the effect
+        player_effects = self.crystal_effects.get_player_effects(attacker.player_id)
+        if player_effects.has_effect(CrystalEffect.DAMAGE_BOOST):
+            damage = int(damage * CRYSTAL_DAMAGE_BOOST_MULTIPLIER)
+
+        # Apply damage to defender
+        was_killed = defender.take_damage(damage)
 
         # If defender was killed, remove them from the board
-        if outcome.defender_killed:
+        if was_killed:
             self.remove_token(defender_id)
 
         return True
@@ -389,6 +419,22 @@ class GameState:
         self.phase = GamePhase.PLAYING
         self.turn_number = 1
 
+    def _apply_heal_boost_effects(self) -> None:
+        """Apply healing to players with active HEAL_BOOST crystal effect."""
+        from shared.constants import CRYSTAL_HEAL_BOOST_AMOUNT
+
+        for player_id, player in self.players.items():
+            # Check if player has heal boost effect
+            player_effects = self.crystal_effects.get_player_effects(player_id)
+            if player_effects.has_effect(CrystalEffect.HEAL_BOOST):
+                # Heal all deployed tokens for this player
+                for token_id in player.token_ids:
+                    if token_id in self.tokens:
+                        token = self.tokens[token_id]
+                        if token.is_alive and token.is_deployed:
+                            # Heal token (capped at max health)
+                            token.heal(CRYSTAL_HEAL_BOOST_AMOUNT)
+
     def end_turn(self) -> None:
         """End current turn and advance to next player."""
         if not self.current_turn_player_id:
@@ -400,6 +446,9 @@ class GameState:
 
         # Update crystal effects (clear expired effects)
         self.crystal_effects.end_turn_update()
+
+        # Apply heal boost to players with active effect
+        self._apply_heal_boost_effects()
 
         # Get list of active players
         active_players = [
@@ -421,6 +470,17 @@ class GameState:
 
         # If we wrapped around to first player, increment turn number
         if next_index == 0:
+            # Check if we should trigger a random crystal effect
+            # Calculate current round number before incrementing (1-indexed)
+            from shared.constants import CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL
+            num_players = len(active_players)
+            current_round = (self.turn_number - 1) // num_players + 1
+
+            # Trigger effect every N rounds (after completing round 5, 10, 15, etc.)
+            if current_round > 0 and current_round % CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL == 0:
+                self.trigger_random_crystal_effect()
+
+            # Increment turn number for new round
             self.turn_number += 1
 
         # Reset turn phase to MOVEMENT for next player
@@ -564,6 +624,35 @@ class GameState:
         return self.crystal_effects.get_tokens_for_player_view(
             player_id, all_tokens, lambda t: t.player_id
         )
+
+    def trigger_random_crystal_effect(self) -> tuple[PlayerID, CrystalEffect] | None:
+        """
+        Trigger a random crystal effect on a random player.
+
+        Returns:
+            Tuple of (affected_player_id, effect_type) if triggered, None otherwise
+        """
+        import random
+
+        # Get active players
+        active_players = [
+            pid for pid, player in self.players.items() if player.is_active
+        ]
+
+        if not active_players:
+            return None
+
+        # Select random player
+        affected_player = random.choice(active_players)
+
+        # Select random effect
+        all_effects = list(CrystalEffect)
+        effect_type = random.choice(all_effects)
+
+        # Apply the effect
+        self.apply_crystal_effect(affected_player, effect_type)
+
+        return (affected_player, effect_type)
 
     def to_dict(self) -> dict:
         """Convert game state to dictionary for serialization."""

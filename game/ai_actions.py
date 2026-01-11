@@ -279,9 +279,10 @@ class AIActionExecutor:
                 False, f"Cannot move: Token #{action.token_id} is dead"
             )
 
-        # Check destination is valid
+        # Check destination is valid (with effective movement range considering speed boost)
+        effective_range = game_state.get_token_movement_range(token)
         valid_moves = MovementSystem.get_valid_moves(
-            token, game_state.board, tokens_dict=game_state.tokens
+            token, game_state.board, max_range=effective_range, tokens_dict=game_state.tokens
         )
         if action.destination not in valid_moves:
             x, y = action.destination
