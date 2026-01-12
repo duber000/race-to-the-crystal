@@ -20,7 +20,16 @@ const TurnPhase = {
 const CrystalEffect = {
     FOG_OF_WAR: 1,
     PHANTOM_ENEMIES: 2,
+    DAMAGE_BOOST: 3,
+    SPEED_BOOST: 4,
 };
+
+// Crystal Effect Animation Constants
+const CRYSTAL_EFFECT_ANIMATION_DURATION = 2.0; // seconds
+const CRYSTAL_FOG_SPREAD_SPEED = 100.0; // pixels per second
+const CRYSTAL_GHOST_COUNT = 5;
+const CRYSTAL_LIGHTNING_FLASH_DURATION = 0.1; // seconds
+const CRYSTAL_WHIRLWIND_COUNT = 8;
 
 const CYAN_GLOW = new BABYLON.Color3(0, 0.78, 0.78);
 const ORANGE_GLOW = new BABYLON.Color3(1, 0.65, 0);
