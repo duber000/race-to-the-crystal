@@ -7,6 +7,7 @@ and game coordination.
 
 import asyncio
 import logging
+import os
 import time
 import uuid
 from typing import Dict, Optional
@@ -953,7 +954,14 @@ class GameServer:
     def _create_aiohttp_app(self) -> aiohttp.web.Application:
         """Create aiohttp application for HTTP/WebSocket server."""
 
-        http_handler = HTTPHandler()
+        # Get JWT secret from environment
+        jwt_secret = os.getenv("JWT_SECRET_KEY", "dev-secret-key-CHANGE-IN-PRODUCTION")
+
+        # Create HTTP handler with game server reference for REST API
+        http_handler = HTTPHandler(
+            game_server=self,
+            jwt_secret=jwt_secret,
+        )
         app = http_handler.create_app()
 
         self.websocket_handler = WebSocketHandler(self)

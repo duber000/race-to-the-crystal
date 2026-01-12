@@ -148,6 +148,27 @@ The 3D mode features two distinct camera perspectives:
 
 See [docs/3D.md](docs/3D.md) for complete 3D mode documentation including camera architecture, controls, and development guide.
 
+**AI Clients:**
+The `client/` directory also contains AI client implementations for automated gameplay:
+
+- **`ai_client.py`**: TCP/WebSocket AI client
+  - Connects to server via TCP (port 8888)
+  - Full AI player with random, aggressive, and defensive strategies
+  - Auto-spawned by server to fill empty slots when game starts
+  - CLI: `uv run race-ai-client --join <game_id>`
+
+- **`http_ai_client.py`**: HTTP POST + SSE AI client (new)
+  - Connects via HTTP REST API (port 8080)
+  - Stateless architecture using JWT authentication
+  - Receives state updates via SSE (Mercure)
+  - Sends actions via HTTP POST
+  - Three strategies: random, aggressive, defensive
+  - CLI: `uv run race-http-ai-client --join <game_id> --name "Bot" --strategy aggressive`
+  - **Use case**: Simpler for testing, works anywhere HTTP works (serverless, scripts, curl)
+  - **Limitation**: Must manually join (not auto-spawned), join-only (can't create games)
+
+Both AI clients use the same underlying game logic (`game/ai_observation.py` and `game/ai_actions.py`) for decision-making.
+
 #### `shared/` - Shared Definitions
 Constants, enums, and configuration objects shared between game logic and rendering.
 
@@ -199,12 +220,21 @@ The unified server runs on a single process with dual protocol support:
   - Protocol translation between WebSocket and internal formats
   - Handles authentication and player registration
   
-- `http_handler.py`: HTTP server for static file serving
+- `http_handler.py`: HTTP server for static file serving and REST API
   - Serves HTML/CSS/JS frontend from `web_server/static/`
   - Serves `/static/*` assets
   - Serves root `/` to load game client
-  
-- `ai_spawner.py`: AI player management
+  - **REST API endpoints for HTTP AI clients:**
+    - `POST /api/game/{game_id}/join` - Join game via HTTP, receive JWT token
+    - `POST /api/game/{game_id}/action` - Execute actions with JWT authentication
+  - Uses JWT (HS256) for stateless authentication (24-hour token expiration)
+
+- `auth.py`: JWT authentication for HTTP API
+  - Token creation/verification for stateless HTTP requests
+  - Validates game_id in token matches requested game
+  - Secret key from `JWT_SECRET_KEY` environment variable
+
+- `ai_spawner.py`: AI player management (TCP/WebSocket AI)
   - Spawns AI processes for automated players
   - Manages AI process lifecycle and cleanup
   - Enables AI testing and demonstration games
@@ -218,12 +248,18 @@ Uses JSON-based protocol with 34+ message types including:
 - Communication: `CHAT`
 
 **Mixed Client Support:**
-- Desktop clients: TCP on port 8888
-- Web clients: HTTP/WebSocket on port 8080
-- Both types play together in the same game
-- All state updates broadcast to all clients
+- **Desktop clients**: TCP on port 8888
+- **Web browser clients**: HTTP/WebSocket on port 8080
+- **HTTP AI clients**: HTTP POST + SSE on port 8080 (new)
+  - Stateless authentication via JWT tokens
+  - Actions via `POST /api/game/{game_id}/action`
+  - State updates via SSE (Mercure)
+  - CLI: `uv run race-http-ai-client --join <game_id>`
+- All client types play together in the same game
+- State updates broadcast via WebSocket (desktop/web) and SSE (HTTP AI/web)
 
 **See [docs/NETWORK.md](docs/NETWORK.md) for complete protocol documentation.**
+**See [docs/SSE_ROADMAP.md](docs/SSE_ROADMAP.md) for HTTP POST + SSE architecture details.**
 
 #### `network/` - Network Protocol Layer
 Low-level networking implementation for TCP and binary message handling.

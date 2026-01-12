@@ -20,6 +20,8 @@ dependencies = [
     "websockets>=13.0",
     "aiohttp>=3.9.0",
     "httpx>=0.27.0",
+    "pyjwt>=2.8.0",
+    "httpx-sse>=0.4.0",
 ]
 
 [project.scripts]
@@ -29,6 +31,7 @@ race-server = "server.server_main:main"
 race-unified-server = "server.server_main:main_unified"
 race-web-server = "web_server.main:run_server"
 race-ai-client = "client.ai_client:run_ai_client"
+race-http-ai-client = "client.http_ai_client:main"
 test = "pytest:main"
 
 [dependency-groups]

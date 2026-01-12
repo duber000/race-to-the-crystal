@@ -65,5 +65,6 @@ class ClientType(Enum):
     """Type of client connecting to server."""
 
     HUMAN = "HUMAN"  # Human player with GUI
-    AI = "AI"  # AI agent player
+    AI = "AI"  # AI agent player (TCP/WebSocket)
     WEB_BROWSER = "WEB_BROWSER"  # Web browser client (Babylon.js)
+    HTTP_AI = "HTTP_AI"  # AI agent using HTTP POST + SSE

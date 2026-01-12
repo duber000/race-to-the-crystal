@@ -13,10 +13,25 @@ Automated playtesting for Race to the Crystal game using AI-driven gameplay.
 - User says "find bugs" or "test for issues"
 - User requests "verify game mechanics"
 - After implementing new features or bug fixes
+- User wants Claude to "join a game" or "play against them"
 
 ## How It Works
 
-### 1. Test Strategy Selection
+### 1. Choose Testing Mode
+
+**Local Testing** (headless simulation)
+- Use for unit testing and mechanics verification
+- No server required
+- Direct `GameState` manipulation
+- Fast iteration
+
+**Network Testing** (join live game)
+- Join an existing multiplayer game as AI player
+- Test network integration and real gameplay
+- Play against humans or other AI
+- Uses HTTP AI client: `uv run race-http-ai-client --join <game_id>`
+
+### 2. Test Strategy Selection
 
 Choose the appropriate testing approach based on user request:
 
@@ -173,7 +188,45 @@ After testing, provide a clear report:
 - [Areas needing more testing]
 ```
 
-### 6. Example Usage Patterns
+### 6. Network Game Participation
+
+**Join an Existing Game:**
+When a user creates a game and wants Claude to join:
+
+```bash
+# User creates game via web or desktop client
+# User provides game_id (from lobby or logs)
+
+# Claude joins via HTTP AI client
+uv run race-http-ai-client --join <game_id> --name "Claude_AI" --strategy aggressive
+```
+
+**Process:**
+1. User starts unified server: `uv run race-unified-server`
+2. User creates game via web/desktop client and gets `game_id`
+3. User shares `game_id` with Claude (or Claude checks server logs)
+4. Claude runs: `uv run race-http-ai-client --join <game_id>`
+5. Claude auto-marks ready and waits for game to start
+6. User starts game, Claude plays automatically
+
+**Finding the Game ID:**
+If user doesn't provide `game_id`, Claude can:
+1. Check server logs: `Created game session <game_id>` or `Game <game_id> created`
+2. Ask user to check lobby screen (shows game ID)
+3. Look for recent `CREATE_GAME` messages in logs
+
+**Strategy Options:**
+- `random`: Random valid actions (good for general testing)
+- `aggressive`: Prioritizes attacks and movement toward objectives
+- `defensive`: Prioritizes deploying and holding positions
+
+**Monitoring:**
+- Claude can see game state updates via SSE
+- Claude makes decisions based on `AIObserver` analysis
+- All actions logged to console
+- Game ends when win condition met
+
+### 7. Example Usage Patterns
 
 **Pattern 1: Full Game Playtest**
 ```python
@@ -217,11 +270,18 @@ After testing, provide a clear report:
 
 ## Files to Use
 
+**Local Testing:**
 - **Main test script**: `test_gameplay_flaws.py`
 - **Game state**: `game/game_state.py`
 - **AI observer**: `game/ai_observation.py`
 - **AI executor**: `game/ai_actions.py`
 - **Game mechanics**: `game/generator.py`, `game/crystal.py`, `game/combat.py`, `game/movement.py`
+
+**Network Testing:**
+- **HTTP AI client**: `client/http_ai_client.py`
+- **CLI command**: `uv run race-http-ai-client`
+- **Required**: Unified server running (`uv run race-unified-server`)
+- **Required**: Game ID from user-created game
 
 ## Common Testing Scenarios
 
