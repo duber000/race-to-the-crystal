@@ -63,6 +63,7 @@ class GameState:
     turn_phase: TurnPhase = TurnPhase.MOVEMENT
     winner_id: PlayerID | None = None
     _next_token_id: int = 0
+    last_triggered_crystal_effect: tuple[PlayerID, CrystalEffect] | None = None
 
     @property
     def current_player_id(self) -> PlayerID | None:
@@ -419,22 +420,6 @@ class GameState:
         self.phase = GamePhase.PLAYING
         self.turn_number = 1
 
-    def _apply_heal_boost_effects(self) -> None:
-        """Apply healing to players with active HEAL_BOOST crystal effect."""
-        from shared.constants import CRYSTAL_HEAL_BOOST_AMOUNT
-
-        for player_id, player in self.players.items():
-            # Check if player has heal boost effect
-            player_effects = self.crystal_effects.get_player_effects(player_id)
-            if player_effects.has_effect(CrystalEffect.HEAL_BOOST):
-                # Heal all deployed tokens for this player
-                for token_id in player.token_ids:
-                    if token_id in self.tokens:
-                        token = self.tokens[token_id]
-                        if token.is_alive and token.is_deployed:
-                            # Heal token (capped at max health)
-                            token.heal(CRYSTAL_HEAL_BOOST_AMOUNT)
-
     def end_turn(self) -> None:
         """End current turn and advance to next player."""
         if not self.current_turn_player_id:
@@ -446,9 +431,6 @@ class GameState:
 
         # Update crystal effects (clear expired effects)
         self.crystal_effects.end_turn_update()
-
-        # Apply heal boost to players with active effect
-        self._apply_heal_boost_effects()
 
         # Get list of active players
         active_players = [
@@ -651,6 +633,9 @@ class GameState:
 
         # Apply the effect
         self.apply_crystal_effect(affected_player, effect_type)
+
+        # Store for client to detect and play animations/sounds
+        self.last_triggered_crystal_effect = (affected_player, effect_type)
 
         return (affected_player, effect_type)
 

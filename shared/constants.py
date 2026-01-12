@@ -37,9 +37,15 @@ CRYSTAL_EFFECT_INITIAL_DURATION = 4  # Effects last 4 turns initially
 CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR = 1  # Each generator captured reduces duration by 1 turn
 PHANTOM_ENEMIES_COUNT = 3  # Number of phantom tokens to show per player
 CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL = 5  # Trigger random crystal effect every N rounds
-CRYSTAL_HEAL_BOOST_AMOUNT = 2  # Health points healed per turn with heal boost
 CRYSTAL_DAMAGE_BOOST_MULTIPLIER = 1.5  # Damage multiplier with damage boost
 CRYSTAL_SPEED_BOOST_AMOUNT = 1  # Extra movement spaces with speed boost
+
+# Crystal Effect Animations
+CRYSTAL_EFFECT_ANIMATION_DURATION = 2.0  # Duration of crystal effect animations (seconds)
+CRYSTAL_FOG_SPREAD_SPEED = 100.0  # Speed at which fog spreads from crystal (pixels/sec)
+CRYSTAL_GHOST_COUNT = 5  # Number of ghost particles in phantom enemies animation
+CRYSTAL_LIGHTNING_FLASH_DURATION = 0.1  # Duration of lightning flash on tokens (seconds)
+CRYSTAL_WHIRLWIND_COUNT = 8  # Number of whirlwind particles in speed boost animation
 
 # Mystery Square Configuration
 MYSTERY_SQUARES_PER_QUADRANT = 2

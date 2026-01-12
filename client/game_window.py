@@ -11,6 +11,7 @@ import arcade
 
 from client.audio_manager import AudioManager
 from client.camera_controller import CameraController
+from client.crystal_effect_animator import CrystalEffectAnimator
 from client.deployment_menu_controller import DeploymentMenuController
 from client.game_action_handler import GameActionHandler
 from client.input_handler import InputHandler
@@ -33,7 +34,7 @@ from shared.constants import (
     MYSTERY_ANIMATION_DURATION,
     PLAYER_COLORS,
 )
-from shared.enums import TurnPhase, GamePhase
+from shared.enums import TurnPhase, GamePhase, CrystalEffect
 from shared.logging_config import setup_logger
 
 # Set up logger for this module
@@ -123,6 +124,9 @@ class GameView(arcade.View):
 
         # Audio manager for background music and generator hums
         self.audio_manager = AudioManager()
+
+        # Crystal effect animator for visual effects
+        self.crystal_effect_animator = CrystalEffectAnimator()
 
         # Mystery square coin flip animations
         # Dict mapping (x, y) position to animation progress (0.0 to 1.0)
@@ -361,6 +365,26 @@ class GameView(arcade.View):
             # Reset state for UI
             self.window.ctx.disable(self.window.ctx.DEPTH_TEST)
 
+        # Draw crystal effect animations (on top of game, below UI)
+        if self.crystal_effect_animator.is_animating() and self.game_state.crystal:
+            # Convert crystal grid position to screen position
+            crystal_pos = self.game_state.crystal.position
+            if self.camera_controller.camera_mode == "2D":  # type: ignore
+                # Use camera transform for 2D mode
+                with self.camera_controller.camera_2d.activate():  # type: ignore
+                    from shared.constants import CELL_SIZE
+                    screen_x = crystal_pos[0] * CELL_SIZE + CELL_SIZE / 2
+                    screen_y = crystal_pos[1] * CELL_SIZE + CELL_SIZE / 2
+                    self.crystal_effect_animator.draw(screen_x, screen_y)
+            else:
+                # For 3D mode, draw in screen space
+                # Project 3D crystal position to screen coordinates
+                # For now, use a fixed center position
+                with self.camera_controller.ui_camera.activate():  # type: ignore
+                    screen_x = self.window.width / 2
+                    screen_y = self.window.height / 2
+                    self.crystal_effect_animator.draw(screen_x, screen_y)
+
         # Draw UI (no camera transform) - always in 2D
         with self.camera_controller.ui_camera.activate():  # type: ignore
             self.ui_sprites.draw()
@@ -433,6 +457,43 @@ class GameView(arcade.View):
         # Remove completed animations
         for position in positions_to_remove:
             del self.mystery_animations[position]
+
+        # Check for newly triggered crystal effects
+        if self.game_state.last_triggered_crystal_effect:
+            player_id, effect_type = self.game_state.last_triggered_crystal_effect
+
+            # Get crystal position
+            if self.game_state.crystal:
+                crystal_pos = self.game_state.crystal.position
+
+                # Get affected tokens for lightning effect
+                affected_tokens = []
+                if effect_type == CrystalEffect.DAMAGE_BOOST:
+                    affected_tokens = [
+                        t for t in self.game_state.tokens.values()
+                        if t.player_id == player_id and t.is_deployed and t.is_alive
+                    ]
+
+                # Start animation
+                self.crystal_effect_animator.start_effect_animation(
+                    effect_type, crystal_pos, affected_tokens
+                )
+
+                # Play sound effect
+                if effect_type == CrystalEffect.FOG_OF_WAR:
+                    self.audio_manager.play_fog_horn_sound()
+                elif effect_type == CrystalEffect.PHANTOM_ENEMIES:
+                    self.audio_manager.play_ghost_sound()
+                elif effect_type == CrystalEffect.DAMAGE_BOOST:
+                    self.audio_manager.play_lightning_sound()
+                elif effect_type == CrystalEffect.SPEED_BOOST:
+                    self.audio_manager.play_whoosh_sound()
+
+            # Clear the trigger
+            self.game_state.last_triggered_crystal_effect = None
+
+        # Update crystal effect animator
+        self.crystal_effect_animator.update(delta_time)
 
         # Update 3D mystery animations if there are any active
         self.renderer_3d.update_mystery_animations(self.mystery_animations)
