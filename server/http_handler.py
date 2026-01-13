@@ -153,9 +153,11 @@ class HTTPHandler:
         - mercure_enabled: Whether Mercure is enabled
         - mercure_hub_url: Mercure hub URL for EventSource
         - mercure_topic: Topic to subscribe to (requires game_id param)
+        - sse_primary_mode: Whether SSE-primary mode is enabled (state updates via SSE only)
         """
         game_id = request.query.get("game_id", "")
         mercure_enabled = bool(os.getenv("MERCURE_PUBLISHER_JWT"))
+        sse_primary_mode = os.getenv("SSE_PRIMARY_MODE", "false").lower() == "true"
 
         config = {
             "mercure_enabled": mercure_enabled,
@@ -163,6 +165,7 @@ class HTTPHandler:
             "mercure_topic": f"{self.mercure_topic_prefix}/{game_id}"
             if game_id
             else self.mercure_topic_prefix,
+            "sse_primary_mode": sse_primary_mode,
         }
 
         return web.json_response(config)
