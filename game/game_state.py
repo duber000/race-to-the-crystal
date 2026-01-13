@@ -654,6 +654,10 @@ class GameState:
             "phase": self.phase.value,
             "turn_phase": self.turn_phase.value,
             "winner_id": self.winner_id,
+            "last_triggered_crystal_effect": (
+                self.last_triggered_crystal_effect[0],
+                self.last_triggered_crystal_effect[1].value
+            ) if self.last_triggered_crystal_effect else None,
         }
 
     def to_json(self) -> str:
@@ -691,6 +695,16 @@ class GameState:
         state.phase = GamePhase(data["phase"])
         state.turn_phase = TurnPhase(data["turn_phase"])
         state.winner_id = data["winner_id"]
+        # Handle last_triggered_crystal_effect deserialization
+        effect_data = data.get("last_triggered_crystal_effect")
+        if effect_data:
+            from shared.enums import CrystalEffect
+            state.last_triggered_crystal_effect = (
+                effect_data[0],
+                CrystalEffect(effect_data[1])
+            )
+        else:
+            state.last_triggered_crystal_effect = None
         return state
 
     @classmethod
