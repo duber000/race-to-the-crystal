@@ -47,6 +47,9 @@ class Renderer3D {
         this.animationTime = 0;
         this.animationCallbacks = new Map();
 
+        // Crystal effect animator
+        this.crystalEffectAnimator = null;
+
         this.audioContext = null;
         this.soundsEnabled = true;
 
@@ -70,6 +73,9 @@ class Renderer3D {
 
         this.initLights();
         this.createBoard();
+
+        // Initialize crystal effect animator
+        this.crystalEffectAnimator = new CrystalEffectAnimator(this.scene);
 
         return this.scene;
     }
@@ -180,6 +186,7 @@ class Renderer3D {
         this.updateTokens(gameState);
         this.checkMysteryLandings(gameState);
         this.updateSpecialCellColors(gameState);
+        this.checkCrystalEffectTrigger(gameState);
     }
 
     createSpecialCells(gameState) {
@@ -962,6 +969,11 @@ class Renderer3D {
                 }
             });
         }
+
+        // Update crystal effect animator
+        if (this.crystalEffectAnimator) {
+            this.crystalEffectAnimator.update(0.016); // ~60fps
+        }
     }
 
     updateMysteryAnimations() {
@@ -1022,6 +1034,50 @@ class Renderer3D {
         if (y < 0 || y >= gameState.board.grid.length) return false;
         if (x < 0 || x >= gameState.board.grid[y].length) return false;
         return gameState.board.grid[y][x].cell_type === 4;
+    }
+
+    checkCrystalEffectTrigger(gameState) {
+        // Check if a crystal effect was just triggered
+        if (!gameState.last_triggered_crystal_effect || !this.crystalEffectAnimator) return;
+        if (!gameState.crystal) return;
+
+        const [affectedPlayerId, effectType] = gameState.last_triggered_crystal_effect;
+
+        // Get affected tokens for lightning effect
+        let affectedTokens = [];
+        if (effectType === CrystalEffect.DAMAGE_BOOST) {
+            affectedTokens = Object.values(gameState.tokens || {}).filter(
+                t => t.player_id === affectedPlayerId && t.is_deployed && t.is_alive
+            );
+        }
+
+        // Start animation
+        this.crystalEffectAnimator.startEffect(
+            effectType,
+            gameState.crystal.position,
+            affectedTokens
+        );
+
+        // Play sound effect
+        switch (effectType) {
+            case CrystalEffect.FOG_OF_WAR:
+                this.playSound("fog_horn");
+                break;
+            case CrystalEffect.PHANTOM_ENEMIES:
+                this.playSound("ghost");
+                break;
+            case CrystalEffect.DAMAGE_BOOST:
+                this.playSound("lightning");
+                break;
+            case CrystalEffect.SPEED_BOOST:
+                this.playSound("whoosh");
+                break;
+        }
+
+        console.log(`Crystal effect triggered: ${effectType} for player ${affectedPlayerId}`);
+        
+        // Clear the effect so it doesn't trigger again
+        gameState.last_triggered_crystal_effect = null;
     }
 
     // ==========================================================================
@@ -1400,6 +1456,10 @@ class Renderer3D {
             case "capture": this.playGeneratorExplosionSound(ctx, now); break;
             case "crystal": this.playCrystalShatterSound(ctx, now); break;
             case "mystery": this.playMysteryBingSound(ctx, now); break;
+            case "fog_horn": this.playFogHornSound(ctx, now); break;
+            case "ghost": this.playGhostSound(ctx, now); break;
+            case "lightning": this.playLightningSound(ctx, now); break;
+            case "whoosh": this.playWhooshSound(ctx, now); break;
             default: this.playDeploySound(ctx, now); break;
         }
     }
@@ -1583,6 +1643,164 @@ class Renderer3D {
 
         osc.start(now);
         osc.stop(now + 0.2);
+    }
+
+    playFogHornSound(ctx, now) {
+        // Deep fog horn - low frequency oscillator with slight vibrato
+        const duration = 1.5;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
+
+        // Main horn tone
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(80, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + duration);
+
+        // Vibrato
+        lfo.type = "sine";
+        lfo.frequency.value = 5;
+        lfoGain.gain.value = 3;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.setValueAtTime(0.3, now + duration * 0.7);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        lfo.start(now);
+        osc.stop(now + duration);
+        lfo.stop(now + duration);
+    }
+
+    playGhostSound(ctx, now) {
+        // Spooky ghost - ethereal wavy tone
+        const duration = 1.2;
+
+        // Main ghostly wail
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.setValueAtTime(600, now + duration * 0.3);
+        osc.frequency.setValueAtTime(350, now + duration * 0.6);
+        osc.frequency.setValueAtTime(500, now + duration);
+
+        filter.type = "lowpass";
+        filter.frequency.value = 1000;
+        filter.Q.value = 5;
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.setValueAtTime(0.2, now + duration * 0.5);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + duration);
+
+        // Add ghostly harmonics
+        for (let i = 0; i < 3; i++) {
+            const harm = ctx.createOscillator();
+            const harmGain = ctx.createGain();
+            harm.type = "sine";
+            harm.frequency.setValueAtTime(800 + i * 200, now);
+            harmGain.gain.setValueAtTime(0.05 * (3 - i) / 3, now);
+            harmGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            harm.connect(harmGain);
+            harmGain.connect(ctx.destination);
+            harm.start(now);
+            harm.stop(now + duration);
+        }
+    }
+
+    playLightningSound(ctx, now) {
+        // Lightning strike - sharp crack with rumble
+        const duration = 0.5;
+
+        // Sharp crack (white noise burst)
+        const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseData.length; i++) {
+            noiseData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.01));
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.5, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+
+        noise.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        noise.start(now);
+
+        // Thunder rumble
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(100, now + 0.1);
+        osc.frequency.exponentialRampToValueAtTime(40, now + duration);
+
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(200, now);
+        filter.Q.value = 2;
+
+        gain.gain.setValueAtTime(0, now + 0.1);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + 0.1);
+        osc.stop(now + duration);
+    }
+
+    playWhooshSound(ctx, now) {
+        // Whoosh - wind-like sweeping sound
+        const duration = 1.0;
+
+        // Wind noise
+        const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseData.length; i++) {
+            noiseData[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.setValueAtTime(200, now);
+        filter.frequency.exponentialRampToValueAtTime(2000, now + duration * 0.5);
+        filter.frequency.exponentialRampToValueAtTime(500, now + duration);
+        filter.Q.value = 2;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0.25, now + duration * 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        noise.start(now);
+        noise.stop(now + duration);
     }
 
     // ==========================================================================

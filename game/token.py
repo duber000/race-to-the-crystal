@@ -96,6 +96,15 @@ class Token:
         """Restore token to full health."""
         self.health = self.max_health
 
+    def heal(self, amount: int) -> None:
+        """
+        Heal token by specified amount (capped at max health).
+
+        Args:
+            amount: Amount of health to restore
+        """
+        self.health = min(self.health + amount, self.max_health)
+
     def move_to(self, new_position: tuple[int, int]) -> None:
         """
         Move token to a new position.

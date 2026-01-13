@@ -116,6 +116,11 @@ class AudioManager:
             "generator_explosion": f"{sound_effects_dir}/generator_explosion.wav",
             "crystal_shatter": f"{sound_effects_dir}/crystal_shatter.wav",
             "flushing": f"{sound_effects_dir}/flushing.wav",
+            # Crystal effect sounds
+            "fog_horn": f"{sound_effects_dir}/fog_horn.wav",
+            "ghost": f"{sound_effects_dir}/ghost.wav",
+            "lightning": f"{sound_effects_dir}/lightning.wav",
+            "whoosh": f"{sound_effects_dir}/whoosh.wav",
         }
 
         for name, path in sound_effects.items():
@@ -406,3 +411,55 @@ class AudioManager:
         self.sound_effects.clear()
 
         self.background_music = None
+
+    def play_fog_horn_sound(self) -> None:
+        """Play the fog horn sound effect for FOG_OF_WAR crystal effect."""
+        if "fog_horn" in self.sound_effects and self.sound_effects["fog_horn"]:
+            try:
+                player = self.sound_effects["fog_horn"].play(self.sound_effects_volume)
+                if player:
+                    self.sound_effect_players.append(player)
+                    if len(self.sound_effect_players) > 20:
+                        self.sound_effect_players.pop(0)
+                logger.debug("Playing fog horn sound effect")
+            except Exception as e:
+                logger.error(f"Error playing fog horn sound: {e}")
+
+    def play_ghost_sound(self) -> None:
+        """Play the ghost sound effect for PHANTOM_ENEMIES crystal effect."""
+        if "ghost" in self.sound_effects and self.sound_effects["ghost"]:
+            try:
+                player = self.sound_effects["ghost"].play(self.sound_effects_volume)
+                if player:
+                    self.sound_effect_players.append(player)
+                    if len(self.sound_effect_players) > 20:
+                        self.sound_effect_players.pop(0)
+                logger.debug("Playing ghost sound effect")
+            except Exception as e:
+                logger.error(f"Error playing ghost sound: {e}")
+
+    def play_lightning_sound(self) -> None:
+        """Play the lightning sound effect for DAMAGE_BOOST crystal effect."""
+        if "lightning" in self.sound_effects and self.sound_effects["lightning"]:
+            try:
+                player = self.sound_effects["lightning"].play(self.sound_effects_volume)
+                if player:
+                    self.sound_effect_players.append(player)
+                    if len(self.sound_effect_players) > 20:
+                        self.sound_effect_players.pop(0)
+                logger.debug("Playing lightning sound effect")
+            except Exception as e:
+                logger.error(f"Error playing lightning sound: {e}")
+
+    def play_whoosh_sound(self) -> None:
+        """Play the whoosh sound effect for SPEED_BOOST crystal effect."""
+        if "whoosh" in self.sound_effects and self.sound_effects["whoosh"]:
+            try:
+                player = self.sound_effects["whoosh"].play(self.sound_effects_volume)
+                if player:
+                    self.sound_effect_players.append(player)
+                    if len(self.sound_effect_players) > 20:
+                        self.sound_effect_players.pop(0)
+                logger.debug("Playing whoosh sound effect")
+            except Exception as e:
+                logger.error(f"Error playing whoosh sound: {e}")

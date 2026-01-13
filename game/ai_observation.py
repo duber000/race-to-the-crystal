@@ -442,8 +442,9 @@ class AIObserver:
     ) -> None:
         """Add movement actions for deployed tokens."""
         for token in deployed_tokens:
+            effective_range = game_state.get_token_movement_range(token)
             valid_moves = MovementSystem.get_valid_moves(
-                token, game_state.board, tokens_dict=game_state.tokens
+                token, game_state.board, max_range=effective_range, tokens_dict=game_state.tokens
             )
             if valid_moves:
                 actions.append(

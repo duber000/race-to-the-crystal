@@ -493,9 +493,11 @@ class InputHandler:
         else:
             # Select this token for movement
             self.selected_token_id = clicked_token.id
+            effective_range = self.game_state.get_token_movement_range(clicked_token)
             self.valid_moves = self.movement_system.get_valid_moves(
                 clicked_token,
                 self.game_state.board,
+                max_range=effective_range,
                 tokens_dict=self.game_state.tokens,
             )
             self.renderer_2d.update_selection_visuals(
