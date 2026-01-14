@@ -275,7 +275,7 @@ class WebSocketClient {
         break;
 
       case "INVALID_ACTION":
-        const message = data.message || data.error || "Invalid action";
+        const message = data.reason || data.message || data.error || "Invalid action";
         console.warn("Invalid action:", message);
         this.emit("invalid_action", { message });
         break;
@@ -327,6 +327,9 @@ class WebSocketClient {
 
     console.log(`Subscribing to Mercure for game ${this.currentGameId}...`);
 
+    // Update the topic to include the game_id
+    this.mercureClient.setTopic(`${this.mercureClient.config.mercure_topic}/${this.currentGameId}`);
+
     // Fallback function: switch back to WebSocket if SSE fails
     const fallbackToWebSocket = () => {
       console.warn("⚠ Using WebSocket for state updates (fallback)");
@@ -343,9 +346,9 @@ class WebSocketClient {
           console.log("✓ Using SSE for state updates");
         }
 
+        // SSE publishes the game state directly, not wrapped in a 'state' property
         this.emit("full_state", {
-          game_state: update.state,
-          last_action: update.last_action,
+          game_state: update,
         });
       },
       fallbackToWebSocket

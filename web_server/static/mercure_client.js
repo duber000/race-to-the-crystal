@@ -50,6 +50,19 @@ class MercureClient {
   }
 
   /**
+   * Update the Mercure topic to subscribe to.
+   * Call this before subscribe() to set the correct topic (e.g., with game_id).
+   *
+   * @param {string} topic - The topic URL to subscribe to
+   */
+  setTopic(topic) {
+    if (this.config) {
+      this.config.mercure_topic = topic;
+      console.log(`Updated Mercure topic to: ${topic}`);
+    }
+  }
+
+  /**
    * Connect to Mercure hub and subscribe to game state updates.
    *
    * @param {Function} onUpdate - Callback function called when state updates arrive

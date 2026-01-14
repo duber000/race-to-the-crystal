@@ -16,8 +16,9 @@ Environment=TCP_PORT=8888
 Environment=HTTP_PORT=8080
 Environment=MERCURE_HUB_URL=http://race-caddy/.well-known/mercure
 Environment=MERCURE_PUBLIC_URL=http://127.0.0.1:8880/.well-known/mercure
-Environment=MERCURE_PUBLISHER_JWT=dev_key
+Environment=MERCURE_PUBLISHER_JWT=dev_secret_key
 Environment=MERCURE_TOPIC_PREFIX=https://api.game.local/game
+Environment=SSE_PRIMARY_MODE=true
 
 [Service]
 Type=notify

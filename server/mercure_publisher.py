@@ -8,6 +8,8 @@ This module handles publishing game state changes to a Mercure hub.
 import os
 import httpx
 import logging
+import jwt
+import time
 from typing import Any, Dict
 from dataclasses import dataclass
 import json
@@ -82,6 +84,27 @@ class MercurePublisher:
             self.client = httpx.AsyncClient(timeout=5.0)
         return self.client
 
+    def _generate_publisher_jwt(self) -> str:
+        """
+        Generate a Mercure publisher JWT token.
+
+        The publisher JWT must contain a 'mercure' claim with 'publish' permissions.
+        The token is signed with the publisher secret key.
+
+        Returns:
+            Signed JWT token string
+        """
+        payload = {
+            "mercure": {
+                "publish": ["*"],  # Allow publishing to all topics
+            },
+            "iat": time.time(),  # Issued at
+        }
+
+        # Sign the JWT with the publisher secret key
+        token = jwt.encode(payload, self.config.publisher_jwt, algorithm="HS256")
+        return token
+
     async def close(self) -> None:
         """Close the HTTP client."""
         if self.client:
@@ -121,12 +144,15 @@ class MercurePublisher:
             if private:
                 form_data["private"] = "on"
 
+            # Generate Mercure publisher JWT with proper claims
+            publisher_token = self._generate_publisher_jwt()
+
             # Send POST request to Mercure hub
             response = await client.post(
                 self.config.hub_url,
                 data=form_data,
                 headers={
-                    "Authorization": f"Bearer {self.config.publisher_jwt}",
+                    "Authorization": f"Bearer {publisher_token}",
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
             )
