@@ -27,6 +27,12 @@ class WebSocketClient {
     this.connectionState = STATE.DISCONNECTED;
 
     this.eventHandlers = new Map();
+
+    // SSE-primary mode support
+    this.useMercure = false;
+    this.mercureClient = null;
+    this.ssePrimaryMode = false; // Set from server config
+    this.usingSSEForState = false; // True if actively using SSE for state updates
   }
 
   on(event, handler) {
@@ -255,7 +261,12 @@ class WebSocketClient {
         break;
 
       case "FULL_STATE":
-        this.emit("full_state", data);
+        // In SSE-primary mode, only process FULL_STATE via WebSocket if SSE is not active
+        if (this.usingSSEForState) {
+          console.log("⚠ Ignoring FULL_STATE from WebSocket (using SSE)");
+        } else {
+          this.emit("full_state", data);
+        }
         break;
 
       case "ERROR":
@@ -282,17 +293,29 @@ class WebSocketClient {
 
       if (mercureReady) {
         this.useMercure = true;
+
+        // Check if SSE-primary mode is enabled from server config
+        if (this.mercureClient.config && this.mercureClient.config.sse_primary_mode) {
+          this.ssePrimaryMode = true;
+          console.log("✓ SSE-primary mode enabled - state updates via SSE only");
+        } else {
+          this.ssePrimaryMode = false;
+          console.log("✓ Dual-channel mode - state updates via both SSE and WebSocket");
+        }
+
         console.log(
           "✓ Mercure client initialized - will use SSE for state updates",
         );
       } else {
         console.log("⚠ Mercure disabled - using WebSocket for all updates");
         this.useMercure = false;
+        this.ssePrimaryMode = false;
       }
       return mercureReady;
     } catch (error) {
       console.error("Failed to initialize Mercure:", error);
       this.useMercure = false;
+      this.ssePrimaryMode = false;
       return false;
     }
   }
@@ -304,13 +327,35 @@ class WebSocketClient {
 
     console.log(`Subscribing to Mercure for game ${this.currentGameId}...`);
 
-    this.mercureClient.subscribe((update) => {
-      console.log("✓ Mercure update received");
-      this.emit("full_state", {
-        game_state: update.state,
-        last_action: update.last_action,
-      });
-    });
+    // Fallback function: switch back to WebSocket if SSE fails
+    const fallbackToWebSocket = () => {
+      console.warn("⚠ Using WebSocket for state updates (fallback)");
+      this.usingSSEForState = false;
+    };
+
+    this.mercureClient.subscribe(
+      (update) => {
+        console.log("✓ Mercure update received");
+
+        // Mark that we're successfully using SSE for state updates
+        if (!this.usingSSEForState) {
+          this.usingSSEForState = true;
+          console.log("✓ Using SSE for state updates");
+        }
+
+        this.emit("full_state", {
+          game_state: update.state,
+          last_action: update.last_action,
+        });
+      },
+      fallbackToWebSocket
+    );
+
+    // Optimistically set usingSSEForState to true if in SSE-primary mode
+    // Will be set back to false if SSE fails
+    if (this.ssePrimaryMode) {
+      this.usingSSEForState = true;
+    }
   }
 
   unsubscribeMercure() {

@@ -1,5 +1,15 @@
 # Race to the Crystal - Architecture Roadmap
 
+## Implementation Status
+
+**✅ Phase 1 (Server-Side Foundation)**: COMPLETED (2026-01-13)
+**✅ Phase 2 (Web Client Updates)**: COMPLETED (2026-01-13)
+**⏸️ Phase 3 (Testing & Validation)**: PARTIALLY COMPLETED (unit tests done, integration tests pending)
+**⏳ Phase 4 (Deployment & Monitoring)**: NOT STARTED
+**⏳ Phase 5 (Future Enhancements)**: NOT STARTED
+
+The SSE-primary mode infrastructure is now fully implemented and ready for testing. Set `SSE_PRIMARY_MODE=true` to enable.
+
 ## Overview
 
 This document outlines the planned architecture refactoring to transition from a dual-channel (WebSocket + Mercure) system to an SSE-primary architecture where Server-Sent Events (Mercure) handles all state updates and WebSocket is reserved for commands.
@@ -103,16 +113,16 @@ Server publishes via Mercure/SSE ─────┤──> All Clients
 
 ## Implementation Phases
 
-### Phase 1: Server-Side Foundation (Weeks 1-2)
+### Phase 1: Server-Side Foundation ✅ **COMPLETED (2026-01-13)**
 
 **Goal:** Add infrastructure for SSE-primary mode with feature flag control.
 
 **Tasks:**
-1. Add `SSE_PRIMARY_MODE` environment variable to `server/game_server.py`
-2. Add message classification constants to `network/messages.py`
-3. Refactor `_broadcast_game_state()` to split SSE and WebSocket paths
-4. Add individual event publishing to `server/mercure_publisher.py`
-5. Track client metadata (type, version) in `server/game_coordinator.py`
+1. ✅ Add `SSE_PRIMARY_MODE` environment variable to `server/game_server.py`
+2. ✅ Add message classification constants to `network/messages.py`
+3. ✅ Refactor `_broadcast_game_state()` to split SSE and WebSocket paths
+4. ✅ Add individual event publishing to `server/mercure_publisher.py`
+5. ✅ Track client metadata (type, version) in `server/game_coordinator.py` (already implemented)
 
 **Key Files:**
 - `server/game_server.py` (lines 44-83, 775-809)
@@ -124,16 +134,16 @@ Server publishes via Mercure/SSE ─────┤──> All Clients
 - `SSE_PRIMARY_MODE=false` (default): Both channels active (current behavior)
 - `SSE_PRIMARY_MODE=true`: SSE for web clients, WebSocket for desktop only
 
-### Phase 2: Web Client Updates (Weeks 2-3)
+### Phase 2: Web Client Updates ✅ **COMPLETED (2026-01-13)**
 
 **Goal:** Update web client to use SSE as primary channel with WebSocket fallback.
 
 **Tasks:**
-1. Enhance `mercure_client.js` with event routing and exponential backoff reconnection
-2. Update `game_client.websocket.js` to conditionally handle FULL_STATE
-3. Add SSE failure detection (30-second timeout triggers WebSocket fallback)
-4. Implement event-based animations in `game_client.js`
-5. Expand `/api/config` endpoint to include SSE mode information
+1. ✅ Enhance `mercure_client.js` with event routing and exponential backoff reconnection
+2. ✅ Update `game_client.websocket.js` to conditionally handle FULL_STATE
+3. ✅ Add SSE failure detection (30-second timeout triggers WebSocket fallback)
+4. ⏸️ Implement event-based animations in `game_client.js` (deferred to Phase 5)
+5. ✅ Expand `/api/config` endpoint to include SSE mode information
 
 **Key Files:**
 - `web_server/static/mercure_client.js` (lines 50-98)
@@ -147,16 +157,16 @@ Server publishes via Mercure/SSE ─────┤──> All Clients
 - Log "⚠ Using WebSocket for state updates (fallback)" on failure
 - Automatic fallback if SSE silent for 30 seconds
 
-### Phase 3: Testing & Validation (Weeks 3-4)
+### Phase 3: Testing & Validation ✅ **PARTIALLY COMPLETED (2026-01-13)**
 
 **Goal:** Comprehensive testing to ensure no regressions or message loss.
 
-#### 3.1 Unit Tests
+#### 3.1 Unit Tests ✅ **COMPLETED**
 **New file:** `tests/test_sse_primary_mode.py`
 
 Test cases:
-- Feature flag controls broadcast routing
-- Web clients receive via SSE in primary mode
+- ✅ Feature flag controls broadcast routing
+- ✅ Web clients receive via SSE in primary mode
 - Desktop clients always receive via WebSocket
 - Mercure publish failure triggers fallback
 - Client type detection from CONNECT message

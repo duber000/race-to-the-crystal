@@ -170,3 +170,122 @@ class MercurePublisher:
         }
 
         return await self.publish_game_state(game_id, event_data)
+
+    # Individual event publishing methods for SSE-primary mode
+    # These enable fine-grained event-driven animations on web clients
+
+    async def publish_turn_change(
+        self, game_id: str, current_player_id: str, turn_number: int, turn_phase: str
+    ) -> bool:
+        """Publish turn change event."""
+        event_data = {
+            "type": "TURN_CHANGE",
+            "current_player_id": current_player_id,
+            "turn_number": turn_number,
+            "turn_phase": turn_phase,
+        }
+        return await self.publish_game_state(game_id, event_data)
+
+    async def publish_token_moved(
+        self,
+        game_id: str,
+        token_id: int,
+        from_position: tuple[int, int],
+        to_position: tuple[int, int],
+        player_id: str,
+    ) -> bool:
+        """Publish token movement event for animations."""
+        event_data = {
+            "type": "TOKEN_MOVED",
+            "token_id": token_id,
+            "from": from_position,
+            "to": to_position,
+            "player_id": player_id,
+        }
+        return await self.publish_game_state(game_id, event_data)
+
+    async def publish_combat_result(
+        self,
+        game_id: str,
+        attacker_id: int,
+        defender_id: int,
+        damage: int,
+        defender_destroyed: bool,
+    ) -> bool:
+        """Publish combat result event for animations."""
+        event_data = {
+            "type": "COMBAT_RESULT",
+            "attacker_id": attacker_id,
+            "defender_id": defender_id,
+            "damage": damage,
+            "defender_destroyed": defender_destroyed,
+        }
+        return await self.publish_game_state(game_id, event_data)
+
+    async def publish_generator_update(
+        self,
+        game_id: str,
+        generator_position: tuple[int, int],
+        capturing_player_id: str | None,
+        turns_held: int,
+        is_disabled: bool,
+    ) -> bool:
+        """Publish generator capture status update."""
+        event_data = {
+            "type": "GENERATOR_UPDATE",
+            "position": generator_position,
+            "capturing_player_id": capturing_player_id,
+            "turns_held": turns_held,
+            "is_disabled": is_disabled,
+        }
+        return await self.publish_game_state(game_id, event_data)
+
+    async def publish_crystal_update(
+        self,
+        game_id: str,
+        crystal_position: tuple[int, int],
+        occupying_player_id: str | None,
+        turns_held: int,
+        tokens_required: int,
+    ) -> bool:
+        """Publish crystal occupation status update."""
+        event_data = {
+            "type": "CRYSTAL_UPDATE",
+            "position": crystal_position,
+            "occupying_player_id": occupying_player_id,
+            "turns_held": turns_held,
+            "tokens_required": tokens_required,
+        }
+        return await self.publish_game_state(game_id, event_data)
+
+    async def publish_mystery_event(
+        self, game_id: str, token_id: int, event_type: str, details: Dict[str, Any]
+    ) -> bool:
+        """Publish mystery square event (heal or teleport)."""
+        event_data = {
+            "type": "MYSTERY_EVENT",
+            "token_id": token_id,
+            "event_type": event_type,
+            "details": details,
+        }
+        return await self.publish_game_state(game_id, event_data)
+
+    async def publish_token_deployed(
+        self, game_id: str, token_id: int, position: tuple[int, int], player_id: str
+    ) -> bool:
+        """Publish token deployment event."""
+        event_data = {
+            "type": "TOKEN_DEPLOYED",
+            "token_id": token_id,
+            "position": position,
+            "player_id": player_id,
+        }
+        return await self.publish_game_state(game_id, event_data)
+
+    async def publish_game_won(self, game_id: str, winner_id: str) -> bool:
+        """Publish game victory event."""
+        event_data = {
+            "type": "GAME_WON",
+            "winner_id": winner_id,
+        }
+        return await self.publish_game_state(game_id, event_data)

@@ -542,19 +542,46 @@ class WebSocketHandler:
             f"current_turn: {game_session.game_state.current_turn_player_id}"
         )
 
+        # Check if SSE-primary mode is enabled
+        sse_primary_mode = getattr(self.game_server, 'sse_primary_mode', False)
+
+        # Publish to Mercure for SSE-capable clients
+        if game_session.network_to_game_id:
+            first_player = next(iter(game_session.network_to_game_id.keys()))
+            mercure_state = game_session.get_game_state_for_player(first_player)
+            if mercure_state and self.game_server.mercure_publisher:
+                mercure_success = await self.game_server.mercure_publisher.publish_game_state(
+                    game_session.game_id, mercure_state
+                )
+                if mercure_success:
+                    logger.debug("[Mercure] Successfully published state to SSE")
+                else:
+                    logger.warning("[Mercure] Publish failed, WebSocket will be used for all clients")
+
+        # Send via WebSocket based on SSE-primary mode
         for net_player_id in game_session.network_to_game_id.keys():
             if net_player_id in self.clients:
                 client = self.clients[net_player_id]
-                state_dict = game_session.get_game_state_for_player(net_player_id)
-                logger.info(
-                    f"[WebSocket] Sending state to {net_player_id[:8]} - turn_phase: {state_dict.get('turn_phase')}"
-                )
-                response = {"type": "FULL_STATE", "game_state": state_dict}
-                try:
-                    await client.websocket.send_json(response)
-                    logger.info(f"[WebSocket] Successfully sent state to {net_player_id[:8]}")
-                except Exception as e:
-                    logger.error(f"Error sending state to client: {e}")
+
+                # In SSE-primary mode, skip WebSocket for web browser clients
+                should_send_websocket = True
+                if sse_primary_mode and client.client_type == ClientType.WEB_BROWSER:
+                    should_send_websocket = False
+                    logger.debug(
+                        f"[WebSocket] Skipping FULL_STATE for {net_player_id[:8]} (WEB_BROWSER) - using SSE"
+                    )
+
+                if should_send_websocket:
+                    state_dict = game_session.get_game_state_for_player(net_player_id)
+                    logger.info(
+                        f"[WebSocket] Sending state to {net_player_id[:8]} - turn_phase: {state_dict.get('turn_phase')}"
+                    )
+                    response = {"type": "FULL_STATE", "game_state": state_dict}
+                    try:
+                        await client.websocket.send_json(response)
+                        logger.info(f"[WebSocket] Successfully sent state to {net_player_id[:8]}")
+                    except Exception as e:
+                        logger.error(f"Error sending state to client: {e}")
             else:
                 logger.warning(
                     f"[WebSocket] Player {net_player_id[:8]} not in clients dict, delegating to game_server"

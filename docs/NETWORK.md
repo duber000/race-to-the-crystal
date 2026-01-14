@@ -57,6 +57,39 @@ This design prevents cheating, ensures consistency across all players, and works
          └────────────────────────┘
 ```
 
+### SSE-Primary Mode (Optional)
+
+The server supports an **SSE-primary mode** where state updates are sent via Server-Sent Events (Mercure/SSE) instead of WebSocket for web clients. This provides better scalability and network compatibility.
+
+**Feature Flag**: Set `SSE_PRIMARY_MODE=true` environment variable
+
+**Behavior**:
+- **SSE-primary mode (enabled)**: Web browser and HTTP AI clients receive state updates via SSE only; desktop clients continue using WebSocket/TCP
+- **Dual-channel mode (default)**: State updates sent via both SSE and WebSocket for compatibility
+
+**Benefits of SSE-Primary Mode**:
+- Better scalability (broadcast-optimized, stateless server)
+- Superior network compatibility (standard HTTP, works through firewalls)
+- Built-in auto-reconnection with Last-Event-ID
+- Reduced WebSocket bandwidth (~50% reduction)
+
+**Message Routing**:
+- **SSE Messages**: FULL_STATE, STATE_UPDATE, TURN_CHANGE, TOKEN_MOVED, COMBAT_RESULT, GENERATOR_UPDATE, CRYSTAL_UPDATE, MYSTERY_EVENT, TOKEN_DEPLOYED, GAME_WON
+- **WebSocket Messages**: All game commands (MOVE, ATTACK, DEPLOY, END_TURN), lobby operations, connection management, and responses
+
+**Automatic Fallback**: If SSE connection fails after 4 retry attempts or 30 seconds of silence, web clients automatically fall back to receiving state updates via WebSocket.
+
+**Configuration**:
+```bash
+# Enable SSE-primary mode
+export SSE_PRIMARY_MODE=true
+
+# Start server
+uv run race-unified-server
+```
+
+See [SSE_ROADMAP.md](SSE_ROADMAP.md) for complete architecture documentation.
+
 ## Quick Start
 
 ### Understanding the Architecture

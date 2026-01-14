@@ -68,3 +68,58 @@ class ClientType(Enum):
     AI = "AI"  # AI agent player (TCP/WebSocket)
     WEB_BROWSER = "WEB_BROWSER"  # Web browser client (Babylon.js)
     HTTP_AI = "HTTP_AI"  # AI agent using HTTP POST + SSE
+
+
+# Message Classification for SSE-Primary Mode
+# Messages sent via SSE (Server-Sent Events / Mercure)
+SSE_MESSAGES = {
+    MessageType.FULL_STATE,
+    MessageType.STATE_UPDATE,
+    MessageType.TURN_CHANGE,
+    MessageType.TOKEN_MOVED,
+    MessageType.COMBAT_RESULT,
+    MessageType.GENERATOR_UPDATE,
+    MessageType.CRYSTAL_UPDATE,
+    MessageType.MYSTERY_EVENT,
+    MessageType.TOKEN_DEPLOYED,
+    MessageType.GAME_WON,
+}
+
+# Messages sent via WebSocket (commands, control, responses)
+WEBSOCKET_MESSAGES = {
+    # Game Commands
+    MessageType.MOVE,
+    MessageType.ATTACK,
+    MessageType.DEPLOY,
+    MessageType.END_TURN,
+    # Lobby Operations
+    MessageType.CREATE_GAME,
+    MessageType.JOIN_GAME,
+    MessageType.START_GAME,
+    MessageType.READY,
+    MessageType.LIST_GAMES,
+    MessageType.LEAVE_GAME,
+    # Connection Management
+    MessageType.CONNECT,
+    MessageType.RECONNECT,
+    MessageType.DISCONNECT,
+    MessageType.HEARTBEAT,
+    # Responses
+    MessageType.CONNECT_ACK,
+    MessageType.RECONNECT_ACK,
+    MessageType.RECONNECT_FAILED,
+    MessageType.HEARTBEAT_ACK,
+    MessageType.ERROR,
+    MessageType.INVALID_ACTION,
+    MessageType.GAME_LIST,
+    # Lobby Events (Phase 1 - keep on WebSocket)
+    MessageType.PLAYER_JOINED,
+    MessageType.PLAYER_LEFT,
+    MessageType.PLAYER_DISCONNECTED,
+    MessageType.PLAYER_RECONNECTED,
+    # Chat
+    MessageType.CHAT,
+}
+
+# Client types that should receive state updates via SSE in SSE-primary mode
+SSE_CAPABLE_CLIENTS = {ClientType.WEB_BROWSER, ClientType.HTTP_AI}

@@ -71,6 +71,11 @@ class GameServer:
         mercure_config = MercureConfig.from_env()
         self.mercure_publisher = MercurePublisher(mercure_config)
 
+        # SSE Primary Mode feature flag
+        # When True: SSE for web clients, WebSocket for desktop only
+        # When False: Both channels active (current behavior)
+        self.sse_primary_mode = os.getenv("SSE_PRIMARY_MODE", "false").lower() == "true"
+
         # Protocol handler
         self.protocol = ProtocolHandler()
 
@@ -81,6 +86,7 @@ class GameServer:
         self.websocket_handler = None  # Set when aiohttp server starts
 
         logger.info(f"Game server initialized on {host}:{port}")
+        logger.info(f"SSE Primary Mode: {'enabled' if self.sse_primary_mode else 'disabled (dual-channel)'}")
 
     async def start(self) -> None:
         """Start the TCP server."""
@@ -782,31 +788,54 @@ class GameServer:
             f"  Game state before broadcast - current_turn: {game_session.game_state.current_turn_player_id}, turn_phase: {game_session.game_state.turn_phase.name}, turn_number: {game_session.game_state.turn_number}"
         )
 
-        # Publish to Mercure hub for web clients using SSE
+        # Import SSE_CAPABLE_CLIENTS for client type checking
+        from network.messages import SSE_CAPABLE_CLIENTS
+
+        # Publish to Mercure hub for SSE-capable clients
         # Use a generic state dict suitable for all players
         if game_session.network_to_game_id:
             # Get first player's state as representative (all get same public state)
             first_player = next(iter(game_session.network_to_game_id.keys()))
             mercure_state = game_session.get_game_state_for_player(first_player)
             if mercure_state:
-                await self.mercure_publisher.publish_game_state(
+                mercure_success = await self.mercure_publisher.publish_game_state(
                     game_session.game_id, mercure_state
                 )
+                if mercure_success:
+                    logger.debug("Successfully published state to Mercure/SSE")
+                else:
+                    logger.warning("Mercure publish failed, all clients will use WebSocket fallback")
 
         # Send to individual players via WebSocket/TCP
+        # In SSE-primary mode: skip SSE-capable clients (they get updates via Mercure)
+        # In dual-channel mode: send to all clients (backward compatibility)
         for net_player_id in game_session.network_to_game_id.keys():
-            state_dict = game_session.get_game_state_for_player(net_player_id)
-            if state_dict:
-                logger.info(
-                    f"  State dict for {net_player_id[:8]}: turn_phase={state_dict.get('turn_phase')}"
+            client_type = self.player_client_types.get(net_player_id)
+
+            # Determine if we should send via WebSocket
+            should_send_websocket = True
+            if self.sse_primary_mode and client_type in SSE_CAPABLE_CLIENTS:
+                # SSE-primary mode: skip WebSocket for SSE-capable clients
+                should_send_websocket = False
+                logger.debug(
+                    f"  -> Skipping FULL_STATE for {net_player_id[:8]} ({client_type.value if client_type else 'UNKNOWN'}) - using SSE"
                 )
 
-            state_msg = self.protocol.create_full_state_message(
-                state_dict, net_player_id
-            )
-            logger.info(f"  -> Sending FULL_STATE to player {net_player_id[:8]}...")
-            await self._send_to_player(net_player_id, state_msg)
-            logger.info(f"  -> FULL_STATE sent to player {net_player_id[:8]}")
+            if should_send_websocket:
+                state_dict = game_session.get_game_state_for_player(net_player_id)
+                if state_dict:
+                    logger.info(
+                        f"  State dict for {net_player_id[:8]}: turn_phase={state_dict.get('turn_phase')}"
+                    )
+
+                state_msg = self.protocol.create_full_state_message(
+                    state_dict, net_player_id
+                )
+                logger.info(
+                    f"  -> Sending FULL_STATE via WebSocket to player {net_player_id[:8]} ({client_type.value if client_type else 'UNKNOWN'})..."
+                )
+                await self._send_to_player(net_player_id, state_msg)
+                logger.info(f"  -> FULL_STATE sent to player {net_player_id[:8]}")
 
         # Clear crystal effect trigger after broadcasting to all clients
         # This prevents the effect from being re-triggered on subsequent broadcasts
