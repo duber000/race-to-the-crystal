@@ -443,3 +443,438 @@ class TestGameStateIntegration:
         # Check effects were preserved
         effects = restored.crystal_effects.get_player_effects(player_id)
         assert effects.has_effect(CrystalEffect.FOG_OF_WAR)
+
+
+class TestDamageBoostEffect:
+    """Test DAMAGE_BOOST crystal effect."""
+
+    def test_damage_boost_increases_attack_damage(self):
+        """Test that damage boost multiplies attack damage correctly."""
+        from shared.constants import CRYSTAL_DAMAGE_BOOST_MULTIPLIER
+
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_ids = list(game_state.players.keys())
+        player_0 = player_ids[0]
+        player_1 = player_ids[1]
+
+        # Get two tokens from different players
+        player_0_tokens = [t for t in game_state.tokens.values() if t.player_id == player_0 and t.is_deployed]
+        player_1_tokens = [t for t in game_state.tokens.values() if t.player_id == player_1 and t.is_deployed]
+
+        attacker = player_0_tokens[0]
+        defender = player_1_tokens[0]
+
+        # Move them adjacent to each other
+        attacker_pos = (10, 10)
+        defender_pos = (10, 11)
+        game_state.move_token(attacker.id, attacker_pos)
+        game_state.move_token(defender.id, defender_pos)
+
+        # Record defender's initial health and base damage
+        initial_health = defender.health
+        base_damage = attacker.attack_power
+
+        # Attack WITHOUT damage boost
+        game_state.attack_token(attacker.id, defender.id)
+        damage_without_boost = initial_health - defender.health
+
+        # Reset defender health
+        defender.health = initial_health
+
+        # Apply damage boost to attacker's player
+        game_state.apply_crystal_effect(player_0, CrystalEffect.DAMAGE_BOOST)
+
+        # Attack WITH damage boost
+        game_state.attack_token(attacker.id, defender.id)
+        damage_with_boost = initial_health - defender.health
+
+        # Verify boost was applied
+        expected_boosted_damage = int(base_damage * CRYSTAL_DAMAGE_BOOST_MULTIPLIER)
+        assert damage_with_boost == expected_boosted_damage
+        assert damage_with_boost > damage_without_boost
+
+    def test_damage_boost_only_affects_boosted_player(self):
+        """Test that damage boost only affects the player who has the effect."""
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_ids = list(game_state.players.keys())
+        player_0 = player_ids[0]
+        player_1 = player_ids[1]
+
+        # Apply damage boost to player 0 only
+        game_state.apply_crystal_effect(player_0, CrystalEffect.DAMAGE_BOOST)
+
+        # Get tokens
+        player_0_tokens = [t for t in game_state.tokens.values() if t.player_id == player_0 and t.is_deployed]
+        player_1_tokens = [t for t in game_state.tokens.values() if t.player_id == player_1 and t.is_deployed]
+
+        attacker_p0 = player_0_tokens[0]
+        attacker_p1 = player_1_tokens[0]
+        defender = player_1_tokens[1]
+
+        # Position tokens
+        game_state.move_token(attacker_p0.id, (10, 10))
+        game_state.move_token(attacker_p1.id, (12, 10))
+        game_state.move_token(defender.id, (10, 11))
+
+        # Player 0 attacks (has boost)
+        defender_health_before = defender.health
+        p0_base_damage = attacker_p0.attack_power
+        game_state.attack_token(attacker_p0.id, defender.id)
+        p0_damage_dealt = defender_health_before - defender.health
+
+        # Reset defender
+        defender.health = defender_health_before
+
+        # Move player 1's attacker adjacent
+        game_state.move_token(attacker_p1.id, (11, 11))
+
+        # Player 1 attacks (no boost)
+        p1_base_damage = attacker_p1.attack_power
+        game_state.attack_token(attacker_p1.id, defender.id)
+        p1_damage_dealt = defender_health_before - defender.health
+
+        # Player 0's damage should be boosted, player 1's should be normal
+        from shared.constants import CRYSTAL_DAMAGE_BOOST_MULTIPLIER
+        assert p0_damage_dealt == int(p0_base_damage * CRYSTAL_DAMAGE_BOOST_MULTIPLIER)
+        assert p1_damage_dealt == p1_base_damage
+        assert p0_damage_dealt > p1_damage_dealt
+
+    def test_damage_boost_expires_after_duration(self):
+        """Test that damage boost effect expires after its duration."""
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_id = list(game_state.players.keys())[0]
+
+        # Apply damage boost with short duration
+        game_state.apply_crystal_effect(player_id, CrystalEffect.DAMAGE_BOOST, duration=2)
+
+        effects = game_state.crystal_effects.get_player_effects(player_id)
+        assert effects.has_effect(CrystalEffect.DAMAGE_BOOST)
+        assert effects.get_effect(CrystalEffect.DAMAGE_BOOST).turns_remaining == 2
+
+        # Reduce duration
+        effects.reduce_all_durations(1)
+        assert effects.has_effect(CrystalEffect.DAMAGE_BOOST)
+        assert effects.get_effect(CrystalEffect.DAMAGE_BOOST).turns_remaining == 1
+
+        # Expire completely
+        effects.reduce_all_durations(1)
+        assert not effects.has_effect(CrystalEffect.DAMAGE_BOOST)
+
+    def test_damage_boost_reduced_by_generator_capture(self):
+        """Test that generator capture reduces damage boost duration."""
+        from shared.constants import CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR
+
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_id = list(game_state.players.keys())[0]
+
+        # Apply damage boost
+        game_state.apply_crystal_effect(player_id, CrystalEffect.DAMAGE_BOOST)
+
+        effects = game_state.crystal_effects.get_player_effects(player_id)
+        initial_duration = effects.get_effect(CrystalEffect.DAMAGE_BOOST).turns_remaining
+
+        # Simulate generator capture
+        game_state.crystal_effects.reduce_effect_durations_for_generator_capture(player_id)
+
+        new_duration = effects.get_effect(CrystalEffect.DAMAGE_BOOST).turns_remaining
+        assert new_duration == initial_duration - CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR
+
+    def test_damage_boost_can_kill_defender(self):
+        """Test that damage boost can increase damage enough to kill."""
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_ids = list(game_state.players.keys())
+        player_0 = player_ids[0]
+        player_1 = player_ids[1]
+
+        # Get tokens
+        player_0_tokens = [t for t in game_state.tokens.values() if t.player_id == player_0 and t.is_deployed]
+        player_1_tokens = [t for t in game_state.tokens.values() if t.player_id == player_1 and t.is_deployed]
+
+        # Find a strong attacker (10hp) and weak defender (4hp)
+        attacker = next((t for t in player_0_tokens if t.max_health == 10), player_0_tokens[0])
+        defender = next((t for t in player_1_tokens if t.max_health == 4), player_1_tokens[0])
+
+        # Position them
+        game_state.move_token(attacker.id, (10, 10))
+        game_state.move_token(defender.id, (10, 11))
+
+        # Set defender to low health
+        defender.health = 6
+
+        # Base damage from 10hp attacker is 5
+        base_damage = attacker.attack_power
+        assert base_damage == 5
+
+        # Apply damage boost (5 * 1.5 = 7.5, int = 7)
+        game_state.apply_crystal_effect(player_0, CrystalEffect.DAMAGE_BOOST)
+
+        # Attack should kill the 6hp defender
+        initial_token_count = len([t for t in game_state.tokens.values() if t.is_alive])
+        game_state.attack_token(attacker.id, defender.id)
+
+        # Defender should be dead
+        assert not defender.is_alive
+        final_token_count = len([t for t in game_state.tokens.values() if t.is_alive])
+        assert final_token_count < initial_token_count
+
+
+class TestSpeedBoostEffect:
+    """Test SPEED_BOOST crystal effect."""
+
+    def test_speed_boost_increases_movement_range(self):
+        """Test that speed boost increases token movement range."""
+        from shared.constants import CRYSTAL_SPEED_BOOST_AMOUNT
+
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_id = list(game_state.players.keys())[0]
+        player_tokens = [t for t in game_state.tokens.values() if t.player_id == player_id and t.is_deployed]
+        token = player_tokens[0]
+
+        # Get base movement range
+        base_range = token.movement_range
+
+        # Get effective range without boost
+        range_without_boost = game_state.get_token_movement_range(token)
+        assert range_without_boost == base_range
+
+        # Apply speed boost
+        game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST)
+
+        # Get effective range with boost
+        range_with_boost = game_state.get_token_movement_range(token)
+        assert range_with_boost == base_range + CRYSTAL_SPEED_BOOST_AMOUNT
+        assert range_with_boost > range_without_boost
+
+    def test_speed_boost_only_affects_boosted_player(self):
+        """Test that speed boost only affects the player who has the effect."""
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_ids = list(game_state.players.keys())
+        player_0 = player_ids[0]
+        player_1 = player_ids[1]
+
+        # Apply speed boost to player 0 only
+        game_state.apply_crystal_effect(player_0, CrystalEffect.SPEED_BOOST)
+
+        # Get tokens
+        player_0_token = next(t for t in game_state.tokens.values() if t.player_id == player_0 and t.is_deployed)
+        player_1_token = next(t for t in game_state.tokens.values() if t.player_id == player_1 and t.is_deployed)
+
+        from shared.constants import CRYSTAL_SPEED_BOOST_AMOUNT
+
+        # Player 0's tokens should have boosted range
+        p0_range = game_state.get_token_movement_range(player_0_token)
+        assert p0_range == player_0_token.movement_range + CRYSTAL_SPEED_BOOST_AMOUNT
+
+        # Player 1's tokens should have normal range
+        p1_range = game_state.get_token_movement_range(player_1_token)
+        assert p1_range == player_1_token.movement_range
+
+    def test_speed_boost_applies_to_all_token_types(self):
+        """Test that speed boost works for tokens with different health levels."""
+        from shared.constants import CRYSTAL_SPEED_BOOST_AMOUNT
+
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_id = list(game_state.players.keys())[0]
+
+        # Apply speed boost
+        game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST)
+
+        # Test with different health tokens (movement range varies by health)
+        player_tokens = [t for t in game_state.tokens.values() if t.player_id == player_id and t.is_deployed]
+
+        for token in player_tokens:
+            base_range = token.movement_range
+            boosted_range = game_state.get_token_movement_range(token)
+            assert boosted_range == base_range + CRYSTAL_SPEED_BOOST_AMOUNT, \
+                f"Token {token.id} with health {token.health}: expected {base_range + CRYSTAL_SPEED_BOOST_AMOUNT}, got {boosted_range}"
+
+    def test_speed_boost_expires_after_duration(self):
+        """Test that speed boost effect expires after its duration."""
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_id = list(game_state.players.keys())[0]
+
+        # Apply speed boost with short duration
+        game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST, duration=2)
+
+        effects = game_state.crystal_effects.get_player_effects(player_id)
+        assert effects.has_effect(CrystalEffect.SPEED_BOOST)
+        assert effects.get_effect(CrystalEffect.SPEED_BOOST).turns_remaining == 2
+
+        # Reduce duration
+        effects.reduce_all_durations(1)
+        assert effects.has_effect(CrystalEffect.SPEED_BOOST)
+        assert effects.get_effect(CrystalEffect.SPEED_BOOST).turns_remaining == 1
+
+        # Expire completely
+        effects.reduce_all_durations(1)
+        assert not effects.has_effect(CrystalEffect.SPEED_BOOST)
+
+    def test_speed_boost_reduced_by_generator_capture(self):
+        """Test that generator capture reduces speed boost duration."""
+        from shared.constants import CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR
+
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_id = list(game_state.players.keys())[0]
+
+        # Apply speed boost
+        game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST)
+
+        effects = game_state.crystal_effects.get_player_effects(player_id)
+        initial_duration = effects.get_effect(CrystalEffect.SPEED_BOOST).turns_remaining
+
+        # Simulate generator capture
+        game_state.crystal_effects.reduce_effect_durations_for_generator_capture(player_id)
+
+        new_duration = effects.get_effect(CrystalEffect.SPEED_BOOST).turns_remaining
+        assert new_duration == initial_duration - CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR
+
+    def test_speed_boost_allows_longer_movement(self):
+        """Test that speed boost actually allows tokens to move further in gameplay."""
+        from game.movement import MovementSystem
+        from shared.constants import CRYSTAL_SPEED_BOOST_AMOUNT
+
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_id = list(game_state.players.keys())[0]
+        player_tokens = [t for t in game_state.tokens.values() if t.player_id == player_id and t.is_deployed]
+        token = player_tokens[0]
+
+        # Position token in clear area
+        start_pos = (12, 12)
+        game_state.move_token(token.id, start_pos)
+
+        # Calculate valid moves without boost
+        base_range = token.movement_range
+        valid_moves_without_boost = MovementSystem.get_valid_moves(
+            token,
+            game_state.board,
+            base_range
+        )
+
+        # Apply speed boost
+        game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST)
+
+        # Calculate valid moves with boost
+        boosted_range = game_state.get_token_movement_range(token)
+        valid_moves_with_boost = MovementSystem.get_valid_moves(
+            token,
+            game_state.board,
+            boosted_range
+        )
+
+        # Should be able to reach more squares with boost
+        assert len(valid_moves_with_boost) > len(valid_moves_without_boost)
+        assert boosted_range == base_range + CRYSTAL_SPEED_BOOST_AMOUNT
+
+
+class TestMultipleEffectsInteraction:
+    """Test interactions between multiple crystal effects."""
+
+    def test_damage_and_speed_boost_together(self):
+        """Test that a player can have both DAMAGE_BOOST and SPEED_BOOST active."""
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_id = list(game_state.players.keys())[0]
+
+        # Apply both effects
+        game_state.apply_crystal_effect(player_id, CrystalEffect.DAMAGE_BOOST)
+        game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST)
+
+        effects = game_state.crystal_effects.get_player_effects(player_id)
+        assert effects.has_effect(CrystalEffect.DAMAGE_BOOST)
+        assert effects.has_effect(CrystalEffect.SPEED_BOOST)
+        assert len(effects.active_effects) == 2
+
+    def test_all_four_effects_can_coexist(self):
+        """Test that all four crystal effects can be active on a player simultaneously."""
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_id = list(game_state.players.keys())[0]
+
+        # Apply all four effects
+        game_state.apply_crystal_effect(player_id, CrystalEffect.FOG_OF_WAR)
+        game_state.apply_crystal_effect(player_id, CrystalEffect.PHANTOM_ENEMIES)
+        game_state.apply_crystal_effect(player_id, CrystalEffect.DAMAGE_BOOST)
+        game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST)
+
+        effects = game_state.crystal_effects.get_player_effects(player_id)
+        assert effects.has_effect(CrystalEffect.FOG_OF_WAR)
+        assert effects.has_effect(CrystalEffect.PHANTOM_ENEMIES)
+        assert effects.has_effect(CrystalEffect.DAMAGE_BOOST)
+        assert effects.has_effect(CrystalEffect.SPEED_BOOST)
+        assert len(effects.active_effects) == 4
+
+    def test_random_effect_can_trigger_any_effect(self):
+        """Test that random effect triggering can select any of the four effects."""
+        import random
+        random.seed(42)  # Set seed for reproducibility
+
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        # Trigger multiple random effects to see variety
+        triggered_effects = set()
+        for _ in range(20):
+            result = game_state.trigger_random_crystal_effect()
+            if result:
+                _, effect_type = result
+                triggered_effects.add(effect_type)
+
+        # We should see at least 2 different effect types in 20 tries
+        # (statistically very likely with 4 options)
+        assert len(triggered_effects) >= 2
+
+    def test_effect_serialization_with_all_types(self):
+        """Test that all effect types serialize/deserialize correctly."""
+        game_state = GameState.create_game(2)
+        game_state.start_game()
+
+        player_id = list(game_state.players.keys())[0]
+
+        # Apply all effects
+        game_state.apply_crystal_effect(player_id, CrystalEffect.FOG_OF_WAR, duration=3)
+        game_state.apply_crystal_effect(player_id, CrystalEffect.PHANTOM_ENEMIES, duration=4)
+        game_state.apply_crystal_effect(player_id, CrystalEffect.DAMAGE_BOOST, duration=2)
+        game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST, duration=5)
+
+        # Serialize
+        data = game_state.to_dict()
+
+        # Deserialize
+        restored = GameState.from_dict(data)
+
+        # Verify all effects preserved
+        restored_effects = restored.crystal_effects.get_player_effects(player_id)
+        assert restored_effects.has_effect(CrystalEffect.FOG_OF_WAR)
+        assert restored_effects.has_effect(CrystalEffect.PHANTOM_ENEMIES)
+        assert restored_effects.has_effect(CrystalEffect.DAMAGE_BOOST)
+        assert restored_effects.has_effect(CrystalEffect.SPEED_BOOST)
+
+        # Verify durations
+        assert restored_effects.get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining == 3
+        assert restored_effects.get_effect(CrystalEffect.PHANTOM_ENEMIES).turns_remaining == 4
+        assert restored_effects.get_effect(CrystalEffect.DAMAGE_BOOST).turns_remaining == 2
+        assert restored_effects.get_effect(CrystalEffect.SPEED_BOOST).turns_remaining == 5
