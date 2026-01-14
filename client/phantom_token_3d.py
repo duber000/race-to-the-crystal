@@ -30,13 +30,12 @@ class PhantomToken3D:
             ctx: Arcade OpenGL context
         """
         self.phantom_token = phantom_token
-        # Use a ghostly blue-ish color instead of player color
-        ghost_color = (150, 150, 255)  # Light blue
+        # Use player color with transparency to show phantom nature
         self.color = np.array(
             [
-                ghost_color[0] / 255.0,
-                ghost_color[1] / 255.0,
-                ghost_color[2] / 255.0,
+                player_color[0] / 255.0,
+                player_color[1] / 255.0,
+                player_color[2] / 255.0,
                 0.5,  # More transparent than real tokens
             ],
             dtype=np.float32,

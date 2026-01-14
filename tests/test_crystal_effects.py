@@ -272,6 +272,13 @@ class TestCrystalEffectsManager:
         effects = manager.get_player_effects("player_0")
         assert len(effects.phantom_tokens) == len(phantoms)
 
+        # Verify phantoms appear as OTHER players, not the affected player
+        for phantom in phantoms:
+            assert phantom.apparent_player_id in ["player_1", "player_2"], \
+                f"Phantom should appear as enemy player, not {phantom.apparent_player_id}"
+            assert phantom.apparent_player_id != "player_0", \
+                "Phantom should not appear as the affected player"
+
     def test_no_phantoms_without_effect(self):
         """Test that phantoms aren't generated without the effect."""
         manager = CrystalEffectsManager()
@@ -472,23 +479,26 @@ class TestDamageBoostEffect:
         game_state.move_token(attacker.id, attacker_pos)
         game_state.move_token(defender.id, defender_pos)
 
-        # Record defender's initial health and base damage
-        initial_health = defender.health
+        # Record base damage
         base_damage = attacker.attack_power
 
         # Attack WITHOUT damage boost
-        game_state.attack_token(attacker.id, defender.id)
-        damage_without_boost = initial_health - defender.health
+        outcome_without_boost = game_state.attack_token(attacker.id, defender.id)
+        assert outcome_without_boost is not None
+        damage_without_boost = outcome_without_boost.damage_dealt
 
-        # Reset defender health
-        defender.health = initial_health
+        # Reset defender to full health
+        defender.is_alive = True
+        defender.health = defender.max_health
+        game_state.board.set_occupant(defender_pos, defender.id)
 
         # Apply damage boost to attacker's player
         game_state.apply_crystal_effect(player_0, CrystalEffect.DAMAGE_BOOST)
 
         # Attack WITH damage boost
-        game_state.attack_token(attacker.id, defender.id)
-        damage_with_boost = initial_health - defender.health
+        outcome_with_boost = game_state.attack_token(attacker.id, defender.id)
+        assert outcome_with_boost is not None
+        damage_with_boost = outcome_with_boost.damage_dealt
 
         # Verify boost was applied
         expected_boosted_damage = int(base_damage * CRYSTAL_DAMAGE_BOOST_MULTIPLIER)
@@ -507,35 +517,40 @@ class TestDamageBoostEffect:
         # Apply damage boost to player 0 only
         game_state.apply_crystal_effect(player_0, CrystalEffect.DAMAGE_BOOST)
 
-        # Get tokens
+        # Get tokens - need separate defenders for each player
         player_0_tokens = [t for t in game_state.tokens.values() if t.player_id == player_0 and t.is_deployed]
         player_1_tokens = [t for t in game_state.tokens.values() if t.player_id == player_1 and t.is_deployed]
 
         attacker_p0 = player_0_tokens[0]
-        attacker_p1 = player_1_tokens[0]
-        defender = player_1_tokens[1]
+        defender_p0 = player_1_tokens[0]  # Player 0 will attack this player 1 token
 
-        # Position tokens
+        attacker_p1 = player_1_tokens[1]
+        defender_p1 = player_0_tokens[1]  # Player 1 will attack this player 0 token
+
+        # Position tokens for player 0's attack
         game_state.move_token(attacker_p0.id, (10, 10))
-        game_state.move_token(attacker_p1.id, (12, 10))
-        game_state.move_token(defender.id, (10, 11))
+        game_state.move_token(defender_p0.id, (10, 11))
 
         # Player 0 attacks (has boost)
-        defender_health_before = defender.health
         p0_base_damage = attacker_p0.attack_power
-        game_state.attack_token(attacker_p0.id, defender.id)
-        p0_damage_dealt = defender_health_before - defender.health
+        outcome_p0 = game_state.attack_token(attacker_p0.id, defender_p0.id)
+        assert outcome_p0 is not None
+        p0_damage_dealt = outcome_p0.damage_dealt
 
-        # Reset defender
-        defender.health = defender_health_before
+        # Reset defender to full health
+        defender_p0.is_alive = True
+        defender_p0.health = defender_p0.max_health
+        game_state.board.set_occupant((10, 11), defender_p0.id)
 
-        # Move player 1's attacker adjacent
-        game_state.move_token(attacker_p1.id, (11, 11))
+        # Position tokens for player 1's attack
+        game_state.move_token(attacker_p1.id, (12, 10))
+        game_state.move_token(defender_p1.id, (12, 11))
 
         # Player 1 attacks (no boost)
         p1_base_damage = attacker_p1.attack_power
-        game_state.attack_token(attacker_p1.id, defender.id)
-        p1_damage_dealt = defender_health_before - defender.health
+        outcome_p1 = game_state.attack_token(attacker_p1.id, defender_p1.id)
+        assert outcome_p1 is not None
+        p1_damage_dealt = outcome_p1.damage_dealt
 
         # Player 0's damage should be boosted, player 1's should be normal
         from shared.constants import CRYSTAL_DAMAGE_BOOST_MULTIPLIER

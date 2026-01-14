@@ -232,14 +232,14 @@ class GameView(arcade.View):
             self.game_state.crystal,
             self.mystery_animations,
         )
-        current_player = self.game_state.get_current_player()
-        viewing_player_id = current_player.id if current_player else None
+        # Use local_player_id for network games (fog of war), None for local games (show all)
+        viewing_player_id = self.local_player_id if self.is_network_game else None
         self.renderer_2d.create_token_sprites(self.game_state, viewing_player_id)
         logger.debug(f"Created {len(self.renderer_2d.token_sprites)} token sprites")
 
         self._create_ui_sprites()
-        current_player = self.game_state.get_current_player()
-        viewing_player_id = current_player.id if current_player else None
+        # Use local_player_id for network games (fog of war), None for local games (show all)
+        viewing_player_id = self.local_player_id if self.is_network_game else None
         self.renderer_3d.create(
             self.game_state, self.window.ctx, self.mystery_animations
         )

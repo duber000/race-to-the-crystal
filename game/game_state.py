@@ -316,7 +316,7 @@ class GameState:
         # Mark as not alive
         token.is_alive = False
 
-    def attack_token(self, attacker_id: TokenID, defender_id: TokenID) -> bool:
+    def attack_token(self, attacker_id: TokenID, defender_id: TokenID) -> "CombatOutcome | None":
         """
         Execute an attack between two tokens.
 
@@ -325,20 +325,21 @@ class GameState:
             defender_id: ID of defending token
 
         Returns:
-            True if attack was successful
+            CombatOutcome with damage information, or None if attack was invalid
         """
-        from game.combat import CombatSystem
+        from game.combat import CombatSystem, CombatOutcome
         from shared.constants import CRYSTAL_DAMAGE_BOOST_MULTIPLIER
+        from shared.enums import CombatResult
 
         attacker = self.get_token(attacker_id)
         defender = self.get_token(defender_id)
 
         if not attacker or not defender:
-            return False
+            return None
 
         # Check if attack is valid
         if not CombatSystem.can_attack(attacker, defender):
-            return False
+            return None
 
         # Calculate damage with potential boost
         damage = attacker.attack_power
@@ -355,7 +356,15 @@ class GameState:
         if was_killed:
             self.remove_token(defender_id)
 
-        return True
+        # Return combat outcome
+        result = CombatResult.KILLED if was_killed else CombatResult.HIT
+        return CombatOutcome(
+            result=result,
+            damage_dealt=damage,
+            attacker_id=attacker_id,
+            defender_id=defender_id,
+            defender_killed=was_killed,
+        )
 
     def _auto_deploy_starting_tokens(
         self, player_id: PlayerID, player_index: int

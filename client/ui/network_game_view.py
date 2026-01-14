@@ -389,8 +389,8 @@ class NetworkGameView(arcade.View):
                 self.game_view.game_state = self.game_state
 
                 # Sync tokens instead of full setup (preserves/triggers animations)
-                current_player = self.game_state.get_current_player()
-                viewing_player_id = current_player.id if current_player else None
+                # Use local_player_id for fog of war perspective
+                viewing_player_id = self.local_player_id
                 self.game_view.renderer_2d.sync_tokens(self.game_state, viewing_player_id)
 
                 # Sync 3D tokens
@@ -472,8 +472,8 @@ class NetworkGameView(arcade.View):
             # Update visuals to reflect rollback
             if self.game_view:
                 # Update 2D renderer
-                current_player = self.game_state.get_current_player()
-                viewing_player_id = current_player.id if current_player else None
+                # Use local_player_id for fog of war perspective
+                viewing_player_id = self.local_player_id
                 if hasattr(self.game_view.renderer_2d, "sync_tokens"):
                     self.game_view.renderer_2d.sync_tokens(self.game_state, viewing_player_id)
 

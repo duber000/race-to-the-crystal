@@ -57,15 +57,16 @@ class PhantomTokenSprite(arcade.Sprite):
         center = size // 2
 
         # Draw ghostly hexagon wireframe (semi-transparent)
-        # Use a blue-ish tint to indicate phantom nature
-        ghost_color = (150, 150, 255, 180)  # Light blue with transparency
+        # Use player color with transparency to show phantom nature
+        base_color = self.player_color
+        ghost_color = (*base_color, 180)  # Add transparency to player color
 
         # Multiple layers for ghostly glow effect
         for i in range(4, 0, -1):
             alpha = int(120 / (i + 1))  # More transparent glow
             radius = self.token_radius + (i * 2)
             width = max(1, 3 - i // 2)
-            color = (*ghost_color[:3], alpha)
+            color = (*base_color, alpha)
 
             points = self._hexagon_points(center, center, radius)
             # Draw as outline only for wireframe effect
@@ -73,7 +74,7 @@ class PhantomTokenSprite(arcade.Sprite):
 
         # Main ghostly hexagon outline
         points = self._hexagon_points(center, center, self.token_radius)
-        main_color = (*ghost_color[:3], 200)  # Slightly more opaque
+        main_color = (*base_color, 200)  # Slightly more opaque
         draw.line(points + [points[0]], fill=main_color, width=2)
 
         # Draw apparent health number with ghostly appearance
@@ -104,13 +105,15 @@ class PhantomTokenSprite(arcade.Sprite):
         text_x = center - text_width // 2
         text_y = center - text_height // 2
 
-        # Draw ghostly text with transparency
-        text_color = (200, 200, 255, 220)  # Light blue, semi-transparent
-        
+        # Draw ghostly text with transparency using player color
+        # Lighten the player color for better visibility on dark background
+        lightened_color = tuple(min(255, int(c * 1.3)) for c in base_color)
+        text_color = (*lightened_color, 220)  # Semi-transparent
+
         # Glow layers
         for offset in range(3, 0, -1):
             alpha = int(100 / (offset + 1))
-            glow_color = (*text_color[:3], alpha)
+            glow_color = (*lightened_color, alpha)
             for dx, dy in [(-offset, 0), (offset, 0), (0, -offset), (0, offset)]:
                 draw.text(
                     (text_x + dx, text_y + dy), health_text, fill=glow_color, font=font
