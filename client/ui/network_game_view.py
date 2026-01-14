@@ -389,12 +389,14 @@ class NetworkGameView(arcade.View):
                 self.game_view.game_state = self.game_state
 
                 # Sync tokens instead of full setup (preserves/triggers animations)
-                self.game_view.renderer_2d.sync_tokens(self.game_state)
+                current_player = self.game_state.get_current_player()
+                viewing_player_id = current_player.id if current_player else None
+                self.game_view.renderer_2d.sync_tokens(self.game_state, viewing_player_id)
 
                 # Sync 3D tokens
                 if hasattr(self.game_view.renderer_3d, "sync_tokens"):
                     self.game_view.renderer_3d.sync_tokens(
-                        self.game_state, self.game_view.window.ctx
+                        self.game_state, self.game_view.window.ctx, viewing_player_id
                     )
 
                 # We still need to recreate board sprites for generator/crystal updates
@@ -470,13 +472,15 @@ class NetworkGameView(arcade.View):
             # Update visuals to reflect rollback
             if self.game_view:
                 # Update 2D renderer
+                current_player = self.game_state.get_current_player()
+                viewing_player_id = current_player.id if current_player else None
                 if hasattr(self.game_view.renderer_2d, "sync_tokens"):
-                    self.game_view.renderer_2d.sync_tokens(self.game_state)
+                    self.game_view.renderer_2d.sync_tokens(self.game_state, viewing_player_id)
 
                 # Update 3D renderer
                 if hasattr(self.game_view.renderer_3d, "sync_tokens"):
                     self.game_view.renderer_3d.sync_tokens(
-                        self.game_state, self.game_view.window.ctx
+                        self.game_state, self.game_view.window.ctx, viewing_player_id
                     )
 
                 # Clear selection

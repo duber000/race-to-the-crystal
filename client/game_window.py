@@ -232,13 +232,20 @@ class GameView(arcade.View):
             self.game_state.crystal,
             self.mystery_animations,
         )
-        self.renderer_2d.create_token_sprites(self.game_state)
+        current_player = self.game_state.get_current_player()
+        viewing_player_id = current_player.id if current_player else None
+        self.renderer_2d.create_token_sprites(self.game_state, viewing_player_id)
         logger.debug(f"Created {len(self.renderer_2d.token_sprites)} token sprites")
 
         self._create_ui_sprites()
+        current_player = self.game_state.get_current_player()
+        viewing_player_id = current_player.id if current_player else None
         self.renderer_3d.create(
             self.game_state, self.window.ctx, self.mystery_animations
         )
+        # Update 3D tokens with crystal effects after creation
+        if viewing_player_id:
+            self.renderer_3d._create_tokens_with_effects(self.game_state, self.window.ctx, viewing_player_id)
 
         # Set up camera to fit entire board in view
         self.camera_controller.setup_initial_view(self.window.width, self.window.height)  # type: ignore

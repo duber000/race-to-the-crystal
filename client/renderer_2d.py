@@ -14,6 +14,7 @@ from arcade.shape_list import ShapeElementList
 
 from client.sprites.board_sprite import create_board_shapes
 from client.sprites.token_sprite import TokenSprite
+from client.sprites.phantom_token_sprite import PhantomTokenSprite
 from shared.constants import CELL_SIZE, CIRCLE_SEGMENTS, PLAYER_COLORS
 from shared.logging_config import setup_logger
 from shared.types import TokenID
@@ -60,6 +61,7 @@ class Renderer2D:
         self.board_shapes: Optional[ShapeElementList] = None
         self.token_sprites: SpriteList = SpriteList()
         self.selection_shapes: ShapeElementList = ShapeElementList()
+        self.phantom_token_sprites: SpriteList = SpriteList()
 
         # Store board data for recreating shapes (needed for animations)
         self.board = None
@@ -123,96 +125,123 @@ class Renderer2D:
         )
         logger.debug("Created board shapes for 2D rendering")
 
-    def create_token_sprites(self, game_state) -> None:
+    def create_token_sprites(self, game_state, viewing_player_id: str | None = None) -> None:
         """
-        Create sprites for all tokens.
+        Create sprites for all tokens, considering crystal effects.
 
         Args:
             game_state: Game state object
+            viewing_player_id: Player ID viewing the board (for crystal effects)
         """
         self.token_sprites.clear()
+        self.phantom_token_sprites.clear()
 
-        for player in game_state.players.values():
-            player_color = PLAYER_COLORS[player.color.value]
+        if viewing_player_id is None:
+            # No crystal effects - show all tokens
+            for player in game_state.players.values():
+                player_color = PLAYER_COLORS[player.color.value]
 
-            for token_id in player.token_ids:
-                token = game_state.get_token(token_id)
-                if token and token.is_alive and token.is_deployed:
-                    sprite = TokenSprite(token, player_color)
-                    self.token_sprites.append(sprite)
+                for token_id in player.token_ids:
+                    token = game_state.get_token(token_id)
+                    if token and token.is_alive and token.is_deployed:
+                        sprite = TokenSprite(token, player_color)
+                        self.token_sprites.append(sprite)
+        else:
+            # Apply crystal effects - get visible tokens for this player
+            visible_tokens, phantom_tokens = game_state.get_visible_tokens_for_player(viewing_player_id)
+            
+            # Create sprites for visible real tokens
+            for token in visible_tokens:
+                player = game_state.players[token.player_id]
+                player_color = PLAYER_COLORS[player.color.value]
+                sprite = TokenSprite(token, player_color)
+                self.token_sprites.append(sprite)
+            
+            # Create sprites for phantom tokens
+            for phantom in phantom_tokens:
+                player_color = PLAYER_COLORS[game_state.players[phantom.apparent_player_id].color.value]
+                sprite = PhantomTokenSprite(phantom, player_color)
+                self.phantom_token_sprites.append(sprite)
 
         logger.debug(
-            f"Created {len(self.token_sprites)} token sprites for 2D rendering"
+            f"Created {len(self.token_sprites)} real token sprites and {len(self.phantom_token_sprites)} phantom token sprites for 2D rendering"
         )
 
-    def sync_tokens(self, game_state) -> None:
+    def sync_tokens(self, game_state, viewing_player_id: str | None = None) -> None:
         """
         Synchronize token sprites with game state, animating changes.
 
         Args:
             game_state: New game state object
+            viewing_player_id: Player ID viewing the board (for crystal effects)
         """
-        # Create a map of existing sprites by token ID
-        existing_sprites = {
-            sprite.token.id: sprite
-            for sprite in self.token_sprites
-            if hasattr(sprite, "token")
-        }
+        if viewing_player_id is None:
+            # No crystal effects - use original logic
+            # Create a map of existing sprites by token ID
+            existing_sprites = {
+                sprite.token.id: sprite
+                for sprite in self.token_sprites
+                if hasattr(sprite, "token")
+            }
 
-        # Track which token IDs we've processed
-        processed_ids = set()
+            # Track which token IDs we've processed
+            processed_ids = set()
 
-        for player in game_state.players.values():
-            player_color = PLAYER_COLORS[player.color.value]
+            for player in game_state.players.values():
+                player_color = PLAYER_COLORS[player.color.value]
 
-            for token_id in player.token_ids:
-                token = game_state.get_token(token_id)
-                if not token or not token.is_alive or not token.is_deployed:
-                    continue
+                for token_id in player.token_ids:
+                    token = game_state.get_token(token_id)
+                    if not token or not token.is_alive or not token.is_deployed:
+                        continue
 
-                processed_ids.add(token_id)
+                    processed_ids.add(token_id)
 
-                if token_id in existing_sprites:
-                    # Update existing sprite
-                    sprite = existing_sprites[token_id]
+                    if token_id in existing_sprites:
+                        # Update existing sprite
+                        sprite = existing_sprites[token_id]
 
-                    # Update health if changed
-                    if sprite.token.health != token.health:
-                        sprite.token = token  # Update reference
-                        sprite.update_health()
+                        # Update health if changed
+                        if sprite.token.health != token.health:
+                            sprite.token = token  # Update reference
+                            sprite.update_health()
 
-                    # Update position (with animation)
-                    # Check if position actually changed
-                    current_grid_x = int(sprite.target_x // CELL_SIZE)
-                    current_grid_y = int(sprite.target_y // CELL_SIZE)
+                        # Update position (with animation)
+                        # Check if position actually changed
+                        current_grid_x = int(sprite.target_x // CELL_SIZE)
+                        current_grid_y = int(sprite.target_y // CELL_SIZE)
 
-                    if (
-                        current_grid_x != token.position[0]
-                        or current_grid_y != token.position[1]
-                    ):
-                        logger.debug(
-                            f"Animating token {token_id} from ({current_grid_x},{current_grid_y}) to ({token.position[0]},{token.position[1]})"
-                        )
-                        sprite.update_position(
-                            token.position[0], token.position[1], instant=False
-                        )
+                        if (
+                            current_grid_x != token.position[0]
+                            or current_grid_y != token.position[1]
+                        ):
+                            logger.debug(
+                                f"Animating token {token_id} from ({current_grid_x},{current_grid_y}) to ({token.position[0]},{token.position[1]})"
+                            )
+                            sprite.update_position(
+                                token.position[0], token.position[1], instant=False
+                            )
+                        else:
+                            logger.debug(
+                                f"Token {token_id} already at target position ({token.position[0]},{token.position[1]})"
+                            )
                     else:
-                        logger.debug(
-                            f"Token {token_id} already at target position ({token.position[0]},{token.position[1]})"
-                        )
-                else:
-                    # Create new sprite
-                    sprite = TokenSprite(token, player_color)
-                    self.token_sprites.append(sprite)
+                        # Create new sprite
+                        sprite = TokenSprite(token, player_color)
+                        self.token_sprites.append(sprite)
 
-        # Remove sprites for tokens that are no longer present/alive/deployed
-        sprites_to_remove = []
-        for sprite in self.token_sprites:
-            if hasattr(sprite, "token") and sprite.token.id not in processed_ids:
-                sprites_to_remove.append(sprite)
+            # Remove sprites for tokens that are no longer present/alive/deployed
+            sprites_to_remove = []
+            for sprite in self.token_sprites:
+                if hasattr(sprite, "token") and sprite.token.id not in processed_ids:
+                    sprites_to_remove.append(sprite)
 
-        for sprite in sprites_to_remove:
-            self.token_sprites.remove(sprite)
+            for sprite in sprites_to_remove:
+                self.token_sprites.remove(sprite)
+        else:
+            # Apply crystal effects - recreate all sprites
+            # This is simpler than trying to sync individual phantom tokens
+            self.create_token_sprites(game_state, viewing_player_id)
 
     def update_selection_visuals(
         self,
@@ -370,6 +399,8 @@ class Renderer2D:
                 self.board_shapes.draw()
             self.selection_shapes.draw()
             self.token_sprites.draw()
+            # Draw phantom tokens on top of real tokens
+            self.phantom_token_sprites.draw()
 
     def cleanup(self) -> None:
         """Clean up rendering resources."""

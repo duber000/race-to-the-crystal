@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Tuple
 
 from client.board_3d import Board3D
 from client.token_3d import Token3D
+from client.phantom_token_3d import PhantomToken3D
 from shared.constants import PLAYER_COLORS
 from shared.logging_config import setup_logger
 from shared.types import TokenID
@@ -31,6 +32,7 @@ class Renderer3D:
         # 3D rendering components
         self.board_3d: Optional[Board3D] = None
         self.tokens_3d: List[Token3D] = []
+        self.phantom_tokens_3d: List[PhantomToken3D] = []
         self.shader_3d = None  # Shared OpenGL shader program
 
         # OpenGL context (set by GameView during initialization)
@@ -117,20 +119,58 @@ class Renderer3D:
             return False
 
         # Create 3D tokens
-        for player in game_state.players.values():
-            player_color = PLAYER_COLORS[player.color.value]
-
-            for token_id in player.token_ids:
-                token = game_state.get_token(token_id)
-                if token and token.is_alive and token.is_deployed:
-                    try:
-                        token_3d = Token3D(token, player_color, ctx)
-                        self.tokens_3d.append(token_3d)
-                    except Exception as e:
-                        logger.error(f"Failed to create 3D token {token_id}: {e}")
-
-        logger.debug(f"Created {len(self.tokens_3d)} 3D tokens")
+        self._create_tokens_with_effects(game_state, ctx, viewing_player_id=None)
         return True
+
+    def _create_tokens_with_effects(self, game_state, ctx, viewing_player_id: str | None = None) -> None:
+        """
+        Create 3D tokens considering crystal effects.
+
+        Args:
+            game_state: Game state object
+            ctx: OpenGL context
+            viewing_player_id: Player ID viewing the board (for crystal effects)
+        """
+        self.tokens_3d.clear()
+        self.phantom_tokens_3d.clear()
+
+        if viewing_player_id is None:
+            # No crystal effects - show all tokens
+            for player in game_state.players.values():
+                player_color = PLAYER_COLORS[player.color.value]
+
+                for token_id in player.token_ids:
+                    token = game_state.get_token(token_id)
+                    if token and token.is_alive and token.is_deployed:
+                        try:
+                            token_3d = Token3D(token, player_color, ctx)
+                            self.tokens_3d.append(token_3d)
+                        except Exception as e:
+                            logger.error(f"Failed to create 3D token {token_id}: {e}")
+        else:
+            # Apply crystal effects - get visible tokens for this player
+            visible_tokens, phantom_tokens = game_state.get_visible_tokens_for_player(viewing_player_id)
+            
+            # Create 3D tokens for visible real tokens
+            for token in visible_tokens:
+                player = game_state.players[token.player_id]
+                player_color = PLAYER_COLORS[player.color.value]
+                try:
+                    token_3d = Token3D(token, player_color, ctx)
+                    self.tokens_3d.append(token_3d)
+                except Exception as e:
+                    logger.error(f"Failed to create 3D token {token.id}: {e}")
+            
+            # Create 3D phantom tokens
+            for phantom in phantom_tokens:
+                player_color = PLAYER_COLORS[game_state.players[phantom.apparent_player_id].color.value]
+                try:
+                    phantom_3d = PhantomToken3D(phantom, player_color, ctx)
+                    self.phantom_tokens_3d.append(phantom_3d)
+                except Exception as e:
+                    logger.error(f"Failed to create 3D phantom token {phantom.phantom_id}: {e}")
+
+        logger.debug(f"Created {len(self.tokens_3d)} real 3D tokens and {len(self.phantom_tokens_3d)} phantom 3D tokens")
 
     def add_token(self, token, player_color: Tuple[int, int, int], ctx) -> None:
         """
@@ -148,59 +188,66 @@ class Renderer3D:
         except Exception as e:
             logger.error(f"Failed to create 3D token {token.id}: {e}")
 
-    def sync_tokens(self, game_state, ctx) -> None:
+    def sync_tokens(self, game_state, ctx, viewing_player_id: str | None = None) -> None:
         """
         Synchronize 3D tokens with game state, animating changes.
 
         Args:
             game_state: New game state object
             ctx: OpenGL context
+            viewing_player_id: Player ID viewing the board (for crystal effects)
         """
-        # Create a map of existing tokens by token ID
-        existing_tokens = {t.token.id: t for t in self.tokens_3d}
+        if viewing_player_id is None:
+            # No crystal effects - use original logic
+            # Create a map of existing tokens by token ID
+            existing_tokens = {t.token.id: t for t in self.tokens_3d}
 
-        # Track processed IDs
-        processed_ids = set()
+            # Track processed IDs
+            processed_ids = set()
 
-        for player in game_state.players.values():
-            player_color = PLAYER_COLORS[player.color.value]
+            for player in game_state.players.values():
+                player_color = PLAYER_COLORS[player.color.value]
 
-            for token_id in player.token_ids:
-                token = game_state.get_token(token_id)
-                if not token or not token.is_alive or not token.is_deployed:
-                    continue
+                for token_id in player.token_ids:
+                    token = game_state.get_token(token_id)
+                    if not token or not token.is_alive or not token.is_deployed:
+                        continue
 
-                processed_ids.add(token_id)
+                    processed_ids.add(token_id)
 
-                if token_id in existing_tokens:
-                    # Update existing token
-                    token_3d = existing_tokens[token_id]
+                    if token_id in existing_tokens:
+                        # Update existing token
+                        token_3d = existing_tokens[token_id]
 
-                    # Update reference
-                    token_3d.token = token
+                        # Update reference
+                        token_3d.token = token
 
-                    # Update position target (non-instant)
-                    # Note: We check against render target, not current position, to avoid interrupting animation
-                    # Just update target, Token3D handles interpolation
-                    token_3d.update_position(
-                        token.position[0], token.position[1], instant=False
-                    )
-                else:
-                    # Create new token
-                    try:
-                        self.add_token(token, player_color, ctx)
-                    except Exception as e:
-                        logger.error(f"Failed to create new 3D token {token_id}: {e}")
+                        # Update position target (non-instant)
+                        # Note: We check against render target, not current position, to avoid interrupting animation
+                        # Just update target, Token3D handles interpolation
+                        token_3d.update_position(
+                            token.position[0], token.position[1], instant=False
+                        )
+                    else:
+                        # Create new token
+                        try:
+                            self.add_token(token, player_color, ctx)
+                        except Exception as e:
+                            logger.error(f"Failed to create new 3D token {token_id}: {e}")
 
-        # Remove dead/undeployed tokens
-        tokens_to_remove = []
-        for token_3d in self.tokens_3d:
-            if token_3d.token.id not in processed_ids:
-                tokens_to_remove.append(token_3d)
+            # Remove dead/undeployed tokens
+            tokens_to_remove = []
+            for token_3d in self.tokens_3d:
+                if token_3d.token.id not in processed_ids:
+                    tokens_to_remove.append(token_3d)
 
-        for token_3d in tokens_to_remove:
-            token_3d.cleanup()
-            self.tokens_3d.remove(token_3d)
+            for token_3d in tokens_to_remove:
+                token_3d.cleanup()
+                self.tokens_3d.remove(token_3d)
+        else:
+            # Apply crystal effects - recreate all tokens
+            # This is simpler than trying to sync individual phantom tokens
+            self._create_tokens_with_effects(game_state, ctx, viewing_player_id)
 
     def update(self, delta_time: float) -> None:
         """
@@ -274,6 +321,10 @@ class Renderer3D:
                 if token_3d.token.is_alive:
                     is_selected = token_3d.token.id == self.selected_token_id
                     token_3d.draw(camera_3d, self.shader_3d, is_selected=is_selected)
+
+            # Draw phantom tokens (always on top)
+            for phantom_3d in self.phantom_tokens_3d:
+                phantom_3d.draw(camera_3d, self.shader_3d, is_selected=False)
 
     def is_available(self) -> bool:
         """
