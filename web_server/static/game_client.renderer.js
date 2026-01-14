@@ -1075,9 +1075,6 @@ class Renderer3D {
         }
 
         console.log(`Crystal effect triggered: ${effectType} for player ${affectedPlayerId}`);
-        
-        // Clear the effect so it doesn't trigger again
-        gameState.last_triggered_crystal_effect = null;
     }
 
     // ==========================================================================

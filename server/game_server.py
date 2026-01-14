@@ -808,6 +808,14 @@ class GameServer:
             await self._send_to_player(net_player_id, state_msg)
             logger.info(f"  -> FULL_STATE sent to player {net_player_id[:8]}")
 
+        # Clear crystal effect trigger after broadcasting to all clients
+        # This prevents the effect from being re-triggered on subsequent broadcasts
+        if game_session.game_state.last_triggered_crystal_effect:
+            logger.info(
+                f"  Clearing crystal effect trigger: {game_session.game_state.last_triggered_crystal_effect}"
+            )
+            game_session.game_state.last_triggered_crystal_effect = None
+
     async def _send_full_state(self, player_id: str, lobby: GameLobby) -> None:
         """
         Send full game state to a single player.

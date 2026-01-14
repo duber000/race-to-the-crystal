@@ -513,13 +513,37 @@ class UIManager {
 
         let html = '<div class="effects-panel">';
         for (const effect of activeEffects) {
-            const effectName = effect.effect_type === CrystalEffect.FOG_OF_WAR
-                ? "Fog of War"
-                : "Phantom Enemies";
-            const icon = effect.effect_type === CrystalEffect.FOG_OF_WAR ? "🌫️" : "👻";
+            // Get effect name, icon, and CSS class based on type
+            let effectName, icon, cssClass;
+            switch (effect.effect_type) {
+                case CrystalEffect.FOG_OF_WAR:
+                    effectName = "Fog of War";
+                    icon = "🌫️";
+                    cssClass = "fog-of-war";
+                    break;
+                case CrystalEffect.PHANTOM_ENEMIES:
+                    effectName = "Phantom Enemies";
+                    icon = "👻";
+                    cssClass = "phantom-enemies";
+                    break;
+                case CrystalEffect.DAMAGE_BOOST:
+                    effectName = "Damage Boost";
+                    icon = "⚡";
+                    cssClass = "damage-boost";
+                    break;
+                case CrystalEffect.SPEED_BOOST:
+                    effectName = "Speed Boost";
+                    icon = "💨";
+                    cssClass = "speed-boost";
+                    break;
+                default:
+                    effectName = "Unknown Effect";
+                    icon = "❓";
+                    cssClass = "";
+            }
 
             html += `
-                <div class="effect-badge">
+                <div class="effect-badge ${cssClass}">
                     <span class="effect-icon">${icon}</span>
                     <span class="effect-name">${effectName}</span>
                     <span class="effect-duration">${effect.turns_remaining} turn${effect.turns_remaining !== 1 ? 's' : ''}</span>
