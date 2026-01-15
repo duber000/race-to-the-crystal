@@ -1,15 +1,19 @@
 # Crystal Effects System
 
-The crystal effects system adds strategic debuff mechanics to Race to the Crystal. Players can be afflicted with crystal-based effects that alter their perception of the game board.
+The crystal effects system adds strategic buff and debuff mechanics to Race to the Crystal. Every 5 rounds, all players are affected by the same randomly selected crystal effect.
 
 ## Overview
 
-Two types of crystal effects can be applied to players:
+Four types of crystal effects can be applied to players:
 
-1. **Fog of War** - Players cannot see enemy tokens
-2. **Phantom Enemies** - Players see illusory enemy tokens that don't actually exist
+1. **Fog of War** (Debuff) - Players cannot see enemy tokens
+2. **Phantom Enemies** (Debuff) - Players see illusory enemy tokens that don't actually exist
+3. **Damage Boost** (Buff) - Players deal 1.5x attack damage
+4. **Speed Boost** (Buff) - Players gain +1 movement range
 
 Effects last for 4 turns by default and can be reduced by capturing generators (1 turn reduction per generator captured).
+
+**Automatic Triggering**: Every 5 rounds (after completing rounds 5, 10, 15, etc.), a random effect is applied to ALL active players simultaneously.
 
 ## Architecture
 
@@ -155,23 +159,38 @@ if effects.has_effect(CrystalEffect.PHANTOM_ENEMIES):
 game_state = GameState.create_game(2)
 game_state.start_game()
 
-# Apply crystal effects to player 0
-player_0 = list(game_state.players.keys())[0]
-game_state.apply_crystal_effect(player_0, CrystalEffect.FOG_OF_WAR)
-game_state.apply_crystal_effect(player_0, CrystalEffect.PHANTOM_ENEMIES)
+# Effects automatically trigger every 5 rounds
+# When triggered, ALL players receive the same effect
+result = game_state.trigger_random_crystal_effect()
+if result:
+    player_id, effect_type = result
+    # player_id will be None (indicates all players affected)
+    print(f"Crystal effect triggered: {effect_type} affects all players!")
 
-# Player 0's view is now restricted
-visible, phantoms = game_state.get_visible_tokens_for_player(player_0)
-print(f"Player 0 sees {len(visible)} real tokens and {len(phantoms)} phantoms")
+# All players now have the effect
+player_0 = list(game_state.players.keys())[0]
+player_1 = list(game_state.players.keys())[1]
+
+effects_p0 = game_state.crystal_effects.get_player_effects(player_0)
+effects_p1 = game_state.crystal_effects.get_player_effects(player_1)
+
+# Both players have the same effect
+assert effects_p0.has_effect(effect_type)
+assert effects_p1.has_effect(effect_type)
+
+# If FOG_OF_WAR or PHANTOM_ENEMIES, get player-specific view
+if effect_type == CrystalEffect.FOG_OF_WAR:
+    visible, phantoms = game_state.get_visible_tokens_for_player(player_0)
+    print(f"Player 0 sees {len(visible)} real tokens (own tokens only)")
 
 # Player 0 captures a generator
+# Effect durations are automatically reduced by 1 turn for that player
 # (This happens through normal game flow)
-# Effect durations are automatically reduced by 1 turn
 
 # Check remaining duration
-effects = game_state.crystal_effects.get_player_effects(player_0)
-fog = effects.get_effect(CrystalEffect.FOG_OF_WAR)
-print(f"Fog of war now has {fog.turns_remaining} turns remaining")
+fog = effects_p0.get_effect(effect_type)
+if fog:
+    print(f"Player 0: {effect_type} has {fog.turns_remaining} turns remaining")
 ```
 
 ## Serialization
@@ -214,6 +233,17 @@ The test suite covers:
 - GameState integration
 
 ## Design Decisions
+
+### Why affect all players instead of one?
+
+Crystal effects apply to ALL players simultaneously because:
+- **Fairness**: Avoids giving random disadvantages/advantages to single players
+- **Shared challenge**: Creates interesting scenarios where everyone adapts to the same constraint
+- **Strategic depth**: Players must adjust their strategy together, creating dynamic gameplay
+- **Balance**: Buffs and debuffs affect everyone equally, maintaining competitive balance
+- **Predictability**: Players can plan around the effect interval (every 5 rounds)
+
+The alternative (affecting one random player) could feel unfair, especially with debuffs like Fog of War.
 
 ### Why separate PhantomToken from Token?
 

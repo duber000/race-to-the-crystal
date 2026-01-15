@@ -476,10 +476,17 @@ class GameView(arcade.View):
                 # Get affected tokens for lightning effect
                 affected_tokens = []
                 if effect_type == CrystalEffect.DAMAGE_BOOST:
-                    affected_tokens = [
-                        t for t in self.game_state.tokens.values()
-                        if t.player_id == player_id and t.is_deployed and t.is_alive
-                    ]
+                    # If player_id is None, effect affects all players
+                    if player_id is None:
+                        affected_tokens = [
+                            t for t in self.game_state.tokens.values()
+                            if t.is_deployed and t.is_alive
+                        ]
+                    else:
+                        affected_tokens = [
+                            t for t in self.game_state.tokens.values()
+                            if t.player_id == player_id and t.is_deployed and t.is_alive
+                        ]
 
                 # Start animation
                 self.crystal_effect_animator.start_effect_animation(

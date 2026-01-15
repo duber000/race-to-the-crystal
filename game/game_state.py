@@ -614,12 +614,12 @@ class GameState:
             player_id, all_tokens, lambda t: t.player_id
         )
 
-    def trigger_random_crystal_effect(self) -> tuple[PlayerID, CrystalEffect] | None:
+    def trigger_random_crystal_effect(self) -> tuple[PlayerID | None, CrystalEffect] | None:
         """
-        Trigger a random crystal effect on a random player.
+        Trigger a random crystal effect on all active players.
 
         Returns:
-            Tuple of (affected_player_id, effect_type) if triggered, None otherwise
+            Tuple of (None, effect_type) if triggered (None indicates all players), None otherwise
         """
         import random
 
@@ -631,20 +631,19 @@ class GameState:
         if not active_players:
             return None
 
-        # Select random player
-        affected_player = random.choice(active_players)
-
         # Select random effect
         all_effects = list(CrystalEffect)
         effect_type = random.choice(all_effects)
 
-        # Apply the effect
-        self.apply_crystal_effect(affected_player, effect_type)
+        # Apply the effect to ALL active players
+        for player_id in active_players:
+            self.apply_crystal_effect(player_id, effect_type)
 
         # Store for client to detect and play animations/sounds
-        self.last_triggered_crystal_effect = (affected_player, effect_type)
+        # None for player_id indicates all players were affected
+        self.last_triggered_crystal_effect = (None, effect_type)
 
-        return (affected_player, effect_type)
+        return (None, effect_type)
 
     def to_dict(self) -> dict:
         """Convert game state to dictionary for serialization."""
