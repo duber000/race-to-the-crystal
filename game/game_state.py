@@ -462,13 +462,11 @@ class GameState:
         # If we wrapped around to first player, increment turn number
         if next_index == 0:
             # Check if we should trigger a random crystal effect
-            # Calculate current round number before incrementing (1-indexed)
+            # turn_number already represents the current round (increments once per full rotation)
             from shared.constants import CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL
-            num_players = len(active_players)
-            current_round = (self.turn_number - 1) // num_players + 1
 
             # Trigger effect every N rounds (after completing round 5, 10, 15, etc.)
-            if current_round > 0 and current_round % CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL == 0:
+            if self.turn_number > 0 and self.turn_number % CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL == 0:
                 self.trigger_random_crystal_effect()
 
             # Increment turn number for new round

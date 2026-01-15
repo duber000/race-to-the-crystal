@@ -168,11 +168,21 @@ class NetworkGameView(arcade.View):
 
         def network_attack_token(attacker_id, defender_id):
             """Intercept attack and send to server."""
+            from game.combat import CombatOutcome
+            from shared.enums import CombatResult
+
             if not self.waiting_for_server:
                 schedule_async(self._send_attack(attacker_id, defender_id))
                 self.waiting_for_server = True
-                return True
-            return False
+                # Return a placeholder CombatOutcome since actual result comes from server
+                return CombatOutcome(
+                    result=CombatResult.HIT,
+                    damage_dealt=0,  # Actual damage determined by server
+                    attacker_id=attacker_id,
+                    defender_id=defender_id,
+                    defender_killed=False
+                )
+            return None
 
         def network_deploy_token(player_id, health_value, position):
             """Intercept deploy and send to server."""

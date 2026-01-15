@@ -48,7 +48,7 @@ class TestGameViewInitialization:
 
         # Create GameView (this should not raise AttributeError)
         try:
-            game_view = GameView(game_state, start_in_3d=False)
+            game_view = GameView(game_state)
 
             # Show the view to trigger on_show_view() which initializes controllers
             arcade_window.show_view(game_view)
@@ -76,7 +76,7 @@ class TestGameViewInitialization:
 
         # Create GameView but DON'T call show_view yet
         # This simulates the state before on_show_view() is called
-        game_view = GameView(game_state, start_in_3d=False)
+        game_view = GameView(game_state)
 
         try:
             # These should not raise AttributeError even when called before on_show_view()
