@@ -258,9 +258,9 @@
         /* Lobby Screens - Tron Aesthetic */
         #connection-screen, #lobby-browser-screen, #waiting-room-screen {
             position: fixed;
-            top: 50%;
+            top: 0;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.95);
             border: 3px solid #0ff;
             padding: 40px;
@@ -270,6 +270,11 @@
             z-index: 2000;
             min-width: 500px;
             max-width: 700px;
+            max-height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            margin: 20px 0;
         }
 
         #connection-screen h2, #lobby-browser-screen h2, #waiting-room-screen h2 {
