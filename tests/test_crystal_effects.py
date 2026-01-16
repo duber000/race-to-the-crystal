@@ -1,7 +1,6 @@
 """
 Unit tests for crystal effects system.
 """
-import pytest
 
 from game.crystal_effects import (
     ActiveEffect,
@@ -10,7 +9,7 @@ from game.crystal_effects import (
     CrystalEffectsManager,
 )
 from game.game_state import GameState
-from shared.enums import CrystalEffect, PlayerColor
+from shared.enums import CrystalEffect
 from shared.constants import (
     CRYSTAL_EFFECT_INITIAL_DURATION,
     CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR,
@@ -23,9 +22,7 @@ class TestActiveEffect:
     def test_create_effect(self):
         """Test creating an active effect."""
         effect = ActiveEffect(
-            effect_type=CrystalEffect.FOG_OF_WAR,
-            turns_remaining=4,
-            applied_turn=1
+            effect_type=CrystalEffect.FOG_OF_WAR, turns_remaining=4, applied_turn=1
         )
         assert effect.effect_type == CrystalEffect.FOG_OF_WAR
         assert effect.turns_remaining == 4
@@ -78,7 +75,7 @@ class TestPhantomToken:
             phantom_id=-1,
             apparent_player_id="player_0",
             position=(5, 5),
-            apparent_health=8
+            apparent_health=8,
         )
         assert phantom.phantom_id == -1
         assert phantom.apparent_player_id == "player_0"
@@ -222,12 +219,17 @@ class TestCrystalEffectsManager:
 
         effects = manager.get_player_effects("player_0")
         assert effects.has_effect(CrystalEffect.FOG_OF_WAR)
-        assert effects.get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining == CRYSTAL_EFFECT_INITIAL_DURATION
+        assert (
+            effects.get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining
+            == CRYSTAL_EFFECT_INITIAL_DURATION
+        )
 
     def test_apply_effect_custom_duration(self):
         """Test applying effect with custom duration."""
         manager = CrystalEffectsManager()
-        manager.apply_effect("player_0", CrystalEffect.FOG_OF_WAR, turn_number=1, duration=2)
+        manager.apply_effect(
+            "player_0", CrystalEffect.FOG_OF_WAR, turn_number=1, duration=2
+        )
 
         effects = manager.get_player_effects("player_0")
         assert effects.get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining == 2
@@ -237,17 +239,27 @@ class TestCrystalEffectsManager:
         manager = CrystalEffectsManager()
         manager.apply_effect("player_0", CrystalEffect.FOG_OF_WAR, turn_number=1)
 
-        initial_duration = manager.get_player_effects("player_0").get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining
+        initial_duration = (
+            manager.get_player_effects("player_0")
+            .get_effect(CrystalEffect.FOG_OF_WAR)
+            .turns_remaining
+        )
 
         manager.reduce_effect_durations_for_generator_capture("player_0")
 
-        new_duration = manager.get_player_effects("player_0").get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining
+        new_duration = (
+            manager.get_player_effects("player_0")
+            .get_effect(CrystalEffect.FOG_OF_WAR)
+            .turns_remaining
+        )
         assert new_duration == initial_duration - CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR
 
     def test_end_turn_update(self):
         """Test end turn update clears expired effects."""
         manager = CrystalEffectsManager()
-        manager.apply_effect("player_0", CrystalEffect.FOG_OF_WAR, turn_number=1, duration=1)
+        manager.apply_effect(
+            "player_0", CrystalEffect.FOG_OF_WAR, turn_number=1, duration=1
+        )
 
         effects = manager.get_player_effects("player_0")
         effects.reduce_all_durations(1)  # Expire it
@@ -265,7 +277,7 @@ class TestCrystalEffectsManager:
             other_player_ids=["player_1", "player_2"],
             board_width=24,
             board_height=24,
-            occupied_positions=set()
+            occupied_positions=set(),
         )
 
         assert len(phantoms) > 0
@@ -274,10 +286,12 @@ class TestCrystalEffectsManager:
 
         # Verify phantoms appear as OTHER players, not the affected player
         for phantom in phantoms:
-            assert phantom.apparent_player_id in ["player_1", "player_2"], \
+            assert phantom.apparent_player_id in ["player_1", "player_2"], (
                 f"Phantom should appear as enemy player, not {phantom.apparent_player_id}"
-            assert phantom.apparent_player_id != "player_0", \
+            )
+            assert phantom.apparent_player_id != "player_0", (
                 "Phantom should not appear as the affected player"
+            )
 
     def test_no_phantoms_without_effect(self):
         """Test that phantoms aren't generated without the effect."""
@@ -288,7 +302,7 @@ class TestCrystalEffectsManager:
             other_player_ids=["player_1"],
             board_width=24,
             board_height=24,
-            occupied_positions=set()
+            occupied_positions=set(),
         )
 
         assert len(phantoms) == 0
@@ -301,12 +315,14 @@ class TestCrystalEffectsManager:
             def __init__(self, player_id):
                 self.player_id = player_id
 
-        all_tokens = [MockToken("player_0"), MockToken("player_1"), MockToken("player_2")]
+        all_tokens = [
+            MockToken("player_0"),
+            MockToken("player_1"),
+            MockToken("player_2"),
+        ]
 
         visible = manager.filter_visible_tokens(
-            "player_0",
-            all_tokens,
-            lambda t: t.player_id
+            "player_0", all_tokens, lambda t: t.player_id
         )
 
         assert len(visible) == 3  # All visible
@@ -320,12 +336,14 @@ class TestCrystalEffectsManager:
             def __init__(self, player_id):
                 self.player_id = player_id
 
-        all_tokens = [MockToken("player_0"), MockToken("player_0"), MockToken("player_1")]
+        all_tokens = [
+            MockToken("player_0"),
+            MockToken("player_0"),
+            MockToken("player_1"),
+        ]
 
         visible = manager.filter_visible_tokens(
-            "player_0",
-            all_tokens,
-            lambda t: t.player_id
+            "player_0", all_tokens, lambda t: t.player_id
         )
 
         assert len(visible) == 2  # Only player_0's tokens
@@ -336,12 +354,7 @@ class TestCrystalEffectsManager:
         manager.apply_effect("player_0", CrystalEffect.FOG_OF_WAR, turn_number=1)
         manager.apply_effect("player_0", CrystalEffect.PHANTOM_ENEMIES, turn_number=1)
 
-        manager.generate_phantom_tokens(
-            "player_0",
-            ["player_1"],
-            24, 24,
-            set()
-        )
+        manager.generate_phantom_tokens("player_0", ["player_1"], 24, 24, set())
 
         class MockToken:
             def __init__(self, player_id):
@@ -350,9 +363,7 @@ class TestCrystalEffectsManager:
         all_tokens = [MockToken("player_0"), MockToken("player_1")]
 
         visible, phantoms = manager.get_tokens_for_player_view(
-            "player_0",
-            all_tokens,
-            lambda t: t.player_id
+            "player_0", all_tokens, lambda t: t.player_id
         )
 
         assert len(visible) == 1  # Only own tokens due to fog
@@ -370,7 +381,9 @@ class TestCrystalEffectsManager:
         assert "player_0" in restored.player_effects
         assert "player_1" in restored.player_effects
         assert restored.player_effects["player_0"].has_effect(CrystalEffect.FOG_OF_WAR)
-        assert restored.player_effects["player_1"].has_effect(CrystalEffect.PHANTOM_ENEMIES)
+        assert restored.player_effects["player_1"].has_effect(
+            CrystalEffect.PHANTOM_ENEMIES
+        )
 
 
 class TestGameStateIntegration:
@@ -405,7 +418,6 @@ class TestGameStateIntegration:
 
         player_ids = list(game_state.players.keys())
         player_0 = player_ids[0]
-        player_1 = player_ids[1]
 
         # Apply fog of war to player 0
         game_state.apply_crystal_effect(player_0, CrystalEffect.FOG_OF_WAR)
@@ -427,12 +439,22 @@ class TestGameStateIntegration:
         player_id = list(game_state.players.keys())[0]
         game_state.apply_crystal_effect(player_id, CrystalEffect.FOG_OF_WAR)
 
-        initial_duration = game_state.crystal_effects.get_player_effects(player_id).get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining
+        initial_duration = (
+            game_state.crystal_effects.get_player_effects(player_id)
+            .get_effect(CrystalEffect.FOG_OF_WAR)
+            .turns_remaining
+        )
 
         # Manually reduce (simulating generator capture)
-        game_state.crystal_effects.reduce_effect_durations_for_generator_capture(player_id)
+        game_state.crystal_effects.reduce_effect_durations_for_generator_capture(
+            player_id
+        )
 
-        new_duration = game_state.crystal_effects.get_player_effects(player_id).get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining
+        new_duration = (
+            game_state.crystal_effects.get_player_effects(player_id)
+            .get_effect(CrystalEffect.FOG_OF_WAR)
+            .turns_remaining
+        )
         assert new_duration == initial_duration - CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR
 
     def test_game_state_serialization_with_effects(self):
@@ -467,8 +489,16 @@ class TestDamageBoostEffect:
         player_1 = player_ids[1]
 
         # Get two tokens from different players
-        player_0_tokens = [t for t in game_state.tokens.values() if t.player_id == player_0 and t.is_deployed]
-        player_1_tokens = [t for t in game_state.tokens.values() if t.player_id == player_1 and t.is_deployed]
+        player_0_tokens = [
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_0 and t.is_deployed
+        ]
+        player_1_tokens = [
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_1 and t.is_deployed
+        ]
 
         attacker = player_0_tokens[0]
         defender = player_1_tokens[0]
@@ -518,8 +548,16 @@ class TestDamageBoostEffect:
         game_state.apply_crystal_effect(player_0, CrystalEffect.DAMAGE_BOOST)
 
         # Get tokens - need separate defenders for each player
-        player_0_tokens = [t for t in game_state.tokens.values() if t.player_id == player_0 and t.is_deployed]
-        player_1_tokens = [t for t in game_state.tokens.values() if t.player_id == player_1 and t.is_deployed]
+        player_0_tokens = [
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_0 and t.is_deployed
+        ]
+        player_1_tokens = [
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_1 and t.is_deployed
+        ]
 
         attacker_p0 = player_0_tokens[0]
         defender_p0 = player_1_tokens[0]  # Player 0 will attack this player 1 token
@@ -554,6 +592,7 @@ class TestDamageBoostEffect:
 
         # Player 0's damage should be boosted, player 1's should be normal
         from shared.constants import CRYSTAL_DAMAGE_BOOST_MULTIPLIER
+
         assert p0_damage_dealt == int(p0_base_damage * CRYSTAL_DAMAGE_BOOST_MULTIPLIER)
         assert p1_damage_dealt == p1_base_damage
         assert p0_damage_dealt > p1_damage_dealt
@@ -566,7 +605,9 @@ class TestDamageBoostEffect:
         player_id = list(game_state.players.keys())[0]
 
         # Apply damage boost with short duration
-        game_state.apply_crystal_effect(player_id, CrystalEffect.DAMAGE_BOOST, duration=2)
+        game_state.apply_crystal_effect(
+            player_id, CrystalEffect.DAMAGE_BOOST, duration=2
+        )
 
         effects = game_state.crystal_effects.get_player_effects(player_id)
         assert effects.has_effect(CrystalEffect.DAMAGE_BOOST)
@@ -594,10 +635,14 @@ class TestDamageBoostEffect:
         game_state.apply_crystal_effect(player_id, CrystalEffect.DAMAGE_BOOST)
 
         effects = game_state.crystal_effects.get_player_effects(player_id)
-        initial_duration = effects.get_effect(CrystalEffect.DAMAGE_BOOST).turns_remaining
+        initial_duration = effects.get_effect(
+            CrystalEffect.DAMAGE_BOOST
+        ).turns_remaining
 
         # Simulate generator capture
-        game_state.crystal_effects.reduce_effect_durations_for_generator_capture(player_id)
+        game_state.crystal_effects.reduce_effect_durations_for_generator_capture(
+            player_id
+        )
 
         new_duration = effects.get_effect(CrystalEffect.DAMAGE_BOOST).turns_remaining
         assert new_duration == initial_duration - CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR
@@ -612,12 +657,24 @@ class TestDamageBoostEffect:
         player_1 = player_ids[1]
 
         # Get tokens
-        player_0_tokens = [t for t in game_state.tokens.values() if t.player_id == player_0 and t.is_deployed]
-        player_1_tokens = [t for t in game_state.tokens.values() if t.player_id == player_1 and t.is_deployed]
+        player_0_tokens = [
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_0 and t.is_deployed
+        ]
+        player_1_tokens = [
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_1 and t.is_deployed
+        ]
 
         # Find a strong attacker (10hp) and weak defender (4hp)
-        attacker = next((t for t in player_0_tokens if t.max_health == 10), player_0_tokens[0])
-        defender = next((t for t in player_1_tokens if t.max_health == 4), player_1_tokens[0])
+        attacker = next(
+            (t for t in player_0_tokens if t.max_health == 10), player_0_tokens[0]
+        )
+        defender = next(
+            (t for t in player_1_tokens if t.max_health == 4), player_1_tokens[0]
+        )
 
         # Position them
         game_state.move_token(attacker.id, (10, 10))
@@ -654,7 +711,11 @@ class TestSpeedBoostEffect:
         game_state.start_game()
 
         player_id = list(game_state.players.keys())[0]
-        player_tokens = [t for t in game_state.tokens.values() if t.player_id == player_id and t.is_deployed]
+        player_tokens = [
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_id and t.is_deployed
+        ]
         token = player_tokens[0]
 
         # Get base movement range
@@ -685,8 +746,16 @@ class TestSpeedBoostEffect:
         game_state.apply_crystal_effect(player_0, CrystalEffect.SPEED_BOOST)
 
         # Get tokens
-        player_0_token = next(t for t in game_state.tokens.values() if t.player_id == player_0 and t.is_deployed)
-        player_1_token = next(t for t in game_state.tokens.values() if t.player_id == player_1 and t.is_deployed)
+        player_0_token = next(
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_0 and t.is_deployed
+        )
+        player_1_token = next(
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_1 and t.is_deployed
+        )
 
         from shared.constants import CRYSTAL_SPEED_BOOST_AMOUNT
 
@@ -711,13 +780,18 @@ class TestSpeedBoostEffect:
         game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST)
 
         # Test with different health tokens (movement range varies by health)
-        player_tokens = [t for t in game_state.tokens.values() if t.player_id == player_id and t.is_deployed]
+        player_tokens = [
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_id and t.is_deployed
+        ]
 
         for token in player_tokens:
             base_range = token.movement_range
             boosted_range = game_state.get_token_movement_range(token)
-            assert boosted_range == base_range + CRYSTAL_SPEED_BOOST_AMOUNT, \
+            assert boosted_range == base_range + CRYSTAL_SPEED_BOOST_AMOUNT, (
                 f"Token {token.id} with health {token.health}: expected {base_range + CRYSTAL_SPEED_BOOST_AMOUNT}, got {boosted_range}"
+            )
 
     def test_speed_boost_expires_after_duration(self):
         """Test that speed boost effect expires after its duration."""
@@ -727,7 +801,9 @@ class TestSpeedBoostEffect:
         player_id = list(game_state.players.keys())[0]
 
         # Apply speed boost with short duration
-        game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST, duration=2)
+        game_state.apply_crystal_effect(
+            player_id, CrystalEffect.SPEED_BOOST, duration=2
+        )
 
         effects = game_state.crystal_effects.get_player_effects(player_id)
         assert effects.has_effect(CrystalEffect.SPEED_BOOST)
@@ -758,7 +834,9 @@ class TestSpeedBoostEffect:
         initial_duration = effects.get_effect(CrystalEffect.SPEED_BOOST).turns_remaining
 
         # Simulate generator capture
-        game_state.crystal_effects.reduce_effect_durations_for_generator_capture(player_id)
+        game_state.crystal_effects.reduce_effect_durations_for_generator_capture(
+            player_id
+        )
 
         new_duration = effects.get_effect(CrystalEffect.SPEED_BOOST).turns_remaining
         assert new_duration == initial_duration - CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR
@@ -772,7 +850,11 @@ class TestSpeedBoostEffect:
         game_state.start_game()
 
         player_id = list(game_state.players.keys())[0]
-        player_tokens = [t for t in game_state.tokens.values() if t.player_id == player_id and t.is_deployed]
+        player_tokens = [
+            t
+            for t in game_state.tokens.values()
+            if t.player_id == player_id and t.is_deployed
+        ]
         token = player_tokens[0]
 
         # Position token in clear area
@@ -782,9 +864,7 @@ class TestSpeedBoostEffect:
         # Calculate valid moves without boost
         base_range = token.movement_range
         valid_moves_without_boost = MovementSystem.get_valid_moves(
-            token,
-            game_state.board,
-            base_range
+            token, game_state.board, base_range
         )
 
         # Apply speed boost
@@ -793,9 +873,7 @@ class TestSpeedBoostEffect:
         # Calculate valid moves with boost
         boosted_range = game_state.get_token_movement_range(token)
         valid_moves_with_boost = MovementSystem.get_valid_moves(
-            token,
-            game_state.board,
-            boosted_range
+            token, game_state.board, boosted_range
         )
 
         # Should be able to reach more squares with boost
@@ -845,6 +923,7 @@ class TestMultipleEffectsInteraction:
     def test_random_effect_can_trigger_any_effect(self):
         """Test that random effect triggering can select any of the four effects."""
         import random
+
         random.seed(42)  # Set seed for reproducibility
 
         game_state = GameState.create_game(2)
@@ -871,9 +950,15 @@ class TestMultipleEffectsInteraction:
 
         # Apply all effects
         game_state.apply_crystal_effect(player_id, CrystalEffect.FOG_OF_WAR, duration=3)
-        game_state.apply_crystal_effect(player_id, CrystalEffect.PHANTOM_ENEMIES, duration=4)
-        game_state.apply_crystal_effect(player_id, CrystalEffect.DAMAGE_BOOST, duration=2)
-        game_state.apply_crystal_effect(player_id, CrystalEffect.SPEED_BOOST, duration=5)
+        game_state.apply_crystal_effect(
+            player_id, CrystalEffect.PHANTOM_ENEMIES, duration=4
+        )
+        game_state.apply_crystal_effect(
+            player_id, CrystalEffect.DAMAGE_BOOST, duration=2
+        )
+        game_state.apply_crystal_effect(
+            player_id, CrystalEffect.SPEED_BOOST, duration=5
+        )
 
         # Serialize
         data = game_state.to_dict()
@@ -889,7 +974,16 @@ class TestMultipleEffectsInteraction:
         assert restored_effects.has_effect(CrystalEffect.SPEED_BOOST)
 
         # Verify durations
-        assert restored_effects.get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining == 3
-        assert restored_effects.get_effect(CrystalEffect.PHANTOM_ENEMIES).turns_remaining == 4
-        assert restored_effects.get_effect(CrystalEffect.DAMAGE_BOOST).turns_remaining == 2
-        assert restored_effects.get_effect(CrystalEffect.SPEED_BOOST).turns_remaining == 5
+        assert (
+            restored_effects.get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining == 3
+        )
+        assert (
+            restored_effects.get_effect(CrystalEffect.PHANTOM_ENEMIES).turns_remaining
+            == 4
+        )
+        assert (
+            restored_effects.get_effect(CrystalEffect.DAMAGE_BOOST).turns_remaining == 2
+        )
+        assert (
+            restored_effects.get_effect(CrystalEffect.SPEED_BOOST).turns_remaining == 5
+        )

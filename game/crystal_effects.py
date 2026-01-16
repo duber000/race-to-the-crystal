@@ -1,6 +1,7 @@
 """
 Crystal effects system for fog of war and phantom enemies.
 """
+
 from dataclasses import dataclass, field
 from typing import Self
 import random
@@ -11,7 +12,7 @@ from shared.constants import (
     CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR,
     PHANTOM_ENEMIES_COUNT,
 )
-from shared.types import TokenID, PlayerID
+from shared.types import PlayerID
 
 
 @dataclass
@@ -24,6 +25,7 @@ class ActiveEffect:
         turns_remaining: Number of turns until effect expires
         applied_turn: Turn number when effect was applied
     """
+
     effect_type: CrystalEffect
     turns_remaining: int
     applied_turn: int
@@ -65,6 +67,7 @@ class PhantomToken:
         position: Position on the board
         apparent_health: Health value shown
     """
+
     phantom_id: int
     apparent_player_id: PlayerID
     position: tuple[int, int]
@@ -100,13 +103,16 @@ class PlayerEffects:
         active_effects: List of currently active effects
         phantom_tokens: List of phantom tokens this player sees
     """
+
     player_id: PlayerID
     active_effects: list[ActiveEffect] = field(default_factory=list)
     phantom_tokens: list[PhantomToken] = field(default_factory=list)
 
     def has_effect(self, effect_type: CrystalEffect) -> bool:
         """Check if player has a specific effect active."""
-        return any(e.effect_type == effect_type and e.is_active() for e in self.active_effects)
+        return any(
+            e.effect_type == effect_type and e.is_active() for e in self.active_effects
+        )
 
     def get_effect(self, effect_type: CrystalEffect) -> ActiveEffect | None:
         """Get specific active effect if it exists."""
@@ -115,16 +121,18 @@ class PlayerEffects:
                 return effect
         return None
 
-    def add_effect(self, effect_type: CrystalEffect, duration: int, turn_number: int) -> ActiveEffect:
+    def add_effect(
+        self, effect_type: CrystalEffect, duration: int, turn_number: int
+    ) -> ActiveEffect:
         """Add or refresh an effect."""
         # Remove existing effect of same type
-        self.active_effects = [e for e in self.active_effects if e.effect_type != effect_type]
+        self.active_effects = [
+            e for e in self.active_effects if e.effect_type != effect_type
+        ]
 
         # Add new effect
         effect = ActiveEffect(
-            effect_type=effect_type,
-            turns_remaining=duration,
-            applied_turn=turn_number
+            effect_type=effect_type, turns_remaining=duration, applied_turn=turn_number
         )
         self.active_effects.append(effect)
         return effect
@@ -181,7 +189,7 @@ class CrystalEffectsManager:
         player_id: PlayerID,
         effect_type: CrystalEffect,
         turn_number: int,
-        duration: int | None = None
+        duration: int | None = None,
     ) -> None:
         """
         Apply a crystal effect to a player.
@@ -199,8 +207,7 @@ class CrystalEffectsManager:
         effects.add_effect(effect_type, duration, turn_number)
 
     def reduce_effect_durations_for_generator_capture(
-        self,
-        capturing_player_id: PlayerID
+        self, capturing_player_id: PlayerID
     ) -> None:
         """
         Reduce effect durations for a player who captured a generator.
@@ -222,7 +229,7 @@ class CrystalEffectsManager:
         other_player_ids: list[PlayerID],
         board_width: int,
         board_height: int,
-        occupied_positions: set[tuple[int, int]]
+        occupied_positions: set[tuple[int, int]],
     ) -> list[PhantomToken]:
         """
         Generate phantom enemy tokens for a player affected by phantom enemies effect.
@@ -257,7 +264,11 @@ class CrystalEffectsManager:
 
                 if pos not in occupied_positions:
                     # Random enemy player
-                    apparent_player = random.choice(other_player_ids) if other_player_ids else affected_player_id
+                    apparent_player = (
+                        random.choice(other_player_ids)
+                        if other_player_ids
+                        else affected_player_id
+                    )
 
                     # Random health
                     apparent_health = random.choice([4, 6, 8, 10])
@@ -266,7 +277,7 @@ class CrystalEffectsManager:
                         phantom_id=self._next_phantom_id,
                         apparent_player_id=apparent_player,
                         position=pos,
-                        apparent_health=apparent_health
+                        apparent_health=apparent_health,
                     )
 
                     effects.phantom_tokens.append(phantom)
@@ -276,10 +287,7 @@ class CrystalEffectsManager:
         return effects.phantom_tokens
 
     def filter_visible_tokens(
-        self,
-        viewing_player_id: PlayerID,
-        all_tokens: list,
-        get_token_player_id
+        self, viewing_player_id: PlayerID, all_tokens: list, get_token_player_id
     ) -> list:
         """
         Filter tokens based on fog of war effect.
@@ -302,10 +310,7 @@ class CrystalEffectsManager:
         return [t for t in all_tokens if get_token_player_id(t) == viewing_player_id]
 
     def get_tokens_for_player_view(
-        self,
-        viewing_player_id: PlayerID,
-        real_tokens: list,
-        get_token_player_id
+        self, viewing_player_id: PlayerID, real_tokens: list, get_token_player_id
     ) -> tuple[list, list[PhantomToken]]:
         """
         Get all tokens a player should see (real + phantom).
@@ -320,21 +325,25 @@ class CrystalEffectsManager:
         """
         # Filter real tokens by fog of war
         visible_tokens = self.filter_visible_tokens(
-            viewing_player_id,
-            real_tokens,
-            get_token_player_id
+            viewing_player_id, real_tokens, get_token_player_id
         )
 
         # Get phantom tokens if effect active
         effects = self.get_player_effects(viewing_player_id)
-        phantoms = effects.phantom_tokens if effects.has_effect(CrystalEffect.PHANTOM_ENEMIES) else []
+        phantoms = (
+            effects.phantom_tokens
+            if effects.has_effect(CrystalEffect.PHANTOM_ENEMIES)
+            else []
+        )
 
         return visible_tokens, phantoms
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         return {
-            "player_effects": {pid: effects.to_dict() for pid, effects in self.player_effects.items()},
+            "player_effects": {
+                pid: effects.to_dict() for pid, effects in self.player_effects.items()
+            },
             "next_phantom_id": self._next_phantom_id,
         }
 

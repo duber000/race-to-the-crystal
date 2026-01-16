@@ -59,7 +59,6 @@ class PhantomTokenSprite(arcade.Sprite):
         # Draw ghostly hexagon wireframe (semi-transparent)
         # Use player color with transparency to show phantom nature
         base_color = self.player_color
-        ghost_color = (*base_color, 180)  # Add transparency to player color
 
         # Multiple layers for ghostly glow effect
         for i in range(4, 0, -1):
@@ -123,7 +122,9 @@ class PhantomTokenSprite(arcade.Sprite):
         draw.text((text_x, text_y), health_text, fill=text_color, font=font)
 
         # Convert PIL image to Arcade texture
-        self.texture = arcade.Texture(name=f"phantom_{self.phantom_token.phantom_id}", image=image)
+        self.texture = arcade.Texture(
+            name=f"phantom_{self.phantom_token.phantom_id}", image=image
+        )
 
     def _hexagon_points(self, cx: float, cy: float, radius: float) -> list:
         """

@@ -9,7 +9,7 @@ Tests the server-side implementation of SSE-primary mode where:
 
 import pytest
 import os
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, patch
 from network.messages import (
     MessageType,
     ClientType,

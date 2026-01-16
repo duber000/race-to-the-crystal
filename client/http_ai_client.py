@@ -17,8 +17,7 @@ from httpx_sse import aconnect_sse
 
 from game.game_state import GameState
 from game.ai_observation import AIObserver
-from game.ai_actions import MoveAction, AttackAction, DeployAction, EndTurnAction
-from shared.enums import GamePhase, TurnPhase
+from shared.enums import GamePhase
 
 
 logging.basicConfig(
@@ -87,13 +86,17 @@ class HTTPAIPlayer:
                 logger.info(
                     f"Joined game {game_id[:8]} as {self.player_name} (auto-ready)"
                 )
-                logger.info(f"  Player ID: {self.player_id[:8]}")
+                logger.info(
+                    f"  Player ID: {self.player_id[:8] if self.player_id else 'unknown'}"
+                )
                 logger.info(f"  SSE URL: {self.sse_url}")
 
                 return True
 
             except httpx.HTTPStatusError as e:
-                logger.error(f"Failed to join game: {e.response.status_code} - {e.response.text}")
+                logger.error(
+                    f"Failed to join game: {e.response.status_code} - {e.response.text}"
+                )
                 raise
             except Exception as e:
                 logger.error(f"Error joining game: {e}")
@@ -114,7 +117,9 @@ class HTTPAIPlayer:
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                async with aconnect_sse(client, "GET", self.sse_url, headers=headers) as event_source:
+                async with aconnect_sse(
+                    client, "GET", self.sse_url, headers=headers
+                ) as event_source:
                     logger.info("SSE connection established")
 
                     async for event in event_source.aiter_sse():
@@ -132,7 +137,9 @@ class HTTPAIPlayer:
                         except json.JSONDecodeError as e:
                             logger.error(f"Failed to parse SSE event: {e}")
                         except Exception as e:
-                            logger.error(f"Error handling SSE event: {e}", exc_info=True)
+                            logger.error(
+                                f"Error handling SSE event: {e}", exc_info=True
+                            )
 
         except Exception as e:
             logger.error(f"SSE connection error: {e}", exc_info=True)
@@ -192,14 +199,16 @@ class HTTPAIPlayer:
             )
 
             # Get available actions
-            actions = AIObserver.list_available_actions(game_state, perspective_player_id)
+            actions = AIObserver.list_available_actions(
+                game_state, perspective_player_id
+            )
 
             if not actions.get("actions"):
                 logger.warning("No actions available")
                 return
 
             # Choose and execute action
-            action = self._choose_action(actions["actions"], game_state, perspective_player_id)
+            action = self._choose_action(actions["actions"], game_state)
             if action:
                 await self._send_action(action)
             else:
@@ -209,7 +218,7 @@ class HTTPAIPlayer:
             logger.error(f"Error processing state update: {e}", exc_info=True)
 
     def _choose_action(
-        self, available_actions: list, game_state: GameState, player_id: str
+        self, available_actions: list, game_state: GameState
     ) -> Optional[dict]:
         """
         Choose an action based on AI strategy.
@@ -217,7 +226,6 @@ class HTTPAIPlayer:
         Args:
             available_actions: List of available action dicts
             game_state: Current game state
-            player_id: Our player ID
 
         Returns:
             Action dict to execute, or None
@@ -233,7 +241,9 @@ class HTTPAIPlayer:
             attacks = [a for a in available_actions if a["type"] == "ATTACK"]
             if attacks:
                 # Choose attack that deals most damage or kills
-                attacks.sort(key=lambda a: (-int(a.get("will_kill", False)), -a.get("damage", 0)))
+                attacks.sort(
+                    key=lambda a: (-int(a.get("will_kill", False)), -a.get("damage", 0))
+                )
                 return attacks[0]
 
             moves = [a for a in available_actions if a["type"] == "MOVE"]
@@ -290,7 +300,9 @@ class HTTPAIPlayer:
         # Add type-specific fields
         if action["type"] == "MOVE":
             action_data["token_id"] = action["token_id"]
-            action_data["destination"] = action["valid_destinations"][0]  # Pick first valid destination
+            action_data["destination"] = action["valid_destinations"][
+                0
+            ]  # Pick first valid destination
 
         elif action["type"] == "ATTACK":
             action_data["attacker_id"] = action["attacker_id"]
@@ -298,7 +310,9 @@ class HTTPAIPlayer:
 
         elif action["type"] == "DEPLOY":
             action_data["health_value"] = action["health_value"]
-            action_data["position"] = action["positions"][0]  # Pick first valid position
+            action_data["position"] = action["positions"][
+                0
+            ]  # Pick first valid position
 
         elif action["type"] == "END_TURN":
             pass  # No additional fields needed

@@ -9,7 +9,7 @@ import jwt
 import secrets
 import time
 import logging
-from typing import Dict, Optional
+from typing import Optional
 from dataclasses import dataclass
 
 

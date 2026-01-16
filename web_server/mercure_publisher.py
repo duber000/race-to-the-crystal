@@ -8,7 +8,7 @@ This module handles publishing game state changes to a Mercure hub.
 import os
 import httpx
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from dataclasses import dataclass
 import json
 

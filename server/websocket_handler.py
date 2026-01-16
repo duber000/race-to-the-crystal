@@ -5,7 +5,6 @@ Handles WebSocket connections from Babylon.js web clients,
 integrating with the main game server for lobby and game actions.
 """
 
-import asyncio
 import json
 import logging
 import time
@@ -32,7 +31,7 @@ class WebSocketClient:
     player_id: Optional[str] = None
     player_name: str = "Unknown"
     client_type: ClientType = ClientType.WEB_BROWSER
-    websocket: web.WebSocketResponse = None
+    websocket: web.WebSocketResponse | None = None
     game_id: Optional[str] = None
     connected_at: float = field(default_factory=time.time)
     ip_address: Optional[str] = None
@@ -91,10 +90,7 @@ class WebSocketHandler:
             # Return error response
             ws = web.WebSocketResponse(max_msg_size=64 * 1024)  # 64KB limit
             await ws.prepare(request)
-            await ws.send_json({
-                "type": "ERROR",
-                "message": error_msg
-            })
+            await ws.send_json({"type": "ERROR", "message": error_msg})
             await ws.close()
             return ws
 
@@ -104,9 +100,7 @@ class WebSocketHandler:
 
         client_id = str(uuid.uuid4())
         client = WebSocketClient(
-            client_id=client_id,
-            websocket=ws,
-            ip_address=ip_address
+            client_id=client_id, websocket=ws, ip_address=ip_address
         )
         self.clients[client_id] = client
 
@@ -169,6 +163,8 @@ class WebSocketHandler:
                 await self._handle_game_action(client, data)
             elif msg_type == "CHAT":
                 await self._handle_chat(client, data)
+            elif msg_type == "SSE_FALLBACK_REQUEST":
+                await self._handle_sse_fallback_request(client, data)
             elif msg_type == "DISCONNECT":
                 await self._handle_client_disconnect(client)
             else:
@@ -222,7 +218,8 @@ class WebSocketHandler:
             "server_version": "1.0.0",
         }
 
-        await client.websocket.send_json(response)
+        if client.websocket:
+            await client.websocket.send_json(response)
         logger.info(f"WebSocket player connected: {player_name} ({player_id[:8]})")
 
     async def _handle_create_game(self, client: WebSocketClient, data: dict) -> None:
@@ -250,7 +247,9 @@ class WebSocketHandler:
 
         # Validate max_players
         if not isinstance(max_players, int) or max_players < 2 or max_players > 4:
-            await self._send_error(client, "Invalid max_players: must be between 2 and 4")
+            await self._send_error(
+                client, "Invalid max_players: must be between 2 and 4"
+            )
             return
 
         try:
@@ -273,7 +272,8 @@ class WebSocketHandler:
                 "status": lobby.status.value,
                 "players": lobby.get_player_list(),
             }
-            await client.websocket.send_json(response)
+            if client.websocket:
+                await client.websocket.send_json(response)
             logger.info(f"WebSocket player created game: {lobby.game_name}")
 
         except ValueError as e:
@@ -313,7 +313,8 @@ class WebSocketHandler:
             "status": lobby.status.value,
             "players": lobby.get_player_list(),
         }
-        await client.websocket.send_json(response)
+        if client.websocket:
+            await client.websocket.send_json(response)
 
         join_event = {
             "type": "PLAYER_JOINED",
@@ -335,7 +336,8 @@ class WebSocketHandler:
         self.game_server.lobby_manager.leave_lobby(game_id, player_id)
 
         response = {"type": "LEAVE_GAME", "game_id": game_id}
-        await client.websocket.send_json(response)
+        if client.websocket:
+            await client.websocket.send_json(response)
 
         leave_event = {
             "type": "PLAYER_LEFT",
@@ -354,7 +356,8 @@ class WebSocketHandler:
 
         lobbies = self.game_server.lobby_manager.list_available_lobbies()
         response = {"type": "GAME_LIST", "games": lobbies}
-        await client.websocket.send_json(response)
+        if client.websocket:
+            await client.websocket.send_json(response)
 
     async def _handle_ready(self, client: WebSocketClient, data: dict) -> None:
         """Handle ready status update from web client."""
@@ -443,7 +446,8 @@ class WebSocketHandler:
                 "action_type": msg_type,
                 "reason": msg,
             }
-            await client.websocket.send_json(error_response)
+            if client.websocket:
+                await client.websocket.send_json(error_response)
             return
 
         if game_session:
@@ -451,6 +455,33 @@ class WebSocketHandler:
 
             if game_session.is_game_over():
                 await self._handle_game_over(game_session)
+
+    async def _handle_sse_fallback_request(
+        self, client: WebSocketClient, data: dict
+    ) -> None:
+        """Handle SSE fallback request from web client - re-enable WebSocket state updates."""
+        if not self.game_server or not client.game_id or not client.player_id:
+            await self._send_error(client, "Not in a game")
+            return
+
+        game_id = client.game_id
+        player_id = client.player_id
+
+        logger.info(f"SSE fallback request from {player_id[:8]} for game {game_id}")
+
+        # Send current game state immediately via WebSocket
+        game_session = self.game_server.game_coordinator.get_game_session(game_id)
+        if game_session:
+            state_dict = game_session.get_game_state_for_player(player_id)
+            response = {"type": "FULL_STATE", "game_state": state_dict}
+            try:
+                if client.websocket:
+                    await client.websocket.send_json(response)
+                    logger.info(
+                        f"[WebSocket] Sent FULL_STATE to {player_id[:8]} (fallback mode)"
+                    )
+            except Exception as e:
+                logger.error(f"Error sending fallback state to client: {e}")
 
     async def _handle_chat(self, client: WebSocketClient, data: dict) -> None:
         """Handle chat message from web client."""
@@ -513,7 +544,8 @@ class WebSocketHandler:
         for client in self.clients.values():
             if client.game_id == game_id and client != exclude_client:
                 try:
-                    await client.websocket.send_json(message)
+                    if client.websocket:
+                        await client.websocket.send_json(message)
                 except Exception as e:
                     logger.error(f"Error broadcasting to client: {e}")
 
@@ -525,7 +557,8 @@ class WebSocketHandler:
         for client in self.clients.values():
             if client.game_id == game_id:
                 try:
-                    await client.websocket.send_json(message)
+                    if client.websocket:
+                        await client.websocket.send_json(message)
                 except Exception as e:
                     logger.error(f"Error broadcasting to client: {e}")
 
@@ -543,20 +576,24 @@ class WebSocketHandler:
         )
 
         # Check if SSE-primary mode is enabled
-        sse_primary_mode = getattr(self.game_server, 'sse_primary_mode', False)
+        sse_primary_mode = getattr(self.game_server, "sse_primary_mode", False)
 
         # Publish to Mercure for SSE-capable clients
         if game_session.network_to_game_id:
             first_player = next(iter(game_session.network_to_game_id.keys()))
             mercure_state = game_session.get_game_state_for_player(first_player)
             if mercure_state and self.game_server.mercure_publisher:
-                mercure_success = await self.game_server.mercure_publisher.publish_game_state(
-                    game_session.game_id, mercure_state
+                mercure_success = (
+                    await self.game_server.mercure_publisher.publish_game_state(
+                        game_session.game_id, mercure_state
+                    )
                 )
                 if mercure_success:
                     logger.debug("[Mercure] Successfully published state to SSE")
                 else:
-                    logger.warning("[Mercure] Publish failed, WebSocket will be used for all clients")
+                    logger.warning(
+                        "[Mercure] Publish failed, WebSocket will be used for all clients"
+                    )
 
         # Send via WebSocket based on SSE-primary mode
         for net_player_id in game_session.network_to_game_id.keys():
@@ -578,8 +615,11 @@ class WebSocketHandler:
                     )
                     response = {"type": "FULL_STATE", "game_state": state_dict}
                     try:
-                        await client.websocket.send_json(response)
-                        logger.info(f"[WebSocket] Successfully sent state to {net_player_id[:8]}")
+                        if client.websocket:
+                            await client.websocket.send_json(response)
+                        logger.info(
+                            f"[WebSocket] Successfully sent state to {net_player_id[:8]}"
+                        )
                     except Exception as e:
                         logger.error(f"Error sending state to client: {e}")
             else:
@@ -613,11 +653,12 @@ class WebSocketHandler:
         self.game_server.lobby_manager.finish_game(game_session.game_id)
         logger.info(f"Game {game_session.game_id} ended. Winner: {winner_name}")
 
-    async def _send_error(self, client: WebSocketClient, error_msg: str) -> None:
+    async def _send_error(self, client: WebSocketClient, error_msg: str | None) -> None:
         """Send error message to client."""
-        response = {"type": "ERROR", "error": error_msg}
+        response = {"type": "ERROR", "error": error_msg or "Unknown error"}
         try:
-            await client.websocket.send_json(response)
+            if client.websocket:
+                await client.websocket.send_json(response)
         except Exception as e:
             logger.error(f"Error sending error message: {e}")
 

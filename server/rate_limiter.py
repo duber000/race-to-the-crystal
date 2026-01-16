@@ -175,8 +175,8 @@ class RateLimiter:
             )
             return (
                 False,
-                f"Too many connections from your IP address. "
-                f"Please wait before connecting again."
+                "Too many connections from your IP address. "
+                "Please wait before connecting again."
             )
 
         # Track active connection

@@ -12,7 +12,6 @@ from shared.enums import (
     PlayerColor,
     TurnPhase,
     CrystalEffect,
-    CrystalEffect,
 )
 from shared.constants import (
     TOKEN_HEALTH_VALUES,
@@ -20,6 +19,7 @@ from shared.constants import (
 )
 from shared.types import TokenID, PlayerID
 from game.board import Board
+from game.combat import CombatOutcome
 from game.player import Player
 from game.token import Token
 from game.generator import Generator
@@ -64,7 +64,9 @@ class GameState:
     winner_id: PlayerID | None = None
     _next_token_id: int = 0
     last_triggered_crystal_effect: tuple[PlayerID, CrystalEffect] | None = None
-    last_triggered_mystery_event: tuple[TokenID, tuple[int, int], str] | None = None  # (token_id, position, effect)
+    last_triggered_mystery_event: tuple[TokenID, tuple[int, int], str] | None = (
+        None  # (token_id, position, effect)
+    )
 
     @property
     def current_player_id(self) -> PlayerID | None:
@@ -317,7 +319,9 @@ class GameState:
         # Mark as not alive
         token.is_alive = False
 
-    def attack_token(self, attacker_id: TokenID, defender_id: TokenID) -> "CombatOutcome | None":
+    def attack_token(
+        self, attacker_id: TokenID, defender_id: TokenID
+    ) -> CombatOutcome | None:
         """
         Execute an attack between two tokens.
 
@@ -470,7 +474,10 @@ class GameState:
             from shared.constants import CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL
 
             # Trigger effect every N rounds (after completing round 5, 10, 15, etc.)
-            if self.turn_number > 0 and self.turn_number % CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL == 0:
+            if (
+                self.turn_number > 0
+                and self.turn_number % CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL == 0
+            ):
                 self.trigger_random_crystal_effect()
 
             # Increment turn number for new round
@@ -618,7 +625,9 @@ class GameState:
             player_id, all_tokens, lambda t: t.player_id
         )
 
-    def trigger_random_crystal_effect(self) -> tuple[PlayerID | None, CrystalEffect] | None:
+    def trigger_random_crystal_effect(
+        self,
+    ) -> tuple[PlayerID | None, CrystalEffect] | None:
         """
         Trigger a random crystal effect on all active players.
 
@@ -666,8 +675,10 @@ class GameState:
             "winner_id": self.winner_id,
             "last_triggered_crystal_effect": (
                 self.last_triggered_crystal_effect[0],
-                self.last_triggered_crystal_effect[1].value
-            ) if self.last_triggered_crystal_effect else None,
+                self.last_triggered_crystal_effect[1].value,
+            )
+            if self.last_triggered_crystal_effect
+            else None,
             "last_triggered_mystery_event": self.last_triggered_mystery_event,
         }
 
@@ -710,9 +721,10 @@ class GameState:
         effect_data = data.get("last_triggered_crystal_effect")
         if effect_data:
             from shared.enums import CrystalEffect
+
             state.last_triggered_crystal_effect = (
                 effect_data[0],
-                CrystalEffect(effect_data[1])
+                CrystalEffect(effect_data[1]),
             )
         else:
             state.last_triggered_crystal_effect = None

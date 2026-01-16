@@ -262,10 +262,20 @@ class WebSocketClient {
 
       case "FULL_STATE":
         // In SSE-primary mode, only process FULL_STATE via WebSocket if SSE is not active
-        if (this.usingSSEForState) {
+        // However, if SSE has failed and we've fallen back to WebSocket, we should process it
+        if (this.usingSSEForState && this.mercureClient && this.mercureClient.isConnected()) {
           console.log("⚠ Ignoring FULL_STATE from WebSocket (using SSE)");
         } else {
+          // If SSE is not working or we've fallen back to WebSocket, process the state
+          console.log("✓ Processing FULL_STATE from WebSocket");
           this.emit("full_state", data);
+          
+          // If we were in GAME_STARTING state, transition to IN_GAME
+          // This is critical for enabling game actions after the initial state is received
+          if (this.connectionState === STATE.GAME_STARTING) {
+            this.connectionState = STATE.IN_GAME;
+            console.log("✓ Transitioned to IN_GAME state - game actions now enabled");
+          }
         }
         break;
 
@@ -331,9 +341,24 @@ class WebSocketClient {
     this.mercureClient.setTopic(`${this.mercureClient.config.mercure_topic}/${this.currentGameId}`);
 
     // Fallback function: switch back to WebSocket if SSE fails
-    const fallbackToWebSocket = () => {
-      console.warn("⚠ Using WebSocket for state updates (fallback)");
+    const fallbackToWebSocket = async () => {
+      console.warn("⚠ SSE failed - requesting WebSocket fallback");
+      
+      // Immediately set usingSSEForState to false to ensure we accept FULL_STATE messages
       this.usingSSEForState = false;
+
+      // If we were waiting for the game to start, ensure we can receive FULL_STATE via WebSocket
+      if (this.connectionState === STATE.GAME_STARTING) {
+        console.log("⚠ Game was starting but SSE failed - will accept FULL_STATE via WebSocket");
+      }
+
+      // Request the server to send FULL_STATE via WebSocket
+      // by sending a special message to re-enable WebSocket updates
+      this.send({
+        type: "SSE_FALLBACK_REQUEST",
+        game_id: this.currentGameId,
+        player_id: this.playerId,
+      });
     };
 
     this.mercureClient.subscribe(
@@ -358,6 +383,7 @@ class WebSocketClient {
     // Will be set back to false if SSE fails
     if (this.ssePrimaryMode) {
       this.usingSSEForState = true;
+      console.log("✓ SSE-primary mode: expecting state updates via SSE");
     }
   }
 
