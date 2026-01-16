@@ -1,3 +1,19 @@
+/**
+ * CameraController - Camera management for overview and first-person modes
+ *
+ * Touch Controls (via Babylon.js built-in multi-touch):
+ * - Pinch: Zoom in/out
+ * - Two-finger drag: Pan camera
+ * - Works on both touch and hybrid devices (mouse + touch)
+ *
+ * Mouse Controls:
+ * - Right-click + drag: Pan camera
+ * - Mouse wheel: Zoom in/out
+ * - Q/E keys: Rotate in first-person mode
+ *
+ * Note: Touch gesture handling is done by Babylon.js ArcRotateCamera's
+ * built-in pointer input system to avoid conflicts and support hybrid devices.
+ */
 class CameraController {
     constructor(scene, canvas, boardWidth, boardHeight, cellSize, wallHeight, deviceCapabilities) {
         this.scene = scene;
@@ -54,11 +70,11 @@ class CameraController {
         this.camera.lowerBetaLimit = Math.PI / 3;
         this.camera.upperBetaLimit = Math.PI / 3;
 
-        // Enable multi-touch on mobile devices
+        // Enable multi-touch on mobile devices (keep mouse support for hybrid devices)
         if (this.deviceCapabilities && this.deviceCapabilities.hasTouch()) {
-            console.log('[CameraController] Enabling multi-touch support');
+            console.log('[CameraController] Enabling multi-touch support (keeping mouse for hybrid devices)');
             if (this.camera.inputs && this.camera.inputs.attached && this.camera.inputs.attached.pointers) {
-                this.camera.inputs.attached.pointers.buttons = []; // Disable mouse buttons on touch devices
+                // Enable multi-touch but DON'T disable mouse buttons (for hybrid devices like Surface)
                 this.camera.inputs.attached.pointers.multiTouchPanning = true;
                 this.camera.inputs.attached.pointers.multiTouchPanAndZoom = true;
                 this.camera.pinchPrecision = config.pinchPrecision;
@@ -278,31 +294,4 @@ class CameraController {
         return activeCamera.fov;
     }
 
-    // ==========================================================================
-    // Touch Gesture Support
-    // ==========================================================================
-
-    /**
-     * Adjust camera zoom - used for pinch gestures on mobile
-     * @param {number} delta - Zoom delta (positive = zoom out, negative = zoom in)
-     */
-    adjustZoom(delta) {
-        if (this.cameraMode === 'overview') {
-            this.camera.radius += delta;
-            this.camera.radius = Math.max(
-                this.camera.lowerRadiusLimit,
-                Math.min(this.camera.upperRadiusLimit, this.camera.radius)
-            );
-        }
-    }
-
-    /**
-     * Rotate camera by angle - used for two-finger rotate gesture on mobile
-     * @param {number} angleDelta - Rotation angle in degrees
-     */
-    rotateCameraByAngle(angleDelta) {
-        if (this.cameraMode === 'firstperson') {
-            this.tokenRotation += angleDelta;
-        }
-    }
 }
