@@ -47,6 +47,9 @@ class Renderer3D {
         this.animationTime = 0;
         this.animationCallbacks = new Map();
 
+        // Track last processed mystery event to avoid duplicates
+        this.lastProcessedMysteryEvent = null;
+
         // Crystal effect animator
         this.crystalEffectAnimator = null;
 
@@ -1009,19 +1012,25 @@ class Renderer3D {
     checkMysteryLandings(gameState) {
         if (!gameState.tokens || !gameState.board) return;
 
-        for (const token of Object.values(gameState.tokens)) {
-            if (!token.is_deployed || !token.is_alive) continue;
+        // Check for new mystery event from server
+        if (gameState.last_triggered_mystery_event) {
+            const eventKey = JSON.stringify(gameState.last_triggered_mystery_event);
 
-            const posKey = `${token.position[0]},${token.position[1]}`;
-            const isMystery = this.isMysterySquare(token.position[0], token.position[1], gameState);
+            // Only process if this is a new event (different from last processed)
+            if (eventKey !== this.lastProcessedMysteryEvent) {
+                const [tokenId, position, effect] = gameState.last_triggered_mystery_event;
+                const posKey = `${position[0]},${position[1]}`;
 
-            if (isMystery && !this.mysteryAnimations.has(posKey)) {
                 this.mysteryAnimations.set(posKey, 0.0);
-                console.log(`Token ${token.id} landed on mystery square at ${posKey}`);
+                console.log(`Token ${tokenId} triggered mystery square at ${posKey} - Effect: ${effect}`);
                 this.playSound("mystery");
+
+                // Mark this event as processed
+                this.lastProcessedMysteryEvent = eventKey;
             }
         }
 
+        // Clean up completed animations
         for (const [posKey, progress] of this.mysteryAnimations) {
             if (progress >= 1.0) {
                 this.mysteryAnimations.delete(posKey);

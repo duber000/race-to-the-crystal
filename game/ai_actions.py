@@ -328,6 +328,13 @@ class AIActionExecutor:
                     token, game_state.board, player_index
                 )
 
+                # Record mystery event for client animations
+                game_state.last_triggered_mystery_event = (
+                    action.token_id,
+                    new_pos,
+                    mystery_result.effect.name,
+                )
+
                 message += "\n→ Token landed on a MYSTERY square!"
                 result_data["mystery_triggered"] = True
                 result_data["mystery_effect"] = mystery_result.effect.name

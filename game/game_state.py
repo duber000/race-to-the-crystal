@@ -64,6 +64,7 @@ class GameState:
     winner_id: PlayerID | None = None
     _next_token_id: int = 0
     last_triggered_crystal_effect: tuple[PlayerID, CrystalEffect] | None = None
+    last_triggered_mystery_event: tuple[TokenID, tuple[int, int], str] | None = None  # (token_id, position, effect)
 
     @property
     def current_player_id(self) -> PlayerID | None:
@@ -438,6 +439,9 @@ class GameState:
         # in the game action handler to allow for sound effects
         # self._update_generators_and_crystal()
 
+        # Clear mystery event from previous action
+        self.last_triggered_mystery_event = None
+
         # Update crystal effects (clear expired effects)
         self.crystal_effects.end_turn_update()
 
@@ -664,6 +668,7 @@ class GameState:
                 self.last_triggered_crystal_effect[0],
                 self.last_triggered_crystal_effect[1].value
             ) if self.last_triggered_crystal_effect else None,
+            "last_triggered_mystery_event": self.last_triggered_mystery_event,
         }
 
     def to_json(self) -> str:
@@ -711,6 +716,10 @@ class GameState:
             )
         else:
             state.last_triggered_crystal_effect = None
+
+        # Handle last_triggered_mystery_event deserialization
+        state.last_triggered_mystery_event = data.get("last_triggered_mystery_event")
+
         return state
 
     @classmethod
