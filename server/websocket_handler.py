@@ -470,7 +470,7 @@ class WebSocketHandler:
         logger.info(f"SSE fallback request from {player_id[:8]} for game {game_id}")
 
         # Send current game state immediately via WebSocket
-        game_session = self.game_server.game_coordinator.get_game_session(game_id)
+        game_session = self.game_server.game_coordinator.get_game(game_id)
         if game_session:
             state_dict = game_session.get_game_state_for_player(player_id)
             response = {"type": "FULL_STATE", "game_state": state_dict}
