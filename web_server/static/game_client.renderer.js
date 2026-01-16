@@ -552,8 +552,9 @@ class Renderer3D {
                 phantomData.mesh.position.x = worldX;
                 phantomData.mesh.position.z = worldZ;
             } else {
-                // Create new phantom
-                const playerColor = PLAYER_COLORS[phantom.apparent_player_id] || PLAYER_COLORS[0];
+                // Create new phantom - look up player color from game state
+                const player = gameState.players[phantom.apparent_player_id];
+                const playerColor = player ? PLAYER_COLORS[player.color] || PLAYER_COLORS[0] : PLAYER_COLORS[0];
                 this.createPhantomToken3D(phantom, playerColor);
             }
         }
