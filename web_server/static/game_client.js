@@ -649,8 +649,15 @@ class GameClient {
   }
 
   quitGame() {
+    // Clean up all resources
     if (this.wsClient) {
       this.wsClient.disconnect();
+    }
+    if (this.inputHandler) {
+      this.inputHandler.dispose();
+    }
+    if (this.guiManager) {
+      this.guiManager.dispose();
     }
     if (this.renderer) {
       this.renderer.dispose();

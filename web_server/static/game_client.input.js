@@ -4,15 +4,20 @@
  * Responsibilities:
  * - Mouse movement, clicks, and hover detection
  * - Keyboard shortcuts
- * - Touch gestures (tap, pinch, pan, rotate)
- * - Camera controls (pan, zoom, rotate)
+ * - Touch tap detection (single/double tap for game actions)
+ * - Camera controls (pan, zoom, rotate) via Babylon.js built-in multi-touch
  * - Event listener setup and cleanup
+ *
+ * Note: Camera gesture controls (pinch, pan) are handled by Babylon.js ArcRotateCamera
+ * to avoid conflicts and support hybrid devices. This class only handles taps for
+ * game actions (selecting cells, canceling).
  *
  * Usage:
  *   const input = new InputHandler(scene, canvas, cameraController, gameState, connectionState, engine, deviceCapabilities);
  *   input.setupEventListeners();
  *   input.on('click', (gridX, gridY) => { ... });
  *   input.on('keydown', (key) => { ... });
+ *   input.dispose(); // Clean up when done
  */
 
 class InputHandler {
@@ -30,13 +35,10 @@ class InputHandler {
         this.lastPanPosition = { x: 0, y: 0 };
         this.hoveredCell = null;
 
-        // Touch state
+        // Touch state (for tap detection only)
         this.touches = new Map();
-        this.gestureStartDistance = 0;
-        this.gestureStartAngle = 0;
         this.lastTapTime = 0;
         this.lastTapPosition = null;
-        this.isTouchPanning = false;
 
         this.eventHandlers = new Map();
     }
@@ -273,118 +275,62 @@ class InputHandler {
     }
 
     isPanningActive() {
-        return this.isPanning || this.isTouchPanning;
+        return this.isPanning;
     }
 
     // ==========================================================================
-    // Touch Gesture Handling
+    // Touch Gesture Handling (Tap Detection Only)
+    // Camera controls are handled by Babylon.js built-in multi-touch
     // ==========================================================================
 
     setupTouchGestures() {
-        console.log('[InputHandler] Setting up touch gesture support');
+        console.log('[InputHandler] Setting up tap detection (camera handled by Babylon.js)');
 
-        this.canvas.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: false });
-        this.canvas.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: false });
-        this.canvas.addEventListener('touchend', (e) => this.onTouchEnd(e), { passive: false });
-        this.canvas.addEventListener('touchcancel', (e) => this.onTouchEnd(e), { passive: false });
+        // Bind methods to preserve 'this' context
+        this.boundOnTouchStart = (e) => this.onTouchStart(e);
+        this.boundOnTouchEnd = (e) => this.onTouchEnd(e);
+
+        this.canvas.addEventListener('touchstart', this.boundOnTouchStart, { passive: false });
+        this.canvas.addEventListener('touchend', this.boundOnTouchEnd, { passive: false });
     }
 
     onTouchStart(event) {
-        event.preventDefault();
-
+        // Track touches for tap detection only
         for (let touch of event.changedTouches) {
             this.touches.set(touch.identifier, {
-                x: touch.clientX,
-                y: touch.clientY,
                 startTime: Date.now(),
                 startX: touch.clientX,
                 startY: touch.clientY
             });
         }
-
-        // Two-finger gesture detected
-        if (event.touches.length === 2) {
-            const touch1 = event.touches[0];
-            const touch2 = event.touches[1];
-
-            this.gestureStartDistance = this.getDistance(touch1, touch2);
-            this.gestureStartAngle = this.getAngle(touch1, touch2);
-            this.isTouchPanning = false; // Disable single-finger pan during two-finger gesture
-        } else if (event.touches.length === 1) {
-            this.isTouchPanning = true;
-        }
-    }
-
-    onTouchMove(event) {
-        event.preventDefault();
-
-        if (event.touches.length === 2) {
-            const touch1 = event.touches[0];
-            const touch2 = event.touches[1];
-
-            // Pinch to zoom
-            const currentDistance = this.getDistance(touch1, touch2);
-            const zoomDelta = (currentDistance - this.gestureStartDistance) * 0.5;
-
-            if (Math.abs(zoomDelta) > 5) {
-                this.cameraController.adjustZoom(-zoomDelta);
-                this.gestureStartDistance = currentDistance;
-            }
-
-            // Two-finger rotate (for first-person mode)
-            if (this.cameraController.cameraMode === 'firstperson') {
-                const currentAngle = this.getAngle(touch1, touch2);
-                const rotateDelta = currentAngle - this.gestureStartAngle;
-
-                if (Math.abs(rotateDelta) > 2) {
-                    this.cameraController.rotateCameraByAngle(rotateDelta * 0.5);
-                    this.gestureStartAngle = currentAngle;
-                }
-            }
-        } else if (event.touches.length === 1 && this.isTouchPanning) {
-            // Single-finger pan/drag (acts like right-click drag on desktop)
-            const touch = event.touches[0];
-            const startTouch = this.touches.get(touch.identifier);
-
-            if (startTouch) {
-                const dx = touch.clientX - startTouch.x;
-                const dy = touch.clientY - startTouch.y;
-
-                // Pan camera if moved more than threshold
-                if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-                    this.cameraController.handlePan(dx, dy);
-
-                    // Update for next frame
-                    startTouch.x = touch.clientX;
-                    startTouch.y = touch.clientY;
-                }
-            }
-        }
     }
 
     onTouchEnd(event) {
-        for (let touch of event.changedTouches) {
-            const startTouch = this.touches.get(touch.identifier);
-
-            if (startTouch) {
-                const duration = Date.now() - startTouch.startTime;
-                const distance = Math.sqrt(
-                    Math.pow(touch.clientX - startTouch.startX, 2) +
-                    Math.pow(touch.clientY - startTouch.startY, 2)
-                );
-
-                // Detect tap (short duration, small movement)
-                if (duration < 300 && distance < 20) {
-                    this.handleTap(touch.clientX, touch.clientY);
-                }
-
+        // Only handle single-touch taps (ignore multi-touch gestures)
+        if (event.changedTouches.length !== 1) {
+            // Clear all touches on multi-touch end
+            for (let touch of event.changedTouches) {
                 this.touches.delete(touch.identifier);
             }
+            return;
         }
 
-        // Reset panning state when all touches are released
-        if (event.touches.length === 0) {
-            this.isTouchPanning = false;
+        const touch = event.changedTouches[0];
+        const startTouch = this.touches.get(touch.identifier);
+
+        if (startTouch) {
+            const duration = Date.now() - startTouch.startTime;
+            const distance = Math.sqrt(
+                Math.pow(touch.clientX - startTouch.startX, 2) +
+                Math.pow(touch.clientY - startTouch.startY, 2)
+            );
+
+            // Detect tap (short duration, small movement)
+            if (duration < 300 && distance < 20) {
+                this.handleTap(touch.clientX, touch.clientY);
+            }
+
+            this.touches.delete(touch.identifier);
         }
     }
 
@@ -433,17 +379,21 @@ class InputHandler {
         }
     }
 
-    getDistance(touch1, touch2) {
-        return Math.sqrt(
-            Math.pow(touch2.clientX - touch1.clientX, 2) +
-            Math.pow(touch2.clientY - touch1.clientY, 2)
-        );
-    }
+    /**
+     * Clean up event listeners
+     */
+    dispose() {
+        // Remove touch listeners
+        if (this.boundOnTouchStart) {
+            this.canvas.removeEventListener('touchstart', this.boundOnTouchStart);
+        }
+        if (this.boundOnTouchEnd) {
+            this.canvas.removeEventListener('touchend', this.boundOnTouchEnd);
+        }
 
-    getAngle(touch1, touch2) {
-        return Math.atan2(
-            touch2.clientY - touch1.clientY,
-            touch2.clientX - touch1.clientX
-        ) * 180 / Math.PI;
+        // Clear touch tracking
+        this.touches.clear();
+
+        console.log('[InputHandler] Disposed and cleaned up event listeners');
     }
 }
