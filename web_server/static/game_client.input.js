@@ -20,6 +20,10 @@
  *   input.dispose(); // Clean up when done
  */
 
+// Debounce delay for game actions (ms)
+// Prevents accidental double-actions from key holds/rapid presses
+const ACTION_DEBOUNCE_MS = 200;
+
 class InputHandler {
     constructor(scene, canvas, cameraController, gameState, connectionState, engine, deviceCapabilities) {
         this.scene = scene;
@@ -40,6 +44,9 @@ class InputHandler {
         this.lastTapTime = 0;
         this.lastTapPosition = null;
 
+        // Action debouncing (prevents rapid key spam)
+        this.lastActionTime = {};
+
         this.eventHandlers = new Map();
     }
 
@@ -54,6 +61,22 @@ class InputHandler {
         if (this.eventHandlers.has(event)) {
             this.eventHandlers.get(event).forEach(handler => handler(data));
         }
+    }
+
+    /**
+     * Check if an action should be debounced (prevents rapid repeated actions).
+     * Returns true if action is allowed, false if it should be ignored.
+     */
+    shouldAllowAction(actionKey) {
+        const now = Date.now();
+        const lastTime = this.lastActionTime[actionKey];
+
+        if (!lastTime || (now - lastTime) > ACTION_DEBOUNCE_MS) {
+            this.lastActionTime[actionKey] = now;
+            return true;
+        }
+
+        return false;
     }
 
     setupEventListeners() {
@@ -184,24 +207,39 @@ class InputHandler {
                 case " ":
                 case "enter":
                     event.preventDefault();
-                    this.emit('keydown', { key: 'end_turn' });
+                    // Debounce end_turn to prevent spacebar spam
+                    if (this.shouldAllowAction('end_turn')) {
+                        this.emit('keydown', { key: 'end_turn' });
+                    }
                     break;
                 case "escape":
                     event.preventDefault();
-                    this.emit('keydown', { key: 'cancel' });
+                    // Debounce cancel to prevent accidental double-cancel
+                    if (this.shouldAllowAction('cancel')) {
+                        this.emit('keydown', { key: 'cancel' });
+                    }
                     break;
                 case "r":
                     event.preventDefault();
-                    this.emit('keydown', { key: 'deploy' });
+                    // Debounce deploy to prevent accidental double-deploy
+                    if (this.shouldAllowAction('deploy')) {
+                        this.emit('keydown', { key: 'deploy' });
+                    }
                     break;
                 case "v":
                     event.preventDefault();
-                    this.emit('keydown', { key: 'camera_toggle' });
+                    // Debounce camera toggle to prevent rapid switching
+                    if (this.shouldAllowAction('camera_toggle')) {
+                        this.emit('keydown', { key: 'camera_toggle' });
+                    }
                     break;
                 case "tab":
                     event.preventDefault();
                     if (this.cameraController.cameraMode === "firstperson") {
-                        this.emit('keydown', { key: 'cycle_token' });
+                        // Debounce token cycling to prevent skipping tokens
+                        if (this.shouldAllowAction('cycle_token')) {
+                            this.emit('keydown', { key: 'cycle_token' });
+                        }
                     }
                     break;
                 case "q":
@@ -214,7 +252,10 @@ class InputHandler {
                     break;
                 case "m":
                     event.preventDefault();
-                    this.emit('keydown', { key: 'toggle_music' });
+                    // Debounce music toggle to prevent rapid on/off switching
+                    if (this.shouldAllowAction('toggle_music')) {
+                        this.emit('keydown', { key: 'toggle_music' });
+                    }
                     break;
                 case "w":
                 case "arrowup":
