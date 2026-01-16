@@ -168,7 +168,15 @@ class HTTPHandler:
             "sse_primary_mode": sse_primary_mode,
         }
 
-        return web.json_response(config)
+        # Prevent browser caching to ensure clients always get current config
+        return web.json_response(
+            config,
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
 
     async def handle_join_game_http(self, request: web.Request) -> web.Response:
         """
