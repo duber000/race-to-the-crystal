@@ -18,8 +18,9 @@
  */
 
 class Renderer3D {
-    constructor(canvas) {
+    constructor(canvas, deviceCapabilities) {
         this.canvas = canvas;
+        this.deviceCapabilities = deviceCapabilities;
         this.engine = null;
         this.scene = null;
         this.glowLayer = null;
@@ -69,10 +70,21 @@ class Renderer3D {
     // ==========================================================================
 
     initScene() {
-        this.engine = new BABYLON.Engine(this.canvas, true);
+        // Get device-specific rendering configuration
+        const renderConfig = this.deviceCapabilities ?
+            this.deviceCapabilities.getRenderingConfig() :
+            { hardwareScaling: 1.0, antialiasing: true };
+
+        console.log('[Renderer3D] Initializing scene with config:', renderConfig);
+
+        // Create engine with adaptive antialiasing
+        this.engine = new BABYLON.Engine(this.canvas, renderConfig.antialiasing);
 
         this.scene = new BABYLON.Scene(this.engine);
         this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
+
+        // Apply performance optimizations for mobile
+        this.applyPerformanceSettings(renderConfig);
 
         this.initLights();
         this.createBoard();
@@ -81,6 +93,38 @@ class Renderer3D {
         this.crystalEffectAnimator = new CrystalEffectAnimator(this.scene);
 
         return this.scene;
+    }
+
+    /**
+     * Apply performance optimizations based on device capabilities
+     * @param {object} renderConfig - Rendering configuration from device capabilities
+     */
+    applyPerformanceSettings(renderConfig) {
+        if (!this.deviceCapabilities || !this.deviceCapabilities.shouldOptimizePerformance()) {
+            console.log('[Renderer3D] Using high-quality settings');
+            return;
+        }
+
+        console.log('[Renderer3D] Applying mobile performance optimizations');
+
+        // Lower hardware scaling for mobile (reduces resolution)
+        this.engine.setHardwareScalingLevel(renderConfig.hardwareScaling);
+
+        // Disable shadows (game doesn't use them currently, but good to be explicit)
+        this.scene.shadowsEnabled = renderConfig.shadowsEnabled;
+
+        // Skip frustum clipping for small scenes (performance boost)
+        this.scene.skipFrustumClipping = true;
+
+        // Disable fog if present
+        this.scene.fogEnabled = false;
+
+        // Reduce glow layer intensity on mobile for better performance
+        if (this.glowLayer) {
+            this.glowLayer.intensity = 1.0; // Reduced from 1.5
+        }
+
+        console.log('[Renderer3D] Performance optimizations applied');
     }
 
     initLights() {
@@ -532,6 +576,9 @@ class Renderer3D {
         material.alpha = 0.9;
         hexagon.material = material;
 
+        // Freeze material for performance (material won't change)
+        material.freeze();
+
         const healthLabel = this.createHealthLabel(token, hexagon.position);
 
         this.tokens3D.set(token.id, {
@@ -565,6 +612,9 @@ class Renderer3D {
         material.emissiveColor = playerColor;
         material.wireframe = true;
         material.alpha = 0.5; // Semi-transparent for phantom effect
+
+        // Freeze material for performance
+        material.freeze();
 
         hexagon.material = material;
 

@@ -16,8 +16,13 @@ class GameClient {
   constructor() {
     this.canvas = document.getElementById("renderCanvas");
 
+    // Device capabilities detection
+    this.deviceCapabilities = new DeviceCapabilities();
+    this.deviceCapabilities.logCapabilities();
+
     // Modules
     this.ui = new UIManager();
+    this.guiManager = null; // Babylon.js GUI (for mobile)
     this.cameraController = null;
     this.inputHandler = null;
     this.renderer = null;
@@ -206,10 +211,12 @@ class GameClient {
   }
 
   initGameModules() {
-    this.renderer = new Renderer3D(this.canvas);
+    // Initialize renderer with device capabilities
+    this.renderer = new Renderer3D(this.canvas, this.deviceCapabilities);
     this.renderer.initScene();
     this.renderer.loadSounds();
 
+    // Initialize camera controller with device capabilities
     this.cameraController = new CameraController(
       this.renderer.scene,
       this.canvas,
@@ -217,8 +224,10 @@ class GameClient {
       BOARD_HEIGHT,
       CELL_SIZE,
       WALL_HEIGHT,
+      this.deviceCapabilities,
     );
 
+    // Initialize input handler with device capabilities
     this.inputHandler = new InputHandler(
       this.renderer.scene,
       this.canvas,
@@ -226,7 +235,17 @@ class GameClient {
       () => this.gameState,
       () => this.wsClient.getConnectionState(),
       this.renderer.engine,
+      this.deviceCapabilities,
     );
+
+    // Initialize Babylon.js GUI manager (for mobile)
+    this.guiManager = new GUIManager(this.renderer.scene, this.deviceCapabilities);
+    this.guiManager.initialize();
+
+    // Set up GUI event handlers if mobile
+    if (this.deviceCapabilities.isMobile()) {
+      this.setupGUIHandlers();
+    }
 
     this.renderer.setCameraUpdateCallback(() => {
       if (
@@ -260,6 +279,41 @@ class GameClient {
 
     this.inputHandler.on("keydown", (data) => {
       this.handleKeyDown(data);
+    });
+  }
+
+  setupGUIHandlers() {
+    console.log('[GameClient] Setting up GUI handlers for mobile');
+
+    this.guiManager.on('action', (data) => {
+      switch (data.type) {
+        case 'deploy':
+          // Show deployment menu
+          this.guiManager.showDeploymentMenu();
+          break;
+        case 'move_attack':
+          // Handle move/attack action based on current state
+          if (this.selectedTokenId) {
+            // If token is selected, this acts as confirmation
+            // No-op, user should tap destination cell
+          }
+          break;
+        case 'end_turn':
+          // End turn
+          this.endTurn();
+          break;
+        case 'camera_toggle':
+          // Toggle camera mode
+          this.cameraController.toggleCameraMode();
+          break;
+      }
+    });
+
+    this.guiManager.on('deploy_select', (data) => {
+      console.log(`[GameClient] Deploy token selected: ${data.health} HP`);
+      // Set the selected deploy health (similar to DOM UI)
+      this.ui.selectedDeployHealth = data.health;
+      this.ui.showDeploymentIndicator(data.health);
     });
   }
 

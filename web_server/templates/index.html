@@ -2,13 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Enhanced viewport for mobile support -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <!-- PWA and mobile meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <meta name="format-detection" content="telephone=no">
+
     <title>Race to the Crystal - 3D Web View</title>
 
     <!-- Preload critical JavaScript resources -->
     <link rel="preload" href="/static/mercure_client.js" as="script">
     <link rel="preload" href="/static/game_client.constants.js" as="script">
+    <link rel="preload" href="/static/game_client.device.js" as="script">
     <link rel="preload" href="/static/game_client.camera.js" as="script">
+    <link rel="preload" href="/static/game_client.gui.js" as="script">
     <link rel="preload" href="/static/game_client.websocket.js" as="script">
     <link rel="preload" href="/static/game_client.ui.js" as="script">
     <link rel="preload" href="/static/game_client.input.js" as="script">
@@ -431,6 +441,190 @@
             line-height: 1.5;
             color: #0aa;
         }
+
+        /* =================================================================
+           RESPONSIVE MOBILE STYLES
+           ================================================================= */
+
+        /* Mobile devices (phones) */
+        @media (max-width: 768px) {
+            /* Compact HUD for mobile */
+            #hud {
+                top: 5px;
+                left: 5px;
+                right: 5px;
+                width: auto;
+                min-width: auto;
+                font-size: 11px;
+                padding: 8px;
+                max-height: 150px;
+                overflow-y: auto;
+            }
+
+            #hud h2 {
+                font-size: 14px;
+                margin-bottom: 5px;
+            }
+
+            #hud .status-line {
+                margin: 2px 0;
+            }
+
+            #hud .player-info {
+                margin: 5px 0;
+                padding: 3px;
+                padding-left: 8px;
+            }
+
+            /* Hide keyboard controls on mobile */
+            #controls {
+                display: none;
+            }
+
+            /* Connection status - smaller on mobile */
+            .connection-status {
+                top: 5px;
+                right: 5px;
+                padding: 5px 10px;
+                font-size: 10px;
+            }
+
+            /* Crystal effects indicator - adjust position */
+            #crystal-effects-indicator {
+                top: auto;
+                bottom: 120px; /* Above action bar */
+                right: 5px;
+                left: 5px;
+                display: flex;
+                justify-content: center;
+            }
+
+            .effects-panel {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 5px;
+                max-width: 100%;
+            }
+
+            .effect-badge {
+                padding: 5px 10px;
+                font-size: 11px;
+                flex: 0 0 auto;
+            }
+
+            .effect-icon {
+                font-size: 14px;
+            }
+
+            /* Lobby screens - full width on mobile */
+            #connection-screen, #lobby-browser-screen, #waiting-room-screen {
+                width: 95%;
+                min-width: auto;
+                max-width: 500px;
+                padding: 20px;
+            }
+
+            #connection-screen h2, #lobby-browser-screen h2, #waiting-room-screen h2 {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+
+            #connection-screen button, #lobby-browser-screen button, #waiting-room-screen button {
+                padding: 10px 16px;
+                font-size: 12px;
+            }
+
+            /* Touch-friendly input fields */
+            #connection-screen input, #lobby-browser-screen input {
+                padding: 14px; /* Larger touch target */
+                font-size: 16px; /* Prevents iOS zoom */
+            }
+
+            /* Game list scrolling */
+            #game-list-container {
+                max-height: 200px;
+            }
+
+            .game-item {
+                padding: 10px;
+            }
+
+            /* Lobby players list */
+            #lobby-players {
+                padding: 10px;
+                min-height: 100px;
+                max-height: 200px;
+            }
+        }
+
+        /* Tablet adaptations (medium screens) */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            #hud {
+                font-size: 13px;
+            }
+
+            /* Keep controls visible on tablet */
+            #controls {
+                font-size: 11px;
+            }
+        }
+
+        /* Very small phones */
+        @media (max-width: 480px) {
+            #hud {
+                font-size: 10px;
+                padding: 5px;
+            }
+
+            #crystal-effects-indicator {
+                bottom: 110px;
+            }
+
+            .effect-badge {
+                font-size: 10px;
+                padding: 4px 8px;
+            }
+
+            #connection-screen, #lobby-browser-screen, #waiting-room-screen {
+                padding: 15px;
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #hud {
+                max-height: 80px;
+                font-size: 10px;
+            }
+
+            #crystal-effects-indicator {
+                bottom: 90px;
+            }
+        }
+
+        /* Touch device optimizations (regardless of screen size) */
+        @media (hover: none) and (pointer: coarse) {
+            /* Larger touch targets */
+            #connection-screen button,
+            #lobby-browser-screen button,
+            #waiting-room-screen button {
+                min-height: 44px; /* Apple HIG recommendation */
+                min-width: 44px;
+            }
+
+            /* Prevent text selection on UI elements */
+            * {
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            /* Allow text selection in inputs */
+            input, textarea {
+                -webkit-user-select: text;
+                user-select: text;
+            }
+        }
     </style>
 </head>
 <body>
@@ -560,8 +754,14 @@
     <!-- Game constants -->
     <script src="/static/game_client.constants.js"></script>
 
+    <!-- Device capabilities detection -->
+    <script src="/static/game_client.device.js"></script>
+
     <!-- Camera controller -->
     <script src="/static/game_client.camera.js"></script>
+
+    <!-- Babylon.js GUI manager -->
+    <script src="/static/game_client.gui.js"></script>
 
     <!-- WebSocket client -->
     <script src="/static/game_client.websocket.js"></script>

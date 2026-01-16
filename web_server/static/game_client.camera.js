@@ -1,11 +1,12 @@
 class CameraController {
-    constructor(scene, canvas, boardWidth, boardHeight, cellSize, wallHeight) {
+    constructor(scene, canvas, boardWidth, boardHeight, cellSize, wallHeight, deviceCapabilities) {
         this.scene = scene;
         this.canvas = canvas;
         this.boardWidth = boardWidth;
         this.boardHeight = boardHeight;
         this.cellSize = cellSize;
         this.wallHeight = wallHeight;
+        this.deviceCapabilities = deviceCapabilities;
 
         this.cameraMode = "overview";
         this.controlledTokenId = null;
@@ -22,6 +23,18 @@ class CameraController {
         const boardCenterX = (this.boardWidth / 2) * this.cellSize;
         const boardCenterY = (this.boardHeight / 2) * this.cellSize;
 
+        // Get device-specific camera configuration
+        const config = this.deviceCapabilities ? this.deviceCapabilities.getCameraConfig() : {
+            panningSensibility: 50,
+            wheelPrecision: 5,
+            pinchPrecision: 0,
+            inertia: 0.9,
+            angularSensibility: 2000
+        };
+
+        console.log('[CameraController] Initializing cameras with config:', config);
+
+        // Overview camera (ArcRotate) - works great with both mouse and touch
         this.camera = new BABYLON.ArcRotateCamera(
             "overviewCamera",
             Math.PI / 4,
@@ -33,12 +46,26 @@ class CameraController {
         this.camera.attachControl(this.canvas, true);
         this.camera.lowerRadiusLimit = 300;
         this.camera.upperRadiusLimit = 1500;
-        this.camera.wheelPrecision = 5;
+        this.camera.wheelPrecision = config.wheelPrecision;
+        this.camera.panningSensibility = config.panningSensibility;
+        this.camera.inertia = config.inertia;
         this.camera.lowerAlphaLimit = 0;
         this.camera.upperAlphaLimit = 0;
         this.camera.lowerBetaLimit = Math.PI / 3;
         this.camera.upperBetaLimit = Math.PI / 3;
 
+        // Enable multi-touch on mobile devices
+        if (this.deviceCapabilities && this.deviceCapabilities.hasTouch()) {
+            console.log('[CameraController] Enabling multi-touch support');
+            if (this.camera.inputs && this.camera.inputs.attached && this.camera.inputs.attached.pointers) {
+                this.camera.inputs.attached.pointers.buttons = []; // Disable mouse buttons on touch devices
+                this.camera.inputs.attached.pointers.multiTouchPanning = true;
+                this.camera.inputs.attached.pointers.multiTouchPanAndZoom = true;
+                this.camera.pinchPrecision = config.pinchPrecision;
+            }
+        }
+
+        // First-person camera
         this.firstPersonCamera = new BABYLON.UniversalCamera(
             "firstPersonCamera",
             new BABYLON.Vector3(boardCenterX, boardCenterY + 150, boardCenterX - 100),
@@ -49,7 +76,7 @@ class CameraController {
         this.firstPersonCamera.keysDown = [];
         this.firstPersonCamera.keysLeft = [];
         this.firstPersonCamera.keysRight = [];
-        this.firstPersonCamera.angularSensibility = 2000;
+        this.firstPersonCamera.angularSensibility = config.angularSensibility;
 
         this.scene.activeCamera = this.camera;
     }
@@ -249,5 +276,33 @@ class CameraController {
         activeCamera.fov += change * 0.01;
         activeCamera.fov = Math.max(0.1, Math.min(1.5, activeCamera.fov));
         return activeCamera.fov;
+    }
+
+    // ==========================================================================
+    // Touch Gesture Support
+    // ==========================================================================
+
+    /**
+     * Adjust camera zoom - used for pinch gestures on mobile
+     * @param {number} delta - Zoom delta (positive = zoom out, negative = zoom in)
+     */
+    adjustZoom(delta) {
+        if (this.cameraMode === 'overview') {
+            this.camera.radius += delta;
+            this.camera.radius = Math.max(
+                this.camera.lowerRadiusLimit,
+                Math.min(this.camera.upperRadiusLimit, this.camera.radius)
+            );
+        }
+    }
+
+    /**
+     * Rotate camera by angle - used for two-finger rotate gesture on mobile
+     * @param {number} angleDelta - Rotation angle in degrees
+     */
+    rotateCameraByAngle(angleDelta) {
+        if (this.cameraMode === 'firstperson') {
+            this.tokenRotation += angleDelta;
+        }
     }
 }
