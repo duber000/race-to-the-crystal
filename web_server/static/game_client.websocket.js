@@ -371,20 +371,20 @@ class WebSocketClient {
           console.log("✓ Using SSE for state updates");
         }
 
+        // Transition to IN_GAME state if needed (critical for enabling game actions)
+        // This mirrors the logic in FULL_STATE WebSocket handler (lines 273-278)
+        if (this.connectionState === STATE.GAME_STARTING) {
+          this.connectionState = STATE.IN_GAME;
+          console.log("✓ Transitioned to IN_GAME state via SSE - game actions now enabled");
+        }
+
         // SSE publishes the game state directly, not wrapped in a 'state' property
         this.emit("full_state", {
           game_state: update,
         });
       },
       fallbackToWebSocket
-    );
-
-    // Optimistically set usingSSEForState to true if in SSE-primary mode
-    // Will be set back to false if SSE fails
-    if (this.ssePrimaryMode) {
-      this.usingSSEForState = true;
-      console.log("✓ SSE-primary mode: expecting state updates via SSE");
-    }
+    )
   }
 
   unsubscribeMercure() {
