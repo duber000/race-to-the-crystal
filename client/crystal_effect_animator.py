@@ -69,6 +69,12 @@ class CrystalEffectAnimator:
             crystal_pos: Position of the crystal (grid coordinates)
             affected_tokens: List of tokens affected (for DAMAGE_BOOST)
         """
+        # Clear all particle lists to prevent stacking from previous animations
+        self.fog_particles.clear()
+        self.ghost_particles.clear()
+        self.lightning_flashes.clear()
+        self.whirlwind_particles.clear()
+
         self.active_animation = effect_type
         self.animation_time = 0.0
         self.crystal_position = crystal_pos
