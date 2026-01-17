@@ -450,6 +450,18 @@ class GameClient {
       case "look_down":
         this.cameraController.lookDown();
         break;
+      case "move_token_forward":
+        this.moveControlledToken('forward');
+        break;
+      case "move_token_backward":
+        this.moveControlledToken('backward');
+        break;
+      case "move_token_left":
+        this.moveControlledToken('left');
+        break;
+      case "move_token_right":
+        this.moveControlledToken('right');
+        break;
       case "toggle_music":
         if (this.renderer) {
           this.renderer.toggleMusic();
@@ -608,6 +620,103 @@ class GameClient {
       return [x, y];
     });
     this.renderer.updateValidMoveIndicators(new Set(movesArray));
+  }
+
+  calculateDestinationFromCameraRotation(currentPos, direction) {
+    // Get camera rotation in degrees
+    // 0° = facing north (-Z), 90° = facing west (-X), 180° = facing south (+Z), 270° = facing east (+X)
+    const rotation = this.cameraController.tokenRotation;
+
+    // Normalize rotation to 0-360
+    const normalizedRotation = ((rotation % 360) + 360) % 360;
+
+    // Determine cardinal direction based on rotation
+    // Quantize to nearest 90 degrees
+    const cardinalIndex = Math.round(normalizedRotation / 90) % 4;
+
+    // Cardinal directions in grid space:
+    // 0: North (-Y), 1: West (-X), 2: South (+Y), 3: East (+X)
+    const cardinals = [
+      [0, -1],  // North: -Y (toward 0,0)
+      [-1, 0],  // West: -X (toward 0,0)
+      [0, 1],   // South: +Y (toward 23,23)
+      [1, 0]    // East: +X (toward 23,23)
+    ];
+
+    let directionIndex = cardinalIndex;
+
+    // Adjust based on movement direction
+    switch (direction) {
+      case 'forward':
+        // Keep current facing direction
+        break;
+      case 'backward':
+        directionIndex = (directionIndex + 2) % 4;
+        break;
+      case 'left':
+        directionIndex = (directionIndex + 1) % 4;
+        break;
+      case 'right':
+        directionIndex = (directionIndex + 3) % 4;
+        break;
+    }
+
+    const [dx, dy] = cardinals[directionIndex];
+    return [currentPos[0] + dx, currentPos[1] + dy];
+  }
+
+  moveControlledToken(direction) {
+    // Only works in first-person mode
+    if (this.cameraController.cameraMode !== 'firstperson') {
+      return;
+    }
+
+    // Must have a controlled token
+    if (!this.controlledTokenId) {
+      this.ui.showActionError("No token selected!");
+      return;
+    }
+
+    // Must be our turn
+    if (!this.gameState || this.gameState.current_turn_player_id !== this.localPlayerId) {
+      this.ui.showActionError("Not your turn!");
+      return;
+    }
+
+    // Must be in movement phase
+    if (this.turnPhase !== TurnPhase.MOVEMENT) {
+      this.ui.showActionError("Can only move during movement phase!");
+      return;
+    }
+
+    const token = this.gameState.tokens[this.controlledTokenId];
+    if (!token || !token.is_alive || !token.is_deployed) {
+      this.ui.showActionError("Invalid token!");
+      return;
+    }
+
+    // Calculate destination based on camera orientation
+    const destination = this.calculateDestinationFromCameraRotation(token.position, direction);
+    const [destX, destY] = destination;
+
+    // Check if destination is on the board
+    if (destX < 0 || destX >= BOARD_WIDTH || destY < 0 || destY >= BOARD_HEIGHT) {
+      this.ui.showActionError("Cannot move off the board!");
+      return;
+    }
+
+    // Check if it's a valid move by calculating valid moves for this token
+    this.updateValidMoves(token);
+    const moveKey = `${destX},${destY}`;
+
+    if (this.validMoves.has(moveKey)) {
+      this.wsClient.moveToken(this.controlledTokenId, destination);
+      this.renderer.playSound("move");
+      this.validMoves = new Set();
+      this.renderer.updateValidMoveIndicators(null);
+    } else {
+      this.ui.showActionError("Invalid move!");
+    }
   }
 
   toggleDeploymentMenu() {
