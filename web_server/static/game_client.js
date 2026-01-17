@@ -658,10 +658,10 @@ class GameClient {
         directionIndex = (directionIndex + 2) % 4;
         break;
       case 'left':
-        directionIndex = (directionIndex + 1) % 4;
+        directionIndex = (directionIndex + 3) % 4;
         break;
       case 'right':
-        directionIndex = (directionIndex + 3) % 4;
+        directionIndex = (directionIndex + 1) % 4;
         break;
     }
 
