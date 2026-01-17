@@ -258,24 +258,68 @@ class InputHandler {
                     }
                     break;
                 case "w":
-                case "arrowup":
                     event.preventDefault();
-                    this.emit('keydown', { key: 'camera_forward' });
+                    if (this.deviceCapabilities && !this.deviceCapabilities.isMobile()) {
+                        this.emit('keydown', { key: 'move_token_forward' });
+                    } else {
+                        this.emit('keydown', { key: 'camera_forward' });
+                    }
                     break;
                 case "s":
-                case "arrowdown":
                     event.preventDefault();
-                    this.emit('keydown', { key: 'camera_backward' });
+                    if (this.deviceCapabilities && !this.deviceCapabilities.isMobile()) {
+                        this.emit('keydown', { key: 'move_token_backward' });
+                    } else {
+                        this.emit('keydown', { key: 'camera_backward' });
+                    }
                     break;
                 case "a":
-                case "arrowleft":
                     event.preventDefault();
-                    this.emit('keydown', { key: 'camera_left' });
+                    if (this.deviceCapabilities && !this.deviceCapabilities.isMobile()) {
+                        this.emit('keydown', { key: 'move_token_left' });
+                    } else {
+                        this.emit('keydown', { key: 'camera_left' });
+                    }
                     break;
                 case "d":
+                    event.preventDefault();
+                    if (this.deviceCapabilities && !this.deviceCapabilities.isMobile()) {
+                        this.emit('keydown', { key: 'move_token_right' });
+                    } else {
+                        this.emit('keydown', { key: 'camera_right' });
+                    }
+                    break;
+                case "arrowup":
+                    event.preventDefault();
+                    if (this.deviceCapabilities && !this.deviceCapabilities.isMobile()) {
+                        this.emit('keydown', { key: 'look_up' });
+                    } else {
+                        this.emit('keydown', { key: 'camera_forward' });
+                    }
+                    break;
+                case "arrowdown":
+                    event.preventDefault();
+                    if (this.deviceCapabilities && !this.deviceCapabilities.isMobile()) {
+                        this.emit('keydown', { key: 'look_down' });
+                    } else {
+                        this.emit('keydown', { key: 'camera_backward' });
+                    }
+                    break;
+                case "arrowleft":
+                    event.preventDefault();
+                    if (this.deviceCapabilities && !this.deviceCapabilities.isMobile()) {
+                        this.emit('keydown', { key: 'rotate_left' });
+                    } else {
+                        this.emit('keydown', { key: 'camera_left' });
+                    }
+                    break;
                 case "arrowright":
                     event.preventDefault();
-                    this.emit('keydown', { key: 'camera_right' });
+                    if (this.deviceCapabilities && !this.deviceCapabilities.isMobile()) {
+                        this.emit('keydown', { key: 'rotate_right' });
+                    } else {
+                        this.emit('keydown', { key: 'camera_right' });
+                    }
                     break;
                 case "+":
                 case "=":
