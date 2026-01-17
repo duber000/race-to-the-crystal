@@ -576,13 +576,19 @@
         }
 
         #mobile-controls .mobile-controls-content {
-            display: none;
             padding: 0 12px 12px 12px;
             border-top: 1px solid #066;
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
         }
 
-        #mobile-controls .mobile-controls-content.expanded {
-            display: block;
+        #mobile-controls .mobile-controls-content.collapsed {
+            max-height: 0;
+            padding: 0;
+            opacity: 0;
+            overflow: hidden;
         }
 
         #mobile-controls h4 {
