@@ -306,6 +306,10 @@ class GameClient {
           // Toggle camera mode
           this.cameraController.toggleCameraMode();
           break;
+        case 'reset_view':
+          // Reset camera to initial overview position
+          this.cameraController.resetView();
+          break;
       }
     });
 

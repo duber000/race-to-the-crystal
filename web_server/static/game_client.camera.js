@@ -294,4 +294,32 @@ class CameraController {
         return activeCamera.fov;
     }
 
+    /**
+     * Reset camera to initial overview position
+     * Useful for mobile users who get lost while panning/zooming
+     */
+    resetView() {
+        const boardCenterX = (this.boardWidth / 2) * this.cellSize;
+        const boardCenterY = (this.boardHeight / 2) * this.cellSize;
+
+        // Switch to overview mode if in first-person
+        if (this.cameraMode === "firstperson") {
+            this.toggleCameraMode();
+        }
+
+        // Reset overview camera to initial position
+        this.camera.alpha = Math.PI / 4;
+        this.camera.beta = Math.PI / 3;
+        this.camera.radius = 500;
+        this.camera.target = new BABYLON.Vector3(boardCenterX, 0, boardCenterY);
+        this.camera.fov = 0.8; // Default FOV
+
+        // Reset first-person camera state
+        this.tokenRotation = 0;
+        this.cameraPitch = -15;
+        this.controlledTokenId = null;
+
+        console.log('[CameraController] View reset to initial position');
+    }
+
 }

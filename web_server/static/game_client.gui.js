@@ -90,8 +90,16 @@ class GUIManager {
             console.log('[GUIManager] Camera toggle button clicked');
             this.emit('action', { type: 'camera_toggle' });
         }, uiScale);
-        cameraBtn.width = `${Math.floor(80 * uiScale)}px`;
+        cameraBtn.width = `${Math.floor(60 * uiScale)}px`;
         this.actionBar.addControl(cameraBtn);
+
+        // Reset View button
+        const resetBtn = this.createActionButton("⌂", "#ff0", () => {
+            console.log('[GUIManager] Reset view button clicked');
+            this.emit('action', { type: 'reset_view' });
+        }, uiScale);
+        resetBtn.width = `${Math.floor(60 * uiScale)}px`;
+        this.actionBar.addControl(resetBtn);
 
         console.log('[GUIManager] Action bar created');
     }

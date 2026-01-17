@@ -24,12 +24,12 @@ class DeviceCapabilities {
      * @returns {string} 'mobile', 'tablet', or 'desktop'
      */
     detectDeviceType() {
-        const ua = navigator.userAgent.toLowerCase();
+        const ua = navigator.userAgent;
 
         if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
             return 'tablet';
         }
-        if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) {
+        if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/i.test(ua)) {
             return 'mobile';
         }
         return 'desktop';
