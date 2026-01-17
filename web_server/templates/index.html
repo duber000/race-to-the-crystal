@@ -53,17 +53,54 @@
             left: 10px;
             background: rgba(0, 0, 0, 0.7);
             border: 2px solid #0ff;
-            padding: 15px;
+            padding: 0;
             font-size: 14px;
             z-index: 100;
             min-width: 250px;
             pointer-events: auto;
         }
 
+        #hud .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            border-bottom: 1px solid #066;
+        }
+
+        #hud .panel-header:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+
         #hud h2 {
-            margin-bottom: 10px;
+            margin: 0;
             color: #0ff;
             text-shadow: 0 0 10px #0ff;
+            flex: 1;
+        }
+
+        #hud .panel-toggle {
+            color: #0aa;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        #hud .panel-content {
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+
+        #hud .panel-content.collapsed {
+            max-height: 0;
+            padding: 0;
+            opacity: 0;
+            overflow: hidden;
         }
 
         #hud .status-line {
@@ -83,15 +120,52 @@
             left: 10px;
             background: rgba(0, 0, 0, 0.7);
             border: 2px solid #0ff;
-            padding: 15px;
+            padding: 0;
             font-size: 12px;
             z-index: 100;
             pointer-events: auto;
         }
 
+        #controls .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            border-bottom: 1px solid #066;
+        }
+
+        #controls .panel-header:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+
         #controls h3 {
-            margin-bottom: 8px;
+            margin: 0;
             color: #0ff;
+            flex: 1;
+        }
+
+        #controls .panel-toggle {
+            color: #0aa;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        #controls .panel-content {
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+
+        #controls .panel-content.collapsed {
+            max-height: 0;
+            padding: 0;
+            opacity: 0;
+            overflow: hidden;
         }
 
         #controls ul {
@@ -563,16 +637,19 @@
                 width: auto;
                 min-width: auto;
                 font-size: 11px;
-                padding: 8px;
+            }
+
+            #hud .panel-header {
+                padding: 8px 12px;
+            }
+
+            #hud .panel-content {
+                padding: 10px;
                 max-height: 150px;
-                overflow-y: auto;
-                overflow-x: hidden;
-                -webkit-overflow-scrolling: touch;
             }
 
             #hud h2 {
                 font-size: 14px;
-                margin-bottom: 5px;
             }
 
             #hud .status-line {
@@ -694,7 +771,14 @@
         @media (max-width: 480px) {
             #hud {
                 font-size: 10px;
-                padding: 5px;
+            }
+
+            #hud .panel-header {
+                padding: 6px 10px;
+            }
+
+            #hud .panel-content {
+                padding: 8px;
             }
 
             #crystal-effects-indicator {
@@ -731,8 +815,11 @@
         /* Landscape mobile */
         @media (max-height: 500px) and (orientation: landscape) {
             #hud {
-                max-height: 80px;
                 font-size: 10px;
+            }
+
+            #hud .panel-content {
+                max-height: 80px;
             }
 
             #crystal-effects-indicator {
@@ -840,44 +927,54 @@
     <canvas id="renderCanvas"></canvas>
 
     <div id="hud">
-        <h2>Race to the Crystal</h2>
-        <div class="status-line">Turn: <span id="turnNumber">0</span></div>
-        <div class="status-line">Phase: <span id="gamePhase">Setup</span></div>
-        <div class="status-line">Turn Phase: <span id="turnPhase">MOVEMENT</span></div>
-        <div class="status-line">Current Player: <span id="currentPlayer">-</span></div>
-        <div id="playersList"></div>
+        <div class="panel-header" onclick="togglePanel('hud')">
+            <h2>Race to the Crystal</h2>
+            <span class="panel-toggle" id="hud-toggle">[-]</span>
+        </div>
+        <div class="panel-content" id="hud-content">
+            <div class="status-line">Turn: <span id="turnNumber">0</span></div>
+            <div class="status-line">Phase: <span id="gamePhase">Setup</span></div>
+            <div class="status-line">Turn Phase: <span id="turnPhase">MOVEMENT</span></div>
+            <div class="status-line">Current Player: <span id="currentPlayer">-</span></div>
+            <div id="playersList"></div>
+        </div>
     </div>
 
     <!-- Crystal Effects Indicator -->
     <div id="crystal-effects-indicator" style="display: none;"></div>
 
     <div id="controls">
-        <h3>Controls</h3>
-        <ul>
-            <li><strong>Left-click:</strong> Select token / Move / Attack</li>
-            <li><strong>Right-click + Drag:</strong> Pan/look around</li>
-            <li><strong>Mouse wheel:</strong> Zoom in/out</li>
-            <li><strong>Space / Enter:</strong> End turn</li>
-            <li><strong>R:</strong> Deploy menu</li>
-            <li><strong>ESC:</strong> Cancel action</li>
-        </ul>
-        <div class="more-controls">
-            <div class="more-controls-header" onclick="toggleMoreControls()">[+] More Controls</div>
-            <div class="more-controls-content" id="more-controls-content">
-                <ul>
-                    <li><strong>WASD / Arrow Keys:</strong> Move camera position</li>
-                    <li><strong>V:</strong> Toggle camera (Overview ↔ First-Person)</li>
-                    <li><strong>TAB:</strong> Cycle through your tokens (3D)</li>
-                    <li><strong>Q / E:</strong> Rotate camera left/right (3D)</li>
-                    <li><strong>+ / -:</strong> Adjust field of view (FOV)</li>
-                    <li><strong>1-4:</strong> Switch player view</li>
-                    <li><strong>M:</strong> Toggle music/sound</li>
-                    <li><strong>Ctrl+Q:</strong> Quit game</li>
-                </ul>
-            </div>
+        <div class="panel-header" onclick="togglePanel('controls')">
+            <h3>Controls</h3>
+            <span class="panel-toggle" id="controls-toggle">[-]</span>
         </div>
-        <div class="gameplay-blurb">
-            Deploy tokens to capture generators. Hold the crystal with enough tokens to win. Tokens with lesser health move faster (2 tiles), robust tokens move slower (1 tile).
+        <div class="panel-content" id="controls-content">
+            <ul>
+                <li><strong>Left-click:</strong> Select token / Move / Attack</li>
+                <li><strong>Right-click + Drag:</strong> Pan/look around</li>
+                <li><strong>Mouse wheel:</strong> Zoom in/out</li>
+                <li><strong>Space / Enter:</strong> End turn</li>
+                <li><strong>R:</strong> Deploy menu</li>
+                <li><strong>ESC:</strong> Cancel action</li>
+            </ul>
+            <div class="more-controls">
+                <div class="more-controls-header" onclick="toggleMoreControls()">[+] More Controls</div>
+                <div class="more-controls-content" id="more-controls-content">
+                    <ul>
+                        <li><strong>WASD / Arrow Keys:</strong> Move camera position</li>
+                        <li><strong>V:</strong> Toggle camera (Overview ↔ First-Person)</li>
+                        <li><strong>TAB:</strong> Cycle through your tokens (3D)</li>
+                        <li><strong>Q / E:</strong> Rotate camera left/right (3D)</li>
+                        <li><strong>+ / -:</strong> Adjust field of view (FOV)</li>
+                        <li><strong>1-4:</strong> Switch player view</li>
+                        <li><strong>M:</strong> Toggle music/sound</li>
+                        <li><strong>Ctrl+Q:</strong> Quit game</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="gameplay-blurb">
+                Deploy tokens to capture generators. Hold the crystal with enough tokens to win. Tokens with lesser health move faster (2 tiles), robust tokens move slower (1 tile).
+            </div>
         </div>
     </div>
 
@@ -958,6 +1055,131 @@
     <script src="/static/game_client.js"></script>
 
     <script>
+        // Panel state management configuration
+        const PANEL_CONFIG = {
+            hud: {
+                contentId: 'hud-content',
+                toggleId: 'hud-toggle',
+                storageKey: 'panelState_hud',
+                mobileDefault: 'collapsed',
+                desktopDefault: 'expanded'
+            },
+            controls: {
+                contentId: 'controls-content',
+                toggleId: 'controls-toggle',
+                storageKey: 'panelState_controls',
+                mobileDefault: 'expanded',
+                desktopDefault: 'expanded'
+            },
+            mobileControls: {
+                contentId: 'mobile-controls-content',
+                toggleId: 'mobile-controls-toggle',
+                storageKey: 'panelState_mobileControls',
+                mobileDefault: 'collapsed',
+                desktopDefault: 'collapsed'
+            }
+        };
+
+        function isMobileDevice() {
+            return window.innerWidth <= 768;
+        }
+
+        function togglePanel(panelId) {
+            const config = PANEL_CONFIG[panelId];
+            if (!config) return;
+
+            const content = document.getElementById(config.contentId);
+            const toggle = document.getElementById(config.toggleId);
+
+            if (!content || !toggle) return;
+
+            const isCollapsed = content.classList.contains('collapsed');
+            const newState = isCollapsed ? 'expanded' : 'collapsed';
+
+            if (isCollapsed) {
+                content.classList.remove('collapsed');
+                toggle.textContent = '[-]';
+            } else {
+                content.classList.add('collapsed');
+                toggle.textContent = '[+]';
+            }
+
+            savePanelState(config.storageKey, newState);
+        }
+
+        function savePanelState(storageKey, state) {
+            try {
+                localStorage.setItem(storageKey, state);
+            } catch (e) {
+                console.warn('Failed to save panel state:', e);
+            }
+        }
+
+        function loadPanelState(config) {
+            try {
+                const saved = localStorage.getItem(config.storageKey);
+                if (saved) return saved;
+            } catch (e) {
+                console.warn('Failed to load panel state:', e);
+            }
+
+            return isMobileDevice() ? config.mobileDefault : config.desktopDefault;
+        }
+
+        function applyPanelState(panelId, state) {
+            const config = PANEL_CONFIG[panelId];
+            if (!config) return;
+
+            const content = document.getElementById(config.contentId);
+            const toggle = document.getElementById(config.toggleId);
+
+            if (!content || !toggle) return;
+
+            if (state === 'collapsed') {
+                content.classList.add('collapsed');
+                toggle.textContent = '[+]';
+            } else {
+                content.classList.remove('collapsed');
+                toggle.textContent = '[-]';
+            }
+        }
+
+        function initCollapsiblePanels() {
+            for (const panelId in PANEL_CONFIG) {
+                const config = PANEL_CONFIG[panelId];
+                const state = loadPanelState(config);
+                applyPanelState(panelId, state);
+            }
+        }
+
+        function handleResize() {
+            // Re-apply defaults on resize if no saved state exists
+            for (const panelId in PANEL_CONFIG) {
+                const config = PANEL_CONFIG[panelId];
+                try {
+                    const saved = localStorage.getItem(config.storageKey);
+                    if (!saved) {
+                        const defaultState = isMobileDevice() ? config.mobileDefault : config.desktopDefault;
+                        applyPanelState(panelId, defaultState);
+                    }
+                } catch (e) {
+                    console.warn('Failed to handle resize:', e);
+                }
+            }
+        }
+
+        // Initialize panels when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            initCollapsiblePanels();
+
+            // Re-apply on resize (debounced)
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(handleResize, 250);
+            });
+        });
+
         function toggleMoreControls() {
             var content = document.getElementById('more-controls-content');
             var header = document.querySelector('.more-controls-header');
@@ -970,14 +1192,7 @@
         }
 
         function toggleMobileControls() {
-            var content = document.getElementById('mobile-controls-content');
-            var toggle = document.getElementById('mobile-controls-toggle');
-            content.classList.toggle('expanded');
-            if (content.classList.contains('expanded')) {
-                toggle.textContent = '[-]';
-            } else {
-                toggle.textContent = '[+]';
-            }
+            togglePanel('mobileControls');
         }
     </script>
 </body>
