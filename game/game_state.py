@@ -446,7 +446,7 @@ class GameState:
         # Clear mystery event from previous action
         self.last_triggered_mystery_event = None
 
-        # Update crystal effects (clear expired effects)
+        # Update crystal effects (decrement durations and remove expired)
         self.crystal_effects.end_turn_update()
 
         # Get list of active players
