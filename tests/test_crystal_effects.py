@@ -255,15 +255,21 @@ class TestCrystalEffectsManager:
         assert new_duration == initial_duration - CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR
 
     def test_end_turn_update(self):
-        """Test end turn update clears expired effects."""
+        """Test end turn update decrements and clears expired effects."""
         manager = CrystalEffectsManager()
         manager.apply_effect(
-            "player_0", CrystalEffect.FOG_OF_WAR, turn_number=1, duration=1
+            "player_0", CrystalEffect.FOG_OF_WAR, turn_number=1, duration=2
         )
 
         effects = manager.get_player_effects("player_0")
-        effects.reduce_all_durations(1)  # Expire it
+        assert effects.get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining == 2
 
+        # First end_turn_update should decrement
+        manager.end_turn_update()
+        assert effects.has_effect(CrystalEffect.FOG_OF_WAR)
+        assert effects.get_effect(CrystalEffect.FOG_OF_WAR).turns_remaining == 1
+
+        # Second end_turn_update should expire it
         manager.end_turn_update()
         assert not effects.has_effect(CrystalEffect.FOG_OF_WAR)
 

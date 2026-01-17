@@ -221,7 +221,7 @@ class CrystalEffectsManager:
     def end_turn_update(self) -> None:
         """Update all effects at end of turn (natural decay)."""
         for effects in self.player_effects.values():
-            effects.clear_expired_effects()
+            effects.reduce_all_durations(1)
 
     def generate_phantom_tokens(
         self,
