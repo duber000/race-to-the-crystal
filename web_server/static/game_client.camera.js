@@ -170,6 +170,20 @@ class CameraController {
         return true;
     }
 
+    lookUp() {
+        if (this.cameraMode !== "firstperson") return false;
+        this.cameraPitch -= 15;
+        this.cameraPitch = Math.max(-89, Math.min(89, this.cameraPitch));
+        return true;
+    }
+
+    lookDown() {
+        if (this.cameraMode !== "firstperson") return false;
+        this.cameraPitch += 15;
+        this.cameraPitch = Math.max(-89, Math.min(89, this.cameraPitch));
+        return true;
+    }
+
     activateMouseLook(x, y) {
         if (this.cameraMode !== "firstperson") {
             return;

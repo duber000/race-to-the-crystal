@@ -444,6 +444,12 @@ class GameClient {
       case "rotate_right":
         this.cameraController.rotateCameraRight();
         break;
+      case "look_up":
+        this.cameraController.lookUp();
+        break;
+      case "look_down":
+        this.cameraController.lookDown();
+        break;
       case "toggle_music":
         if (this.renderer) {
           this.renderer.toggleMusic();
