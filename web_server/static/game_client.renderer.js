@@ -59,7 +59,9 @@ class Renderer3D {
 
         // Background music and generator hums
         this.backgroundMusic = null;
-        this.generatorHums = [];
+        this.suspenseMusic = null;
+        this.generatorHums = []; // Now stores objects: { source, gain, panner, frequency }
+        this.crystalHum = null;  // Stores: { source, gain, panner }
         this.musicVolume = 0.3;
         this.humVolume = 0.2;
         this.musicEnabled = true;
@@ -1258,6 +1260,7 @@ class Renderer3D {
             if (this.scene) {
                 this.animationTime += 0.016;
                 this.updateAnimations();
+                this.updateAudio(); // Update 3D spatial audio interactions
                 if (this._cameraUpdateCallback) {
                     this._cameraUpdateCallback();
                 }
@@ -1523,16 +1526,12 @@ class Renderer3D {
             if (gen.is_disabled && !genMeshData.isDisabled) {
                 this.triggerExplosion(gen.position, ORANGE_GLOW);
                 this.playSound("capture");
+                this.updateGeneratorHumState(gen.position, false);
+            }
 
-                const genIndex = gameState.generators.indexOf(gen);
-                if (genIndex >= 0 && genIndex < this.generatorHums.length) {
-                    const hum = this.generatorHums[genIndex];
-                    if (hum && this.musicEnabled) {
-                        hum.pause();
-                        hum.currentTime = 0;
-                        console.log(`Generator ${genIndex} disabled - hum stopped`);
-                    }
-                }
+            // Ensure hum is playing if enabled
+            if (!gen.is_disabled && genMeshData.isDisabled) {
+                this.updateGeneratorHumState(gen.position, true);
             }
 
             if (dominantPlayer && playerCounts[dominantPlayer] >= 2 && !gen.is_disabled) {
@@ -1730,102 +1729,315 @@ class Renderer3D {
     }
 
     // ==========================================================================
-    // Sound Effects
+    // Sound Effects & Music
     // ==========================================================================
 
     loadSounds() {
         this.audioContext = null;
         this.soundsEnabled = true;
 
-        // Load background music
-        this.loadBackgroundMusic();
+        // Initialize Audio Context immediately to be ready
+        // (Browser needs user gesture to resume, but we can creating it now)
+        this.getAudioContext();
 
-        // Load 4 generator hum tracks
-        this.loadGeneratorHums();
+        // Music
+        this.loadBackgroundMusic();
     }
 
     loadBackgroundMusic() {
+        // 1. Low Key Techno (General Background)
         try {
             this.backgroundMusic = new Audio('/static/assets/music/techno.mp3');
             this.backgroundMusic.loop = true;
             this.backgroundMusic.volume = this.musicVolume;
-
-            // Try to play, but handle autoplay restrictions
-            const playPromise = this.backgroundMusic.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    console.log("Background music playing");
-                }).catch(e => {
-                    console.log("Background music autoplay blocked, will start on user interaction");
-                    // Add click listener to start music on first interaction
-                    document.addEventListener('click', () => {
-                        if (this.backgroundMusic && this.musicEnabled) {
-                            this.backgroundMusic.play().catch(() => { });
-                        }
-                    }, { once: true });
-                });
-            }
         } catch (e) {
-            console.error("Error loading background music:", e);
+            console.warn("Could not load techno music");
         }
+
+        // 2. Suspense Music (Near Crystal)
+        try {
+            this.suspenseMusic = new Audio('/static/assets/music/suspense.mp3');
+            this.suspenseMusic.loop = true;
+            this.suspenseMusic.volume = 0; // Starts silent
+        } catch (e) {
+            console.warn("Could not load suspense music");
+        }
+
+        // Setup User Interaction Listener to start audio
+        const startAudio = () => {
+            if (!this.musicEnabled) return;
+
+            const ctx = this.getAudioContext();
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+
+            if (this.backgroundMusic && this.backgroundMusic.paused) {
+                this.backgroundMusic.play().catch(e => console.log("Bg play failed:", e));
+            }
+            if (this.suspenseMusic && this.suspenseMusic.paused) {
+                this.suspenseMusic.play().catch(e => console.log("Suspense play failed:", e));
+            }
+
+            this.initSpatialSounds();
+        };
+
+        window.addEventListener('click', startAudio, { once: true });
+        window.addEventListener('keydown', startAudio, { once: true });
     }
 
-    loadGeneratorHums() {
+    initSpatialSounds() {
+        if (this.generatorHums.length > 0) return; // Already initialized
+
+        const ctx = this.getAudioContext();
+        if (!ctx) return;
+
+        // --- Generator Hums (Procedural Laser Hum) ---
+        // We'll create 4 distinct hums
+        const baseFreqs = [50, 60, 55, 65]; // Slightly different low drones
+
         for (let i = 0; i < 4; i++) {
-            try {
-                const hum = new Audio(`/static/assets/music/generator_${i}_hum.wav`);
-                hum.loop = true;
-                hum.volume = this.humVolume;
+            // Create Oscillator for the hum
+            const osc = ctx.createOscillator();
+            osc.type = 'sawtooth';
+            osc.frequency.value = baseFreqs[i];
 
-                // Try to play immediately
-                const playPromise = hum.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        console.log(`Generator ${i} hum playing`);
-                    }).catch(e => {
-                        console.log(`Generator ${i} hum autoplay blocked`);
-                        // Will be started by user interaction trigger
-                        document.addEventListener('click', () => {
-                            if (this.musicEnabled) {
-                                hum.play().catch(() => { });
-                            }
-                        }, { once: true });
-                    });
-                }
+            // Lowpass filter to make it a "hum" rather than a "buzz"
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 120;
+            filter.Q.value = 5;
 
-                this.generatorHums.push(hum);
-            } catch (e) {
-                console.error(`Error loading generator ${i} hum:`, e);
-                this.generatorHums.push(null);
-            }
+            // Amplitude Modulation (pulsing laser effect)
+            const ampGain = ctx.createGain();
+            const lfo = ctx.createOscillator();
+            lfo.frequency.value = 8 + i; // Different pulse rates
+            const lfoGain = ctx.createGain();
+            lfoGain.gain.value = 0.3;
+
+            // Connect LFO
+            lfo.connect(lfoGain);
+            lfoGain.connect(ampGain.gain);
+            // Set base gain
+            ampGain.gain.value = 0.5;
+
+            // Spatial Panner
+            const panner = ctx.createPanner();
+            panner.panningModel = 'HRTF';
+            panner.distanceModel = 'exponential';
+            panner.refDistance = 100;
+            panner.maxDistance = 1000;
+            panner.rolloffFactor = 1;
+
+            // Final Gain for volume control
+            const masterGain = ctx.createGain();
+            masterGain.gain.value = 0; // Start silent, volume set by loop
+
+            // Graph: Osc -> Filter -> AmpGain -> Panner -> MasterGain -> Destination
+            osc.connect(filter);
+            filter.connect(ampGain);
+            ampGain.connect(panner);
+            panner.connect(masterGain);
+            masterGain.connect(ctx.destination);
+
+            osc.start();
+            lfo.start();
+
+            this.generatorHums.push({
+                osc, lfo, panner, masterGain,
+                active: false,
+                baseFreq: baseFreqs[i]
+            });
         }
+
+        // --- Crystal Ambience (High Crystalline Tinkle) ---
+        // Using a couple of high sine waves with varying amplitude
+        const crystalNode = ctx.createGain();
+        const crystalPanner = ctx.createPanner();
+        crystalPanner.panningModel = 'HRTF';
+        crystalPanner.distanceModel = 'linear';
+        crystalPanner.refDistance = 50;
+        crystalPanner.maxDistance = 500;
+        crystalPanner.rolloffFactor = 1;
+
+        // Use a ScriptProcessor or multiple oscillators for "sparkle"
+        // Simplified: 2 beating sine waves + high noise
+        const cOsc1 = ctx.createOscillator();
+        cOsc1.type = 'sine';
+        cOsc1.frequency.value = 2000;
+
+        const cOsc2 = ctx.createOscillator();
+        cOsc2.type = 'sine';
+        cOsc2.frequency.value = 2005; // 5Hz beat
+
+        const cGain = ctx.createGain();
+        cGain.gain.value = 0; // Controlled by updateAudio
+
+        cOsc1.connect(cGain);
+        cOsc2.connect(cGain);
+        cGain.connect(crystalPanner);
+        crystalPanner.connect(ctx.destination);
+
+        cOsc1.start();
+        cOsc2.start();
+
+        this.crystalHum = {
+            oscillators: [cOsc1, cOsc2],
+            panner: crystalPanner,
+            gain: cGain
+        };
+    }
+
+    updateGeneratorHumState(gridPos, isEnabled) {
+        // Map grid position to a predictable generator index (0-3)
+        // Generators are usually at corners or specific spots.
+        // We simply map based on available slots in generatorHums
+        // For accurate 3D sound, we update the position in the render loop (updateAudio)
+        // so we don't need to do much here other than maybe logic flag.
+        // But WAIT, our generatorHums array isn't tied to specific generators yet.
+        // We will tie them in updateAudio().
     }
 
     toggleMusic() {
         this.musicEnabled = !this.musicEnabled;
 
+        const ctx = this.getAudioContext();
+
         if (this.musicEnabled) {
-            // Resume music
-            if (this.backgroundMusic) {
-                this.backgroundMusic.play().catch(e => console.log("Music play failed:", e));
-            }
-            // Resume active generator hums
-            this.generatorHums.forEach((hum) => {
-                if (hum && hum.paused) {
-                    hum.play().catch(() => { });
-                }
-            });
+            if (ctx.state === 'suspended') ctx.resume();
+            if (this.backgroundMusic) this.backgroundMusic.play().catch(() => { });
+            if (this.suspenseMusic) this.suspenseMusic.play().catch(() => { });
+
+            // Unmute procedural
+            this.generatorHums.forEach(h => h.masterGain.gain.value = this.humVolume);
         } else {
-            // Pause all audio
-            if (this.backgroundMusic) {
-                this.backgroundMusic.pause();
-            }
-            this.generatorHums.forEach(hum => {
-                if (hum) hum.pause();
-            });
+            if (this.backgroundMusic) this.backgroundMusic.pause();
+            if (this.suspenseMusic) this.suspenseMusic.pause();
+
+            // Mute procedural
+            this.generatorHums.forEach(h => h.masterGain.gain.value = 0);
         }
 
         console.log(this.musicEnabled ? "Music enabled" : "Music disabled");
+    }
+
+    updateAudio() {
+        if (!this.soundsEnabled || !this.musicEnabled) return;
+
+        const ctx = this.getAudioContext();
+        if (!ctx || ctx.state !== 'running') return;
+
+        if (!this.scene || !this.scene.activeCamera) return;
+
+        const cameraPos = this.scene.activeCamera.globalPosition;
+        const listenr = ctx.listener;
+
+        // Update Listener
+        if (listenr.positionX) {
+            listenr.positionX.value = cameraPos.x;
+            listenr.positionY.value = cameraPos.y;
+            listenr.positionZ.value = cameraPos.z;
+        } else {
+            listenr.setPosition(cameraPos.x, cameraPos.y, cameraPos.z);
+        }
+
+        // --- 1. Background Music Mixing (Techno vs Suspense) ---
+        if (this.crystalMesh && this.crystalMesh.mesh) {
+            const crystalWorldPos = this.crystalMesh.mesh.position;
+            const dist = BABYLON.Vector3.Distance(cameraPos, crystalWorldPos);
+
+            // Distances: <300 = Suspense, >800 = Techno, In-between = Crossfade
+            const suspenseThresh = 400;
+            const technoThresh = 900;
+
+            let mix = (dist - suspenseThresh) / (technoThresh - suspenseThresh);
+            mix = Math.max(0, Math.min(1, mix)); // 0 = Full Suspense, 1 = Full Techno
+
+            if (this.backgroundMusic) {
+                this.backgroundMusic.volume = mix * this.musicVolume;
+            }
+            if (this.suspenseMusic) {
+                this.suspenseMusic.volume = (1.0 - mix) * this.musicVolume * 1.2; // boost suspense slighty
+            }
+
+            // --- 2. Crystal Ambient Sound ---
+            if (this.crystalHum) {
+                // Update position
+                const p = this.crystalHum.panner;
+                if (p.positionX) {
+                    p.positionX.value = crystalWorldPos.x;
+                    p.positionY.value = crystalWorldPos.y;
+                    p.positionZ.value = crystalWorldPos.z;
+                } else {
+                    p.setPosition(crystalWorldPos.x, crystalWorldPos.y, crystalWorldPos.z);
+                }
+
+                // Volume based on distance (closer = louder, but capped)
+                // Linear dropoff is handled by Panner, but we ensure it's on
+                this.crystalHum.gain.gain.value = this.humVolume * 0.8;
+
+                // Add some glitter/sparkle probability
+                if (Math.random() < 0.05) {
+                    this.playCrystalSparkle(ctx, crystalWorldPos);
+                }
+            }
+        }
+
+        // --- 3. Generator Hums ---
+        // We match generator meshes to our pool of 4 hums
+        let humIdx = 0;
+        this.generatorMeshes.forEach((genData, key) => {
+            if (humIdx >= this.generatorHums.length) return;
+
+            const hum = this.generatorHums[humIdx];
+
+            if (!genData.isDisabled) {
+                // Update position
+                const pos = genData.mesh.position;
+                if (hum.panner.positionX) {
+                    hum.panner.positionX.value = pos.x;
+                    hum.panner.positionY.value = pos.y;
+                    hum.panner.positionZ.value = pos.z;
+                } else {
+                    hum.panner.setPosition(pos.x, pos.y, pos.z);
+                }
+
+                // Ensure volume is up
+                hum.masterGain.gain.value = this.humVolume;
+            } else {
+                // Silenced
+                hum.masterGain.gain.value = 0;
+            }
+            humIdx++;
+        });
+
+        // Silence unused hums
+        for (let j = humIdx; j < this.generatorHums.length; j++) {
+            this.generatorHums[j].masterGain.gain.value = 0;
+        }
+    }
+
+    playCrystalSparkle(ctx, pos) {
+        // Random high ping
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const panner = ctx.createPanner();
+
+        panner.panningModel = 'HRTF';
+        panner.setPosition(pos.x, pos.y, pos.z);
+
+        osc.type = 'sine';
+        osc.frequency.value = 2000 + Math.random() * 4000;
+
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+        osc.connect(gain);
+        gain.connect(panner);
+        panner.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
     }
 
     getAudioContext() {
@@ -2215,12 +2427,21 @@ class Renderer3D {
             this.backgroundMusic = null;
         }
 
+        if (this.suspenseMusic) {
+            this.suspenseMusic.pause();
+            this.suspenseMusic = null;
+        }
+
         this.generatorHums.forEach(hum => {
-            if (hum) {
-                hum.pause();
-            }
+            if (hum.osc) { hum.osc.stop(); hum.osc.disconnect(); }
+            if (hum.lfo) { hum.lfo.stop(); hum.lfo.disconnect(); }
         });
         this.generatorHums = [];
+
+        if (this.crystalHum) {
+            this.crystalHum.oscillators.forEach(o => { o.stop(); o.disconnect(); });
+            this.crystalHum = null;
+        }
 
         // Cleanup 3D resources
         this.tokens3D.forEach((tokenData) => {

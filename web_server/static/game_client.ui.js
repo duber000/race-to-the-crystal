@@ -451,7 +451,7 @@ class UIManager {
     updateHUD(gameState, localPlayerId) {
         document.getElementById("turnNumber").textContent = gameState.turn_number || 0;
         document.getElementById("gamePhase").textContent = gameState.phase || "SETUP";
-        
+
         // Display turn phase (MOVEMENT vs ACTION)
         const turnPhaseMap = {
             1: "MOVEMENT",
@@ -582,7 +582,7 @@ class UIManager {
         menu.style.backgroundColor = "#000080";
         menu.style.border = "2px solid #00FFFF";
         menu.style.padding = "20px";
-        menu.style.zIndex = "1000";
+        menu.style.zIndex = "1100";
         menu.style.fontFamily = "monospace";
         menu.style.color = "#00FFFF";
         menu.style.textAlign = "center";

@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <!-- Enhanced viewport for mobile support -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
     <!-- PWA and mobile meta tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -43,7 +45,8 @@
         #renderCanvas {
             width: 100%;
             height: 100vh;
-            display: none;  /* Hidden until game starts */
+            display: none;
+            /* Hidden until game starts */
             outline: none;
         }
 
@@ -286,10 +289,13 @@
         }
 
         @keyframes pulse-fog {
-            0%, 100% {
+
+            0%,
+            100% {
                 box-shadow: 0 0 15px rgba(170, 170, 170, 0.5);
                 border-color: #aaa;
             }
+
             50% {
                 box-shadow: 0 0 25px rgba(170, 170, 170, 0.8);
                 border-color: #ccc;
@@ -297,10 +303,13 @@
         }
 
         @keyframes pulse-phantom {
-            0%, 100% {
+
+            0%,
+            100% {
                 box-shadow: 0 0 15px rgba(170, 68, 255, 0.5);
                 border-color: #aa44ff;
             }
+
             50% {
                 box-shadow: 0 0 25px rgba(170, 68, 255, 0.8);
                 border-color: #cc66ff;
@@ -308,10 +317,13 @@
         }
 
         @keyframes pulse-damage {
-            0%, 100% {
+
+            0%,
+            100% {
                 box-shadow: 0 0 15px rgba(255, 136, 68, 0.5);
                 border-color: #ff8844;
             }
+
             50% {
                 box-shadow: 0 0 25px rgba(255, 136, 68, 0.8);
                 border-color: #ffaa66;
@@ -319,10 +331,13 @@
         }
 
         @keyframes pulse-speed {
-            0%, 100% {
+
+            0%,
+            100% {
                 box-shadow: 0 0 15px rgba(68, 170, 255, 0.5);
                 border-color: #44aaff;
             }
+
             50% {
                 box-shadow: 0 0 25px rgba(68, 170, 255, 0.8);
                 border-color: #66ccff;
@@ -330,7 +345,9 @@
         }
 
         /* Lobby Screens - Tron Aesthetic */
-        #connection-screen, #lobby-browser-screen, #waiting-room-screen {
+        #connection-screen,
+        #lobby-browser-screen,
+        #waiting-room-screen {
             position: fixed;
             top: 0;
             left: 50%;
@@ -351,7 +368,9 @@
             margin: 20px 0;
         }
 
-        #connection-screen h2, #lobby-browser-screen h2, #waiting-room-screen h2 {
+        #connection-screen h2,
+        #lobby-browser-screen h2,
+        #waiting-room-screen h2 {
             text-align: center;
             font-size: 24px;
             margin-bottom: 25px;
@@ -359,7 +378,8 @@
             letter-spacing: 2px;
         }
 
-        #connection-screen input, #lobby-browser-screen input {
+        #connection-screen input,
+        #lobby-browser-screen input {
             width: 100%;
             background: #000;
             border: 2px solid #0ff;
@@ -375,7 +395,9 @@
             color: #066;
         }
 
-        #connection-screen button, #lobby-browser-screen button, #waiting-room-screen button {
+        #connection-screen button,
+        #lobby-browser-screen button,
+        #waiting-room-screen button {
             background: #000;
             border: 2px solid #0ff;
             color: #0ff;
@@ -388,13 +410,16 @@
             text-transform: uppercase;
         }
 
-        #connection-screen button:hover, #lobby-browser-screen button:hover, #waiting-room-screen button:hover {
+        #connection-screen button:hover,
+        #lobby-browser-screen button:hover,
+        #waiting-room-screen button:hover {
             background: #0ff;
             color: #000;
             box-shadow: 0 0 20px #0ff;
         }
 
-        #connection-error, #lobby-error {
+        #connection-error,
+        #lobby-error {
             color: #f00;
             margin-top: 10px;
             font-size: 12px;
@@ -530,7 +555,8 @@
         #mobile-controls {
             display: none;
             position: absolute;
-            bottom: 120px; /* Above action bar */
+            bottom: 120px;
+            /* Above action bar */
             left: 10px;
             background: rgba(0, 0, 0, 0.9);
             border: 2px solid #0ff;
@@ -635,6 +661,7 @@
 
         /* Mobile devices (phones) */
         @media (max-width: 768px) {
+
             /* Compact HUD for mobile */
             #hud {
                 top: 5px;
@@ -696,7 +723,8 @@
             /* Crystal effects indicator - adjust position */
             #crystal-effects-indicator {
                 top: auto;
-                bottom: 120px; /* Above action bar */
+                bottom: 120px;
+                /* Above action bar */
                 right: 5px;
                 left: 5px;
                 display: flex;
@@ -721,27 +749,36 @@
             }
 
             /* Lobby screens - full width on mobile */
-            #connection-screen, #lobby-browser-screen, #waiting-room-screen {
+            #connection-screen,
+            #lobby-browser-screen,
+            #waiting-room-screen {
                 width: 95%;
                 min-width: auto;
                 max-width: 500px;
                 padding: 20px;
             }
 
-            #connection-screen h2, #lobby-browser-screen h2, #waiting-room-screen h2 {
+            #connection-screen h2,
+            #lobby-browser-screen h2,
+            #waiting-room-screen h2 {
                 font-size: 18px;
                 margin-bottom: 15px;
             }
 
-            #connection-screen button, #lobby-browser-screen button, #waiting-room-screen button {
+            #connection-screen button,
+            #lobby-browser-screen button,
+            #waiting-room-screen button {
                 padding: 10px 16px;
                 font-size: 12px;
             }
 
             /* Touch-friendly input fields */
-            #connection-screen input, #lobby-browser-screen input {
-                padding: 14px; /* Larger touch target */
-                font-size: 16px; /* Prevents iOS zoom */
+            #connection-screen input,
+            #lobby-browser-screen input {
+                padding: 14px;
+                /* Larger touch target */
+                font-size: 16px;
+                /* Prevents iOS zoom */
             }
 
             /* Game list scrolling */
@@ -796,7 +833,9 @@
                 padding: 4px 8px;
             }
 
-            #connection-screen, #lobby-browser-screen, #waiting-room-screen {
+            #connection-screen,
+            #lobby-browser-screen,
+            #waiting-room-screen {
                 padding: 15px;
             }
 
@@ -846,11 +885,13 @@
 
         /* Touch device optimizations (regardless of screen size) */
         @media (hover: none) and (pointer: coarse) {
+
             /* Larger touch targets */
             #connection-screen button,
             #lobby-browser-screen button,
             #waiting-room-screen button {
-                min-height: 44px; /* Apple HIG recommendation */
+                min-height: 44px;
+                /* Apple HIG recommendation */
                 min-width: 44px;
             }
 
@@ -862,13 +903,116 @@
             }
 
             /* Allow text selection in inputs */
-            input, textarea {
+            input,
+            textarea {
                 -webkit-user-select: text;
                 user-select: text;
             }
         }
+
+        /* Mobile Action Bar */
+        #mobile-action-bar {
+            display: none;
+            /* Hidden by default, shown on mobile via media query */
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.95);
+            border-top: 2px solid #0ff;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 5px;
+            box-shadow: 0 -5px 20px rgba(0, 255, 255, 0.2);
+            padding-bottom: env(safe-area-inset-bottom);
+            /* iPhone X+ support */
+        }
+
+        /* Show only on mobile/small screens */
+        @media (min-width: 769px) {
+            #mobile-action-bar {
+                display: none !important;
+            }
+        }
+
+        /* Show on mobile */
+        @media (max-width: 768px) {
+            #mobile-action-bar {
+                display: flex !important;
+            }
+
+            /* Adjust other elements to not be covered by the bar */
+            #hud {
+                bottom: 70px;
+                /* Push up if needed */
+            }
+
+            #mobile-controls {
+                bottom: 70px !important;
+            }
+
+            #crystal-effects-indicator {
+                bottom: 75px !important;
+            }
+        }
+
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: #0aa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+            flex: 1;
+            height: 100%;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .action-btn:active {
+            background: rgba(0, 255, 255, 0.1);
+            color: #fff;
+            transform: scale(0.95);
+        }
+
+        .action-btn.active {
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+        }
+
+        .btn-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+            display: block;
+        }
+
+        .btn-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Special style for End Turn */
+        .action-btn.main-action {
+            color: #0f0;
+            background: rgba(0, 255, 0, 0.05);
+            border-left: 1px solid #033;
+            border-right: 1px solid #033;
+        }
+
+        .action-btn.main-action:active {
+            background: rgba(0, 255, 0, 0.2);
+        }
     </style>
 </head>
+
 <body>
     <!-- Connection Screen -->
     <div id="connection-screen">
@@ -979,7 +1123,8 @@
                 </div>
             </div>
             <div class="gameplay-blurb">
-                Deploy tokens to capture generators. Hold the crystal with enough tokens to win. Tokens with lesser health move faster (2 tiles), robust tokens move slower (1 tile).
+                Deploy tokens to capture generators. Hold the crystal with enough tokens to win. Tokens with lesser
+                health move faster (2 tiles), robust tokens move slower (1 tile).
             </div>
         </div>
     </div>
@@ -998,23 +1143,39 @@
                 <li><strong>Pinch:</strong> Zoom</li>
                 <li><strong>Two-finger drag:</strong> Pan camera</li>
             </ul>
-            <div class="action-bar-hint">
-                <strong>Action Bar:</strong>
-                <ul>
-                    <li><span class="btn-hint">Deploy</span> Place tokens</li>
-                    <li><span class="btn-hint">End Turn</span> Finish turn</li>
-                    <li><span class="btn-hint">📷</span> Camera view</li>
-                    <li><span class="btn-hint">⌂</span> Reset view</li>
-                </ul>
-            </div>
         </div>
+    </div>
+
+    <!-- Mobile Action Bar (Fixed Bottom) -->
+    <div id="mobile-action-bar">
+        <button id="mobile-btn-deploy" class="action-btn" ontouchstart="handleMobileAction('deploy', event)">
+            <span class="btn-icon">⚡</span>
+            <span class="btn-label">Deploy</span>
+        </button>
+        <button id="mobile-btn-camera" class="action-btn" ontouchstart="handleMobileAction('camera', event)">
+            <span class="btn-icon">📷</span>
+            <span class="btn-label">View</span>
+        </button>
+        <button id="mobile-btn-end-turn" class="action-btn main-action"
+            ontouchstart="handleMobileAction('end_turn', event)">
+            <span class="btn-icon">Done</span>
+            <span class="btn-label">End Turn</span>
+        </button>
+        <button id="mobile-btn-reset" class="action-btn" ontouchstart="handleMobileAction('reset', event)">
+            <span class="btn-icon">⌂</span>
+            <span class="btn-label">Reset</span>
+        </button>
+        <button id="mobile-btn-menu" class="action-btn" ontouchstart="handleMobileAction('menu', event)">
+            <span class="btn-icon">≡</span>
+            <span class="btn-label">Menu</span>
+        </button>
     </div>
 
     <div id="connectionStatus" class="connection-status">Connected</div>
 
     <!-- Auto-populate server host with current hostname -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const serverHostInput = document.getElementById('server-host-input');
             if (serverHostInput && !serverHostInput.value) {
                 serverHostInput.value = window.location.hostname;
@@ -1175,12 +1336,12 @@
         }
 
         // Initialize panels when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             initCollapsiblePanels();
 
             // Re-apply on resize (debounced)
             let resizeTimer;
-            window.addEventListener('resize', function() {
+            window.addEventListener('resize', function () {
                 clearTimeout(resizeTimer);
                 resizeTimer = setTimeout(handleResize, 250);
             });
@@ -1200,6 +1361,65 @@
         function toggleMobileControls() {
             togglePanel('mobileControls');
         }
+
+        function handleMobileAction(action, event) {
+            if (event) {
+                event.preventDefault(); // Prevent default touch behavior (scrolling/zoom)
+                event.stopPropagation();
+            }
+
+            // Visual feedback
+            const btn = event.currentTarget;
+            if (btn) {
+                btn.classList.add('active');
+                setTimeout(() => btn.classList.remove('active'), 150);
+            }
+
+            // Haptic feedback
+            if (navigator.vibrate) {
+                try {
+                    navigator.vibrate(50);
+                } catch (e) { }
+            }
+
+            if (!window.gameClient) return;
+
+            console.log('[MobileAction]', action);
+
+            try {
+                switch (action) {
+                    case 'deploy':
+                        // Use the DOM-based deployment menu
+                        if (window.gameClient.toggleDeploymentMenu) {
+                            window.gameClient.toggleDeploymentMenu();
+                        }
+                        break;
+                    case 'camera':
+                        // Reuse the key handler for consistency
+                        if (window.gameClient.handleKeyDown) {
+                            window.gameClient.handleKeyDown({ key: 'camera_toggle' });
+                        }
+                        break;
+                    case 'end_turn':
+                        if (window.gameClient.handleKeyDown) {
+                            window.gameClient.handleKeyDown({ key: 'end_turn' });
+                        }
+                        break;
+                    case 'reset':
+                        if (window.gameClient.cameraController) {
+                            window.gameClient.cameraController.resetView();
+                        }
+                        break;
+                    case 'menu':
+                        // Toggle the main menu/HUD
+                        togglePanel('hud');
+                        break;
+                }
+            } catch (e) {
+                console.error('Error handling mobile action:', e);
+            }
+        }
     </script>
 </body>
+
 </html>

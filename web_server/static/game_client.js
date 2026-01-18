@@ -244,13 +244,14 @@ class GameClient {
     );
 
     // Initialize Babylon.js GUI manager (for mobile)
-    this.guiManager = new GUIManager(this.renderer.scene, this.deviceCapabilities);
-    this.guiManager.initialize();
+    // DISABLED: Using HTML/DOM based mobile controls in index.html instead
+    // this.guiManager = new GUIManager(this.renderer.scene, this.deviceCapabilities);
+    // this.guiManager.initialize();
 
     // Set up GUI event handlers if mobile
-    if (this.deviceCapabilities.isMobile()) {
-      this.setupGUIHandlers();
-    }
+    // if (this.deviceCapabilities.isMobile()) {
+    //   this.setupGUIHandlers();
+    // }
 
     this.renderer.setCameraUpdateCallback(() => {
       if (
