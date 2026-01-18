@@ -63,6 +63,9 @@ class Renderer3D {
         this.musicVolume = 0.3;
         this.humVolume = 0.2;
         this.musicEnabled = true;
+
+        // Cleanup callbacks for observers and orphaned nodes
+        this.cleanupCallbacks = [];
     }
 
     // ==========================================================================
@@ -410,6 +413,10 @@ class Renderer3D {
     }
 
     createSpecialCells(gameState) {
+        // Run cleanup callbacks (removes observers, disposes orphaned nodes)
+        this.cleanupCallbacks.forEach(cb => cb());
+        this.cleanupCallbacks = [];
+
         this.specialCellMeshes.forEach((mesh) => mesh.dispose());
         this.specialCellMeshes = [];
         this.generatorMeshes.clear();
@@ -493,20 +500,37 @@ class Renderer3D {
                     laserLight.intensity = 5.0;
                     laserLight.parent = laserPivot;
 
-                    this.scene.onBeforeRenderObservable.add(() => {
+                    this.specialCellMeshes.push(laserPivot); // Ensure disposal
+
+                    // Observer
+                    const observer = this.scene.onBeforeRenderObservable.add(() => {
                         const time = Date.now();
                         // Rapid strobe (10Hz)
-                        laserLight.isEnabled = Math.floor(time / 100) % 2 === 0;
+                        if (laserLight) {
+                            laserLight.setEnabled(Math.floor(time / 100) % 2 === 0);
+                        }
 
                         // Circular path
-                        laserPivot.rotation.y += 0.05;
+                        if (laserPivot) {
+                            laserPivot.rotation.y += 0.05;
+                        }
 
                         // Nanodots lighting up in sequence
-                        const sequence = Math.floor(time / 200) % points.length;
-                        points.forEach((p, i) => {
-                            p.material.emissiveColor = i === sequence ? new BABYLON.Color3(1, 1, 1) : new BABYLON.Color3(0.5, 0.4, 1.0);
-                            p.material.alpha = i === sequence ? 1.0 : (gen.is_disabled ? 0.1 : 0.6);
-                        });
+                        if (points && points.length > 0) {
+                            const sequence = Math.floor(time / 200) % points.length;
+                            points.forEach((p, i) => {
+                                if (p.isDisposed()) return;
+                                p.material.emissiveColor = i === sequence ? new BABYLON.Color3(1, 1, 1) : new BABYLON.Color3(0.5, 0.4, 1.0);
+                                p.material.alpha = i === sequence ? 1.0 : (gen.is_disabled ? 0.1 : 0.6);
+                            });
+                        }
+                    });
+
+                    // Register cleanup for this observer and light
+                    this.cleanupCallbacks.push(() => {
+                        this.scene.onBeforeRenderObservable.remove(observer);
+                        if (laserLight) laserLight.dispose();
+                        // laserPivot is in specialCellMeshes, so it gets disposed there
                     });
                 }
 
@@ -559,8 +583,15 @@ class Renderer3D {
                 nvLight.position.z += (Math.random() - 0.5) * CELL_SIZE * 0.6;
 
                 // Animated flicker
-                this.scene.onBeforeRenderObservable.add(() => {
-                    nvLight.intensity = 0.3 + Math.random() * 0.4;
+                const observer = this.scene.onBeforeRenderObservable.add(() => {
+                    if (nvLight && !nvLight.isDisposed()) {
+                        nvLight.intensity = 0.3 + Math.random() * 0.4;
+                    }
+                });
+
+                this.cleanupCallbacks.push(() => {
+                    this.scene.onBeforeRenderObservable.remove(observer);
+                    if (nvLight) nvLight.dispose();
                 });
             }
 
@@ -587,6 +618,11 @@ class Renderer3D {
                 nvLight.intensity = 0.3;
                 nvLight.parent = cp;
 
+                // Track for cleanup
+                this.cleanupCallbacks.push(() => {
+                    if (nvLight) nvLight.dispose();
+                });
+
                 // --- Orbiting Micro-Crystals (4 per co-processor) ---
                 for (let j = 0; j < 4; j++) {
                     const micro = BABYLON.MeshBuilder.CreatePolyhedron(`micro_${i}_${j}`,
@@ -595,15 +631,18 @@ class Renderer3D {
                     this.specialCellMeshes.push(micro);
 
                     // Animation: Orbit co-processor (Slow, 30s period)
-                    // 30s period => 2*PI / 30 rad/s ~= 0.2 rad/s.
-                    // Date.now() is ms. 0.2 rad/s = 0.0002 rad/ms.
-                    this.scene.onBeforeRenderObservable.add(() => {
+                    const observer = this.scene.onBeforeRenderObservable.add(() => {
+                        if (micro.isDisposed()) return;
                         const time = Date.now();
                         const angle = (j * Math.PI / 2) + (time * 0.0002);
                         const orbitRadius = CELL_SIZE * 0.5;
                         micro.position.x = cp.position.x + Math.cos(angle) * orbitRadius;
                         micro.position.z = cp.position.z + Math.sin(angle) * orbitRadius;
                         micro.position.y = cp.position.y + Math.sin(time * 0.001) * 2;
+                    });
+
+                    this.cleanupCallbacks.push(() => {
+                        this.scene.onBeforeRenderObservable.remove(observer);
                     });
                 }
 
@@ -624,8 +663,13 @@ class Renderer3D {
                 this.specialCellMeshes.push(tube);
 
                 // Animate pulse along filament
-                this.scene.onBeforeRenderObservable.add(() => {
+                const observer = this.scene.onBeforeRenderObservable.add(() => {
+                    if (goldMat && !goldMat.isReady()) return;
                     goldMat.emissiveIntensity = 0.5 + Math.sin(Date.now() * 0.003) * 0.5; // 2s period approx
+                });
+
+                this.cleanupCallbacks.push(() => {
+                    this.scene.onBeforeRenderObservable.remove(observer);
                 });
             });
 
@@ -643,9 +687,18 @@ class Renderer3D {
             greenLaser.diffuse = new BABYLON.Color3(0.06, 0.72, 0.5); // Green #10B981
             greenLaser.intensity = 3.0;
 
-            this.scene.onBeforeRenderObservable.add(() => {
-                greenLaser.intensity = 2.0 + Math.sin(Date.now() * 0.003) * 1.0;
-                hub.rotation.y += 0.01;
+            const observer = this.scene.onBeforeRenderObservable.add(() => {
+                if (greenLaser && !greenLaser.isDisposed()) {
+                    greenLaser.intensity = 2.0 + Math.sin(Date.now() * 0.003) * 1.0;
+                }
+                if (hub && !hub.isDisposed()) {
+                    hub.rotation.y += 0.01;
+                }
+            });
+
+            this.cleanupCallbacks.push(() => {
+                this.scene.onBeforeRenderObservable.remove(observer);
+                if (greenLaser) greenLaser.dispose();
             });
 
             this.crystalMesh = { mesh: hub, position: gameState.crystal.position, tokenCounts: {} };
