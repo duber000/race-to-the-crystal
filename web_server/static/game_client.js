@@ -227,6 +227,11 @@ class GameClient {
       this.deviceCapabilities,
     );
 
+    // Initialize the post-processing pipeline now that we have a camera
+    if (this.renderer && this.cameraController.camera) {
+      this.renderer.initPipeline(this.cameraController.camera);
+    }
+
     // Initialize input handler with device capabilities
     this.inputHandler = new InputHandler(
       this.renderer.scene,
@@ -381,7 +386,7 @@ class GameClient {
         return;
       }
 
-       if (tokenAtCell && !this.isOurToken(tokenAtCell.id)) {
+      if (tokenAtCell && !this.isOurToken(tokenAtCell.id)) {
         if (this.turnPhase === TurnPhase.ACTION) {
           console.log(`Attempting attack: ${this.selectedTokenId} -> ${tokenAtCell.id}`);
           this.wsClient.attackToken(this.selectedTokenId, tokenAtCell.id);
@@ -427,6 +432,10 @@ class GameClient {
         break;
       case "camera_toggle":
         this.renderer.camera = this.cameraController.toggleCameraMode();
+        // Re-attach pipeline to the new active camera
+        if (this.renderer.pipeline) {
+          this.renderer.pipeline.addCamera(this.renderer.camera);
+        }
         if (this.cameraController.cameraMode === "firstperson") {
           const aliveTokens = this.getAliveTokens();
           if (aliveTokens.length > 0) {
@@ -560,7 +569,7 @@ class GameClient {
       }
     }
 
-     this.renderer.updateValidAttackIndicators(
+    this.renderer.updateValidAttackIndicators(
       this.validMoves.size > 0 ? this.validMoves : null,
     );
   }

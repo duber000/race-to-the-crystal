@@ -133,10 +133,149 @@ class Renderer3D {
             new BABYLON.Vector3(0, 1, 0),
             this.scene,
         );
-        ambientLight.intensity = 0.3;
+        ambientLight.intensity = 0.4;
+        ambientLight.groundColor = new BABYLON.Color3(0.1, 0.1, 0.2);
 
+        // Main directional light for depth
+        const dirLight = new BABYLON.DirectionalLight(
+            "dirLight",
+            new BABYLON.Vector3(-1, -2, -1),
+            this.scene
+        );
+        dirLight.position = new BABYLON.Vector3(20, 40, 20);
+        dirLight.intensity = 0.6;
+
+        // Glow layer for emissive materials
         this.glowLayer = new BABYLON.GlowLayer("glow", this.scene);
-        this.glowLayer.intensity = 1.5;
+        this.glowLayer.intensity = 1.0;
+
+        // Post-processing pipeline setup (delayed until camera is available)
+        this.pipeline = null;
+
+        // Create a starry skybox
+        this.createSkybox();
+
+        // Create ambient particles
+        this.createAmbientParticles();
+    }
+
+    /**
+     * Complete the rendering pipeline setup once a camera is available
+     * @param {BABYLON.Camera} camera - The camera to attach the pipeline to
+     */
+    initPipeline(camera) {
+        if (!camera || this.pipeline) return;
+
+        console.log('[Renderer3D] Initializing rendering pipeline with camera:', camera.name);
+
+        this.pipeline = new BABYLON.DefaultRenderingPipeline(
+            "defaultPipeline",
+            true, // isHDR
+            this.scene,
+            [camera]
+        );
+
+        this.pipeline.bloomEnabled = true;
+        this.pipeline.bloomThreshold = 0.8;
+        this.pipeline.bloomWeight = 0.3;
+        this.pipeline.bloomKernel = 64;
+        this.pipeline.bloomScale = 0.5;
+
+        this.pipeline.chromaticAberrationEnabled = true;
+        this.pipeline.chromaticAberration.aberrationAmount = 30;
+
+        this.pipeline.sharpenEnabled = true;
+        this.pipeline.sharpen.edgeAmount = 0.2;
+
+        this.pipeline.grainEnabled = true;
+        this.pipeline.grain.intensity = 5;
+        this.pipeline.grain.animated = true;
+    }
+
+    createSkybox() {
+        // Create a large sphere for the skybox
+        const skybox = BABYLON.MeshBuilder.CreateSphere("stars", { diameter: 5000, segments: 8 }, this.scene);
+        const skyboxMaterial = new BABYLON.StandardMaterial("starsMate", this.scene);
+        skyboxMaterial.backFaceCulling = false;
+        skyboxMaterial.disableLighting = true;
+        skybox.material = skyboxMaterial;
+        skybox.infiniteDistance = true;
+
+        // Create a procedural star texture
+        const starTexture = new BABYLON.DynamicTexture("starTexture", 512, this.scene);
+        const ctx = starTexture.getContext();
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, 512, 512);
+
+        for (let i = 0; i < 500; i++) {
+            const x = Math.random() * 512;
+            const y = Math.random() * 512;
+            const size = Math.random() * 1.5;
+            const alpha = 0.2 + Math.random() * 0.8;
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        starTexture.update();
+
+        skyboxMaterial.emissiveTexture = starTexture;
+        skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+        skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+
+        // Apply a slow rotation to the skybox
+        this.scene.onBeforeRenderObservable.add(() => {
+            skybox.rotation.y += 0.0002;
+            skybox.rotation.x += 0.0001;
+        });
+    }
+
+    createAmbientParticles() {
+        const particleSystem = new BABYLON.ParticleSystem("ambientParticles", 2000, this.scene);
+
+        // Create a tiny white dot texture
+        const texture = new BABYLON.DynamicTexture("pTex", 32, this.scene);
+        const ctxP = texture.getContext();
+        ctxP.fillStyle = "white";
+        ctxP.beginPath();
+        ctxP.arc(16, 16, 8, 0, Math.PI * 2);
+        ctxP.fill();
+        texture.update();
+
+        particleSystem.particleTexture = texture;
+        particleSystem.emitter = new BABYLON.Vector3(
+            (BOARD_WIDTH * CELL_SIZE) / 2,
+            0,
+            (BOARD_HEIGHT * CELL_SIZE) / 2
+        );
+
+        particleSystem.minEmitBox = new BABYLON.Vector3(-400, 0, -400);
+        particleSystem.maxEmitBox = new BABYLON.Vector3(400, 200, 400);
+
+        particleSystem.color1 = new BABYLON.Color4(0.4, 0.8, 1.0, 0.3);
+        particleSystem.color2 = new BABYLON.Color4(0.2, 0.5, 1.0, 0.2);
+        particleSystem.colorDead = new BABYLON.Color4(0, 0, 0.2, 0.0);
+
+        particleSystem.minSize = 0.5;
+        particleSystem.maxSize = 2.0;
+
+        particleSystem.minLifeTime = 10;
+        particleSystem.maxLifeTime = 20;
+
+        particleSystem.emitRate = 100;
+
+        particleSystem.gravity = new BABYLON.Vector3(0, 0, 0);
+        particleSystem.direction1 = new BABYLON.Vector3(-1, 1, -1);
+        particleSystem.direction2 = new BABYLON.Vector3(1, 1, 1);
+
+        particleSystem.minAngularSpeed = 0;
+        particleSystem.maxAngularSpeed = Math.PI;
+
+        particleSystem.minEmitPower = 0.1;
+        particleSystem.maxEmitPower = 0.5;
+        particleSystem.updateSpeed = 0.005;
+
+        particleSystem.start();
     }
 
     createBoard() {
@@ -214,12 +353,46 @@ class Renderer3D {
         );
         ground.position.x = (BOARD_WIDTH * CELL_SIZE) / 2 - CELL_SIZE / 2;
         ground.position.z = (BOARD_HEIGHT * CELL_SIZE) / 2 - CELL_SIZE / 2;
-        ground.position.y = 0.01;
+        ground.position.y = 0;
 
-        const groundMat = new BABYLON.StandardMaterial("groundMat", this.scene);
-        groundMat.alpha = 0;
+        const groundMat = new BABYLON.PBRMaterial("groundMat", this.scene);
+        groundMat.albedoColor = new BABYLON.Color3(0.02, 0.02, 0.05);
+        groundMat.metallic = 0.1;
+        groundMat.roughness = 0.8;
+
+        // Create procedural grid texture
+        const gridTexture = new BABYLON.DynamicTexture("gridTexture", 1024, this.scene);
+        const ctxG = gridTexture.getContext();
+        ctxG.fillStyle = "black";
+        ctxG.fillRect(0, 0, 1024, 1024);
+
+        ctxG.strokeStyle = "rgba(0, 200, 255, 0.2)";
+        ctxG.lineWidth = 2;
+        const spacing = 1024 / BOARD_WIDTH;
+        for (let i = 0; i <= BOARD_WIDTH; i++) {
+            ctxG.beginPath();
+            ctxG.moveTo(i * spacing, 0);
+            ctxG.lineTo(i * spacing, 1024);
+            ctxG.stroke();
+
+            ctxG.beginPath();
+            ctxG.moveTo(0, i * spacing);
+            ctxG.lineTo(1024, i * spacing);
+            ctxG.stroke();
+        }
+        gridTexture.update();
+
+        groundMat.emissiveTexture = gridTexture;
+        groundMat.emissiveColor = new BABYLON.Color3(1, 1, 1);
+        groundMat.opacityTexture = gridTexture;
         ground.material = groundMat;
         ground.isPickable = true;
+
+        // Animate ground lines slowly
+        this.scene.onBeforeRenderObservable.add(() => {
+            const pulse = 0.1 + Math.sin(Date.now() * 0.001) * 0.05;
+            groundMat.emissiveIntensity = pulse * 10;
+        });
 
         this.board3D.push(ground);
     }
@@ -300,11 +473,22 @@ class Renderer3D {
                     centerZ,
                 );
 
-                const material = new BABYLON.StandardMaterial("generatorMat", this.scene);
+                const material = new BABYLON.PBRMaterial("generatorMat", this.scene);
                 material.emissiveColor = ORANGE_GLOW;
-                material.wireframe = true;
-                material.alpha = gen.is_disabled ? 0.3 : 1.0; // Brighter main cube
+                material.albedoColor = new BABYLON.Color3(0.1, 0.05, 0);
+                material.metallic = 0.8;
+                material.roughness = 0.2;
+                material.emissiveIntensity = gen.is_disabled ? 0.3 : 1.5;
+                material.alpha = gen.is_disabled ? 0.3 : 1.0;
                 cube.material = material;
+
+                // Rotational animation for active generators
+                if (!gen.is_disabled) {
+                    this.scene.onBeforeRenderObservable.add(() => {
+                        cube.rotation.y += 0.02;
+                        cube.rotation.x += 0.01;
+                    });
+                }
 
                 this.specialCellMeshes.push(cube);
                 cubes.push(cube);
@@ -362,13 +546,31 @@ class Renderer3D {
             );
             pyramid.position = new BABYLON.Vector3(centerX, crystalHeight / 2, centerZ);
 
-            const material = new BABYLON.StandardMaterial("crystalMat", this.scene);
+            const material = new BABYLON.PBRMaterial("crystalPBR", this.scene);
             material.emissiveColor = MAGENTA_GLOW;
-            material.wireframe = true;
-            material.alpha = 1.0;  // Full brightness for main crystal
+            material.albedoColor = new BABYLON.Color3(0, 0, 0);
+            material.metallic = 0.9;
+            material.roughness = 0.1;
+            material.emissiveIntensity = 2.0;
+            material.alpha = 0.8;
+            material.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
             pyramid.material = material;
 
+            // Add a point light to the crystal
+            const crystalLight = new BABYLON.PointLight("crystalLight", pyramid.position, this.scene);
+            crystalLight.diffuse = MAGENTA_GLOW;
+            crystalLight.intensity = 0.8;
+            crystalLight.range = CELL_SIZE * 15;
+
+            // Animate crystal light pulsing
+            this.scene.onBeforeRenderObservable.add(() => {
+                const pulse = 0.6 + Math.sin(Date.now() * 0.002) * 0.4;
+                crystalLight.intensity = pulse;
+                pyramid.rotation.y += 0.01;
+            });
+
             this.specialCellMeshes.push(pyramid);
+            this.specialCellMeshes.push(crystalLight);
             this.crystalMesh = { mesh: pyramid, position: gameState.crystal.position, tokenCounts: {} };
         }
 
@@ -396,11 +598,21 @@ class Renderer3D {
         ring.position = new BABYLON.Vector3(centerX, WALL_HEIGHT * 0.5, centerZ);
         ring.rotation.z = Math.PI / 2;
 
-        const material = new BABYLON.StandardMaterial("mysteryMat", this.scene);
+        const material = new BABYLON.PBRMaterial("mysteryMat", this.scene);
         material.emissiveColor = CYAN_GLOW.clone();
-        material.wireframe = true;
+        material.albedoColor = new BABYLON.Color3(0, 0, 0);
+        material.metallic = 0.5;
+        material.roughness = 0.2;
+        material.emissiveIntensity = 2.0;
         material.alpha = 0.6;
+        material.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
         ring.material = material;
+
+        // Animated rotation
+        this.scene.onBeforeRenderObservable.add(() => {
+            ring.rotation.x += 0.05;
+            ring.rotation.y += 0.02;
+        });
 
         this.glowLayer.addIncludedOnlyMesh(ring);
         this.specialCellMeshes.push(ring);
@@ -571,14 +783,21 @@ class Renderer3D {
         );
         hexagon.position = new BABYLON.Vector3(worldX, TOKEN_HEIGHT / 2, worldZ);
 
-        const material = new BABYLON.StandardMaterial(`tokenMat_${token.id}`, this.scene);
+        const material = new BABYLON.PBRMaterial(`tokenMat_${token.id}`, this.scene);
         material.emissiveColor = playerColor;
-        material.wireframe = true;
+        material.albedoColor = new BABYLON.Color3(0, 0, 0);
+        material.metallic = 0.5;
+        material.roughness = 0.4;
+        material.emissiveIntensity = 1.0;
         material.alpha = 0.9;
         hexagon.material = material;
 
-        // Freeze material for performance (material won't change)
-        material.freeze();
+        // Add a small light beneath the token for a floor glow
+        const tokenLight = new BABYLON.PointLight(`tokenLight_${token.id}`, hexagon.position, this.scene);
+        tokenLight.diffuse = playerColor;
+        tokenLight.intensity = 0.3;
+        tokenLight.range = CELL_SIZE * 1.5;
+        tokenLight.parent = hexagon;
 
         const healthLabel = this.createHealthLabel(token, hexagon.position);
 
@@ -606,16 +825,17 @@ class Renderer3D {
         );
         hexagon.position = new BABYLON.Vector3(worldX, TOKEN_HEIGHT / 2, worldZ);
 
-        const material = new BABYLON.StandardMaterial(
+        const material = new BABYLON.PBRMaterial(
             `phantomMat_${phantom.phantom_id}`,
             this.scene
         );
         material.emissiveColor = playerColor;
-        material.wireframe = true;
-        material.alpha = 0.5; // Semi-transparent for phantom effect
-
-        // Freeze material for performance
-        material.freeze();
+        material.albedoColor = new BABYLON.Color3(0, 0, 0);
+        material.metallic = 0.2;
+        material.roughness = 0.8;
+        material.emissiveIntensity = 0.5;
+        material.alpha = 0.4; // Semi-transparent for phantom effect
+        material.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
 
         hexagon.material = material;
 
@@ -1416,7 +1636,7 @@ class Renderer3D {
                     // Add click listener to start music on first interaction
                     document.addEventListener('click', () => {
                         if (this.backgroundMusic && this.musicEnabled) {
-                            this.backgroundMusic.play().catch(() => {});
+                            this.backgroundMusic.play().catch(() => { });
                         }
                     }, { once: true });
                 });
@@ -1443,7 +1663,7 @@ class Renderer3D {
                         // Will be started by user interaction trigger
                         document.addEventListener('click', () => {
                             if (this.musicEnabled) {
-                                hum.play().catch(() => {});
+                                hum.play().catch(() => { });
                             }
                         }, { once: true });
                     });
@@ -1468,7 +1688,7 @@ class Renderer3D {
             // Resume active generator hums
             this.generatorHums.forEach((hum) => {
                 if (hum && hum.paused) {
-                    hum.play().catch(() => {});
+                    hum.play().catch(() => { });
                 }
             });
         } else {
