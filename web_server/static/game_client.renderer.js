@@ -41,6 +41,7 @@ class Renderer3D {
         this.crystalMesh = null;
         this.explosionParticles = [];
         this.confettiParticles = [];
+        this.crystalFrames = []; // To store multi-layered frames for animation
 
         // Local player ID for crystal effects filtering
         this.localPlayerId = null;
@@ -187,7 +188,7 @@ class Renderer3D {
         this.pipeline.bloomScale = 0.5;
 
         this.pipeline.chromaticAberrationEnabled = true;
-        this.pipeline.chromaticAberration.aberrationAmount = 30;
+        this.pipeline.chromaticAberration.aberrationAmount = 5; // Reduced from 30 for better clarity at edges
 
         this.pipeline.sharpenEnabled = true;
         this.pipeline.sharpen.edgeAmount = 0.2;
@@ -203,12 +204,21 @@ class Renderer3D {
     }
 
     initGodRays(mesh) {
-        if (this.vls) return;
-        this.vls = new BABYLON.VolumetricLightScatteringPostProcess('vls', 1.0, this.scene.activeCamera, mesh, 100, BABYLON.Texture.BILINEAR_SAMPLINGMODE, this.engine, false);
-        this.vls.exposure = 0.2;
-        this.vls.decay = 0.95;
-        this.vls.weight = 0.7;
-        this.vls.density = 0.5;
+        if (this.vls || !mesh || !this.scene || !this.scene.activeCamera) return;
+        try {
+            // Volumetric Light Scattering should be attached to the active camera
+            this.vls = new BABYLON.VolumetricLightScatteringPostProcess('vls', 1.0, this.scene.activeCamera, mesh, 100, BABYLON.Texture.BILINEAR_SAMPLINGMODE, this.engine, false);
+            this.vls.exposure = 0.2;
+            this.vls.decay = 0.95;
+            this.vls.weight = 0.7;
+            this.vls.density = 0.5;
+
+            // Custom cleanup: if the camera changes, we might need to handle it, 
+            // but for now we just keep it on the original camera it was created with.
+        } catch (e) {
+            console.error('[Renderer3D] Failed to initialize God Rays:', e);
+            this.vls = null;
+        }
     }
 
     createSkybox() {
@@ -370,8 +380,8 @@ class Renderer3D {
             { width: BOARD_WIDTH * CELL_SIZE, height: BOARD_HEIGHT * CELL_SIZE },
             this.scene,
         );
-        ground.position.x = (BOARD_WIDTH * CELL_SIZE) / 2 - CELL_SIZE / 2;
-        ground.position.z = (BOARD_HEIGHT * CELL_SIZE) / 2 - CELL_SIZE / 2;
+        ground.position.x = (BOARD_WIDTH * CELL_SIZE) / 2;
+        ground.position.z = (BOARD_HEIGHT * CELL_SIZE) / 2;
         ground.position.y = 0;
 
         const groundMat = new BABYLON.PBRMaterial("groundMat", this.scene);
@@ -433,8 +443,15 @@ class Renderer3D {
         this.cleanupCallbacks.forEach(cb => cb());
         this.cleanupCallbacks = [];
 
+        // Instead of disposing VLS, we just clear its mesh reference temporarily
+        // to avoid it pointing to a disposed mesh.
+        if (this.vls) {
+            this.vls.mesh = null;
+        }
+
         this.specialCellMeshes.forEach((mesh) => mesh.dispose());
         this.specialCellMeshes = [];
+        this.crystalFrames = [];
         this.generatorMeshes.clear();
         this.crystalMesh = null;
 
@@ -446,21 +463,17 @@ class Renderer3D {
         });
         this.generatorLineMeshes = [];
 
-        // Dispose VLS if it exists to avoid leaks and duplication
-        if (this.vls) {
-            this.vls.dispose();
-            this.vls = null;
-        }
-
         if (!gameState.crystal) return;
 
         const centerX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
         const centerZ = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
-        const hubY = 10; // 10 units up
+        const hubY = 60; // Suspended much higher for visibility
 
         // --- 1. NLO Central Computer (The Hub) ---
-        const hub = BABYLON.MeshBuilder.CreateIcoSphere("nlo_hub", { radius: 6, subdivisions: 2 }, this.scene);
+        // A GIGANTIC, imposing central structure visible from afar
+        const hub = BABYLON.MeshBuilder.CreateIcoSphere("nlo_hub", { radius: 40, subdivisions: 2 }, this.scene);
         hub.position = new BABYLON.Vector3(centerX, hubY, centerZ);
+        hub.scaling.y = 2.2; // Extra tall like the screenshot
 
         const hubMat = new BABYLON.PBRMaterial("nloHubMat", this.scene);
         hubMat.albedoColor = new BABYLON.Color3(0, 0.2, 0.8); // Deep Electric Blue
@@ -473,14 +486,24 @@ class Renderer3D {
         this.crystalMesh = { mesh: hub, position: gameState.crystal.position, tokenCounts: {} };
         this.specialCellMeshes.push(hub);
 
+        // Add internal "core" for complexity
+        const hubCore = BABYLON.MeshBuilder.CreateIcoSphere("nlo_core", { radius: 25, subdivisions: 1 }, this.scene);
+        hubCore.position = hub.position;
+        hubCore.parent = hub;
+        const coreMat = hubMat.clone("coreMat");
+        coreMat.emissiveIntensity = 5.0;
+        hubCore.material = coreMat;
+        this.specialCellMeshes.push(hubCore);
+
         // --- 2. The Gold Laser Rig (Frame) ---
-        // A geometric lattice of thin gold tubes
-        const frame = BABYLON.MeshBuilder.CreateIcoSphere("gold_frame", { radius: 9, subdivisions: 1 }, this.scene);
+        // Massive geometry to match the jumbo hub
+        const frame = BABYLON.MeshBuilder.CreateIcoSphere("gold_frame", { radius: 60, subdivisions: 1 }, this.scene);
         frame.position = hub.position;
+        frame.scaling.y = 2.2;
         const frameMat = new BABYLON.PBRMaterial("goldFrameMat", this.scene);
         frameMat.albedoColor = new BABYLON.Color3(1.0, 0.766, 0.336);
         frameMat.metallic = 1.0;
-        frameMat.roughness = 0.3;
+        frameMat.roughness = 0.2;
 
         // Use a default environment texture for the metallic look
         if (!this.scene.environmentTexture) {
@@ -490,18 +513,34 @@ class Renderer3D {
         frame.material = frameMat;
         frame.material.wireframe = true;
         this.specialCellMeshes.push(frame);
+        this.crystalFrames.push(frame);
 
-        // Setup Volumetric Light Scattering (God Rays)
-        if (this.scene.activeCamera) {
+        // Nested inner frame for that complex wireframe look
+        const innerFrame = frame.clone("inner_frame");
+        innerFrame.scaling = new BABYLON.Vector3(0.6, 1.3, 0.6);
+        this.specialCellMeshes.push(innerFrame);
+        this.crystalFrames.push(innerFrame);
+
+        // Third layer for extra detail
+        const outerFrame = frame.clone("outer_frame");
+        outerFrame.scaling = new BABYLON.Vector3(1.2, 0.8, 1.2);
+        this.specialCellMeshes.push(outerFrame);
+        this.crystalFrames.push(outerFrame);
+
+        // Setup or Update Volumetric Light Scattering (God Rays)
+        if (this.vls) {
+            this.vls.mesh = hub;
+        } else if (this.scene.activeCamera) {
             this.initGodRays(hub);
         }
 
         // --- 3. Shard Assembly Pillars (The Generators) ---
+        // MASSIVELY SPREAD OUT: Using ±250 to position them far at the corners
         const shardOffsets = [
-            { x: 15, z: 15 },
-            { x: -15, z: 15 },
-            { x: -15, z: -15 },
-            { x: 15, z: -15 }
+            { x: 250, z: 250 },
+            { x: -250, z: 250 },
+            { x: -250, z: -250 },
+            { x: 250, z: -250 }
         ];
 
         const shardMat = new BABYLON.PBRMaterial("shardMat", this.scene);
@@ -520,12 +559,14 @@ class Renderer3D {
                 const pillarZ = centerZ + offset.z;
 
                 const pillar = BABYLON.MeshBuilder.CreateCylinder(`shard_assembly_${index}`, {
-                    height: 20,
-                    diameter: 10,
+                    height: 80,
+                    diameter: 30,
                     subdivisions: 32
                 }, this.scene);
-                pillar.position = new BABYLON.Vector3(pillarX, 10, pillarZ);
-                pillar.material = shardMat;
+                pillar.position = new BABYLON.Vector3(pillarX, 40, pillarZ);
+
+                // Give each pillar its own material instance for individual colors
+                pillar.material = shardMat.clone(`shardMat_${index}`);
 
                 // Procedural "Shard" Effect: Randomize vertex positions
                 const positions = pillar.getVerticesData(BABYLON.VertexBuffer.PositionKind);
@@ -627,20 +668,20 @@ class Renderer3D {
             const pillarPos = genData.mesh.position;
             const path = [pillarPos, hubPos];
 
-            // Create three emissive materials for lasers
+            // Create three emissive materials for lasers (Reverted to RGB theme)
             const blueMat = new BABYLON.PBRMaterial(`laserBlue_${index}`, this.scene);
-            blueMat.emissiveColor = new BABYLON.Color3(0, 0, 1); // Hex #0000FF
-            blueMat.emissiveIntensity = 5.0;
+            blueMat.emissiveColor = new BABYLON.Color3(0.1, 0.4, 1.0); // Rich Electric Blue
+            blueMat.emissiveIntensity = 8.0;
             blueMat.albedoColor = new BABYLON.Color3(0, 0, 0);
 
             const greenMat = new BABYLON.PBRMaterial(`laserGreen_${index}`, this.scene);
-            greenMat.emissiveColor = new BABYLON.Color3(0, 1, 0); // Hex #00FF00
-            greenMat.emissiveIntensity = 5.0;
+            greenMat.emissiveColor = new BABYLON.Color3(0.1, 0.8, 0.2); // Emerald Green
+            greenMat.emissiveIntensity = 8.0;
             greenMat.albedoColor = new BABYLON.Color3(0, 0, 0);
 
             const redMat = new BABYLON.PBRMaterial(`laserRed_${index}`, this.scene);
-            redMat.emissiveColor = new BABYLON.Color3(1, 0, 0); // Hex #FF0000
-            redMat.emissiveIntensity = 5.0;
+            redMat.emissiveColor = new BABYLON.Color3(0.8, 0.1, 0.1); // Ruby Red
+            redMat.emissiveIntensity = 8.0;
             redMat.albedoColor = new BABYLON.Color3(0, 0, 0);
 
             const materials = [blueMat, greenMat, redMat];
@@ -1174,10 +1215,14 @@ class Renderer3D {
             }
         });
 
-        // NLO Rotation: Slowly rotate the central blue crystal on its Y-axis
+        // NLO Rotation: Rotate the central hub and its complex rig
         if (this.crystalMesh && this.crystalMesh.mesh) {
             this.crystalMesh.mesh.rotation.y += 0.005;
         }
+        this.crystalFrames.forEach((frame, idx) => {
+            frame.rotation.y += 0.003 * (idx % 2 === 0 ? 1 : -1); // Counter-rotating frames
+            frame.rotation.z += 0.001 * (idx % 2 === 0 ? 1 : -1);
+        });
 
         // Pulse God Rays
         if (this.vls) {
@@ -1479,10 +1524,12 @@ class Renderer3D {
             }
 
             if (dominantPlayer && crystalCounts[dominantPlayer] >= 2) {
-                const color = playerColors[dominantPlayer] || MAGENTA_GLOW;
+                const color = playerColors[dominantPlayer] || new BABYLON.Color3(0, 0.8, 1.0);
                 this.crystalMesh.mesh.material.emissiveColor = color;
+                this.crystalMesh.mesh.material.emissiveIntensity = 3.0; // Boost when captured
             } else {
-                this.crystalMesh.mesh.material.emissiveColor = MAGENTA_GLOW;
+                this.crystalMesh.mesh.material.emissiveColor = new BABYLON.Color3(0, 0.8, 1.0); // Default Cyan
+                this.crystalMesh.mesh.material.emissiveIntensity = 2.0;
             }
 
             this.crystalMesh.tokenCounts = crystalCounts;
@@ -1630,14 +1677,8 @@ class Renderer3D {
             console.warn("Could not load techno music");
         }
 
-        // 2. Suspense Music (Near Crystal)
-        try {
-            this.suspenseMusic = new Audio('/static/assets/music/suspense.mp3');
-            this.suspenseMusic.loop = true;
-            this.suspenseMusic.volume = 0; // Starts silent
-        } catch (e) {
-            console.warn("Could not load suspense music");
-        }
+        // 2. Suspense Music (Near Crystal) - Removed as file is missing
+        this.suspenseMusic = null;
 
         // Setup User Interaction Listener to start audio
         const startAudio = () => {
@@ -1830,10 +1871,7 @@ class Renderer3D {
             mix = Math.max(0, Math.min(1, mix)); // 0 = Full Suspense, 1 = Full Techno
 
             if (this.backgroundMusic) {
-                this.backgroundMusic.volume = mix * this.musicVolume;
-            }
-            if (this.suspenseMusic) {
-                this.suspenseMusic.volume = (1.0 - mix) * this.musicVolume * 1.2; // boost suspense slighty
+                this.backgroundMusic.volume = this.musicVolume;
             }
 
             // --- 2. Crystal Ambient Sound ---

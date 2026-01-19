@@ -59,6 +59,7 @@ class CameraController {
             new BABYLON.Vector3(boardCenterX, 0, boardCenterY),
             this.scene,
         );
+        this.camera.maxZ = 10000;
         this.camera.attachControl(this.canvas, true);
         this.camera.lowerRadiusLimit = 300;
         this.camera.upperRadiusLimit = 1500;
@@ -88,6 +89,7 @@ class CameraController {
             this.scene,
         );
         this.firstPersonCamera.setTarget(new BABYLON.Vector3(boardCenterX, 0, boardCenterY));
+        this.firstPersonCamera.maxZ = 10000;
         this.firstPersonCamera.keysUp = [];
         this.firstPersonCamera.keysDown = [];
         this.firstPersonCamera.keysLeft = [];
