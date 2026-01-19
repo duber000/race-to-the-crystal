@@ -152,7 +152,7 @@ class Renderer3D {
 
         // Glow layer for emissive materials
         this.glowLayer = new BABYLON.GlowLayer("glow", this.scene);
-        this.glowLayer.intensity = 1.0;
+        this.glowLayer.intensity = 1.5;
 
         // Post-processing pipeline setup (delayed until camera is available)
         this.pipeline = null;
@@ -195,6 +195,20 @@ class Renderer3D {
         this.pipeline.grainEnabled = true;
         this.pipeline.grain.intensity = 5;
         this.pipeline.grain.animated = true;
+
+        // Initialize Volumetric Light Scattering if it hasn't been set up
+        if (this.crystalMesh && this.crystalMesh.mesh && !this.vls) {
+            this.initGodRays(this.crystalMesh.mesh);
+        }
+    }
+
+    initGodRays(mesh) {
+        if (this.vls) return;
+        this.vls = new BABYLON.VolumetricLightScatteringPostProcess('vls', 1.0, this.scene.activeCamera, mesh, 100, BABYLON.Texture.BILINEAR_SAMPLINGMODE, this.engine, false);
+        this.vls.exposure = 0.2;
+        this.vls.decay = 0.95;
+        this.vls.weight = 0.7;
+        this.vls.density = 0.5;
     }
 
     createSkybox() {
@@ -426,286 +440,131 @@ class Renderer3D {
 
         // Dispose old generator line segments
         this.generatorLineMeshes.forEach((lineData) => {
-            if (lineData.segments) {
-                lineData.segments.forEach(seg => {
-                    if (seg) seg.dispose();
-                });
+            if (lineData.beams) {
+                lineData.beams.forEach(beam => beam.dispose());
             }
         });
         this.generatorLineMeshes = [];
 
+        // Dispose VLS if it exists to avoid leaks and duplication
+        if (this.vls) {
+            this.vls.dispose();
+            this.vls = null;
+        }
+
+        if (!gameState.crystal) return;
+
+        const centerX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
+        const centerZ = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
+        const hubY = 10; // 10 units up
+
+        // --- 1. NLO Central Computer (The Hub) ---
+        const hub = BABYLON.MeshBuilder.CreateIcoSphere("nlo_hub", { radius: 6, subdivisions: 2 }, this.scene);
+        hub.position = new BABYLON.Vector3(centerX, hubY, centerZ);
+
+        const hubMat = new BABYLON.PBRMaterial("nloHubMat", this.scene);
+        hubMat.albedoColor = new BABYLON.Color3(0, 0.2, 0.8); // Deep Electric Blue
+        hubMat.emissiveColor = new BABYLON.Color3(0, 0.8, 1.0); // Bright Cyan
+        hubMat.emissiveIntensity = 2.0;
+        hubMat.subSurface.isTranslucencyEnabled = true;
+        hubMat.subSurface.translucencyIntensity = 1.0;
+        hub.material = hubMat;
+
+        this.crystalMesh = { mesh: hub, position: gameState.crystal.position, tokenCounts: {} };
+        this.specialCellMeshes.push(hub);
+
+        // --- 2. The Gold Laser Rig (Frame) ---
+        // A geometric lattice of thin gold tubes
+        const frame = BABYLON.MeshBuilder.CreateIcoSphere("gold_frame", { radius: 9, subdivisions: 1 }, this.scene);
+        frame.position = hub.position;
+        const frameMat = new BABYLON.PBRMaterial("goldFrameMat", this.scene);
+        frameMat.albedoColor = new BABYLON.Color3(1.0, 0.766, 0.336);
+        frameMat.metallic = 1.0;
+        frameMat.roughness = 0.3;
+
+        // Use a default environment texture for the metallic look
+        if (!this.scene.environmentTexture) {
+            this.scene.environmentTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("https://playground.babylonjs.com/textures/environment.env", this.scene);
+        }
+
+        frame.material = frameMat;
+        frame.material.wireframe = true;
+        this.specialCellMeshes.push(frame);
+
+        // Setup Volumetric Light Scattering (God Rays)
+        if (this.scene.activeCamera) {
+            this.initGodRays(hub);
+        }
+
+        // --- 3. Shard Assembly Pillars (The Generators) ---
+        const shardOffsets = [
+            { x: 15, z: 15 },
+            { x: -15, z: 15 },
+            { x: -15, z: -15 },
+            { x: 15, z: -15 }
+        ];
+
+        const shardMat = new BABYLON.PBRMaterial("shardMat", this.scene);
+        shardMat.albedoColor = new BABYLON.Color3(1, 1, 1); // Pure white
+        shardMat.alpha = 0.2; // highly transparent
+        shardMat.metallic = 0;
+        shardMat.roughness = 0.1;
+        shardMat.subSurface.isRefractionEnabled = true;
+        shardMat.subSurface.indexOfRefraction = 1.458; // fused silica
+        shardMat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
+
         if (gameState.generators) {
-            gameState.generators.forEach((gen) => {
-                const centerX = gen.position[0] * CELL_SIZE + CELL_SIZE / 2;
-                const centerZ = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
+            gameState.generators.forEach((gen, index) => {
+                const offset = shardOffsets[index % 4];
+                const pillarX = centerX + offset.x;
+                const pillarZ = centerZ + offset.z;
 
-                // --- Quartz Memory Banks (Classical Storage) ---
-                const baseWidth = CELL_SIZE * 0.8;
-                const baseDepth = CELL_SIZE * 0.4;
-                const baseHeight = WALL_HEIGHT * 0.15;
-                const points = [];
+                const pillar = BABYLON.MeshBuilder.CreateCylinder(`shard_assembly_${index}`, {
+                    height: 20,
+                    diameter: 10,
+                    subdivisions: 32
+                }, this.scene);
+                pillar.position = new BABYLON.Vector3(pillarX, 10, pillarZ);
+                pillar.material = shardMat;
 
-                // Create a rectangular quartz slab
-                const slab = BABYLON.MeshBuilder.CreateBox(
-                    `quartz_memory_${gen.position[0]}_${gen.position[1]}`,
-                    { width: baseWidth, height: baseHeight, depth: baseDepth },
-                    this.scene,
-                );
-                slab.position = new BABYLON.Vector3(centerX, WALL_HEIGHT * 0.1, centerZ);
-
-                const material = new BABYLON.PBRMaterial("quartzMat", this.scene);
-                material.albedoColor = new BABYLON.Color3(0.95, 0.95, 1.0);
-                material.metallic = 0;
-                material.roughness = 0.05;
-                material.alpha = gen.is_disabled ? 0.05 : 0.15;
-                material.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
-                material.indexOfRefraction = 1.54; // Quartz IOR
-                slab.material = material;
-
-                // Interior: Volumetric nanostructure patterns (imaged as a grid of points inside)
-                for (let x = -1; x <= 1; x++) {
-                    for (let z = -1; z <= 1; z++) {
-                        const dot = BABYLON.MeshBuilder.CreateSphere(
-                            `nanodot_${gen.position[0]}_${gen.position[1]}_${x}_${z}`,
-                            { diameter: 2 },
-                            this.scene
-                        );
-                        dot.position = new BABYLON.Vector3(
-                            centerX + (x * baseWidth * 0.3),
-                            WALL_HEIGHT * 0.1,
-                            centerZ + (z * baseDepth * 0.3)
-                        );
-                        const dotMat = new BABYLON.StandardMaterial("dotMat", this.scene);
-                        dotMat.emissiveColor = new BABYLON.Color3(0.5, 0.4, 1.0); // Violet tint
-                        dotMat.alpha = gen.is_disabled ? 0.1 : 0.6;
-                        dot.material = dotMat;
-                        dot.parent = slab;
-                        points.push(dot);
-                    }
+                // Procedural "Shard" Effect: Randomize vertex positions
+                const positions = pillar.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+                for (let i = 0; i < positions.length; i++) {
+                    positions[i] += (Math.random() - 0.5) * 1.0; // randomness factor 0.5 to 1.0
                 }
+                pillar.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
 
-                // Animated strobe effect (Femtosecond Laser writing)
-                if (!gen.is_disabled) {
-                    // Create a rotating femtosecond laser
-                    const laserPivot = new BABYLON.TransformNode(`laserPivot_${gen.position[0]}_${gen.position[1]}`, this.scene);
-                    laserPivot.position = slab.position.clone();
+                // Create Hit Particle System for this pillar
+                const hitParticles = new BABYLON.ParticleSystem(`hitParticles_${index}`, 200, this.scene);
+                hitParticles.particleTexture = new BABYLON.Texture("https://playground.babylonjs.com/textures/flare.png", this.scene);
+                hitParticles.emitter = pillar.position.clone();
+                hitParticles.minEmitBox = new BABYLON.Vector3(-1, 0, -1);
+                hitParticles.maxEmitBox = new BABYLON.Vector3(1, 2, 1);
+                hitParticles.color1 = new BABYLON.Color4(1, 1, 1, 1);
+                hitParticles.color2 = new BABYLON.Color4(0.5, 0.8, 1, 1);
+                hitParticles.minSize = 0.1;
+                hitParticles.maxSize = 0.5;
+                hitParticles.minLifeTime = 0.1;
+                hitParticles.maxLifeTime = 0.5;
+                hitParticles.emitRate = 0; // Trigger manually
+                hitParticles.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+                hitParticles.start();
 
-                    const laserLight = new BABYLON.SpotLight(
-                        `femtosecond_${gen.position[0]}_${gen.position[1]}`,
-                        new BABYLON.Vector3(baseWidth, baseWidth, 0), // Offset
-                        new BABYLON.Vector3(-1, -1, 0), // Direction towards center
-                        Math.PI / 8,
-                        10,
-                        this.scene
-                    );
-                    laserLight.diffuse = new BABYLON.Color3(0.88, 0.95, 1.0); // Bright white-blue #E0F2FE
-                    laserLight.intensity = 5.0;
-                    laserLight.parent = laserPivot;
-
-                    this.specialCellMeshes.push(laserPivot); // Ensure disposal
-
-                    // Observer
-                    const observer = this.scene.onBeforeRenderObservable.add(() => {
-                        const time = Date.now();
-                        // Rapid strobe (10Hz)
-                        if (laserLight) {
-                            laserLight.setEnabled(Math.floor(time / 100) % 2 === 0);
-                        }
-
-                        // Circular path
-                        if (laserPivot) {
-                            laserPivot.rotation.y += 0.05;
-                        }
-
-                        // Nanodots lighting up in sequence
-                        if (points && points.length > 0) {
-                            const sequence = Math.floor(time / 200) % points.length;
-                            points.forEach((p, i) => {
-                                if (p.isDisposed()) return;
-                                p.material.emissiveColor = i === sequence ? new BABYLON.Color3(1, 1, 1) : new BABYLON.Color3(0.5, 0.4, 1.0);
-                                p.material.alpha = i === sequence ? 1.0 : (gen.is_disabled ? 0.1 : 0.6);
-                            });
-                        }
-                    });
-
-                    // Register cleanup for this observer and light
-                    this.cleanupCallbacks.push(() => {
-                        this.scene.onBeforeRenderObservable.remove(observer);
-                        if (laserLight) laserLight.dispose();
-                        // laserPivot is in specialCellMeshes, so it gets disposed there
-                    });
-                }
-
-                this.specialCellMeshes.push(slab);
-
+                this.specialCellMeshes.push(pillar);
                 this.generatorMeshes.set(`${gen.position[0]},${gen.position[1]}`, {
-                    mesh: slab,
-                    glowMeshes: points,
+                    mesh: pillar,
+                    hitParticles: hitParticles,
                     position: gen.position,
                     isDisabled: gen.is_disabled,
                     lastOwner: null,
                 });
             });
-
-            // Moved createGeneratorLines call to after Co-Processors are created
         }
 
-        if (gameState.crystal) {
-            const centerX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
-            const centerZ = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
-            const centerY = WALL_HEIGHT * 1.5;
+        // Updated Generator Lines (Lasers)
+        this.createGeneratorLines(gameState);
 
-            // --- Central Hub Crystal (Diamond - Quantum Processor) ---
-            const hub = BABYLON.MeshBuilder.CreatePolyhedron("hub_diamond",
-                { type: 1, size: CELL_SIZE * 0.8 }, this.scene); // Octahedral
-            hub.position = new BABYLON.Vector3(centerX, centerY, centerZ);
-            hub.scaling = new BABYLON.Vector3(1, 1.5, 1);
-
-            const hubMat = new BABYLON.PBRMaterial("hubMat", this.scene);
-            hubMat.albedoColor = new BABYLON.Color3(0.12, 0.23, 0.54); // Deep blue #1E3A8A
-            hubMat.metallic = 0;
-            hubMat.roughness = 0.1;
-            hubMat.alpha = 0.7;
-            hubMat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
-            hubMat.indexOfRefraction = 2.42; // Diamond IOR
-            hubMat.emissiveColor = new BABYLON.Color3(0.86, 0.15, 0.15); // Red #DC2626
-            hubMat.emissiveIntensity = 0.3;
-            hub.material = hubMat;
-
-            this.specialCellMeshes.push(hub);
-
-            // Hub Interior: NV Centers (Random Red Points)
-            for (let k = 0; k < 10; k++) {
-                const nvLight = new BABYLON.PointLight(`nv_hub_${k}`, hub.position.clone(), this.scene);
-                nvLight.diffuse = new BABYLON.Color3(0.86, 0.15, 0.15); // Red
-                nvLight.intensity = 0.5;
-                nvLight.parent = hub;
-                nvLight.position.x += (Math.random() - 0.5) * CELL_SIZE * 0.6;
-                nvLight.position.y += (Math.random() - 0.5) * CELL_SIZE * 0.6;
-                nvLight.position.z += (Math.random() - 0.5) * CELL_SIZE * 0.6;
-
-                // Animated flicker
-                const observer = this.scene.onBeforeRenderObservable.add(() => {
-                    if (nvLight && !nvLight.isDisposed()) {
-                        nvLight.intensity = 0.3 + Math.random() * 0.4;
-                    }
-                });
-
-                this.cleanupCallbacks.push(() => {
-                    this.scene.onBeforeRenderObservable.remove(observer);
-                    if (nvLight) nvLight.dispose();
-                });
-            }
-
-            // --- Co-Processor Crystals (4 Smaller Diamonds) ---
-            const coProcessorDistance = CELL_SIZE * 2;
-            const coProcessors = [];
-            const coCoords = [[1, 1], [1, -1], [-1, -1], [-1, 1]];
-
-            coCoords.forEach((coord, i) => {
-                const cp = BABYLON.MeshBuilder.CreatePolyhedron(`co_proc_${i}`,
-                    { type: 1, size: CELL_SIZE * 0.3 }, this.scene);
-                const cpX = centerX + coord[0] * coProcessorDistance;
-                const cpZ = centerZ + coord[1] * coProcessorDistance;
-                cp.position = new BABYLON.Vector3(cpX, centerY, cpZ);
-                // Rotate slightly differently (15-30 deg on Y)
-                cp.rotation.y = (15 + i * 5) * (Math.PI / 180);
-                cp.material = hubMat;
-                this.specialCellMeshes.push(cp);
-                coProcessors.push(cp);
-
-                // Add internal NV glow for Co-Processors too
-                const nvLight = new BABYLON.PointLight(`nv_cp_${i}`, cp.position.clone(), this.scene);
-                nvLight.diffuse = new BABYLON.Color3(0.86, 0.15, 0.15);
-                nvLight.intensity = 0.3;
-                nvLight.parent = cp;
-
-                // Track for cleanup
-                this.cleanupCallbacks.push(() => {
-                    if (nvLight) nvLight.dispose();
-                });
-
-                // --- Orbiting Micro-Crystals (4 per co-processor) ---
-                for (let j = 0; j < 4; j++) {
-                    const micro = BABYLON.MeshBuilder.CreatePolyhedron(`micro_${i}_${j}`,
-                        { type: 1, size: CELL_SIZE * 0.05 }, this.scene);
-                    micro.material = hubMat;
-                    this.specialCellMeshes.push(micro);
-
-                    // Animation: Orbit co-processor (Slow, 30s period)
-                    const observer = this.scene.onBeforeRenderObservable.add(() => {
-                        if (micro.isDisposed()) return;
-                        const time = Date.now();
-                        const angle = (j * Math.PI / 2) + (time * 0.0002);
-                        const orbitRadius = CELL_SIZE * 0.5;
-                        micro.position.x = cp.position.x + Math.cos(angle) * orbitRadius;
-                        micro.position.z = cp.position.z + Math.sin(angle) * orbitRadius;
-                        micro.position.y = cp.position.y + Math.sin(time * 0.001) * 2;
-                    });
-
-                    this.cleanupCallbacks.push(() => {
-                        this.scene.onBeforeRenderObservable.remove(observer);
-                    });
-                }
-
-                // Gold Filament: Hub to Co-Processor
-                const points = [hub.position, cp.position];
-                const tube = BABYLON.MeshBuilder.CreateTube(`filament_${i}`, {
-                    path: points,
-                    radius: 2,
-                    cap: BABYLON.Mesh.CAP_ALL
-                }, this.scene);
-
-                const goldMat = new BABYLON.PBRMaterial(`goldMat_${i}`, this.scene);
-                goldMat.albedoColor = new BABYLON.Color3(1.0, 0.84, 0); // Gold #FFD700
-                goldMat.metallic = 1.0;
-                goldMat.roughness = 0.3;
-                goldMat.emissiveColor = new BABYLON.Color3(0.5, 0.4, 0);
-                tube.material = goldMat;
-                this.specialCellMeshes.push(tube);
-
-                // Animate pulse along filament
-                const observer = this.scene.onBeforeRenderObservable.add(() => {
-                    if (goldMat && !goldMat.isReady()) return;
-                    goldMat.emissiveIntensity = 0.5 + Math.sin(Date.now() * 0.003) * 0.5; // 2s period approx
-                });
-
-                this.cleanupCallbacks.push(() => {
-                    this.scene.onBeforeRenderObservable.remove(observer);
-                });
-            });
-
-            // Store Co-Processors for Generator Lines (Lasers)
-            this.coProcessors = coProcessors;
-
-            // Updated Generator Lines now that co-processors exist
-            this.createGeneratorLines(gameState);
-
-            // Primary Green Laser (Top-down spotlight on hub)
-            const greenLaser = new BABYLON.SpotLight("greenLaser",
-                new BABYLON.Vector3(centerX, centerY + 200, centerZ),
-                new BABYLON.Vector3(0, -1, 0),
-                Math.PI / 6, 2, this.scene);
-            greenLaser.diffuse = new BABYLON.Color3(0.06, 0.72, 0.5); // Green #10B981
-            greenLaser.intensity = 3.0;
-
-            const observer = this.scene.onBeforeRenderObservable.add(() => {
-                if (greenLaser && !greenLaser.isDisposed()) {
-                    greenLaser.intensity = 2.0 + Math.sin(Date.now() * 0.003) * 1.0;
-                }
-                if (hub && !hub.isDisposed()) {
-                    hub.rotation.y += 0.01;
-                }
-            });
-
-            this.cleanupCallbacks.push(() => {
-                this.scene.onBeforeRenderObservable.remove(observer);
-                if (greenLaser) greenLaser.dispose();
-            });
-
-            this.crystalMesh = { mesh: hub, position: gameState.crystal.position, tokenCounts: {} };
-        }
-
+        // Mystery Squares
         if (gameState.board && gameState.board.grid) {
             for (let y = 0; y < gameState.board.grid.length; y++) {
                 for (let x = 0; x < gameState.board.grid[y].length; x++) {
@@ -752,41 +611,60 @@ class Renderer3D {
     }
 
     createGeneratorLines(gameState) {
-        if (!gameState.generators || !gameState.crystal || !this.coProcessors) return;
+        if (!gameState.generators || !gameState.crystal || !this.crystalMesh) return;
 
-        // We need to connect each generator to the nearest Co-Processor
-        // Co-Processors are stored in this.coProcessors
+        const centerX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
+        const centerZ = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
+        const hubY = 10;
+        const hubPos = new BABYLON.Vector3(centerX, hubY, centerZ);
 
-        gameState.generators.forEach((gen) => {
+        gameState.generators.forEach((gen, index) => {
             if (gen.is_disabled) return;
 
-            const genX = gen.position[0] * CELL_SIZE + CELL_SIZE / 2;
-            const genZ = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
-            const genY = WALL_HEIGHT * 0.6; // Connect to slab level
+            const genData = this.generatorMeshes.get(`${gen.position[0]},${gen.position[1]}`);
+            if (!genData) return;
 
-            // Find nearest co-processor
-            let nearestCP = null;
-            let minDist = Infinity;
-            const genPos = new BABYLON.Vector3(genX, genY, genZ);
+            const pillarPos = genData.mesh.position;
+            const path = [pillarPos, hubPos];
 
-            this.coProcessors.forEach(cp => {
-                const dist = BABYLON.Vector3.Distance(genPos, cp.position);
-                if (dist < minDist) {
-                    minDist = dist;
-                    nearestCP = cp;
-                }
+            // Create three emissive materials for lasers
+            const blueMat = new BABYLON.PBRMaterial(`laserBlue_${index}`, this.scene);
+            blueMat.emissiveColor = new BABYLON.Color3(0, 0, 1); // Hex #0000FF
+            blueMat.emissiveIntensity = 5.0;
+            blueMat.albedoColor = new BABYLON.Color3(0, 0, 0);
+
+            const greenMat = new BABYLON.PBRMaterial(`laserGreen_${index}`, this.scene);
+            greenMat.emissiveColor = new BABYLON.Color3(0, 1, 0); // Hex #00FF00
+            greenMat.emissiveIntensity = 5.0;
+            greenMat.albedoColor = new BABYLON.Color3(0, 0, 0);
+
+            const redMat = new BABYLON.PBRMaterial(`laserRed_${index}`, this.scene);
+            redMat.emissiveColor = new BABYLON.Color3(1, 0, 0); // Hex #FF0000
+            redMat.emissiveIntensity = 5.0;
+            redMat.albedoColor = new BABYLON.Color3(0, 0, 0);
+
+            const materials = [blueMat, greenMat, redMat];
+            const beams = [];
+
+            materials.forEach((mat, mIdx) => {
+                const beam = BABYLON.MeshBuilder.CreateTube(`laserBeam_${index}_${mIdx}`, {
+                    path: path,
+                    radius: 0.5,
+                    instance: null
+                }, this.scene);
+                beam.material = mat;
+                // Offset beams slightly to avoid Z-fighting and look like a bundle
+                beam.position.x += (mIdx - 1) * 0.8;
+                beam.position.z += (mIdx - 1) * 0.8;
+                beams.push(beam);
+                this.specialCellMeshes.push(beam);
             });
 
-            if (!nearestCP) return;
-
-            // Create data structure for animated lasers
             this.generatorLineMeshes.push({
-                genX, genY, genZ,
-                crystalX: nearestCP.position.x,
-                crystalY: nearestCP.position.y - 10, // Bottom of crystal
-                crystalZ: nearestCP.position.z,
                 genPosition: gen.position,
-                segments: []
+                beams: beams,
+                pillarPos: pillarPos,
+                hitParticles: genData.hitParticles
             });
         });
     }
@@ -1274,39 +1152,37 @@ class Renderer3D {
     }
 
     updateAnimations() {
-        // Update flowing generator line segments
+        // Update flowing generator line segments (Lasers)
         this.generatorLineMeshes.forEach((lineData) => {
-            if (!lineData.genX) return; // Skip if not initialized properly
+            if (!lineData.beams) return;
 
-            // Dispose old segments
-            if (lineData.segments) {
-                lineData.segments.forEach(seg => {
-                    if (seg) seg.dispose();
-                });
-                lineData.segments = [];
+            lineData.beams.forEach((beam) => {
+                // Laser Pulse: Randomly scale the visibility or emissiveIntensity
+                const pulse = 0.5 + Math.random() * 0.5;
+                if (beam.material) {
+                    beam.material.emissiveIntensity = 2.0 + pulse * 10;
+                    beam.visibility = 0.4 + pulse * 0.6;
+                }
+            });
+
+            // Data "HITS": Trigger particle system at contact point (pillar side)
+            if (lineData.hitParticles && Math.random() > 0.7) {
+                lineData.hitParticles.emitRate = 50;
+                setTimeout(() => {
+                    if (lineData.hitParticles) lineData.hitParticles.emitRate = 0;
+                }, 100);
             }
-
-            // Create thin red laser beams
-            const segments = 1; // Continuous beam look
-            const points = [
-                new BABYLON.Vector3(lineData.genX, lineData.genY, lineData.genZ),
-                new BABYLON.Vector3(lineData.crystalX, lineData.crystalY, lineData.crystalZ)
-            ];
-
-            const line = BABYLON.MeshBuilder.CreateLines(
-                `laser_${Date.now()}`,
-                { points: points },
-                this.scene
-            );
-
-            // Red Laser Color #DC2626
-            const color = new BABYLON.Color3(0.86, 0.15, 0.15);
-            // Pulse opacity
-            const opacity = 0.5 + 0.5 * Math.sin(this.animationTime * 5); // 0.5 - 1.0
-
-            line.color = new BABYLON.Color4(color.r, color.g, color.b, opacity);
-            lineData.segments.push(line);
         });
+
+        // NLO Rotation: Slowly rotate the central blue crystal on its Y-axis
+        if (this.crystalMesh && this.crystalMesh.mesh) {
+            this.crystalMesh.mesh.rotation.y += 0.005;
+        }
+
+        // Pulse God Rays
+        if (this.vls) {
+            this.vls.weight = 0.5 + Math.sin(this.animationTime * 2) * 0.2;
+        }
 
         this.mysteryRings.forEach((ring) => {
             const name = ring.name;
