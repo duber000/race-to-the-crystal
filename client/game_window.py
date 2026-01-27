@@ -307,10 +307,10 @@ class GameView(arcade.View):
                 instruction = f"Selected {self.deployment_controller.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"  # type: ignore
             elif self.input_handler.turn_phase == TurnPhase.MOVEMENT:
                 if self.camera_controller.camera_mode == "3D":  # type: ignore
-                    instruction = "Click a token to select, then move OR attack (not both) | Right-click + drag to look around"
+                    instruction = "Hold LMB to move | Click token to select | RMB drag to look/pan"
                 else:
                     instruction = (
-                        "Click a token to select, then move OR attack (not both)"
+                        "Hold LMB to move | Click token to select | RMB drag to pan"
                     )
             elif self.input_handler.turn_phase == TurnPhase.ACTION:
                 instruction = (

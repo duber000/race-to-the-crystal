@@ -126,16 +126,39 @@ class CameraController:
 
     def pan(self, dx: float, dy: float) -> None:
         """
-        Pan the 2D camera by the given amount.
+        Pan the camera by the given amount.
+        In 2D mode, pans the 2D camera.
+        In 3D mode, pans the 3D camera's position.
 
         Args:
             dx: Change in x
             dy: Change in y
         """
-        self.camera_2d.position = (
-            self.camera_2d.position[0] + dx,
-            self.camera_2d.position[1] + dy,
-        )
+        if self.camera_mode == "2D":
+            self.camera_2d.position = (
+                self.camera_2d.position[0] + dx,
+                self.camera_2d.position[1] + dy,
+            )
+        else:
+            # In 3D mode, translate the camera position in its XY plane
+            # Map dx to right movement and dy to forward movement
+            self.camera_3d.move(forward_delta=dy, right_delta=-dx)
+
+    def move_camera_forward(self, amount: float) -> None:
+        """Move camera forward."""
+        self.pan(0, amount)
+
+    def move_camera_backward(self, amount: float) -> None:
+        """Move camera backward."""
+        self.pan(0, -amount)
+
+    def move_camera_left(self, amount: float) -> None:
+        """Move camera left."""
+        self.pan(-amount, 0)
+
+    def move_camera_right(self, amount: float) -> None:
+        """Move camera right."""
+        self.pan(amount, 0)
 
     def zoom_in(self) -> None:
         """Zoom in the 2D camera."""
@@ -374,13 +397,14 @@ class CameraController:
     def activate_mouse_look(self, x: int, y: int, window) -> None:
         """
         Activate mouse-look mode in 3D.
+        Only activates if following a token (FPS mode).
 
         Args:
             x: Mouse x coordinate
             y: Mouse y coordinate
             window: Window reference for cursor visibility
         """
-        if self.camera_mode == "3D":
+        if self.camera_mode == "3D" and self.controlled_token_id is not None:
             self.mouse_look_active = True
             self.last_mouse_position = (x, y)
             window.set_mouse_visible(False)
