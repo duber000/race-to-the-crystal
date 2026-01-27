@@ -59,6 +59,7 @@ class CameraController {
             new BABYLON.Vector3(boardCenterX, 0, boardCenterY),
             this.scene,
         );
+        this.camera.minZ = 1;  // Near clipping plane - prevents clipping of close objects
         this.camera.maxZ = 10000;
         this.camera.attachControl(this.canvas, true);
         this.camera.lowerRadiusLimit = 300;
@@ -89,6 +90,7 @@ class CameraController {
             this.scene,
         );
         this.firstPersonCamera.setTarget(new BABYLON.Vector3(boardCenterX, 0, boardCenterY));
+        this.firstPersonCamera.minZ = 1;  // Near clipping plane
         this.firstPersonCamera.maxZ = 10000;
         this.firstPersonCamera.keysUp = [];
         this.firstPersonCamera.keysDown = [];
