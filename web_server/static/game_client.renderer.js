@@ -559,11 +559,11 @@ class Renderer3D {
                 const worldZ = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
                 const pillar = BABYLON.MeshBuilder.CreateCylinder(`shard_assembly_${index}`, {
-                    height: 80,
-                    diameter: 30,
+                    height: 60,
+                    diameter: 24,
                     subdivisions: 32
                 }, this.scene);
-                pillar.position = new BABYLON.Vector3(worldX, 40, worldZ);
+                pillar.position = new BABYLON.Vector3(worldX, 30, worldZ);
 
                 // Give each pillar its own material instance for individual colors
                 pillar.material = shardMat.clone(`shardMat_${index}`);
@@ -845,7 +845,7 @@ class Renderer3D {
 
         const hexagon = BABYLON.MeshBuilder.CreateCylinder(
             `token_${token.id}`,
-            { diameter: CELL_SIZE * 0.9, height: TOKEN_HEIGHT, tessellation: 6 },
+            { diameter: CELL_SIZE * 0.7, height: TOKEN_HEIGHT, tessellation: 6 },
             this.scene,
         );
         hexagon.position = new BABYLON.Vector3(worldX, TOKEN_HEIGHT / 2, worldZ);
@@ -888,7 +888,7 @@ class Renderer3D {
 
         const hexagon = BABYLON.MeshBuilder.CreateCylinder(
             `phantom_${phantom.phantom_id}`,
-            { diameter: CELL_SIZE * 0.9, height: TOKEN_HEIGHT, tessellation: 6 },
+            { diameter: CELL_SIZE * 0.7, height: TOKEN_HEIGHT, tessellation: 6 },
             this.scene,
         );
         hexagon.position = new BABYLON.Vector3(worldX, TOKEN_HEIGHT / 2, worldZ);
@@ -1103,7 +1103,7 @@ class Renderer3D {
 
         const square = BABYLON.MeshBuilder.CreateGround(
             "hoverSquare",
-            { width: CELL_SIZE * 0.9, height: CELL_SIZE * 0.9 },
+            { width: CELL_SIZE * 0.7, height: CELL_SIZE * 0.7 },
             this.scene,
         );
         square.position = new BABYLON.Vector3(centerX, 2.0, centerZ);

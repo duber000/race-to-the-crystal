@@ -36,8 +36,14 @@ class CameraController {
     }
 
     _initCameras() {
-        const boardCenterX = (this.boardWidth / 2) * this.cellSize;
-        const boardCenterY = (this.boardHeight / 2) * this.cellSize;
+        // Calculate real world dimensions
+        const boardRealWidth = this.boardWidth * this.cellSize;
+        const boardRealHeight = this.boardHeight * this.cellSize;
+        const boardCenterX = boardRealWidth / 2;
+        const boardCenterY = boardRealHeight / 2;
+
+        // Calculate the diagonal size of the board to determine safe limits
+        const boardDiagonal = Math.sqrt(Math.pow(boardRealWidth, 2) + Math.pow(boardRealHeight, 2));
 
         // Get device-specific camera configuration
         const config = this.deviceCapabilities ? this.deviceCapabilities.getCameraConfig() : {
@@ -55,22 +61,36 @@ class CameraController {
             "overviewCamera",
             Math.PI / 4,
             Math.PI / 3,
-            500,
+            boardDiagonal * 0.8, // Start at a zoom level relative to board size
             new BABYLON.Vector3(boardCenterX, 0, boardCenterY),
             this.scene,
         );
-        this.camera.minZ = 1;  // Near clipping plane - prevents clipping of close objects
-        this.camera.maxZ = 10000;
+
+        this.camera.minZ = 5;  // Near clipping plane - prevent clipping through tokens
+
+        // FIX: Set maxZ dynamically so edges of large boards don't get clipped
+        this.camera.maxZ = boardDiagonal * 5;
+
         this.camera.attachControl(this.canvas, true);
-        this.camera.lowerRadiusLimit = 300;
-        this.camera.upperRadiusLimit = 1500;
+        this.camera.lowerRadiusLimit = 200; // Allow getting closer
+
+        // FIX: Allow zooming out far enough to see the corners, but not infinite
+        this.camera.upperRadiusLimit = boardDiagonal * 1.5;
+
         this.camera.wheelPrecision = config.wheelPrecision;
-        this.camera.panningSensibility = config.panningSensibility;
+        this.camera.fov = 0.7;  // Wider FOV to see edges of board (default ~0.8-1.0)
+
+        // Disable built-in RMB panning - we handle panning via LMB through handlePan()
+        // RMB is used only for rotation (alpha) in our custom input handler
+        this.camera.panningSensibility = 0;
+
         this.camera.inertia = config.inertia;
         this.camera.lowerAlphaLimit = -Math.PI;  // Allow full rotation
         this.camera.upperAlphaLimit = Math.PI;   // Allow full rotation
-        this.camera.lowerBetaLimit = Math.PI / 3;
-        this.camera.upperBetaLimit = Math.PI / 3;
+
+        // FIX: Adjusted Beta limits to allow seeing the board from higher up if needed
+        this.camera.lowerBetaLimit = 0.1;
+        this.camera.upperBetaLimit = (Math.PI / 2) - 0.1; // Don't hit ground level
 
         // Enable multi-touch on mobile devices (keep mouse support for hybrid devices)
         if (this.deviceCapabilities && this.deviceCapabilities.hasTouch()) {
@@ -90,8 +110,11 @@ class CameraController {
             this.scene,
         );
         this.firstPersonCamera.setTarget(new BABYLON.Vector3(boardCenterX, 0, boardCenterY));
-        this.firstPersonCamera.minZ = 1;  // Near clipping plane
-        this.firstPersonCamera.maxZ = 10000;
+        this.firstPersonCamera.minZ = 5;  // Near clipping plane - prevent clipping through tokens
+
+        // FIX: Update maxZ here too
+        this.firstPersonCamera.maxZ = boardDiagonal * 5;
+
         this.firstPersonCamera.keysUp = [];
         this.firstPersonCamera.keysDown = [];
         this.firstPersonCamera.keysLeft = [];
@@ -126,9 +149,13 @@ class CameraController {
     updateFirstPersonCamera(token) {
         if (this.cameraMode !== "firstperson" || !token) return;
 
+        // Note: Assuming TOKEN_HEIGHT is defined globally or passed in context. 
+        // If not, replace with a fixed value like 50.
+        const tokenHeightVal = (typeof TOKEN_HEIGHT !== 'undefined') ? TOKEN_HEIGHT : 50;
+
         const tokenX = token.position[0] * this.cellSize + this.cellSize / 2;
         const tokenZ = token.position[1] * this.cellSize + this.cellSize / 2;
-        const tokenY = TOKEN_HEIGHT / 2;
+        const tokenY = tokenHeightVal / 2;
 
         const offset = 100;
         const height = 30;
@@ -237,8 +264,26 @@ class CameraController {
         forward.y = 0;
         forward.normalize();
 
-        this.camera.target.addInPlace(right.scale(-dx * panSpeed));
-        this.camera.target.addInPlace(forward.scale(dy * panSpeed));
+        // Calculate the proposed move
+        const moveVector = right.scale(-dx * panSpeed).add(forward.scale(dy * panSpeed));
+        const newTarget = this.camera.target.add(moveVector);
+
+        // FIX: Define the bounds (World coordinates of board edges)
+        // Adding a padding (2 cells) so you can see just past the edge
+        const padding = this.cellSize * 2;
+        const minX = -padding;
+        const maxX = (this.boardWidth * this.cellSize) + padding;
+        const minZ = -padding;
+        const maxZ = (this.boardHeight * this.cellSize) + padding;
+
+        // FIX: Apply clamping: Only move if within bounds
+        if (newTarget.x >= minX && newTarget.x <= maxX) {
+            this.camera.target.x = newTarget.x;
+        }
+
+        if (newTarget.z >= minZ && newTarget.z <= maxZ) {
+            this.camera.target.z = newTarget.z;
+        }
     }
 
     moveCameraForward(amount) {
@@ -319,6 +364,9 @@ class CameraController {
     resetView() {
         const boardCenterX = (this.boardWidth / 2) * this.cellSize;
         const boardCenterY = (this.boardHeight / 2) * this.cellSize;
+        const boardRealWidth = this.boardWidth * this.cellSize;
+        const boardRealHeight = this.boardHeight * this.cellSize;
+        const boardDiagonal = Math.sqrt(Math.pow(boardRealWidth, 2) + Math.pow(boardRealHeight, 2));
 
         // Switch to overview mode if in first-person
         if (this.cameraMode === "firstperson") {
@@ -328,7 +376,8 @@ class CameraController {
         // Reset overview camera to initial position
         this.camera.alpha = Math.PI / 4;
         this.camera.beta = Math.PI / 3;
-        this.camera.radius = 500;
+        // FIX: Reset radius relative to diagonal
+        this.camera.radius = boardDiagonal * 0.8;
         this.camera.target = new BABYLON.Vector3(boardCenterX, 0, boardCenterY);
         this.camera.fov = 0.8; // Default FOV
 
@@ -339,5 +388,4 @@ class CameraController {
 
         console.log('[CameraController] View reset to initial position');
     }
-
 }

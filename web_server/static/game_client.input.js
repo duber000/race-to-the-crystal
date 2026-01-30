@@ -23,6 +23,7 @@
 // Debounce delay for game actions (ms)
 // Prevents accidental double-actions from key holds/rapid presses
 const ACTION_DEBOUNCE_MS = 200;
+const DRAG_THRESHOLD = 10;  // Pixels to trigger drag (must be larger than click threshold)
 
 class InputHandler {
     constructor(scene, canvas, cameraController, gameState, connectionState, engine, deviceCapabilities) {
@@ -128,34 +129,35 @@ class InputHandler {
             return;
         }
 
-        // Handle LMB dragging/moving (mouse only to avoid conflict with touch gestures)
+        // Handle LMB dragging (mouse only)
         if (this.isLMBDown && pointerInfo.event.pointerType === 'mouse') {
             const dist = Math.sqrt(
                 Math.pow(pointerInfo.event.clientX - this.lmbDownPosition.x, 2) +
                 Math.pow(pointerInfo.event.clientY - this.lmbDownPosition.y, 2)
             );
 
-            if (dist > 5) {
+            if (dist > DRAG_THRESHOLD) {
                 this.isLMBDragging = true;
             }
 
             if (this.isLMBDragging) {
-                if (this.cameraController.cameraMode === "firstperson") {
-                    // Move around the board in FPS mode with LMB
+                if (this.cameraController.cameraMode === "overview") {
+                    // Pan camera in overview mode
+                    this.cameraController.handlePan(dx, dy);
+                } else if (this.cameraController.cameraMode === "firstperson") {
+                    // Move around the board in FPS mode
                     this.cameraController.moveCameraForward(-dy * 0.5);
                     this.cameraController.moveCameraRight(dx * 0.5);
                 }
-                // LMB panning in overview mode is disabled - use RMB for rotation
                 return;
             }
         }
 
-        // Handle RMB circular panning (rotation) in overview mode
+        // Handle RMB rotation in overview mode
         if (this.isPanning && this.cameraController.cameraMode === "overview") {
-            // Rotate camera around the board based on horizontal mouse movement
-            const rotationAmount = dx * 0.005; // Sensitivity: adjust as needed
+            const rotationAmount = dx * 0.003;
             if (this.cameraController.camera) {
-                this.cameraController.camera.alpha = (this.cameraController.camera.alpha + rotationAmount) % (Math.PI * 2);
+                this.cameraController.camera.alpha += rotationAmount;
             }
             return;
         }
@@ -194,8 +196,9 @@ class InputHandler {
                     y: pointerInfo.event.clientY,
                 };
                 this.isLMBDragging = false;
+                this.canvas.style.cursor = "pointer";
             } else {
-                // Restore immediate click logic for touch/pen to maintain compatibility
+                // Immediate click for touch/pen (no drag threshold)
                 const pickResult = this.scene.pick(
                     pointerInfo.event.clientX,
                     pointerInfo.event.clientY,
@@ -232,7 +235,7 @@ class InputHandler {
     handlePointerUp(pointerInfo) {
         if (pointerInfo.event.button === 0 && pointerInfo.event.pointerType === 'mouse') {
             if (this.isLMBDown && !this.isLMBDragging) {
-                // Perform click only if not dragging
+                // Click only if not dragging
                 const pickResult = this.scene.pick(
                     pointerInfo.event.clientX,
                     pointerInfo.event.clientY,
@@ -251,6 +254,7 @@ class InputHandler {
             }
             this.isLMBDown = false;
             this.isLMBDragging = false;
+            this.canvas.style.cursor = "default";
         } else if (pointerInfo.event.button === 2) {
             if (this.cameraController.cameraMode === "overview") {
                 this.isPanning = false;
