@@ -63,7 +63,7 @@
             pointer-events: auto;
         }
 
-        #hud .panel-header {
+        #hud > summary {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -72,10 +72,15 @@
             user-select: none;
             -webkit-tap-highlight-color: transparent;
             border-bottom: 1px solid #066;
+            list-style: none;
         }
 
-        #hud .panel-header:hover {
+        #hud > summary:hover {
             background: rgba(0, 255, 255, 0.1);
+        }
+
+        #hud > summary::-webkit-details-marker {
+            display: none;
         }
 
         #hud h2 {
@@ -85,25 +90,11 @@
             flex: 1;
         }
 
-        #hud .panel-toggle {
-            color: #0aa;
-            font-size: 12px;
-            margin-left: 10px;
-        }
-
         #hud .panel-content {
             padding: 15px;
             max-height: 500px;
             overflow-y: auto;
             overflow-x: hidden;
-            transition: max-height 0.3s ease, opacity 0.3s ease;
-        }
-
-        #hud .panel-content.collapsed {
-            max-height: 0;
-            padding: 0;
-            opacity: 0;
-            overflow: hidden;
         }
 
         #hud .status-line {
@@ -129,7 +120,7 @@
             pointer-events: auto;
         }
 
-        #controls .panel-header {
+        #controls > summary {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -138,10 +129,15 @@
             user-select: none;
             -webkit-tap-highlight-color: transparent;
             border-bottom: 1px solid #066;
+            list-style: none;
         }
 
-        #controls .panel-header:hover {
+        #controls > summary:hover {
             background: rgba(0, 255, 255, 0.1);
+        }
+
+        #controls > summary::-webkit-details-marker {
+            display: none;
         }
 
         #controls h3 {
@@ -150,25 +146,11 @@
             flex: 1;
         }
 
-        #controls .panel-toggle {
-            color: #0aa;
-            font-size: 11px;
-            margin-left: 10px;
-        }
-
         #controls .panel-content {
             padding: 15px;
             max-height: 400px;
             overflow-y: auto;
             overflow-x: hidden;
-            transition: max-height 0.3s ease, opacity 0.3s ease;
-        }
-
-        #controls .panel-content.collapsed {
-            max-height: 0;
-            padding: 0;
-            opacity: 0;
-            overflow: hidden;
         }
 
         #controls ul {
@@ -522,24 +504,26 @@
             padding-top: 10px;
         }
 
-        #controls .more-controls-header {
+        #controls .more-controls > summary {
             cursor: pointer;
             color: #0aa;
             font-size: 11px;
             user-select: none;
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
 
-        #controls .more-controls-header:hover {
+        #controls .more-controls > summary:hover {
             color: #0ff;
         }
 
-        #controls .more-controls-content {
+        #controls .more-controls > summary::-webkit-details-marker {
             display: none;
-            margin-top: 8px;
         }
 
-        #controls .more-controls-content.expanded {
-            display: block;
+        #controls .more-controls-content {
+            margin-top: 8px;
         }
 
         #controls .gameplay-blurb {
@@ -567,13 +551,18 @@
             border-radius: 8px;
         }
 
-        #mobile-controls .mobile-controls-header {
+        #mobile-controls > summary {
             display: flex;
             align-items: center;
             padding: 8px 12px;
             cursor: pointer;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            list-style: none;
+        }
+
+        #mobile-controls > summary::-webkit-details-marker {
+            display: none;
         }
 
         #mobile-controls .mobile-controls-icon {
@@ -596,25 +585,12 @@
             flex: 1;
         }
 
-        #mobile-controls .mobile-controls-toggle {
-            color: #0aa;
-            font-size: 10px;
-        }
-
         #mobile-controls .mobile-controls-content {
             padding: 0 12px 12px 12px;
             border-top: 1px solid #066;
             max-height: 300px;
             overflow-y: auto;
             overflow-x: hidden;
-            transition: max-height 0.3s ease, opacity 0.3s ease;
-        }
-
-        #mobile-controls .mobile-controls-content.collapsed {
-            max-height: 0;
-            padding: 0;
-            opacity: 0;
-            overflow: hidden;
         }
 
         #mobile-controls h4 {
@@ -672,7 +648,7 @@
                 font-size: 11px;
             }
 
-            #hud .panel-header {
+            #hud > summary {
                 padding: 8px 12px;
             }
 
@@ -698,7 +674,6 @@
             /* Hide keyboard controls on mobile */
             #controls {
                 display: none !important;
-                visibility: hidden !important;
             }
 
             /* Show touch controls on mobile */
@@ -1076,11 +1051,10 @@
 
     <canvas id="renderCanvas"></canvas>
 
-    <div id="hud">
-        <div class="panel-header" onclick="togglePanel('hud')">
+    <details id="hud" open>
+        <summary>
             <h2>Race to the Crystal</h2>
-            <span class="panel-toggle" id="hud-toggle">[-]</span>
-        </div>
+        </summary>
         <div class="panel-content" id="hud-content">
             <div class="status-line">Turn: <span id="turnNumber">0</span></div>
             <div class="status-line">Phase: <span id="gamePhase">Setup</span></div>
@@ -1088,16 +1062,15 @@
             <div class="status-line">Current Player: <span id="currentPlayer">-</span></div>
             <div id="playersList"></div>
         </div>
-    </div>
+    </details>
 
     <!-- Crystal Effects Indicator -->
     <div id="crystal-effects-indicator" style="display: none;"></div>
 
-    <div id="controls">
-        <div class="panel-header" onclick="togglePanel('controls')">
+    <details id="controls" open>
+        <summary>
             <h3>Controls</h3>
-            <span class="panel-toggle" id="controls-toggle">[-]</span>
-        </div>
+        </summary>
         <div class="panel-content" id="controls-content">
             <ul>
                 <li><strong>Hold Left-click:</strong> Move around board</li>
@@ -1108,8 +1081,8 @@
                 <li><strong>R:</strong> Deploy menu</li>
                 <li><strong>ESC:</strong> Cancel action</li>
             </ul>
-            <div class="more-controls">
-                <div class="more-controls-header" onclick="toggleMoreControls()">[+] More Controls</div>
+            <details class="more-controls">
+                <summary class="more-controls-header">More Controls</summary>
                 <div class="more-controls-content" id="more-controls-content">
                     <ul>
                         <li><strong>WASD / Arrow Keys:</strong> Move camera position</li>
@@ -1122,21 +1095,20 @@
                         <li><strong>Ctrl+Q:</strong> Quit game</li>
                     </ul>
                 </div>
-            </div>
+            </details>
             <div class="gameplay-blurb">
                 Deploy tokens to capture generators. Hold the crystal with enough tokens to win. Tokens with lesser
                 health move faster (2 tiles), robust tokens move slower (1 tile).
             </div>
         </div>
-    </div>
+    </details>
 
     <!-- Mobile Touch Controls (shown on mobile, hidden on desktop) -->
-    <div id="mobile-controls">
-        <div class="mobile-controls-header" onclick="toggleMobileControls()">
+    <details id="mobile-controls">
+        <summary class="mobile-controls-header">
             <span class="mobile-controls-icon">?</span>
             <span class="mobile-controls-title">Help</span>
-            <span class="mobile-controls-toggle" id="mobile-controls-toggle">[+]</span>
-        </div>
+        </summary>
         <div class="mobile-controls-content" id="mobile-controls-content">
             <h4>Touch Controls</h4>
             <ul>
@@ -1145,7 +1117,7 @@
                 <li><strong>Two-finger drag:</strong> Pan camera</li>
             </ul>
         </div>
-    </div>
+    </details>
 
     <!-- Mobile Action Bar (Fixed Bottom) -->
     <div id="mobile-action-bar">
@@ -1223,146 +1195,6 @@
     <script src="/static/game_client.js"></script>
 
     <script>
-        // Panel state management configuration
-        const PANEL_CONFIG = {
-            hud: {
-                contentId: 'hud-content',
-                toggleId: 'hud-toggle',
-                storageKey: 'panelState_hud',
-                mobileDefault: 'collapsed',
-                desktopDefault: 'expanded'
-            },
-            controls: {
-                contentId: 'controls-content',
-                toggleId: 'controls-toggle',
-                storageKey: 'panelState_controls',
-                mobileDefault: 'expanded',
-                desktopDefault: 'expanded'
-            },
-            mobileControls: {
-                contentId: 'mobile-controls-content',
-                toggleId: 'mobile-controls-toggle',
-                storageKey: 'panelState_mobileControls',
-                mobileDefault: 'collapsed',
-                desktopDefault: 'collapsed'
-            }
-        };
-
-        function isMobileDevice() {
-            return window.innerWidth <= 768;
-        }
-
-        function togglePanel(panelId) {
-            const config = PANEL_CONFIG[panelId];
-            if (!config) return;
-
-            const content = document.getElementById(config.contentId);
-            const toggle = document.getElementById(config.toggleId);
-
-            if (!content || !toggle) return;
-
-            const isCollapsed = content.classList.contains('collapsed');
-            const newState = isCollapsed ? 'expanded' : 'collapsed';
-
-            if (isCollapsed) {
-                content.classList.remove('collapsed');
-                toggle.textContent = '[-]';
-            } else {
-                content.classList.add('collapsed');
-                toggle.textContent = '[+]';
-            }
-
-            savePanelState(config.storageKey, newState);
-        }
-
-        function savePanelState(storageKey, state) {
-            try {
-                localStorage.setItem(storageKey, state);
-            } catch (e) {
-                console.warn('Failed to save panel state:', e);
-            }
-        }
-
-        function loadPanelState(config) {
-            try {
-                const saved = localStorage.getItem(config.storageKey);
-                if (saved) return saved;
-            } catch (e) {
-                console.warn('Failed to load panel state:', e);
-            }
-
-            return isMobileDevice() ? config.mobileDefault : config.desktopDefault;
-        }
-
-        function applyPanelState(panelId, state) {
-            const config = PANEL_CONFIG[panelId];
-            if (!config) return;
-
-            const content = document.getElementById(config.contentId);
-            const toggle = document.getElementById(config.toggleId);
-
-            if (!content || !toggle) return;
-
-            if (state === 'collapsed') {
-                content.classList.add('collapsed');
-                toggle.textContent = '[+]';
-            } else {
-                content.classList.remove('collapsed');
-                toggle.textContent = '[-]';
-            }
-        }
-
-        function initCollapsiblePanels() {
-            for (const panelId in PANEL_CONFIG) {
-                const config = PANEL_CONFIG[panelId];
-                const state = loadPanelState(config);
-                applyPanelState(panelId, state);
-            }
-        }
-
-        function handleResize() {
-            // Re-apply defaults on resize if no saved state exists
-            for (const panelId in PANEL_CONFIG) {
-                const config = PANEL_CONFIG[panelId];
-                try {
-                    const saved = localStorage.getItem(config.storageKey);
-                    if (!saved) {
-                        const defaultState = isMobileDevice() ? config.mobileDefault : config.desktopDefault;
-                        applyPanelState(panelId, defaultState);
-                    }
-                } catch (e) {
-                    console.warn('Failed to handle resize:', e);
-                }
-            }
-        }
-
-        // Initialize panels when DOM is ready
-        document.addEventListener('DOMContentLoaded', function () {
-            initCollapsiblePanels();
-
-            // Re-apply on resize (debounced)
-            let resizeTimer;
-            window.addEventListener('resize', function () {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(handleResize, 250);
-            });
-        });
-
-        function toggleMoreControls() {
-            var content = document.getElementById('more-controls-content');
-            var header = document.querySelector('.more-controls-header');
-            content.classList.toggle('expanded');
-            if (content.classList.contains('expanded')) {
-                header.textContent = '[-] More Controls';
-            } else {
-                header.textContent = '[+] More Controls';
-            }
-        }
-
-        function toggleMobileControls() {
-            togglePanel('mobileControls');
-        }
-
         function handleMobileAction(action, event) {
             if (event) {
                 event.preventDefault(); // Prevent default touch behavior (scrolling/zoom)
@@ -1411,10 +1243,14 @@
                             window.gameClient.cameraController.resetView();
                         }
                         break;
-                    case 'menu':
-                        // Toggle the main menu/HUD
-                        togglePanel('hud');
+                    case 'menu': {
+                        // Toggle the HUD details element
+                        const hud = document.getElementById('hud');
+                        if (hud) {
+                            hud.toggleAttribute('open');
+                        }
                         break;
+                    }
                 }
             } catch (e) {
                 console.error('Error handling mobile action:', e);
