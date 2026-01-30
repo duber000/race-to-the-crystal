@@ -326,18 +326,18 @@ class Board3D:
     ) -> list:
         """Create wireframe cube vertices."""
         half = size / 2
-        height = self.wall_height * 0.6  # Cube height
+        cube_height = 40.0  # Height of generator cube
 
-        # 8 vertices of cube
+        # 8 vertices of cube (x, y, z) where y is up
         vertices = [
-            (center_x - half, center_y - half, 0.0),  # 0: bottom-front-left
-            (center_x + half, center_y - half, 0.0),  # 1: bottom-front-right
-            (center_x + half, center_y + half, 0.0),  # 2: bottom-back-right
-            (center_x - half, center_y + half, 0.0),  # 3: bottom-back-left
-            (center_x - half, center_y - half, height),  # 4: top-front-left
-            (center_x + half, center_y - half, height),  # 5: top-front-right
-            (center_x + half, center_y + half, height),  # 6: top-back-right
-            (center_x - half, center_y + half, height),  # 7: top-back-left
+            (center_x - half, 0.0, center_y - half),  # 0: bottom-front-left
+            (center_x + half, 0.0, center_y - half),  # 1: bottom-front-right
+            (center_x + half, 0.0, center_y + half),  # 2: bottom-back-right
+            (center_x - half, 0.0, center_y + half),  # 3: bottom-back-left
+            (center_x - half, cube_height, center_y - half),  # 4: top-front-left
+            (center_x + half, cube_height, center_y - half),  # 5: top-front-right
+            (center_x + half, cube_height, center_y + half),  # 6: top-back-right
+            (center_x - half, cube_height, center_y + half),  # 7: top-back-left
         ]
 
         # 12 edges of cube (each edge is 2 vertices)
@@ -371,15 +371,15 @@ class Board3D:
         self, center_x: float, center_y: float, size: float
     ) -> list:
         """Create wireframe diamond/pyramid vertices."""
-        height = self.wall_height * 0.8
+        diamond_height = 50.0  # Height of crystal diamond
 
-        # 5 vertices: 4 base corners + 1 apex
+        # 5 vertices: 4 base corners + 1 apex (x, y, z) where y is up
         vertices = [
-            (center_x, center_y, height),  # 0: apex
-            (center_x + size, center_y, 0.0),  # 1: base-right
-            (center_x, center_y + size, 0.0),  # 2: base-back
-            (center_x - size, center_y, 0.0),  # 3: base-left
-            (center_x, center_y - size, 0.0),  # 4: base-front
+            (center_x, diamond_height, center_y),  # 0: apex
+            (center_x + size, 0.0, center_y),  # 1: base-right
+            (center_x, 0.0, center_y + size),  # 2: base-back
+            (center_x - size, 0.0, center_y),  # 3: base-left
+            (center_x, 0.0, center_y - size),  # 4: base-front
         ]
 
         # Edges: 4 base edges + 4 edges to apex

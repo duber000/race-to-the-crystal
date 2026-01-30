@@ -67,8 +67,8 @@ class CameraController {
         this.camera.wheelPrecision = config.wheelPrecision;
         this.camera.panningSensibility = config.panningSensibility;
         this.camera.inertia = config.inertia;
-        this.camera.lowerAlphaLimit = 0;
-        this.camera.upperAlphaLimit = 0;
+        this.camera.lowerAlphaLimit = -Math.PI;  // Allow full rotation
+        this.camera.upperAlphaLimit = Math.PI;   // Allow full rotation
         this.camera.lowerBetaLimit = Math.PI / 3;
         this.camera.upperBetaLimit = Math.PI / 3;
 

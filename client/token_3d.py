@@ -123,8 +123,8 @@ class Token3D:
         """
         # Create model matrix (translate to interpolated render position)
         world_x = self.render_x
-        world_y = self.render_y
-        world_z = 0.0  # Tokens sit on the board surface
+        world_y = self.height / 2.0  # Center token above board surface
+        world_z = self.render_y
 
         # Translation matrix
         model_matrix = np.eye(4, dtype=np.float32)

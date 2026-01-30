@@ -140,20 +140,23 @@ class InputHandler {
             }
 
             if (this.isLMBDragging) {
-                if (this.cameraController.cameraMode === "overview") {
-                    this.cameraController.handlePan(dx, dy);
-                } else if (this.cameraController.cameraMode === "firstperson") {
+                if (this.cameraController.cameraMode === "firstperson") {
                     // Move around the board in FPS mode with LMB
                     this.cameraController.moveCameraForward(-dy * 0.5);
                     this.cameraController.moveCameraRight(dx * 0.5);
                 }
+                // LMB panning in overview mode is disabled - use RMB for rotation
                 return;
             }
         }
 
-        // Handle RMB panning in overview mode
+        // Handle RMB circular panning (rotation) in overview mode
         if (this.isPanning && this.cameraController.cameraMode === "overview") {
-            this.cameraController.handlePan(dx, dy);
+            // Rotate camera around the board based on horizontal mouse movement
+            const rotationAmount = dx * 0.005; // Sensitivity: adjust as needed
+            if (this.cameraController.camera) {
+                this.cameraController.camera.alpha = (this.cameraController.camera.alpha + rotationAmount) % (Math.PI * 2);
+            }
             return;
         }
 

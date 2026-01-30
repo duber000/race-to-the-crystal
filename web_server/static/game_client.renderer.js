@@ -554,16 +554,16 @@ class Renderer3D {
 
         if (gameState.generators) {
             gameState.generators.forEach((gen, index) => {
-                const offset = shardOffsets[index % 4];
-                const pillarX = centerX + offset.x;
-                const pillarZ = centerZ + offset.z;
+                // Position generator at its grid location
+                const worldX = gen.position[0] * CELL_SIZE + CELL_SIZE / 2;
+                const worldZ = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
                 const pillar = BABYLON.MeshBuilder.CreateCylinder(`shard_assembly_${index}`, {
                     height: 80,
                     diameter: 30,
                     subdivisions: 32
                 }, this.scene);
-                pillar.position = new BABYLON.Vector3(pillarX, 40, pillarZ);
+                pillar.position = new BABYLON.Vector3(worldX, 40, worldZ);
 
                 // Give each pillar its own material instance for individual colors
                 pillar.material = shardMat.clone(`shardMat_${index}`);
@@ -857,6 +857,7 @@ class Renderer3D {
         material.roughness = 0.4;
         material.emissiveIntensity = 1.0;
         material.alpha = 0.9;
+        material.backFaceCulling = false;  // Allow seeing token from inside
         hexagon.material = material;
 
         // Add a small light beneath the token for a floor glow
@@ -903,6 +904,7 @@ class Renderer3D {
         material.emissiveIntensity = 0.5;
         material.alpha = 0.4; // Semi-transparent for phantom effect
         material.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
+        material.backFaceCulling = false;  // Allow seeing phantom from inside
 
         hexagon.material = material;
 
