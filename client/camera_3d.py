@@ -294,3 +294,20 @@ class FirstPersonCamera3D:
         grid_x = int(world_x // CELL_SIZE)
         grid_y = int(world_y // CELL_SIZE)
         return grid_x, grid_y
+
+    def move(self, forward_delta: float = 0.0, right_delta: float = 0.0):
+        """
+        Move camera position relative to current yaw in the XY plane.
+
+        Args:
+            forward_delta: Move forward/backward
+            right_delta: Move right/left
+        """
+        yaw_rad = np.radians(self.yaw)
+
+        # Calculate forward and right vectors in the XY plane
+        # Yaw 0 is facing along +X axis
+        forward = np.array([np.cos(yaw_rad), np.sin(yaw_rad), 0.0], dtype=np.float32)
+        right = np.array([np.sin(yaw_rad), -np.cos(yaw_rad), 0.0], dtype=np.float32)
+
+        self.position += forward * forward_delta + right * right_delta

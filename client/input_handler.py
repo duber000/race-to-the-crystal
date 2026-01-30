@@ -84,6 +84,12 @@ class InputHandler:
         # Mystery animations reference (will be set by GameView)
         self.mystery_animations = {}
 
+        # Mouse state for dragging
+        self.lmb_pressed = False
+        self.rmb_pressed = False
+        self.is_dragging = False
+        self.drag_start_pos = (0, 0)
+
     def set_mystery_animations(self, mystery_animations: dict):
         """Set reference to mystery animations dict."""
         self.mystery_animations = mystery_animations
@@ -102,9 +108,36 @@ class InputHandler:
         Returns:
             True if event was handled, False otherwise
         """
-        # Handle mouse-look in 3D mode
+        # Handle mouse-look in 3D mode (RMB)
         if self.camera_controller.handle_mouse_motion(x, y, dx, dy, window):
             return True  # Mouse-look handled, skip UI hover effects
+
+        # Handle LMB/RMB dragging
+        if self.lmb_pressed or self.rmb_pressed:
+            dist = (
+                (x - self.drag_start_pos[0]) ** 2 + (y - self.drag_start_pos[1]) ** 2
+            ) ** 0.5
+            if dist > 5:
+                self.is_dragging = True
+
+            if self.is_dragging:
+                if self.camera_controller.camera_mode == "2D":
+                    # Pan 2D camera (inverted for "grab and pull" feel)
+                    self.camera_controller.pan(
+                        -dx / self.camera_controller.zoom_level,
+                        -dy / self.camera_controller.zoom_level,
+                    )
+                    return True
+                elif self.camera_controller.camera_mode == "3D":
+                    if self.lmb_pressed:
+                        # Move camera position in 3D mode with LMB
+                        self.camera_controller.move_camera_forward(dy * 0.5)
+                        self.camera_controller.move_camera_right(-dx * 0.5)
+                        return True
+                    elif self.rmb_pressed:
+                        # Panning in 3D overview mode with RMB
+                        self.camera_controller.pan(-dx, -dy)
+                        return True
 
         # Update hovered grid position for 3D mode
         if self.camera_controller.camera_mode == "3D":
@@ -141,125 +174,21 @@ class InputHandler:
         Returns:
             True if event was handled, False otherwise
         """
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            self.lmb_pressed = True
+            self.drag_start_pos = (x, y)
+            self.is_dragging = False
+        elif button == arcade.MOUSE_BUTTON_RIGHT:
+            self.rmb_pressed = True
+            self.drag_start_pos = (x, y)
+            self.is_dragging = False
+
         if (
             button == arcade.MOUSE_BUTTON_RIGHT
             and self.camera_controller.camera_mode == "3D"
         ):
             # Activate mouse-look in 3D mode
             self.camera_controller.activate_mouse_look(x, y, window)
-            return True
-
-        if button == arcade.MOUSE_BUTTON_LEFT:
-            # Check UI first (prevents click-through)
-            ui_action = self.ui_manager.handle_mouse_click(x, y)
-            if ui_action == "end_turn":
-                self._handle_end_turn()
-                return True
-            elif ui_action == "cancel":
-                self._handle_cancel()
-                return True
-
-            current_player = self.game_state.get_current_player()
-
-            # First, convert screen coordinates to world/grid to check for tokens
-            world_pos = None
-            grid_pos = None
-            clicked_on_token = False
-
-            if self.camera_controller.camera_mode == "2D":
-                world_pos = self.camera_controller.screen_to_world_2d(x, y)
-                grid_x = int(world_pos[0] // CELL_SIZE)
-                grid_y = int(world_pos[1] // CELL_SIZE)
-                grid_pos = (grid_x, grid_y)
-            else:
-                grid_pos = self.camera_controller.screen_to_grid_3d(
-                    x, y, window.width, window.height
-                )
-
-            # Check if there's a token at the click position
-            if grid_pos and self.game_state.board.is_valid_position(
-                grid_pos[0], grid_pos[1]
-            ):
-                for player in self.game_state.players.values():
-                    for token_id in player.token_ids:
-                        token = self.game_state.get_token(token_id)
-                        if (
-                            token
-                            and token.is_alive
-                            and token.is_deployed
-                            and token.position == grid_pos
-                        ):
-                            clicked_on_token = True
-                            break
-                    if clicked_on_token:
-                        break
-
-            # In 3D first-person mode, if raycasting found nothing AND we have a controlled token,
-            # assume the user is clicking on the controlled token (looking directly at it)
-            if (
-                not clicked_on_token
-                and self.camera_controller.camera_mode == "3D"
-                and grid_pos is None
-            ):
-                controlled_token_id = self.camera_controller.controlled_token_id
-                if controlled_token_id is not None:
-                    controlled_token = self.game_state.get_token(controlled_token_id)
-                    if (
-                        controlled_token
-                        and controlled_token.is_alive
-                        and controlled_token.is_deployed
-                    ):
-                        # Use controlled token's position for clicking in first-person view
-                        grid_pos = controlled_token.position
-                        clicked_on_token = True
-
-            # Check corner menu if open (UI-based menu) - do this before indicator check
-            if self.deployment_controller.menu_open and current_player:
-                reserve_counts = self.game_state.get_reserve_token_counts(
-                    current_player.id
-                )
-                selected_health = self.deployment_controller.handle_menu_click(
-                    (x, y), current_player, reserve_counts
-                )
-                if selected_health:
-                    # Clear any existing token selection to prevent conflicts
-                    self.selected_token_id = None
-                    self.valid_moves = set()
-                    self.renderer_2d.update_selection_visuals(
-                        self.selected_token_id, self.valid_moves, self.game_state
-                    )
-                    # Clear 3D visuals
-                    self.renderer_3d.update_selection_visuals(
-                        self.selected_token_id, self.valid_moves
-                    )
-                    return True
-
-            # Check if clicking on R hexagon to open menu - but NOT if clicking on a token
-            if (
-                not clicked_on_token
-                and not self.deployment_controller.menu_open
-                # Do not steal clicks when a token or deploy option is selected
-                and self.selected_token_id is None
-                and not self.deployment_controller.selected_deploy_health
-                and self.deployment_controller.is_click_on_indicator(
-                    x, y, current_player
-                )
-            ):
-                if current_player and self.turn_phase == TurnPhase.MOVEMENT:
-                    self.deployment_controller.open_menu()
-                    return True
-
-            # Proceed with world interaction
-            if self.camera_controller.camera_mode == "2D":
-                if world_pos:
-                    self._handle_select((world_pos[0], world_pos[1]))
-            else:
-                if grid_pos:
-                    logger.debug(f"3D click detected at grid {grid_pos}")
-                    self._handle_select_3d(grid_pos)
-                else:
-                    logger.debug("3D ray casting: no intersection with board plane")
-
             return True
 
         return False
@@ -286,6 +215,128 @@ class InputHandler:
         ):
             # Deactivate mouse-look in 3D mode
             self.camera_controller.deactivate_mouse_look(window)
+
+        # Handle click/selection on LMB release if not dragging
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            was_dragging = self.is_dragging
+            self.lmb_pressed = False
+            self.is_dragging = False
+
+            if not was_dragging:
+                # Original selection logic
+                # Check UI first (prevents click-through)
+                ui_action = self.ui_manager.handle_mouse_click(x, y)
+                if ui_action == "end_turn":
+                    self._handle_end_turn()
+                    return True
+                elif ui_action == "cancel":
+                    self._handle_cancel()
+                    return True
+
+                current_player = self.game_state.get_current_player()
+
+                # First, convert screen coordinates to world/grid to check for tokens
+                world_pos = None
+                grid_pos = None
+                clicked_on_token = False
+
+                if self.camera_controller.camera_mode == "2D":
+                    world_pos = self.camera_controller.screen_to_world_2d(x, y)
+                    grid_x = int(world_pos[0] // CELL_SIZE)
+                    grid_y = int(world_pos[1] // CELL_SIZE)
+                    grid_pos = (grid_x, grid_y)
+                else:
+                    grid_pos = self.camera_controller.screen_to_grid_3d(
+                        x, y, window.width, window.height
+                    )
+
+                # Check if there's a token at the click position
+                if grid_pos and self.game_state.board.is_valid_position(
+                    grid_pos[0], grid_pos[1]
+                ):
+                    for player in self.game_state.players.values():
+                        for token_id in player.token_ids:
+                            token = self.game_state.get_token(token_id)
+                            if (
+                                token
+                                and token.is_alive
+                                and token.is_deployed
+                                and token.position == grid_pos
+                            ):
+                                clicked_on_token = True
+                                break
+                        if clicked_on_token:
+                            break
+
+                # In 3D first-person mode, if raycasting found nothing AND we have a controlled token,
+                # assume the user is clicking on the controlled token (looking directly at it)
+                if (
+                    not clicked_on_token
+                    and self.camera_controller.camera_mode == "3D"
+                    and grid_pos is None
+                ):
+                    controlled_token_id = self.camera_controller.controlled_token_id
+                    if controlled_token_id is not None:
+                        controlled_token = self.game_state.get_token(controlled_token_id)
+                        if (
+                            controlled_token
+                            and controlled_token.is_alive
+                            and controlled_token.is_deployed
+                        ):
+                            # Use controlled token's position for clicking in first-person view
+                            grid_pos = controlled_token.position
+                            clicked_on_token = True
+
+                # Check corner menu if open (UI-based menu) - do this before indicator check
+                if self.deployment_controller.menu_open and current_player:
+                    reserve_counts = self.game_state.get_reserve_token_counts(
+                        current_player.id
+                    )
+                    selected_health = self.deployment_controller.handle_menu_click(
+                        (x, y), current_player, reserve_counts
+                    )
+                    if selected_health:
+                        # Clear any existing token selection to prevent conflicts
+                        self.selected_token_id = None
+                        self.valid_moves = set()
+                        self.renderer_2d.update_selection_visuals(
+                            self.selected_token_id, self.valid_moves, self.game_state
+                        )
+                        # Clear 3D visuals
+                        self.renderer_3d.update_selection_visuals(
+                            self.selected_token_id, self.valid_moves
+                        )
+                        return True
+
+                # Check if clicking on R hexagon to open menu - but NOT if clicking on a token
+                if (
+                    not clicked_on_token
+                    and not self.deployment_controller.menu_open
+                    # Do not steal clicks when a token or deploy option is selected
+                    and self.selected_token_id is None
+                    and not self.deployment_controller.selected_deploy_health
+                    and self.deployment_controller.is_click_on_indicator(
+                        x, y, current_player
+                    )
+                ):
+                    if current_player and self.turn_phase == TurnPhase.MOVEMENT:
+                        self.deployment_controller.open_menu()
+                        return True
+
+                # Proceed with world interaction
+                if self.camera_controller.camera_mode == "2D":
+                    if world_pos:
+                        self._handle_select((world_pos[0], world_pos[1]))
+                else:
+                    if grid_pos:
+                        logger.debug(f"3D click detected at grid {grid_pos}")
+                        self._handle_select_3d(grid_pos)
+                    else:
+                        logger.debug("3D ray casting: no intersection with board plane")
+                return True
+        elif button == arcade.MOUSE_BUTTON_RIGHT:
+            self.rmb_pressed = False
+            self.is_dragging = False
             return True
 
         return False

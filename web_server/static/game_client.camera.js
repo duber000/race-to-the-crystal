@@ -241,8 +241,8 @@ class CameraController {
         this.camera.target.addInPlace(forward.scale(dy * panSpeed));
     }
 
-    moveCameraForward() {
-        const moveAmount = this.cameraMode === "overview" ? 50 : 20;
+    moveCameraForward(amount) {
+        const moveAmount = amount !== undefined ? amount : (this.cameraMode === "overview" ? 50 : 20);
         const activeCamera = this.cameraMode === "overview" ? this.camera : this.firstPersonCamera;
         const forward = activeCamera.getDirection(BABYLON.Vector3.Forward());
         forward.y = 0;
@@ -257,8 +257,8 @@ class CameraController {
         }
     }
 
-    moveCameraBackward() {
-        const moveAmount = this.cameraMode === "overview" ? 50 : 20;
+    moveCameraBackward(amount) {
+        const moveAmount = amount !== undefined ? amount : (this.cameraMode === "overview" ? 50 : 20);
         const activeCamera = this.cameraMode === "overview" ? this.camera : this.firstPersonCamera;
         const forward = activeCamera.getDirection(BABYLON.Vector3.Forward());
         forward.y = 0;
@@ -273,8 +273,8 @@ class CameraController {
         }
     }
 
-    moveCameraLeft() {
-        const moveAmount = this.cameraMode === "overview" ? 50 : 20;
+    moveCameraLeft(amount) {
+        const moveAmount = amount !== undefined ? amount : (this.cameraMode === "overview" ? 50 : 20);
         const activeCamera = this.cameraMode === "overview" ? this.camera : this.firstPersonCamera;
         const right = activeCamera.getDirection(BABYLON.Vector3.Right());
         right.y = 0;
@@ -289,8 +289,8 @@ class CameraController {
         }
     }
 
-    moveCameraRight() {
-        const moveAmount = this.cameraMode === "overview" ? 50 : 20;
+    moveCameraRight(amount) {
+        const moveAmount = amount !== undefined ? amount : (this.cameraMode === "overview" ? 50 : 20);
         const activeCamera = this.cameraMode === "overview" ? this.camera : this.firstPersonCamera;
         const right = activeCamera.getDirection(BABYLON.Vector3.Right());
         right.y = 0;

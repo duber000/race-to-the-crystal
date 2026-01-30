@@ -35,7 +35,10 @@ class InputHandler {
         this.deviceCapabilities = deviceCapabilities;
 
         // Mouse state
-        this.isPanning = false;
+        this.isPanning = false; // Right-click panning
+        this.isLMBDown = false;
+        this.lmbDownPosition = { x: 0, y: 0 };
+        this.isLMBDragging = false;
         this.lastPanPosition = { x: 0, y: 0 };
         this.hoveredCell = null;
 
@@ -119,11 +122,36 @@ class InputHandler {
         const dx = pointerInfo.event.movementX || 0;
         const dy = pointerInfo.event.movementY || 0;
 
+        // Handle mouse-look (RMB in first-person)
         if (this.cameraController.mouseLookActive) {
             this.cameraController.handleMouseMotion(dx, dy);
             return;
         }
 
+        // Handle LMB dragging/moving (mouse only to avoid conflict with touch gestures)
+        if (this.isLMBDown && pointerInfo.event.pointerType === 'mouse') {
+            const dist = Math.sqrt(
+                Math.pow(pointerInfo.event.clientX - this.lmbDownPosition.x, 2) +
+                Math.pow(pointerInfo.event.clientY - this.lmbDownPosition.y, 2)
+            );
+
+            if (dist > 5) {
+                this.isLMBDragging = true;
+            }
+
+            if (this.isLMBDragging) {
+                if (this.cameraController.cameraMode === "overview") {
+                    this.cameraController.handlePan(dx, dy);
+                } else if (this.cameraController.cameraMode === "firstperson") {
+                    // Move around the board in FPS mode with LMB
+                    this.cameraController.moveCameraForward(-dy * 0.5);
+                    this.cameraController.moveCameraRight(dx * 0.5);
+                }
+                return;
+            }
+        }
+
+        // Handle RMB panning in overview mode
         if (this.isPanning && this.cameraController.cameraMode === "overview") {
             this.cameraController.handlePan(dx, dy);
             return;
@@ -156,19 +184,29 @@ class InputHandler {
 
     handlePointerDown(pointerInfo) {
         if (pointerInfo.event.button === 0) {
-            const pickResult = this.scene.pick(
-                pointerInfo.event.clientX,
-                pointerInfo.event.clientY,
-            );
+            if (pointerInfo.event.pointerType === 'mouse') {
+                this.isLMBDown = true;
+                this.lmbDownPosition = {
+                    x: pointerInfo.event.clientX,
+                    y: pointerInfo.event.clientY,
+                };
+                this.isLMBDragging = false;
+            } else {
+                // Restore immediate click logic for touch/pen to maintain compatibility
+                const pickResult = this.scene.pick(
+                    pointerInfo.event.clientX,
+                    pointerInfo.event.clientY,
+                );
 
-            if (pickResult.hit && pickResult.pickedPoint) {
-                const x = pickResult.pickedPoint.x;
-                const z = pickResult.pickedPoint.z;
-                const gridX = Math.floor(x / CELL_SIZE);
-                const gridY = Math.floor(z / CELL_SIZE);
+                if (pickResult.hit && pickResult.pickedPoint) {
+                    const x = pickResult.pickedPoint.x;
+                    const z = pickResult.pickedPoint.z;
+                    const gridX = Math.floor(x / CELL_SIZE);
+                    const gridY = Math.floor(z / CELL_SIZE);
 
-                if (gridX >= 0 && gridX < BOARD_WIDTH && gridY >= 0 && gridY < BOARD_HEIGHT) {
-                    this.emit('click', { gridX, gridY });
+                    if (gridX >= 0 && gridX < BOARD_WIDTH && gridY >= 0 && gridY < BOARD_HEIGHT) {
+                        this.emit('click', { gridX, gridY });
+                    }
                 }
             }
         } else if (pointerInfo.event.button === 2) {
@@ -189,7 +227,28 @@ class InputHandler {
     }
 
     handlePointerUp(pointerInfo) {
-        if (pointerInfo.event.button === 2) {
+        if (pointerInfo.event.button === 0 && pointerInfo.event.pointerType === 'mouse') {
+            if (this.isLMBDown && !this.isLMBDragging) {
+                // Perform click only if not dragging
+                const pickResult = this.scene.pick(
+                    pointerInfo.event.clientX,
+                    pointerInfo.event.clientY,
+                );
+
+                if (pickResult.hit && pickResult.pickedPoint) {
+                    const x = pickResult.pickedPoint.x;
+                    const z = pickResult.pickedPoint.z;
+                    const gridX = Math.floor(x / CELL_SIZE);
+                    const gridY = Math.floor(z / CELL_SIZE);
+
+                    if (gridX >= 0 && gridX < BOARD_WIDTH && gridY >= 0 && gridY < BOARD_HEIGHT) {
+                        this.emit('click', { gridX, gridY });
+                    }
+                }
+            }
+            this.isLMBDown = false;
+            this.isLMBDragging = false;
+        } else if (pointerInfo.event.button === 2) {
             if (this.cameraController.cameraMode === "overview") {
                 this.isPanning = false;
                 this.canvas.style.cursor = "default";
