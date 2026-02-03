@@ -69,12 +69,18 @@ class GameClient {
 
     this.wsClient.on("connected", (data) => {
       this.ui.showConnectionStatus("Connected!");
+      this.ui.playerId = data.playerId;
       this.updateUIState(STATE.CONNECTED);
       this.wsClient.requestGameList();
     });
 
     this.wsClient.on("error", (data) => {
       this.ui.showConnectionError(data.message);
+      this.updateUIState(STATE.DISCONNECTED);
+    });
+
+    this.wsClient.on("disconnect", () => {
+      this.ui.playerId = null;
       this.updateUIState(STATE.DISCONNECTED);
     });
 

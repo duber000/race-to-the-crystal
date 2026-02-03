@@ -42,6 +42,312 @@
             overflow: hidden;
         }
 
+        .hidden {
+            display: none;
+        }
+
+        .ready-button--ready {
+            background: #080;
+            border-color: #0f0;
+            color: #0f0;
+        }
+
+        .ready-button--not-ready {
+            background: #000;
+        }
+
+        .start-button--enabled {
+            opacity: 1;
+            cursor: pointer;
+        }
+
+        .start-button--disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .join-by-id {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 2px solid #0ff;
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        .join-by-id-title {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .join-by-id-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .join-by-id-input {
+            flex: 1;
+            background: #000;
+            border: 2px solid #0ff;
+            color: #0ff;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .join-by-id-button {
+            background: #000;
+            border: 2px solid #0ff;
+            color: #0ff;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .lobby-browse-title {
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .no-games-msg {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 12px;
+            color: #0aa;
+        }
+
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dialog {
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #0ff;
+            padding: 30px;
+            font-family: 'Courier New', monospace;
+            color: #0ff;
+            box-shadow: 0 0 30px #0ff;
+            min-width: 320px;
+            max-width: 90vw;
+        }
+
+        .dialog-title {
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px #0ff;
+        }
+
+        .dialog-field {
+            margin-bottom: 15px;
+        }
+
+        .dialog-label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .dialog-input,
+        .dialog-select {
+            width: 100%;
+            background: #000;
+            border: 2px solid #0ff;
+            color: #0ff;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .dialog-note {
+            text-align: center;
+            font-size: 12px;
+            margin-bottom: 20px;
+            color: #0aa;
+        }
+
+        .dialog-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .dialog-button {
+            background: #000;
+            border: 2px solid #0ff;
+            color: #0ff;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .dialog-button:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 20px #0ff;
+        }
+
+        .game-id-display {
+            text-align: center;
+            font-size: 12px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #0ff;
+            cursor: pointer;
+            user-select: all;
+        }
+
+        .game-id-copy-success {
+            color: #0f0;
+        }
+
+        .ready-indicator.ready {
+            color: #0f0;
+            font-weight: bold;
+        }
+
+        .ready-indicator.not-ready {
+            color: #f80;
+            font-weight: bold;
+        }
+
+        .player-color {
+            color: #fff;
+        }
+
+        .player-color-0 {
+            color: #0ff;
+        }
+
+        .player-color-1 {
+            color: #f0f;
+        }
+
+        .player-color-2 {
+            color: #ff0;
+        }
+
+        .player-color-3 {
+            color: #0f0;
+        }
+
+        .cursor-default {
+            cursor: default;
+        }
+
+        .cursor-none {
+            cursor: none;
+        }
+
+        .cursor-grabbing {
+            cursor: grabbing;
+        }
+
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .action-error {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 0, 0, 0.8);
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 16px;
+            z-index: 9999;
+            text-align: center;
+        }
+
+        .deployment-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #000080;
+            border: 2px solid #00ffff;
+            padding: 20px;
+            z-index: 1100;
+            font-family: monospace;
+            color: #00ffff;
+            text-align: center;
+        }
+
+        .deployment-menu-title {
+            margin-bottom: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .deployment-menu-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .deploy-btn {
+            padding: 10px;
+            background: #000080;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .deploy-btn:hover {
+            background: #00ffff;
+            color: #000080;
+        }
+
+        .deployment-menu-hint {
+            margin-top: 20px;
+            font-size: 12px;
+        }
+
+        .deployment-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 128, 128, 0.9);
+            border: 2px solid #00ffff;
+            padding: 15px 30px;
+            z-index: 1000;
+            font-family: monospace;
+            color: #00ffff;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .deployment-indicator-subtitle {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .deployment-indicator-value {
+            font-size: 24px;
+        }
+
+        .deployment-indicator-hint {
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
         #renderCanvas {
             width: 100%;
             height: 100vh;
@@ -1009,25 +1315,25 @@
     </div>
 
     <!-- Lobby Browser Screen -->
-    <div id="lobby-browser-screen" style="display: none;">
+    <div id="lobby-browser-screen" class="hidden">
         <h2>GAME LOBBY</h2>
 
         <!-- Join by Game ID Section -->
-        <div style="margin-bottom: 20px; padding: 15px; border: 2px solid #0ff; background: rgba(0, 255, 255, 0.05);">
-            <h3 style="margin-bottom: 10px; font-size: 14px;">Join by Game ID:</h3>
-            <div style="display: flex; gap: 10px;">
+        <div class="join-by-id">
+            <h3 class="join-by-id-title">Join by Game ID:</h3>
+            <div class="join-by-id-row">
                 <input type="text" id="join-game-id-input" placeholder="Enter game ID or short ID"
-                    style="flex: 1; background: #000; border: 2px solid #0ff; color: #0ff; padding: 10px; font-family: 'Courier New', monospace; font-size: 12px;">
+                    class="join-by-id-input">
                 <button id="join-by-id-btn"
-                    style="background: #000; border: 2px solid #0ff; color: #0ff; padding: 10px 20px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 12px; text-transform: uppercase;">
+                    class="join-by-id-button">
                     Join
                 </button>
             </div>
         </div>
 
-        <h3 style="margin-bottom: 10px; font-size: 14px; text-align: center;">Or browse available games:</h3>
+        <h3 class="lobby-browse-title">Or browse available games:</h3>
         <div id="game-list-container"></div>
-        <div id="no-games-msg" style="display: none;">No games available. Create one!</div>
+        <div id="no-games-msg" class="no-games-msg hidden">No games available. Create one!</div>
         <div class="button-container">
             <button id="create-game-btn">Create Game</button>
             <button id="refresh-games-btn">Refresh</button>
@@ -1037,14 +1343,14 @@
     </div>
 
     <!-- Waiting Room Screen -->
-    <div id="waiting-room-screen" style="display: none;">
+    <div id="waiting-room-screen" class="hidden">
         <h2 id="lobby-game-name">Game Lobby</h2>
         <div id="lobby-players">
             <h3>Players:</h3>
         </div>
         <div class="button-container">
             <button id="ready-btn">Ready</button>
-            <button id="start-game-btn" style="display: none;">Start Game</button>
+            <button id="start-game-btn" class="hidden">Start Game</button>
             <button id="leave-lobby-btn">Leave</button>
         </div>
     </div>
@@ -1065,7 +1371,7 @@
     </details>
 
     <!-- Crystal Effects Indicator -->
-    <div id="crystal-effects-indicator" style="display: none;"></div>
+    <div id="crystal-effects-indicator" class="hidden"></div>
 
     <details id="controls" open>
         <summary>

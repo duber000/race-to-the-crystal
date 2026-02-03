@@ -196,7 +196,8 @@ class InputHandler {
                     y: pointerInfo.event.clientY,
                 };
                 this.isLMBDragging = false;
-                this.canvas.style.cursor = "pointer";
+                this.canvas.classList.add("cursor-pointer");
+                this.canvas.classList.remove("cursor-default");
             } else {
                 // Immediate click for touch/pen (no drag threshold)
                 const pickResult = this.scene.pick(
@@ -222,7 +223,8 @@ class InputHandler {
                     x: pointerInfo.event.clientX,
                     y: pointerInfo.event.clientY,
                 };
-                this.canvas.style.cursor = "grabbing";
+                this.canvas.classList.add("cursor-grabbing");
+                this.canvas.classList.remove("cursor-default");
             } else {
                 this.cameraController.activateMouseLook(
                     pointerInfo.event.clientX,
@@ -254,11 +256,13 @@ class InputHandler {
             }
             this.isLMBDown = false;
             this.isLMBDragging = false;
-            this.canvas.style.cursor = "default";
+            this.canvas.classList.add("cursor-default");
+            this.canvas.classList.remove("cursor-pointer");
         } else if (pointerInfo.event.button === 2) {
             if (this.cameraController.cameraMode === "overview") {
                 this.isPanning = false;
-                this.canvas.style.cursor = "default";
+                this.canvas.classList.add("cursor-default");
+                this.canvas.classList.remove("cursor-grabbing");
             } else {
                 this.cameraController.deactivateMouseLook();
             }

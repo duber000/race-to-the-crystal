@@ -221,12 +221,14 @@ class CameraController {
         }
         this.mouseLookActive = true;
         this.lastMousePosition = { x, y };
-        this.canvas.style.cursor = "none";
+        this.canvas.classList.add("cursor-none");
+        this.canvas.classList.remove("cursor-default");
     }
 
     deactivateMouseLook() {
         this.mouseLookActive = false;
-        this.canvas.style.cursor = "default";
+        this.canvas.classList.add("cursor-default");
+        this.canvas.classList.remove("cursor-none");
     }
 
     handleMouseMotion(dx, dy) {
@@ -243,12 +245,14 @@ class CameraController {
         if (this.cameraMode !== "overview") return;
         this.isPanning = true;
         this.lastMousePosition = { x, y };
-        this.canvas.style.cursor = "grabbing";
+        this.canvas.classList.add("cursor-grabbing");
+        this.canvas.classList.remove("cursor-default");
     }
 
     stopPan() {
         this.isPanning = false;
-        this.canvas.style.cursor = "default";
+        this.canvas.classList.add("cursor-default");
+        this.canvas.classList.remove("cursor-grabbing");
     }
 
     handlePan(dx, dy) {

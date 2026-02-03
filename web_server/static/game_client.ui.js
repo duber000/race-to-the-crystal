@@ -20,6 +20,7 @@ class UIManager {
         this.deploymentMenuOpen = false;
         this.selectedDeployHealth = null;
         this.lobbyHandlersSetup = false;
+        this.playerId = null;
     }
 
     // ==========================================================================
@@ -27,63 +28,60 @@ class UIManager {
     // ==========================================================================
 
     showScreen(screenName) {
-        document.getElementById("connection-screen").style.display = "none";
-        document.getElementById("lobby-browser-screen").style.display = "none";
-        document.getElementById("waiting-room-screen").style.display = "none";
+        this._setHiddenById("connection-screen", true);
+        this._setHiddenById("lobby-browser-screen", true);
+        this._setHiddenById("waiting-room-screen", true);
 
         if (this.canvas) {
-            this.canvas.style.display = "none";
+            this.canvas.classList.add("hidden");
         }
 
-        const hud = document.getElementById("hud");
-        const controls = document.getElementById("controls");
-        const connectionStatus = document.getElementById("connectionStatus");
-
-        if (hud) hud.style.display = "none";
-        if (controls) controls.style.display = "none";
-        if (connectionStatus) connectionStatus.style.display = "none";
+        this._setHiddenById("hud", true);
+        this._setHiddenById("controls", true);
+        this._setHiddenById("connectionStatus", true);
 
         switch (screenName) {
             case 'disconnected':
             case 'connecting':
-                document.getElementById("connection-screen").style.display = "block";
+                this._setHiddenById("connection-screen", false);
                 break;
             case 'connected':
-                document.getElementById("lobby-browser-screen").style.display = "block";
+                this._setHiddenById("lobby-browser-screen", false);
                 break;
             case 'lobby':
-                document.getElementById("waiting-room-screen").style.display = "block";
+                this._setHiddenById("waiting-room-screen", false);
                 break;
             case 'game':
             case 'game_starting':
-                document.getElementById("waiting-room-screen").style.display = "block";
+                this._setHiddenById("waiting-room-screen", false);
                 break;
             case 'in_game':
                 if (this.canvas) {
-                    this.canvas.style.display = "block";
+                    this.canvas.classList.remove("hidden");
                     this.canvas.setAttribute("tabindex", "1");
                     this.canvas.focus();
                 }
-                if (hud) {
-                    hud.style.display = "block";
-                }
-                if (controls) {
-                    controls.style.display = "block";
-                }
-                if (connectionStatus) {
-                    connectionStatus.style.display = "block";
-                }
+                this._setHiddenById("hud", false);
+                this._setHiddenById("controls", false);
+                this._setHiddenById("connectionStatus", false);
                 break;
             default:
                 console.warn(`[UI] Unknown screen: ${screenName}`);
         }
     }
 
+    _setHiddenById(elementId, hidden) {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            return;
+        }
+        element.classList.toggle("hidden", hidden);
+    }
+
     showConnectionStatus(message) {
         const statusMsg = document.getElementById("connection-status-msg");
         if (statusMsg) {
             statusMsg.textContent = message;
-            statusMsg.style.color = "#0ff";
         }
     }
 
@@ -96,18 +94,7 @@ class UIManager {
 
     showActionError(message) {
         const errorDiv = document.createElement("div");
-        errorDiv.style.position = "fixed";
-        errorDiv.style.top = "50%";
-        errorDiv.style.left = "50%";
-        errorDiv.style.transform = "translate(-50%, -50%)";
-        errorDiv.style.backgroundColor = "rgba(255, 0, 0, 0.8)";
-        errorDiv.style.color = "#fff";
-        errorDiv.style.padding = "20px";
-        errorDiv.style.borderRadius = "10px";
-        errorDiv.style.fontFamily = "monospace";
-        errorDiv.style.fontSize = "16px";
-        errorDiv.style.zIndex = "9999";
-        errorDiv.style.textAlign = "center";
+        errorDiv.className = "action-error";
         errorDiv.textContent = message;
 
         document.body.appendChild(errorDiv);
@@ -128,11 +115,11 @@ class UIManager {
         container.innerHTML = "";
 
         if (!games || games.length === 0) {
-            noGamesMsg.style.display = "block";
+            noGamesMsg.classList.remove("hidden");
             return;
         }
 
-        noGamesMsg.style.display = "none";
+        noGamesMsg.classList.add("hidden");
 
         games.forEach((game) => {
             const gameDiv = document.createElement("div");
@@ -140,11 +127,20 @@ class UIManager {
 
             const gameInfo = document.createElement("div");
             gameInfo.className = "game-info";
-            gameInfo.innerHTML = `
-                <strong>${game.game_name || game.name}</strong>
-                <span>Players: ${game.num_players || 0}/${game.max_players || 4}</span>
-                <span>Status: ${game.status || "waiting"}</span>
-            `;
+            const gameName = document.createElement("strong");
+            gameName.textContent = game.game_name || game.name || "Unknown Game";
+
+            const players = document.createElement("span");
+            const currentPlayers =
+                game.current_players ?? game.num_players ?? 0;
+            players.textContent = `Players: ${currentPlayers}/${game.max_players || 4}`;
+
+            const status = document.createElement("span");
+            status.textContent = `Status: ${game.status || "waiting"}`;
+
+            gameInfo.appendChild(gameName);
+            gameInfo.appendChild(players);
+            gameInfo.appendChild(status);
 
             const joinBtn = document.createElement("button");
             joinBtn.textContent = "Join";
@@ -161,6 +157,10 @@ class UIManager {
     }
 
     setupLobbyBrowserHandlers(createGame, refreshGames, disconnect) {
+        if (this.lobbyHandlersSetup) {
+            return;
+        }
+        this.lobbyHandlersSetup = true;
         document.getElementById("create-game-btn").addEventListener("click", () => {
             this.showCreateGameDialog(createGame);
         });
@@ -197,52 +197,37 @@ class UIManager {
         // Create dialog overlay
         const overlay = document.createElement("div");
         overlay.id = "create-game-dialog-overlay";
-        overlay.style.position = "fixed";
-        overlay.style.top = "0";
-        overlay.style.left = "0";
-        overlay.style.width = "100%";
-        overlay.style.height = "100%";
-        overlay.style.background = "rgba(0, 0, 0, 0.8)";
-        overlay.style.zIndex = "3000";
-        overlay.style.display = "flex";
-        overlay.style.alignItems = "center";
-        overlay.style.justifyContent = "center";
+        overlay.className = "dialog-overlay";
 
         const dialog = document.createElement("div");
-        dialog.style.background = "rgba(0, 0, 0, 0.95)";
-        dialog.style.border = "3px solid #0ff";
-        dialog.style.padding = "30px";
-        dialog.style.fontFamily = "'Courier New', monospace";
-        dialog.style.color = "#0ff";
-        dialog.style.boxShadow = "0 0 30px #0ff";
-        dialog.style.minWidth = "400px";
+        dialog.className = "dialog";
 
         dialog.innerHTML = `
-            <h2 style="text-align: center; margin-bottom: 20px; text-shadow: 0 0 15px #0ff;">CREATE GAME</h2>
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px;">Game Name:</label>
+            <h2 class="dialog-title">CREATE GAME</h2>
+            <div class="dialog-field">
+                <label class="dialog-label">Game Name:</label>
                 <input type="text" id="dialog-game-name" value="My Game" maxlength="50"
-                    style="width: 100%; background: #000; border: 2px solid #0ff; color: #0ff; padding: 10px; font-family: 'Courier New', monospace; font-size: 14px;">
+                    class="dialog-input">
             </div>
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 5px;">Number of Players:</label>
+            <div class="dialog-field">
+                <label class="dialog-label">Number of Players:</label>
                 <select id="dialog-player-count"
-                    style="width: 100%; background: #000; border: 2px solid #0ff; color: #0ff; padding: 10px; font-family: 'Courier New', monospace; font-size: 14px;">
+                    class="dialog-select">
                     <option value="2">2 Players</option>
                     <option value="3">3 Players</option>
                     <option value="4" selected>4 Players</option>
                 </select>
             </div>
-            <div style="text-align: center; font-size: 12px; margin-bottom: 20px; color: #0aa;">
+            <div class="dialog-note">
                 AI players will fill empty slots when you start the game
             </div>
-            <div style="display: flex; gap: 10px; justify-content: center;">
+            <div class="dialog-actions">
                 <button id="dialog-create-btn"
-                    style="background: #000; border: 2px solid #0ff; color: #0ff; padding: 12px 24px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 14px; text-transform: uppercase;">
+                    class="dialog-button">
                     Create
                 </button>
                 <button id="dialog-cancel-btn"
-                    style="background: #000; border: 2px solid #0ff; color: #0ff; padding: 12px 24px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 14px; text-transform: uppercase;">
+                    class="dialog-button">
                     Cancel
                 </button>
             </div>
@@ -250,21 +235,6 @@ class UIManager {
 
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
-
-        // Add hover effects
-        const buttons = [dialog.querySelector("#dialog-create-btn"), dialog.querySelector("#dialog-cancel-btn")];
-        buttons.forEach(btn => {
-            btn.addEventListener("mouseenter", () => {
-                btn.style.background = "#0ff";
-                btn.style.color = "#000";
-                btn.style.boxShadow = "0 0 20px #0ff";
-            });
-            btn.addEventListener("mouseleave", () => {
-                btn.style.background = "#000";
-                btn.style.color = "#0ff";
-                btn.style.boxShadow = "none";
-            });
-        });
 
         // Handle create button
         dialog.querySelector("#dialog-create-btn").addEventListener("click", () => {
@@ -311,14 +281,7 @@ class UIManager {
         if (!gameIdDisplay) {
             gameIdDisplay = document.createElement("div");
             gameIdDisplay.id = "lobby-game-id";
-            gameIdDisplay.style.textAlign = "center";
-            gameIdDisplay.style.fontSize = "12px";
-            gameIdDisplay.style.marginBottom = "15px";
-            gameIdDisplay.style.padding = "10px";
-            gameIdDisplay.style.background = "rgba(0, 255, 255, 0.1)";
-            gameIdDisplay.style.border = "1px solid #0ff";
-            gameIdDisplay.style.cursor = "pointer";
-            gameIdDisplay.style.userSelect = "all";
+            gameIdDisplay.className = "game-id-display";
             gameIdDisplay.title = "Click to copy game ID";
 
             const titleElement = document.getElementById("lobby-game-name");
@@ -328,10 +291,19 @@ class UIManager {
             gameIdDisplay.addEventListener("click", () => {
                 const gameId = gameIdDisplay.getAttribute("data-game-id");
                 navigator.clipboard.writeText(gameId).then(() => {
-                    const originalText = gameIdDisplay.innerHTML;
-                    gameIdDisplay.innerHTML = `<span style="color: #0f0;">✓ Copied to clipboard!</span>`;
+                    gameIdDisplay.textContent = "✓ Copied to clipboard!";
+                    gameIdDisplay.classList.add("game-id-copy-success");
                     setTimeout(() => {
-                        gameIdDisplay.innerHTML = originalText;
+                        const shortId = gameId.substring(0, 8);
+                        gameIdDisplay.textContent = "";
+                        const gameIdLabel = document.createTextNode("Game ID: ");
+                        const strong = document.createElement("strong");
+                        strong.textContent = shortId;
+                        const suffix = document.createTextNode(" (click to copy full ID)");
+                        gameIdDisplay.appendChild(gameIdLabel);
+                        gameIdDisplay.appendChild(strong);
+                        gameIdDisplay.appendChild(suffix);
+                        gameIdDisplay.classList.remove("game-id-copy-success");
                     }, 2000);
                 }).catch(() => {
                     console.error("Failed to copy game ID");
@@ -341,13 +313,24 @@ class UIManager {
 
         // Update game ID display
         const shortId = lobby.game_id.substring(0, 8);
-        gameIdDisplay.innerHTML = `Game ID: <strong>${shortId}</strong> (click to copy full ID)`;
+        gameIdDisplay.textContent = "";
+        const gameIdLabel = document.createTextNode("Game ID: ");
+        const strong = document.createElement("strong");
+        strong.textContent = shortId;
+        const suffix = document.createTextNode(" (click to copy full ID)");
+        gameIdDisplay.appendChild(gameIdLabel);
+        gameIdDisplay.appendChild(strong);
+        gameIdDisplay.appendChild(suffix);
         gameIdDisplay.setAttribute("data-game-id", lobby.game_id);
 
         this.renderLobbyPlayerList(lobby, isHost);
 
         const startBtn = document.getElementById("start-game-btn");
-        startBtn.style.display = isHost ? "block" : "none";
+        if (isHost) {
+            startBtn.classList.remove("hidden");
+        } else {
+            startBtn.classList.add("hidden");
+        }
 
         this.updateReadyButton(isReady);
     }
@@ -372,17 +355,22 @@ class UIManager {
             const youLabel = isYou ? " (YOU)" : "";
 
             const color = this.getPlayerColor(player.color_index);
-            let readyIndicator = "";
+            const nameSpan = document.createElement("span");
+            nameSpan.className = `player-color player-color-${player.color_index ?? 0}`;
+            nameSpan.textContent = `${player.player_name}${hostLabel}${youLabel}`;
 
+            const readySpan = document.createElement("span");
+            readySpan.className = "ready-indicator";
             if (player.is_ready) {
-                readyIndicator = '<span style="color: #0f0; font-weight: bold;"> ✓ READY</span>';
+                readySpan.classList.add("ready");
+                readySpan.textContent = " ✓ READY";
             } else {
-                readyIndicator = '<span style="color: #f80; font-weight: bold;"> ✗ NOT READY</span>';
+                readySpan.classList.add("not-ready");
+                readySpan.textContent = " ✗ NOT READY";
             }
 
-            playerDiv.innerHTML = `
-                <span style="color: ${color};">${player.player_name}${hostLabel}${youLabel}</span>${readyIndicator}
-            `;
+            playerDiv.appendChild(nameSpan);
+            playerDiv.appendChild(readySpan);
 
             container.appendChild(playerDiv);
         });
@@ -396,7 +384,8 @@ class UIManager {
     updateReadyButton(isReady) {
         const readyBtn = document.getElementById("ready-btn");
         readyBtn.textContent = isReady ? "Unready" : "Ready";
-        readyBtn.style.backgroundColor = isReady ? "#080" : "#000";
+        readyBtn.classList.toggle("ready-button--ready", isReady);
+        readyBtn.classList.toggle("ready-button--not-ready", !isReady);
     }
 
     updateStartButtonState(lobby, isHost, startGameCallback) {
@@ -414,8 +403,8 @@ class UIManager {
 
         if (allReady && minPlayers) {
             startBtn.disabled = false;
-            startBtn.style.opacity = "1";
-            startBtn.style.cursor = "pointer";
+            startBtn.classList.add("start-button--enabled");
+            startBtn.classList.remove("start-button--disabled");
             const emptySlots = (lobby.max_players || 4) - lobby.players.length;
             if (emptySlots > 0) {
                 startBtn.title = `Start game (${emptySlots} AI player${emptySlots > 1 ? 's' : ''} will fill empty slots)`;
@@ -424,8 +413,8 @@ class UIManager {
             }
         } else {
             startBtn.disabled = true;
-            startBtn.style.opacity = "0.5";
-            startBtn.style.cursor = "not-allowed";
+            startBtn.classList.add("start-button--disabled");
+            startBtn.classList.remove("start-button--enabled");
             if (!allReady) {
                 startBtn.title = "Waiting for all players to be ready...";
             } else {
@@ -464,7 +453,13 @@ class UIManager {
         if (gameState.current_turn_player_id !== null && gameState.players[gameState.current_turn_player_id]) {
             const currentPlayer = gameState.players[gameState.current_turn_player_id];
             const color = this.getPlayerColor(currentPlayer.color);
-            document.getElementById("currentPlayer").innerHTML = `<span style="color: ${color};">${currentPlayer.name || "Unknown"}</span>`;
+            const currentPlayerEl = document.getElementById("currentPlayer");
+            currentPlayerEl.textContent = currentPlayer.name || "Unknown";
+            currentPlayerEl.className = "";
+            currentPlayerEl.classList.add(
+                "player-color",
+                `player-color-${currentPlayer.color ?? 0}`,
+            );
         }
 
         const playersList = document.getElementById("playersList");
@@ -475,10 +470,15 @@ class UIManager {
             playerDiv.className = "player-info";
             const isLocal = player.id === localPlayerId ? " (YOU)" : "";
             const color = this.getPlayerColor(player.color);
-            playerDiv.innerHTML = `
-                <strong style="color: ${color};">${player.name}${isLocal}</strong>
-                <div>Tokens: ${player.token_ids.length}</div>
-            `;
+            const name = document.createElement("strong");
+            name.className = `player-color player-color-${player.color ?? 0}`;
+            name.textContent = `${player.name}${isLocal}`;
+
+            const tokenCount = document.createElement("div");
+            tokenCount.textContent = `Tokens: ${player.token_ids.length}`;
+
+            playerDiv.appendChild(name);
+            playerDiv.appendChild(tokenCount);
             playersList.appendChild(playerDiv);
         }
 
@@ -497,7 +497,7 @@ class UIManager {
 
         if (!playerEffects || !playerEffects.active_effects || playerEffects.active_effects.length === 0) {
             indicator.innerHTML = "";
-            indicator.style.display = "none";
+            indicator.classList.add("hidden");
             return;
         }
 
@@ -505,13 +505,16 @@ class UIManager {
 
         if (activeEffects.length === 0) {
             indicator.innerHTML = "";
-            indicator.style.display = "none";
+            indicator.classList.add("hidden");
             return;
         }
 
-        indicator.style.display = "block";
+        indicator.classList.remove("hidden");
+        indicator.textContent = "";
 
-        let html = '<div class="effects-panel">';
+        const panel = document.createElement("div");
+        panel.className = "effects-panel";
+
         for (const effect of activeEffects) {
             // Get effect name, icon, and CSS class based on type
             let effectName, icon, cssClass;
@@ -542,17 +545,28 @@ class UIManager {
                     cssClass = "";
             }
 
-            html += `
-                <div class="effect-badge ${cssClass}">
-                    <span class="effect-icon">${icon}</span>
-                    <span class="effect-name">${effectName}</span>
-                    <span class="effect-duration">${effect.turns_remaining} turn${effect.turns_remaining !== 1 ? 's' : ''}</span>
-                </div>
-            `;
-        }
-        html += '</div>';
+            const badge = document.createElement("div");
+            badge.className = `effect-badge ${cssClass}`;
 
-        indicator.innerHTML = html;
+            const iconSpan = document.createElement("span");
+            iconSpan.className = "effect-icon";
+            iconSpan.textContent = icon;
+
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "effect-name";
+            nameSpan.textContent = effectName;
+
+            const duration = document.createElement("span");
+            duration.className = "effect-duration";
+            duration.textContent = `${effect.turns_remaining} turn${effect.turns_remaining !== 1 ? "s" : ""}`;
+
+            badge.appendChild(iconSpan);
+            badge.appendChild(nameSpan);
+            badge.appendChild(duration);
+            panel.appendChild(badge);
+        }
+
+        indicator.appendChild(panel);
     }
 
     // ==========================================================================
@@ -575,29 +589,19 @@ class UIManager {
 
         const menu = document.createElement("div");
         menu.id = "deployment-menu";
-        menu.style.position = "fixed";
-        menu.style.top = "50%";
-        menu.style.left = "50%";
-        menu.style.transform = "translate(-50%, -50%)";
-        menu.style.backgroundColor = "#000080";
-        menu.style.border = "2px solid #00FFFF";
-        menu.style.padding = "20px";
-        menu.style.zIndex = "1100";
-        menu.style.fontFamily = "monospace";
-        menu.style.color = "#00FFFF";
-        menu.style.textAlign = "center";
+        menu.className = "deployment-menu";
 
         menu.innerHTML = `
-            <div style="margin-bottom: 20px; font-size: 16px; font-weight: bold;">
+            <div class="deployment-menu-title">
                 SELECT TOKEN TO DEPLOY
             </div>
-            <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
-                <button class="deploy-btn" data-health="10" style="padding: 10px; background: #000080; border: 1px solid #00FFFF; color: #00FFFF; cursor: pointer; font-size: 14px;">10 HP</button>
-                <button class="deploy-btn" data-health="8" style="padding: 10px; background: #000080; border: 1px solid #00FFFF; color: #00FFFF; cursor: pointer; font-size: 14px;">8 HP</button>
-                <button class="deploy-btn" data-health="6" style="padding: 10px; background: #000080; border: 1px solid #00FFFF; color: #00FFFF; cursor: pointer; font-size: 14px;">6 HP</button>
-                <button class="deploy-btn" data-health="4" style="padding: 10px; background: #000080; border: 1px solid #00FFFF; color: #00FFFF; cursor: pointer; font-size: 14px;">4 HP</button>
+            <div class="deployment-menu-grid">
+                <button class="deploy-btn" data-health="10">10 HP</button>
+                <button class="deploy-btn" data-health="8">8 HP</button>
+                <button class="deploy-btn" data-health="6">6 HP</button>
+                <button class="deploy-btn" data-health="4">4 HP</button>
             </div>
-            <div style="margin-top: 20px; font-size: 12px;">
+            <div class="deployment-menu-hint">
                 Click a button then click a corner cell to deploy
             </div>
         `;
@@ -624,24 +628,11 @@ class UIManager {
 
         const indicator = document.createElement("div");
         indicator.id = "deployment-indicator";
-        indicator.style.position = "fixed";
-        indicator.style.top = "50%";
-        indicator.style.left = "50%";
-        indicator.style.transform = "translate(-50%, -50%)";
-        indicator.style.backgroundColor = "rgba(0, 128, 128, 0.9)";
-        indicator.style.border = "2px solid #00FFFF";
-        indicator.style.padding = "15px 30px";
-        indicator.style.zIndex = "1000";
-        indicator.style.fontFamily = "monospace";
-        indicator.style.color = "#00FFFF";
-        indicator.style.fontSize = "18px";
-        indicator.style.fontWeight = "bold";
-        indicator.style.textAlign = "center";
-        indicator.style.pointerEvents = "none";
+        indicator.className = "deployment-indicator";
         indicator.innerHTML = `
-            <div style="font-size: 14px; margin-bottom: 5px;">DEPLOY TOKEN</div>
-            <div style="font-size: 24px;">${health} HP</div>
-            <div style="font-size: 12px; margin-top: 10px;">Click a corner cell</div>
+            <div class="deployment-indicator-subtitle">DEPLOY TOKEN</div>
+            <div class="deployment-indicator-value">${health} HP</div>
+            <div class="deployment-indicator-hint">Click a corner cell</div>
         `;
 
         document.body.appendChild(indicator);
