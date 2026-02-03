@@ -129,10 +129,9 @@ class CameraController {
             this.cameraMode = "firstperson";
             this.camera.detachControl(this.canvas);
             this.scene.activeCamera = this.firstPersonCamera;
-            this.firstPersonCamera.attachControl(this.canvas, true);
-            if (this.firstPersonCamera.inputs) {
-                this.firstPersonCamera.inputs.clear();
-            }
+            // Don't attach control - we handle all input manually via InputHandler
+            // attachControl would register Babylon's internal pointer handlers that
+            // can intercept RMB events before our onPointerObservable fires
             this.canvas.focus();
             this.canvas.setAttribute("tabindex", "1");
             return this.firstPersonCamera;

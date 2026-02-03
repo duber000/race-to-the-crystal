@@ -1456,12 +1456,12 @@ class Renderer3D {
             if (gen.is_disabled && !genMeshData.isDisabled) {
                 this.triggerExplosion(gen.position, ORANGE_GLOW);
                 this.playSound("capture");
-                this.updateGeneratorHumState(gen.position, false);
+                // this.updateGeneratorHumState(gen.position, false);
             }
 
             // Ensure hum is playing if enabled
             if (!gen.is_disabled && genMeshData.isDisabled) {
-                this.updateGeneratorHumState(gen.position, true);
+                // this.updateGeneratorHumState(gen.position, true);
             }
 
             if (dominantPlayer && playerCounts[dominantPlayer] >= 2 && !gen.is_disabled) {
@@ -1705,7 +1705,8 @@ class Renderer3D {
                 this.suspenseMusic.play().catch(e => console.log("Suspense play failed:", e));
             }
 
-            this.initSpatialSounds();
+            // Spatial sounds disabled - generator hums and crystal ambience
+            // this.initSpatialSounds();
         };
 
         window.addEventListener('click', startAudio, { once: true });
@@ -1906,65 +1907,65 @@ class Renderer3D {
                 this.backgroundMusic.volume = this.musicVolume;
             }
 
-            // --- 2. Crystal Ambient Sound ---
-            if (this.crystalHum) {
-                // Update position
-                const p = this.crystalHum.panner;
-                if (p.positionX) {
-                    p.positionX.value = crystalWorldPos.x;
-                    p.positionY.value = crystalWorldPos.y;
-                    p.positionZ.value = crystalWorldPos.z;
-                } else {
-                    p.setPosition(crystalWorldPos.x, crystalWorldPos.y, crystalWorldPos.z);
-                }
-
-                if (this.crystalHumEnabled) {
-                    // Volume based on distance (closer = louder, but capped)
-                    // Linear dropoff is handled by Panner, but we ensure it's on
-                    this.crystalHum.gain.gain.value = this.humVolume * 0.8;
-
-                    // Add some gentle sparkle probability
-                    if (Math.random() < 0.025) {
-                        this.playCrystalSparkle(ctx, crystalWorldPos);
-                    }
-                } else {
-                    this.crystalHum.gain.gain.value = 0;
-                }
-            }
+            // --- 2. Crystal Ambient Sound (DISABLED) ---
+            // if (this.crystalHum) {
+            //     // Update position
+            //     const p = this.crystalHum.panner;
+            //     if (p.positionX) {
+            //         p.positionX.value = crystalWorldPos.x;
+            //         p.positionY.value = crystalWorldPos.y;
+            //         p.positionZ.value = crystalWorldPos.z;
+            //     } else {
+            //         p.setPosition(crystalWorldPos.x, crystalWorldPos.y, crystalWorldPos.z);
+            //     }
+            //
+            //     if (this.crystalHumEnabled) {
+            //         // Volume based on distance (closer = louder, but capped)
+            //         // Linear dropoff is handled by Panner, but we ensure it's on
+            //         this.crystalHum.gain.gain.value = this.humVolume * 0.8;
+            //
+            //         // Add some gentle sparkle probability
+            //         if (Math.random() < 0.025) {
+            //             this.playCrystalSparkle(ctx, crystalWorldPos);
+            //         }
+            //     } else {
+            //         this.crystalHum.gain.gain.value = 0;
+            //     }
+            // }
         }
 
-        // --- 3. Generator Hums ---
-        // We match generator meshes to our pool of 4 hums
-        let humIdx = 0;
-        this.generatorMeshes.forEach((genData, key) => {
-            if (humIdx >= this.generatorHums.length) return;
-
-            const hum = this.generatorHums[humIdx];
-
-            if (!genData.isDisabled) {
-                // Update position
-                const pos = genData.mesh.position;
-                if (hum.panner.positionX) {
-                    hum.panner.positionX.value = pos.x;
-                    hum.panner.positionY.value = pos.y;
-                    hum.panner.positionZ.value = pos.z;
-                } else {
-                    hum.panner.setPosition(pos.x, pos.y, pos.z);
-                }
-
-                // Ensure volume is up
-                hum.masterGain.gain.value = this.generatorHumEnabled ? this.humVolume : 0;
-            } else {
-                // Silenced
-                hum.masterGain.gain.value = 0;
-            }
-            humIdx++;
-        });
-
-        // Silence unused hums
-        for (let j = humIdx; j < this.generatorHums.length; j++) {
-            this.generatorHums[j].masterGain.gain.value = 0;
-        }
+        // --- 3. Generator Hums (DISABLED) ---
+        // // We match generator meshes to our pool of 4 hums
+        // let humIdx = 0;
+        // this.generatorMeshes.forEach((genData, key) => {
+        //     if (humIdx >= this.generatorHums.length) return;
+        //
+        //     const hum = this.generatorHums[humIdx];
+        //
+        //     if (!genData.isDisabled) {
+        //         // Update position
+        //         const pos = genData.mesh.position;
+        //         if (hum.panner.positionX) {
+        //             hum.panner.positionX.value = pos.x;
+        //             hum.panner.positionY.value = pos.y;
+        //             hum.panner.positionZ.value = pos.z;
+        //         } else {
+        //             hum.panner.setPosition(pos.x, pos.y, pos.z);
+        //         }
+        //
+        //         // Ensure volume is up
+        //         hum.masterGain.gain.value = this.generatorHumEnabled ? this.humVolume : 0;
+        //     } else {
+        //         // Silenced
+        //         hum.masterGain.gain.value = 0;
+        //     }
+        //     humIdx++;
+        // });
+        //
+        // // Silence unused hums
+        // for (let j = humIdx; j < this.generatorHums.length; j++) {
+        //     this.generatorHums[j].masterGain.gain.value = 0;
+        // }
     }
 
     playCrystalSparkle(ctx, pos) {

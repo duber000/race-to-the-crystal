@@ -263,7 +263,7 @@ class GameClient {
       if (
         this.cameraController.cameraMode === "firstperson" &&
         this.gameState &&
-        this.controlledTokenId
+        this.controlledTokenId !== null
       ) {
         const token = this.gameState.tokens[this.controlledTokenId];
         if (token) {
@@ -700,7 +700,7 @@ class GameClient {
     }
 
     // Must have a controlled token
-    if (!this.controlledTokenId) {
+    if (this.controlledTokenId === null) {
       this.ui.showActionError("No token selected!");
       return;
     }

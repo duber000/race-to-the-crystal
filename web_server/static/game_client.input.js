@@ -124,26 +124,8 @@ class InputHandler {
         };
         document.addEventListener("mousemove", this.boundMouseMove, { passive: false });
 
-        this.boundPointerDown = (event) => {
-            if (event.pointerType !== "mouse") return;
-            if (event.button !== 2 && !(event.buttons & 2)) return;
-            event.preventDefault();
-            this.isRMBDown = true;
-            if (this.cameraController.cameraMode === "firstperson") {
-                this.cameraController.activateMouseLook(event.clientX, event.clientY);
-            }
-        };
-        this.boundPointerUp = (event) => {
-            if (event.pointerType !== "mouse") return;
-            if (event.button !== 2) return;
-            event.preventDefault();
-            this.isRMBDown = false;
-            if (this.cameraController.cameraMode === "firstperson") {
-                this.cameraController.deactivateMouseLook();
-            }
-        };
-        this.canvas.addEventListener("pointerdown", this.boundPointerDown, { passive: false });
-        this.canvas.addEventListener("pointerup", this.boundPointerUp, { passive: false });
+        // RMB pointerdown/up handled exclusively by Babylon's onPointerObservable
+        // to avoid duplicate event handling
 
         this.scene.onPointerObservable.add((pointerInfo) => {
             switch (pointerInfo.type) {
