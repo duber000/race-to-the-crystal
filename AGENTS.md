@@ -1,8 +1,121 @@
-# CLAUDE.md - Developer Guide
+# AGENTS.md - AI Agent Developer Guide
 
-This file provides technical guidance for Claude Code when working with this repository.
+This file provides technical guidance for AI agents (Claude, GPT, etc.) when working with this repository. It is the **single source of truth** for agent-facing documentation.
 
 **For user-facing documentation, see [README.md](README.md).**
+**For human developer guidance, this file also serves that purpose.**
+
+---
+
+## AI Quick Reference
+
+### Action Schema (Machine-Readable)
+
+```json
+{
+  "MOVE": {
+    "token_id": "int (TokenID)",
+    "destination": "[x: int, y: int]"
+  },
+  "ATTACK": {
+    "attacker_id": "int (TokenID)",
+    "defender_id": "int (TokenID)"
+  },
+  "DEPLOY": {
+    "health_value": "10 | 8 | 6 | 4",
+    "position": "[x: int, y: int]"
+  },
+  "END_TURN": {}
+}
+```
+
+### Python API (Quick Start)
+
+```python
+from game.api import GameAPI
+
+# Initialize API for a player
+api = GameAPI(game_state, player_id)
+
+# Get current state (text description)
+print(api.observe())
+
+# Get available actions as list of dicts
+actions = api.actions()
+
+# Execute actions (returns ActionResult with .success, .message, .data)
+result = api.move(token_id=5, x=12, y=12)
+result = api.attack(attacker_id=5, defender_id=10)
+result = api.deploy(health=8, x=2, y=2)
+result = api.end_turn()
+```
+
+### Low-Level API (Direct Access)
+
+```python
+from game.ai_observation import AIObserver
+from game.ai_actions import AIActionExecutor, MoveAction, AttackAction, DeployAction, EndTurnAction
+
+# Get full situation report
+report = AIObserver.get_situation_report(game_state, player_id)
+
+# Get available actions as structured dict
+actions = AIObserver.list_available_actions(game_state, player_id)
+# Returns: {"phase": "MOVEMENT"|"ACTION", "actions": [...]}
+
+# Execute an action
+executor = AIActionExecutor()
+result = executor.execute_action(
+    MoveAction(token_id=5, destination=(12, 12)),
+    game_state,
+    player_id
+)
+# result.success: bool
+# result.message: str (detailed description)
+# result.data: dict | None (action-specific data)
+```
+
+### Key Game Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| Board size | 24x24 | Grid dimensions |
+| Tokens per player | 20 | 5x10hp, 5x8hp, 5x6hp, 5x4hp |
+| Starting tokens | 3 | Auto-deployed to corner |
+| Crystal tokens required | 12 | Base requirement (minus 2 per disabled generator) |
+| Crystal turns to win | 3 | Consecutive turns holding crystal |
+| Generator tokens required | 2 | To capture a generator |
+| Generator turns to capture | 2 | Consecutive turns |
+| Movement (HP >= 7) | 1 | Spaces per turn |
+| Movement (HP <= 6) | 2 | Spaces per turn (damaged = faster) |
+| Combat damage | HP // 2 | Attacker's current health divided by 2 |
+
+### Turn Phase Flow
+
+```
+MOVEMENT phase:
+  ├── Move a deployed token → transitions to ACTION
+  ├── Deploy from reserve → transitions to ACTION
+  └── End turn (skip) → next player's MOVEMENT
+
+ACTION phase:
+  ├── Attack adjacent enemy → stay in ACTION
+  └── End turn → next player's MOVEMENT
+```
+
+### Error Message Format
+
+All validation errors follow this pattern:
+```
+CANNOT {action}: {reason} | {context}
+```
+
+Example errors:
+- `MOVE_FAILED: token_not_found | token_id=99 | valid_tokens=[1,2,3,4,5]`
+- `MOVE_FAILED: wrong_phase | current=ACTION | required=MOVEMENT`
+- `ATTACK_FAILED: not_adjacent | attacker_pos=(5,5) | defender_pos=(10,10)`
+
+---
 
 ## Quick Reference
 
@@ -49,6 +162,8 @@ make clean
 make sync
 ```
 
+---
+
 ## Architecture Overview
 
 ### Core Design Principle: Separation of Game Logic and Rendering
@@ -65,10 +180,12 @@ The codebase strictly separates game mechanics from visual presentation:
 Contains all game mechanics, rules, and state management. These modules have NO dependencies on rendering libraries.
 
 **Key files:**
+- `api.py`: **Simplified facade for AI agents** - single entry point for all game interactions
 - `game_state.py`: Central state container managing all entities and game phase
 - `ai_actions.py`: Action classes (Move, Attack, Deploy, EndTurn) with validation/execution
   - Returns `ActionResult` and `ValidationResult` dataclasses (not tuples)
 - `ai_observation.py`: Converts game state to text descriptions for AI players (enables headless AI gameplay)
+- `schemas.py`: TypedDict schemas for action validation and serialization
 - `board.py`: 24x24 grid with cell types (normal, generator, crystal, mystery)
   - Uses `shared/corner_layout.py` for deployment position calculations
 - `token.py`: Token entities with health, position, movement range
@@ -84,7 +201,7 @@ Contains all game mechanics, rules, and state management. These modules have NO 
   - Self-documenting method names eliminate need for "what" comments
 - `mystery_square.py`: Random events (heal or teleport)
 
-**Critical architectural detail:** The `ai_observation.py` and `ai_actions.py` modules provide a complete text-based API for interacting with the game. This enables:
+**Critical architectural detail:** The `api.py`, `ai_observation.py` and `ai_actions.py` modules provide a complete text-based API for interacting with the game. This enables:
 1. AI players to play without rendering
 2. Automated testing of game mechanics
 3. Network multiplayer (future)
@@ -148,6 +265,27 @@ The 3D mode features two distinct camera perspectives:
 
 See [docs/3D.md](docs/3D.md) for complete 3D mode documentation including camera architecture, controls, and development guide.
 
+**AI Clients:**
+The `client/` directory also contains AI client implementations for automated gameplay:
+
+- **`ai_client.py`**: TCP/WebSocket AI client
+  - Connects to server via TCP (port 8888)
+  - Full AI player with random, aggressive, and defensive strategies
+  - Auto-spawned by server to fill empty slots when game starts
+  - CLI: `uv run race-ai-client --join <game_id>`
+
+- **`http_ai_client.py`**: HTTP POST + SSE AI client (new)
+  - Connects via HTTP REST API (port 8080)
+  - Stateless architecture using JWT authentication
+  - Receives state updates via SSE (Mercure)
+  - Sends actions via HTTP POST
+  - Three strategies: random, aggressive, defensive
+  - CLI: `uv run race-http-ai-client --join <game_id> --name "Bot" --strategy aggressive`
+  - **Use case**: Simpler for testing, works anywhere HTTP works (serverless, scripts, curl)
+  - **Limitation**: Must manually join (not auto-spawned), join-only (can't create games)
+
+Both AI clients use the same underlying game logic (`game/ai_observation.py` and `game/ai_actions.py`) for decision-making.
+
 #### `shared/` - Shared Definitions
 Constants, enums, and configuration objects shared between game logic and rendering.
 
@@ -165,6 +303,7 @@ Constants, enums, and configuration objects shared between game logic and render
   - `ViewportConfig`: Window and viewport dimensions (window_width, window_height, hud_height)
   - `UIStyleConfig`: UI styling parameters (margin, indicator_size, spacing)
 - `logging_config.py`: Centralized logging configuration
+- `types.py`: Type definitions including `TokenID`, `PlayerID`, `Position`, and action result types
 
 **Important:** When changing game rules, update constants in `shared/constants.py` rather than hardcoding values.
 
@@ -183,28 +322,37 @@ The unified server runs on a single process with dual protocol support:
   - `_handle_message()`: Routes incoming messages to appropriate handlers
   - `_broadcast_game_state()`: Sends updates to all connected clients
   - Reconnection support with 5-minute timeout window
-  
+
 - `lobby.py`: Lobby management for game creation/joining
   - `LobbyManager`: Tracks available games and player readiness
   - `GameStatus`: Enum for lobby, playing, and finished states
   - Supports mixed lobbies (desktop + web clients simultaneously)
-  
+
 - `game_coordinator.py`: Active game session management
   - `GameCoordinator`: Manages all running games
   - `GameSession`: Per-game state wrapping `GameState`
   - `AIActionExecutor`: Validates and executes player actions
-  
+
 - `websocket_handler.py`: WebSocket connection handler for web clients
   - `WebSocketHandler`: Manages client connections and message routing
   - Protocol translation between WebSocket and internal formats
   - Handles authentication and player registration
-  
-- `http_handler.py`: HTTP server for static file serving
+
+- `http_handler.py`: HTTP server for static file serving and REST API
   - Serves HTML/CSS/JS frontend from `web_server/static/`
   - Serves `/static/*` assets
   - Serves root `/` to load game client
-  
-- `ai_spawner.py`: AI player management
+  - **REST API endpoints for HTTP AI clients:**
+    - `POST /api/game/{game_id}/join` - Join game via HTTP, receive JWT token
+    - `POST /api/game/{game_id}/action` - Execute actions with JWT authentication
+  - Uses JWT (HS256) for stateless authentication (24-hour token expiration)
+
+- `auth.py`: JWT authentication for HTTP API
+  - Token creation/verification for stateless HTTP requests
+  - Validates game_id in token matches requested game
+  - Secret key from `JWT_SECRET_KEY` environment variable
+
+- `ai_spawner.py`: AI player management (TCP/WebSocket AI)
   - Spawns AI processes for automated players
   - Manages AI process lifecycle and cleanup
   - Enables AI testing and demonstration games
@@ -218,12 +366,18 @@ Uses JSON-based protocol with 34+ message types including:
 - Communication: `CHAT`
 
 **Mixed Client Support:**
-- Desktop clients: TCP on port 8888
-- Web clients: HTTP/WebSocket on port 8080
-- Both types play together in the same game
-- All state updates broadcast to all clients
+- **Desktop clients**: TCP on port 8888
+- **Web browser clients**: HTTP/WebSocket on port 8080
+- **HTTP AI clients**: HTTP POST + SSE on port 8080 (new)
+  - Stateless authentication via JWT tokens
+  - Actions via `POST /api/game/{game_id}/action`
+  - State updates via SSE (Mercure)
+  - CLI: `uv run race-http-ai-client --join <game_id>`
+- All client types play together in the same game
+- State updates broadcast via WebSocket (desktop/web) and SSE (HTTP AI/web)
 
 **See [docs/NETWORK.md](docs/NETWORK.md) for complete protocol documentation.**
+**See [docs/SSE_ROADMAP.md](docs/SSE_ROADMAP.md) for HTTP POST + SSE architecture details.**
 
 #### `network/` - Network Protocol Layer
 Low-level networking implementation for TCP and binary message handling.
@@ -253,7 +407,9 @@ Browser-based 3D client using Babylon.js 8 for rendering.
 #### `tests/` - Unit Tests
 276 pytest tests covering all game mechanics. Tests use pure game logic without rendering.
 
-### Game State Flow
+---
+
+## Game State Flow
 
 1. **GameState** is the single source of truth containing:
    - Board (24x24 grid)
@@ -288,40 +444,135 @@ Browser-based 3D client using Babylon.js 8 for rendering.
    - Each disabled generator reduces requirement by 2
    - Generators disabled by holding with 2 tokens for 2 turns
 
-### AI Integration Architecture
+---
+
+## AI Integration Architecture
 
 The game is designed to be playable by AI without visual rendering:
 
-1. **Observation** (`ai_observation.py`):
-   - `AIObserver.describe_game_state()`: Full text description of game state
-   - `AIObserver.get_board_map()`: ASCII art map
-   - `AIObserver.list_available_actions()`: All valid actions for current phase
-   - `AIObserver.get_situation_report()`: Complete report combining all above
+### 1. GameAPI Facade (Recommended)
 
-2. **Actions** (`ai_actions.py`):
-   - Action classes: `MoveAction`, `AttackAction`, `DeployAction`, `EndTurnAction`
-   - `AIActionExecutor.validate_action()`: Check if action is valid
-   - `AIActionExecutor.execute_action()`: Execute action and return result
-   - All validation includes detailed error messages for AI debugging
+The simplest way to interact with the game:
 
-3. **Example AI Play Loop**:
-   ```python
-   from game.ai_observation import AIObserver
-   from game.ai_actions import AIActionExecutor, MoveAction
+```python
+from game.api import GameAPI
 
-   # Get game state as text
-   report = AIObserver.get_situation_report(game_state, player_id)
+api = GameAPI(game_state, player_id)
 
-   # List valid actions
-   actions = AIObserver.list_available_actions(game_state, player_id)
+# Observation
+report = api.observe()           # Full text situation report
+actions = api.actions()          # List of available actions
+board_map = api.board_map()      # ASCII representation
 
-   # Execute action
-   executor = AIActionExecutor()
-   action = MoveAction(token_id=5, destination=(12, 12))
-   success, message, data = executor.execute_action(action, game_state, player_id)
-   ```
+# Actions (all return ActionResult)
+result = api.move(token_id, x, y)
+result = api.attack(attacker_id, defender_id)
+result = api.deploy(health_value, x, y)
+result = api.end_turn()
 
-### Testing Strategy
+# Check result
+if result.success:
+    print(result.message)
+    print(result.data)  # Action-specific data dict
+else:
+    print(f"Failed: {result.message}")
+```
+
+### 2. Direct Observation (`ai_observation.py`)
+
+```python
+from game.ai_observation import AIObserver
+
+# Full text description
+AIObserver.describe_game_state(game_state, player_id)
+
+# ASCII board map
+AIObserver.get_board_map(game_state, player_id)
+
+# Available actions as structured dict
+AIObserver.list_available_actions(game_state, player_id)
+# Returns: {"phase": "MOVEMENT"|"ACTION", "actions": [...]}
+
+# Complete situation report (combines all above)
+AIObserver.get_situation_report(game_state, player_id)
+
+# Victory condition explanation
+AIObserver.explain_victory_conditions(game_state)
+```
+
+### 3. Direct Action Execution (`ai_actions.py`)
+
+```python
+from game.ai_actions import (
+    AIActionExecutor,
+    MoveAction,
+    AttackAction,
+    DeployAction,
+    EndTurnAction,
+    ActionResult,
+    ValidationResult,
+)
+
+executor = AIActionExecutor()
+
+# Validate without executing
+validation: ValidationResult = executor.validate_action(action, game_state, player_id)
+if validation.is_valid:
+    print("Action is valid")
+else:
+    print(f"Invalid: {validation.message}")
+
+# Validate and execute
+result: ActionResult = executor.execute_action(action, game_state, player_id)
+# result.success: bool
+# result.message: str
+# result.data: dict | None
+```
+
+### Example AI Play Loop
+
+```python
+from game.api import GameAPI
+from game.game_state import GameState
+
+# Setup
+game_state = GameState()
+game_state.add_player("ai_1", "AI Player", 0)  # color index 0
+game_state.start_game()
+
+api = GameAPI(game_state, "ai_1")
+
+# Game loop
+while game_state.phase == GamePhase.PLAYING:
+    if game_state.current_turn_player_id != "ai_1":
+        continue  # Wait for our turn
+
+    # Get available actions
+    actions = api.actions()
+
+    if not actions:
+        api.end_turn()
+        continue
+
+    # Simple strategy: pick first available action
+    action = actions[0]
+
+    match action["type"]:
+        case "MOVE":
+            dest = action["valid_destinations"][0]
+            api.move(action["token_id"], dest[0], dest[1])
+        case "ATTACK":
+            api.attack(action["attacker_id"], action["defender_id"])
+        case "DEPLOY":
+            pos = action["positions"][0]
+            api.deploy(action["health_value"], pos[0], pos[1])
+        case "END_TURN":
+            api.end_turn()
+```
+
+---
+
+## Testing Strategy
 
 The project has 276 unit tests organized by game system:
 
@@ -336,6 +587,8 @@ The project has 276 unit tests organized by game system:
 - `test_ai_actions.py`: AI action execution
 
 **Playtesting:** Use the `/playtesting` skill or `test_gameplay_flaws.py` to run automated AI playtests. This is especially useful after implementing new features to verify end-to-end gameplay.
+
+---
 
 ## Important Conventions
 
@@ -450,6 +703,8 @@ Generator capture and crystal win conditions are checked at **end of turn** in `
 
 This means changes to token positions don't immediately affect capture/win status until turn ends.
 
+---
+
 ## Python Version and Dependencies
 
 - **Python 3.14** required (see `.python-version`)
@@ -457,6 +712,8 @@ This means changes to token positions don't immediately affect capture/win statu
 - **arcade** for rendering (GPU-accelerated)
 - **numpy** for vector math
 - **pytest** for testing
+
+---
 
 ## Common Gotchas
 
@@ -471,6 +728,8 @@ This means changes to token positions don't immediately affect capture/win statu
 5. **Rendering independence**: The client can be completely ignored when testing game logic. Use `AIObserver` for headless testing.
 
 6. **Turn end timing**: Generators and crystal are checked AFTER end turn, not during token actions. This means you can't win mid-turn.
+
+---
 
 ## Skills Available
 
