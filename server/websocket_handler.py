@@ -15,9 +15,9 @@ from dataclasses import dataclass, field
 from aiohttp import WSMsgType, web
 
 from network.messages import MessageType, ClientType
-from network.protocol import NetworkMessage, ProtocolHandler
+from network.protocol import NetworkMessage
 from server.rate_limiter import RateLimiter
-from server.lobby import validate_player_name, validate_game_name
+from server.lobby import validate_player_name
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,6 @@ class WebSocketHandler:
         """
         self.game_server = game_server
         self.clients: Dict[str, WebSocketClient] = {}
-        self.protocol = ProtocolHandler()
         self._runner = None
         self.rate_limiter = RateLimiter()
 
@@ -178,6 +177,24 @@ class WebSocketHandler:
             logger.error(f"Error handling WebSocket message: {e}", exc_info=True)
             await self._send_error(client, f"Server error: {e}")
 
+    async def _delegate_to_server(
+        self, client: WebSocketClient, message: NetworkMessage
+    ) -> None:
+        """Delegate a NetworkMessage to the main server for handling."""
+        if not self.game_server or not client.player_id:
+            await self._send_error(client, "Not connected")
+            return
+
+        await self.game_server._handle_message(client.player_id, message)
+
+    def _sync_client_game_id(self, client: WebSocketClient) -> None:
+        """Sync client game_id from lobby manager after server-side updates."""
+        if not self.game_server or not client.player_id:
+            return
+
+        lobby = self.game_server.lobby_manager.get_lobby_by_player(client.player_id)
+        client.game_id = lobby.game_id if lobby else None
+
     async def _handle_connect(self, client: WebSocketClient, data: dict) -> None:
         """Handle web client connection."""
         if not self.game_server:
@@ -237,14 +254,6 @@ class WebSocketHandler:
         game_name = data.get("game_name", "Web Game")
         max_players = data.get("max_players", 4)
 
-        # Validate game name
-        try:
-            validate_game_name(game_name)
-        except ValueError as e:
-            await self._send_error(client, f"Invalid game name: {e}")
-            logger.warning(f"Invalid game name rejected: {game_name} - {e}")
-            return
-
         # Validate max_players
         if not isinstance(max_players, int) or max_players < 2 or max_players > 4:
             await self._send_error(
@@ -252,32 +261,18 @@ class WebSocketHandler:
             )
             return
 
-        try:
-            lobby = self.game_server.lobby_manager.create_lobby(
-                player_id=client.player_id,
-                player_name=client.player_name,
-                game_name=game_name,
-                client_type=ClientType.WEB_BROWSER,
-                max_players=max_players,
-            )
-            client.game_id = lobby.game_id
-
-            response = {
-                "type": "CREATE_GAME",
-                "game_id": lobby.game_id,
-                "game_name": lobby.game_name,
-                "host_player_id": lobby.host_player_id,
-                "max_players": lobby.max_players,
-                "current_players": len(lobby.players),
-                "status": lobby.status.value,
-                "players": lobby.get_player_list(),
-            }
-            if client.websocket:
-                await client.websocket.send_json(response)
-            logger.info(f"WebSocket player created game: {lobby.game_name}")
-
-        except ValueError as e:
-            await self._send_error(client, f"Invalid game: {e}")
+        message = NetworkMessage(
+            type=MessageType.CREATE_GAME,
+            timestamp=time.time(),
+            player_id=client.player_id,
+            data={
+                "game_name": game_name,
+                "max_players": max_players,
+                "player_name": client.player_name,
+            },
+        )
+        await self._delegate_to_server(client, message)
+        self._sync_client_game_id(client)
 
     async def _handle_join_game(self, client: WebSocketClient, data: dict) -> None:
         """Handle join game request from web client."""
@@ -289,75 +284,41 @@ class WebSocketHandler:
         if not game_id:
             await self._send_error(client, "No game_id provided")
             return
-
-        lobby = self.game_server.lobby_manager.join_lobby(
-            game_id=game_id,
+        message = NetworkMessage(
+            type=MessageType.JOIN_GAME,
+            timestamp=time.time(),
             player_id=client.player_id,
-            player_name=client.player_name,
-            client_type=ClientType.WEB_BROWSER,
+            data={"game_id": game_id, "player_name": client.player_name},
         )
-
-        if not lobby:
-            await self._send_error(client, "Cannot join game")
-            return
-
-        client.game_id = lobby.game_id
-
-        response = {
-            "type": "JOIN_GAME",
-            "game_id": lobby.game_id,
-            "game_name": lobby.game_name,
-            "host_player_id": lobby.host_player_id,
-            "max_players": lobby.max_players,
-            "current_players": len(lobby.players),
-            "status": lobby.status.value,
-            "players": lobby.get_player_list(),
-        }
-        if client.websocket:
-            await client.websocket.send_json(response)
-
-        join_event = {
-            "type": "PLAYER_JOINED",
-            "game_id": game_id,
-            "player_id": client.player_id,
-            "player_name": client.player_name,
-            "lobby": lobby.to_dict(),
-        }
-        await self._broadcast_to_lobby(game_id, join_event, exclude_client=client)
+        await self._delegate_to_server(client, message)
+        self._sync_client_game_id(client)
 
     async def _handle_leave_game(self, client: WebSocketClient, data: dict) -> None:
         """Handle leave game request from web client."""
         if not self.game_server or not client.game_id:
             return
 
-        game_id = client.game_id
-        player_id = client.player_id
-
-        self.game_server.lobby_manager.leave_lobby(game_id, player_id)
-
-        response = {"type": "LEAVE_GAME", "game_id": game_id}
-        if client.websocket:
-            await client.websocket.send_json(response)
-
-        leave_event = {
-            "type": "PLAYER_LEFT",
-            "game_id": game_id,
-            "player_id": player_id,
-        }
-        await self._broadcast_to_lobby(game_id, leave_event)
-
-        client.game_id = None
+        message = NetworkMessage(
+            type=MessageType.LEAVE_GAME,
+            timestamp=time.time(),
+            player_id=client.player_id,
+            data={"game_id": client.game_id},
+        )
+        await self._delegate_to_server(client, message)
+        self._sync_client_game_id(client)
 
     async def _handle_list_games(self, client: WebSocketClient) -> None:
         """Handle list games request from web client."""
-        if not self.game_server:
-            await self._send_error(client, "Server not initialized")
+        if not self.game_server or not client.player_id:
+            await self._send_error(client, "Not connected")
             return
 
-        lobbies = self.game_server.lobby_manager.list_available_lobbies()
-        response = {"type": "GAME_LIST", "games": lobbies}
-        if client.websocket:
-            await client.websocket.send_json(response)
+        message = NetworkMessage(
+            type=MessageType.LIST_GAMES,
+            timestamp=time.time(),
+            player_id=client.player_id,
+        )
+        await self._delegate_to_server(client, message)
 
     async def _handle_ready(self, client: WebSocketClient, data: dict) -> None:
         """Handle ready status update from web client."""
@@ -366,20 +327,13 @@ class WebSocketHandler:
             return
 
         is_ready = data.get("ready", True)
-        self.game_server.lobby_manager.set_ready(
-            client.game_id, client.player_id, is_ready
+        message = NetworkMessage(
+            type=MessageType.READY,
+            timestamp=time.time(),
+            player_id=client.player_id,
+            data={"ready": is_ready},
         )
-
-        lobby = self.game_server.lobby_manager.get_lobby(client.game_id)
-
-        ready_event = {
-            "type": "READY",
-            "game_id": client.game_id,
-            "player_id": client.player_id,
-            "ready": is_ready,
-            "lobby": lobby.to_dict() if lobby else None,
-        }
-        await self._broadcast_to_lobby(client.game_id, ready_event)
+        await self._delegate_to_server(client, message)
 
     async def _handle_start_game(self, client: WebSocketClient, data: dict) -> None:
         """Handle start game request from web client - delegates to main server."""
@@ -387,17 +341,13 @@ class WebSocketHandler:
             await self._send_error(client, "Not in a game")
             return
 
-        # Create NetworkMessage and delegate to main TCP server's handler
-        # This ensures consistent behavior and proper broadcasting to all client types
         message = NetworkMessage(
             type=MessageType.START_GAME,
             timestamp=time.time(),
             player_id=client.player_id,
             data={"game_id": client.game_id},
         )
-
-        # Delegate to main server's start game handler (which handles AI spawning & broadcasting)
-        await self.game_server._handle_start_game(client.player_id, message)
+        await self._delegate_to_server(client, message)
 
     async def _handle_game_action(self, client: WebSocketClient, data: dict) -> None:
         """Handle game action from web client."""
@@ -433,28 +383,7 @@ class WebSocketHandler:
             player_id=client.player_id,
             data=action_data,
         )
-
-        success, msg, result_data, game_session = (
-            self.game_server.game_coordinator.execute_action(
-                client.player_id, self.protocol.message_to_action(message)
-            )
-        )
-
-        if not success:
-            error_response = {
-                "type": "INVALID_ACTION",
-                "action_type": msg_type,
-                "reason": msg,
-            }
-            if client.websocket:
-                await client.websocket.send_json(error_response)
-            return
-
-        if game_session:
-            await self._broadcast_game_state(game_session)
-
-            if game_session.is_game_over():
-                await self._handle_game_over(game_session)
+        await self._delegate_to_server(client, message)
 
     async def _handle_sse_fallback_request(
         self, client: WebSocketClient, data: dict
@@ -492,13 +421,13 @@ class WebSocketHandler:
         if not chat_message:
             return
 
-        chat_event = {
-            "type": "CHAT",
-            "player_id": client.player_id,
-            "player_name": client.player_name,
-            "message": chat_message,
-        }
-        await self._broadcast_to_lobby(client.game_id, chat_event)
+        message = NetworkMessage(
+            type=MessageType.CHAT,
+            timestamp=time.time(),
+            player_id=client.player_id,
+            data={"message": chat_message},
+        )
+        await self._delegate_to_server(client, message)
 
     async def _handle_client_disconnect(self, client: WebSocketClient) -> None:
         """Handle explicit disconnect from web client."""
@@ -533,21 +462,6 @@ class WebSocketHandler:
                 )
 
         logger.info(f"WebSocket client disconnected: {client.client_id}")
-
-    async def _broadcast_to_lobby(
-        self,
-        game_id: str,
-        message: dict,
-        exclude_client: Optional[WebSocketClient] = None,
-    ) -> None:
-        """Broadcast message to all clients in a lobby."""
-        for client in self.clients.values():
-            if client.game_id == game_id and client != exclude_client:
-                try:
-                    if client.websocket:
-                        await client.websocket.send_json(message)
-                except Exception as e:
-                    logger.error(f"Error broadcasting to client: {e}")
 
     async def _broadcast_to_game(self, game_id: Optional[str], message: dict) -> None:
         """Broadcast message to all clients in an active game."""

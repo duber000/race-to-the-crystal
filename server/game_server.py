@@ -23,6 +23,7 @@ from server.ai_spawner import AISpawner
 from server.websocket_handler import WebSocketHandler
 from server.http_handler import HTTPHandler
 from server.mercure_publisher import MercurePublisher, MercureConfig
+from server.message_router import build_server_routes, route_server_message
 
 
 logging.basicConfig(
@@ -84,6 +85,7 @@ class GameServer:
         self.server = None
         self.aiohttp_runner = None
         self.websocket_handler = None  # Set when aiohttp server starts
+        self._message_routes = build_server_routes(self)
 
         logger.info(f"Game server initialized on {host}:{port}")
         logger.info(f"SSE Primary Mode: {'enabled' if self.sse_primary_mode else 'disabled (dual-channel)'}")
@@ -445,52 +447,19 @@ class GameServer:
         logger.debug(f"Received {message.type.value} from {player_id[:8]}")
 
         try:
-            # Route message based on type
-            if message.type == MessageType.DISCONNECT:
-                await self._handle_disconnect(player_id)
-
-            elif message.type == MessageType.HEARTBEAT:
-                await self._handle_heartbeat(player_id, message)
-
-            elif message.type == MessageType.CREATE_GAME:
-                await self._handle_create_game(player_id, message)
-
-            elif message.type == MessageType.JOIN_GAME:
-                await self._handle_join_game(player_id, message)
-
-            elif message.type == MessageType.LEAVE_GAME:
-                await self._handle_leave_game(player_id, message)
-
-            elif message.type == MessageType.LIST_GAMES:
-                await self._handle_list_games(player_id)
-
-            elif message.type == MessageType.READY:
-                await self._handle_ready(player_id, message)
-
-            elif message.type == MessageType.START_GAME:
-                await self._handle_start_game(player_id, message)
-
-            # Game actions
-            elif message.type in [
-                MessageType.MOVE,
-                MessageType.ATTACK,
-                MessageType.DEPLOY,
-                MessageType.END_TURN,
-            ]:
-                await self._handle_game_action(player_id, message)
-
-            # Chat
-            elif message.type == MessageType.CHAT:
-                await self._handle_chat(player_id, message)
-
-            else:
-                logger.warning(f"Unhandled message type: {message.type.value}")
+            await route_server_message(
+                self._message_routes, player_id, message, self._handle_unhandled_message
+            )
 
         except Exception as e:
             logger.error(
                 f"Error handling message {message.type.value}: {e}", exc_info=True
             )
             await self._send_error(player_id, f"Server error: {e}")
+
+    async def _handle_unhandled_message(self, message: NetworkMessage) -> None:
+        """Log unhandled message types."""
+        logger.warning(f"Unhandled message type: {message.type.value}")
 
     async def _handle_heartbeat(self, player_id: str, message: NetworkMessage) -> None:
         """Respond to heartbeat."""
