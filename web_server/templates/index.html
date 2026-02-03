@@ -351,8 +351,7 @@
         #renderCanvas {
             width: 100%;
             height: 100vh;
-            display: none;
-            /* Hidden until game starts */
+            display: block;
             outline: none;
         }
 
@@ -1355,7 +1354,7 @@
         </div>
     </div>
 
-    <canvas id="renderCanvas"></canvas>
+    <canvas id="renderCanvas" class="hidden"></canvas>
 
     <details id="hud" open>
         <summary>

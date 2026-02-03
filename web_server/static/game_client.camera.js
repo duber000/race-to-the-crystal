@@ -152,10 +152,13 @@ class CameraController {
         // Note: Assuming TOKEN_HEIGHT is defined globally or passed in context. 
         // If not, replace with a fixed value like 50.
         const tokenHeightVal = (typeof TOKEN_HEIGHT !== 'undefined') ? TOKEN_HEIGHT : 50;
+        const cageTopY = (typeof WALL_HEIGHT !== 'undefined') ? WALL_HEIGHT : null;
 
         const tokenX = token.position[0] * this.cellSize + this.cellSize / 2;
         const tokenZ = token.position[1] * this.cellSize + this.cellSize / 2;
-        const tokenY = tokenHeightVal / 2;
+        const tokenY = (cageTopY !== null)
+            ? Math.max(tokenHeightVal / 2, cageTopY - (tokenHeightVal / 2))
+            : (tokenHeightVal / 2);
 
         const offset = 100;
         const height = 30;

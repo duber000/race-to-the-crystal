@@ -447,6 +447,10 @@ class GameClient {
           const aliveTokens = this.getAliveTokens();
           if (aliveTokens.length > 0) {
             this.controlledTokenId = aliveTokens[0].id;
+            const token = this.gameState?.tokens?.[this.controlledTokenId];
+            if (token) {
+              this.cameraController.updateFirstPersonCamera(token);
+            }
           }
         }
         break;
@@ -456,6 +460,10 @@ class GameClient {
         );
         if (newTokenId) {
           this.controlledTokenId = newTokenId;
+          const token = this.gameState?.tokens?.[this.controlledTokenId];
+          if (token) {
+            this.cameraController.updateFirstPersonCamera(token);
+          }
         }
         break;
       case "rotate_left":

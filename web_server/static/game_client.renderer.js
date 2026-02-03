@@ -17,6 +17,11 @@
  *   renderer.startRenderLoop();
  */
 
+const BOARD_CAGE_TOP_Y = WALL_HEIGHT;
+const TOKEN_CENTER_Y = Math.max(TOKEN_HEIGHT / 2, BOARD_CAGE_TOP_Y - (TOKEN_HEIGHT / 2));
+const GENERATOR_HEIGHT = Math.min(60, BOARD_CAGE_TOP_Y * 0.9);
+const GENERATOR_CENTER_Y = BOARD_CAGE_TOP_Y - (GENERATOR_HEIGHT / 2);
+
 class Renderer3D {
     constructor(canvas, deviceCapabilities) {
         this.canvas = canvas;
@@ -63,6 +68,8 @@ class Renderer3D {
         this.suspenseMusic = null;
         this.generatorHums = []; // Now stores objects: { source, gain, panner, frequency }
         this.crystalHum = null;  // Stores: { source, gain, panner }
+        this.crystalHumEnabled = false;
+        this.generatorHumEnabled = false;
         this.musicVolume = 0.3;
         this.humVolume = 0.2;
         this.musicEnabled = true;
@@ -559,11 +566,11 @@ class Renderer3D {
                 const worldZ = gen.position[1] * CELL_SIZE + CELL_SIZE / 2;
 
                 const pillar = BABYLON.MeshBuilder.CreateCylinder(`shard_assembly_${index}`, {
-                    height: 60,
+                    height: GENERATOR_HEIGHT,
                     diameter: 24,
                     subdivisions: 32
                 }, this.scene);
-                pillar.position = new BABYLON.Vector3(worldX, 30, worldZ);
+                pillar.position = new BABYLON.Vector3(worldX, GENERATOR_CENTER_Y, worldZ);
 
                 // Give each pillar its own material instance for individual colors
                 pillar.material = shardMat.clone(`shardMat_${index}`);
@@ -848,7 +855,7 @@ class Renderer3D {
             { diameter: CELL_SIZE * 0.7, height: TOKEN_HEIGHT, tessellation: 6 },
             this.scene,
         );
-        hexagon.position = new BABYLON.Vector3(worldX, TOKEN_HEIGHT / 2, worldZ);
+        hexagon.position = new BABYLON.Vector3(worldX, TOKEN_CENTER_Y, worldZ);
 
         const material = new BABYLON.PBRMaterial(`tokenMat_${token.id}`, this.scene);
         material.emissiveColor = playerColor;
@@ -891,7 +898,7 @@ class Renderer3D {
             { diameter: CELL_SIZE * 0.7, height: TOKEN_HEIGHT, tessellation: 6 },
             this.scene,
         );
-        hexagon.position = new BABYLON.Vector3(worldX, TOKEN_HEIGHT / 2, worldZ);
+        hexagon.position = new BABYLON.Vector3(worldX, TOKEN_CENTER_Y, worldZ);
 
         const material = new BABYLON.PBRMaterial(
             `phantomMat_${phantom.phantom_id}`,
@@ -1036,7 +1043,7 @@ class Renderer3D {
             30,
             10,
             tokenData.mesh.position,
-            new BABYLON.Vector3(worldX, TOKEN_HEIGHT / 2, worldZ),
+            new BABYLON.Vector3(worldX, TOKEN_CENTER_Y, worldZ),
             BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT,
         );
 
@@ -1048,7 +1055,7 @@ class Renderer3D {
                 30,
                 10,
                 tokenData.healthLabel.position,
-                new BABYLON.Vector3(worldX, TOKEN_HEIGHT + 10, worldZ),
+                new BABYLON.Vector3(worldX, TOKEN_CENTER_Y + (TOKEN_HEIGHT / 2) + 10, worldZ),
                 BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT,
             );
 
@@ -1769,8 +1776,7 @@ class Renderer3D {
             });
         }
 
-        // --- Crystal Ambience (High Crystalline Tinkle) ---
-        // Using a couple of high sine waves with varying amplitude
+        // --- Crystal Ambience (Chimey, Glassy Bed) ---
         const crystalNode = ctx.createGain();
         const crystalPanner = ctx.createPanner();
         crystalPanner.panningModel = 'HRTF';
@@ -1779,29 +1785,53 @@ class Renderer3D {
         crystalPanner.maxDistance = 500;
         crystalPanner.rolloffFactor = 1;
 
-        // Use a ScriptProcessor or multiple oscillators for "sparkle"
-        // Simplified: 2 beating sine waves + high noise
+        // Gentle crystal bed: soft partials + mild bandpass + slow shimmer
         const cOsc1 = ctx.createOscillator();
         cOsc1.type = 'sine';
-        cOsc1.frequency.value = 2000;
+        cOsc1.frequency.value = 1100;
 
         const cOsc2 = ctx.createOscillator();
         cOsc2.type = 'sine';
-        cOsc2.frequency.value = 2005; // 5Hz beat
+        cOsc2.frequency.value = 1650;
+        cOsc2.detune.value = 3;
+
+        const cOsc3 = ctx.createOscillator();
+        cOsc3.type = 'sine';
+        cOsc3.frequency.value = 2200;
+        cOsc3.detune.value = -2;
+
+        const cFilter = ctx.createBiquadFilter();
+        cFilter.type = 'bandpass';
+        cFilter.frequency.value = 1600;
+        cFilter.Q.value = 1.1;
 
         const cGain = ctx.createGain();
         cGain.gain.value = 0; // Controlled by updateAudio
 
-        cOsc1.connect(cGain);
-        cOsc2.connect(cGain);
+        // Subtle shimmer via slow AM
+        const cLfo = ctx.createOscillator();
+        cLfo.type = 'sine';
+        cLfo.frequency.value = 0.35;
+        const cLfoGain = ctx.createGain();
+        cLfoGain.gain.value = 0.08;
+
+        cOsc1.connect(cFilter);
+        cOsc2.connect(cFilter);
+        cOsc3.connect(cFilter);
+        cFilter.connect(cGain);
         cGain.connect(crystalPanner);
         crystalPanner.connect(ctx.destination);
 
+        cLfo.connect(cLfoGain);
+        cLfoGain.connect(cGain.gain);
+
         cOsc1.start();
         cOsc2.start();
+        cOsc3.start();
+        cLfo.start();
 
         this.crystalHum = {
-            oscillators: [cOsc1, cOsc2],
+            oscillators: [cOsc1, cOsc2, cOsc3, cLfo],
             panner: crystalPanner,
             gain: cGain
         };
@@ -1828,7 +1858,7 @@ class Renderer3D {
             if (this.suspenseMusic) this.suspenseMusic.play().catch(() => { });
 
             // Unmute procedural
-            this.generatorHums.forEach(h => h.masterGain.gain.value = this.humVolume);
+            this.generatorHums.forEach(h => h.masterGain.gain.value = this.generatorHumEnabled ? this.humVolume : 0);
         } else {
             if (this.backgroundMusic) this.backgroundMusic.pause();
             if (this.suspenseMusic) this.suspenseMusic.pause();
@@ -1888,13 +1918,17 @@ class Renderer3D {
                     p.setPosition(crystalWorldPos.x, crystalWorldPos.y, crystalWorldPos.z);
                 }
 
-                // Volume based on distance (closer = louder, but capped)
-                // Linear dropoff is handled by Panner, but we ensure it's on
-                this.crystalHum.gain.gain.value = this.humVolume * 0.8;
+                if (this.crystalHumEnabled) {
+                    // Volume based on distance (closer = louder, but capped)
+                    // Linear dropoff is handled by Panner, but we ensure it's on
+                    this.crystalHum.gain.gain.value = this.humVolume * 0.8;
 
-                // Add some glitter/sparkle probability
-                if (Math.random() < 0.05) {
-                    this.playCrystalSparkle(ctx, crystalWorldPos);
+                    // Add some gentle sparkle probability
+                    if (Math.random() < 0.025) {
+                        this.playCrystalSparkle(ctx, crystalWorldPos);
+                    }
+                } else {
+                    this.crystalHum.gain.gain.value = 0;
                 }
             }
         }
@@ -1919,7 +1953,7 @@ class Renderer3D {
                 }
 
                 // Ensure volume is up
-                hum.masterGain.gain.value = this.humVolume;
+                hum.masterGain.gain.value = this.generatorHumEnabled ? this.humVolume : 0;
             } else {
                 // Silenced
                 hum.masterGain.gain.value = 0;
@@ -1934,26 +1968,52 @@ class Renderer3D {
     }
 
     playCrystalSparkle(ctx, pos) {
-        // Random high ping
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const panner = ctx.createPanner();
+        // Wind chime sparkle: a few soft, staggered strikes with glassy partials
+        const now = ctx.currentTime;
+        const chimeNotes = [440, 494, 554, 659, 740, 880]; // A major pentatonic-ish
+        const hitCount = 2 + Math.floor(Math.random() * 3); // 2-4 hits
+        const partials = [1.0, 2.02, 3.01];
 
+        const panner = ctx.createPanner();
         panner.panningModel = 'HRTF';
         panner.setPosition(pos.x, pos.y, pos.z);
 
-        osc.type = 'sine';
-        osc.frequency.value = 2000 + Math.random() * 4000;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1400;
+        filter.Q.value = 1.4;
 
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        const masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(0.04, now);
+        masterGain.gain.exponentialRampToValueAtTime(0.0006, now + 0.7);
 
-        osc.connect(gain);
-        gain.connect(panner);
+        filter.connect(masterGain);
+        masterGain.connect(panner);
         panner.connect(ctx.destination);
 
-        osc.start();
-        osc.stop(ctx.currentTime + 0.5);
+        const oscs = [];
+        for (let i = 0; i < hitCount; i++) {
+            const base = chimeNotes[Math.floor(Math.random() * chimeNotes.length)];
+            const hitTime = now + i * (0.08 + Math.random() * 0.12);
+            partials.forEach((ratio, idx) => {
+                const o = ctx.createOscillator();
+                o.type = idx === 0 ? 'triangle' : 'sine';
+                o.frequency.value = base * ratio;
+                o.detune.value = (Math.random() - 0.5) * 6;
+                o.connect(filter);
+                o.start(hitTime);
+                o.stop(hitTime + 0.5);
+                oscs.push(o);
+            });
+        }
+
+        // Cleanup
+        setTimeout(() => {
+            oscs.forEach(o => o.disconnect());
+            filter.disconnect();
+            masterGain.disconnect();
+            panner.disconnect();
+        }, 1200);
     }
 
     getAudioContext() {

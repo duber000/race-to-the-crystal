@@ -38,10 +38,12 @@ class InputHandler {
         // Mouse state
         this.isPanning = false; // Right-click panning
         this.isLMBDown = false;
+        this.isRMBDown = false;
         this.lmbDownPosition = { x: 0, y: 0 };
         this.isLMBDragging = false;
         this.lastPanPosition = { x: 0, y: 0 };
         this.hoveredCell = null;
+        this.lastPointerMoveTime = 0;
 
         // Touch state (for tap detection only)
         this.touches = new Map();
@@ -52,6 +54,10 @@ class InputHandler {
         this.lastActionTime = {};
 
         this.eventHandlers = new Map();
+
+        this.boundMouseMove = null;
+        this.boundPointerDown = null;
+        this.boundPointerUp = null;
     }
 
     on(event, handler) {
@@ -100,6 +106,45 @@ class InputHandler {
             this.canvas.focus();
         });
 
+        this.boundMouseMove = (event) => {
+            if (!this.cameraController.mouseLookActive || this.cameraController.cameraMode !== "firstperson") {
+                return;
+            }
+            if (Date.now() - this.lastPointerMoveTime < 50) {
+                return;
+            }
+            let dx = event.movementX || 0;
+            let dy = event.movementY || 0;
+            if (dx === 0 && dy === 0 && this.cameraController.lastMousePosition) {
+                dx = event.clientX - this.cameraController.lastMousePosition.x;
+                dy = event.clientY - this.cameraController.lastMousePosition.y;
+            }
+            this.cameraController.lastMousePosition = { x: event.clientX, y: event.clientY };
+            this.cameraController.handleMouseMotion(dx, dy);
+        };
+        document.addEventListener("mousemove", this.boundMouseMove, { passive: false });
+
+        this.boundPointerDown = (event) => {
+            if (event.pointerType !== "mouse") return;
+            if (event.button !== 2 && !(event.buttons & 2)) return;
+            event.preventDefault();
+            this.isRMBDown = true;
+            if (this.cameraController.cameraMode === "firstperson") {
+                this.cameraController.activateMouseLook(event.clientX, event.clientY);
+            }
+        };
+        this.boundPointerUp = (event) => {
+            if (event.pointerType !== "mouse") return;
+            if (event.button !== 2) return;
+            event.preventDefault();
+            this.isRMBDown = false;
+            if (this.cameraController.cameraMode === "firstperson") {
+                this.cameraController.deactivateMouseLook();
+            }
+        };
+        this.canvas.addEventListener("pointerdown", this.boundPointerDown, { passive: false });
+        this.canvas.addEventListener("pointerup", this.boundPointerUp, { passive: false });
+
         this.scene.onPointerObservable.add((pointerInfo) => {
             switch (pointerInfo.type) {
                 case BABYLON.PointerEventTypes.POINTERMOVE:
@@ -120,11 +165,20 @@ class InputHandler {
     }
 
     handlePointerMove(pointerInfo) {
-        const dx = pointerInfo.event.movementX || 0;
-        const dy = pointerInfo.event.movementY || 0;
+        let dx = pointerInfo.event.movementX || 0;
+        let dy = pointerInfo.event.movementY || 0;
+        this.lastPointerMoveTime = Date.now();
 
         // Handle mouse-look (RMB in first-person)
         if (this.cameraController.mouseLookActive) {
+            if (dx === 0 && dy === 0 && this.cameraController.lastMousePosition) {
+                dx = pointerInfo.event.clientX - this.cameraController.lastMousePosition.x;
+                dy = pointerInfo.event.clientY - this.cameraController.lastMousePosition.y;
+            }
+            this.cameraController.lastMousePosition = {
+                x: pointerInfo.event.clientX,
+                y: pointerInfo.event.clientY,
+            };
             this.cameraController.handleMouseMotion(dx, dy);
             return;
         }
@@ -217,6 +271,10 @@ class InputHandler {
                 }
             }
         } else if (pointerInfo.event.button === 2) {
+            if (pointerInfo.event.preventDefault) {
+                pointerInfo.event.preventDefault();
+            }
+            this.isRMBDown = true;
             if (this.cameraController.cameraMode === "overview") {
                 this.isPanning = true;
                 this.lastPanPosition = {
@@ -259,6 +317,7 @@ class InputHandler {
             this.canvas.classList.add("cursor-default");
             this.canvas.classList.remove("cursor-pointer");
         } else if (pointerInfo.event.button === 2) {
+            this.isRMBDown = false;
             if (this.cameraController.cameraMode === "overview") {
                 this.isPanning = false;
                 this.canvas.classList.add("cursor-default");
@@ -544,6 +603,15 @@ class InputHandler {
         }
         if (this.boundOnTouchEnd) {
             this.canvas.removeEventListener('touchend', this.boundOnTouchEnd);
+        }
+        if (this.boundMouseMove) {
+            document.removeEventListener("mousemove", this.boundMouseMove);
+        }
+        if (this.boundPointerDown) {
+            this.canvas.removeEventListener("pointerdown", this.boundPointerDown);
+        }
+        if (this.boundPointerUp) {
+            this.canvas.removeEventListener("pointerup", this.boundPointerUp);
         }
 
         // Clear touch tracking
