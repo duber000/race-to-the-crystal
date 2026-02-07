@@ -97,7 +97,7 @@ class WebSocketHandler:
         ws = web.WebSocketResponse(max_msg_size=64 * 1024)
         await ws.prepare(request)
 
-        client_id = str(uuid.uuid4())
+        client_id = str(uuid.uuid7())
         client = WebSocketClient(
             client_id=client_id, websocket=ws, ip_address=ip_address
         )
@@ -211,7 +211,7 @@ class WebSocketHandler:
             logger.warning(f"Invalid player name rejected: {player_name} - {e}")
             return
 
-        player_id = str(uuid.uuid4())
+        player_id = str(uuid.uuid7())
 
         # Update client with player info
         client.player_id = player_id

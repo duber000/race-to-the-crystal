@@ -136,7 +136,7 @@ class GameServer:
             writer: Stream writer
         """
         # Create connection wrapper
-        conn_id = str(uuid.uuid4())
+        conn_id = str(uuid.uuid7())
         connection = Connection(reader, writer, conn_id)
 
         # Add to connection pool
@@ -211,7 +211,7 @@ class GameServer:
             client_type = ClientType.HUMAN
 
         # Assign player ID
-        player_id = str(uuid.uuid4())
+        player_id = str(uuid.uuid7())
 
         # Store connection and client type
         self.player_connections[player_id] = connection

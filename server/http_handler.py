@@ -234,7 +234,7 @@ class HTTPHandler:
                 )
 
             # Generate player ID
-            player_id = str(uuid.uuid4())
+            player_id = str(uuid.uuid7())
 
             # Join lobby
             updated_lobby = self.game_server.lobby_manager.join_lobby(

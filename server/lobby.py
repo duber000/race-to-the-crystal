@@ -359,7 +359,7 @@ class LobbyManager:
             logger.warning(f"Invalid game creation attempt: {e}")
             raise
 
-        game_id = str(uuid.uuid4())
+        game_id = str(uuid.uuid7())
 
         lobby = GameLobby(
             game_id=game_id,
