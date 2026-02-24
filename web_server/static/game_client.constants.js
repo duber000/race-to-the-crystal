@@ -68,3 +68,8 @@ export const INPUT_CONFIG = {
     ACTION_DEBOUNCE_MS: 200,
     DRAG_THRESHOLD: 10  // Pixels to trigger drag
 };
+
+// Backward compatibility aliases
+export const TurnPhase = GAME_PHASE;
+export const STATE = UI_STATE;
+export const CELL_SIZE = BOARD_CONFIG.CELL_SIZE;

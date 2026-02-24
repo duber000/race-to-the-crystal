@@ -2,6 +2,8 @@
 // Networking Module - Handles all WebSocket and network communication
 // ==========================================================================
 
+import { STATE } from './game_client.constants.js';
+
 class NetworkManager {
     constructor() {
         this.websocket = null;

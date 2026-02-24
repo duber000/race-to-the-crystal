@@ -2,6 +2,8 @@
 // Input Handler - Manages mouse, keyboard, and touch input
 // ==========================================================================
 
+import { CELL_SIZE, INPUT_CONFIG } from './game_client.constants.js';
+
 class InputHandler {
     constructor(scene, canvas, cameraController, gameState, connectionState, engine, deviceCapabilities) {
         this.scene = scene;

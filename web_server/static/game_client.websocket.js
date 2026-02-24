@@ -14,6 +14,8 @@
  *   wsClient.on('state_update', (gameState) => { ... });
  */
 
+import { STATE } from './game_client.constants.js';
+
 class WebSocketClient {
   constructor() {
     this.websocket = null;

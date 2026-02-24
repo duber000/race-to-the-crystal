@@ -2,6 +2,8 @@
 // UI Manager - Handles all UI screens, HUD, and user interface
 // ==========================================================================
 
+import { TurnPhase } from './game_client.constants.js';
+
 class UIManager {
     constructor() {
         this.deploymentMenuOpen = false;
