@@ -1,8 +1,20 @@
+// ==========================================================================
+// Race to the Crystal - Main Game Client (Facade)
+// ==========================================================================
+
+// Import modules
+import { NetworkManager } from './network_manager.js';
+import { UIManager } from './ui_manager.js';
+import { CameraController } from './camera_controller.js';
+import { InputHandler } from './input_handler.js';
+import { DeviceCapabilities } from './game_client.device.js';
+import { BOARD_CONFIG, GAME_PHASE, UI_STATE, INPUT_CONFIG } from './game_client.constants.js';
+
 /**
  * Race to the Crystal - Main Game Client (Facade)
  *
  * This is the main entry point that coordinates all modules:
- * - WebSocketClient: Network communication and lobby management
+ * - NetworkManager: Network communication and lobby management
  * - UIManager: All UI screens and HUD
  * - CameraController: Overview and first-person camera modes
  * - InputHandler: Mouse and keyboard input
@@ -20,13 +32,12 @@ class GameClient {
     this.deviceCapabilities = new DeviceCapabilities();
     this.deviceCapabilities.logCapabilities();
 
-    // Modules
-    this.ui = new UIManager();
-    this.guiManager = null; // Babylon.js GUI (for mobile)
+    // Initialize modules
+    this.networkManager = new NetworkManager();
+    this.uiManager = new UIManager();
     this.cameraController = null;
     this.inputHandler = null;
     this.renderer = null;
-    this.wsClient = null;
 
     // Game state
     this.gameState = null;
@@ -34,7 +45,7 @@ class GameClient {
     this.selectedTokenId = null;
     this.controlledTokenId = null;
     this.validMoves = new Set();
-    this.turnPhase = TurnPhase.MOVEMENT;
+    this.turnPhase = GAME_PHASE.MOVEMENT;
 
     // Animation and effects
     this.musicPlaying = true;
@@ -50,90 +61,88 @@ class GameClient {
   }
 
   setupUI() {
-    this.ui.canvas = this.canvas;
+    this.uiManager.setCanvas(this.canvas);
   }
 
   setupConnectionScreen() {
-    this.ui.setupConnectionScreen((name, host, port) => {
+    this.uiManager.setupConnectionScreen((name, host, port) => {
       this.connectToServer(host, port, name);
     });
   }
 
   connectToServer(host, port, playerName) {
-    this.wsClient = new WebSocketClient();
-
-    this.wsClient.on("connecting", () => {
-      this.ui.showConnectionStatus("Connecting to server...");
+    this.networkManager.on("connecting", () => {
+      this.uiManager.showConnectionStatus("Connecting to server...");
       this.updateUIState(STATE.CONNECTING);
     });
 
-    this.wsClient.on("connected", (data) => {
-      this.ui.showConnectionStatus("Connected!");
-      this.ui.playerId = data.playerId;
+    this.networkManager.on("connected", (data) => {
+      this.uiManager.showConnectionStatus("Connected!");
+      this.uiManager.playerId = data.playerId;
       this.updateUIState(STATE.CONNECTED);
-      this.wsClient.requestGameList();
+      this.networkManager.requestGameList();
     });
 
-    this.wsClient.on("error", (data) => {
-      this.ui.showConnectionError(data.message);
+    this.networkManager.on("error", (data) => {
+      this.uiManager.showConnectionError(data.message);
       this.updateUIState(STATE.DISCONNECTED);
     });
 
-    this.wsClient.on("disconnect", () => {
-      this.ui.playerId = null;
+    this.networkManager.on("disconnect", () => {
+      this.uiManager.playerId = null;
       this.updateUIState(STATE.DISCONNECTED);
     });
 
-    this.wsClient.on("game_list", (data) => {
-      this.ui.onJoinGame = (gameId) => this.wsClient.joinGame(gameId);
-      this.ui.renderGameList(data.games);
+    this.networkManager.on("game_list", (data) => {
+      this.uiManager.onJoinGame = (gameId) => this.networkManager.joinGame(gameId);
+      this.uiManager.renderGameList(data.games);
     });
 
-    this.wsClient.on("lobby_joined", (data) => {
+    this.networkManager.on("lobby_joined", (data) => {
       this.updateUIState(STATE.IN_LOBBY);
-      const isReady = this.wsClient.isPlayerReady();
-      this.ui.renderWaitingRoom(data.lobby, data.isHost, isReady);
+      const isReady = this.networkManager.isPlayerReady();
+      this.uiManager.renderWaitingRoom(data.lobby, data.isHost, isReady);
       this.setupWaitingRoomHandlers();
     });
 
-    this.wsClient.on("lobby_updated", (data) => {
+    this.networkManager.on("lobby_updated", (data) => {
       const lobby = data.lobby;
-      const isHost = this.wsClient.isPlayerHost();
-      const isReady = this.wsClient.isPlayerReady();
-      this.ui.renderWaitingRoom(lobby, isHost, isReady);
-      this.ui.updateStartButtonState(lobby, isHost, () => this.startGame());
+      const isHost = this.networkManager.isPlayerHost();
+      const isReady = this.networkManager.isPlayerReady();
+      this.uiManager.renderWaitingRoom(lobby, isHost, isReady);
+      this.uiManager.updateStartButtonState(lobby, isHost, () => this.startGame());
     });
 
-    this.wsClient.on("host_left", () => {
+    this.networkManager.on("host_left", () => {
       alert("Host left the game. Returning to lobby.");
       this.leaveLobby();
     });
 
-    this.wsClient.on("lobby_left", () => {
+    this.networkManager.on("lobby_left", () => {
       this.updateUIState(STATE.CONNECTED);
-      this.wsClient.requestGameList();
+      this.networkManager.requestGameList();
     });
 
-    this.wsClient.on("game_starting", () => {
+    this.networkManager.on("game_starting", () => {
       // Only transition to game_starting if not already in game
-      if (this.wsClient.getConnectionState() !== STATE.IN_GAME) {
+      if (this.networkManager.getConnectionState() !== STATE.IN_GAME) {
         this.updateUIState(STATE.GAME_STARTING);
       }
     });
 
-    this.wsClient.on("full_state", (data) => {
+    this.networkManager.on("full_state", (data) => {
       this.handleFullState(data);
     });
 
-    this.wsClient.on("invalid_action", (data) => {
-      this.ui.showActionError(data.message);
+    this.networkManager.on("invalid_action", (data) => {
+      this.uiManager.showActionError(data.message);
     });
 
-    this.wsClient.connect(host, port, playerName);
+    this.networkManager.connect(host, port, playerName);
   }
 
   setupWaitingRoomHandlers() {
-    this.ui.setupWaitingRoomHandlers(
+    this.uiManager.setupWaitingRoomHandlers(
       () => this.toggleReady(),
       () => this.startGame(),
       () => this.leaveLobby(),
@@ -168,34 +177,34 @@ class GameClient {
   }
 
   setupLobbyBrowserHandlers() {
-    this.ui.setupLobbyBrowserHandlers(
+    this.uiManager.setupLobbyBrowserHandlers(
       (gameName, playerCount) => {
-        if (!this.wsClient) {
+        if (!this.networkManager) {
           alert(
-            "Connection error: WebSocket client not found. Please reconnect.",
+            "Connection error: Network manager not found. Please reconnect.",
           );
           return;
         }
-        this.wsClient.createGame(gameName, playerCount || 4);
+        this.networkManager.createGame(gameName, playerCount || 4);
       },
       () => {
-        if (!this.wsClient) {
+        if (!this.networkManager) {
           return;
         }
-        this.wsClient.requestGameList();
+        this.networkManager.requestGameList();
       },
       () => {
-        if (!this.wsClient) {
+        if (!this.networkManager) {
           return;
         }
-        this.wsClient.disconnect();
+        this.networkManager.disconnect();
       },
     );
   }
 
   handleFullState(data) {
-    if (this.wsClient.getConnectionState() !== STATE.IN_GAME) {
-      this.wsClient.connectionState = STATE.IN_GAME;
+    if (this.networkManager.getConnectionState() !== STATE.IN_GAME) {
+      this.networkManager.connectionState = STATE.IN_GAME;
       this.updateUIState(STATE.IN_GAME);
 
       if (data.game_state && data.game_state.perspective_player_id) {
@@ -244,7 +253,7 @@ class GameClient {
       this.canvas,
       this.cameraController,
       () => this.gameState,
-      () => this.wsClient.getConnectionState(),
+      () => this.networkManager.getConnectionState(),
       this.renderer.engine,
       this.deviceCapabilities,
     );
@@ -334,7 +343,7 @@ class GameClient {
   }
 
   updateGameState(gameState) {
-    if (this.wsClient.getConnectionState() !== STATE.IN_GAME) {
+    if (this.networkManager.getConnectionState() !== STATE.IN_GAME) {
       return;
     }
 
@@ -342,7 +351,7 @@ class GameClient {
     this.turnPhase = gameState.turn_phase || TurnPhase.MOVEMENT;
 
     this.renderer.updateGameState(gameState);
-    this.ui.updateHUD(gameState, this.localPlayerId);
+    this.uiManager.updateHUD(gameState, this.localPlayerId);
 
     if (gameState.current_turn_player_id !== this.localPlayerId) {
       this.selectedTokenId = null;
@@ -353,20 +362,73 @@ class GameClient {
   }
 
   handleClick(gridX, gridY) {
-    if (this.wsClient.getConnectionState() !== STATE.IN_GAME) return;
+    if (this.networkManager.getConnectionState() !== STATE.IN_GAME) return;
     if (
       !this.gameState ||
       this.gameState.current_turn_player_id !== this.localPlayerId
     )
       return;
 
-    if (this.ui.getSelectedDeployHealth() !== null) {
-      const health = this.ui.getSelectedDeployHealth();
-      this.wsClient.deployToken(health, [gridX, gridY]);
+    if (this.uiManager.getSelectedDeployHealth() !== null) {
+      const health = this.uiManager.getSelectedDeployHealth();
+      this.networkManager.deployToken(health, [gridX, gridY]);
       this.renderer.playSound("deploy");
-      this.ui.clearSelection();
+      this.uiManager.clearSelection();
       return;
     }
+
+    const tokenAtCell = this.getTokenAt(gridX, gridY);
+
+    if (this.selectedTokenId === null) {
+      if (tokenAtCell && this.isOurToken(tokenAtCell.id)) {
+        this.selectedTokenId = tokenAtCell.id;
+        // Show valid moves in MOVEMENT phase, attack targets in ACTION phase
+        if (this.turnPhase === TurnPhase.MOVEMENT) {
+          this.updateValidMoves(tokenAtCell);
+        } else if (this.turnPhase === TurnPhase.ACTION) {
+          this.updateValidAttackTargets(tokenAtCell);
+        }
+        this.renderer.updateTokenSelectionGlow(this.selectedTokenId);
+        this.renderer.playSound("deploy");
+      }
+    } else {
+      const selectedToken = this.gameState.tokens[this.selectedTokenId];
+
+      if (tokenAtCell && tokenAtCell.id === this.selectedTokenId) {
+        this.selectedTokenId = null;
+        this.validMoves = new Set();
+        this.renderer.updateValidMoveIndicators(null);
+        this.renderer.updateTokenSelectionGlow(null);
+        return;
+      }
+
+      if (tokenAtCell && !this.isOurToken(tokenAtCell.id)) {
+        if (this.turnPhase === TurnPhase.ACTION) {
+          console.log(`Attempting attack: ${this.selectedTokenId} > ${tokenAtCell.id}`);
+          this.networkManager.attackToken(this.selectedTokenId, tokenAtCell.id);
+          this.renderer.playSound("attack");
+          this.selectedTokenId = null;
+          this.validMoves = new Set();
+          this.renderer.updateValidMoveIndicators(null);
+          this.renderer.updateTokenSelectionGlow(null);
+        } else {
+          console.log(`Cannot attack: Wrong phase (currently ${this.turnPhase}, need ACTION)`);
+        }
+        return;
+      }
+
+      const moveKey = `${gridX},${gridY}`;
+      if (this.validMoves.has(moveKey)) {
+        this.networkManager.moveToken(this.selectedTokenId, [gridX, gridY]);
+        this.renderer.playSound("move");
+        this.selectedTokenId = null;
+        this.validMoves = new Set();
+        this.renderer.updateValidMoveIndicators(null);
+        this.renderer.updateTokenSelectionGlow(null);
+        return;
+      }
+    }
+  }
 
     const tokenAtCell = this.getTokenAt(gridX, gridY);
 
@@ -425,7 +487,7 @@ class GameClient {
     const key = data.key;
     switch (key) {
       case "end_turn":
-        this.wsClient.endTurn();
+        this.networkManager.endTurn();
         this.selectedTokenId = null;
         this.validMoves = new Set();
         this.renderer.updateValidMoveIndicators(null);
@@ -575,7 +637,7 @@ class GameClient {
       const nx = x + dx;
       const ny = y + dy;
 
-      if (nx < 0 || nx >= BOARD_WIDTH || ny < 0 || ny >= BOARD_HEIGHT)
+      if (nx < 0 || nx >= BOARD_CONFIG.WIDTH || ny < 0 || ny >= BOARD_CONFIG.HEIGHT)
         continue;
 
       const enemyToken = this.getTokenAt(nx, ny);
@@ -620,7 +682,7 @@ class GameClient {
         const posKey = `${nx},${ny}`;
 
         if (visited.has(posKey)) continue;
-        if (nx < 0 || nx >= BOARD_WIDTH || ny < 0 || ny >= BOARD_HEIGHT)
+        if (nx < 0 || nx >= BOARD_CONFIG.WIDTH || ny < 0 || ny >= BOARD_CONFIG.HEIGHT)
           continue;
 
         const tokenAtCell = this.getTokenAt(nx, ny);
@@ -701,25 +763,25 @@ class GameClient {
 
     // Must have a controlled token
     if (this.controlledTokenId === null) {
-      this.ui.showActionError("No token selected!");
+      this.uiManager.showActionError("No token selected!");
       return;
     }
 
     // Must be our turn
     if (!this.gameState || this.gameState.current_turn_player_id !== this.localPlayerId) {
-      this.ui.showActionError("Not your turn!");
+      this.uiManager.showActionError("Not your turn!");
       return;
     }
 
     // Must be in movement phase
     if (this.turnPhase !== TurnPhase.MOVEMENT) {
-      this.ui.showActionError("Can only move during movement phase!");
+      this.uiManager.showActionError("Can only move during movement phase!");
       return;
     }
 
     const token = this.gameState.tokens[this.controlledTokenId];
     if (!token || !token.is_alive || !token.is_deployed) {
-      this.ui.showActionError("Invalid token!");
+      this.uiManager.showActionError("Invalid token!");
       return;
     }
 
@@ -729,7 +791,7 @@ class GameClient {
 
     // Check if destination is on the board
     if (destX < 0 || destX >= BOARD_WIDTH || destY < 0 || destY >= BOARD_HEIGHT) {
-      this.ui.showActionError("Cannot move off the board!");
+      this.uiManager.showActionError("Cannot move off the board!");
       return;
     }
 
@@ -738,27 +800,27 @@ class GameClient {
     const moveKey = `${destX},${destY}`;
 
     if (this.validMoves.has(moveKey)) {
-      this.wsClient.moveToken(this.controlledTokenId, destination);
+      this.networkManager.moveToken(this.controlledTokenId, destination);
       this.renderer.playSound("move");
       this.validMoves = new Set();
       this.renderer.updateValidMoveIndicators(null);
     } else {
-      this.ui.showActionError("Invalid move!");
+      this.uiManager.showActionError("Invalid move!");
     }
   }
 
   toggleDeploymentMenu() {
     if (!this.gameState) return;
     if (this.gameState.current_turn_player_id !== this.localPlayerId) {
-      this.ui.showActionError("Not your turn!");
+      this.uiManager.showActionError("Not your turn!");
       return;
     }
     if (this.turnPhase !== TurnPhase.MOVEMENT) {
-      this.ui.showActionError("Can only deploy during movement phase!");
+      this.uiManager.showActionError("Can only deploy during movement phase!");
       return;
     }
 
-    this.ui.toggleDeploymentMenu(!this.ui.isDeploymentMenuOpen());
+    this.uiManager.toggleDeploymentMenu(!this.uiManager.isDeploymentMenuOpen());
   }
 
   cancelAction() {
@@ -767,34 +829,34 @@ class GameClient {
       this.validMoves = new Set();
       this.renderer.updateValidMoveIndicators(null);
       this.renderer.updateTokenSelectionGlow(null);
-    } else if (this.ui.getSelectedDeployHealth() !== null) {
-      this.ui.clearSelection();
-    } else if (this.ui.isDeploymentMenuOpen()) {
-      this.ui.toggleDeploymentMenu(false);
+    } else if (this.uiManager.getSelectedDeployHealth() !== null) {
+      this.uiManager.clearSelection();
+    } else if (this.uiManager.isDeploymentMenuOpen()) {
+      this.uiManager.toggleDeploymentMenu(false);
     }
   }
 
   toggleReady() {
-    const isReady = this.wsClient.toggleReady();
-    this.ui.updateReadyButton(isReady);
+    const isReady = this.networkManager.toggleReady();
+    this.uiManager.updateReadyButton(isReady);
   }
 
   startGame() {
     try {
-      this.wsClient.startGame();
+      this.networkManager.startGame();
     } catch (error) {
       alert(error.message);
     }
   }
 
   leaveLobby() {
-    this.wsClient.leaveLobby();
+    this.networkManager.leaveLobby();
   }
 
   quitGame() {
     // Clean up all resources
-    if (this.wsClient) {
-      this.wsClient.disconnect();
+    if (this.networkManager) {
+      this.networkManager.disconnect();
     }
     if (this.inputHandler) {
       this.inputHandler.dispose();
@@ -808,6 +870,10 @@ class GameClient {
     alert("Game quit. You can close this window.");
   }
 }
+
+// ==========================================================================
+// Main entry point
+// ==========================================================================
 
 // Initialize game when page loads
 window.addEventListener("DOMContentLoaded", () => {
