@@ -662,11 +662,8 @@ class AIActionExecutor:
         self, action: EndTurnAction, game_state: GameState, player_id: PlayerID
     ) -> ActionResult:
         """Execute an end turn action."""
-        # Update generators/crystal capture before advancing the turn
-        newly_disabled, crystal_captured = game_state._update_generators_and_crystal()
-
-        # End the turn
-        game_state.end_turn()
+        # Update objectives and advance the turn
+        newly_disabled, crystal_captured = game_state.end_turn_with_objective_update()
 
         # Get new current player
         new_player = game_state.get_current_player()

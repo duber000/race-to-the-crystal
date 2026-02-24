@@ -439,10 +439,6 @@ class GameState:
         if not self.current_turn_player_id:
             return
 
-        # Note: _update_generators_and_crystal() is now called separately
-        # in the game action handler to allow for sound effects
-        # self._update_generators_and_crystal()
-
         # Clear mystery event from previous action
         self.last_triggered_mystery_event = None
 
@@ -486,7 +482,7 @@ class GameState:
         # Reset turn phase to MOVEMENT for next player
         self.turn_phase = TurnPhase.MOVEMENT
 
-    def _update_generators_and_crystal(self) -> tuple[list[int], bool]:
+    def update_objectives(self) -> tuple[list[int], bool]:
         """
         Update generator capture status and check crystal win condition.
         Called at the end of each turn.
@@ -538,6 +534,25 @@ class GameState:
 
         return newly_disabled, crystal_captured
 
+    def end_turn_with_objective_update(self) -> tuple[list[int], bool]:
+        """
+        Update generators/crystal, then advance the turn.
+
+        Returns:
+            Tuple of (newly_disabled_generator_ids, crystal_captured)
+        """
+        newly_disabled, crystal_captured = self.update_objectives()
+        self.end_turn()
+        return newly_disabled, crystal_captured
+
+    def _update_generators_and_crystal(self) -> tuple[list[int], bool]:
+        """
+        Backward-compatible wrapper for objective updates.
+
+        Prefer using update_objectives() or end_turn_with_objective_update().
+        """
+        return self.update_objectives()
+
     def check_win_condition(self) -> str | None:
         """
         Check if any player has won the game.
@@ -546,9 +561,9 @@ class GameState:
             Player ID of winner, or None if no winner yet
 
         Note:
-            Win condition checking is performed automatically in end_turn()
-            via _update_generators_and_crystal(). This method just returns
-            the cached winner_id value.
+            Win condition checking is performed by update_objectives() /
+            end_turn_with_objective_update(). This method returns the cached
+            winner_id value.
         """
         return self.winner_id
 

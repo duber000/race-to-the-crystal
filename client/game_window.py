@@ -74,7 +74,6 @@ class GameView(arcade.View):
         self.is_network_game = is_network_game
         self.network_client = network_client
         self.local_player_id = local_player_id
-        self.window.ctx  # Ensure context is available
         self.music_enabled = music_enabled
 
         # Systems
@@ -245,7 +244,9 @@ class GameView(arcade.View):
         )
         # Update 3D tokens with crystal effects after creation
         if viewing_player_id:
-            self.renderer_3d._create_tokens_with_effects(self.game_state, self.window.ctx, viewing_player_id)
+            self.renderer_3d.create_tokens_with_effects(
+                self.game_state, self.window.ctx, viewing_player_id
+            )
 
         # Set up camera to fit entire board in view
         self.camera_controller.setup_initial_view(self.window.width, self.window.height)  # type: ignore

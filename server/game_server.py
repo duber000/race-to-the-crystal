@@ -332,7 +332,10 @@ class GameServer:
         # Notify other players that player reconnected
         if game_session:
             lobby = self.lobby_manager.get_lobby(saved_game_id)
-            reconnect_name = lobby.players.get(player_id, {}).get("name", "Unknown") if lobby else "Unknown"
+            reconnect_info = lobby.players.get(player_id) if lobby else None
+            reconnect_name = (
+                reconnect_info.player_name if reconnect_info else "Unknown"
+            )
             reconnect_msg = NetworkMessage(
                 type=MessageType.PLAYER_RECONNECTED,
                 timestamp=time.time(),
@@ -343,7 +346,10 @@ class GameServer:
             # Still in lobby
             lobby = self.lobby_manager.get_lobby(saved_game_id)
             if lobby:
-                reconnect_name = lobby.players.get(player_id, {}).get("name", "Unknown")
+                reconnect_info = lobby.players.get(player_id)
+                reconnect_name = (
+                    reconnect_info.player_name if reconnect_info else "Unknown"
+                )
                 reconnect_msg = NetworkMessage(
                     type=MessageType.PLAYER_RECONNECTED,
                     timestamp=time.time(),
@@ -372,7 +378,7 @@ class GameServer:
         if game_session and not explicit:
             # Keep client_type for reconnection
             # Save disconnection info for reconnection
-            lobby = self.lobby_manager.get_lobby_by_player(player_id)
+            lobby = self.lobby_manager.get_player_lobby(player_id)
             self.disconnected_players[player_id] = {
                 "disconnect_time": time.time(),
                 "game_id": lobby.game_id if lobby else None,
@@ -405,12 +411,13 @@ class GameServer:
         else:
             # Explicit disconnect or not in game - remove completely
             # Get player info before removing
-            lobby = self.lobby_manager.get_lobby_by_player(player_id)
+            lobby = self.lobby_manager.get_player_lobby(player_id)
             player_name = "Unknown"
             game_id = None
 
             if lobby:
-                player_name = lobby.players.get(player_id, {}).get("name", "Unknown")
+                player_info = lobby.players.get(player_id)
+                player_name = player_info.player_name if player_info else "Unknown"
                 game_id = lobby.game_id
 
             # Remove from lobby/game and client type tracking
@@ -870,7 +877,7 @@ class GameServer:
             return
 
         # Get player's name
-        lobby = self.lobby_manager.get_lobby_by_player(player_id)
+        lobby = self.lobby_manager.get_player_lobby(player_id)
         player_name = "Unknown"
 
         if lobby and player_id in lobby.players:

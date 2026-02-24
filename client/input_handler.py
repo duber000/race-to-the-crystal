@@ -76,7 +76,6 @@ class InputHandler:
         # Selection state
         self.selected_token_id: Optional[TokenID] = None
         self.valid_moves: Set[Tuple[int, int]] = set()
-        self.turn_phase = TurnPhase.MOVEMENT
 
         # Hover state for 3D mode
         self.hovered_grid_pos: Optional[Tuple[int, int]] = None
@@ -93,6 +92,10 @@ class InputHandler:
     def set_mystery_animations(self, mystery_animations: dict):
         """Set reference to mystery animations dict."""
         self.mystery_animations = mystery_animations
+
+    def _is_in_phase(self, phase: TurnPhase) -> bool:
+        """Check the authoritative turn phase from game state."""
+        return self.game_state.turn_phase == phase
 
     def handle_mouse_motion(self, x: int, y: int, dx: int, dy: int, window) -> bool:
         """
@@ -254,19 +257,7 @@ class InputHandler:
                 if grid_pos and self.game_state.board.is_valid_position(
                     grid_pos[0], grid_pos[1]
                 ):
-                    for player in self.game_state.players.values():
-                        for token_id in player.token_ids:
-                            token = self.game_state.get_token(token_id)
-                            if (
-                                token
-                                and token.is_alive
-                                and token.is_deployed
-                                and token.position == grid_pos
-                            ):
-                                clicked_on_token = True
-                                break
-                        if clicked_on_token:
-                            break
+                    clicked_on_token = self._find_token_at_position(grid_pos) is not None
 
                 # In 3D first-person mode, if raycasting found nothing AND we have a controlled token,
                 # assume the user is clicking on the controlled token (looking directly at it)
@@ -319,7 +310,7 @@ class InputHandler:
                         x, y, current_player
                     )
                 ):
-                    if current_player and self.turn_phase == TurnPhase.MOVEMENT:
+                    if current_player and self._is_in_phase(TurnPhase.MOVEMENT):
                         self.deployment_controller.open_menu()
                         return True
 
@@ -420,7 +411,7 @@ class InputHandler:
             current_player = self.game_state.get_current_player()
             if (
                 current_player
-                and self.turn_phase == TurnPhase.MOVEMENT
+                and self._is_in_phase(TurnPhase.MOVEMENT)
                 and not self.deployment_controller.selected_deploy_health
             ):
                 # Toggle open/close; respect the menu_just_opened guard
@@ -506,16 +497,14 @@ class InputHandler:
 
     def _find_token_at_position(self, grid_pos: Tuple[int, int]):
         """Find token at grid position."""
-        for player in self.game_state.players.values():
-            for token_id in player.token_ids:
-                token = self.game_state.get_token(token_id)
-                if (
-                    token
-                    and token.is_alive
-                    and token.is_deployed
-                    and token.position == grid_pos
-                ):
-                    return token
+        cell = self.game_state.board.get_cell_at(grid_pos)
+        if not cell:
+            return None
+
+        for token_id in cell.occupants:
+            token = self.game_state.get_token(token_id)
+            if token and token.is_alive and token.is_deployed:
+                return token
         return None
 
     def _handle_token_click(
@@ -529,7 +518,7 @@ class InputHandler:
 
     def _handle_own_token_click(self, clicked_token, grid_pos: Tuple[int, int]):
         """Handle clicking on own token."""
-        if self.turn_phase != TurnPhase.MOVEMENT:
+        if not self._is_in_phase(TurnPhase.MOVEMENT):
             return
 
         # Check if trying to stack on generator/crystal
@@ -565,16 +554,16 @@ class InputHandler:
 
     def _handle_enemy_token_click(self, clicked_token):
         """Handle clicking on enemy token (attack)."""
-        if self.turn_phase == TurnPhase.MOVEMENT and self.selected_token_id is not None:
+        if self._is_in_phase(TurnPhase.ACTION) and self.selected_token_id is not None:
             self._try_attack(clicked_token)
 
     def _handle_empty_cell_click(self, grid_pos: Tuple[int, int], current_player):
         """Handle clicking on empty cell."""
-        if self.selected_token_id is not None and self.turn_phase == TurnPhase.MOVEMENT:
+        if self.selected_token_id is not None and self._is_in_phase(TurnPhase.MOVEMENT):
             self._try_move_selected_token(grid_pos)
         elif (
             self.deployment_controller.selected_deploy_health
-            and self.turn_phase == TurnPhase.MOVEMENT
+            and self._is_in_phase(TurnPhase.MOVEMENT)
         ):
             self._try_deploy_token(grid_pos, current_player)
 
@@ -628,7 +617,7 @@ class InputHandler:
 
             if deployed_token:
                 self.deployment_controller.selected_deploy_health = None
-                self.turn_phase = TurnPhase.ACTION
+                self.game_state.turn_phase = TurnPhase.ACTION
                 logger.info("Deployment complete - you can attack or end turn")
             else:
                 # In network mode, we assume the action was queued/sent successfully
@@ -692,7 +681,7 @@ class InputHandler:
             )
 
             # Can't attack after moving - go directly to end turn phase
-            self.turn_phase = TurnPhase.END_TURN
+            self.game_state.turn_phase = TurnPhase.END_TURN
             logger.info("Turn complete - press SPACE to end turn")
 
     def _try_attack(self, target_token):
@@ -745,7 +734,7 @@ class InputHandler:
             self.renderer_3d.update_selection_visuals(
                 self.selected_token_id, self.valid_moves
             )
-            self.turn_phase = TurnPhase.END_TURN
+            self.game_state.turn_phase = TurnPhase.END_TURN
 
     def _handle_cancel(self):
         """Handle cancel action."""
@@ -772,6 +761,3 @@ class InputHandler:
 
         # Execute end turn through action handler
         self.action_handler.execute_end_turn(self.mystery_animations)
-
-        # Reset to movement phase
-        self.turn_phase = TurnPhase.MOVEMENT

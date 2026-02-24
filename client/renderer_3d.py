@@ -119,10 +119,12 @@ class Renderer3D:
             return False
 
         # Create 3D tokens
-        self._create_tokens_with_effects(game_state, ctx, viewing_player_id=None)
+        self.create_tokens_with_effects(game_state, ctx, viewing_player_id=None)
         return True
 
-    def _create_tokens_with_effects(self, game_state, ctx, viewing_player_id: str | None = None) -> None:
+    def create_tokens_with_effects(
+        self, game_state, ctx, viewing_player_id: str | None = None
+    ) -> None:
         """
         Create 3D tokens considering crystal effects.
 
@@ -247,7 +249,7 @@ class Renderer3D:
         else:
             # Apply crystal effects - recreate all tokens
             # This is simpler than trying to sync individual phantom tokens
-            self._create_tokens_with_effects(game_state, ctx, viewing_player_id)
+            self.create_tokens_with_effects(game_state, ctx, viewing_player_id)
 
     def update(self, delta_time: float) -> None:
         """

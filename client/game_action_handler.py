@@ -11,7 +11,7 @@ from client.sprites.token_sprite import TokenSprite
 from game.combat import CombatSystem
 from game.mystery_square import MysterySquareSystem
 from shared.constants import PLAYER_COLORS
-from shared.enums import CellType, TurnPhase
+from shared.enums import CellType
 from shared.logging_config import setup_logger
 from shared.types import TokenID
 
@@ -308,9 +308,9 @@ class GameActionHandler:
 
         logger.info(f"Ending turn for {current_player.name}")
 
-        # Get the current generator and crystal state before ending turn
+        # Update objectives and then advance the turn
         newly_disabled_generators, crystal_captured = (
-            self.game_state._update_generators_and_crystal()
+            self.game_state.end_turn_with_objective_update()
         )
 
         # Play sound effects for newly captured generators
@@ -323,12 +323,6 @@ class GameActionHandler:
         if crystal_captured:
             self.audio_manager.play_crystal_shatter_sound()
             logger.info("🏆 Crystal captured! Playing shatter sound")
-
-        # Advance to next player
-        self.game_state.end_turn()
-
-        # Reset to movement phase
-        self.game_state.turn_phase = TurnPhase.MOVEMENT
 
         next_player = self.game_state.get_current_player()
         if next_player:

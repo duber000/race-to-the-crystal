@@ -192,7 +192,7 @@ class WebSocketHandler:
         if not self.game_server or not client.player_id:
             return
 
-        lobby = self.game_server.lobby_manager.get_lobby_by_player(client.player_id)
+        lobby = self.game_server.lobby_manager.get_player_lobby(client.player_id)
         client.game_id = lobby.game_id if lobby else None
 
     async def _handle_connect(self, client: WebSocketClient, data: dict) -> None:
@@ -442,7 +442,7 @@ class WebSocketHandler:
             game_session = self.game_server.game_coordinator.get_player_game(
                 client.player_id
             )
-            lobby = self.game_server.lobby_manager.get_lobby_by_player(client.player_id)
+            lobby = self.game_server.lobby_manager.get_player_lobby(client.player_id)
 
             # Clean up game server tracking
             self.game_server.player_connections.pop(client.player_id, None)
