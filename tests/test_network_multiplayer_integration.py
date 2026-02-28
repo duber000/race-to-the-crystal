@@ -7,7 +7,6 @@ Tests the full workflow of two players connecting, creating a game, and taking t
 import asyncio
 import pytest
 import time
-from typing import List, Dict
 
 from server.game_server import GameServer
 from client.network_client import NetworkClient
@@ -20,8 +19,8 @@ class MockMessageHandler:
     """Mock message handler to track received messages."""
 
     def __init__(self):
-        self.received_messages: List[NetworkMessage] = []
-        self.game_states: List[Dict] = []
+        self.received_messages: list[NetworkMessage] = []
+        self.game_states: list[dict] = []
 
     async def handle_message(self, message: NetworkMessage):
         """Handle received messages and track them."""

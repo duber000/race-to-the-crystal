@@ -6,7 +6,7 @@ Provides async connection management with message framing.
 
 import asyncio
 import logging
-from typing import Optional, Callable, Awaitable
+from typing import Callable, Awaitable
 
 from network.protocol import NetworkMessage, MessageFraming
 
@@ -91,7 +91,7 @@ class Connection:
             await self.close()
             return False
 
-    async def receive_message(self) -> Optional[NetworkMessage]:
+    async def receive_message(self) -> NetworkMessage | None:
         """
         Receive the next NetworkMessage from the connection.
 
@@ -214,7 +214,7 @@ class ConnectionPool:
             f"Added connection to pool: {connection_id} (total: {len(self.connections)})"
         )
 
-    def remove_connection(self, connection_id: str) -> Optional[Connection]:
+    def remove_connection(self, connection_id: str) -> Connection | None:
         """
         Remove a connection from the pool.
 
@@ -232,7 +232,7 @@ class ConnectionPool:
             )
         return connection
 
-    def get_connection(self, connection_id: str) -> Optional[Connection]:
+    def get_connection(self, connection_id: str) -> Connection | None:
         """
         Get a connection by ID.
 
@@ -245,7 +245,7 @@ class ConnectionPool:
         return self.connections.get(connection_id)
 
     async def broadcast(
-        self, message: NetworkMessage, exclude: Optional[set[str]] = None
+        self, message: NetworkMessage, exclude: set[str] | None = None
     ) -> int:
         """
         Broadcast a message to all connections (optionally excluding some).

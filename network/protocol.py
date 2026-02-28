@@ -7,7 +7,7 @@ client-server communication using JSON over TCP.
 
 import json
 import time
-from typing import Dict, Any, Optional, Tuple
+import typing
 from dataclasses import dataclass
 
 from network.messages import MessageType, ClientType
@@ -36,8 +36,8 @@ class NetworkMessage:
 
     type: MessageType
     timestamp: float
-    player_id: Optional[str] = None
-    data: Optional[Dict[str, Any]] = None
+    player_id: str | None = None
+    data: dict[str, typing.Any] | None = None
 
     def to_json(self) -> str:
         """Serialize message to JSON string."""
@@ -85,7 +85,7 @@ class ProtocolHandler:
 
     @staticmethod
     def create_connect_ack_message(
-        player_id: str, session_data: Dict
+        player_id: str, session_data: dict[str, typing.Any]
     ) -> NetworkMessage:
         """Create a CONNECT_ACK response with assigned player_id."""
         return NetworkMessage(
@@ -107,7 +107,7 @@ class ProtocolHandler:
 
     @staticmethod
     def create_reconnect_message(
-        player_id: str, game_id: Optional[str] = None
+        player_id: str, game_id: str | None = None
     ) -> NetworkMessage:
         """Create a RECONNECT message to rejoin a game."""
         return NetworkMessage(
@@ -119,7 +119,7 @@ class ProtocolHandler:
 
     @staticmethod
     def create_reconnect_ack_message(
-        player_id: str, game_id: str, session_data: Dict
+        player_id: str, game_id: str, session_data: dict[str, typing.Any]
     ) -> NetworkMessage:
         """Create a RECONNECT_ACK response confirming successful reconnection."""
         return NetworkMessage(
@@ -261,7 +261,7 @@ class ProtocolHandler:
 
     @staticmethod
     def create_full_state_message(
-        game_state_dict: Dict, player_id: str
+        game_state_dict: dict[str, typing.Any], player_id: str
     ) -> NetworkMessage:
         """
         Create a FULL_STATE message with complete game state.
@@ -276,7 +276,9 @@ class ProtocolHandler:
         )
 
     @staticmethod
-    def create_state_update_message(update_data: Dict) -> NetworkMessage:
+    def create_state_update_message(
+        update_data: dict[str, typing.Any],
+    ) -> NetworkMessage:
         """
         Create a STATE_UPDATE message with delta changes.
 
@@ -304,7 +306,9 @@ class ProtocolHandler:
     # --- EVENT MESSAGES ---
 
     @staticmethod
-    def create_combat_result_message(result_data: Dict) -> NetworkMessage:
+    def create_combat_result_message(
+        result_data: dict[str, typing.Any],
+    ) -> NetworkMessage:
         """Create a COMBAT_RESULT event message."""
         return NetworkMessage(
             type=MessageType.COMBAT_RESULT, timestamp=time.time(), data=result_data
@@ -312,7 +316,7 @@ class ProtocolHandler:
 
     @staticmethod
     def create_token_moved_message(
-        token_id: int, old_pos: Tuple, new_pos: Tuple
+        token_id: int, old_pos: tuple[int, int], new_pos: tuple[int, int]
     ) -> NetworkMessage:
         """Create a TOKEN_MOVED event message."""
         return NetworkMessage(
@@ -354,7 +358,7 @@ class ProtocolHandler:
 
     @staticmethod
     def create_error_message(
-        error_msg: str, player_id: Optional[str] = None
+        error_msg: str, player_id: str | None = None
     ) -> NetworkMessage:
         """Create an ERROR message."""
         return NetworkMessage(
@@ -401,7 +405,7 @@ class MessageFraming:
         return length_bytes + json_bytes
 
     @staticmethod
-    def parse_frame(data: bytes) -> Tuple[Optional[bytes], bytes]:
+    def parse_frame(data: bytes) -> tuple[bytes | None, bytes]:
         """
         Parse a framed message from TCP stream.
 

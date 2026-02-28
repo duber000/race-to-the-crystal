@@ -6,7 +6,6 @@ and selection visuals.
 """
 
 import math
-from typing import Dict, List, Optional, Set, Tuple
 
 import arcade
 from arcade import SpriteList
@@ -58,7 +57,7 @@ class Renderer2D:
     def __init__(self):
         """Initialize 2D renderer."""
         # Sprite lists
-        self.board_shapes: Optional[ShapeElementList] = None
+        self.board_shapes: ShapeElementList | None = None
         self.token_sprites: SpriteList = SpriteList()
         self.selection_shapes: ShapeElementList = ShapeElementList()
         self.phantom_token_sprites: SpriteList = SpriteList()
@@ -72,9 +71,9 @@ class Renderer2D:
     def create_board_sprites(
         self,
         board,
-        generators: List,
+        generators: list,
         crystal,
-        mystery_animations: Dict[Tuple[int, int], float],
+        mystery_animations: dict[tuple[int, int], float],
     ) -> None:
         """
         Create shapes for the board (grid, generators, crystal, mystery squares).
@@ -93,7 +92,7 @@ class Renderer2D:
         if crystal is None and hasattr(board, "get_crystal_position"):
 
             class _DummyCrystal:
-                def __init__(self, pos: Tuple[int, int]):
+                def __init__(self, pos: tuple[int, int]):
                     self.position = pos
 
             self.crystal = _DummyCrystal(board.get_crystal_position())
@@ -103,7 +102,7 @@ class Renderer2D:
         if (not generators) and hasattr(board, "get_generator_positions"):
 
             class _DummyGenerator:
-                def __init__(self, pos: Tuple[int, int]):
+                def __init__(self, pos: tuple[int, int]):
                     self.position = pos
                     self.is_disabled = False
 
@@ -125,7 +124,9 @@ class Renderer2D:
         )
         logger.debug("Created board shapes for 2D rendering")
 
-    def create_token_sprites(self, game_state, viewing_player_id: str | None = None) -> None:
+    def create_token_sprites(
+        self, game_state, viewing_player_id: str | None = None
+    ) -> None:
         """
         Create sprites for all tokens, considering crystal effects.
 
@@ -148,18 +149,22 @@ class Renderer2D:
                         self.token_sprites.append(sprite)
         else:
             # Apply crystal effects - get visible tokens for this player
-            visible_tokens, phantom_tokens = game_state.get_visible_tokens_for_player(viewing_player_id)
-            
+            visible_tokens, phantom_tokens = game_state.get_visible_tokens_for_player(
+                viewing_player_id
+            )
+
             # Create sprites for visible real tokens
             for token in visible_tokens:
                 player = game_state.players[token.player_id]
                 player_color = PLAYER_COLORS[player.color.value]
                 sprite = TokenSprite(token, player_color)
                 self.token_sprites.append(sprite)
-            
+
             # Create sprites for phantom tokens
             for phantom in phantom_tokens:
-                player_color = PLAYER_COLORS[game_state.players[phantom.apparent_player_id].color.value]
+                player_color = PLAYER_COLORS[
+                    game_state.players[phantom.apparent_player_id].color.value
+                ]
                 sprite = PhantomTokenSprite(phantom, player_color)
                 self.phantom_token_sprites.append(sprite)
 
@@ -245,8 +250,8 @@ class Renderer2D:
 
     def update_selection_visuals(
         self,
-        selected_token_id: Optional[TokenID],
-        valid_moves: Set[Tuple[int, int]],
+        selected_token_id: TokenID | None,
+        valid_moves: set[tuple[int, int]],
         game_state,
     ) -> None:
         """

@@ -10,7 +10,6 @@ import logging
 import os
 import time
 import uuid
-from typing import Dict, Optional
 
 import aiohttp
 
@@ -56,11 +55,11 @@ class GameServer:
 
         # Connection management
         self.connection_pool = ConnectionPool()
-        self.player_connections: Dict[str, Connection] = {}  # player_id -> Connection
-        self.player_client_types: Dict[str, ClientType] = {}  # player_id -> ClientType
+        self.player_connections: dict[str, Connection] = {}  # player_id -> Connection
+        self.player_client_types: dict[str, ClientType] = {}  # player_id -> ClientType
 
         # Reconnection support
-        self.disconnected_players: Dict[str, Dict] = {}  # player_id -> disconnect info
+        self.disconnected_players: dict[str, dict] = {}  # player_id -> disconnect info
         self.reconnect_timeout = 300.0  # 5 minutes
 
         # Game management
@@ -189,7 +188,7 @@ class GameServer:
 
     async def _handle_connect(
         self, connection: Connection, message: NetworkMessage, conn_id: str
-    ) -> Optional[str]:
+    ) -> [str]:
         """
         Handle initial CONNECT message.
 
@@ -236,7 +235,7 @@ class GameServer:
 
     async def _handle_reconnect(
         self, connection: Connection, message: NetworkMessage, conn_id: str
-    ) -> Optional[str]:
+    ) -> [str]:
         """
         Handle RECONNECT message from a returning player.
 

@@ -6,7 +6,6 @@ game state synchronization.
 """
 
 import logging
-from typing import Dict, Optional, List, Tuple
 
 from game.game_state import GameState
 from game.ai_actions import AIAction, AIActionExecutor
@@ -43,8 +42,8 @@ class GameSession:
 
         # Map player_ids to game state player_ids
         # The lobby has UUIDs, the game state has player indices
-        self.network_to_game_id: Dict[str, str] = {}
-        self.game_to_network_id: Dict[str, str] = {}
+        self.network_to_game_id: dict[str, str] = {}
+        self.game_to_network_id: dict[str, str] = {}
 
         # Initialize players from lobby
         self._initialize_players(lobby)
@@ -112,7 +111,7 @@ class GameSession:
 
     def execute_action(
         self, network_player_id: str, action: AIAction
-    ) -> Tuple[bool, str, Optional[Dict]]:
+    ) -> tuple[bool, str, dict | None]:
         """
         Execute a game action for a player.
 
@@ -146,7 +145,7 @@ class GameSession:
 
         return success, message, result_data
 
-    def get_game_state_for_player(self, network_player_id: str) -> Optional[dict]:
+    def get_game_state_for_player(self, network_player_id: str) -> [dict]:
         """
         Get serialized game state from a player's perspective.
 
@@ -169,7 +168,7 @@ class GameSession:
 
         return state_dict
 
-    def get_situation_report(self, network_player_id: str) -> Optional[str]:
+    def get_situation_report(self, network_player_id: str) -> [str]:
         """
         Get AI-friendly text description of game state.
 
@@ -185,7 +184,7 @@ class GameSession:
 
         return AIObserver.get_situation_report(self.game_state, game_player_id)
 
-    def get_current_network_player_id(self) -> Optional[str]:
+    def get_current_network_player_id(self) -> [str]:
         """
         Get network player ID of current turn player.
 
@@ -201,7 +200,7 @@ class GameSession:
 
         return self.game_state.phase == GamePhase.ENDED
 
-    def get_winner_network_id(self) -> Optional[str]:
+    def get_winner_network_id(self) -> [str]:
         """Get network player ID of winner (if game ended)."""
         if not self.is_game_over():
             return None
@@ -222,8 +221,8 @@ class GameCoordinator:
 
     def __init__(self):
         """Initialize the game coordinator."""
-        self.active_games: Dict[str, GameSession] = {}
-        self.player_to_game: Dict[str, str] = {}  # Maps player_id -> game_id
+        self.active_games: dict[str, GameSession] = {}
+        self.player_to_game: dict[str, str] = {}  # Maps player_id -> game_id
         logger.info("Game coordinator initialized")
 
     def create_game(self, lobby: GameLobby) -> GameSession:
@@ -249,7 +248,7 @@ class GameCoordinator:
 
         return game_session
 
-    def get_game(self, game_id: str) -> Optional[GameSession]:
+    def get_game(self, game_id: str) -> [GameSession]:
         """
         Get an active game session.
 
@@ -261,7 +260,7 @@ class GameCoordinator:
         """
         return self.active_games.get(game_id)
 
-    def get_player_game(self, player_id: str) -> Optional[GameSession]:
+    def get_player_game(self, player_id: str) -> [GameSession]:
         """
         Get the game session a player is in.
 
@@ -279,7 +278,7 @@ class GameCoordinator:
 
     def execute_action(
         self, player_id: str, action: AIAction
-    ) -> Tuple[bool, str, Optional[Dict], Optional[GameSession]]:
+    ) -> tuple[bool, str, dict | None, GameSession | None]:
         """
         Execute an action for a player in their current game.
 
@@ -323,7 +322,7 @@ class GameCoordinator:
         logger.info(f"Ended game session {game_id}")
         return True
 
-    def remove_player(self, player_id: str) -> Optional[str]:
+    def remove_player(self, player_id: str) -> [str]:
         """
         Remove a player from their game (on disconnect).
 
@@ -343,7 +342,7 @@ class GameCoordinator:
         """Get number of active games."""
         return len(self.active_games)
 
-    def list_active_games(self) -> List[dict]:
+    def list_active_games(self) -> list[dict]:
         """
         Get list of active games.
 

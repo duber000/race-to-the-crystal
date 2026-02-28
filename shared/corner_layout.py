@@ -6,7 +6,6 @@ to corner-specific positioning logic.
 """
 
 from dataclasses import dataclass
-from typing import Tuple, List
 from enum import Enum
 
 from shared.ui_config import ViewportConfig, UIStyleConfig
@@ -38,7 +37,7 @@ class BoardCornerConfig:
     x_range: range
     y_range: range
 
-    def get_deployable_positions(self) -> List[Tuple[int, int]]:
+    def get_deployable_positions(self) -> list[tuple[int, int]]:
         """
         Get all valid deployment positions for this corner.
 
@@ -75,7 +74,7 @@ class UICornerConfig:
 
     def get_indicator_position(
         self, viewport: ViewportConfig, style: UIStyleConfig
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Calculate screen-space position for corner indicator.
 
@@ -111,7 +110,7 @@ class UICornerConfig:
         center_y: float,
         spacing: float,
         far_spacing_multiplier: float = 1.8,
-    ) -> List[Tuple[float, float]]:
+    ) -> list[tuple[float, float]]:
         """
         Calculate positions for menu options around the corner indicator.
 

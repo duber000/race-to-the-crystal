@@ -9,7 +9,6 @@ import jwt
 import secrets
 import time
 import logging
-from typing import Optional
 from dataclasses import dataclass
 
 
@@ -84,7 +83,7 @@ def create_player_token(
     return token
 
 
-def verify_player_token(token: str, secret_key: str) -> Optional[TokenPayload]:
+def verify_player_token(token: str, secret_key: str) -> TokenPayload | None:
     """
     Verify and decode a JWT token.
 
@@ -113,7 +112,7 @@ def verify_player_token(token: str, secret_key: str) -> Optional[TokenPayload]:
         raise
 
 
-def extract_token_from_header(authorization_header: str) -> Optional[str]:
+def extract_token_from_header(authorization_header: str) -> str | None:
     """
     Extract JWT token from Authorization header.
 

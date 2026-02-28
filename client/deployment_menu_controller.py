@@ -6,7 +6,6 @@ and deploy tokens from their reserve.
 """
 
 import math
-from typing import Dict, Optional, Tuple
 
 import arcade
 
@@ -55,7 +54,7 @@ class DeploymentMenuController:
         # Menu state
         self.menu_open = False
         self.menu_just_opened = False
-        self.selected_deploy_health: Optional[int] = None
+        self.selected_deploy_health: int | None = None
 
         # Pre-create text objects for performance
         self.reserve_text = arcade.Text(
@@ -78,11 +77,11 @@ class DeploymentMenuController:
         }
 
         # Count text objects will be created dynamically as needed
-        self.count_texts: Dict[str, arcade.Text] = {}
+        self.count_texts: dict[str, arcade.Text] = {}
 
     def get_indicator_position(
         self, current_player
-    ) -> Optional[Tuple[float, float, float]]:
+    ) -> [tuple[float, float, float]]:
         """
         Get the position and size of the corner indicator.
 
@@ -162,10 +161,10 @@ class DeploymentMenuController:
 
     def handle_menu_click(
         self,
-        screen_pos: Tuple[int, int],
+        screen_pos: tuple[int, int],
         current_player,
-        reserve_counts: Dict[int, int],
-    ) -> Optional[int]:
+        reserve_counts: dict[int, int],
+    ) -> [int]:
         """
         Handle click on UI-based corner menu (around R hexagon).
 
@@ -272,7 +271,7 @@ class DeploymentMenuController:
         self.reserve_text.color = player_color
         self.reserve_text.draw()
 
-    def draw_menu(self, current_player, reserve_counts: Dict[int, int]) -> None:
+    def draw_menu(self, current_player, reserve_counts: dict[int, int]) -> None:
         """
         Draw the corner deployment menu in UI space around the R hexagon.
 
@@ -349,7 +348,7 @@ class DeploymentMenuController:
                 self.count_texts[text_key].draw()
 
     def is_valid_deployment_position(
-        self, grid_pos: Tuple[int, int], player_id: PlayerID, game_state
+        self, grid_pos: tuple[int, int], player_id: PlayerID, game_state
     ) -> bool:
         """
         Check if a position is valid for deployment.

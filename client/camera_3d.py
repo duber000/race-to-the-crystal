@@ -6,7 +6,6 @@ perspective, with support for ray casting (mouse picking) in 3D space.
 """
 
 import numpy as np
-from typing import Tuple
 from shared.constants import (
     CELL_SIZE,
     CAMERA_FOV,
@@ -150,7 +149,7 @@ class FirstPersonCamera3D:
 
     def follow_token(
         self,
-        token_position: Tuple[int, int],
+        token_position: tuple[int, int],
         token_rotation: float = 0.0,
         pitch: float = CAMERA_FIRST_PERSON_PITCH,
         height: float = CAMERA_FIRST_PERSON_HEIGHT,
@@ -206,7 +205,7 @@ class FirstPersonCamera3D:
 
     def screen_to_ray(
         self, screen_x: int, screen_y: int, window_width: int, window_height: int
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Convert screen coordinates to 3D ray in world space for mouse picking.
 
@@ -247,7 +246,7 @@ class FirstPersonCamera3D:
 
     def ray_intersect_plane(
         self, ray_origin: np.ndarray, ray_direction: np.ndarray, plane_z: float = 0.0
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Find intersection of ray with horizontal plane (board surface).
 
@@ -280,7 +279,7 @@ class FirstPersonCamera3D:
 
         return intersect_x, intersect_y
 
-    def world_to_grid(self, world_x: float, world_y: float) -> Tuple[int, int]:
+    def world_to_grid(self, world_x: float, world_y: float) -> tuple[int, int]:
         """
         Convert world coordinates to grid coordinates.
 

@@ -5,7 +5,6 @@ This module handles all input events (mouse, keyboard, text) and coordinates
 with other controllers to execute game actions.
 """
 
-from typing import Optional, Set, Tuple
 
 import arcade
 
@@ -74,11 +73,11 @@ class InputHandler:
         self.audio_manager = audio_manager
 
         # Selection state
-        self.selected_token_id: Optional[TokenID] = None
-        self.valid_moves: Set[Tuple[int, int]] = set()
+        self.selected_token_id: TokenID | None = None
+        self.valid_moves: set[tuple[int, int]] = set()
 
         # Hover state for 3D mode
-        self.hovered_grid_pos: Optional[Tuple[int, int]] = None
+        self.hovered_grid_pos: tuple[int, int] | None = None
 
         # Mystery animations reference (will be set by GameView)
         self.mystery_animations = {}
@@ -446,7 +445,7 @@ class InputHandler:
 
         return False
 
-    def _handle_select(self, world_pos: Tuple[float, float]):
+    def _handle_select(self, world_pos: tuple[float, float]):
         """
         Handle selection at world position.
 
@@ -495,7 +494,7 @@ class InputHandler:
 
         return True
 
-    def _find_token_at_position(self, grid_pos: Tuple[int, int]):
+    def _find_token_at_position(self, grid_pos: tuple[int, int]):
         """Find token at grid position."""
         cell = self.game_state.board.get_cell_at(grid_pos)
         if not cell:
@@ -508,7 +507,7 @@ class InputHandler:
         return None
 
     def _handle_token_click(
-        self, clicked_token, current_player, grid_pos: Tuple[int, int]
+        self, clicked_token, current_player, grid_pos: tuple[int, int]
     ):
         """Handle clicking on a token."""
         if clicked_token.player_id == current_player.id:
@@ -516,7 +515,7 @@ class InputHandler:
         else:
             self._handle_enemy_token_click(clicked_token)
 
-    def _handle_own_token_click(self, clicked_token, grid_pos: Tuple[int, int]):
+    def _handle_own_token_click(self, clicked_token, grid_pos: tuple[int, int]):
         """Handle clicking on own token."""
         if not self._is_in_phase(TurnPhase.MOVEMENT):
             return
@@ -557,7 +556,7 @@ class InputHandler:
         if self._is_in_phase(TurnPhase.ACTION) and self.selected_token_id is not None:
             self._try_attack(clicked_token)
 
-    def _handle_empty_cell_click(self, grid_pos: Tuple[int, int], current_player):
+    def _handle_empty_cell_click(self, grid_pos: tuple[int, int], current_player):
         """Handle clicking on empty cell."""
         if self.selected_token_id is not None and self._is_in_phase(TurnPhase.MOVEMENT):
             self._try_move_selected_token(grid_pos)
@@ -567,7 +566,7 @@ class InputHandler:
         ):
             self._try_deploy_token(grid_pos, current_player)
 
-    def _try_move_selected_token(self, grid_pos: Tuple[int, int]):
+    def _try_move_selected_token(self, grid_pos: tuple[int, int]):
         """Try to move selected token to grid position."""
         logger.info(
             f"_try_move_selected_token called with {grid_pos}, selected_token={self.selected_token_id}, valid_moves={self.valid_moves}"
@@ -598,7 +597,7 @@ class InputHandler:
 
             logger.warning(f"Cannot move to {grid_pos} - not a valid move")
 
-    def _try_deploy_token(self, grid_pos: Tuple[int, int], current_player):
+    def _try_deploy_token(self, grid_pos: tuple[int, int], current_player):
         """Try to deploy token at grid position."""
         if self.deployment_controller.is_valid_deployment_position(
             grid_pos, current_player.id, self.game_state
@@ -628,7 +627,7 @@ class InputHandler:
             logger.warning("Cannot deploy outside your corner area")
             self.deployment_controller.selected_deploy_health = None
 
-    def _handle_select_3d(self, grid_pos: Tuple[int, int]):
+    def _handle_select_3d(self, grid_pos: tuple[int, int]):
         """
         Handle selection in 3D mode using ray-cast grid position.
         Supports token selection, movement, attack, and deployment.
@@ -650,7 +649,7 @@ class InputHandler:
         else:
             self._handle_empty_cell_click(grid_pos, current_player)
 
-    def _try_move_to_cell(self, cell: Tuple[int, int]):
+    def _try_move_to_cell(self, cell: tuple[int, int]):
         """
         Try to move the selected token to a cell.
 

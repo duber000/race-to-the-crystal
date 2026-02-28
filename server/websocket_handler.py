@@ -9,7 +9,6 @@ import json
 import logging
 import time
 import uuid
-from typing import Dict, Optional
 from dataclasses import dataclass, field
 
 from aiohttp import WSMsgType, web
@@ -28,13 +27,13 @@ class WebSocketClient:
     """Represents a connected web browser client."""
 
     client_id: str
-    player_id: Optional[str] = None
+    player_id: str | None = None
     player_name: str = "Unknown"
     client_type: ClientType = ClientType.WEB_BROWSER
     websocket: web.WebSocketResponse | None = None
-    game_id: Optional[str] = None
+    game_id: str | None = None
     connected_at: float = field(default_factory=time.time)
-    ip_address: Optional[str] = None
+    ip_address: str | None = None
 
     def is_in_game(self) -> bool:
         """Check if client is in an active game."""
@@ -57,7 +56,7 @@ class WebSocketHandler:
             game_server: Reference to main GameServer for delegating actions
         """
         self.game_server = game_server
-        self.clients: Dict[str, WebSocketClient] = {}
+        self.clients: dict[str, WebSocketClient] = {}
         self._runner = None
         self.rate_limiter = RateLimiter()
 
@@ -463,7 +462,7 @@ class WebSocketHandler:
 
         logger.info(f"WebSocket client disconnected: {client.client_id}")
 
-    async def _broadcast_to_game(self, game_id: Optional[str], message: dict) -> None:
+    async def _broadcast_to_game(self, game_id: str | None, message: dict) -> None:
         """Broadcast message to all clients in an active game."""
         if not game_id:
             return

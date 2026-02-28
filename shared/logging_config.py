@@ -6,7 +6,6 @@ This module provides consistent logging setup across all components.
 
 import logging
 import sys
-from typing import Optional
 
 
 # Default log format
@@ -17,7 +16,7 @@ SIMPLE_FORMAT = "%(levelname)s - %(name)s - %(message)s"
 def setup_logger(
     name: str,
     level: int = logging.INFO,
-    format_string: Optional[str] = None,
+    format_string: str | None = None,
     add_console_handler: bool = True,
 ) -> logging.Logger:
     """

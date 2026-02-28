@@ -2,7 +2,6 @@
 Movement system with pathfinding.
 """
 
-from typing import List, Tuple, Set, Optional, Dict
 from collections import deque
 
 from game.token import Token
@@ -29,9 +28,9 @@ class MovementSystem:
     def get_valid_moves(
         token: Token,
         board: Board,
-        max_range: Optional[int] = None,
-        tokens_dict: Optional[Dict[TokenID, Token]] = None,
-    ) -> Set[Tuple[int, int]]:
+        max_range: int | None = None,
+        tokens_dict: dict[TokenID, Token] | None = None,
+    ) -> set[tuple[int, int]]:
         """
         Calculate all valid destination cells for a token using BFS.
 
@@ -52,9 +51,9 @@ class MovementSystem:
 
         start = token.position
         player_id = token.player_id
-        visited: Set[Tuple[int, int]] = {start}
+        visited: set[tuple[int, int]] = {start}
         queue = deque([(start, 0)])
-        valid_moves: Set[Tuple[int, int]] = set()
+        valid_moves: set[tuple[int, int]] = set()
 
         while queue:
             (x, y), distance = queue.popleft()
@@ -107,9 +106,9 @@ class MovementSystem:
     @staticmethod
     def is_valid_move(
         token: Token,
-        destination: Tuple[int, int],
+        destination: tuple[int, int],
         board: Board,
-        tokens_dict: Optional[Dict[TokenID, Token]] = None,
+        tokens_dict: dict[TokenID, Token] | None = None,
     ) -> bool:
         """
         Check if a move is valid for a token.
@@ -134,8 +133,8 @@ class MovementSystem:
 
     @staticmethod
     def find_path(
-        start: Tuple[int, int], end: Tuple[int, int], board: Board, max_distance: int
-    ) -> Optional[List[Tuple[int, int]]]:
+        start: tuple[int, int], end: tuple[int, int], board: Board, max_distance: int
+    ) -> list[tuple[int, int]] | None:
         """
         Find shortest path from start to end using BFS.
 
@@ -152,7 +151,7 @@ class MovementSystem:
         if start == end:
             return [start]
 
-        visited: Set[Tuple[int, int]] = {start}
+        visited: set[tuple[int, int]] = {start}
         queue = deque([(start, [start])])
 
         while queue:
@@ -195,7 +194,7 @@ class MovementSystem:
         return None
 
     @staticmethod
-    def get_distance(pos1: Tuple[int, int], pos2: Tuple[int, int]) -> int:
+    def get_distance(pos1: tuple[int, int], pos2: tuple[int, int]) -> int:
         """
         Calculate Manhattan distance between two positions.
 
@@ -209,7 +208,7 @@ class MovementSystem:
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
     @staticmethod
-    def get_euclidean_distance(pos1: Tuple[int, int], pos2: Tuple[int, int]) -> float:
+    def get_euclidean_distance(pos1: tuple[int, int], pos2: tuple[int, int]) -> float:
         """
         Calculate Euclidean distance between two positions.
 
@@ -223,7 +222,7 @@ class MovementSystem:
         return ((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2) ** 0.5
 
     @staticmethod
-    def is_adjacent(pos1: Tuple[int, int], pos2: Tuple[int, int]) -> bool:
+    def is_adjacent(pos1: tuple[int, int], pos2: tuple[int, int]) -> bool:
         """
         Check if two positions are adjacent (8-directional).
 
@@ -240,8 +239,8 @@ class MovementSystem:
 
     @staticmethod
     def get_adjacent_positions(
-        position: Tuple[int, int], board: Board
-    ) -> List[Tuple[int, int]]:
+        position: tuple[int, int], board: Board
+    ) -> list[tuple[int, int]]:
         """
         Get all valid adjacent positions to a given position.
 

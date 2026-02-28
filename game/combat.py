@@ -3,7 +3,6 @@ Combat system and resolution.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 from game.token import Token
 from shared.enums import CombatResult
@@ -128,7 +127,7 @@ class CombatSystem:
         return attackable
 
     @staticmethod
-    def calculate_damage_preview(attacker: Token, defender: Token) -> Optional[int]:
+    def calculate_damage_preview(attacker: Token, defender: Token) -> [int]:
         """
         Calculate how much damage an attack would deal (without executing).
 

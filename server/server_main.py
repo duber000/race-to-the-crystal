@@ -129,10 +129,8 @@ def main():
         logger.info("Running in UNIFIED mode (TCP + HTTP/WebSocket)")
         logger.info(f"  TCP port: {args.port}")
         logger.info(f"  HTTP/WebSocket port: {args.http_port}")
-        logger.info(
-            "  Access web client at: http://localhost:{}/".format(args.http_port)
-        )
-        logger.info("  WebSocket endpoint: ws://localhost:{}/ws".format(args.http_port))
+        logger.info(f"  Access web client at: http://localhost:{args.http_port}/")
+        logger.info(f"  WebSocket endpoint: ws://localhost:{args.http_port}/ws")
 
     try:
         asyncio.run(runner.run())

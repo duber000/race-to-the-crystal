@@ -5,7 +5,6 @@ This module handles execution of all game actions including movement,
 combat, deployment, and turn management.
 """
 
-from typing import Dict, Optional, Tuple
 
 from client.sprites.token_sprite import TokenSprite
 from game.combat import CombatSystem
@@ -59,12 +58,12 @@ class GameActionHandler:
 
         # Track mystery animations that should start after token movement completes
         # Maps token_id -> (target_position, should_play_sound)
-        self.pending_mystery_animations: Dict[
-            TokenID, Tuple[Tuple[int, int], bool]
+        self.pending_mystery_animations: dict[
+            TokenID[tuple[int, int], bool]
         ] = {}
 
     def process_pending_mystery_animations(
-        self, mystery_animations: Dict[Tuple[int, int], float]
+        self, mystery_animations: dict[tuple[int, int], float]
     ) -> None:
         """
         Check if any tokens have finished moving and start their mystery animations.
@@ -105,11 +104,11 @@ class GameActionHandler:
     def execute_move(
         self,
         token_id: TokenID,
-        target_cell: Tuple[int, int],
-        mystery_animations: Dict[Tuple[int, int], float],
+        target_cell: tuple[int, int],
+        mystery_animations: dict[tuple[int, int], float],
         ctx,
         animate: bool = True,
-    ) -> Tuple[bool, Optional[Tuple[int, int]]]:
+    ) -> tuple[bool[tuple[int, int]]]:
         """
         Execute a token move action.
 
@@ -250,7 +249,7 @@ class GameActionHandler:
         return True
 
     def execute_deployment(
-        self, player_id: int, health: int, position: Tuple[int, int], ctx
+        self, player_id: int, health: int, position: tuple[int, int], ctx
     ):
         """
         Execute a token deployment action.
@@ -294,7 +293,7 @@ class GameActionHandler:
         return deployed_token
 
     def execute_end_turn(
-        self, mystery_animations: Dict[Tuple[int, int], float]
+        self, mystery_animations: dict[tuple[int, int], float]
     ) -> None:
         """
         Execute end turn action.

@@ -6,7 +6,6 @@ This module provides functions to make the game state observable to AI players
 human-readable text descriptions of the game state.
 """
 
-from typing import Dict, List, Tuple
 from game.game_state import GameState
 from game.movement import MovementSystem
 from game.combat import CombatSystem
@@ -56,7 +55,7 @@ class AIObserver:
         return "Uncontested"
 
     @staticmethod
-    def _get_crystal_holders(crystal, game_state: GameState) -> Dict[str, int]:
+    def _get_crystal_holders(crystal, game_state: GameState) -> dict[str, int]:
         """Get dictionary mapping player_id to number of tokens on crystal."""
         # Count tokens at crystal position
         tokens_at_crystal = game_state.get_tokens_at_position(crystal.position)
@@ -68,7 +67,7 @@ class AIObserver:
         return player_counts
 
     @staticmethod
-    def _get_deployable_positions(board, player_index: int) -> List[Tuple[int, int]]:
+    def _get_deployable_positions(board, player_index: int) -> list[tuple[int, int]]:
         """Get valid deployment positions for a player (3x3 corner area)."""
         # Reuse the board helper so network validation matches the UI and board config
         return board.get_deployable_positions(player_index)
@@ -396,7 +395,7 @@ class AIObserver:
         lines.append("")
 
     @staticmethod
-    def list_available_actions(game_state: GameState, player_id: PlayerID) -> Dict:
+    def list_available_actions(game_state: GameState, player_id: PlayerID) -> dict:
         """
         Return structured dictionary of all valid actions for current turn phase.
 
@@ -444,7 +443,10 @@ class AIObserver:
         for token in deployed_tokens:
             effective_range = game_state.get_token_movement_range(token)
             valid_moves = MovementSystem.get_valid_moves(
-                token, game_state.board, max_range=effective_range, tokens_dict=game_state.tokens
+                token,
+                game_state.board,
+                max_range=effective_range,
+                tokens_dict=game_state.tokens,
             )
             if valid_moves:
                 actions.append(

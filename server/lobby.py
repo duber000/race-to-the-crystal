@@ -7,7 +7,6 @@ Handles game creation, player joining, ready status, and game starting.
 import uuid
 import logging
 import re
-from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -148,7 +147,7 @@ class GameLobby:
     host_player_id: str
     max_players: int = 4
     min_players: int = 2
-    players: Dict[str, PlayerInfo] = field(default_factory=dict)
+    players: dict[str, PlayerInfo] = field(default_factory=dict)
     status: GameStatus = GameStatus.WAITING
 
     def add_player(
@@ -292,7 +291,7 @@ class GameLobby:
         for i, player_info in enumerate(self.players.values()):
             player_info.color_index = i
 
-    def get_player_list(self) -> List[dict]:
+    def get_player_list(self) -> list[dict]:
         """
         Get list of all players in the lobby.
 
@@ -324,7 +323,7 @@ class LobbyManager:
 
     def __init__(self):
         """Initialize the lobby manager."""
-        self.lobbies: Dict[str, GameLobby] = {}
+        self.lobbies: dict[str, GameLobby] = {}
         logger.info("Lobby manager initialized")
 
     def create_lobby(
@@ -379,7 +378,7 @@ class LobbyManager:
 
         return lobby
 
-    def get_lobby(self, game_id: str) -> Optional[GameLobby]:
+    def get_lobby(self, game_id: str) -> [GameLobby]:
         """
         Get a lobby by ID.
 
@@ -393,7 +392,7 @@ class LobbyManager:
 
     def join_lobby(
         self, game_id: str, player_id: str, player_name: str, client_type: ClientType
-    ) -> Optional[GameLobby]:
+    ) -> [GameLobby]:
         """
         Join an existing lobby.
 
@@ -463,7 +462,7 @@ class LobbyManager:
 
         return lobby.set_player_ready(player_id, is_ready)
 
-    def start_game(self, game_id: str) -> Optional[GameLobby]:
+    def start_game(self, game_id: str) -> [GameLobby]:
         """
         Start a game (if all players ready).
 
@@ -522,7 +521,7 @@ class LobbyManager:
         logger.info(f"Game {game_id} FINISHED")
         return True
 
-    def list_available_lobbies(self) -> List[dict]:
+    def list_available_lobbies(self) -> list[dict]:
         """
         Get list of lobbies that can be joined.
 
@@ -538,7 +537,7 @@ class LobbyManager:
 
         return available
 
-    def get_player_lobby(self, player_id: str) -> Optional[GameLobby]:
+    def get_player_lobby(self, player_id: str) -> [GameLobby]:
         """
         Find which lobby a player is in.
 
@@ -554,7 +553,7 @@ class LobbyManager:
 
         return None
 
-    def get_lobby_by_player(self, player_id: str) -> Optional[GameLobby]:
+    def get_lobby_by_player(self, player_id: str) -> [GameLobby]:
         """
         Backward-compatible alias for get_player_lobby().
         """

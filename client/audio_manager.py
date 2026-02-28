@@ -6,7 +6,6 @@ generator hum tracks, and game sound effects.
 """
 
 import os
-from typing import List, Optional
 
 import arcade
 
@@ -37,15 +36,15 @@ class AudioManager:
     def __init__(self):
         """Initialize audio manager."""
         # Background music
-        self.background_music: Optional[arcade.Sound] = None
-        self.music_player: Optional[arcade.Sound] = None
+        self.background_music: arcade.Sound | None = None
+        self.music_player: arcade.Sound | None = None
         self.music_volume = BACKGROUND_MUSIC_VOLUME
         self.music_playing = True
 
         # Generator hum tracks (separate audio for each generator)
-        self.generator_hums: List[Optional[arcade.Sound]] = []  # List of Sound objects
-        self.generator_hum_players: List[
-            Optional[arcade.Sound]
+        self.generator_hums: list[[arcade.Sound]] = []  # List of Sound objects
+        self.generator_hum_players: list[
+            [arcade.Sound]
         ] = []  # List of MediaPlayer objects
         self.generator_hum_volume = GENERATOR_HUM_VOLUME
 
@@ -210,7 +209,7 @@ class AudioManager:
             self.music_playing = True
             logger.info("Music playing")
 
-    def update_generator_hums(self, generators: List) -> None:
+    def update_generator_hums(self, generators: list) -> None:
         """
         Update generator hum audio based on which generators are captured.
 

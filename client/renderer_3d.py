@@ -4,7 +4,6 @@
 This module handles all 3D rendering including board, tokens, and shaders.
 """
 
-from typing import Dict, List, Optional, Tuple
 
 from client.board_3d import Board3D
 from client.token_3d import Token3D
@@ -30,22 +29,22 @@ class Renderer3D:
     def __init__(self):
         """Initialize 3D renderer."""
         # 3D rendering components
-        self.board_3d: Optional[Board3D] = None
-        self.tokens_3d: List[Token3D] = []
-        self.phantom_tokens_3d: List[PhantomToken3D] = []
+        self.board_3d: Board3D | None = None
+        self.tokens_3d: list[Token3D] = []
+        self.phantom_tokens_3d: list[PhantomToken3D] = []
         self.shader_3d = None  # Shared OpenGL shader program
 
         # OpenGL context (set by GameView during initialization)
         self.ctx = None
 
         # Selection state for highlighting selected token
-        self.selected_token_id: Optional[TokenID] = None
+        self.selected_token_id: TokenID | None = None
 
     def create(
         self,
         game_state,
         ctx,
-        mystery_animations: Dict[Tuple[int, int], float],
+        mystery_animations: dict[tuple[int, int], float],
     ) -> bool:
         """
         Initialize 3D rendering components.
@@ -174,7 +173,7 @@ class Renderer3D:
 
         logger.debug(f"Created {len(self.tokens_3d)} real 3D tokens and {len(self.phantom_tokens_3d)} phantom 3D tokens")
 
-    def add_token(self, token, player_color: Tuple[int, int, int], ctx) -> None:
+    def add_token(self, token, player_color: tuple[int, int, int], ctx) -> None:
         """
         Add a single 3D token (used when deploying new tokens).
 
@@ -277,7 +276,7 @@ class Renderer3D:
                 break
 
     def update_mystery_animations(
-        self, mystery_animations: Dict[Tuple[int, int], float]
+        self, mystery_animations: dict[tuple[int, int], float]
     ) -> None:
         """
         Update mystery square animations.
@@ -294,7 +293,7 @@ class Renderer3D:
             self.board_3d.update_generator_lines()
 
     def update_selection_visuals(
-        self, selected_token_id: Optional[TokenID], valid_moves: set
+        self, selected_token_id: TokenID | None, valid_moves: set
     ) -> None:
         """
         Update selection and valid move indicators in 3D mode.
