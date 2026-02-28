@@ -1469,35 +1469,26 @@
     <!-- Mercure client for SSE updates -->
     <script src="/static/mercure_client.js"></script>
 
-    <!-- Game constants -->
+    <!-- Game constants (no imports, can be regular script) -->
     <script src="/static/game_client.constants.js"></script>
 
-    <!-- Device capabilities detection -->
-    <script src="/static/game_client.device.js"></script>
-
-    <!-- Camera controller -->
-    <script src="/static/game_client.camera.js"></script>
-
-    <!-- Babylon.js GUI manager -->
-    <script src="/static/game_client.gui.js"></script>
-
-    <!-- WebSocket client -->
-    <script src="/static/game_client.websocket.js"></script>
-
-    <!-- UI manager -->
-    <script src="/static/game_client.ui.js"></script>
-
-    <!-- Input handler -->
-    <script src="/static/game_client.input.js"></script>
-
-    <!-- Crystal effect animator -->
+    <!-- Crystal effect animator (no imports, can be regular script) -->
     <script src="/static/game_client.crystal_effects.js"></script>
 
-    <!-- 3D Renderer -->
-    <script src="/static/game_client.renderer.js"></script>
+    <!-- Device capabilities detection (no imports, can be regular script) -->
+    <script src="/static/game_client.device.js"></script>
 
-    <!-- Main game client -->
-    <script src="/static/game_client.js"></script>
+    <!-- Camera controller (no imports, can be regular script) -->
+    <script src="/static/game_client.camera.js"></script>
+
+    <!-- Babylon.js GUI manager (no imports, can be regular script) -->
+    <script src="/static/game_client.gui.js"></script>
+
+    <!-- WebGL/Babylon renderer module (loads all renderer modules) -->
+    <script type="module" src="/static/game_client.renderer.js"></script>
+
+    <!-- Main game client module (imports all dependencies including Renderer3D) -->
+    <script type="module" src="/static/game_client.js"></script>
 
     <script>
         function handleMobileAction(action, event) {

@@ -244,9 +244,4 @@ class NetworkManager {
     }
 }
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = NetworkManager;
-} else {
-    window.NetworkManager = NetworkManager;
-}
+export { NetworkManager };

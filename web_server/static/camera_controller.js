@@ -285,9 +285,4 @@ class CameraController {
     }
 }
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CameraController;
-} else {
-    window.CameraController = CameraController;
-}
+export { CameraController };

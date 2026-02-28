@@ -9,6 +9,7 @@ import { CameraController } from './camera_controller.js';
 import { InputHandler } from './input_handler.js';
 import { DeviceCapabilities } from './game_client.device.js';
 import { BOARD_CONFIG, GAME_PHASE, UI_STATE, INPUT_CONFIG, TurnPhase, STATE, CELL_SIZE } from './game_client.constants.js';
+import { Renderer3D } from './renderer.base.js';
 
 /**
  * Race to the Crystal - Main Game Client (Facade)

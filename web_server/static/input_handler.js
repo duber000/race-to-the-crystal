@@ -414,9 +414,4 @@ class InputHandler {
     }
 }
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = InputHandler;
-} else {
-    window.InputHandler = InputHandler;
-}
+export { InputHandler };
