@@ -126,7 +126,7 @@ class TestMoveActionValidation:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "wrong phase" in msg.lower()
+        assert "wrong_phase" in msg.lower()
 
     def test_move_not_your_token(self):
         """Test move fails when token doesn't belong to player."""
@@ -143,7 +143,7 @@ class TestMoveActionValidation:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "does not belong to you" in msg.lower()
+        assert "not_owner" in msg.lower()
 
     def test_move_invalid_destination(self):
         """Test move fails with invalid destination."""
@@ -158,7 +158,7 @@ class TestMoveActionValidation:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "not reachable" in msg.lower()
+        assert "invalid_destination" in msg.lower()
 
     def test_move_not_your_turn(self):
         """Test move fails when it's not your turn."""
@@ -173,7 +173,7 @@ class TestMoveActionValidation:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "not your turn" in msg.lower()
+        assert "not_your_turn" in msg.lower()
 
 
 class TestMoveActionExecution:
@@ -242,7 +242,7 @@ class TestAttackActionValidation:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "wrong phase" in msg.lower()
+        assert "wrong_phase" in msg.lower()
 
     def test_attack_own_token(self):
         """Test attack fails when targeting own token."""
@@ -257,7 +257,7 @@ class TestAttackActionValidation:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "cannot attack your own" in msg.lower()
+        assert "friendly_fire" in msg.lower()
 
     def test_attack_not_adjacent(self):
         """Test attack fails when tokens are not adjacent."""
@@ -272,7 +272,7 @@ class TestAttackActionValidation:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "not adjacent" in msg.lower()
+        assert "not_adjacent" in msg.lower()
 
 
 class TestAttackActionExecution:
@@ -358,7 +358,7 @@ class TestDeployActionValidation:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "wrong phase" in msg.lower()
+        assert "wrong_phase" in msg.lower()
 
     def test_deploy_invalid_health(self):
         """Test deploy fails with invalid health value."""
@@ -371,7 +371,7 @@ class TestDeployActionValidation:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "invalid health" in msg.lower()
+        assert "invalid_health" in msg.lower()
 
     def test_deploy_occupied_position(self):
         """Test deploy fails when position is occupied."""
@@ -399,7 +399,7 @@ class TestDeployActionValidation:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "not a valid deployment location" in msg.lower()
+        assert "invalid_position" in msg.lower()
 
 
 class TestDeployActionExecution:
@@ -527,7 +527,7 @@ class TestEdgeCases:
         is_valid, msg = executor.validate_action(action, game_state, "p1")
 
         assert not is_valid
-        assert "not in playing phase" in msg.lower()
+        assert "wrong_game_phase" in msg.lower()
 
     def test_nonexistent_token(self):
         """Test move fails with nonexistent token."""
@@ -540,7 +540,7 @@ class TestEdgeCases:
         is_valid, msg = executor.validate_action(action, game_state, "player_0")
 
         assert not is_valid
-        assert "does not exist" in msg.lower()
+        assert "token_not_found" in msg.lower()
 
     def test_action_without_player(self):
         """Test action fails when player doesn't exist."""
@@ -555,4 +555,4 @@ class TestEdgeCases:
         )
 
         assert not is_valid
-        assert "not your turn" in msg.lower()
+        assert "not_your_turn" in msg.lower()
