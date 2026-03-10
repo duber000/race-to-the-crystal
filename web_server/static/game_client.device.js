@@ -220,3 +220,4 @@ class DeviceCapabilities {
 }
 
 export { DeviceCapabilities };
+window.DeviceCapabilities = DeviceCapabilities;

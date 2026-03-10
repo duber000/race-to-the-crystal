@@ -114,7 +114,8 @@ class NetworkManager {
     handleMessage(data) {
         switch (data.type) {
             case "connected":
-                this.playerId = data.playerId;
+            case "CONNECT_ACK":
+                this.playerId = data.player_id || data.playerId;
                 this.connectionState = STATE.CONNECTED;
                 this.emit("connected", data);
                 break;
@@ -125,6 +126,7 @@ class NetworkManager {
                 this.emit("disconnect");
                 break;
             case "game_list":
+            case "GAME_LIST":
                 this.availableGames = data.games;
                 this.emit("game_list", data);
                 break;
@@ -164,6 +166,10 @@ class NetworkManager {
             ready: this.isReady
         });
         return this.isReady;
+    }
+
+    requestGameList() {
+        this.send({ type: "LIST_GAMES" });
     }
 
     createGame(gameName, playerCount) {

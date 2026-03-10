@@ -72,6 +72,27 @@ class UIManager {
         element.classList.toggle("hidden", hidden);
     }
 
+    setupConnectionScreen(connectCallback) {
+        document.getElementById("connect-btn").addEventListener("click", () => {
+            const name = document.getElementById("player-name-input").value.trim();
+            const host = document.getElementById("server-host-input").value.trim();
+            const port = document.getElementById("server-port-input").value.trim();
+
+            if (!name) {
+                this.showConnectionError("Please enter your name");
+                return;
+            }
+
+            connectCallback(name, host, port);
+        });
+
+        document.getElementById("player-name-input").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                document.getElementById("connect-btn").click();
+            }
+        });
+    }
+
     showConnectionStatus(message) {
         const statusMsg = document.getElementById("connection-status-msg");
         if (statusMsg) {

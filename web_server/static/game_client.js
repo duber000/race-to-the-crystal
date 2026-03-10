@@ -153,23 +153,23 @@ class GameClient {
   updateUIState(state) {
     switch (state) {
       case STATE.DISCONNECTED:
-        this.ui.showScreen("disconnected");
+        this.uiManager.showScreen("disconnected");
         break;
       case STATE.CONNECTING:
-        this.ui.showScreen("connecting");
+        this.uiManager.showScreen("connecting");
         break;
       case STATE.CONNECTED:
-        this.ui.showScreen("connected");
+        this.uiManager.showScreen("connected");
         this.setupLobbyBrowserHandlers();
         break;
       case STATE.IN_LOBBY:
-        this.ui.showScreen("lobby");
+        this.uiManager.showScreen("lobby");
         break;
       case STATE.GAME_STARTING:
-        this.ui.showScreen("game_starting");
+        this.uiManager.showScreen("game_starting");
         break;
       case STATE.IN_GAME:
-        this.ui.showScreen("in_game");
+        this.uiManager.showScreen("in_game");
         this.initGameModules();
         break;
       default:
@@ -338,8 +338,8 @@ class GameClient {
     this.guiManager.on('deploy_select', (data) => {
       console.log(`[GameClient] Deploy token selected: ${data.health} HP`);
       // Set the selected deploy health (similar to DOM UI)
-      this.ui.selectedDeployHealth = data.health;
-      this.ui.showDeploymentIndicator(data.health);
+      this.uiManager.selectedDeployHealth = data.health;
+      this.uiManager.showDeploymentIndicator(data.health);
     });
   }
 
