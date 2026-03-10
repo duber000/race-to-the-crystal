@@ -173,7 +173,8 @@ class UIManager {
     updateStartButtonState(lobby, isHost, callback) {
         const button = document.getElementById("start-game-btn");
         if (button) {
-            button.disabled = !(isHost && lobby.players.length >= 2);
+            button.classList.toggle("hidden", !isHost);
+            button.disabled = !(isHost && lobby.players && lobby.players.length >= 2);
             button.onclick = callback;
         }
     }
@@ -336,27 +337,31 @@ class UIManager {
     }
 
     renderWaitingRoom(lobby, isHost, isReady) {
-        const playersList = document.getElementById("players-list");
+        const playersList = document.getElementById("lobby-players");
         if (!playersList) return;
 
-        // Clear existing players
-        playersList.innerHTML = "";
+        // Update game name
+        const gameName = document.getElementById("lobby-game-name");
+        if (gameName) {
+            gameName.textContent = `${lobby.game_name || "Game Lobby"}${isHost ? " (Host)" : ""}`;
+        }
+
+        // Clear and rebuild players list (keep heading)
+        playersList.innerHTML = "<h3>Players:</h3>";
 
         // Render player items
-        lobby.players.forEach(player => {
-            const item = document.createElement("div");
-            item.className = "player-item";
-            item.innerHTML = `
-                <div class="player-name">${player.name}</div>
-                <div class="player-status">${player.ready ? "Ready!" : "Not ready"}</div>
-            `;
-            playersList.appendChild(item);
-        });
-
-        // Update host indicator
-        const hostIndicator = document.getElementById("host-indicator");
-        if (hostIndicator) {
-            hostIndicator.textContent = isHost ? "(Host)" : "";
+        if (lobby.players) {
+            lobby.players.forEach(player => {
+                const name = player.player_name || player.name;
+                const ready = player.is_ready || player.ready;
+                const item = document.createElement("div");
+                item.className = "player-item";
+                item.innerHTML = `
+                    <span class="player-name">${name}</span>
+                    <span class="player-status" style="color: ${ready ? '#0f0' : '#f80'}">${ready ? "Ready!" : "Not ready"}</span>
+                `;
+                playersList.appendChild(item);
+            });
         }
     }
 

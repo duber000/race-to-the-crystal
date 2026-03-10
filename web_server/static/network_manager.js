@@ -134,7 +134,7 @@ class NetworkManager {
             case "CREATE_GAME":
             case "JOIN_GAME":
                 this.currentLobby = data.lobby || data;
-                this.isHost = data.host_id === this.playerId || (data.lobby && data.lobby.host_id === this.playerId);
+                this.isHost = (this.currentLobby.host_player_id || this.currentLobby.host_id) === this.playerId;
                 this.emit("lobby_joined", { lobby: this.currentLobby, isHost: this.isHost });
                 break;
             case "lobby_updated":
@@ -144,7 +144,7 @@ class NetworkManager {
             case "PLAYER_RECONNECTED":
             case "READY":
                 this.currentLobby = data.lobby || data;
-                this.isHost = (this.currentLobby.host_id === this.playerId);
+                this.isHost = (this.currentLobby.host_player_id || this.currentLobby.host_id) === this.playerId;
                 this.emit("lobby_updated", { lobby: this.currentLobby, isHost: this.isHost });
                 break;
             case "host_left":

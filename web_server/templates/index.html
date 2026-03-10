@@ -787,11 +787,15 @@
             text-shadow: 0 0 10px #0ff;
         }
 
-        .lobby-player {
-            padding: 8px;
+        .lobby-player,
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
             margin: 5px 0;
             border-left: 3px solid #0ff;
-            padding-left: 12px;
+            background: rgba(0, 255, 255, 0.05);
         }
 
         #lobby-game-name {
