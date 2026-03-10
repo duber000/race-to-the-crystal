@@ -142,6 +142,7 @@ class NetworkManager {
             case "PLAYER_LEFT":
             case "PLAYER_DISCONNECTED":
             case "PLAYER_RECONNECTED":
+            case "READY":
                 this.currentLobby = data.lobby || data;
                 this.isHost = (this.currentLobby.host_id === this.playerId);
                 this.emit("lobby_updated", { lobby: this.currentLobby, isHost: this.isHost });

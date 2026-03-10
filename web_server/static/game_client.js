@@ -356,14 +356,18 @@ class GameClient {
     this.gameState = gameState;
     this.turnPhase = gameState.turn_phase || TurnPhase.MOVEMENT;
 
-    this.renderer.updateGameState(gameState);
+    if (this.renderer) {
+      this.renderer.updateGameState(gameState);
+    }
     this.uiManager.updateHUD(gameState, this.localPlayerId);
 
     if (gameState.current_turn_player_id !== this.localPlayerId) {
       this.selectedTokenId = null;
       this.validMoves = new Set();
-      this.renderer.updateValidMoveIndicators(null);
-      this.renderer.updateTokenSelectionGlow(null);
+      if (this.renderer) {
+        this.renderer.updateValidMoveIndicators(null);
+        this.renderer.updateTokenSelectionGlow(null);
+      }
     }
   }
 

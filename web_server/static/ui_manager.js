@@ -155,7 +155,7 @@ class UIManager {
     }
 
     updateReadyButton(isReady) {
-        const button = document.getElementById("ready-button");
+        const button = document.getElementById("ready-btn");
         if (button) {
             button.textContent = isReady ? "Ready!" : "Ready?";
             button.classList.toggle("ready", isReady);
@@ -163,7 +163,7 @@ class UIManager {
     }
 
     updateStartButtonState(lobby, isHost, callback) {
-        const button = document.getElementById("start-game-button");
+        const button = document.getElementById("start-game-btn");
         if (button) {
             button.disabled = !(isHost && lobby.players.length >= 2);
             button.onclick = callback;
@@ -260,7 +260,7 @@ class UIManager {
         this.onLeaveLobby = onLeaveLobby;
 
         // Setup ready button
-        const readyBtn = document.getElementById("ready-button");
+        const readyBtn = document.getElementById("ready-btn");
         if (readyBtn) {
             readyBtn.onclick = () => {
                 if (this.onToggleReady) {
@@ -270,7 +270,7 @@ class UIManager {
         }
 
         // Setup start game button
-        const startBtn = document.getElementById("start-game-button");
+        const startBtn = document.getElementById("start-game-btn");
         if (startBtn) {
             startBtn.onclick = () => {
                 if (this.onStartGame) {
@@ -280,7 +280,7 @@ class UIManager {
         }
 
         // Setup leave lobby button
-        const leaveBtn = document.getElementById("leave-lobby-button");
+        const leaveBtn = document.getElementById("leave-lobby-btn");
         if (leaveBtn) {
             leaveBtn.onclick = () => {
                 if (this.onLeaveLobby) {
