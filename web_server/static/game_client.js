@@ -209,21 +209,34 @@ class GameClient {
   }
 
   handleFullState(data) {
+    console.log("[GameClient] handleFullState called, current state:", this.networkManager.getConnectionState());
+    console.log("[GameClient] FULL_STATE data keys:", Object.keys(data));
+
     if (this.networkManager.getConnectionState() !== STATE.IN_GAME) {
       this.networkManager.connectionState = STATE.IN_GAME;
-      this.updateUIState(STATE.IN_GAME);
+      try {
+        this.updateUIState(STATE.IN_GAME);
+        console.log("[GameClient] UI transitioned to IN_GAME");
+      } catch (error) {
+        console.error("[GameClient] Error in updateUIState/initGameModules:", error);
+      }
 
       if (data.game_state && data.game_state.perspective_player_id) {
         this.localPlayerId = data.game_state.perspective_player_id;
+        console.log("[GameClient] Local player ID:", this.localPlayerId);
         // Set local player ID on renderer for crystal effects
         if (this.renderer) {
           this.renderer.localPlayerId = this.localPlayerId;
         }
+      } else {
+        console.warn("[GameClient] No game_state or perspective_player_id in FULL_STATE data");
       }
     }
 
     if (data.game_state) {
       this.updateGameState(data.game_state);
+    } else {
+      console.warn("[GameClient] No game_state in FULL_STATE data");
     }
 
     if (data.last_action && this.renderer) {
