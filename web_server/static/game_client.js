@@ -96,6 +96,11 @@ class GameClient {
 
     this.networkManager.on("game_list", (data) => {
       this.uiManager.onJoinGame = (gameId) => this.networkManager.joinGame(gameId);
+      this.uiManager.setupLobbyBrowserHandlers(
+        (gameName, playerCount) => this.networkManager.createGame(gameName, playerCount),
+        () => this.networkManager.requestGameList(),
+        () => this.networkManager.disconnect()
+      );
       this.uiManager.renderGameList(data.games);
     });
 

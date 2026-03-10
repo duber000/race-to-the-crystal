@@ -180,7 +180,7 @@ class UIManager {
         this.onDisconnect = onDisconnect;
 
         // Setup create game button
-        const createBtn = document.getElementById("create-game-button");
+        const createBtn = document.getElementById("create-game-btn");
         if (createBtn) {
             createBtn.onclick = () => {
                 const gameName = prompt("Enter game name:");
@@ -196,7 +196,7 @@ class UIManager {
         }
 
         // Setup refresh button
-        const refreshBtn = document.getElementById("refresh-games-button");
+        const refreshBtn = document.getElementById("refresh-games-btn");
         if (refreshBtn) {
             refreshBtn.onclick = () => {
                 if (this.onRefreshGames) {
@@ -206,7 +206,7 @@ class UIManager {
         }
 
         // Setup disconnect button
-        const disconnectBtn = document.getElementById("disconnect-button");
+        const disconnectBtn = document.getElementById("disconnect-btn");
         if (disconnectBtn) {
             disconnectBtn.onclick = () => {
                 if (this.onDisconnect) {

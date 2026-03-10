@@ -131,28 +131,44 @@ class NetworkManager {
                 this.emit("game_list", data);
                 break;
             case "lobby_joined":
-                this.currentLobby = data.lobby;
-                this.emit("lobby_joined", data);
+            case "CREATE_GAME":
+            case "JOIN_GAME":
+                this.currentLobby = data.lobby || data;
+                this.isHost = data.host_id === this.playerId || (data.lobby && data.lobby.host_id === this.playerId);
+                this.emit("lobby_joined", { lobby: this.currentLobby, isHost: this.isHost });
                 break;
             case "lobby_updated":
-                this.currentLobby = data.lobby;
-                this.emit("lobby_updated", data);
+            case "PLAYER_JOINED":
+            case "PLAYER_LEFT":
+            case "PLAYER_DISCONNECTED":
+            case "PLAYER_RECONNECTED":
+                this.currentLobby = data.lobby || data;
+                this.isHost = (this.currentLobby.host_id === this.playerId);
+                this.emit("lobby_updated", { lobby: this.currentLobby, isHost: this.isHost });
                 break;
             case "host_left":
                 this.emit("host_left");
                 break;
             case "lobby_left":
+            case "LEAVE_GAME":
                 this.currentLobby = null;
                 this.emit("lobby_left");
                 break;
             case "game_starting":
+            case "START_GAME":
                 this.emit("game_starting");
                 break;
             case "full_state":
+            case "FULL_STATE":
+                this.connectionState = STATE.IN_GAME;
                 this.emit("full_state", data);
                 break;
             case "invalid_action":
+            case "INVALID_ACTION":
                 this.emit("invalid_action", data);
+                break;
+            case "ERROR":
+                this.emit("error", data);
                 break;
             default:
                 console.warn(`Unknown message type: ${data.type}`);
@@ -162,7 +178,7 @@ class NetworkManager {
     toggleReady() {
         this.isReady = !this.isReady;
         this.send({
-            type: "TOGGLE_READY",
+            type: "READY",
             ready: this.isReady
         });
         return this.isReady;
@@ -176,7 +192,7 @@ class NetworkManager {
         this.send({
             type: "CREATE_GAME",
             game_name: gameName,
-            player_count: playerCount
+            max_players: parseInt(playerCount) || 4
         });
     }
 
@@ -189,7 +205,7 @@ class NetworkManager {
 
     leaveLobby() {
         this.send({
-            type: "LEAVE_LOBBY"
+            type: "LEAVE_GAME"
         });
     }
 
