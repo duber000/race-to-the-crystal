@@ -107,6 +107,14 @@ class UIManager {
         }
     }
 
+    showLobbyError(message) {
+        const errorMsg = document.getElementById("lobby-error");
+        if (errorMsg) {
+            errorMsg.textContent = message;
+            setTimeout(() => { errorMsg.textContent = ""; }, 3000);
+        }
+    }
+
     showActionError(message) {
         const errorDiv = document.createElement("div");
         errorDiv.className = "action-error";
@@ -179,20 +187,57 @@ class UIManager {
         this.onRefreshGames = onRefreshGames;
         this.onDisconnect = onDisconnect;
 
-        // Setup create game button
+        // Setup create game button - shows inline form
         const createBtn = document.getElementById("create-game-btn");
-        if (createBtn) {
+        const createSection = document.getElementById("create-game-section");
+        if (createBtn && createSection) {
             createBtn.onclick = () => {
-                const gameName = prompt("Enter game name:");
-                const playerCount = parseInt(prompt("Enter player count (2-4):")) || 4;
-                if (gameName && playerCount >= 2 && playerCount <= 4) {
+                createSection.classList.remove("hidden");
+                createBtn.classList.add("hidden");
+                const nameInput = document.getElementById("create-game-name-input");
+                if (nameInput) nameInput.focus();
+            };
+
+            const confirmBtn = document.getElementById("create-game-confirm-btn");
+            const cancelBtn = document.getElementById("create-game-cancel-btn");
+
+            const hideCreateForm = () => {
+                createSection.classList.add("hidden");
+                createBtn.classList.remove("hidden");
+            };
+
+            if (confirmBtn) {
+                confirmBtn.onclick = () => {
+                    const gameName = document.getElementById("create-game-name-input").value.trim();
+                    const playerCount = parseInt(document.getElementById("create-game-players-input").value) || 4;
+                    if (!gameName) {
+                        this.showLobbyError("Please enter a game name");
+                        return;
+                    }
+                    if (playerCount < 2 || playerCount > 4) {
+                        this.showLobbyError("Player count must be 2-4");
+                        return;
+                    }
+                    hideCreateForm();
                     if (this.onCreateGame) {
                         this.onCreateGame(gameName, playerCount);
                     }
-                } else {
-                    alert("Invalid game name or player count");
-                }
-            };
+                };
+            }
+
+            if (cancelBtn) {
+                cancelBtn.onclick = hideCreateForm;
+            }
+
+            // Allow Enter key in game name input to submit
+            const nameInput = document.getElementById("create-game-name-input");
+            if (nameInput) {
+                nameInput.addEventListener("keypress", (e) => {
+                    if (e.key === "Enter" && confirmBtn) {
+                        confirmBtn.click();
+                    }
+                });
+            }
         }
 
         // Setup refresh button
