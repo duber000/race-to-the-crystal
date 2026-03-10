@@ -263,33 +263,37 @@ class UIManager {
     }
 
     renderGameList(games) {
-        const gameList = document.getElementById("game-list");
+        const gameList = document.getElementById("game-list-container");
+        const noGamesMsg = document.getElementById("no-games-msg");
         if (!gameList) return;
 
         // Clear existing games
         gameList.innerHTML = "";
 
-        if (games.length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "game-item empty";
-            empty.textContent = "No games found. Create a new game!";
-            gameList.appendChild(empty);
+        if (!games || games.length === 0) {
+            if (noGamesMsg) noGamesMsg.classList.remove("hidden");
             return;
         }
 
+        if (noGamesMsg) noGamesMsg.classList.add("hidden");
+
         // Render game items
         games.forEach(game => {
+            const name = game.game_name || game.name;
+            const id = game.game_id || game.id;
+            const playerCount = game.current_players ?? (game.players ? game.players.length : 0);
+            const maxPlayers = game.max_players || 4;
             const item = document.createElement("div");
             item.className = "game-item";
             item.innerHTML = `
-                <div class="game-name">${game.name}</div>
                 <div class="game-info">
-                    ${game.players.length}/${game.max_players} players
+                    <strong>${name}</strong>
+                    <span>${playerCount}/${maxPlayers} players</span>
                 </div>
             `;
             item.onclick = () => {
                 if (this.onJoinGame) {
-                    this.onJoinGame(game.id);
+                    this.onJoinGame(id);
                 }
             };
             gameList.appendChild(item);

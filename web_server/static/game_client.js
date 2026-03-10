@@ -79,7 +79,7 @@ class GameClient {
 
     this.networkManager.on("connected", (data) => {
       this.uiManager.showConnectionStatus("Connected!");
-      this.uiManager.playerId = data.playerId;
+      this.uiManager.playerId = data.player_id || data.playerId;
       this.updateUIState(STATE.CONNECTED);
       this.networkManager.requestGameList();
     });
