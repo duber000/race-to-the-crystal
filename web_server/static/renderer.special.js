@@ -4,6 +4,9 @@
  */
 
 import { Renderer3D } from './renderer.base.js';
+import { BOARD_CONFIG, CELL_SIZE } from './game_client.constants.js';
+
+const WALL_HEIGHT = BOARD_CONFIG.WALL_HEIGHT;
 
 Renderer3D.prototype.createSpecialCells = function(gameState) {
     this.cleanupCallbacks.forEach(cb => cb());

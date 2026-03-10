@@ -431,59 +431,6 @@ class GameClient {
     }
   }
 
-    const tokenAtCell = this.getTokenAt(gridX, gridY);
-
-    if (this.selectedTokenId === null) {
-      if (tokenAtCell && this.isOurToken(tokenAtCell.id)) {
-        this.selectedTokenId = tokenAtCell.id;
-        // Show valid moves in MOVEMENT phase, attack targets in ACTION phase
-        if (this.turnPhase === TurnPhase.MOVEMENT) {
-          this.updateValidMoves(tokenAtCell);
-        } else if (this.turnPhase === TurnPhase.ACTION) {
-          this.updateValidAttackTargets(tokenAtCell);
-        }
-        this.renderer.updateTokenSelectionGlow(this.selectedTokenId);
-        this.renderer.playSound("deploy");
-      }
-    } else {
-      const selectedToken = this.gameState.tokens[this.selectedTokenId];
-
-      if (tokenAtCell && tokenAtCell.id === this.selectedTokenId) {
-        this.selectedTokenId = null;
-        this.validMoves = new Set();
-        this.renderer.updateValidMoveIndicators(null);
-        this.renderer.updateTokenSelectionGlow(null);
-        return;
-      }
-
-      if (tokenAtCell && !this.isOurToken(tokenAtCell.id)) {
-        if (this.turnPhase === TurnPhase.ACTION) {
-          console.log(`Attempting attack: ${this.selectedTokenId} -> ${tokenAtCell.id}`);
-          this.wsClient.attackToken(this.selectedTokenId, tokenAtCell.id);
-          this.renderer.playSound("attack");
-          this.selectedTokenId = null;
-          this.validMoves = new Set();
-          this.renderer.updateValidMoveIndicators(null);
-          this.renderer.updateTokenSelectionGlow(null);
-        } else {
-          console.log(`Cannot attack: Wrong phase (currently ${this.turnPhase}, need ACTION)`);
-        }
-        return;
-      }
-
-      const moveKey = `${gridX},${gridY}`;
-      if (this.validMoves.has(moveKey)) {
-        this.wsClient.moveToken(this.selectedTokenId, [gridX, gridY]);
-        this.renderer.playSound("move");
-        this.selectedTokenId = null;
-        this.validMoves = new Set();
-        this.renderer.updateValidMoveIndicators(null);
-        this.renderer.updateTokenSelectionGlow(null);
-        return;
-      }
-    }
-  }
-
   handleKeyDown(data) {
     const key = data.key;
     switch (key) {

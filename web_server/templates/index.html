@@ -1469,8 +1469,8 @@
     <!-- Mercure client for SSE updates -->
     <script src="/static/mercure_client.js"></script>
 
-    <!-- Game constants (no imports, can be regular script) -->
-    <script src="/static/game_client.constants.js"></script>
+    <!-- Game constants (ES6 module, imported by renderer modules) -->
+    <script type="module" src="/static/game_client.constants.js"></script>
 
     <!-- Crystal effect animator (no imports, can be regular script) -->
     <script src="/static/game_client.crystal_effects.js"></script>

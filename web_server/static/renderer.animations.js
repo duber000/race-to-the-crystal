@@ -4,6 +4,11 @@
  */
 
 import { Renderer3D } from './renderer.base.js';
+import { BOARD_CONFIG, CELL_SIZE } from './game_client.constants.js';
+
+const WALL_HEIGHT = BOARD_CONFIG.WALL_HEIGHT;
+const BOARD_WIDTH = BOARD_CONFIG.WIDTH;
+const BOARD_HEIGHT = BOARD_CONFIG.HEIGHT;
 
 Renderer3D.prototype.updateAnimations = function() {
     this.generatorLineMeshes.forEach((lineData) => {

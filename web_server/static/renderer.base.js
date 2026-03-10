@@ -4,7 +4,12 @@
  */
 
 import { AudioManager } from './audio_manager.js';
+import { BOARD_CONFIG, CELL_SIZE } from './game_client.constants.js';
 
+const WALL_HEIGHT = BOARD_CONFIG.WALL_HEIGHT;
+const TOKEN_HEIGHT = BOARD_CONFIG.TOKEN_HEIGHT;
+const BOARD_WIDTH = BOARD_CONFIG.WIDTH;
+const BOARD_HEIGHT = BOARD_CONFIG.HEIGHT;
 const BOARD_CAGE_TOP_Y = WALL_HEIGHT;
 const TOKEN_CENTER_Y = Math.max(TOKEN_HEIGHT / 2, BOARD_CAGE_TOP_Y - (TOKEN_HEIGHT / 2));
 const GENERATOR_HEIGHT = Math.min(60, BOARD_CAGE_TOP_Y * 0.9);

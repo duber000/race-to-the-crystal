@@ -218,3 +218,5 @@ class DeviceCapabilities {
         console.log('  Vibration Support:', this.hasVibration());
     }
 }
+
+export { DeviceCapabilities };

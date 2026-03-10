@@ -4,6 +4,7 @@
  */
 
 import { Renderer3D } from './renderer.base.js';
+import { CELL_SIZE } from './game_client.constants.js';
 
 Renderer3D.prototype.updateHoverIndicator = function(gridX, gridY) {
     if (this.hoverMesh) {
