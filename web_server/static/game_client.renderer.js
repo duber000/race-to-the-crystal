@@ -38,6 +38,16 @@ Renderer3D.prototype.initTokenRenderer = function() {
 };
 
 /**
+ * Update tokens - delegates to TokenRenderer
+ */
+Renderer3D.prototype.updateTokens = function(gameState) {
+    this.initTokenRenderer();
+    if (this.tokenRenderer) {
+        this.tokenRenderer.updateTokens(gameState);
+    }
+};
+
+/**
  * Update token selection glow effect
  * Delegates to TokenRenderer
  */
