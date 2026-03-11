@@ -91,6 +91,14 @@ class HTTPHandler:
 
         logger.info(f"HTTP handler initialized with static dir: {self.static_dir}")
 
+    @web.middleware
+    async def _no_cache_middleware(self, request, handler):
+        """Add no-cache headers to JS/HTML responses to prevent stale code."""
+        response = await handler(request)
+        if request.path.endswith(('.js', '.html')):
+            response.headers['Cache-Control'] = 'no-cache, must-revalidate'
+        return response
+
     def create_app(self) -> web.Application:
         """
         Create aiohttp application with routes.
@@ -98,7 +106,7 @@ class HTTPHandler:
         Returns:
             Configured web application
         """
-        app = web.Application()
+        app = web.Application(middlewares=[self._no_cache_middleware])
 
         # Static files and web client
         app.router.add_get("/", self.handle_index)
