@@ -4,8 +4,10 @@
  */
 
 import { AudioManager } from './audio_manager.js';
-import { BOARD_CONFIG, CELL_SIZE } from './game_client.constants.js';
+import { BOARD_CONFIG, CELL_SIZE, GLOW_COLORS } from './game_client.constants.js';
 
+const CYAN_GLOW = GLOW_COLORS.CYAN;
+const ORANGE_GLOW = GLOW_COLORS.ORANGE;
 const WALL_HEIGHT = BOARD_CONFIG.WALL_HEIGHT;
 const TOKEN_HEIGHT = BOARD_CONFIG.TOKEN_HEIGHT;
 const BOARD_WIDTH = BOARD_CONFIG.WIDTH;
