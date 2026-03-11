@@ -130,6 +130,7 @@ class InputHandler {
         if (event.button === 0) { // Left mouse button
             this.isLMBDown = true;
             this.lmbDownPosition = { x: event.clientX, y: event.clientY };
+            this.lastPanPosition = { x: event.clientX, y: event.clientY };
             this.isLMBDragging = false;
         } else if (event.button === 2) { // Right mouse button
             this.isRMBDown = true;
@@ -162,6 +163,17 @@ class InputHandler {
     }
 
     handleMouseMove(event) {
+        // FPS mouse look: when in first-person mode, mouse movement rotates the view
+        if (this.cameraController.cameraMode === "firstperson") {
+            if (this.isLMBDown || this.isRMBDown) {
+                const deltaX = event.clientX - this.lastPanPosition.x;
+                const deltaY = event.clientY - this.lastPanPosition.y;
+                this.cameraController.applyMouseLook(deltaX, deltaY);
+                this.lastPanPosition = { x: event.clientX, y: event.clientY };
+            }
+            return;
+        }
+
         // Update hover state
         this.updateHoverState(event);
 
@@ -169,10 +181,10 @@ class InputHandler {
         if (this.isPanning) {
             const deltaX = event.clientX - this.lastPanPosition.x;
             const deltaY = event.clientY - this.lastPanPosition.y;
-            
+
             this.cameraController.moveCameraRight(-deltaX * 0.01);
             this.cameraController.moveCameraForward(deltaY * 0.01);
-            
+
             this.lastPanPosition = { x: event.clientX, y: event.clientY };
         }
     }

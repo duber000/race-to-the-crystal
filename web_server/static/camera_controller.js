@@ -17,6 +17,7 @@ class CameraController {
         this.tokenRotation = 0;
         this.cameraPitch = -15;
         this.mouseLookActive = false;
+        this.mouseLookSensitivity = 0.3;
         this.isPanning = false;
         this.lastMousePosition = { x: 0, y: 0 };
 
@@ -103,6 +104,9 @@ class CameraController {
     }
 
     _setupFirstPersonCamera() {
+        // Detach built-in camera controls so they don't fight with manual FPS positioning
+        this.camera.detachControl();
+
         // Get the controlled token and position camera behind it
         if (this.controlledTokenId && this.scene) {
             const token = this.scene.tokens[this.controlledTokenId];
@@ -113,6 +117,8 @@ class CameraController {
     }
 
     _setupOverviewCamera() {
+        // Re-attach built-in camera controls for overview mode
+        this.camera.attachControl(this.canvas, true);
         // Reset to default overview position
         const boardRealWidth = this.boardWidth * this.cellSize;
         const boardRealHeight = this.boardHeight * this.cellSize;
@@ -131,14 +137,14 @@ class CameraController {
         const worldX = x * this.cellSize + this.cellSize / 2;
         const worldZ = z * this.cellSize + this.cellSize / 2;
 
-        // Position camera behind and above the token
-        const cameraDistance = 20;
-        const cameraHeight = 30;
-        
-        // Calculate camera position based on token rotation
+        // Calculate camera position based on token rotation and pitch
         const angle = this.tokenRotation * (Math.PI / 180);
-        const offsetX = Math.sin(angle) * cameraDistance;
-        const offsetZ = Math.cos(angle) * cameraDistance;
+        const pitchRad = this.cameraPitch * (Math.PI / 180);
+        const cameraDistance = 60;
+        const cameraHeight = 40 - Math.sin(pitchRad) * cameraDistance;
+
+        const offsetX = Math.sin(angle) * cameraDistance * Math.cos(pitchRad);
+        const offsetZ = Math.cos(angle) * cameraDistance * Math.cos(pitchRad);
 
         this.camera.setPosition(new BABYLON.Vector3(
             worldX - offsetX,
@@ -146,12 +152,13 @@ class CameraController {
             worldZ - offsetZ
         ));
 
-        // Look at the token
-        this.camera.setTarget(new BABYLON.Vector3(worldX, 0, worldZ));
-
-        // Adjust camera rotation to match token orientation
-        this.camera.alpha = -angle;
-        this.camera.beta = this.cameraPitch * (Math.PI / 180);
+        // Look ahead of the token in the direction it faces
+        const lookAheadDist = 30;
+        this.camera.setTarget(new BABYLON.Vector3(
+            worldX + Math.sin(angle) * lookAheadDist,
+            10,
+            worldZ + Math.cos(angle) * lookAheadDist
+        ));
     }
 
     resetView() {
@@ -180,7 +187,7 @@ class CameraController {
     }
 
     lookUp() {
-        this.cameraPitch = Math.min(-5, this.cameraPitch + 5);
+        this.cameraPitch = Math.min(10, this.cameraPitch + 5);
         if (this.controlledTokenId && this.cameraMode === "firstperson") {
             const token = this.scene.tokens[this.controlledTokenId];
             if (token) {
@@ -189,8 +196,22 @@ class CameraController {
         }
     }
 
+    applyMouseLook(deltaX, deltaY) {
+        if (this.cameraMode !== "firstperson") return;
+
+        this.tokenRotation += deltaX * this.mouseLookSensitivity;
+        this.cameraPitch = Math.max(-60, Math.min(10, this.cameraPitch - deltaY * this.mouseLookSensitivity));
+
+        if (this.controlledTokenId) {
+            const token = this.scene.tokens ? this.scene.tokens[this.controlledTokenId] : null;
+            if (token) {
+                this.updateFirstPersonCamera(token);
+            }
+        }
+    }
+
     lookDown() {
-        this.cameraPitch = Math.max(-30, this.cameraPitch - 5);
+        this.cameraPitch = Math.max(-60, this.cameraPitch - 5);
         if (this.controlledTokenId && this.cameraMode === "firstperson") {
             const token = this.scene.tokens[this.controlledTokenId];
             if (token) {
