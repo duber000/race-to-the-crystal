@@ -6,16 +6,20 @@
 import { AudioManager } from './audio_manager.js';
 import { BOARD_CONFIG, CELL_SIZE, GLOW_COLORS } from './game_client.constants.js';
 
-const CYAN_GLOW = GLOW_COLORS.CYAN;
-const ORANGE_GLOW = GLOW_COLORS.ORANGE;
+export const CYAN_GLOW = GLOW_COLORS.CYAN;
+export const ORANGE_GLOW = GLOW_COLORS.ORANGE;
+export const WHITE_GLOW = GLOW_COLORS.WHITE;
+export const GREEN_GLOW = GLOW_COLORS.GREEN;
+export const RED_GLOW = GLOW_COLORS.RED;
+export const MAGENTA_GLOW = GLOW_COLORS.MAGENTA;
 const WALL_HEIGHT = BOARD_CONFIG.WALL_HEIGHT;
 const TOKEN_HEIGHT = BOARD_CONFIG.TOKEN_HEIGHT;
 const BOARD_WIDTH = BOARD_CONFIG.WIDTH;
 const BOARD_HEIGHT = BOARD_CONFIG.HEIGHT;
-const BOARD_CAGE_TOP_Y = WALL_HEIGHT;
-const TOKEN_CENTER_Y = Math.max(TOKEN_HEIGHT / 2, BOARD_CAGE_TOP_Y - (TOKEN_HEIGHT / 2));
-const GENERATOR_HEIGHT = Math.min(60, BOARD_CAGE_TOP_Y * 0.9);
-const GENERATOR_CENTER_Y = BOARD_CAGE_TOP_Y - (GENERATOR_HEIGHT / 2);
+export const BOARD_CAGE_TOP_Y = WALL_HEIGHT;
+export const TOKEN_CENTER_Y = Math.max(TOKEN_HEIGHT / 2, BOARD_CAGE_TOP_Y - (TOKEN_HEIGHT / 2));
+export const GENERATOR_HEIGHT = Math.min(60, BOARD_CAGE_TOP_Y * 0.9);
+export const GENERATOR_CENTER_Y = BOARD_CAGE_TOP_Y - (GENERATOR_HEIGHT / 2);
 
 class Renderer3D {
     constructor(canvas, deviceCapabilities) {

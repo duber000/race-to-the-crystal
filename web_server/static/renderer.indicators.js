@@ -3,7 +3,7 @@
  * Hover, valid move, and valid attack indicators
  */
 
-import { Renderer3D } from './renderer.base.js';
+import { Renderer3D, WHITE_GLOW, GREEN_GLOW, RED_GLOW } from './renderer.base.js';
 import { CELL_SIZE } from './game_client.constants.js';
 
 Renderer3D.prototype.updateHoverIndicator = function(gridX, gridY) {

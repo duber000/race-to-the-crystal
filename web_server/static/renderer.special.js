@@ -3,7 +3,7 @@
  * Generators, crystal, mystery squares, and generator lines
  */
 
-import { Renderer3D } from './renderer.base.js';
+import { Renderer3D, GENERATOR_HEIGHT, GENERATOR_CENTER_Y, CYAN_GLOW, ORANGE_GLOW } from './renderer.base.js';
 import { BOARD_CONFIG, CELL_SIZE } from './game_client.constants.js';
 
 const WALL_HEIGHT = BOARD_CONFIG.WALL_HEIGHT;

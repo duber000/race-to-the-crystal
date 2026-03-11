@@ -3,7 +3,7 @@
  * Update loop, animations, particles, mystery animations
  */
 
-import { Renderer3D } from './renderer.base.js';
+import { Renderer3D, CYAN_GLOW } from './renderer.base.js';
 import { BOARD_CONFIG, CELL_SIZE } from './game_client.constants.js';
 
 const WALL_HEIGHT = BOARD_CONFIG.WALL_HEIGHT;

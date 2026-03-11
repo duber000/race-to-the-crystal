@@ -3,7 +3,7 @@
  * Generator and crystal color updates based on token ownership
  */
 
-import { Renderer3D } from './renderer.base.js';
+import { Renderer3D, ORANGE_GLOW } from './renderer.base.js';
 
 Renderer3D.prototype.updateSpecialCellColors = function(gameState) {
     if (!gameState.tokens || !gameState.generators) return;
