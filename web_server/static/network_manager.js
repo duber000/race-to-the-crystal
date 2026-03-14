@@ -132,21 +132,39 @@ class NetworkManager {
                 break;
             case "lobby_joined":
             case "CREATE_GAME":
-            case "JOIN_GAME":
-                this.currentLobby = data.lobby || data;
-                this.isHost = (this.currentLobby.host_player_id || this.currentLobby.host_id) === this.playerId;
+            case "JOIN_GAME": {
+                const rawLobby = data.lobby || data;
+                this.currentLobby = {
+                    game_id: rawLobby.game_id,
+                    game_name: rawLobby.game_name,
+                    host_player_id: rawLobby.host_player_id || rawLobby.host_id,
+                    players: rawLobby.players || [],
+                    max_players: rawLobby.max_players || 4,
+                    status: rawLobby.status,
+                };
+                this.isHost = this.currentLobby.host_player_id === this.playerId;
                 this.emit("lobby_joined", { lobby: this.currentLobby, isHost: this.isHost });
                 break;
+            }
             case "lobby_updated":
             case "PLAYER_JOINED":
             case "PLAYER_LEFT":
             case "PLAYER_DISCONNECTED":
             case "PLAYER_RECONNECTED":
-            case "READY":
-                this.currentLobby = data.lobby || data;
-                this.isHost = (this.currentLobby.host_player_id || this.currentLobby.host_id) === this.playerId;
+            case "READY": {
+                const rawLobby = data.lobby || data;
+                this.currentLobby = {
+                    game_id: rawLobby.game_id,
+                    game_name: rawLobby.game_name,
+                    host_player_id: rawLobby.host_player_id || rawLobby.host_id,
+                    players: rawLobby.players || [],
+                    max_players: rawLobby.max_players || 4,
+                    status: rawLobby.status,
+                };
+                this.isHost = this.currentLobby.host_player_id === this.playerId;
                 this.emit("lobby_updated", { lobby: this.currentLobby, isHost: this.isHost });
                 break;
+            }
             case "host_left":
                 this.emit("host_left");
                 break;

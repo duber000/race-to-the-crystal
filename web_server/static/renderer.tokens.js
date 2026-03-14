@@ -9,7 +9,7 @@
  * - Token selection glow effects
  */
 
-import { BOARD_CONFIG, CELL_SIZE } from './game_client.constants.js';
+import { BOARD_CONFIG, CELL_SIZE, PLAYER_COLORS, CRYSTAL_EFFECT } from './game_client.constants.js';
 
 const WALL_HEIGHT = BOARD_CONFIG.WALL_HEIGHT;
 const TOKEN_HEIGHT = BOARD_CONFIG.TOKEN_HEIGHT;
@@ -52,7 +52,8 @@ class TokenRenderer {
             const player = Object.values(gameState.players).find((p) =>
                 p.token_ids.includes(token.id)
             );
-            const playerColor = player ? PLAYER_COLORS[player.color] || PLAYER_COLORS[0] : PLAYER_COLORS[0];
+            const colorIndex = player ? (player.color_index ?? player.color ?? 0) : 0;
+            const playerColor = PLAYER_COLORS[colorIndex] || PLAYER_COLORS[0];
 
             if (this.tokens3D.has(token.id)) {
                 this.updateTokenPosition(token.id, token);
@@ -72,11 +73,11 @@ class TokenRenderer {
         const effect = gameState.crystal.active_effect;
         const localPlayerId = this.localPlayerId;
 
-        if (effect.type === CrystalEffect.FOG_OF_WAR) {
+        if (effect.type === CRYSTAL_EFFECT.FOG_OF_WAR) {
             return allTokens.filter((token) => token.player_id === localPlayerId);
         }
 
-        if (effect.type === CrystalEffect.PHANTOM_ENEMIES) {
+        if (effect.type === CRYSTAL_EFFECT.PHANTOM_ENEMIES) {
             return allTokens;
         }
 
@@ -106,14 +107,15 @@ class TokenRenderer {
                 phantomData.mesh.position.z = worldZ;
             } else {
                 const player = gameState.players[phantom.apparent_player_id];
-                const playerColor = player ? PLAYER_COLORS[player.color] || PLAYER_COLORS[0] : PLAYER_COLORS[0];
+                const colorIndex = player ? (player.color_index ?? player.color ?? 0) : 0;
+            const playerColor = PLAYER_COLORS[colorIndex] || PLAYER_COLORS[0];
                 this.createPhantomToken3D(phantom, playerColor);
             }
         }
     }
 
     getPhantomTokens(gameState) {
-        if (!gameState.crystal?.active_effect || gameState.crystal.active_effect.type !== CrystalEffect.PHANTOM_ENEMIES) {
+        if (!gameState.crystal?.active_effect || gameState.crystal.active_effect.type !== CRYSTAL_EFFECT.PHANTOM_ENEMIES) {
             return [];
         }
 

@@ -452,13 +452,13 @@ class UIManager {
 
         if (gameState.current_turn_player_id !== null && gameState.players[gameState.current_turn_player_id]) {
             const currentPlayer = gameState.players[gameState.current_turn_player_id];
-            const color = this.getPlayerColor(currentPlayer.color);
+            const currentColorIndex = currentPlayer.color_index ?? currentPlayer.color ?? 0;
             const currentPlayerEl = document.getElementById("currentPlayer");
             currentPlayerEl.textContent = currentPlayer.name || "Unknown";
             currentPlayerEl.className = "";
             currentPlayerEl.classList.add(
                 "player-color",
-                `player-color-${currentPlayer.color ?? 0}`,
+                `player-color-${currentColorIndex}`,
             );
         }
 
@@ -469,9 +469,9 @@ class UIManager {
             const playerDiv = document.createElement("div");
             playerDiv.className = "player-info";
             const isLocal = player.id === localPlayerId ? " (YOU)" : "";
-            const color = this.getPlayerColor(player.color);
+            const colorIndex = player.color_index ?? player.color ?? 0;
             const name = document.createElement("strong");
-            name.className = `player-color player-color-${player.color ?? 0}`;
+            name.className = `player-color player-color-${colorIndex}`;
             name.textContent = `${player.name}${isLocal}`;
 
             const tokenCount = document.createElement("div");

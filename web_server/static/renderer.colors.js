@@ -4,6 +4,7 @@
  */
 
 import { Renderer3D, ORANGE_GLOW } from './renderer.base.js';
+import { PLAYER_COLORS } from './game_client.constants.js';
 
 Renderer3D.prototype.updateSpecialCellColors = function(gameState) {
     if (!gameState.tokens || !gameState.generators) return;
@@ -125,16 +126,11 @@ Renderer3D.prototype.updateSpecialCellColors = function(gameState) {
 
 Renderer3D.prototype.getPlayerColors = function(gameState) {
     const colors = {};
-    const colorValues = [
-        new BABYLON.Color3(1, 0, 0),
-        new BABYLON.Color3(0, 0, 1),
-        new BABYLON.Color3(0, 1, 0),
-        new BABYLON.Color3(1, 1, 0),
-    ];
-
+    let index = 0;
     for (const [playerId, player] of Object.entries(gameState.players || {})) {
-        const colorIndex = parseInt(playerId.split("_")[1]) || 0;
-        colors[playerId] = colorValues[colorIndex % colorValues.length];
+        const colorIndex = player.color_index ?? player.color ?? index;
+        colors[playerId] = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
+        index++;
     }
     return colors;
 };
