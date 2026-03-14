@@ -214,13 +214,15 @@ class GameClient {
     if (!this.gameInitialized) {
       this.gameInitialized = true;
       this.networkManager.connectionState = STATE.IN_GAME;
+      // updateUIState → initGameModules creates this.renderer synchronously
       this.updateUIState(STATE.IN_GAME);
+    }
 
-      if (data.game_state && data.game_state.perspective_player_id) {
-        this.localPlayerId = data.game_state.perspective_player_id;
-        if (this.renderer) {
-          this.renderer.localPlayerId = this.localPlayerId;
-        }
+    // Always sync localPlayerId from server perspective (covers first call and re-syncs)
+    if (data.game_state && data.game_state.perspective_player_id) {
+      this.localPlayerId = data.game_state.perspective_player_id;
+      if (this.renderer) {
+        this.renderer.localPlayerId = this.localPlayerId;
       }
     }
 
@@ -370,6 +372,10 @@ class GameClient {
         this.renderer.updateValidMoveIndicators(null);
         this.renderer.updateTokenSelectionGlow(null);
       }
+      if (this.uiManager.isDeploymentMenuOpen()) {
+        this.uiManager.toggleDeploymentMenu(false);
+      }
+      this.uiManager.clearSelection();
     }
   }
 
@@ -538,8 +544,20 @@ class GameClient {
         this.quitGame();
         break;
       case "switch_player":
-        if (data.playerIndex !== undefined) {
-          this.localPlayerId = `player_${data.playerIndex}`;
+        if (data.playerIndex !== undefined && this.gameState) {
+          const playerIds = Object.keys(this.gameState.players);
+          if (data.playerIndex < playerIds.length) {
+            this.localPlayerId = playerIds[data.playerIndex];
+            if (this.renderer) {
+              this.renderer.localPlayerId = this.localPlayerId;
+            }
+            this.selectedTokenId = null;
+            this.validMoves = new Set();
+            if (this.renderer) {
+              this.renderer.updateValidMoveIndicators(null);
+              this.renderer.updateTokenSelectionGlow(null);
+            }
+          }
         }
         break;
     }
@@ -649,9 +667,11 @@ class GameClient {
 
         if (tokenAtCell && this.isOurToken(tokenAtCell.id)) {
           const cell = this.gameState?.board?.grid?.[ny]?.[nx];
-          const isGeneratorOrCrystal =
-            cell?.cell_type === 2 || cell?.cell_type === 3;
-          if (!isGeneratorOrCrystal) continue;
+          if (cell !== undefined) {
+            const isGeneratorOrCrystal = cell.cell_type === 2 || cell.cell_type === 3;
+            if (!isGeneratorOrCrystal) continue;
+          }
+          // If cell type is unknown, allow movement (don't block)
         }
 
         visited.add(posKey);

@@ -58,6 +58,8 @@ class InputHandler {
         this.boundMouseMove = null;
         this.boundPointerDown = null;
         this.boundPointerUp = null;
+        this.boundKeyDown = null;
+        this.boundKeyDownCtrl = null;
     }
 
     on(event, handler) {
@@ -311,7 +313,7 @@ class InputHandler {
     }
 
     setupKeyboardListeners() {
-        window.addEventListener("keydown", (event) => {
+        this.boundKeyDown = (event) => {
             const key = event.key.toLowerCase();
 
             switch (key) {
@@ -448,14 +450,16 @@ class InputHandler {
                         this.emit('keydown', { key: 'switch_player', playerIndex: parseInt(key) - 1 });
                     }
             }
-        });
+        };
+        window.addEventListener("keydown", this.boundKeyDown);
 
-        window.addEventListener("keydown", (event) => {
+        this.boundKeyDownCtrl = (event) => {
             if (event.ctrlKey && event.key.toLowerCase() === "q") {
                 event.preventDefault();
                 this.emit('keydown', { key: 'quit' });
             }
-        });
+        };
+        window.addEventListener("keydown", this.boundKeyDownCtrl);
     }
 
     setupWindowListeners() {
@@ -594,6 +598,12 @@ class InputHandler {
         }
         if (this.boundPointerUp) {
             this.canvas.removeEventListener("pointerup", this.boundPointerUp);
+        }
+        if (this.boundKeyDown) {
+            window.removeEventListener("keydown", this.boundKeyDown);
+        }
+        if (this.boundKeyDownCtrl) {
+            window.removeEventListener("keydown", this.boundKeyDownCtrl);
         }
 
         // Clear touch tracking

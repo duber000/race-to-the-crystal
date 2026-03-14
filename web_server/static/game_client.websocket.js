@@ -144,13 +144,15 @@ class WebSocketClient {
     console.log("Received message:", data.type);
 
     switch (data.type) {
+      case "connected":
       case "CONNECT_ACK":
-        this.playerId = data.player_id;
+        this.playerId = data.player_id || data.playerId;
         console.log(`✓ Connected as ${this.playerName} (ID: ${this.playerId})`);
         this.connectionState = STATE.CONNECTED;
         this.emit("connected", { playerId: this.playerId });
         break;
 
+      case "game_list":
       case "GAME_LIST":
         this.availableGames = data.games || [];
         console.log(`Received ${this.availableGames.length} games`);
