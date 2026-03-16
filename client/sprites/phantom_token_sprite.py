@@ -94,11 +94,17 @@ class PhantomTokenSprite(arcade.Sprite):
                     continue
             if font is None:
                 font = ImageFont.load_default()
+        except OSError as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Font file not found, using default: {e}")
+            font = ImageFont.load_default()
         except Exception as e:
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.warning(f"Font loading failed, using default: {e}")
+            logger.warning(f"Unexpected font error, using default: {e}")
             font = ImageFont.load_default()
 
         health_text = str(self.phantom_token.apparent_health)

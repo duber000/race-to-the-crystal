@@ -115,8 +115,14 @@ class Board3D:
             self.shader_program = self.ctx.program(
                 vertex_shader=vertex_shader, fragment_shader=fragment_shader
             )
+        except RuntimeError as e:
+            print(f"ERROR: OpenGL shader compilation failed: {e}")
+            self.shader_program = None
+        except ValueError as e:
+            print(f"ERROR: Invalid shader source: {e}")
+            self.shader_program = None
         except Exception as e:
-            print(f"ERROR: Failed to compile 3D shaders: {e}")
+            print(f"ERROR: Unexpected error compiling shaders: {e}")
             self.shader_program = None
 
     def _create_grid_geometry(self):

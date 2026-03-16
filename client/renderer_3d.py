@@ -4,7 +4,6 @@
 This module handles all 3D rendering including board, tokens, and shaders.
 """
 
-
 from client.board_3d import Board3D
 from client.token_3d import Token3D
 from client.phantom_token_3d import PhantomToken3D
@@ -111,8 +110,20 @@ class Renderer3D:
                 self.shader_3d = self.board_3d.shader_program  # Reuse shader
                 logger.info("3D rendering initialized successfully")
 
+        except RuntimeError as e:
+            logger.error(f"OpenGL context error initializing 3D: {e}")
+            self.board_3d = None
+            self.shader_3d = None
+            return False
+        except ValueError as e:
+            logger.error(f"Invalid 3D configuration: {e}")
+            self.board_3d = None
+            self.shader_3d = None
+            return False
         except Exception as e:
-            logger.error(f"Failed to initialize 3D rendering: {e}")
+            logger.error(
+                f"Unexpected error initializing 3D rendering: {e}", exc_info=True
+            )
             self.board_3d = None
             self.shader_3d = None
             return False
@@ -146,12 +157,23 @@ class Renderer3D:
                         try:
                             token_3d = Token3D(token, player_color, ctx)
                             self.tokens_3d.append(token_3d)
+                        except ValueError as e:
+                            logger.error(f"Invalid token data for 3D: {token_id}: {e}")
+                        except RuntimeError as e:
+                            logger.error(
+                                f"OpenGL error creating 3D token {token_id}: {e}"
+                            )
                         except Exception as e:
-                            logger.error(f"Failed to create 3D token {token_id}: {e}")
+                            logger.error(
+                                f"Unexpected error creating 3D token: {e}",
+                                exc_info=True,
+                            )
         else:
             # Apply crystal effects - get visible tokens for this player
-            visible_tokens, phantom_tokens = game_state.get_visible_tokens_for_player(viewing_player_id)
-            
+            visible_tokens, phantom_tokens = game_state.get_visible_tokens_for_player(
+                viewing_player_id
+            )
+
             # Create 3D tokens for visible real tokens
             for token in visible_tokens:
                 player = game_state.players[token.player_id]
@@ -159,19 +181,31 @@ class Renderer3D:
                 try:
                     token_3d = Token3D(token, player_color, ctx)
                     self.tokens_3d.append(token_3d)
+                except ValueError as e:
+                    logger.error(f"Invalid token data for 3D: {token.id}: {e}")
+                except RuntimeError as e:
+                    logger.error(f"OpenGL error creating 3D token {token.id}: {e}")
                 except Exception as e:
-                    logger.error(f"Failed to create 3D token {token.id}: {e}")
-            
+                    logger.error(
+                        f"Unexpected error creating 3D token: {e}", exc_info=True
+                    )
+
             # Create 3D phantom tokens
             for phantom in phantom_tokens:
-                player_color = PLAYER_COLORS[game_state.players[phantom.apparent_player_id].color.value]
+                player_color = PLAYER_COLORS[
+                    game_state.players[phantom.apparent_player_id].color.value
+                ]
                 try:
                     phantom_3d = PhantomToken3D(phantom, player_color, ctx)
                     self.phantom_tokens_3d.append(phantom_3d)
                 except Exception as e:
-                    logger.error(f"Failed to create 3D phantom token {phantom.phantom_id}: {e}")
+                    logger.error(
+                        f"Failed to create 3D phantom token {phantom.phantom_id}: {e}"
+                    )
 
-        logger.debug(f"Created {len(self.tokens_3d)} real 3D tokens and {len(self.phantom_tokens_3d)} phantom 3D tokens")
+        logger.debug(
+            f"Created {len(self.tokens_3d)} real 3D tokens and {len(self.phantom_tokens_3d)} phantom 3D tokens"
+        )
 
     def add_token(self, token, player_color: tuple[int, int, int], ctx) -> None:
         """
@@ -186,10 +220,16 @@ class Renderer3D:
             token_3d = Token3D(token, player_color, ctx)
             self.tokens_3d.append(token_3d)
             logger.debug(f"Added 3D token {token.id}")
+        except ValueError as e:
+            logger.error(f"Invalid token data for 3D: {token.id}: {e}")
+        except RuntimeError as e:
+            logger.error(f"OpenGL error creating 3D token {token.id}: {e}")
         except Exception as e:
-            logger.error(f"Failed to create 3D token {token.id}: {e}")
+            logger.error(f"Unexpected error creating 3D token: {e}", exc_info=True)
 
-    def sync_tokens(self, game_state, ctx, viewing_player_id: str | None = None) -> None:
+    def sync_tokens(
+        self, game_state, ctx, viewing_player_id: str | None = None
+    ) -> None:
         """
         Synchronize 3D tokens with game state, animating changes.
 
@@ -233,8 +273,17 @@ class Renderer3D:
                         # Create new token
                         try:
                             self.add_token(token, player_color, ctx)
+                        except ValueError as e:
+                            logger.error(f"Invalid token data for 3D: {token_id}: {e}")
+                        except RuntimeError as e:
+                            logger.error(
+                                f"OpenGL error creating 3D token {token_id}: {e}"
+                            )
                         except Exception as e:
-                            logger.error(f"Failed to create new 3D token {token_id}: {e}")
+                            logger.error(
+                                f"Unexpected error creating 3D token: {e}",
+                                exc_info=True,
+                            )
 
             # Remove dead/undeployed tokens
             tokens_to_remove = []
