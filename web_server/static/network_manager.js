@@ -86,6 +86,40 @@ class NetworkManager {
   }
 
   /**
+   * Handle STATE_UPDATE message by merging delta into local state.
+   * @param {Object} data - Delta update data from server
+   * @private
+   */
+  _handleStateUpdate(data) {
+    console.log("✓ Processing STATE_UPDATE");
+    this.emit("state_update", data);
+  }
+
+  /**
+   * Recursively merge a delta into a base object.
+   * @param {Object} base - The object to update
+   * @param {Object} delta - The changes to apply
+   * @returns {Object} The updated object
+   * @private
+   */
+  _mergeDelta(base, delta) {
+    if (!base) return delta;
+    if (!delta) return base;
+
+    for (const key in delta) {
+      if (Object.prototype.hasOwnProperty.call(delta, key)) {
+        if (delta[key] !== null && typeof delta[key] === 'object' && !Array.isArray(delta[key]) && 
+            base[key] !== null && typeof base[key] === 'object' && !Array.isArray(base[key])) {
+          this._mergeDelta(base[key], delta[key]);
+        } else {
+          base[key] = delta[key];
+        }
+      }
+    }
+    return base;
+  }
+
+  /**
    * Process queued state updates sequentially.
    * @private
    */
@@ -349,6 +383,11 @@ class NetworkManager {
         this._handleFullState(data);
         break;
 
+      case "STATE_UPDATE":
+      case "state_update":
+        this._handleStateUpdate(data.data || data);
+        break;
+
       case "ERROR":
       case "error":
         console.error("Server error:", data.error || data.message);
@@ -477,10 +516,24 @@ class NetworkManager {
           console.log("✓ Transitioned to IN_GAME state via SSE - game actions now enabled");
         }
 
-        // SSE publishes the game state directly, not wrapped in a 'state' property
-        this.emit("full_state", {
-          game_state: update,
-        });
+        // Dispatch based on message type
+        const type = update.type;
+        if (type === "STATE_UPDATE" || type === "state_update") {
+          this._handleStateUpdate(update);
+        } else if (type === "FULL_STATE" || type === "full_state") {
+          this.emit("full_state", {
+            game_state: update,
+          });
+        } else if (type) {
+          // It's a fine-grained event (TOKEN_MOVED, COMBAT_RESULT, etc.)
+          console.log(`✓ SSE Event received: ${type}`);
+          this.emit(type.toLowerCase(), update);
+        } else {
+          // Default to full state for legacy/raw updates
+          this.emit("full_state", {
+            game_state: update,
+          });
+        }
         
         // Update last processed version
         if (stateVersion) {

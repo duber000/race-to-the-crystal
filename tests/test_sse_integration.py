@@ -39,7 +39,8 @@ async def test_sse_primary_mode_broadcast_filtering():
     with patch.dict(os.environ, {"SSE_PRIMARY_MODE": "true"}):
         server = GameServer(host="localhost", port=0)
         server.mercure_publisher = AsyncMock()
-        server.mercure_publisher.publish_game_state.return_value = True
+        server.mercure_publisher.publish_full_state.return_value = True
+        server.mercure_publisher.publish_state_update.return_value = True
 
         # Setup Web client (SSE capable)
         web_player_id = "player_web_id"
@@ -57,8 +58,8 @@ async def test_sse_primary_mode_broadcast_filtering():
         lobby = MagicMock()
         lobby.game_id = "game_123"
         lobby.players = {
-            web_player_id: MagicMock(player_id=web_player_id),
-            desktop_player_id: MagicMock(player_id=desktop_player_id)
+            web_player_id: MagicMock(player_id=web_player_id, color_index=0),
+            desktop_player_id: MagicMock(player_id=desktop_player_id, color_index=1)
         }
         
         session = server.game_coordinator.create_game(lobby)
@@ -76,7 +77,9 @@ async def test_sse_primary_mode_broadcast_filtering():
             assert web_player_id not in sent_player_ids, "Web client should NOT have received WebSocket update in SSE-primary mode"
             
             # Verify Mercure publish
-            server.mercure_publisher.publish_game_state.assert_called_once()
+            # Can be either full state (first time) or delta
+            assert (server.mercure_publisher.publish_full_state.called or 
+                    server.mercure_publisher.publish_state_update.called)
 
 @pytest.mark.asyncio
 async def test_sse_failure_fallback():
@@ -86,19 +89,26 @@ async def test_sse_failure_fallback():
     with patch.dict(os.environ, {"SSE_PRIMARY_MODE": "true"}):
         server = GameServer(host="localhost", port=0)
         server.mercure_publisher = AsyncMock()
-        server.mercure_publisher.publish_game_state.return_value = False # FAIL
+        server.mercure_publisher.publish_full_state.return_value = False # FAIL
+        server.mercure_publisher.publish_state_update.return_value = False # FAIL
 
         web_player_id = "player_web_id"
         web_conn = MagicMock()
         server.player_connections[web_player_id] = web_conn
         server.player_client_types[web_player_id] = ClientType.WEB_BROWSER
 
+        web_player_id2 = "player_web_id2"
         lobby = MagicMock()
         lobby.game_id = "game_123"
-        lobby.players = {web_player_id: MagicMock(player_id=web_player_id)}
+        lobby.players = {
+            web_player_id: MagicMock(player_id=web_player_id, color_index=0),
+            web_player_id2: MagicMock(player_id=web_player_id2, color_index=1)
+        }
         
         session = server.game_coordinator.create_game(lobby)
         session.network_to_game_id[web_player_id] = "g_web"
+        session.network_to_game_id[web_player_id2] = "g_web2"
+        server.player_client_types[web_player_id2] = ClientType.WEB_BROWSER
 
         with patch.object(server, '_send_to_player', AsyncMock()) as mock_send:
             await server._broadcast_game_state(session)

@@ -4,6 +4,7 @@
 
 // Import modules
 import { NetworkManager } from './network_manager.js';
+import { StateManager } from './state_manager.js';
 import { UIManager } from './ui_manager.js';
 import { CameraController } from './camera_controller.js';
 import { InputHandler } from './input_handler.js';
@@ -40,14 +41,20 @@ class GameClient {
     this.inputHandler = null;
     this.renderer = null;
 
-    // Game state
-    this.gameState = null;
+    // Game state (managed by StateManager)
+    this.stateManager = new StateManager();
     this.gameInitialized = false;
-    this.localPlayerId = null;
-    this.selectedTokenId = null;
-    this.controlledTokenId = null;
-    this.validMoves = new Set();
     this.turnPhase = GAME_PHASE.MOVEMENT;
+
+    // Direct access for convenience (optional)
+    Object.defineProperty(this, 'gameState', { get: () => this.stateManager.gameState });
+    Object.defineProperty(this, 'localPlayerId', { get: () => this.stateManager.localPlayerId });
+    Object.defineProperty(this, 'selectedTokenId', { get: () => this.stateManager.selectedTokenId });
+    Object.defineProperty(this, 'controlledTokenId', { get: () => this.stateManager.controlledTokenId });
+    Object.defineProperty(this, 'validMoves', { get: () => this.stateManager.validMoves });
+
+    // Setup state change callback
+    this.stateManager.setChangeCallback((state) => this.handleStateChanged(state));
 
     // Animation and effects
     this.musicPlaying = true;
@@ -141,6 +148,43 @@ class GameClient {
       this.handleFullState(data);
     });
 
+    this.networkManager.on("state_update", (data) => {
+      this.handleStateUpdate(data);
+    });
+
+    // Fine-grained SSE Events for animations
+    this.networkManager.on("token_moved", (data) => {
+      this.handleTokenMoved(data);
+    });
+
+    this.networkManager.on("combat_result", (data) => {
+      this.handleCombatResult(data);
+    });
+
+    this.networkManager.on("token_deployed", (data) => {
+      this.handleTokenDeployed(data);
+    });
+
+    this.networkManager.on("generator_update", (data) => {
+      this.handleGeneratorUpdate(data);
+    });
+
+    this.networkManager.on("crystal_update", (data) => {
+      this.handleCrystalUpdate(data);
+    });
+
+    this.networkManager.on("mystery_event", (data) => {
+      this.handleMysteryEvent(data);
+    });
+
+    this.networkManager.on("turn_change", (data) => {
+      this.handleTurnChange(data);
+    });
+
+    this.networkManager.on("game_won", (data) => {
+      this.handleGameWon(data);
+    });
+
     this.networkManager.on("invalid_action", (data) => {
       this.uiManager.showActionError(data.message);
     });
@@ -214,25 +258,126 @@ class GameClient {
     if (!this.gameInitialized) {
       this.gameInitialized = true;
       this.networkManager.connectionState = STATE.IN_GAME;
-      // updateUIState → initGameModules creates this.renderer synchronously
       this.updateUIState(STATE.IN_GAME);
     }
 
-    // Always sync localPlayerId from server perspective (covers first call and re-syncs)
-    if (data.game_state && data.game_state.perspective_player_id) {
-      this.localPlayerId = data.game_state.perspective_player_id;
-      if (this.renderer) {
-        this.renderer.localPlayerId = this.localPlayerId;
-      }
-    }
-
-    if (data.game_state) {
-      this.updateGameState(data.game_state);
-    }
+    this.stateManager.setFullState(data);
 
     if (data.last_action && this.renderer) {
       this.renderer.playSound(data.last_action);
     }
+  }
+
+  handleStateUpdate(delta) {
+    this.stateManager.applyDelta(delta);
+  }
+
+  handleStateChanged(state) {
+    if (this.networkManager.getConnectionState() !== STATE.IN_GAME) {
+      return;
+    }
+
+    this.turnPhase = state.turn_phase || TurnPhase.MOVEMENT;
+
+    if (this.renderer) {
+      this.renderer.localPlayerId = this.stateManager.localPlayerId;
+      this.renderer.updateGameState(state);
+      this.renderer.updateValidMoveIndicators(this.stateManager.selectedTokenId);
+      this.renderer.updateTokenSelectionGlow(this.stateManager.selectedTokenId);
+    }
+    
+    this.uiManager.updateHUD(state, this.stateManager.localPlayerId);
+
+    // Auto-clear selection if it's not our turn
+    if (state.current_turn_player_id !== this.stateManager.localPlayerId) {
+      this.stateManager.clearSelection();
+      if (this.renderer) {
+        this.renderer.updateValidMoveIndicators(null);
+        this.renderer.updateTokenSelectionGlow(null);
+      }
+      if (this.uiManager.isDeploymentMenuOpen()) {
+        this.uiManager.toggleDeploymentMenu(false);
+      }
+      this.uiManager.clearSelection();
+    }
+  }
+
+  handleTokenMoved(data) {
+    if (!this.gameState || !this.gameState.tokens[data.token_id]) return;
+    
+    // Update local state for immediate feedback
+    this.gameState.tokens[data.token_id].position = data.new_position;
+    
+    // Trigger animation in renderer
+    if (this.renderer) {
+      this.renderer.animateTokenMove(data.token_id, data.old_position, data.new_position);
+    }
+    
+    // Refresh basic state info
+    this.updateGameState(this.gameState);
+  }
+
+  handleCombatResult(data) {
+    if (!this.gameState) return;
+    
+    // Update local state (health, destruction)
+    const defender = this.gameState.tokens[data.defender_id];
+    if (defender) {
+      defender.health -= data.damage;
+      if (data.defender_destroyed) {
+        defender.is_alive = false;
+      }
+    }
+    
+    // Trigger animation in renderer
+    if (this.renderer) {
+      this.renderer.animateCombat(data);
+    }
+    
+    this.updateGameState(this.gameState);
+  }
+
+  handleTokenDeployed(data) {
+    if (!this.gameState) return;
+    // (Actual synchronization usually happens via the next state update, 
+    // but we can trigger a spawn animation here)
+    if (this.renderer) {
+      this.renderer.animateTokenDeploy(data);
+    }
+  }
+
+  handleGeneratorUpdate(data) {
+    if (this.renderer) {
+      this.renderer.animateGeneratorUpdate(data);
+    }
+  }
+
+  handleCrystalUpdate(data) {
+    if (this.renderer) {
+      this.renderer.animateCrystalUpdate(data);
+    }
+  }
+
+  handleMysteryEvent(data) {
+    if (this.renderer) {
+        this.renderer.animateMysteryEvent(data);
+    }
+  }
+
+  handleTurnChange(data) {
+    if (!this.gameState) return;
+    this.gameState.current_turn_player_id = data.current_player_id;
+    this.gameState.turn_number = data.turn_number;
+    this.gameState.turn_phase = data.turn_phase;
+    
+    this.updateGameState(this.gameState);
+  }
+
+  handleGameWon(data) {
+    if (this.renderer) {
+      this.renderer.triggerVictoryEffect();
+    }
+    alert(`GAME OVER! ${data.winner_name} has won the race to the crystal!`);
   }
 
   initGameModules() {
@@ -352,24 +497,35 @@ class GameClient {
 
     if (this.selectedTokenId === null) {
       if (tokenAtCell && this.isOurToken(tokenAtCell.id)) {
-        this.selectedTokenId = tokenAtCell.id;
         // Show valid moves in MOVEMENT phase, attack targets in ACTION phase
+        let validMoves = new Set();
         if (this.turnPhase === TurnPhase.MOVEMENT) {
-          this.updateValidMoves(tokenAtCell);
+          validMoves = this.calculateValidMoves(tokenAtCell);
         } else if (this.turnPhase === TurnPhase.ACTION) {
-          this.updateValidAttackTargets(tokenAtCell);
+          validMoves = this.calculateValidAttackTargets(tokenAtCell);
         }
-        this.renderer.updateTokenSelectionGlow(this.selectedTokenId);
+        
+        this.stateManager.setSelectedToken(tokenAtCell.id, validMoves);
+        
+        if (this.renderer) {
+          if (this.turnPhase === TurnPhase.MOVEMENT) {
+            this.renderer.updateValidMoveIndicators(validMoves);
+          } else {
+            this.renderer.updateValidAttackIndicators(validMoves);
+          }
+          this.renderer.updateTokenSelectionGlow(this.selectedTokenId);
+        }
         this.renderer.playSound("deploy");
       }
     } else {
       const selectedToken = this.gameState.tokens[this.selectedTokenId];
 
       if (tokenAtCell && tokenAtCell.id === this.selectedTokenId) {
-        this.selectedTokenId = null;
-        this.validMoves = new Set();
-        this.renderer.updateValidMoveIndicators(null);
-        this.renderer.updateTokenSelectionGlow(null);
+        this.stateManager.clearSelection();
+        if (this.renderer) {
+          this.renderer.updateValidMoveIndicators(null);
+          this.renderer.updateTokenSelectionGlow(null);
+        }
         return;
       }
 
@@ -378,10 +534,11 @@ class GameClient {
           console.log(`Attempting attack: ${this.selectedTokenId} > ${tokenAtCell.id}`);
           this.networkManager.attackToken(this.selectedTokenId, tokenAtCell.id);
           this.renderer.playSound("attack");
-          this.selectedTokenId = null;
-          this.validMoves = new Set();
-          this.renderer.updateValidMoveIndicators(null);
-          this.renderer.updateTokenSelectionGlow(null);
+          this.stateManager.clearSelection();
+          if (this.renderer) {
+            this.renderer.updateValidMoveIndicators(null);
+            this.renderer.updateTokenSelectionGlow(null);
+          }
         } else {
           console.log(`Cannot attack: Wrong phase (currently ${this.turnPhase}, need ACTION)`);
         }
@@ -392,10 +549,11 @@ class GameClient {
       if (this.validMoves.has(moveKey)) {
         this.networkManager.moveToken(this.selectedTokenId, [gridX, gridY]);
         this.renderer.playSound("move");
-        this.selectedTokenId = null;
-        this.validMoves = new Set();
-        this.renderer.updateValidMoveIndicators(null);
-        this.renderer.updateTokenSelectionGlow(null);
+        this.stateManager.clearSelection();
+        if (this.renderer) {
+          this.renderer.updateValidMoveIndicators(null);
+          this.renderer.updateTokenSelectionGlow(null);
+        }
         return;
       }
     }
@@ -547,8 +705,8 @@ class GameClient {
       .filter((token) => token && token.is_alive && token.is_deployed);
   }
 
-  updateValidAttackTargets(token) {
-    this.validMoves = new Set();
+  calculateValidAttackTargets(token) {
+    const validMoves = new Set();
 
     // Find adjacent enemy tokens
     const [x, y] = token.position;
@@ -572,76 +730,53 @@ class GameClient {
 
       const enemyToken = this.getTokenAt(nx, ny);
       if (enemyToken && !this.isOurToken(enemyToken.id)) {
-        this.validMoves.add(`${nx},${ny}`);
+        validMoves.add(`${nx},${ny}`);
       }
     }
 
-    this.renderer.updateValidAttackIndicators(
-      this.validMoves.size > 0 ? this.validMoves : null,
-    );
+    return validMoves;
   }
 
-  updateValidMoves(token) {
-    this.validMoves = new Set();
-
+  calculateValidMoves(token) {
+    const validMoves = new Set();
     const moveRange = token.health >= 7 ? 1 : 2;
     const start = token.position;
     const visited = new Set();
-    visited.add(`${start[0]},${start[1]}`);
-
+    const posKey = (x, y) => `${x},${y}`;
+    
+    visited.add(posKey(start[0], start[1]));
     const queue = [[start, 0]];
     const directions = [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, -1],
-      [0, 1],
-      [1, -1],
-      [1, 0],
-      [1, 1],
+      [-1, -1], [-1, 0], [-1, 1],
+      [0, -1],           [0, 1],
+      [1, -1],  [1, 0],  [1, 1],
     ];
 
     while (queue.length > 0) {
       const [[x, y], distance] = queue.shift();
 
-      if (distance >= moveRange) continue;
+      if (distance < moveRange) {
+        for (const [dx, dy] of directions) {
+          const nx = x + dx;
+          const ny = y + dy;
+          const key = posKey(nx, ny);
 
-      for (const [dx, dy] of directions) {
-        const nx = x + dx;
-        const ny = y + dy;
-        const posKey = `${nx},${ny}`;
-
-        if (visited.has(posKey)) continue;
-        if (nx < 0 || nx >= BOARD_CONFIG.WIDTH || ny < 0 || ny >= BOARD_CONFIG.HEIGHT)
-          continue;
-
-        const tokenAtCell = this.getTokenAt(nx, ny);
-        if (tokenAtCell && !this.isOurToken(tokenAtCell.id)) continue;
-
-        if (tokenAtCell && this.isOurToken(tokenAtCell.id)) {
-          const cell = this.gameState?.board?.grid?.[ny]?.[nx];
-          if (cell !== undefined) {
-            const isGeneratorOrCrystal = cell.cell_type === 2 || cell.cell_type === 3;
-            if (!isGeneratorOrCrystal) continue;
+          if (
+            nx >= 0 && nx < BOARD_CONFIG.WIDTH &&
+            ny >= 0 && ny < BOARD_CONFIG.HEIGHT &&
+            !visited.has(key)
+          ) {
+            const tokenAt = this.getTokenAt(nx, ny);
+            if (!tokenAt) {
+              visited.add(key);
+              validMoves.add(key);
+              queue.push([[nx, ny], distance + 1]);
+            }
           }
-          // If cell type is unknown, allow movement (don't block)
         }
-
-        visited.add(posKey);
-
-        if (nx !== start[0] || ny !== start[1]) {
-          this.validMoves.add(posKey);
-        }
-
-        queue.push([[nx, ny], distance + 1]);
       }
     }
-
-    const movesArray = Array.from(this.validMoves).map((key) => {
-      const [x, y] = key.split(",").map(Number);
-      return [x, y];
-    });
-    this.renderer.updateValidMoveIndicators(new Set(movesArray));
+    return validMoves;
   }
 
   calculateDestinationFromCameraRotation(currentPos, direction) {
@@ -757,10 +892,11 @@ class GameClient {
 
   cancelAction() {
     if (this.selectedTokenId) {
-      this.selectedTokenId = null;
-      this.validMoves = new Set();
-      this.renderer.updateValidMoveIndicators(null);
-      this.renderer.updateTokenSelectionGlow(null);
+      this.stateManager.clearSelection();
+      if (this.renderer) {
+        this.renderer.updateValidMoveIndicators(null);
+        this.renderer.updateTokenSelectionGlow(null);
+      }
     } else if (this.uiManager.getSelectedDeployHealth() !== null) {
       this.uiManager.clearSelection();
     } else if (this.uiManager.isDeploymentMenuOpen()) {
@@ -792,9 +928,6 @@ class GameClient {
     }
     if (this.inputHandler) {
       this.inputHandler.dispose();
-    }
-    if (typeof this.guiManager !== 'undefined' && this.guiManager) {
-      this.guiManager.dispose();
     }
     if (this.renderer) {
       this.renderer.dispose();

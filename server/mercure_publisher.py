@@ -113,16 +113,28 @@ class MercurePublisher:
         self, game_id: str, state_data: Dict[str, Any], private: bool = False
     ) -> bool:
         """
-        Publish game state update to Mercure hub.
-
-        Args:
-            game_id: Unique game identifier
-            state_data: Game state data to publish
-            private: If True, only subscribers with valid JWT can receive
-
-        Returns:
-            True if publish succeeded, False otherwise
+        [DEPRECATED] Publish game state update. Use publish_full_state or publish_state_update.
         """
+        return await self._publish_internal(game_id, state_data, private)
+
+    async def publish_full_state(
+        self, game_id: str, state_dict: Dict[str, Any], private: bool = False
+    ) -> bool:
+        """Publish a full state update."""
+        state_dict["type"] = "FULL_STATE"
+        return await self._publish_internal(game_id, state_dict, private)
+
+    async def publish_state_update(
+        self, game_id: str, delta: Dict[str, Any], private: bool = False
+    ) -> bool:
+        """Publish a state delta update."""
+        delta["type"] = "STATE_UPDATE"
+        return await self._publish_internal(game_id, delta, private)
+
+    async def _publish_internal(
+        self, game_id: str, data: Dict[str, Any], private: bool = False
+    ) -> bool:
+        """Internal helper for publishing to Mercure hub."""
         if not self.enabled:
             logger.debug("Mercure disabled, skipping publish")
             return False
@@ -133,10 +145,9 @@ class MercurePublisher:
             client = await self.ensure_client()
 
             # Prepare form data for Mercure
-            # Mercure expects application/x-www-form-urlencoded
             form_data = {
                 "topic": topic,
-                "data": json.dumps(state_data),  # Mercure expects string data
+                "data": json.dumps(data),
             }
 
             if private:

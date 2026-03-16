@@ -775,60 +775,74 @@ class GameServer:
         logger.info(
             f"Broadcasting game state to {len(game_session.network_to_game_id)} players in game {game_session.game_id}"
         )
-        logger.info(
-            f"  Game state before broadcast - current_turn: {game_session.game_state.current_turn_player_id}, turn_phase: {game_session.game_state.turn_phase.name}, turn_number: {game_session.game_state.turn_number}"
-        )
+
+        # Calculate delta if possible
+        current_state = game_session.game_state.to_dict()
+        delta = None
+        if game_session.last_state:
+            delta = game_session.game_state.get_delta(game_session.last_state)
+            if delta:
+                logger.debug(f"Calculated state delta with {len(delta)} changed fields")
+            else:
+                logger.debug("No changes detected in state delta")
+                # Even if no changes, we might want to update last_state or heartbeat
+                # but for now we'll proceed to see if individual sends are needed.
 
         # Import SSE_CAPABLE_CLIENTS for client type checking
         from network.messages import SSE_CAPABLE_CLIENTS
 
         # Publish to Mercure hub for SSE-capable clients
-        # Use a generic state dict suitable for all players
         if game_session.network_to_game_id:
-            # Get first player's state as representative (all get same public state)
-            first_player = next(iter(game_session.network_to_game_id.keys()))
-            mercure_state = game_session.get_game_state_for_player(first_player)
-            if mercure_state:
-                mercure_success = await self.mercure_publisher.publish_game_state(
-                    game_session.game_id, mercure_state
+            # Get perspective for first player (generic for public fields)
+            first_net_id = next(iter(game_session.network_to_game_id.keys()))
+            first_game_id = game_session.network_to_game_id[first_net_id]
+
+            # In SSE, we publish one message for all subscribers of the topic.
+            # We add perspective info that is generic enough or handled by client.
+            if delta:
+                mercure_success = await self.mercure_publisher.publish_state_update(
+                    game_session.game_id, delta
                 )
-                if mercure_success:
-                    logger.debug("Successfully published state to Mercure/SSE")
-                else:
-                    logger.warning(
-                        "Mercure publish failed, all clients will use WebSocket fallback"
-                    )
+            else:
+                full_state = game_session.get_game_state_for_player(first_net_id)
+                mercure_success = await self.mercure_publisher.publish_full_state(
+                    game_session.game_id, full_state
+                )
+
+            if mercure_success:
+                logger.debug("Successfully published to Mercure/SSE")
+            else:
+                logger.warning(
+                    "Mercure publish failed, all clients will use WebSocket fallback"
+                )
 
         # Send to individual players via WebSocket/TCP
-        # In SSE-primary mode: skip SSE-capable clients (they get updates via Mercure)
-        # In dual-channel mode: send to all clients (backward compatibility)
         for net_player_id in game_session.network_to_game_id.keys():
             client_type = self.player_client_types.get(net_player_id)
 
-            # Determine if we should send via WebSocket
-            should_send_websocket = True
-            if self.sse_primary_mode and client_type in SSE_CAPABLE_CLIENTS:
-                # SSE-primary mode: skip WebSocket for SSE-capable clients
-                should_send_websocket = False
-                logger.debug(
-                    f"  -> Skipping FULL_STATE for {net_player_id[:8]} ({client_type.value if client_type else 'UNKNOWN'}) - using SSE"
-                )
+            # In SSE-primary mode: skip SSE-capable clients IF Mercure succeeded
+            if self.sse_primary_mode and client_type in SSE_CAPABLE_CLIENTS and mercure_success:
+                continue
 
-            if should_send_websocket:
+            # Determine whether to send FULL_STATE or STATE_UPDATE
+            # For TCP/Desktop clients, we start with FULL_STATE and can transition to deltas
+            # if we are sure they have the previous state.
+            if delta and game_session.last_state:
+                # Add perspective to delta (though usually constant)
+                # For safety in this phase, we use STATE_UPDATE for deltas
+                state_msg = self.protocol.create_state_update_message(delta)
+                logger.debug(f"  -> Sending STATE_UPDATE to {net_player_id[:8]}")
+            else:
                 state_dict = game_session.get_game_state_for_player(net_player_id)
-                if state_dict:
-                    logger.info(
-                        f"  State dict for {net_player_id[:8]}: turn_phase={state_dict.get('turn_phase')}"
-                    )
-
                 state_msg = self.protocol.create_full_state_message(
                     state_dict, net_player_id
                 )
-                logger.info(
-                    f"  -> Sending FULL_STATE via WebSocket to player {net_player_id[:8]} ({client_type.value if client_type else 'UNKNOWN'})..."
-                )
-                await self._send_to_player(net_player_id, state_msg)
-                logger.info(f"  -> FULL_STATE sent to player {net_player_id[:8]}")
+                logger.debug(f"  -> Sending FULL_STATE to {net_player_id[:8]}")
+
+            await self._send_to_player(net_player_id, state_msg)
+
+        # Update last_state for next broadcast
+        game_session.last_state = current_state
 
         # Clear crystal effect trigger after broadcasting to all clients
         # This prevents the effect from being re-triggered on subsequent broadcasts

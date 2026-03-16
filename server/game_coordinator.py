@@ -56,6 +56,9 @@ class GameSession:
         # Action executor for validating and executing actions
         self.executor = AIActionExecutor()
 
+        # Track last state for delta updates
+        self.last_state: dict | None = None
+
         logger.info(
             f"Created game session {game_id} ({self.game_name}) "
             f"with {num_players} players"

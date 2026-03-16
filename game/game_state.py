@@ -701,6 +701,42 @@ class GameState:
         """Convert game state to JSON string."""
         return json.dumps(self.to_dict())
 
+    def get_delta(self, previous_state_dict: dict | None) -> dict:
+        """
+        Calculate the difference between the current state and a previous state.
+
+        Args:
+            previous_state_dict: The dictionary representation of a previous state,
+                                obtained from to_dict().
+
+        Returns:
+            A dictionary containing only the changes. If previous_state_dict is None,
+            returns the full state.
+        """
+        current_state_dict = self.to_dict()
+        if not previous_state_dict:
+            return current_state_dict
+
+        return self._calculate_dict_delta(previous_state_dict, current_state_dict)
+
+    def _calculate_dict_delta(self, old_dict: dict, new_dict: dict) -> dict:
+        """
+        Recursively calculate the delta between two dictionaries.
+        
+        Returns a dict with keys from new_dict that are different or missing in old_dict.
+        """
+        delta = {}
+        for key, value in new_dict.items():
+            if key not in old_dict:
+                delta[key] = value
+            elif isinstance(value, dict) and isinstance(old_dict.get(key), dict):
+                nested_delta = self._calculate_dict_delta(old_dict[key], value)
+                if nested_delta:
+                    delta[key] = nested_delta
+            elif value != old_dict.get(key):
+                delta[key] = value
+        return delta
+
     @classmethod
     def from_dict(cls, data: dict) -> Self:
         """Create game state from dictionary."""
