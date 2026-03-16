@@ -242,8 +242,18 @@ class MenuGameWindow(AsyncWindow):
             # Show lobby view
             self._show_lobby(is_host=False)
 
+        except ValueError as e:
+            logger.error(f"Invalid game join data: {e}")
+            if self.network_client:
+                await self.network_client.disconnect()
+            self.show_view(self.main_menu)
+        except ConnectionError as e:
+            logger.error(f"Connection lost joining game: {e}")
+            if self.network_client:
+                await self.network_client.disconnect()
+            self.show_view(self.main_menu)
         except Exception as e:
-            logger.error(f"Error joining game: {e}", exc_info=True)
+            logger.error(f"Unexpected error joining game: {e}", exc_info=True)
             if self.network_client:
                 await self.network_client.disconnect()
             self.show_view(self.main_menu)
@@ -300,8 +310,16 @@ class MenuGameWindow(AsyncWindow):
             # Show lobby view
             self._show_lobby(is_host=True)
 
+        except ValueError as e:
+            logger.error(f"Invalid game creation data: {e}")
+            self.show_view(self.main_menu)
+        except ConnectionError as e:
+            logger.error(f"Connection lost creating game: {e}")
+            self.show_view(self.main_menu)
         except Exception as e:
-            logger.error(f"Error connecting/creating game: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error connecting/creating game: {e}", exc_info=True
+            )
             self.show_view(self.main_menu)
 
     def _show_lobby(self, is_host: bool = False):
@@ -356,9 +374,15 @@ class MenuGameWindow(AsyncWindow):
                 logger.info(
                     f"Received initial game state with {len(initial_state.players)} players, {len(initial_state.tokens)} tokens"
                 )
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON in game state: {e}")
+            except ValueError as e:
+                logger.error(f"Invalid game state data: {e}")
+            except KeyError as e:
+                logger.error(f"Missing game state field: {e}")
             except Exception as e:
                 logger.error(
-                    f"Failed to deserialize initial game state: {e}", exc_info=True
+                    f"Unexpected error deserializing game state: {e}", exc_info=True
                 )
 
         # Create network game view with initial state
