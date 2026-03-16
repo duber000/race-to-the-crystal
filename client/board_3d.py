@@ -14,10 +14,20 @@ from pathlib import Path
 from game.board import Board
 from shared.enums import CellType
 from shared.constants import (
-    CELL_SIZE,
-    BOARD_WIDTH,
     BOARD_HEIGHT,
     WALL_HEIGHT,
+    GENERATOR_HEIGHT_3D,
+    CRYSTAL_HEIGHT_3D,
+    MYSTERY_CYLINDER_SEGMENTS,
+    GENERATOR_CRYSTAL_LINE_SEGMENTS,
+    BOARD_GRID_COLOR_3D,
+    GENERATOR_COLOR_3D,
+    CRYSTAL_COLOR_3D,
+    MYSTERY_COLOR_3D,
+    GEN_CRYSTAL_LINE_COLOR_3D,
+    DEPLOYMENT_ZONE_COLOR_3D,
+    VALID_MOVE_COLOR_3D,
+    HOVER_INDICATOR_COLOR_3D,
 )
 
 
@@ -88,9 +98,7 @@ class Board3D:
 
         # Grid and wall parameters
         self.wall_height = WALL_HEIGHT
-        self.grid_color = np.array(
-            [0.0, 0.78, 0.78, 0.7], dtype=np.float32
-        )  # Cyan glow
+        self.grid_color = np.array(BOARD_GRID_COLOR_3D, dtype=np.float32)
 
         # Initialize geometry and shaders
         self._create_shader()
@@ -120,6 +128,9 @@ class Board3D:
             self.shader_program = None
         except ValueError as e:
             print(f"ERROR: Invalid shader source: {e}")
+            self.shader_program = None
+        except FileNotFoundError as e:
+            print(f"ERROR: Shader file not found: {e}")
             self.shader_program = None
         except Exception as e:
             print(f"ERROR: Unexpected error compiling shaders: {e}")
@@ -214,7 +225,7 @@ class Board3D:
             gen_height = self.wall_height * 0.6
 
             # Create line segments from generator to crystal
-            segments = 20
+            segments = GENERATOR_CRYSTAL_LINE_SEGMENTS
             for i in range(segments):
                 t1 = i / segments
                 t2 = (i + 1) / segments
@@ -296,7 +307,6 @@ class Board3D:
                             )
                         )
 
-                    elif cell.cell_type == CellType.MYSTERY:
                         # Mystery as wireframe cylinder (cyan) with coin flip animation
                         animation_progress = self.mystery_animations.get((x, y), 0.0)
                         mystery_vertices.extend(
@@ -332,7 +342,7 @@ class Board3D:
     ) -> list:
         """Create wireframe cube vertices."""
         half = size / 2
-        cube_height = 40.0  # Height of generator cube
+        cube_height = GENERATOR_HEIGHT_3D  # Height of generator cube
 
         # 8 vertices of cube (x, y, z) where y is up
         vertices = [
@@ -377,7 +387,7 @@ class Board3D:
         self, center_x: float, center_y: float, size: float
     ) -> list:
         """Create wireframe diamond/pyramid vertices."""
-        diamond_height = 50.0  # Height of crystal diamond
+        diamond_height = CRYSTAL_HEIGHT_3D  # Height of crystal diamond
 
         # 5 vertices: 4 base corners + 1 apex (x, y, z) where y is up
         vertices = [
@@ -428,7 +438,7 @@ class Board3D:
         Returns:
             List of vertex coordinates
         """
-        segments = 16
+        segments = MYSTERY_CYLINDER_SEGMENTS
         height = self.wall_height * 0.5
 
         vertices = []
@@ -691,7 +701,7 @@ class Board3D:
         # Draw generators (orange cubes)
         if self.generators_vao:
             self.shader_program["base_color"] = np.array(
-                [1.0, 0.65, 0.0, 0.8], dtype=np.float32
+                GENERATOR_COLOR_3D, dtype=np.float32
             )
             self.shader_program["glow_intensity"] = 2.0
             self.generators_vao.render(self.shader_program, mode=self.ctx.LINES)
@@ -699,7 +709,7 @@ class Board3D:
         # Draw crystal (magenta diamond)
         if self.crystal_vao:
             self.shader_program["base_color"] = np.array(
-                [1.0, 0.0, 1.0, 0.9], dtype=np.float32
+                CRYSTAL_COLOR_3D, dtype=np.float32
             )
             self.shader_program["glow_intensity"] = 2.5
             self.crystal_vao.render(self.shader_program, mode=self.ctx.LINES)
@@ -707,7 +717,7 @@ class Board3D:
         # Draw mystery squares (cyan cylinders)
         if self.mystery_vao:
             self.shader_program["base_color"] = np.array(
-                [0.0, 1.0, 1.0, 0.7], dtype=np.float32
+                MYSTERY_COLOR_3D, dtype=np.float32
             )
             self.shader_program["glow_intensity"] = 1.8
             self.mystery_vao.render(self.shader_program, mode=self.ctx.LINES)
@@ -715,7 +725,7 @@ class Board3D:
         # Draw generator to crystal connection lines (orange with glow)
         if self.gen_crystal_lines_vao:
             self.shader_program["base_color"] = np.array(
-                [1.0, 0.65, 0.0, 0.9], dtype=np.float32
+                GEN_CRYSTAL_LINE_COLOR_3D, dtype=np.float32
             )
             self.shader_program["glow_intensity"] = 2.2
             self.gen_crystal_lines_vao.render(self.shader_program, mode=self.ctx.LINES)
@@ -723,8 +733,8 @@ class Board3D:
         # Draw deployment zone indicators (yellow/white brackets)
         if self.deployment_zones_vao:
             self.shader_program["base_color"] = np.array(
-                [1.0, 1.0, 0.6, 0.5],
-                dtype=np.float32,  # Subtle yellow/white
+                DEPLOYMENT_ZONE_COLOR_3D,
+                dtype=np.float32,
             )
             self.shader_program["glow_intensity"] = 1.2
             self.deployment_zones_vao.render(self.shader_program, mode=self.ctx.LINES)
@@ -732,8 +742,8 @@ class Board3D:
         # Draw valid move indicators (green wireframes)
         if self.valid_moves_vao:
             self.shader_program["base_color"] = np.array(
-                [0.0, 1.0, 0.0, 0.7],
-                dtype=np.float32,  # Green
+                VALID_MOVE_COLOR_3D,
+                dtype=np.float32,
             )
             self.shader_program["glow_intensity"] = 1.8
             self.valid_moves_vao.render(self.shader_program, mode=self.ctx.LINES)
@@ -741,8 +751,8 @@ class Board3D:
         # Draw hover indicator (white wireframe, brightest)
         if self.hover_vao:
             self.shader_program["base_color"] = np.array(
-                [1.0, 1.0, 1.0, 0.9],
-                dtype=np.float32,  # White
+                HOVER_INDICATOR_COLOR_3D,
+                dtype=np.float32,
             )
             self.shader_program["glow_intensity"] = 2.5
             self.hover_vao.render(self.shader_program, mode=self.ctx.LINES)

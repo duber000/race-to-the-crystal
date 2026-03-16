@@ -7,7 +7,14 @@ This module handles all 3D rendering including board, tokens, and shaders.
 from client.board_3d import Board3D
 from client.token_3d import Token3D
 from client.phantom_token_3d import PhantomToken3D
-from shared.constants import PLAYER_COLORS
+from game.ai_observation import AIObserver
+from shared.enums import TurnPhase, CrystalEffect
+from shared.constants import (
+    PLAYER_COLORS,
+    CELL_SIZE,
+    WALL_HEIGHT,
+    TOKEN_HEIGHT_3D,
+)
 from shared.logging_config import setup_logger
 from shared.types import TokenID
 
@@ -155,7 +162,9 @@ class Renderer3D:
                     token = game_state.get_token(token_id)
                     if token and token.is_alive and token.is_deployed:
                         try:
-                            token_3d = Token3D(token, player_color, ctx)
+                            token_3d = Token3D(
+                                token, player_color, ctx, self.shader_3d, height=TOKEN_HEIGHT_3D
+                            )
                             self.tokens_3d.append(token_3d)
                         except ValueError as e:
                             logger.error(f"Invalid token data for 3D: {token_id}: {e}")
@@ -179,7 +188,9 @@ class Renderer3D:
                 player = game_state.players[token.player_id]
                 player_color = PLAYER_COLORS[player.color.value]
                 try:
-                    token_3d = Token3D(token, player_color, ctx)
+                    token_3d = Token3D(
+                        token, player_color, ctx, self.shader_3d, height=TOKEN_HEIGHT_3D
+                    )
                     self.tokens_3d.append(token_3d)
                 except ValueError as e:
                     logger.error(f"Invalid token data for 3D: {token.id}: {e}")
@@ -196,7 +207,7 @@ class Renderer3D:
                     game_state.players[phantom.apparent_player_id].color.value
                 ]
                 try:
-                    phantom_3d = PhantomToken3D(phantom, player_color, ctx)
+                    phantom_3d = PhantomToken3D(phantom, player_color, ctx, self.shader_3d)
                     self.phantom_tokens_3d.append(phantom_3d)
                 except Exception as e:
                     logger.error(
@@ -217,7 +228,7 @@ class Renderer3D:
             ctx: OpenGL context from Arcade window
         """
         try:
-            token_3d = Token3D(token, player_color, ctx)
+            token_3d = Token3D(token, player_color, ctx, self.shader_3d, height=TOKEN_HEIGHT_3D)
             self.tokens_3d.append(token_3d)
             logger.debug(f"Added 3D token {token.id}")
         except ValueError as e:

@@ -214,11 +214,16 @@ class AudioManager:
 
         if self.music_playing:
             if self.music_player:
-                self.music_player.pause()  # type: ignore
+                # Use getattr to safely call pause on the player object
+                pause_fn = getattr(self.music_player, "pause", None)
+                if pause_fn:
+                    pause_fn()
             # Pause all generator hums
             for player in self.generator_hum_players:
                 if player:
-                    player.pause()  # type: ignore
+                    pause_fn = getattr(player, "pause", None)
+                    if pause_fn:
+                        pause_fn()
             self.music_playing = False
             logger.info("Music paused")
         else:
@@ -421,12 +426,16 @@ class AudioManager:
         """
         # Pause music
         if self.music_player and self.music_playing:
-            self.music_player.pause()  # type: ignore
+            pause_fn = getattr(self.music_player, "pause", None)
+            if pause_fn:
+                pause_fn()
 
         # Pause all generator hums
         for player in self.generator_hum_players:
             if player:
-                player.pause()  # type: ignore
+                pause_fn = getattr(player, "pause", None)
+                if pause_fn:
+                    pause_fn()
 
     def cleanup(self) -> None:
         """
@@ -436,15 +445,23 @@ class AudioManager:
         """
         # Stop background music
         if self.music_player:
-            self.music_player.pause()  # type: ignore
-            self.music_player.delete()  # type: ignore
+            pause_fn = getattr(self.music_player, "pause", None)
+            if pause_fn:
+                pause_fn()
+            delete_fn = getattr(self.music_player, "delete", None)
+            if delete_fn:
+                delete_fn()
             self.music_player = None
 
         # Stop and delete all generator hum players
         for player in self.generator_hum_players:
             if player:
-                player.pause()  # type: ignore
-                player.delete()  # type: ignore
+                pause_fn = getattr(player, "pause", None)
+                if pause_fn:
+                    pause_fn()
+                delete_fn = getattr(player, "delete", None)
+                if delete_fn:
+                    delete_fn()
         self.generator_hum_players.clear()
         self.generator_hums.clear()
 

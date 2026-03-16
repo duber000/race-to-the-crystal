@@ -33,6 +33,11 @@ from shared.constants import (
     CHAT_WIDGET_Y,
     MYSTERY_ANIMATION_DURATION,
     PLAYER_COLORS,
+    HUD_BACKGROUND_COLOR,
+    HUD_HEIGHT,
+    HUD_TEXT_COLOR_PRIMARY,
+    HUD_TEXT_COLOR_SECONDARY,
+    HUD_TEXT_COLOR_TERTIARY,
 )
 from shared.enums import TurnPhase, GamePhase, CrystalEffect
 from shared.logging_config import setup_logger
@@ -102,13 +107,17 @@ class GameView(arcade.View):
             font_size=24,
             bold=True,
         )
-        self.turn_text = arcade.Text("", 10, 0, (200, 200, 200), font_size=16)
-        self.phase_text = arcade.Text("", 200, 0, (200, 200, 200), font_size=16)
+        self.turn_text = arcade.Text(
+            "", 10, 0, HUD_TEXT_COLOR_SECONDARY, font_size=16
+        )
+        self.phase_text = arcade.Text(
+            "", 200, 0, HUD_TEXT_COLOR_SECONDARY, font_size=16
+        )
         self.instruction_text = arcade.Text(
             "",
             0,
             0,  # X and Y will be updated in _draw_hud
-            (150, 150, 150),
+            HUD_TEXT_COLOR_TERTIARY,
             font_size=14,
         )
 
@@ -249,7 +258,8 @@ class GameView(arcade.View):
             )
 
         # Set up camera to fit entire board in view
-        self.camera_controller.setup_initial_view(self.window.width, self.window.height)  # type: ignore
+        assert self.camera_controller is not None
+        self.camera_controller.setup_initial_view(self.window.width, self.window.height)
 
         # Load and play background music (only if enabled and not already loaded)
         self.audio_manager.music_playing = self.music_enabled
@@ -257,7 +267,8 @@ class GameView(arcade.View):
             self.audio_manager.load_background_music()
 
         # Build initial UI
-        self.ui_manager.rebuild_visuals(self.game_state)  # type: ignore
+        assert self.ui_manager is not None
+        self.ui_manager.rebuild_visuals(self.game_state)
 
         logger.info("Window setup complete")
 
@@ -277,9 +288,9 @@ class GameView(arcade.View):
         arcade.draw_lrbt_rectangle_filled(
             0,
             self.window.width,
-            self.window.height - 80,
+            self.window.height - HUD_HEIGHT,
             self.window.height,
-            (20, 20, 30, 200),  # Semi-transparent dark background
+            HUD_BACKGROUND_COLOR,
         )
 
         # Current player info
@@ -304,10 +315,12 @@ class GameView(arcade.View):
 
         # Instructions (check if input_handler exists)
         if self.input_handler:
-            if self.deployment_controller.selected_deploy_health:  # type: ignore
-                instruction = f"Selected {self.deployment_controller.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"  # type: ignore
+            assert self.deployment_controller is not None
+            assert self.camera_controller is not None
+            if self.deployment_controller.selected_deploy_health:
+                instruction = f"Selected {self.deployment_controller.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"
             elif self.input_handler.turn_phase == TurnPhase.MOVEMENT:
-                if self.camera_controller.camera_mode == "3D":  # type: ignore
+                if self.camera_controller.camera_mode == "3D":
                     instruction = "Hold LMB to move | Click token to select | RMB drag to look/pan"
                 else:
                     instruction = (
@@ -324,13 +337,14 @@ class GameView(arcade.View):
 
         self.instruction_text.text = instruction
         self.instruction_text.x = self.window.width - 700
-        self.instruction_text.y = self.window.height - 60
+        self.instruction_text.y = self.window.height - HUD_HEIGHT + 20
         self.instruction_text.draw()
 
         # Draw corner indicator for deployment area
         current_player = self.game_state.get_current_player()
         if current_player:
-            self.deployment_controller.draw_indicator(current_player)  # type: ignore
+            assert self.deployment_controller is not None
+            self.deployment_controller.draw_indicator(current_player)
 
     def on_draw(self):
         """
@@ -345,9 +359,11 @@ class GameView(arcade.View):
         # Clear the window (color buffer and depth buffer)
         self.clear()
 
-        if self.camera_controller.camera_mode == "2D":  # type: ignore
+        assert self.camera_controller is not None
+
+        if self.camera_controller.camera_mode == "2D":
             # 2D top-down rendering
-            self.renderer_2d.draw(self.camera_controller.camera_2d)  # type: ignore
+            self.renderer_2d.draw(self.camera_controller.camera_2d)
         else:
             # 3D first-person rendering - enable depth test and blending
             self.window.ctx.enable(self.window.ctx.DEPTH_TEST)
@@ -356,10 +372,11 @@ class GameView(arcade.View):
 
             if self.renderer_3d.is_available():
                 # Update camera to follow controlled token
-                self.camera_controller.update_3d_camera(self.game_state)  # type: ignore
+                self.camera_controller.update_3d_camera(self.game_state)
 
                 # Update hover and valid move indicators for 3D
                 if self.renderer_3d.board_3d:
+                    assert self.input_handler is not None
                     self.renderer_3d.board_3d.update_hover_indicator(
                         self.input_handler.hovered_grid_pos
                     )
@@ -368,7 +385,7 @@ class GameView(arcade.View):
                     )
 
                 # Draw 3D rendering
-                self.renderer_3d.draw(self.camera_controller.camera_3d)  # type: ignore
+                self.renderer_3d.draw(self.camera_controller.camera_3d)
 
             # Reset state for UI
             self.window.ctx.disable(self.window.ctx.DEPTH_TEST)
@@ -377,9 +394,10 @@ class GameView(arcade.View):
         if self.crystal_effect_animator.is_animating() and self.game_state.crystal:
             # Convert crystal grid position to screen position
             crystal_pos = self.game_state.crystal.position
-            if self.camera_controller.camera_mode == "2D":  # type: ignore
+            assert self.camera_controller is not None
+            if self.camera_controller.camera_mode == "2D":
                 # Use camera transform for 2D mode
-                with self.camera_controller.camera_2d.activate():  # type: ignore
+                with self.camera_controller.camera_2d.activate():
                     from shared.constants import CELL_SIZE
                     screen_x = crystal_pos[0] * CELL_SIZE + CELL_SIZE / 2
                     screen_y = crystal_pos[1] * CELL_SIZE + CELL_SIZE / 2
@@ -388,16 +406,18 @@ class GameView(arcade.View):
                 # For 3D mode, draw in screen space
                 # Project 3D crystal position to screen coordinates
                 # For now, use a fixed center position
-                with self.camera_controller.ui_camera.activate():  # type: ignore
+                with self.camera_controller.ui_camera.activate():
                     screen_x = self.window.width / 2
                     screen_y = self.window.height / 2
                     self.crystal_effect_animator.draw(screen_x, screen_y)
 
         # Draw UI (no camera transform) - always in 2D
-        with self.camera_controller.ui_camera.activate():  # type: ignore
+        assert self.camera_controller is not None
+        with self.camera_controller.ui_camera.activate():
             self.ui_sprites.draw()
             self._draw_hud()
-            self.ui_manager.draw()  # type: ignore
+            assert self.ui_manager is not None
+            self.ui_manager.draw()
 
         # Draw chat widget (in UI space)
         if self.chat_widget:
@@ -407,14 +427,15 @@ class GameView(arcade.View):
         # Draw corner menu if open (in UI space around R hexagon)
         # Works in both 2D and 3D modes
         # Draw deployment menu if open
-        if self.deployment_controller.menu_open:  # type: ignore
-            with self.camera_controller.ui_camera.activate():  # type: ignore
+        assert self.deployment_controller is not None
+        if self.deployment_controller.menu_open:
+            with self.camera_controller.ui_camera.activate():
                 current_player = self.game_state.get_current_player()
                 if current_player:
                     reserve_counts = self.game_state.get_reserve_token_counts(
                         current_player.id
                     )
-                    self.deployment_controller.draw_menu(current_player, reserve_counts)  # type: ignore
+                    self.deployment_controller.draw_menu(current_player, reserve_counts)
 
     def on_update(self, delta_time: float):
         """
@@ -530,9 +551,11 @@ class GameView(arcade.View):
             crystal_pos = (
                 self.renderer_2d.crystal.position if self.renderer_2d.crystal else None
             )
+            assert self.renderer_2d.board is not None
+            assert self.renderer_2d.generators is not None
             self.renderer_2d.board_shapes = create_board_shapes(
-                self.renderer_2d.board,  # type: ignore
-                generators=self.renderer_2d.generators,  # type: ignore
+                self.renderer_2d.board,
+                generators=self.renderer_2d.generators,
                 crystal_pos=crystal_pos,
                 mystery_animations=self.mystery_animations,
             )

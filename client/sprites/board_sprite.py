@@ -13,7 +13,18 @@ import math
 import time
 
 from game.board import Board
-from shared.constants import CELL_SIZE, BOARD_WIDTH, BOARD_HEIGHT
+from shared.constants import (
+    CELL_SIZE,
+    BOARD_WIDTH,
+    BOARD_HEIGHT,
+    GENERATOR_COLOR_3D,
+    CRYSTAL_COLOR_3D,
+    MYSTERY_COLOR_3D,
+    GEN_CRYSTAL_LINE_COLOR_3D,
+    DEPLOYMENT_ZONE_COLOR_3D,
+    GRID_LINE_COLOR,
+    GRID_LINE_WIDTH,
+)
 from shared.enums import CellType
 
 
@@ -112,8 +123,8 @@ def create_board_shapes(
     if mystery_animations is None:
         mystery_animations = {}
 
-    # Bright neon grid lines for vector arcade look
-    grid_color = (0, 200, 200, 180)  # Brighter cyan with transparency
+    # Neon grid lines for vector arcade look
+    grid_color = GRID_LINE_COLOR
 
     # Draw vertical grid lines with glow
     for x in range(BOARD_WIDTH + 1):
@@ -127,7 +138,7 @@ def create_board_shapes(
             )
             shape_list.append(line)
         # Main bright line
-        line = create_line(x_pos, 0, x_pos, BOARD_HEIGHT * CELL_SIZE, grid_color, 2)
+        line = create_line(x_pos, 0, x_pos, BOARD_HEIGHT * CELL_SIZE, grid_color, GRID_LINE_WIDTH + 1)
         shape_list.append(line)
 
     # Draw horizontal grid lines with glow
@@ -142,7 +153,7 @@ def create_board_shapes(
             )
             shape_list.append(line)
         # Main bright line
-        line = create_line(0, y_pos, BOARD_WIDTH * CELL_SIZE, y_pos, grid_color, 2)
+        line = create_line(0, y_pos, BOARD_WIDTH * CELL_SIZE, y_pos, grid_color, GRID_LINE_WIDTH + 1)
         shape_list.append(line)
 
     # Draw special cells with wireframe vector graphics
@@ -177,7 +188,12 @@ def create_board_shapes(
                                 points[j][1],
                                 points[j + 1][0],
                                 points[j + 1][1],
-                                (255, 165, 0, alpha),
+                                (
+                                    int(GENERATOR_COLOR_3D[0] * 255),
+                                    int(GENERATOR_COLOR_3D[1] * 255),
+                                    int(GENERATOR_COLOR_3D[2] * 255),
+                                    alpha,
+                                ),
                                 max(1, 4 - i // 3),  # Thicker outer glow
                             )
                             shape_list.append(line)
