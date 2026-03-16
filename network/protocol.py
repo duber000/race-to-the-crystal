@@ -241,6 +241,8 @@ class ProtocolHandler:
         data = message.data or {}
 
         if action_type == MessageType.MOVE:
+            if data.get("destination") is None:
+                raise ValueError("MOVE message missing required 'destination' field")
             return MoveAction(
                 token_id=data["token_id"], destination=tuple(data["destination"])
             )
@@ -249,6 +251,8 @@ class ProtocolHandler:
                 attacker_id=data["attacker_id"], defender_id=data["defender_id"]
             )
         elif action_type == MessageType.DEPLOY:
+            if data.get("position") is None:
+                raise ValueError("DEPLOY message missing required 'position' field")
             return DeployAction(
                 health_value=data["health_value"], position=tuple(data["position"])
             )

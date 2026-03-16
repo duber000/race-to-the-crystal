@@ -32,24 +32,20 @@ class AudioManager {
         this.activeSoundPlayers = [];
 
         // Audio file paths
-        this.musicPath = 'assets/music/techno.mp3';
+        this.musicPath = '/static/assets/music/techno.mp3';
         this.generatorHumPaths = [
-            'assets/music/generator_0_hum.wav',
-            'assets/music/generator_1_hum.wav',
-            'assets/music/generator_2_hum.wav',
-            'assets/music/generator_3_hum.wav',
+            '/static/assets/music/generator_0_hum.wav',
+            '/static/assets/music/generator_1_hum.wav',
+            '/static/assets/music/generator_2_hum.wav',
+            '/static/assets/music/generator_3_hum.wav',
         ];
         this.soundEffectPaths = {
-            move: 'assets/sounds/sliding.wav',
-            deploy: 'assets/sounds/sliding.wav',
-            attack: 'assets/sounds/flushing.wav',
-            mystery: 'assets/sounds/mystery_bing.wav',
-            generator_explosion: 'assets/sounds/generator_explosion.wav',
-            crystal_shatter: 'assets/sounds/crystal_shatter.wav',
-            fog_horn: 'assets/sounds/fog_horn.wav',
-            ghost: 'assets/sounds/ghost.wav',
-            lightning: 'assets/sounds/lightning.wav',
-            whoosh: 'assets/sounds/whoosh.wav',
+            move: '/static/assets/sounds/sliding.wav',
+            deploy: '/static/assets/sounds/sliding.wav',
+            attack: '/static/assets/sounds/flushing.wav',
+            mystery: '/static/assets/sounds/mystery_bing.wav',
+            generator_explosion: '/static/assets/sounds/generator_explosion.wav',
+            crystal_shatter: '/static/assets/sounds/crystal_shatter.wav',
         };
     }
 
