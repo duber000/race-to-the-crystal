@@ -11,6 +11,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 
+import aiohttp
 from aiohttp import WSMsgType, web
 
 from network.messages import MessageType, ClientType
@@ -115,8 +116,16 @@ class WebSocketHandler:
                     logger.info(f"WebSocket client {client_id} requested close")
                     break
 
+        except aiohttp.WSServerHandshakeError as e:
+            logger.error(f"WebSocket handshake failed for {client_id}: {e}")
+        except ConnectionResetError as e:
+            logger.warning(f"Connection reset by {client_id}: {e}")
+        except aiohttp.ClientError as e:
+            logger.error(f"WebSocket client error for {client_id}: {e}")
         except Exception as e:
-            logger.error(f"WebSocket handler error for {client_id}: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected WebSocket error for {client_id}: {e}", exc_info=True
+            )
         finally:
             await self._handle_disconnect(client)
             # Release connection rate limit slot
@@ -172,8 +181,16 @@ class WebSocketHandler:
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON from {client.client_id}: {e}")
             await self._send_error(client, "Invalid JSON format")
+        except ValueError as e:
+            logger.warning(f"Invalid message data from {client.client_id}: {e}")
+            await self._send_error(client, f"Invalid request: {e}")
+        except KeyError as e:
+            logger.warning(f"Missing message field from {client.client_id}: {e}")
+            await self._send_error(client, f"Missing field: {e}")
         except Exception as e:
-            logger.error(f"Error handling WebSocket message: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error handling WebSocket message: {e}", exc_info=True
+            )
             await self._send_error(client, f"Server error: {e}")
 
     async def _delegate_to_server(
@@ -448,8 +465,14 @@ class WebSocketHandler:
                     logger.info(
                         f"[WebSocket] Sent FULL_STATE to {player_id[:8]} (fallback mode)"
                     )
+            except aiohttp.ClientError as e:
+                logger.warning(f"WebSocket error sending fallback state: {e}")
+            except ConnectionError as e:
+                logger.warning(f"Connection lost sending fallback state: {e}")
             except Exception as e:
-                logger.error(f"Error sending fallback state to client: {e}")
+                logger.error(
+                    f"Unexpected error sending fallback state: {e}", exc_info=True
+                )
 
     async def _handle_chat(self, client: WebSocketClient, data: dict) -> None:
         """Handle chat message from web client."""
@@ -512,8 +535,12 @@ class WebSocketHandler:
                 try:
                     if client.websocket:
                         await client.websocket.send_json(message)
+                except aiohttp.ClientError as e:
+                    logger.warning(f"WebSocket error broadcasting: {e}")
+                except ConnectionError as e:
+                    logger.warning(f"Connection lost broadcasting: {e}")
                 except Exception as e:
-                    logger.error(f"Error broadcasting to client: {e}")
+                    logger.error(f"Unexpected error broadcasting: {e}", exc_info=True)
 
     async def _broadcast_game_state(self, game_session) -> None:
         """Broadcast updated game state to all clients in the game."""
@@ -573,8 +600,14 @@ class WebSocketHandler:
                         logger.info(
                             f"[WebSocket] Successfully sent state to {net_player_id[:8]}"
                         )
+                    except aiohttp.ClientError as e:
+                        logger.warning(f"WebSocket error sending state: {e}")
+                    except ConnectionError as e:
+                        logger.warning(f"Connection lost sending state: {e}")
                     except Exception as e:
-                        logger.error(f"Error sending state to client: {e}")
+                        logger.error(
+                            f"Unexpected error sending state: {e}", exc_info=True
+                        )
             else:
                 logger.warning(
                     f"[WebSocket] Player {net_player_id[:8]} not in clients dict, delegating to game_server"
@@ -612,8 +645,12 @@ class WebSocketHandler:
         try:
             if client.websocket:
                 await client.websocket.send_json(response)
+        except aiohttp.ClientError as e:
+            logger.warning(f"WebSocket error sending error message: {e}")
+        except ConnectionError as e:
+            logger.warning(f"Connection lost sending error message: {e}")
         except Exception as e:
-            logger.error(f"Error sending error message: {e}")
+            logger.error(f"Unexpected error sending error message: {e}", exc_info=True)
 
     def get_client_count(self) -> int:
         """Get number of connected clients."""

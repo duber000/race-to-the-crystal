@@ -71,8 +71,12 @@ class ServerRunner:
 
         except asyncio.CancelledError:
             logger.info("Server task cancelled")
+        except KeyboardInterrupt:
+            logger.info("Server interrupted by user")
+        except OSError as e:
+            logger.error(f"Socket error: {e}")
         except Exception as e:
-            logger.error(f"Server error: {e}", exc_info=True)
+            logger.error(f"Unexpected server error: {e}", exc_info=True)
         finally:
             await self.server.stop()
             if self.unified:

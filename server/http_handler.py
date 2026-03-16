@@ -288,8 +288,17 @@ class HTTPHandler:
             )
 
         except ValueError as e:
-            logger.error(f"Error joining game via HTTP: {e}")
+            logger.error(f"Validation error in HTTP join: {e}")
             return web.json_response({"error": str(e)}, status=400)
+        except KeyError as e:
+            logger.error(f"Missing field in HTTP join: {e}")
+            return web.json_response({"error": "Missing required field"}, status=400)
+        except jwt.InvalidTokenError as e:
+            if "exp" in str(e).lower():
+                logger.warning(f"Token expired: {e}")
+                return web.json_response({"error": "Token expired"}, status=401)
+            logger.warning(f"Invalid JWT token: {e}")
+            return web.json_response({"error": "Invalid token"}, status=401)
         except Exception as e:
             logger.error(f"Unexpected error in HTTP join: {e}", exc_info=True)
             return web.json_response({"error": "Internal server error"}, status=500)
@@ -476,8 +485,17 @@ class HTTPHandler:
             )
 
         except ValueError as e:
-            logger.error(f"Error processing HTTP action: {e}")
+            logger.error(f"Validation error in HTTP action: {e}")
             return web.json_response({"error": str(e)}, status=400)
+        except KeyError as e:
+            logger.error(f"Missing field in HTTP action: {e}")
+            return web.json_response({"error": "Missing required field"}, status=400)
+        except jwt.InvalidTokenError as e:
+            if "exp" in str(e).lower():
+                logger.warning(f"Token expired: {e}")
+                return web.json_response({"error": "Token expired"}, status=401)
+            logger.warning(f"Invalid JWT token: {e}")
+            return web.json_response({"error": "Invalid token"}, status=401)
         except Exception as e:
             logger.error(f"Unexpected error in HTTP action: {e}", exc_info=True)
             return web.json_response({"error": "Internal server error"}, status=500)

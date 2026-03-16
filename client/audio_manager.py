@@ -94,10 +94,20 @@ class AudioManager:
                             self.music_volume, loop=True
                         )
                         logger.info("Generated background music playing (looping)")
+                except FileNotFoundError as e:
+                    logger.warning(f"Generated music file not found: {e}")
+                except OSError as e:
+                    logger.error(f"OS error generating music: {e}")
                 except Exception as e:
-                    logger.error(f"Error generating music: {e}")
+                    logger.error(
+                        f"Unexpected error generating music: {e}", exc_info=True
+                    )
+        except FileNotFoundError as e:
+            logger.warning(f"Music file not found: {e}")
+        except OSError as e:
+            logger.error(f"OS error loading music: {e}")
         except Exception as e:
-            logger.error(f"Error loading background music: {e}")
+            logger.error(f"Unexpected error loading music: {e}", exc_info=True)
 
         # Load and play generator hum tracks
         self._load_generator_hums()
@@ -129,8 +139,14 @@ class AudioManager:
                 else:
                     logger.warning(f"Sound effect file not found: {path}")
                     self.sound_effects[name] = None
+            except FileNotFoundError as e:
+                logger.warning(f"Sound effect file not found: {path}: {e}")
+            except OSError as e:
+                logger.error(f"OS error loading sound effect: {e}")
             except Exception as e:
-                logger.error(f"Error loading sound effect {name}: {e}")
+                logger.error(
+                    f"Unexpected error loading sound effect: {e}", exc_info=True
+                )
                 self.sound_effects[name] = None
 
     def _load_generator_hums(self) -> None:
@@ -159,8 +175,14 @@ class AudioManager:
                 self.generator_hums.append(hum_sound)
                 self.generator_hum_players.append(hum_player)
                 logger.info(f"✓ Generator {gen_id} hum loaded and playing")
+            except FileNotFoundError as e:
+                logger.error(f"Generator hum file not found: {e}")
+            except OSError as e:
+                logger.error(f"OS error loading generator hum: {e}")
             except Exception as e:
-                logger.error(f"Error loading generator {gen_id} hum: {e}")
+                logger.error(
+                    f"Unexpected error loading generator hum: {e}", exc_info=True
+                )
                 import traceback
 
                 traceback.print_exc()
@@ -247,8 +269,14 @@ class AudioManager:
                             player.delete()
                             self.generator_hum_players[gen_id] = None
                             logger.debug(f"  Generator {gen_id} DISABLED - HUM STOPPED")
+                        except AttributeError as e:
+                            logger.debug(f"Player already None: {e}")
+                        except OSError as e:
+                            logger.error(f"OS error stopping hum: {e}")
                         except Exception as e:
-                            logger.error(f"  Error stopping hum: {e}")
+                            logger.error(
+                                f"Unexpected error managing hum: {e}", exc_info=True
+                            )
                     else:
                         logger.debug(f"  Generator {gen_id} active - hum playing")
                 elif (
@@ -262,8 +290,14 @@ class AudioManager:
                             self.generator_hum_volume, loop=True
                         )
                         logger.debug(f"  Generator {gen_id} freed - HUM RESTARTED")
+                    except AttributeError as e:
+                        logger.debug(f"Hum sound not loaded: {e}")
+                    except OSError as e:
+                        logger.error(f"OS error restarting hum: {e}")
                     except Exception as e:
-                        logger.error(f"  Error restarting hum: {e}")
+                        logger.error(
+                            f"Unexpected error managing hum: {e}", exc_info=True
+                        )
                 elif generator.is_disabled and hum_sound:
                     # Player is None but generator is disabled (already stopped)
                     logger.debug(
@@ -286,8 +320,12 @@ class AudioManager:
                     if len(self.sound_effect_players) > 20:
                         self.sound_effect_players.pop(0)
                 logger.debug("Playing sliding sound effect")
+            except AttributeError as e:
+                logger.debug(f"Sound effect not loaded: {e}")
+            except OSError as e:
+                logger.error(f"OS error playing sound: {e}")
             except Exception as e:
-                logger.error(f"Error playing sliding sound: {e}")
+                logger.error(f"Unexpected error playing sound: {e}", exc_info=True)
 
     def play_mystery_bing_sound(self) -> None:
         """Play the mystery bing sound effect for landing on mystery squares."""
@@ -302,8 +340,12 @@ class AudioManager:
                     if len(self.sound_effect_players) > 20:
                         self.sound_effect_players.pop(0)
                 logger.debug("Playing mystery bing sound effect")
+            except AttributeError as e:
+                logger.debug(f"Sound effect not loaded: {e}")
+            except OSError as e:
+                logger.error(f"OS error playing sound: {e}")
             except Exception as e:
-                logger.error(f"Error playing mystery bing sound: {e}")
+                logger.error(f"Unexpected error playing sound: {e}", exc_info=True)
 
     def play_generator_explosion_sound(self) -> None:
         """Play the generator explosion sound effect for capturing generators."""
@@ -322,8 +364,12 @@ class AudioManager:
                     if len(self.sound_effect_players) > 20:
                         self.sound_effect_players.pop(0)
                 logger.debug("Playing generator explosion sound effect")
+            except AttributeError as e:
+                logger.debug(f"Sound effect not loaded: {e}")
+            except OSError as e:
+                logger.error(f"OS error playing sound: {e}")
             except Exception as e:
-                logger.error(f"Error playing generator explosion sound: {e}")
+                logger.error(f"Unexpected error playing sound: {e}", exc_info=True)
 
     def play_crystal_shatter_sound(self) -> None:
         """Play the crystal shatter sound effect for capturing the crystal."""
@@ -341,8 +387,12 @@ class AudioManager:
                     if len(self.sound_effect_players) > 20:
                         self.sound_effect_players.pop(0)
                 logger.debug("Playing crystal shatter sound effect")
+            except AttributeError as e:
+                logger.debug(f"Sound effect not loaded: {e}")
+            except OSError as e:
+                logger.error(f"OS error playing sound: {e}")
             except Exception as e:
-                logger.error(f"Error playing crystal shatter sound: {e}")
+                logger.error(f"Unexpected error playing sound: {e}", exc_info=True)
 
     def play_flushing_sound(self) -> None:
         """Play the flushing sound effect for defeating enemy tokens."""
@@ -355,8 +405,12 @@ class AudioManager:
                     if len(self.sound_effect_players) > 20:
                         self.sound_effect_players.pop(0)
                 logger.debug("Playing flushing sound effect")
+            except AttributeError as e:
+                logger.debug(f"Sound effect not loaded: {e}")
+            except OSError as e:
+                logger.error(f"OS error playing sound: {e}")
             except Exception as e:
-                logger.error(f"Error playing flushing sound: {e}")
+                logger.error(f"Unexpected error playing sound: {e}", exc_info=True)
 
     def pause_all(self) -> None:
         """
@@ -400,8 +454,14 @@ class AudioManager:
                 try:
                     player.pause()
                     player.delete()
+                except AttributeError as e:
+                    logger.debug(f"Player already None: {e}")
+                except OSError as e:
+                    logger.error(f"OS error in sound operation: {e}")
                 except Exception as e:
-                    logger.error(f"Error cleaning up sound player: {e}", exc_info=True)
+                    logger.error(
+                        f"Unexpected error in sound operation: {e}", exc_info=True
+                    )
         self.sound_effect_players.clear()
 
         # Clear sound effects
@@ -419,8 +479,12 @@ class AudioManager:
                     if len(self.sound_effect_players) > 20:
                         self.sound_effect_players.pop(0)
                 logger.debug("Playing fog horn sound effect")
+            except AttributeError as e:
+                logger.debug(f"Sound effect not loaded: {e}")
+            except OSError as e:
+                logger.error(f"OS error playing sound: {e}")
             except Exception as e:
-                logger.error(f"Error playing fog horn sound: {e}")
+                logger.error(f"Unexpected error playing sound: {e}", exc_info=True)
 
     def play_ghost_sound(self) -> None:
         """Play the ghost sound effect for PHANTOM_ENEMIES crystal effect."""
@@ -432,8 +496,12 @@ class AudioManager:
                     if len(self.sound_effect_players) > 20:
                         self.sound_effect_players.pop(0)
                 logger.debug("Playing ghost sound effect")
+            except AttributeError as e:
+                logger.debug(f"Sound effect not loaded: {e}")
+            except OSError as e:
+                logger.error(f"OS error playing sound: {e}")
             except Exception as e:
-                logger.error(f"Error playing ghost sound: {e}")
+                logger.error(f"Unexpected error playing sound: {e}", exc_info=True)
 
     def play_lightning_sound(self) -> None:
         """Play the lightning sound effect for DAMAGE_BOOST crystal effect."""
@@ -445,8 +513,12 @@ class AudioManager:
                     if len(self.sound_effect_players) > 20:
                         self.sound_effect_players.pop(0)
                 logger.debug("Playing lightning sound effect")
+            except AttributeError as e:
+                logger.debug(f"Sound effect not loaded: {e}")
+            except OSError as e:
+                logger.error(f"OS error playing sound: {e}")
             except Exception as e:
-                logger.error(f"Error playing lightning sound: {e}")
+                logger.error(f"Unexpected error playing sound: {e}", exc_info=True)
 
     def play_whoosh_sound(self) -> None:
         """Play the whoosh sound effect for SPEED_BOOST crystal effect."""
@@ -458,5 +530,9 @@ class AudioManager:
                     if len(self.sound_effect_players) > 20:
                         self.sound_effect_players.pop(0)
                 logger.debug("Playing whoosh sound effect")
+            except AttributeError as e:
+                logger.debug(f"Sound effect not loaded: {e}")
+            except OSError as e:
+                logger.error(f"OS error playing sound: {e}")
             except Exception as e:
-                logger.error(f"Error playing whoosh sound: {e}")
+                logger.error(f"Unexpected error playing sound: {e}", exc_info=True)

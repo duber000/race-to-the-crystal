@@ -43,9 +43,7 @@ class MercureConfig:
             "MERCURE_HUB_URL", "http://localhost:3000/.well-known/mercure"
         )
         publisher_jwt = os.getenv("MERCURE_PUBLISHER_JWT", "")
-        topic_prefix = os.getenv(
-            "MERCURE_TOPIC_PREFIX", "https://api.game.com/game"
-        )
+        topic_prefix = os.getenv("MERCURE_TOPIC_PREFIX", "https://api.game.com/game")
 
         if not publisher_jwt:
             logger.warning(
@@ -166,13 +164,14 @@ class MercurePublisher:
                 )
                 return False
 
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error from Mercure hub: {e.status_code}: {e}")
+            return False
         except httpx.RequestError as e:
-            logger.warning(f"Failed to publish to Mercure hub: {e}")
+            logger.warning(f"Request error publishing to Mercure: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"Unexpected error publishing to Mercure: {e}", exc_info=True
-            )
+            logger.error(f"Unexpected error publishing to Mercure: {e}", exc_info=True)
             return False
 
     async def publish_action_event(

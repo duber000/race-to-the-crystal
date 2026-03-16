@@ -48,7 +48,11 @@ class Connection:
             self.remote_address = (
                 f"{peername[0]}:{peername[1]}" if peername else "unknown"
             )
-        except Exception:
+        except OSError:
+            # Socket not connected yet
+            self.remote_address = "unknown"
+        except AttributeError:
+            # Writer closed
             self.remote_address = "unknown"
 
         logger.info(f"Connection created: {connection_id} from {self.remote_address}")
@@ -86,8 +90,20 @@ class Connection:
             )
             return True
 
+        except ConnectionResetError as e:
+            logger.warning(f"Connection reset by peer: {self.connection_id}: {e}")
+            await self.close()
+            return False
+        except BrokenPipeError as e:
+            logger.warning(f"Broken pipe sending to {self.connection_id}: {e}")
+            await self.close()
+            return False
+        except asyncio.IncompleteReadError as e:
+            logger.warning(f"Incomplete read sending to {self.connection_id}: {e}")
+            await self.close()
+            return False
         except Exception as e:
-            logger.error(f"Error sending message to {self.connection_id}: {e}")
+            logger.error(f"Unexpected error sending message: {e}", exc_info=True)
             await self.close()
             return False
 
@@ -130,8 +146,20 @@ class Connection:
 
                 self.buffer += chunk
 
+        except ConnectionResetError as e:
+            logger.warning(f"Connection reset by peer: {self.connection_id}: {e}")
+            await self.close()
+            return None
+        except asyncio.IncompleteReadError as e:
+            logger.warning(f"Incomplete read from {self.connection_id}: {e}")
+            await self.close()
+            return None
+        except asyncio.CancelledError:
+            logger.info(f"Receive cancelled for {self.connection_id}")
+            await self.close()
+            return None
         except Exception as e:
-            logger.error(f"Error receiving message from {self.connection_id}: {e}")
+            logger.error(f"Unexpected error receiving message: {e}", exc_info=True)
             await self.close()
             return None
 
@@ -159,14 +187,28 @@ class Connection:
                 # Call handler
                 try:
                     await handler(message)
+                except ValueError as e:
+                    logger.warning(
+                        f"Invalid message data from {self.connection_id}: {e}"
+                    )
+                except KeyError as e:
+                    logger.warning(
+                        f"Missing message field from {self.connection_id}: {e}"
+                    )
                 except Exception as e:
                     logger.error(
-                        f"Error in message handler for {self.connection_id}: {e}",
+                        f"Unexpected error in message handler: {e}",
                         exc_info=True,
                     )
 
+        except ConnectionError as e:
+            logger.warning(
+                f"Connection lost in message loop: {self.connection_id}: {e}"
+            )
+        except asyncio.CancelledError:
+            logger.info(f"Message loop cancelled for {self.connection_id}")
         except Exception as e:
-            logger.error(f"Message loop error for {self.connection_id}: {e}")
+            logger.error(f"Unexpected message loop error: {e}", exc_info=True)
         finally:
             await self.close()
 
@@ -181,8 +223,12 @@ class Connection:
             self.writer.close()
             await self.writer.wait_closed()
             logger.info(f"Connection closed: {self.connection_id}")
+        except BrokenPipeError as e:
+            logger.warning(f"Already closed {self.connection_id}: {e}")
+        except OSError as e:
+            logger.warning(f"Socket error closing {self.connection_id}: {e}")
         except Exception as e:
-            logger.error(f"Error closing connection {self.connection_id}: {e}")
+            logger.error(f"Unexpected error closing connection: {e}", exc_info=True)
 
     def is_closed(self) -> bool:
         """Check if connection is closed."""

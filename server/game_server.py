@@ -6,6 +6,7 @@ and game coordination.
 """
 
 import asyncio
+import json
 import logging
 import os
 import time
@@ -182,8 +183,16 @@ class GameServer:
         except asyncio.TimeoutError:
             logger.warning(f"Connection timeout for {conn_id}")
             await connection.close()
+        except ConnectionError as e:
+            logger.error(f"Connection failed for {conn_id}: {e}")
+            await connection.close()
+        except OSError as e:
+            logger.error(f"Socket error for {conn_id}: {e}")
+            await connection.close()
         except Exception as e:
-            logger.error(f"Error handling connection {conn_id}: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error handling connection {conn_id}: {e}", exc_info=True
+            )
             await connection.close()
         finally:
             self.connection_pool.remove_connection(conn_id)
@@ -457,10 +466,17 @@ class GameServer:
                 self._message_routes, player_id, message, self._handle_unhandled_message
             )
 
+        except json.JSONDecodeError as e:
+            logger.warning(f"Malformed message JSON from {player_id[:8]}: {e}")
+            await self._send_error(player_id, "Malformed message")
+        except ValueError as e:
+            logger.warning(f"Invalid message data from {player_id[:8]}: {e}")
+            await self._send_error(player_id, f"Invalid message: {e}")
+        except KeyError as e:
+            logger.warning(f"Missing message field from {player_id[:8]}: {e}")
+            await self._send_error(player_id, f"Missing message field: {e}")
         except Exception as e:
-            logger.error(
-                f"Error handling message {message.type.value}: {e}", exc_info=True
-            )
+            logger.error(f"Unexpected error handling message: {e}", exc_info=True)
             await self._send_error(player_id, f"Server error: {e}")
 
     async def _handle_unhandled_message(self, message: NetworkMessage) -> None:
@@ -907,11 +923,20 @@ class GameServer:
                         f"Failed to send {message.type.value} to {player_id[:8]}"
                     )
                 return result
+            except BrokenPipeError as e:
+                logger.warning(f"Broken pipe sending to {player_id[:8]}: {e}")
+                return False
+            except ConnectionResetError as e:
+                logger.warning(f"Connection reset sending to {player_id[:8]}: {e}")
+                return False
+            except asyncio.TimeoutError as e:
+                logger.warning(f"Timeout sending to {player_id[:8]}: {e}")
+                return False
+            except OSError as e:
+                logger.warning(f"Socket error sending to {player_id[:8]}: {e}")
+                return False
             except Exception as e:
-                logger.error(
-                    f"Error sending {message.type.value} to {player_id[:8]}: {e}",
-                    exc_info=True,
-                )
+                logger.error(f"Unexpected error sending message: {e}", exc_info=True)
                 return False
 
         # Try WebSocket connection
@@ -930,9 +955,15 @@ class GameServer:
 
                     await ws_client.websocket.send_json(msg_dict)
                     return True
+                except aiohttp.ClientError as e:
+                    logger.warning(f"WebSocket error sending to {player_id[:8]}: {e}")
+                    return False
+                except ConnectionError as e:
+                    logger.warning(f"WebSocket connection lost: {player_id[:8]}: {e}")
+                    return False
                 except Exception as e:
                     logger.error(
-                        f"Error sending {message.type.value} to WebSocket {player_id[:8]}: {e}",
+                        f"Unexpected error sending WebSocket message: {e}",
                         exc_info=True,
                     )
                     return False

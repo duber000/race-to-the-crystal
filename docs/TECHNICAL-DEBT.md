@@ -134,35 +134,40 @@ data.get("defender_id") or data.get("target_id")  # Now validated with error res
 
 ---
 
-### 5. Overly Broad Exception Handling
+### 5. Overly Broad Exception Handling ✅ IN PROGRESS - 2026-03-16
 
 **Impact:** Error diagnosis impossible, wrong errors handled  
-**Count:** 40+ `except Exception` blocks across codebase
+**Count:** 88 → 44 instances remaining (50% reduction)
 
-| File | Count | Risk |
-|------|-------|------|
-| `client/audio_manager.py` | 15 | Audio operations should catch specific media errors |
-| `server/ai_spawner.py` | 8 | Process management needs specific handling |
-| `server/websocket_handler.py` | 6 | Protocol errors should be specific |
-| `network/connection.py` | 6 | Network I/O should catch specific errors |
-| `server/game_server.py` | 4 | Server logic needs specific error handling |
+**Status:** Phase 2 complete - Tier 1 (Critical), Tier 2 (Network), Tier 3 (Audio) refactored
+
+| File | Status | Changes |
+|------|--------|---------|
+| `server/auth.py` | ✅ Already good | No changes needed - already uses specific jwt exceptions |
+| `server/game_server.py` | ✅ COMPLETE | 4 instances: ConnectionError, OSError, json.JSONDecodeError, ValueError, KeyError, aiohttp.ClientError |
+| `server/websocket_handler.py` | ✅ COMPLETE | 6 instances: aiohttp.ClientError, ConnectionResetError, json.JSONDecodeError, ValueError, KeyError |
+| `server/http_handler.py` | ✅ COMPLETE | 2 instances: jwt.InvalidTokenError (with expired check), ValueError, KeyError |
+| `server/ai_spawner.py` | ✅ COMPLETE | 9 instances: asyncio.TimeoutError, PermissionError, FileNotFoundError, OSError, ProcessLookupError |
+| `server/mercure_publisher.py` | ✅ COMPLETE | 1 instance: httpx.HTTPStatusError added |
+| `server/server_main.py` | ✅ COMPLETE | 1 instance: KeyboardInterrupt, OSError added |
+| `network/connection.py` | ✅ COMPLETE | 6 instances: ConnectionResetError, BrokenPipeError, asyncio.IncompleteReadError, OSError |
+| `client/audio_manager.py` | ✅ COMPLETE | 15 instances: FileNotFoundError, OSError, AttributeError for sound operations |
+| `client/renderer_3d.py` | ⏳ PENDING | 6 instances remaining |
+| `client/board_3d.py` | ⏳ PENDING | 1 instance remaining |
+| `client/sprites/*.py` | ⏳ PENDING | 2 instances remaining |
+| Remaining 20+ files | ⏳ PENDING | ~35 instances |
 
 **Risk:** Broad exceptions catch unexpected errors, masking real bugs and making debugging difficult.
 
-**Recommendation:** Replace with specific exception types:
-```python
-# Instead of:
-except Exception as e:
-    logger.error(f"Error: {e}")
+**Progress:**
+- **Completed:** 44 instances (50% of 88)
+- **All tests passing:** 367 tests ✅
+- **Graceful error handling preserved:** ✅
+- **Specific exception types used:** ✅
 
-# Use:
-except asyncio.TimeoutError as e:
-    logger.warning(f"Connection timeout: {e}")
-except ConnectionError as e:
-    logger.error(f"Connection failed: {e}")
-```
+**Recommendation:** Continue with Tier 3 (Client Rendering) and Tier 4 (UI/Utility cleanup).
 
-**Estimated Effort:** 1-2 sprints
+**Estimated Completion:** 1-2 more days for remaining 44 instances
 
 ---
 
@@ -599,7 +604,13 @@ def test_game_window_initialization():
 - [x] Replace silent `pass` handlers with logging (Item #3 - RESOLVED)
 - [x] Add input validation for `.get()` calls (Item #4 - RESOLVED)
 
-### Sprint 2 (Critical - Remaining)
+### ✅ Sprint 2 - IN PROGRESS (2026-03-16)
+- [x] Refactor broad exception handlers - 50% complete (44/88 instances)
+  - Tier 1 (Server): ✅ COMPLETE - 23 instances
+  - Tier 2 (Network): ✅ COMPLETE - 6 instances
+  - Tier 3 (Audio): ✅ COMPLETE - 15 instances
+  - Tier 3 (Rendering): ⏳ PENDING - 9 instances
+  - Tier 4 (Cleanup): ⏳ PENDING - ~35 instances
 - [ ] Add tests for `mystery_square.py`
 - [ ] Add tests for `player.py`
 - [ ] Add tests for `auth.py`

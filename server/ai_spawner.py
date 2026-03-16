@@ -108,8 +108,16 @@ class AISpawner:
                 else:
                     logger.error(f"Failed to spawn AI player {ai_name}")
 
+            except asyncio.TimeoutError as e:
+                logger.error(f"Timeout spawning AI player {ai_name}: {e}")
+            except PermissionError as e:
+                logger.error(f"Permission denied spawning AI player {ai_name}: {e}")
+            except FileNotFoundError as e:
+                logger.error(f"AI client executable not found: {e}")
             except Exception as e:
-                logger.error(f"Error spawning AI player {ai_name}: {e}", exc_info=True)
+                logger.error(
+                    f"Unexpected error spawning AI player {ai_name}: {e}", exc_info=True
+                )
 
         if spawned:
             logger.info(
@@ -165,7 +173,7 @@ class AISpawner:
             logger.error(f"Security validation failed for AI spawn: {e}")
             return None
         except Exception as e:
-            logger.error(f"Unexpected validation error: {e}", exc_info=True)
+            logger.error(f"Unexpected validation error in AI spawn: {e}", exc_info=True)
             return None
 
         # Build command to spawn AI client
@@ -202,8 +210,17 @@ class AISpawner:
 
             return process
 
+        except FileNotFoundError as e:
+            logger.error(f"AI client executable not found: {e}")
+            return None
+        except PermissionError as e:
+            logger.error(f"Permission denied executing AI client: {e}")
+            return None
+        except OSError as e:
+            logger.error(f"OS error spawning AI process: {e}")
+            return None
         except Exception as e:
-            logger.error(f"Failed to spawn AI process: {e}", exc_info=True)
+            logger.error(f"Unexpected error spawning AI process: {e}", exc_info=True)
             return None
 
     async def _log_process_output(
@@ -225,8 +242,18 @@ class AISpawner:
                         if not line:
                             break
                         logger.info(f"[{ai_name} OUT] {line.decode().strip()}")
+                    except asyncio.CancelledError:
+                        logger.debug(f"Output reader cancelled for {ai_name}")
+                        break
+                    except ConnectionError as e:
+                        logger.debug(
+                            f"Connection lost reading output from {ai_name}: {e}"
+                        )
+                        break
                     except Exception as e:
-                        logger.debug(f"Error reading stdout from {ai_name}: {e}")
+                        logger.debug(
+                            f"Unexpected error reading output from {ai_name}: {e}"
+                        )
                         break
 
             async def read_stderr():
@@ -236,8 +263,18 @@ class AISpawner:
                         if not line:
                             break
                         logger.error(f"[{ai_name} ERR] {line.decode().strip()}")
+                    except asyncio.CancelledError:
+                        logger.debug(f"Output reader cancelled for {ai_name}")
+                        break
+                    except ConnectionError as e:
+                        logger.debug(
+                            f"Connection lost reading output from {ai_name}: {e}"
+                        )
+                        break
                     except Exception as e:
-                        logger.debug(f"Error reading stderr from {ai_name}: {e}")
+                        logger.debug(
+                            f"Unexpected error reading output from {ai_name}: {e}"
+                        )
                         break
 
             # Run both readers concurrently
@@ -252,8 +289,14 @@ class AISpawner:
             else:
                 logger.info(f"AI process {ai_name} exited normally")
 
+        except asyncio.CancelledError:
+            logger.info(f"Output reader cancelled for {ai_name}")
+        except asyncio.TimeoutError as e:
+            logger.warning(f"Timeout reading output from {ai_name}: {e}")
         except Exception as e:
-            logger.error(f"Error reading output from {ai_name}: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error reading output from {ai_name}: {e}", exc_info=True
+            )
 
     async def cleanup_ai_for_game(self, game_id: str) -> None:
         """
@@ -285,10 +328,20 @@ class AISpawner:
                         spawned_ai.process.kill()
                         await spawned_ai.process.wait()
 
-                except Exception as e:
-                    logger.error(
-                        f"Error terminating AI player {spawned_ai.player_name}: {e}"
+                except ProcessLookupError as e:
+                    logger.warning(
+                        f"AI process already terminated: {spawned_ai.player_name}: {e}"
                     )
+                except PermissionError as e:
+                    logger.error(
+                        f"Permission denied terminating AI: {spawned_ai.player_name}: {e}"
+                    )
+                except OSError as e:
+                    logger.error(
+                        f"OS error terminating AI: {spawned_ai.player_name}: {e}"
+                    )
+                except Exception as e:
+                    logger.error(f"Unexpected error terminating AI: {e}", exc_info=True)
 
                 to_remove.append(spawned_ai)
 
@@ -309,12 +362,22 @@ class AISpawner:
             try:
                 spawned_ai.process.terminate()
                 await asyncio.wait_for(spawned_ai.process.wait(), timeout=2.0)
+            except ProcessLookupError as e:
+                logger.warning(f"AI process already terminated: {e}")
+            except PermissionError as e:
+                logger.error(f"Permission denied terminating AI: {e}")
+            except OSError as e:
+                logger.error(f"OS error terminating AI: {e}")
             except Exception as e:
-                logger.error(f"Error terminating AI process: {e}")
+                logger.error(f"Unexpected error terminating AI: {e}", exc_info=True)
                 try:
                     spawned_ai.process.kill()
+                except (ProcessLookupError, PermissionError, OSError) as e:
+                    logger.error(f"Failed to kill AI process: {e}")
                 except Exception as e:
-                    logger.error(f"Failed to kill AI process: {e}", exc_info=True)
+                    logger.error(
+                        f"Unexpected error killing AI process: {e}", exc_info=True
+                    )
 
         self.spawned_processes.clear()
         logger.info("All AI processes cleaned up")
