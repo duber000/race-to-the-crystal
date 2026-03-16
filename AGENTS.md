@@ -365,19 +365,18 @@ Uses JSON-based protocol with 34+ message types including:
 - Sync: `FULL_STATE`, `GAME_WON`
 - Communication: `CHAT`
 
-**Mixed Client Support:**
-- **Desktop clients**: TCP on port 8888
-- **Web browser clients**: HTTP/WebSocket on port 8080
-- **HTTP AI clients**: HTTP POST + SSE on port 8080 (new)
-  - Stateless authentication via JWT tokens
-  - Actions via `POST /api/game/{game_id}/action`
-  - State updates via SSE (Mercure)
-  - CLI: `uv run race-http-ai-client --join <game_id>`
-- All client types play together in the same game
-- State updates broadcast via WebSocket (desktop/web) and SSE (HTTP AI/web)
+- **Mixed Client Support:**
+  - **Desktop clients**: TCP on port 8888
+  - **Web browser clients**: HTTP/WebSocket on port 8080
+  - **HTTP AI clients**: HTTP POST + SSE on port 8080
+    - Stateless authentication via JWT tokens
+    - Actions via `POST /api/game/{game_id}/action`
+    - State updates via SSE (Mercure)
+- All client types play together in the same game.
+- **SSE Delta Updates**: Web clients receive `STATE_UPDATE` messages with incremental changes, falling back to `FULL_STATE` if processing fails.
+- **State Management**: Web client uses a centralized `StateManager.js` for state tracking and delta merging.
 
 **See [docs/NETWORK.md](docs/NETWORK.md) for complete protocol documentation.**
-**See [docs/SSE_ROADMAP.md](docs/SSE_ROADMAP.md) for HTTP POST + SSE architecture details.**
 
 #### `network/` - Network Protocol Layer
 Low-level networking implementation for TCP and binary message handling.
@@ -391,10 +390,13 @@ Low-level networking implementation for TCP and binary message handling.
 Browser-based 3D client using Babylon.js 8 for rendering.
 
 **Architecture:**
-- **Modular JavaScript**: Separate files for rendering, WebSocket, camera, input, UI
-- **Babylon.js Renderer**: Wireframe graphics matching Tron/Battlezone aesthetic
-- **WebSocket Protocol**: Connects to unified server on port 8080
-- **Real-time Sync**: State updates via WebSocket, smooth animations
+- **Centralized State**: `state_manager.js` handles game state, delta merging, and player tracking.
+- **Modular Components**:
+    - `network_manager.js`: Handles WebSocket/SSE connections and message routing.
+    - `ui_manager.js`: Manages HUD, menus, and DOM-based indicators.
+    - `game_client.js`: Main coordinator delegating to state, UI, and rendering.
+- **Babylon.js Renderer**: Wireframe graphics matching Tron/Battlezone aesthetic.
+- **Real-time Sync**: State updates via WebSocket/SSE, smooth event-based animations.
 
 **Key features:**
 - No modifications to game logic required

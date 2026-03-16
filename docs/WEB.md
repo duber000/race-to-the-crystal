@@ -39,40 +39,25 @@ Unified Game Server
 
 ### Frontend Architecture
 
-The web client is built with modular JavaScript components:
+The web client is built with modular JavaScript components using a clear separation of concerns:
 
-**Main Modules:**
-- `game_client.js` - Core game loop and coordination
-- `game_client.renderer.js` - Babylon.js 3D rendering
-- `game_client.websocket.js` - WebSocket connection and protocol
-- `game_client.camera.js` - Camera system and controls
-- `game_client.input.js` - Mouse and keyboard input
-- `game_client.ui.js` - HUD and UI elements
-- `game_client.constants.js` - Game constants and configuration
+**Core Modules:**
+- `game_client.js` - Main coordinator delegating to state, UI, and rendering.
+- `state_manager.js` - **Centralized Game State**: Handles state storage, delta merging, and player tracking.
+- `network_manager.js` - **Communication Layer**: Handles WebSocket/SSE connections and message routing.
+- `ui_manager.js` - **UI Orchestrator**: Manages HUD, menus, and DOM-based indicators.
 
-**Rendering Features:**
-- Wireframe grid board with vertical pillars
-- Hexagonal prism tokens with player colors
-- Special cells: generators (orange cubes), crystal (magenta pyramid)
-- Glow layer for Tron/Battlezone aesthetic
-- ArcRotateCamera for overview perspective
-- Real-time position updates via WebSocket
+**Specialized Modules:**
+- `audio_manager.js` - Sound effects and music management.
+- `camera_controller.js` - 3D camera systems and coordinate conversion.
+- `input_handler.js` - Mouse and keyboard input translation.
+- `renderer.*.js` - Modular Babylon.js rendering (base, tokens, effects, animations).
+- `game_client.constants.js` - Shared game constants and configuration.
 
-### Backend Integration
-
-The server-side handler (`server/websocket_handler.py`) manages web clients:
-
-**Key responsibilities:**
-- Serve static HTML/JS/CSS files via HTTP
-- Handle WebSocket connections on `/ws`
-- Translate between WebSocket and internal protocol
-- Authenticate and register players
-- Route messages to/from game coordinator
-
-**State synchronization:**
-- Server broadcasts `FULL_STATE` on every action
-- Clients update 3D scene based on received state
-- Smooth animations prevent jarring updates
+**State Synchronization:**
+- **Full State Sync**: Server broadcasts `FULL_STATE` when a baseline is needed.
+- **Delta Updates**: Server sends incremental `STATE_UPDATE` messages for efficiency.
+- **Event-Based Animations**: Fine-grained SSE events (e.g., `TOKEN_MOVED`) trigger immediate animations in the renderer for responsive feedback.
 
 ## Controls
 

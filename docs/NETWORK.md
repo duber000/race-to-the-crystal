@@ -74,21 +74,12 @@ The server supports an **SSE-primary mode** where state updates are sent via Ser
 - Reduced WebSocket bandwidth (~50% reduction)
 
 **Message Routing**:
-- **SSE Messages**: FULL_STATE, STATE_UPDATE, TURN_CHANGE, TOKEN_MOVED, COMBAT_RESULT, GENERATOR_UPDATE, CRYSTAL_UPDATE, MYSTERY_EVENT, TOKEN_DEPLOYED, GAME_WON
+- **SSE Messages**: FULL_STATE, STATE_UPDATE (delta), TURN_CHANGE, TOKEN_MOVED, COMBAT_RESULT, GENERATOR_UPDATE, CRYSTAL_UPDATE, MYSTERY_EVENT, TOKEN_DEPLOYED, GAME_WON
 - **WebSocket Messages**: All game commands (MOVE, ATTACK, DEPLOY, END_TURN), lobby operations, connection management, and responses
 
+**Delta Updates**: The server sends incremental `STATE_UPDATE` messages containing only changed fields when possible, falling back to `FULL_STATE` if a baseline state is unavailable or if delta calculation fails.
+
 **Automatic Fallback**: If SSE connection fails after 4 retry attempts or 30 seconds of silence, web clients automatically fall back to receiving state updates via WebSocket.
-
-**Configuration**:
-```bash
-# Enable SSE-primary mode
-export SSE_PRIMARY_MODE=true
-
-# Start server
-uv run race-unified-server
-```
-
-See [SSE_ROADMAP.md](SSE_ROADMAP.md) for complete architecture documentation.
 
 ## Quick Start
 
