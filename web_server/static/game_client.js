@@ -268,15 +268,6 @@ class GameClient {
       this.deviceCapabilities,
     );
 
-    // Initialize Babylon.js GUI manager (for mobile)
-    // DISABLED: Using HTML/DOM based mobile controls in index.html instead
-    // this.guiManager = new GUIManager(this.renderer.scene, this.deviceCapabilities);
-    // this.guiManager.initialize();
-
-    // Set up GUI event handlers if mobile
-    // if (this.deviceCapabilities.isMobile()) {
-    //   this.setupGUIHandlers();
-    // }
 
     this.renderer.setCameraUpdateCallback(() => {
       if (
@@ -313,44 +304,6 @@ class GameClient {
     });
   }
 
-  setupGUIHandlers() {
-    console.log('[GameClient] Setting up GUI handlers for mobile');
-
-    this.guiManager.on('action', (data) => {
-      switch (data.type) {
-        case 'deploy':
-          // Show deployment menu
-          this.guiManager.showDeploymentMenu();
-          break;
-        case 'move_attack':
-          // Handle move/attack action based on current state
-          if (this.selectedTokenId) {
-            // If token is selected, this acts as confirmation
-            // No-op, user should tap destination cell
-          }
-          break;
-        case 'end_turn':
-          // End turn
-          this.endTurn();
-          break;
-        case 'camera_toggle':
-          // Toggle camera mode
-          this.cameraController.toggleCameraMode();
-          break;
-        case 'reset_view':
-          // Reset camera to initial overview position
-          this.cameraController.resetView();
-          break;
-      }
-    });
-
-    this.guiManager.on('deploy_select', (data) => {
-      console.log(`[GameClient] Deploy token selected: ${data.health} HP`);
-      // Set the selected deploy health (similar to DOM UI)
-      this.uiManager.selectedDeployHealth = data.health;
-      this.uiManager.showDeploymentIndicator(data.health);
-    });
-  }
 
   updateGameState(gameState) {
     if (this.networkManager.getConnectionState() !== STATE.IN_GAME) {
@@ -840,7 +793,7 @@ class GameClient {
     if (this.inputHandler) {
       this.inputHandler.dispose();
     }
-    if (this.guiManager) {
+    if (typeof this.guiManager !== 'undefined' && this.guiManager) {
       this.guiManager.dispose();
     }
     if (this.renderer) {
