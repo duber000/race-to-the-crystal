@@ -152,8 +152,14 @@ class HTTPAIPlayer:
                                 exc_info=True,
                             )
 
+        except httpx.RequestError as e:
+            logger.error(f"Network error in SSE connection: {e}")
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error from SSE: {e.response.status_code}")
+        except asyncio.CancelledError:
+            logger.info("SSE connection cancelled")
         except Exception as e:
-            logger.error(f"SSE connection error: {e}", exc_info=True)
+            logger.error(f"Unexpected SSE connection error: {e}", exc_info=True)
 
     async def _handle_sse_event(self, data: dict) -> None:
         """
@@ -406,12 +412,16 @@ async def run_http_ai_client():
 
         logger.info("AI client finished")
 
+    except asyncio.CancelledError:
+        logger.info("AI client task cancelled")
     except KeyboardInterrupt:
         logger.info("AI client stopped by user")
+    except httpx.RequestError as e:
+        logger.error(f"Network error in AI client: {e}")
     except SystemExit as e:
         logger.info(f"AI client exited: {e.code}")
     except Exception as e:
-        logger.error(f"Unexpected fatal error: {e}", exc_info=True)
+        logger.error(f"Unexpected fatal error in AI client: {e}", exc_info=True)
 
 
 def main():

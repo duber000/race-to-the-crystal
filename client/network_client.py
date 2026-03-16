@@ -209,6 +209,9 @@ class NetworkClient:
         except ConnectionRefusedError as e:
             logger.error(f"Connection refused during reconnection: {e}")
             return False
+        except (ConnectionResetError, BrokenPipeError) as e:
+            logger.error(f"Connection lost during reconnection: {e}")
+            return False
         except OSError as e:
             logger.error(f"Socket error reconnecting: {e}")
             return False
@@ -461,8 +464,8 @@ class NetworkClient:
         except ValueError as e:
             logger.error(f"Invalid game list data: {e}")
             return None
-        except ConnectionError as e:
-            logger.error(f"Connection lost listing games: {e}")
+        except (ConnectionError, OSError) as e:
+            logger.error(f"Connection error listing games: {e}")
             return None
         except Exception as e:
             logger.error(f"Unexpected error listing games: {e}", exc_info=True)
