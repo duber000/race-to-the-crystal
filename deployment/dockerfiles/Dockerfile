@@ -47,9 +47,11 @@ COPY docs/ docs/
 RUN uv sync --frozen
 
 # Download Babylon.js (gitignored, not included in repo)
+# Strip sourceMappingURL comments to avoid 404s for .map files in browser devtools
 RUN curl -sL -o web_server/static/babylon.js https://cdn.babylonjs.com/babylon.js && \
     curl -sL -o web_server/static/babylonjs.loaders.min.js https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js && \
-    curl -sL -o web_server/static/babylon.gui.min.js https://cdn.babylonjs.com/gui/babylon.gui.min.js
+    curl -sL -o web_server/static/babylon.gui.min.js https://cdn.babylonjs.com/gui/babylon.gui.min.js && \
+    sed -i 's|//# sourceMappingURL=.*||g' web_server/static/babylon.js web_server/static/babylonjs.loaders.min.js web_server/static/babylon.gui.min.js
 
 # Expose ports
 # 8888: TCP port for desktop clients
