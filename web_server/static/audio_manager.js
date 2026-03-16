@@ -46,6 +46,10 @@ class AudioManager {
             mystery: '/static/assets/sounds/mystery_bing.wav',
             generator_explosion: '/static/assets/sounds/generator_explosion.wav',
             crystal_shatter: '/static/assets/sounds/crystal_shatter.wav',
+            fog_horn: '/static/assets/sounds/fog_horn.wav',
+            ghost: '/static/assets/sounds/ghost.wav',
+            lightning: '/static/assets/sounds/lightning.wav',
+            whoosh: '/static/assets/sounds/whoosh.wav',
         };
     }
 
