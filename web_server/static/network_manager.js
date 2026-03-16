@@ -234,11 +234,11 @@ class NetworkManager {
         });
     }
 
-    moveToken(tokenId, position) {
+    moveToken(tokenId, destination) {
         this.send({
             type: "MOVE",
             token_id: tokenId,
-            position: position
+            destination: destination
         });
     }
 
