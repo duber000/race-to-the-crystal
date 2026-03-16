@@ -37,15 +37,13 @@ class AudioManager:
         """Initialize audio manager."""
         # Background music
         self.background_music: arcade.Sound | None = None
-        self.music_player: arcade.Sound | None = None
+        self.music_player: object | None = None
         self.music_volume = BACKGROUND_MUSIC_VOLUME
         self.music_playing = True
 
         # Generator hum tracks (separate audio for each generator)
-        self.generator_hums: list[[arcade.Sound]] = []  # List of Sound objects
-        self.generator_hum_players: list[
-            [arcade.Sound]
-        ] = []  # List of MediaPlayer objects
+        self.generator_hums: list = []  # List of Sound objects
+        self.generator_hum_players: list = []  # List of MediaPlayer objects
         self.generator_hum_volume = GENERATOR_HUM_VOLUME
 
         # Sound effects
@@ -194,11 +192,11 @@ class AudioManager:
 
         if self.music_playing:
             if self.music_player:
-                self.music_player.pause()
+                self.music_player.pause()  # type: ignore
             # Pause all generator hums
             for player in self.generator_hum_players:
                 if player:
-                    player.pause()
+                    player.pause()  # type: ignore
             self.music_playing = False
             logger.info("Music paused")
         else:
@@ -369,12 +367,12 @@ class AudioManager:
         """
         # Pause music
         if self.music_player and self.music_playing:
-            self.music_player.pause()
+            self.music_player.pause()  # type: ignore
 
         # Pause all generator hums
         for player in self.generator_hum_players:
             if player:
-                player.pause()
+                player.pause()  # type: ignore
 
     def cleanup(self) -> None:
         """
@@ -384,15 +382,15 @@ class AudioManager:
         """
         # Stop background music
         if self.music_player:
-            self.music_player.pause()
-            self.music_player.delete()
+            self.music_player.pause()  # type: ignore
+            self.music_player.delete()  # type: ignore
             self.music_player = None
 
         # Stop and delete all generator hum players
         for player in self.generator_hum_players:
             if player:
-                player.pause()
-                player.delete()
+                player.pause()  # type: ignore
+                player.delete()  # type: ignore
         self.generator_hum_players.clear()
         self.generator_hums.clear()
 
@@ -402,8 +400,8 @@ class AudioManager:
                 try:
                     player.pause()
                     player.delete()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Error cleaning up sound player: {e}", exc_info=True)
         self.sound_effect_players.clear()
 
         # Clear sound effects

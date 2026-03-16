@@ -87,7 +87,9 @@ class GameServer:
         self._message_routes = build_server_routes(self)
 
         logger.info(f"Game server initialized on {host}:{port}")
-        logger.info(f"SSE Primary Mode: {'enabled' if self.sse_primary_mode else 'disabled (dual-channel)'}")
+        logger.info(
+            f"SSE Primary Mode: {'enabled' if self.sse_primary_mode else 'disabled (dual-channel)'}"
+        )
 
     async def start(self) -> None:
         """Start the TCP server."""
@@ -188,7 +190,7 @@ class GameServer:
 
     async def _handle_connect(
         self, connection: Connection, message: NetworkMessage, conn_id: str
-    ) -> [str]:
+    ) -> str | None:
         """
         Handle initial CONNECT message.
 
@@ -201,7 +203,7 @@ class GameServer:
             Assigned player_id, or None if connection failed
         """
         data = message.data or {}
-        player_name = data.get("player_name", "Unknown")
+        player_name = (data.get("player_name") or "Unknown").strip()
         client_type_str = data.get("client_type", "HUMAN")
 
         try:
@@ -235,7 +237,7 @@ class GameServer:
 
     async def _handle_reconnect(
         self, connection: Connection, message: NetworkMessage, conn_id: str
-    ) -> [str]:
+    ) -> str | None:
         """
         Handle RECONNECT message from a returning player.
 
@@ -249,7 +251,7 @@ class GameServer:
         """
         player_id = message.player_id
         data = message.data or {}
-        game_id = data.get("game_id")
+        game_id = data.get("game_id", "").strip()
 
         logger.info(
             f"Reconnection attempt from {player_id[:8] if player_id else 'unknown'}"
@@ -329,12 +331,10 @@ class GameServer:
         )
 
         # Notify other players that player reconnected
-        if game_session:
+        if game_session and saved_game_id:
             lobby = self.lobby_manager.get_lobby(saved_game_id)
             reconnect_info = lobby.players.get(player_id) if lobby else None
-            reconnect_name = (
-                reconnect_info.player_name if reconnect_info else "Unknown"
-            )
+            reconnect_name = reconnect_info.player_name if reconnect_info else "Unknown"
             reconnect_msg = NetworkMessage(
                 type=MessageType.PLAYER_RECONNECTED,
                 timestamp=time.time(),
@@ -479,11 +479,11 @@ class GameServer:
     ) -> None:
         """Handle CREATE_GAME request."""
         data = message.data or {}
-        game_name = data.get("game_name", "New Game")
+        game_name = (data.get("game_name") or "New Game").strip()
         max_players = data.get("max_players", 4)
 
         # Get player info from stored client type
-        player_name = data.get("player_name", "Player")
+        player_name = (data.get("player_name") or "Player").strip()
         client_type = self.player_client_types.get(player_id, ClientType.HUMAN)
 
         # Create lobby with validation
@@ -513,13 +513,13 @@ class GameServer:
     async def _handle_join_game(self, player_id: str, message: NetworkMessage) -> None:
         """Handle JOIN_GAME request."""
         data = message.data or {}
-        game_id = data.get("game_id")
+        game_id = (data.get("game_id") or "").strip()
 
         if not game_id:
             await self._send_error(player_id, "No game_id provided")
             return
 
-        player_name = data.get("player_name", "Player")
+        player_name = (data.get("player_name") or "Player").strip()
         # Use the client type stored during connection
         client_type = self.player_client_types.get(player_id, ClientType.HUMAN)
 
@@ -779,7 +779,9 @@ class GameServer:
                 if mercure_success:
                     logger.debug("Successfully published state to Mercure/SSE")
                 else:
-                    logger.warning("Mercure publish failed, all clients will use WebSocket fallback")
+                    logger.warning(
+                        "Mercure publish failed, all clients will use WebSocket fallback"
+                    )
 
         # Send to individual players via WebSocket/TCP
         # In SSE-primary mode: skip SSE-capable clients (they get updates via Mercure)
@@ -915,7 +917,7 @@ class GameServer:
         # Try WebSocket connection
         if self.websocket_handler:
             ws_client = self.websocket_handler.clients.get(player_id)
-            if ws_client:
+            if ws_client and ws_client.websocket:
                 try:
                     # Convert NetworkMessage to dict for WebSocket
                     msg_dict = {
@@ -963,7 +965,7 @@ class GameServer:
         for player_id in game_session.network_to_game_id.keys():
             await self._send_to_player(player_id, message)
 
-    def _create_aiohttp_app(self) -> aiohttp.web.Application:
+    def _create_aiohttp_app(self):
         """Create aiohttp application for HTTP/WebSocket server."""
 
         # Get JWT secret from environment

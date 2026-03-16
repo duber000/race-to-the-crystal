@@ -313,8 +313,8 @@ class AISpawner:
                 logger.error(f"Error terminating AI process: {e}")
                 try:
                     spawned_ai.process.kill()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to kill AI process: {e}", exc_info=True)
 
         self.spawned_processes.clear()
         logger.info("All AI processes cleaned up")

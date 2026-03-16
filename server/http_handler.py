@@ -95,8 +95,8 @@ class HTTPHandler:
     async def _no_cache_middleware(self, request, handler):
         """Add no-cache headers to JS/HTML responses to prevent stale code."""
         response = await handler(request)
-        if request.path.endswith(('.js', '.html')):
-            response.headers['Cache-Control'] = 'no-cache, must-revalidate'
+        if request.path.endswith((".js", ".html")):
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
         return response
 
     def create_app(self) -> web.Application:
@@ -123,7 +123,9 @@ class HTTPHandler:
 
         return app
 
-    async def handle_index(self, request: web.Request) -> web.FileResponse:
+    async def handle_index(
+        self, request: web.Request
+    ) -> web.FileResponse | web.Response:
         """Serve the main index.html page."""
         index_file = self.templates_dir / "index.html"
 
@@ -138,7 +140,9 @@ class HTTPHandler:
             content_type="text/html",
         )
 
-    async def handle_game(self, request: web.Request) -> web.FileResponse:
+    async def handle_game(
+        self, request: web.Request
+    ) -> web.FileResponse | web.Response:
         """Serve the game page."""
         game_file = self.templates_dir / "index.html"
 
@@ -204,9 +208,7 @@ class HTTPHandler:
             500: Server error
         """
         if not self.game_server:
-            return web.json_response(
-                {"error": "Server not initialized"}, status=500
-            )
+            return web.json_response({"error": "Server not initialized"}, status=500)
 
         game_id = request.match_info["game_id"]
 
@@ -230,12 +232,11 @@ class HTTPHandler:
             # Check if game exists
             lobby = self.game_server.lobby_manager.get_lobby(game_id)
             if not lobby:
-                return web.json_response(
-                    {"error": "Game not found"}, status=404
-                )
+                return web.json_response({"error": "Game not found"}, status=404)
 
             # Check if game already started
             from server.lobby import GameStatus
+
             if lobby.status != GameStatus.WAITING:
                 return web.json_response(
                     {"error": "Game already started or finished"}, status=410
@@ -267,7 +268,9 @@ class HTTPHandler:
             token = create_player_token(player_id, game_id, self.jwt_secret)
 
             # Build SSE URL
-            sse_url = f"{self.mercure_public_url}?topic={self.mercure_topic_prefix}/{game_id}"
+            sse_url = (
+                f"{self.mercure_public_url}?topic={self.mercure_topic_prefix}/{game_id}"
+            )
 
             logger.info(
                 f"HTTP AI client joined game {game_id[:8]}: "
@@ -289,9 +292,7 @@ class HTTPHandler:
             return web.json_response({"error": str(e)}, status=400)
         except Exception as e:
             logger.error(f"Unexpected error in HTTP join: {e}", exc_info=True)
-            return web.json_response(
-                {"error": "Internal server error"}, status=500
-            )
+            return web.json_response({"error": "Internal server error"}, status=500)
 
     async def handle_action_http(self, request: web.Request) -> web.Response:
         """
@@ -320,9 +321,7 @@ class HTTPHandler:
             500: Server error
         """
         if not self.game_server:
-            return web.json_response(
-                {"error": "Server not initialized"}, status=500
-            )
+            return web.json_response({"error": "Server not initialized"}, status=500)
 
         game_id = request.match_info["game_id"]
 
@@ -338,13 +337,12 @@ class HTTPHandler:
         try:
             payload = verify_player_token(token, self.jwt_secret)
         except jwt.ExpiredSignatureError:
-            return web.json_response(
-                {"error": "Token expired"}, status=401
-            )
+            return web.json_response({"error": "Token expired"}, status=401)
         except jwt.InvalidTokenError:
-            return web.json_response(
-                {"error": "Invalid token"}, status=401
-            )
+            return web.json_response({"error": "Invalid token"}, status=401)
+
+        if not payload:
+            return web.json_response({"error": "Invalid token payload"}, status=401)
 
         # Validate token is for this game
         if not validate_token_for_game(payload, game_id):
@@ -357,11 +355,61 @@ class HTTPHandler:
         try:
             # Parse action data
             action_data = await request.json()
-            action_type = action_data.get("type")
+            action_type = action_data.get("type", "").strip()
 
             if not action_type:
                 return web.json_response(
                     {"error": "Action type is required"}, status=400
+                )
+
+            # Validate action data based on type
+            if action_type in ["MOVE", "move"]:
+                token_id = action_data.get("token_id")
+                destination = action_data.get("destination")
+                if token_id is None:
+                    return web.json_response(
+                        {"error": "token_id is required for MOVE action"}, status=400
+                    )
+                if (
+                    not destination
+                    or not isinstance(destination, list)
+                    or len(destination) != 2
+                ):
+                    return web.json_response(
+                        {"error": "destination must be [x, y] coordinates"}, status=400
+                    )
+            elif action_type in ["ATTACK", "attack"]:
+                attacker_id = action_data.get("attacker_id")
+                defender_id = action_data.get("defender_id") or action_data.get(
+                    "target_id"
+                )
+                if attacker_id is None:
+                    return web.json_response(
+                        {"error": "attacker_id is required for ATTACK action"},
+                        status=400,
+                    )
+                if defender_id is None:
+                    return web.json_response(
+                        {
+                            "error": "defender_id or target_id is required for ATTACK action"
+                        },
+                        status=400,
+                    )
+            elif action_type in ["DEPLOY", "deploy"]:
+                health_value = action_data.get("health_value")
+                position = action_data.get("position")
+                if health_value is None:
+                    return web.json_response(
+                        {"error": "health_value is required for DEPLOY action"},
+                        status=400,
+                    )
+                if not position or not isinstance(position, list) or len(position) != 2:
+                    return web.json_response(
+                        {"error": "position must be [x, y] coordinates"}, status=400
+                    )
+            elif action_type not in ["END_TURN", "end_turn"]:
+                return web.json_response(
+                    {"error": f"Unknown action type: {action_type}"}, status=400
                 )
 
             # Convert action type to MessageType enum
@@ -432,9 +480,7 @@ class HTTPHandler:
             return web.json_response({"error": str(e)}, status=400)
         except Exception as e:
             logger.error(f"Unexpected error in HTTP action: {e}", exc_info=True)
-            return web.json_response(
-                {"error": "Internal server error"}, status=500
-            )
+            return web.json_response({"error": "Internal server error"}, status=500)
 
     @property
     def static_path(self) -> Path:

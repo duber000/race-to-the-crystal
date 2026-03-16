@@ -100,7 +100,9 @@ def verify_player_token(token: str, secret_key: str) -> TokenPayload | None:
     """
     try:
         payload = jwt.decode(token, secret_key, algorithms=["HS256"])
-        logger.debug(f"Verified JWT token for player {payload.get('player_id', 'unknown')[:8]}")
+        logger.debug(
+            f"Verified JWT token for player {payload.get('player_id', 'unknown')[:8]}"
+        )
         return TokenPayload.from_dict(payload)
 
     except jwt.ExpiredSignatureError:
@@ -132,13 +134,15 @@ def extract_token_from_header(authorization_header: str) -> str | None:
 
     parts = authorization_header.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
-        logger.warning(f"Invalid Authorization header format: {authorization_header[:20]}")
+        logger.warning(
+            f"Invalid Authorization header format: {authorization_header[:20]}"
+        )
         return None
 
     return parts[1]
 
 
-def validate_token_for_game(payload: TokenPayload, game_id: str) -> bool:
+def validate_token_for_game(payload: TokenPayload | None, game_id: str) -> bool:
     """
     Validate that a token's game_id matches the requested game.
 

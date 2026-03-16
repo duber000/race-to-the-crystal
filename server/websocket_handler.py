@@ -365,8 +365,48 @@ class WebSocketHandler:
             await self._send_error(client, "Missing message type")
             return
 
+        # Validate action data based on type
+        msg_type_lower = msg_type.lower()
+        if msg_type_lower in ["move", "attack", "deploy"]:
+            if msg_type_lower == "move":
+                if data.get("token_id") is None:
+                    await self._send_error(client, "token_id is required for MOVE")
+                    return
+                destination = data.get("destination")
+                if (
+                    not destination
+                    or not isinstance(destination, list)
+                    or len(destination) != 2
+                ):
+                    await self._send_error(
+                        client, "destination must be [x, y] coordinates"
+                    )
+                    return
+            elif msg_type_lower == "attack":
+                if data.get("attacker_id") is None:
+                    await self._send_error(client, "attacker_id is required for ATTACK")
+                    return
+                defender_id = data.get("defender_id") or data.get("target_id")
+                if defender_id is None:
+                    await self._send_error(
+                        client, "defender_id or target_id is required for ATTACK"
+                    )
+                    return
+            elif msg_type_lower == "deploy":
+                if data.get("health_value") is None:
+                    await self._send_error(
+                        client, "health_value is required for DEPLOY"
+                    )
+                    return
+                position = data.get("position")
+                if not position or not isinstance(position, list) or len(position) != 2:
+                    await self._send_error(
+                        client, "position must be [x, y] coordinates"
+                    )
+                    return
+
         action_data = {
-            "type": msg_type.lower(),
+            "type": msg_type_lower,
             "token_id": data.get("token_id"),
             "destination": data.get("destination"),
             "attacker_id": data.get("attacker_id"),

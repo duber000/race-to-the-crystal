@@ -87,11 +87,15 @@ class TokenSprite(arcade.Sprite):
                 try:
                     font = ImageFont.truetype(font_path, font_size)
                     break
-                except (IOError, OSError):
+                except IOError, OSError:
                     continue
             if font is None:
                 font = ImageFont.load_default()
-        except Exception:
+        except Exception as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Font loading failed, using default: {e}")
             font = ImageFont.load_default()
 
         health_text = str(self.token.health)
