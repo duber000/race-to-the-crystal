@@ -99,8 +99,16 @@ class GameManager:
         for client in self.websocket_clients:
             try:
                 await client.send_text(state_json)
+            except ConnectionError as e:
+                logger.warning(f"Client connection lost: {e}")
+                disconnected.append(client)
+            except RuntimeError as e:
+                logger.warning(f"WebSocket closed: {e}")
+                disconnected.append(client)
             except Exception as e:
-                logger.error(f"Error broadcasting to client: {e}")
+                logger.error(
+                    f"Unexpected error broadcasting to client: {e}", exc_info=True
+                )
                 disconnected.append(client)
 
         # Remove disconnected clients
