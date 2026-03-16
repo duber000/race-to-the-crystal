@@ -35,6 +35,84 @@ class WebSocketClient {
     this.mercureClient = null;
     this.ssePrimaryMode = false; // Set from server config
     this.usingSSEForState = false; // True if actively using SSE for state updates
+    
+    // State update tracking for race condition prevention
+    this.lastStateVersion = null; // Track last processed state version
+    this.stateUpdateLock = false; // Prevent concurrent state processing
+  }
+
+  /**
+   * Handle FULL_STATE message with idempotent processing and queue management.
+   * @param {Object} data - Full state data from server
+   * @private
+   */
+  _handleFullState(data) {
+    // In SSE-primary mode, only process FULL_STATE via WebSocket if SSE is not active
+    if (this.usingSSEForState && this.mercureClient && this.mercureClient.isConnected()) {
+      console.log("⚠ Ignoring FULL_STATE from WebSocket (using SSE)");
+      return;
+    }
+    
+    console.log("✓ Processing FULL_STATE from WebSocket");
+    
+    // Check for duplicate state (idempotent processing)
+    const stateVersion = data.version || data.timestamp || null;
+    if (stateVersion && this.lastStateVersion && stateVersion === this.lastStateVersion) {
+      console.log("⚠ Duplicate FULL_STATE detected, skipping (idempotent)");
+      return;
+    }
+    
+    // Set lock to prevent concurrent processing
+    if (this.stateUpdateLock) {
+      console.log("⚠ State update already processing, queuing");
+      this.stateUpdateQueue.push({ source: "websocket", data });
+      return;
+    }
+    
+    this.stateUpdateLock = true;
+    this.emit("full_state", data);
+    
+    // Update last processed version
+    if (stateVersion) {
+      this.lastStateVersion = stateVersion;
+    }
+    
+    // If we were in GAME_STARTING state, transition to IN_GAME
+    if (this.connectionState === STATE.GAME_STARTING) {
+      this.connectionState = STATE.IN_GAME;
+      console.log("✓ Transitioned to IN_GAME state - game actions now enabled");
+    }
+    
+    this.stateUpdateLock = false;
+    
+    // Process queued updates
+    this._processStateQueue();
+  }
+
+  /**
+   * Process queued state updates sequentially.
+   * @private
+   */
+  _processStateQueue() {
+    if (this.stateUpdateQueue.length === 0) return;
+    
+    const next = this.stateUpdateQueue.shift();
+    console.log(`Processing queued state update from ${next.source}`);
+    
+    if (next.source === "websocket") {
+      this._handleFullState(next.data);
+    } else if (next.source === "sse") {
+      const update = next.data.game_state;
+      this.emit("full_state", next.data);
+      if (this.connectionState === STATE.GAME_STARTING) {
+        this.connectionState = STATE.IN_GAME;
+      }
+    }
+    
+    // Recursively process remaining queue
+    if (this.stateUpdateQueue.length > 0) {
+      this._processStateQueue();
+    }
   }
 
   on(event, handler) {
@@ -265,22 +343,7 @@ class WebSocketClient {
         break;
 
       case "FULL_STATE":
-        // In SSE-primary mode, only process FULL_STATE via WebSocket if SSE is not active
-        // However, if SSE has failed and we've fallen back to WebSocket, we should process it
-        if (this.usingSSEForState && this.mercureClient && this.mercureClient.isConnected()) {
-          console.log("⚠ Ignoring FULL_STATE from WebSocket (using SSE)");
-        } else {
-          // If SSE is not working or we've fallen back to WebSocket, process the state
-          console.log("✓ Processing FULL_STATE from WebSocket");
-          this.emit("full_state", data);
-          
-          // If we were in GAME_STARTING state, transition to IN_GAME
-          // This is critical for enabling game actions after the initial state is received
-          if (this.connectionState === STATE.GAME_STARTING) {
-            this.connectionState = STATE.IN_GAME;
-            console.log("✓ Transitioned to IN_GAME state - game actions now enabled");
-          }
-        }
+        this._handleFullState(data);
         break;
 
       case "ERROR":
@@ -375,6 +438,22 @@ class WebSocketClient {
           console.log("✓ Using SSE for state updates");
         }
 
+        // Check for duplicate state (idempotent processing)
+        const stateVersion = update.version || update.timestamp || null;
+        if (stateVersion && this.lastStateVersion && stateVersion === this.lastStateVersion) {
+          console.log("⚠ Duplicate SSE state detected, skipping (idempotent)");
+          return;
+        }
+        
+        // Set lock to prevent concurrent processing
+        if (this.stateUpdateLock) {
+          console.log("⚠ State update already processing, queuing SSE update");
+          this.stateUpdateQueue.push({ source: "sse", data: { game_state: update } });
+          return;
+        }
+        
+        this.stateUpdateLock = true;
+
         // Transition to IN_GAME state if needed (critical for enabling game actions)
         // This mirrors the logic in FULL_STATE WebSocket handler (lines 273-278)
         if (this.connectionState === STATE.GAME_STARTING) {
@@ -386,9 +465,45 @@ class WebSocketClient {
         this.emit("full_state", {
           game_state: update,
         });
+        
+        // Update last processed version
+        if (stateVersion) {
+          this.lastStateVersion = stateVersion;
+        }
+        
+        this.stateUpdateLock = false;
+        
+        // Process queued updates
+        this._processStateQueue();
       },
       fallbackToWebSocket
     )
+  }
+
+  /**
+   * Process queued state updates sequentially.
+   * @private
+   */
+  _processStateQueue() {
+    if (this.stateUpdateQueue.length === 0) return;
+    
+    const next = this.stateUpdateQueue.shift();
+    console.log(`Processing queued state update from ${next.source}`);
+    
+    if (next.source === "websocket") {
+      this._handleFullState(next.data);
+    } else if (next.source === "sse") {
+      const update = next.data.game_state;
+      this.emit("full_state", next.data);
+      if (this.connectionState === STATE.GAME_STARTING) {
+        this.connectionState = STATE.IN_GAME;
+      }
+    }
+    
+    // Recursively process remaining queue
+    if (this.stateUpdateQueue.length > 0) {
+      this._processStateQueue();
+    }
   }
 
   unsubscribeMercure() {

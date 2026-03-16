@@ -69,6 +69,16 @@ export const INPUT_CONFIG = {
     DRAG_THRESHOLD: 10  // Pixels to trigger drag
 };
 
+// Timeout configuration
+export const TIMEOUT_CONFIG = {
+    SSE_SILENCE_MS: 30000,
+    SSE_CHECK_INTERVAL_MS: 5000,
+    ERROR_TIMEOUT_MS: 3000,
+    MAX_ERRORS: 5,
+    RECONNECT_MAX_DELAY_MS: 30000,
+    RECONNECT_MAX_ATTEMPTS: 4
+};
+
 // Backward compatibility aliases
 export const TurnPhase = GAME_PHASE;
 export const STATE = UI_STATE;
@@ -79,11 +89,3 @@ export const WALL_HEIGHT = BOARD_CONFIG.WALL_HEIGHT;
 export const TOKEN_HEIGHT = BOARD_CONFIG.TOKEN_HEIGHT;
 export const BOARD_WIDTH = BOARD_CONFIG.WIDTH;
 export const BOARD_HEIGHT = BOARD_CONFIG.HEIGHT;
-
-// Expose globals for non-module scripts
-Object.assign(window, {
-    BOARD_CONFIG, PLAYER_COLORS, GAME_PHASE, CRYSTAL_EFFECT,
-    CRYSTAL_EFFECT_ANIMATION, GLOW_COLORS, UI_STATE, INPUT_CONFIG,
-    TurnPhase, STATE, CELL_SIZE, WALL_HEIGHT, TOKEN_HEIGHT,
-    BOARD_WIDTH, BOARD_HEIGHT
-});

@@ -424,6 +424,24 @@ class Renderer3D {
             this.audioManager.cleanup();
         }
 
+        // Dispose all board meshes
+        if (this.board3D) {
+            this.board3D.forEach(mesh => {
+                if (mesh && mesh.dispose) mesh.dispose();
+            });
+            this.board3D = [];
+        }
+
+        // Dispose all generator meshes
+        if (this.generatorMeshes) {
+            this.generatorMeshes.forEach((meshes) => {
+                if (meshes) meshes.forEach(mesh => {
+                    if (mesh && mesh.dispose) mesh.dispose();
+                });
+            });
+            this.generatorMeshes.clear();
+        }
+
         if (this.scene) this.scene.dispose();
         if (this.engine) this.engine.dispose();
     }

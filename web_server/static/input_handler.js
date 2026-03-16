@@ -2,9 +2,23 @@
 // Input Handler - Manages mouse, keyboard, and touch input
 // ==========================================================================
 
-import { CELL_SIZE, INPUT_CONFIG } from './game_client.constants.js';
+import { CELL_SIZE, INPUT_CONFIG, TIMEOUT_CONFIG } from './game_client.constants.js';
 
+/**
+ * Input Handler - Manages mouse, keyboard, and touch input for the game.
+ * Handles pointer events, keyboard shortcuts, and touch gestures.
+ */
 class InputHandler {
+    /**
+     * Create an input handler.
+     * @param {BABYLON.Scene} scene - Babylon.js scene
+     * @param {HTMLCanvasElement} canvas - Canvas element
+     * @param {CameraController} cameraController - Camera controller instance
+     * @param {Object} gameState - Game state object
+     * @param {string} connectionState - Current connection state
+     * @param {BABYLON.Engine} engine - Babylon.js engine
+     * @param {Object} deviceCapabilities - Device capabilities object
+     */
     constructor(scene, canvas, cameraController, gameState, connectionState, engine, deviceCapabilities) {
         this.scene = scene;
         this.canvas = canvas;
@@ -35,8 +49,8 @@ class InputHandler {
 
     // Error handling configuration
     this.errorConfig = {
-        maxErrors: 5,
-        errorTimeout: 3000
+        maxErrors: TIMEOUT_CONFIG.MAX_ERRORS,
+        errorTimeout: TIMEOUT_CONFIG.ERROR_TIMEOUT_MS
     };
 
     this.errorCount = 0;
@@ -49,6 +63,11 @@ class InputHandler {
         this.boundPointerUp = null;
     }
 
+    /**
+     * Register an event handler.
+     * @param {string} event - Event name
+     * @param {Function} handler - Event handler function
+     */
     on(event, handler) {
         if (!this.eventHandlers.has(event)) {
             this.eventHandlers.set(event, []);
@@ -56,12 +75,20 @@ class InputHandler {
         this.eventHandlers.get(event).push(handler);
     }
 
+    /**
+     * Emit an event to all registered handlers.
+     * @param {string} event - Event name
+     * @param {Object} data - Event data
+     */
     emit(event, data) {
         if (this.eventHandlers.has(event)) {
             this.eventHandlers.get(event).forEach(handler => handler(data));
         }
     }
 
+    /**
+     * Setup all event listeners for pointer, keyboard, and touch input.
+     */
     setupEventListeners() {
         this.setupPointerListeners();
         this.setupKeyboardListeners();
@@ -72,58 +99,77 @@ class InputHandler {
         }
     }
 
+    /**
+     * Setup pointer event listeners for mouse and touch input.
+     */
     setupPointerListeners() {
-        // Pointer lock for FPS mouse look
-        document.addEventListener('pointerlockchange', () => {
+        // Store bound handlers for proper cleanup
+        this.boundPointerLock = () => {
             this.pointerLocked = document.pointerLockElement === this.canvas;
-        });
-
-        // Mouse down
-        this.canvas.addEventListener('mousedown', (event) => {
-            // Request pointer lock when clicking canvas in FPS mode
+        };
+        this.boundPointerDown = (event) => {
             if (this.cameraController.cameraMode === "firstperson" && !this.pointerLocked) {
                 this.canvas.requestPointerLock();
             }
             this.handlePointerDown(event);
-        });
+        };
+        this.boundPointerUp = (event) => {
+            this.handlePointerUp(event);
+        };
+        this.boundMouseMove = (event) => {
+            this.handleMouseMove(event);
+        };
+        this.boundMouseLeave = (event) => {
+            this.handleMouseLeave(event);
+        };
+        this.boundTouchStart = (event) => {
+            this.handleTouchStart(event);
+        };
+        this.boundTouchEnd = (event) => {
+            this.handleTouchEnd(event);
+        };
+        this.boundTouchMove = (event) => {
+            this.handleTouchMove(event);
+        };
+
+        // Pointer lock for FPS mouse look
+        document.addEventListener('pointerlockchange', this.boundPointerLock);
+
+        // Mouse down
+        this.canvas.addEventListener('mousedown', this.boundPointerDown);
 
         // Mouse up
-        this.canvas.addEventListener('mouseup', (event) => {
-            this.handlePointerUp(event);
-        });
+        this.canvas.addEventListener('mouseup', this.boundPointerUp);
 
         // Mouse move
-        this.canvas.addEventListener('mousemove', (event) => {
-            this.handleMouseMove(event);
-        });
+        this.canvas.addEventListener('mousemove', this.boundMouseMove);
 
         // Mouse leave
-        this.canvas.addEventListener('mouseleave', (event) => {
-            this.handleMouseLeave(event);
-        });
+        this.canvas.addEventListener('mouseleave', this.boundMouseLeave);
 
         // Touch start
-        this.canvas.addEventListener('touchstart', (event) => {
-            this.handleTouchStart(event);
-        });
+        this.canvas.addEventListener('touchstart', this.boundTouchStart);
 
         // Touch end
-        this.canvas.addEventListener('touchend', (event) => {
-            this.handleTouchEnd(event);
-        });
+        this.canvas.addEventListener('touchend', this.boundTouchEnd);
 
         // Touch move
-        this.canvas.addEventListener('touchmove', (event) => {
-            this.handleTouchMove(event);
-        });
+        this.canvas.addEventListener('touchmove', this.boundTouchMove);
     }
 
+    /**
+     * Setup keyboard event listeners.
+     */
     setupKeyboardListeners() {
-        document.addEventListener('keydown', (event) => {
+        this.boundKeyDown = (event) => {
             this.handleKeyDown(event);
-        });
+        };
+        document.addEventListener('keydown', this.boundKeyDown);
     }
 
+    /**
+     * Setup touch gestures using Babylon.js built-in support.
+     */
     setupTouchGestures() {
         // Setup Babylon.js built-in touch gestures for camera control
         if (this.cameraController.camera && this.cameraController.camera.inputs) {
@@ -136,6 +182,10 @@ class InputHandler {
         }
     }
 
+    /**
+     * Handle pointer down event (mouse/touch press).
+     * @param {PointerEvent} event - Pointer event
+     */
     handlePointerDown(event) {
         if (event.button === 0) { // Left mouse button
             this.isLMBDown = true;
@@ -154,6 +204,10 @@ class InputHandler {
         }
     }
 
+    /**
+     * Handle pointer up event (mouse/touch release).
+     * @param {PointerEvent} event - Pointer event
+     */
     handlePointerUp(event) {
         if (event.button === 0 && this.isLMBDown) { // Left mouse button
             this.isLMBDown = false;
@@ -172,6 +226,11 @@ class InputHandler {
         }
     }
 
+    /**
+     * Handle mouse move event.
+     * Updates hover state and handles camera panning.
+     * @param {MouseEvent} event - Mouse event
+     */
     handleMouseMove(event) {
         // FPS mouse look: pointer lock gives us raw movementX/Y
         if (this.cameraController.cameraMode === "firstperson" && this.pointerLocked) {
@@ -196,6 +255,11 @@ class InputHandler {
         }
     }
 
+    /**
+     * Handle mouse leave event.
+     * Resets all input state.
+     * @param {MouseEvent} event - Mouse event
+     */
     handleMouseLeave(event) {
         this.isLMBDown = false;
         this.isRMBDown = false;
@@ -204,6 +268,11 @@ class InputHandler {
         this.emit('hover', { gridX: null, gridY: null });
     }
 
+    /**
+     * Handle touch start event.
+     * Initializes tap detection.
+     * @param {TouchEvent} event - Touch event
+     */
     handleTouchStart(event) {
         // Handle single tap detection
         if (event.touches.length === 1) {
@@ -217,6 +286,11 @@ class InputHandler {
         }
     }
 
+    /**
+     * Handle touch end event.
+     * Detects taps and emits click events.
+     * @param {TouchEvent} event - Touch event
+     */
     handleTouchEnd(event) {
         // Handle tap detection
         const now = Date.now();
@@ -241,6 +315,11 @@ class InputHandler {
         }
     }
 
+    /**
+     * Handle touch move event.
+     * Updates touch position and invalidates tap detection if moved.
+     * @param {TouchEvent} event - Touch event
+     */
     handleTouchMove(event) {
         // Prevent default scrolling behavior
         event.preventDefault();
@@ -266,12 +345,20 @@ class InputHandler {
         }
     }
 
+    /**
+     * Exit pointer lock mode.
+     */
     exitPointerLock() {
         if (this.pointerLocked) {
             document.exitPointerLock();
         }
     }
 
+    /**
+     * Handle keyboard key down event.
+     * Processes game control keys and emits key events.
+     * @param {KeyboardEvent} event - Keyboard event
+     */
     handleKeyDown(event) {
         const key = event.key.toLowerCase();
 
@@ -352,6 +439,11 @@ class InputHandler {
         }
     }
 
+    /**
+     * Handle mouse click event.
+     * Converts screen coordinates to grid coordinates and emits click event.
+     * @param {MouseEvent} event - Mouse event
+     */
     handleClick(event) {
         // Convert screen coordinates to grid coordinates
         const rect = this.canvas.getBoundingClientRect();
@@ -371,6 +463,11 @@ class InputHandler {
         }
     }
 
+    /**
+     * Handle touch tap event.
+     * Converts touch coordinates to grid coordinates and emits click event.
+     * @param {Touch} touch - Touch object
+     */
     handleTap(touch) {
         // Convert touch coordinates to grid coordinates
         const rect = this.canvas.getBoundingClientRect();
@@ -390,6 +487,11 @@ class InputHandler {
         }
     }
 
+    /**
+     * Update hover state based on mouse position.
+     * Emits hover event when hovered cell changes.
+     * @param {MouseEvent} event - Mouse event
+     */
     updateHoverState(event) {
         // Convert screen coordinates to grid coordinates
         const rect = this.canvas.getBoundingClientRect();
@@ -419,28 +521,41 @@ class InputHandler {
         }
     }
 
-  shouldAllowAction(actionKey) {
-    const now = Date.now();
-    const lastTime = this.lastActionTime[actionKey];
+    /**
+     * Check if action should be allowed based on debounce timing.
+     * @param {string} actionKey - Action identifier
+     * @returns {boolean} True if action is allowed
+     */
+    shouldAllowAction(actionKey) {
+        const now = Date.now();
+        const lastTime = this.lastActionTime[actionKey];
 
-    if (!lastTime || (now - lastTime) > INPUT_CONFIG.ACTION_DEBOUNCE_MS) {
-        this.lastActionTime[actionKey] = now;
-        return true;
+        if (!lastTime || (now - lastTime) > INPUT_CONFIG.ACTION_DEBOUNCE_MS) {
+            this.lastActionTime[actionKey] = now;
+            return true;
+        }
+
+        return false;
     }
 
-    return false;
-  }
-
+    /**
+     * Dispose all event listeners and clean up resources.
+     */
     dispose() {
-        // Remove event listeners
-        this.canvas.removeEventListener('mousedown', this.boundPointerDown);
-        this.canvas.removeEventListener('mouseup', this.boundPointerUp);
-        this.canvas.removeEventListener('mousemove', this.boundMouseMove);
-        
-        document.removeEventListener('keydown', this.boundKeyDown);
+        // Remove event listeners using stored bound handlers
+        if (this.boundPointerLock) document.removeEventListener('pointerlockchange', this.boundPointerLock);
+        if (this.boundPointerDown) this.canvas.removeEventListener('mousedown', this.boundPointerDown);
+        if (this.boundPointerUp) this.canvas.removeEventListener('mouseup', this.boundPointerUp);
+        if (this.boundMouseMove) this.canvas.removeEventListener('mousemove', this.boundMouseMove);
+        if (this.boundMouseLeave) this.canvas.removeEventListener('mouseleave', this.boundMouseLeave);
+        if (this.boundTouchStart) this.canvas.removeEventListener('touchstart', this.boundTouchStart);
+        if (this.boundTouchEnd) this.canvas.removeEventListener('touchend', this.boundTouchEnd);
+        if (this.boundTouchMove) this.canvas.removeEventListener('touchmove', this.boundTouchMove);
+        if (this.boundKeyDown) document.removeEventListener('keydown', this.boundKeyDown);
         
         // Clear event handlers
         this.eventHandlers.clear();
+        this.touches.clear();
     }
 }
 

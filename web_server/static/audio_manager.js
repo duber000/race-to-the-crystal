@@ -89,7 +89,10 @@ class AudioManager {
                 this.playBackgroundMusic();
             }
         } catch (error) {
-            console.error('[AudioManager] Failed to load background music:', error);
+            console.error('[AudioManager] Failed to load background music:', error.message || error);
+            if (this.onErrorCallback) {
+                this.onErrorCallback('Background music failed to load');
+            }
         }
     }
 
@@ -147,8 +150,11 @@ class AudioManager {
             this.soundEffects.set(name, audioBuffer);
             console.log(`[AudioManager] Sound effect loaded: ${name}`);
         } catch (error) {
-            console.error(`[AudioManager] Failed to load sound effect ${name}:`, error);
+            console.error(`[AudioManager] Failed to load sound effect ${name}:`, error.message || error);
             this.soundEffects.set(name, null);
+            if (this.onErrorCallback) {
+                this.onErrorCallback(`Audio "${name}" failed to load`);
+            }
         }
     }
 

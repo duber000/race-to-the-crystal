@@ -2,7 +2,21 @@
 // Camera Controller - Manages overview and first-person camera modes
 // ==========================================================================
 
+/**
+ * Camera Controller - Manages overview and first-person camera modes.
+ * Handles camera initialization, mode switching, and FPS camera positioning.
+ */
 class CameraController {
+    /**
+     * Create a camera controller.
+     * @param {BABYLON.Scene} scene - Babylon.js scene
+     * @param {HTMLCanvasElement} canvas - Canvas element
+     * @param {number} boardWidth - Board width in cells (24)
+     * @param {number} boardHeight - Board height in cells (24)
+     * @param {number} cellSize - Cell size in world units
+     * @param {number} wallHeight - Wall height in world units
+     * @param {Object} deviceCapabilities - Device capabilities object
+     */
     constructor(scene, canvas, boardWidth, boardHeight, cellSize, wallHeight, deviceCapabilities) {
         this.scene = scene;
         this.canvas = canvas;
@@ -23,6 +37,12 @@ class CameraController {
 
         this._initCameras();
     }
+
+    /**
+     * Initialize overview and first-person cameras.
+     * @private
+     */
+    _initCameras() {
 
     _initCameras() {
         // Calculate real world dimensions
@@ -91,6 +111,10 @@ class CameraController {
         }
     }
 
+    /**
+     * Toggle between overview and first-person camera modes.
+     * @returns {BABYLON.ArcRotateCamera} The configured camera
+     */
     toggleCameraMode() {
         this.cameraMode = this.cameraMode === "overview" ? "firstperson" : "overview";
         
@@ -103,6 +127,11 @@ class CameraController {
         return this.camera;
     }
 
+    /**
+     * Setup first-person camera mode.
+     * Detaches built-in controls and positions camera behind controlled token.
+     * @private
+     */
     _setupFirstPersonCamera() {
         // Detach built-in camera controls so they don't fight with manual FPS positioning
         this.camera.detachControl();
@@ -116,6 +145,11 @@ class CameraController {
         }
     }
 
+    /**
+     * Setup overview camera mode.
+     * Re-attaches built-in controls and resets to default overview position.
+     * @private
+     */
     _setupOverviewCamera() {
         // Re-attach built-in camera controls for overview mode
         this.camera.attachControl(this.canvas, true);
@@ -130,6 +164,10 @@ class CameraController {
         this.camera.radius = Math.sqrt(Math.pow(boardRealWidth, 2) + Math.pow(boardRealHeight, 2)) * 0.8;
     }
 
+    /**
+     * Update first-person camera position behind the controlled token.
+     * @param {Object} token - Token object with position property
+     */
     updateFirstPersonCamera(token) {
         if (!token || !token.position) return;
 
@@ -161,11 +199,17 @@ class CameraController {
         ));
     }
 
+    /**
+     * Reset camera to overview mode.
+     */
     resetView() {
         this.cameraMode = "overview";
         this._setupOverviewCamera();
     }
 
+    /**
+     * Rotate camera left by 15 degrees.
+     */
     rotateCameraLeft() {
         this.tokenRotation -= 15;
         if (this.controlledTokenId && this.cameraMode === "firstperson") {
@@ -176,6 +220,9 @@ class CameraController {
         }
     }
 
+    /**
+     * Rotate camera right by 15 degrees.
+     */
     rotateCameraRight() {
         this.tokenRotation += 15;
         if (this.controlledTokenId && this.cameraMode === "firstperson") {
@@ -186,6 +233,9 @@ class CameraController {
         }
     }
 
+    /**
+     * Tilt camera up by 5 degrees.
+     */
     lookUp() {
         this.cameraPitch = Math.min(10, this.cameraPitch + 5);
         if (this.controlledTokenId && this.cameraMode === "firstperson") {
@@ -196,6 +246,11 @@ class CameraController {
         }
     }
 
+    /**
+     * Apply mouse movement for FPS camera look.
+     * @param {number} deltaX - Horizontal mouse movement
+     * @param {number} deltaY - Vertical mouse movement
+     */
     applyMouseLook(deltaX, deltaY) {
         if (this.cameraMode !== "firstperson") return;
 
@@ -210,6 +265,9 @@ class CameraController {
         }
     }
 
+    /**
+     * Tilt camera down by 5 degrees.
+     */
     lookDown() {
         this.cameraPitch = Math.max(-60, this.cameraPitch - 5);
         if (this.controlledTokenId && this.cameraMode === "firstperson") {
@@ -220,6 +278,9 @@ class CameraController {
         }
     }
 
+    /**
+     * Move camera forward in overview mode.
+     */
     moveCameraForward() {
         if (this.cameraMode !== "overview") return;
         
@@ -233,6 +294,9 @@ class CameraController {
         this.camera.setPosition(this.camera.target.clone().addInPlace(new BABYLON.Vector3(0, this.camera.radius, 0)));
     }
 
+    /**
+     * Move camera backward in overview mode.
+     */
     moveCameraBackward() {
         if (this.cameraMode !== "overview") return;
         
@@ -246,6 +310,9 @@ class CameraController {
         this.camera.setPosition(this.camera.target.clone().addInPlace(new BABYLON.Vector3(0, this.camera.radius, 0)));
     }
 
+    /**
+     * Move camera left in overview mode.
+     */
     moveCameraLeft() {
         if (this.cameraMode !== "overview") return;
         
@@ -259,6 +326,9 @@ class CameraController {
         this.camera.setPosition(this.camera.target.clone().addInPlace(new BABYLON.Vector3(0, this.camera.radius, 0)));
     }
 
+    /**
+     * Move camera right in overview mode.
+     */
     moveCameraRight() {
         if (this.cameraMode !== "overview") return;
         
@@ -272,10 +342,19 @@ class CameraController {
         this.camera.setPosition(this.camera.target.clone().addInPlace(new BABYLON.Vector3(0, this.camera.radius, 0)));
     }
 
+    /**
+     * Adjust camera field of view.
+     * @param {number} delta - FOV change amount
+     */
     adjustFOV(delta) {
         this.camera.fov = Math.max(0.5, Math.min(1.5, this.camera.fov + delta * 0.01));
     }
 
+    /**
+     * Cycle to next controlled token for FPS camera.
+     * @param {Array} aliveTokens - Array of alive token objects
+     * @returns {number|null} New controlled token ID or null
+     */
     cycleControlledToken(aliveTokens) {
         if (aliveTokens.length === 0) return null;
 
@@ -290,16 +369,28 @@ class CameraController {
         return this.controlledTokenId;
     }
 
+    /**
+     * Get camera mode.
+     * @returns {string} Current camera mode
+     */
     get cameraMode() {
         return this._cameraMode;
     }
 
+    /**
+     * Set camera mode.
+     * @param {string} value - New camera mode
+     */
     set cameraMode(value) {
         this._cameraMode = value;
     }
 
+    /**
+     * Dispose camera resources.
+     */
     dispose() {
         if (this.camera) {
+            this.camera.detachControl();
             this.camera.dispose();
             this.camera = null;
         }
