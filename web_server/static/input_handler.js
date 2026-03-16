@@ -23,6 +23,7 @@ class InputHandler {
         this.lastPanPosition = { x: 0, y: 0 };
         this.hoveredCell = null;
         this.lastPointerMoveTime = 0;
+        this.pointerLocked = false;
 
         // Touch state (for tap detection only)
         this.touches = new Map();
@@ -72,8 +73,17 @@ class InputHandler {
     }
 
     setupPointerListeners() {
+        // Pointer lock for FPS mouse look
+        document.addEventListener('pointerlockchange', () => {
+            this.pointerLocked = document.pointerLockElement === this.canvas;
+        });
+
         // Mouse down
         this.canvas.addEventListener('mousedown', (event) => {
+            // Request pointer lock when clicking canvas in FPS mode
+            if (this.cameraController.cameraMode === "firstperson" && !this.pointerLocked) {
+                this.canvas.requestPointerLock();
+            }
             this.handlePointerDown(event);
         });
 
@@ -163,14 +173,11 @@ class InputHandler {
     }
 
     handleMouseMove(event) {
-        // FPS mouse look: when in first-person mode, mouse movement rotates the view
-        if (this.cameraController.cameraMode === "firstperson") {
-            if (this.isLMBDown || this.isRMBDown) {
-                const deltaX = event.clientX - this.lastPanPosition.x;
-                const deltaY = event.clientY - this.lastPanPosition.y;
-                this.cameraController.applyMouseLook(deltaX, deltaY);
-                this.lastPanPosition = { x: event.clientX, y: event.clientY };
-            }
+        // FPS mouse look: pointer lock gives us raw movementX/Y
+        if (this.cameraController.cameraMode === "firstperson" && this.pointerLocked) {
+            const deltaX = event.movementX || 0;
+            const deltaY = event.movementY || 0;
+            this.cameraController.applyMouseLook(deltaX, deltaY);
             return;
         }
 
@@ -259,17 +266,28 @@ class InputHandler {
         }
     }
 
+    exitPointerLock() {
+        if (this.pointerLocked) {
+            document.exitPointerLock();
+        }
+    }
+
     handleKeyDown(event) {
         const key = event.key.toLowerCase();
-        
+
         // Prevent default browser behavior for game keys
         const gameKeys = [
             'end', 'escape', 'd', 'v', 'tab', 'q', 'e', 'arrowup', 'arrowdown',
             'arrowleft', 'arrowright', 'm', 'w', 'a', 's', 'z', 'x', 'c'
         ];
-        
+
         if (gameKeys.includes(key)) {
             event.preventDefault();
+        }
+
+        // Exit pointer lock on Escape or when toggling camera back to overview
+        if (key === 'escape' || key === 'v') {
+            this.exitPointerLock();
         }
 
         // Debounce rapid key presses
