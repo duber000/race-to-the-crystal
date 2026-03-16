@@ -50,8 +50,12 @@ class AsyncArcadeScheduler:
         logger.info(f"Event loop running in thread {threading.current_thread().name}")
         try:
             self.loop.run_forever()
+        except KeyboardInterrupt:
+            logger.info("Event loop interrupted by user")
+        except RuntimeError as e:
+            logger.error(f"Event loop runtime error: {e}")
         except Exception as e:
-            logger.error(f"Error in event loop thread: {e}", exc_info=True)
+            logger.error(f"Unexpected error in event loop thread: {e}", exc_info=True)
         finally:
             self.loop.close()
             logger.info("Event loop closed")

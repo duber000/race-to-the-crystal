@@ -180,7 +180,7 @@ class NetworkGameView(arcade.View):
                     damage_dealt=0,  # Actual damage determined by server
                     attacker_id=attacker_id,
                     defender_id=defender_id,
-                    defender_killed=False
+                    defender_killed=False,
                 )
             return None
 
@@ -325,8 +325,14 @@ class NetworkGameView(arcade.View):
             try:
                 message = self._message_queue.get_nowait()
                 self._process_message(message)
+            except ValueError as e:
+                logger.warning(f"Invalid message in queue: {e}")
+            except KeyError as e:
+                logger.warning(f"Missing message field: {e}")
             except Exception as e:
-                logger.error(f"Error processing queued message: {e}", exc_info=True)
+                logger.error(
+                    f"Unexpected error processing queued message: {e}", exc_info=True
+                )
 
         # Delegate to game view if it exists
         if self.game_view:
@@ -368,10 +374,12 @@ class NetworkGameView(arcade.View):
                     logger.error(f"Server error: {error_msg}")
                     self.waiting_for_server = False
 
+        except ValueError as e:
+            logger.warning(f"Invalid message data: {e}")
+        except KeyError as e:
+            logger.warning(f"Missing message field: {e}")
         except Exception as e:
-            logger.error(
-                f"Error processing message {message.type.value}: {e}", exc_info=True
-            )
+            logger.error(f"Unexpected error processing message: {e}", exc_info=True)
 
     def _handle_full_state(self, message):
         """Handle FULL_STATE message with complete game state (main thread)."""
@@ -401,7 +409,9 @@ class NetworkGameView(arcade.View):
                 # Sync tokens instead of full setup (preserves/triggers animations)
                 # Use local_player_id for fog of war perspective
                 viewing_player_id = self.local_player_id
-                self.game_view.renderer_2d.sync_tokens(self.game_state, viewing_player_id)
+                self.game_view.renderer_2d.sync_tokens(
+                    self.game_state, viewing_player_id
+                )
 
                 # Sync 3D tokens
                 if hasattr(self.game_view.renderer_3d, "sync_tokens"):
@@ -441,8 +451,16 @@ class NetworkGameView(arcade.View):
                     "No game view exists yet - will be created with this state"
                 )
 
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in game state: {e}")
+        except ValueError as e:
+            logger.error(f"Invalid game state data: {e}")
+        except KeyError as e:
+            logger.error(f"Missing game state field: {e}")
         except Exception as e:
-            logger.error(f"Failed to deserialize game state: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error deserializing game state: {e}", exc_info=True
+            )
 
         self.waiting_for_server = False
 
@@ -485,7 +503,9 @@ class NetworkGameView(arcade.View):
                 # Use local_player_id for fog of war perspective
                 viewing_player_id = self.local_player_id
                 if hasattr(self.game_view.renderer_2d, "sync_tokens"):
-                    self.game_view.renderer_2d.sync_tokens(self.game_state, viewing_player_id)
+                    self.game_view.renderer_2d.sync_tokens(
+                        self.game_state, viewing_player_id
+                    )
 
                 # Update 3D renderer
                 if hasattr(self.game_view.renderer_3d, "sync_tokens"):

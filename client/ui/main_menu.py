@@ -545,8 +545,10 @@ class NetworkSetupView(arcade.View):
                 try:
                     pyperclip.copy(text_to_copy)
                     logger.info(f"Copied to clipboard: {text_to_copy}")
+                except OSError as e:
+                    logger.error(f"Clipboard OS error (copy): {e}")
                 except Exception as e:
-                    logger.error(f"Failed to copy to clipboard: {e}")
+                    logger.error(f"Failed to copy to clipboard: {e}", exc_info=True)
 
         # Handle paste (Ctrl+V)
         elif key == arcade.key.V:
@@ -559,8 +561,10 @@ class NetworkSetupView(arcade.View):
                     if hasattr(focused_widget, "caret"):
                         focused_widget.caret.position = len(pasted_text)
                     logger.info(f"Pasted from clipboard: {pasted_text}")
+            except OSError as e:
+                logger.error(f"Clipboard OS error (paste): {e}")
             except Exception as e:
-                logger.error(f"Failed to paste from clipboard: {e}")
+                logger.error(f"Failed to paste from clipboard: {e}", exc_info=True)
 
         # Handle cut (Ctrl+X)
         elif key == arcade.key.X:
@@ -572,8 +576,10 @@ class NetworkSetupView(arcade.View):
                     if hasattr(focused_widget, "caret"):
                         focused_widget.caret.position = 0
                     logger.info(f"Cut to clipboard: {text_to_cut}")
+                except OSError as e:
+                    logger.error(f"Clipboard OS error (cut): {e}")
                 except Exception as e:
-                    logger.error(f"Failed to cut to clipboard: {e}")
+                    logger.error(f"Failed to cut to clipboard: {e}", exc_info=True)
 
     def _on_start_click(self, event):
         """Handle start button click."""

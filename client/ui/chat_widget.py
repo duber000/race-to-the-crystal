@@ -211,8 +211,12 @@ class ChatWidget:
             await self.network_client.connection.send_message(chat_msg)
             logger.info(f"Sent chat message: {message}")
 
+        except ValueError as e:
+            logger.error(f"Invalid chat message data: {e}")
+        except ConnectionError as e:
+            logger.error(f"Connection lost sending chat: {e}")
         except Exception as e:
-            logger.error(f"Error sending chat message: {e}", exc_info=True)
+            logger.error(f"Unexpected error sending chat message: {e}", exc_info=True)
 
     def update(self, delta_time: float):
         """

@@ -965,8 +965,59 @@ except Exception as e:
 
 ---
 
-**Phase 2 Status:** 50% COMPLETE  
-**Estimated completion:** 1-2 more days for remaining 44 instances
+**Phase 2 Status:** 60% COMPLETE (53/88 instances)  
+**Estimated completion:** 1 more day for remaining 35 instances
+
+---
+
+## Completed Refactors (Updated)
+
+### ✅ Tier 3: Medium (Client Rendering) - 9 instances
+
+| File | Status | Changes |
+|------|--------|---------|
+| `client/renderer_3d.py` | ✅ COMPLETE | 6 instances: RuntimeError, ValueError for OpenGL operations |
+| `client/board_3d.py` | ✅ COMPLETE | 1 instance: RuntimeError, ValueError for shader compilation |
+| `client/sprites/token_sprite.py` | ✅ COMPLETE | 1 instance: OSError for font loading |
+| `client/sprites/phantom_token_sprite.py` | ✅ COMPLETE | 1 instance: OSError for font loading |
+
+**Total:** 9 instances refactored
+
+---
+
+## Overall Progress
+
+| Tier | Status | Instances | Files |
+|------|--------|-----------|-------|
+| Tier 1: Critical (Server) | ✅ COMPLETE | 23 | 7 files |
+| Tier 2: High (Network) | ✅ COMPLETE | 6 | 1 file |
+| Tier 3: Medium (Client) | ✅ COMPLETE | 24 | 5 files |
+| Tier 4: Low (Cleanup) | ⏳ PENDING | ~35 | 20+ files |
+| **Total** | **60%** | **53/88** | **33+ files** |
+
+---
+
+## Next Steps: Tier 4 (Low Priority Cleanup)
+
+Remaining files to refactor (~35 instances):
+
+1. `client/http_ai_client.py` - 6 instances
+2. `client/network_client.py` - 4 instances
+3. `client/ui/network_game_view.py` - 3 instances
+4. `client/ui/lobby_view.py` - 3 instances
+5. `client/ui/main_menu.py` - 3 instances
+6. `client/menu_main.py` - 3 instances
+7. `client/ui/game_browser_view.py` - 1 instance
+8. `client/ui/chat_widget.py` - 1 instance
+9. `client/ui/async_arcade.py` - 1 instance
+10. `web_server/main.py` - 1 instance
+11. `web_server/mercure_publisher.py` - 1 instance
+12. Test/example files - 4 instances
+
+---
+
+**Phase 2 Status:** 60% COMPLETE  
+**Remaining:** 35 instances across 12+ files
 
 #### Line 74: Server runner
 ```python

@@ -213,8 +213,14 @@ class LobbyView(arcade.View):
             try:
                 message = self._message_queue.get_nowait()
                 self._process_message(message)
+            except ValueError as e:
+                logger.warning(f"Invalid message in queue: {e}")
+            except KeyError as e:
+                logger.warning(f"Missing message field: {e}")
             except Exception as e:
-                logger.error(f"Error processing queued message: {e}", exc_info=True)
+                logger.error(
+                    f"Unexpected error processing queued message: {e}", exc_info=True
+                )
 
         # Update chat widget
         if self.chat_widget:
@@ -375,10 +381,12 @@ class LobbyView(arcade.View):
                 error_msg = data.get("error", "Unknown error")
                 logger.error(f"Server error: {error_msg}")
 
+        except ValueError as e:
+            logger.warning(f"Invalid message data: {e}")
+        except KeyError as e:
+            logger.warning(f"Missing message field: {e}")
         except Exception as e:
-            logger.error(
-                f"Error processing message {message.type.value}: {e}", exc_info=True
-            )
+            logger.error(f"Unexpected error processing message: {e}", exc_info=True)
 
     def _handle_create_game(self, message):
         """Handle CREATE_GAME response - initialize lobby with host player (main thread)."""
@@ -543,8 +551,10 @@ class LobbyView(arcade.View):
                 logger.info(f"Copied game ID to clipboard: {game_id[:8]}...")
                 # Show feedback
                 self.copy_feedback_timer = 2.0  # Show "Copied!" for 2 seconds
+            except OSError as e:
+                logger.error(f"Clipboard OS error copying game ID: {e}")
             except Exception as e:
-                logger.error(f"Failed to copy game ID to clipboard: {e}")
+                logger.error(f"Failed to copy game ID to clipboard: {e}", exc_info=True)
         else:
             logger.warning("No game ID available to copy")
 

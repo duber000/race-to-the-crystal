@@ -260,11 +260,21 @@ class GameBrowserView(arcade.View):
             self._needs_ui_rebuild = True  # Defer UI rebuild to main thread
             logger.info("=== Finished _load_games ===")
 
-        except Exception as e:
-            logger.error(f"Error loading games: {e}", exc_info=True)
+        except ValueError as e:
+            logger.error(f"Invalid game list data: {e}")
             self.error_message = str(e)
             self.loading = False
-            self._needs_ui_rebuild = True  # Defer UI rebuild to main thread
+            self._needs_ui_rebuild = True
+        except ConnectionError as e:
+            logger.error(f"Connection lost loading games: {e}")
+            self.error_message = "Connection lost"
+            self.loading = False
+            self._needs_ui_rebuild = True
+        except Exception as e:
+            logger.error(f"Unexpected error loading games: {e}", exc_info=True)
+            self.error_message = str(e)
+            self.loading = False
+            self._needs_ui_rebuild = True
 
     def _on_join_game(self, game_id: str):
         """
