@@ -98,8 +98,14 @@ class HTTPAIPlayer:
                     f"Failed to join game: {e.response.status_code} - {e.response.text}"
                 )
                 raise
+            except httpx.RequestError as e:
+                logger.error(f"Network error joining game: {e}")
+                raise
+            except ValueError as e:
+                logger.error(f"Invalid join response data: {e}")
+                raise
             except Exception as e:
-                logger.error(f"Error joining game: {e}")
+                logger.error(f"Unexpected error joining game: {e}", exc_info=True)
                 raise
 
     async def play(self) -> None:
@@ -136,9 +142,14 @@ class HTTPAIPlayer:
 
                         except json.JSONDecodeError as e:
                             logger.error(f"Failed to parse SSE event: {e}")
+                        except ValueError as e:
+                            logger.error(f"Invalid SSE event data: {e}")
+                        except KeyError as e:
+                            logger.error(f"Missing SSE event field: {e}")
                         except Exception as e:
                             logger.error(
-                                f"Error handling SSE event: {e}", exc_info=True
+                                f"Unexpected error handling SSE event: {e}",
+                                exc_info=True,
                             )
 
         except Exception as e:
@@ -214,8 +225,14 @@ class HTTPAIPlayer:
             else:
                 logger.warning("No action chosen")
 
+        except ValueError as e:
+            logger.error(f"Invalid game state data: {e}")
+        except KeyError as e:
+            logger.error(f"Missing game state field: {e}")
         except Exception as e:
-            logger.error(f"Error processing state update: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error processing state update: {e}", exc_info=True
+            )
 
     def _choose_action(
         self, available_actions: list, game_state: GameState
@@ -332,8 +349,12 @@ class HTTPAIPlayer:
             logger.error(
                 f"Action rejected: {e.response.status_code} - {e.response.text}"
             )
+        except httpx.RequestError as e:
+            logger.error(f"Network error sending action: {e}")
+        except ValueError as e:
+            logger.error(f"Invalid action response data: {e}")
         except Exception as e:
-            logger.error(f"Error sending action: {e}")
+            logger.error(f"Unexpected error sending action: {e}", exc_info=True)
 
 
 async def run_http_ai_client():
@@ -387,8 +408,10 @@ async def run_http_ai_client():
 
     except KeyboardInterrupt:
         logger.info("AI client stopped by user")
+    except SystemExit as e:
+        logger.info(f"AI client exited: {e.code}")
     except Exception as e:
-        logger.error(f"Fatal error: {e}", exc_info=True)
+        logger.error(f"Unexpected fatal error: {e}", exc_info=True)
 
 
 def main():
