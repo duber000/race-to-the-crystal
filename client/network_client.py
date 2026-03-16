@@ -121,8 +121,14 @@ class NetworkClient:
         except asyncio.TimeoutError:
             logger.error("Connection timeout")
             return False
+        except ConnectionRefusedError as e:
+            logger.error(f"Connection refused by server: {e}")
+            return False
+        except OSError as e:
+            logger.error(f"Socket error connecting: {e}")
+            return False
         except Exception as e:
-            logger.error(f"Connection error: {e}", exc_info=True)
+            logger.error(f"Unexpected error connecting: {e}", exc_info=True)
             return False
 
     async def reconnect(self) -> bool:
@@ -200,8 +206,14 @@ class NetworkClient:
         except asyncio.TimeoutError:
             logger.error("Reconnection timeout")
             return False
+        except ConnectionRefusedError as e:
+            logger.error(f"Connection refused during reconnection: {e}")
+            return False
+        except OSError as e:
+            logger.error(f"Socket error reconnecting: {e}")
+            return False
         except Exception as e:
-            logger.error(f"Reconnection error: {e}", exc_info=True)
+            logger.error(f"Unexpected error reconnecting: {e}", exc_info=True)
             return False
 
     async def disconnect(self) -> None:
@@ -250,10 +262,18 @@ class NetworkClient:
                 # Handle message
                 await self._handle_message(message)
 
+        except ConnectionResetError as e:
+            logger.error(f"Connection reset by server: {e}")
+            if self.auto_reconnect and self.game_id:
+                await self._attempt_auto_reconnect()
+        except BrokenPipeError as e:
+            logger.error(f"Broken pipe in message loop: {e}")
+            if self.auto_reconnect and self.game_id:
+                await self._attempt_auto_reconnect()
+        except asyncio.CancelledError:
+            logger.info("Message loop cancelled")
         except Exception as e:
-            logger.error(f"Message loop error: {e}", exc_info=True)
-
-            # Attempt auto-reconnection on error if enabled and in a game
+            logger.error(f"Unexpected error in message loop: {e}", exc_info=True)
             if self.auto_reconnect and self.game_id:
                 await self._attempt_auto_reconnect()
         finally:
@@ -438,8 +458,14 @@ class NetworkClient:
         except asyncio.TimeoutError:
             logger.error("Timeout waiting for game list")
             return None
+        except ValueError as e:
+            logger.error(f"Invalid game list data: {e}")
+            return None
+        except ConnectionError as e:
+            logger.error(f"Connection lost listing games: {e}")
+            return None
         except Exception as e:
-            logger.error(f"Error listing games: {e}", exc_info=True)
+            logger.error(f"Unexpected error listing games: {e}", exc_info=True)
             return None
 
     async def _wait_for_message_type(
