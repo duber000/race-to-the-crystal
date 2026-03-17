@@ -7,6 +7,7 @@
 **Sprint 2 Status:** ✅ COMPLETED - SSE migration + Exception handling + Magic numbers
 **Sprint 3 Status:** ✅ COMPLETED - Function refactoring + Code patterns + Init exports
 **Sprint 4 Status:** ✅ COMPLETED - Null validation fixes + Type hints
+**Sprint 5 Status:** ✅ COMPLETED - Core game logic tests (mystery_square, player, api, schemas)
 
 ---
 
@@ -29,7 +30,7 @@ This document catalogs technical debt identified during a comprehensive codebase
 
 ### Priority Summary
 
-- **🔴 Critical:** 3 items remaining (1, 2, 7) - down from 6
+- **🔴 Critical:** 2 items remaining (2, 7) - down from 6 (Item 1 completed)
 - **🟡 High:** 0 items - all completed
 - **🟢 Medium:** 2 items remaining (14, 20) - down from 6 (Items 18, 19 completed)
 
@@ -37,25 +38,29 @@ This document catalogs technical debt identified during a comprehensive codebase
 
 ## Critical Technical Debt (Immediate Action Required)
 
-### 1. Untested Core Game Logic (754 lines)
+### 1. Untested Core Game Logic ✅ RESOLVED 2026-03-17
+
+**Status:** Resolved  
+**Date Fixed:** 2026-03-17
 
 **Impact:** Game mechanics could break silently without detection  
 **Files:**
-- `game/mystery_square.py` (163 lines) - Random events, teleportation
-- `game/player.py` (110 lines) - Token ownership, serialization
-- `game/api.py` (315 lines) - GameAPI facade for AI agents
-- `game/schemas.py` (166 lines) - TypedDict validation schemas
+- `game/mystery_square.py` (163 lines) - Random events, teleportation ✅ Now tested
+- `game/player.py` (110 lines) - Token ownership, serialization ✅ Now tested
+- `game/api.py` (315 lines) - GameAPI facade for AI agents ✅ Now tested
+- `game/schemas.py` (166 lines) - TypedDict validation schemas ✅ Now tested
 
-**Risk:** These modules contain core game mechanics with zero unit test coverage. Changes could introduce game-breaking bugs undetected.
+**Test Files Added:**
+- `tests/test_mystery_square.py` - 22 tests covering heal/teleport effects, edge cases, random distribution
+- `tests/test_player.py` - 33 tests covering creation, token management, serialization, edge cases
+- `tests/test_api.py` - 28 tests covering observation methods, actions, utility methods, edge cases
+- `tests/test_schemas.py` - 36 tests covering all TypedDict schemas and validation
 
-**Recommendation:** Add comprehensive unit tests covering:
-- Mystery square random events (heal vs teleport probabilities)
-- Mystery square edge cases (teleport to occupied cells)
-- Player token ownership and serialization
-- GameAPI facade methods (move, attack, deploy, end_turn, observe)
-- Schema validation edge cases
+**Total New Tests:** 119 tests (was 0)
 
-**Estimated Effort:** 2-3 sprints
+**Risk:** ✅ Mitigated - All core game logic now has comprehensive test coverage
+
+**Completed:** Sprint 5 (2026-03-17)
 
 ---
 
@@ -561,7 +566,14 @@ def test_game_window_initialization():
 - [x] Add type hints to critical methods - `input_handler.py`, `game_window.py`, `http_handler.py`
 - [x] Fix malformed type annotation in `game_action_handler.py`
 
-### Sprint 5-6 (Medium)
+### ✅ Sprint 5 - COMPLETED (2026-03-17)
+- [x] Add comprehensive tests for core game logic (Item #1 - RESOLVED)
+  - [x] `test_mystery_square.py` - 22 tests for mystery square events
+  - [x] `test_player.py` - 33 tests for player management
+  - [x] `test_api.py` - 28 tests for GameAPI facade
+  - [x] `test_schemas.py` - 36 tests for TypedDict schemas
+
+### Sprint 6 (Medium)
 - [ ] Add type hints to all public methods
 - [ ] Refactor deep nesting (6 instances)
 - [ ] Audit `# type: ignore` comments
