@@ -138,14 +138,16 @@ web_server/
 ├── templates/
 │   └── index.html              # Main HTML page
 └── static/
-    ├── game_client.js          # Core game loop
-    ├── game_client.renderer.js # 3D rendering
-    ├── game_client.websocket.js # WebSocket handling
-    ├── game_client.camera.js   # Camera system
-    ├── game_client.input.js    # Input handling
-    ├── game_client.ui.js       # HUD and UI
-    ├── game_client.constants.js # Constants
-    └── mercure_client.js       # Mercure SSE client (optional)
+    ├── game_client.js          # Main coordinator (facade)
+    ├── state_manager.js        # Centralized game state
+    ├── network_manager.js      # WebSocket/SSE communication
+    ├── ui_manager.js           # UI screens and HUD
+    ├── camera_controller.js    # 3D camera systems
+    ├── input_handler.js        # Mouse/keyboard input
+    ├── audio_manager.js        # Sound effects and music
+    ├── mercure_client.js       # Mercure SSE client
+    ├── game_client.constants.js # Game constants
+    └── renderer.*.js           # Modular rendering (base, tokens, effects)
 ```
 
 ### Adding Features

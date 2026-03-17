@@ -13,6 +13,7 @@ from game.ai_observation import AIObserver
 from server.lobby import GameLobby
 from game.generator import GeneratorManager
 from game.crystal import CrystalManager
+from shared.errors import ServerError, ErrorCode
 
 
 logger = logging.getLogger(__name__)
@@ -128,7 +129,12 @@ class GameSession:
         # Map network player ID to game player ID
         game_player_id = self.network_to_game_id.get(network_player_id)
         if not game_player_id:
-            return False, "Player not in game", None
+            error = ServerError(
+                ErrorCode.PLAYER_NOT_IN_GAME,
+                "Player not in game",
+                {"network_player_id": network_player_id},
+            )
+            return False, str(error), None
 
         # Execute action using AIActionExecutor
         success, message, result_data = self.executor.execute_action(

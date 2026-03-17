@@ -334,30 +334,30 @@ def deploy_token(self, health_value: int, position: tuple[int, int]) -> Token:
 
 ---
 
-### 14. Inconsistent Error Message Formats
+### 14. Inconsistent Error Message Formats ✅ RESOLVED 2026-03-16
+
+**Status:** Resolved  
+**Date Fixed:** 2026-03-16
 
 **Impact:** Debugging difficulty, inconsistent API, poor DX  
 **Pattern:** Multiple error formats across codebase
 
-| Pattern | Example Location | Format |
-|---------|-----------------|--------|
-| Simple string | `server/http_handler.py:288` | `{"error": str(e)}` |
-| Generic message | `server/http_handler.py:292` | `{"error": "Internal server error"}` |
-| Prefixed error | `server/websocket_handler.py:174` | `"Invalid JSON format"` |
-| Server error prefix | `server/websocket_handler.py:176` | `"Server error: {e}"` |
-| Tuple return | `server/game_coordinator.py:128` | `(False, "Player not in game", None)` |
-| Game logic format | `game/ai_actions.py` | `CANNOT {action}: {reason} \| {context}` |
+**Resolution:**
+Created `shared/errors.py` with standardized error classes:
+- `GameError` - Game logic errors: `CANNOT {action}: {reason} | {context}`
+- `ValidationError` - Input validation: `Invalid {field}: {reason} | {context}`
+- `ServerError` - Server errors: `Server error: {code} | {message}`
+- `ActionError` - Action execution failures
+- `ErrorCode` - Standardized error codes across all modules
 
-**Recommendation:** Standardize on game logic format across all modules:
-```python
-# Standard format: CANNOT {action}: {reason} | {context}
-return ValidationResult(
-    False,
-    "CANNOT MOVE: token_not_found | token_id=99 | valid_tokens=[1,2,3,4,5]"
-)
-```
+**Files Updated:**
+- `shared/errors.py` (NEW) - Standardized error classes
+- `shared/__init__.py` - Exported error classes
+- `server/http_handler.py` - All error responses use standardized format
+- `server/websocket_handler.py` - All error messages use standardized format
+- `server/game_coordinator.py` - Error messages standardized
 
-**Estimated Effort:** 1 sprint
+**Completed:** Sprint 4 (2026-03-16)
 
 ---
 

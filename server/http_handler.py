@@ -23,6 +23,13 @@ from server.auth import (
     validate_token_for_game,
 )
 from server.lobby import validate_player_name
+from shared.errors import (
+    ValidationError,
+    ServerError,
+    ActionError,
+    ErrorCode,
+    format_error_response,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -208,7 +215,10 @@ class HTTPHandler:
             500: Server error
         """
         if not self.game_server:
-            return web.json_response({"error": "Server not initialized"}, status=500)
+            error = ServerError(
+                ErrorCode.SERVER_NOT_INITIALIZED, "Server not initialized"
+            )
+            return web.json_response(format_error_response(error, 500), status=500)
 
         game_id = request.match_info["game_id"]
 
@@ -217,30 +227,34 @@ class HTTPHandler:
             player_name = data.get("player_name")
 
             if not player_name:
-                return web.json_response(
-                    {"error": "player_name is required"}, status=400
-                )
+                error = ValidationError("player_name", ErrorCode.MISSING_FIELD)
+                return web.json_response(format_error_response(error, 400), status=400)
 
             # Validate player name
             try:
                 validate_player_name(player_name)
             except ValueError as e:
-                return web.json_response(
-                    {"error": f"Invalid player_name: {e}"}, status=400
+                error = ValidationError(
+                    "player_name", ErrorCode.INVALID_VALUE, {"details": str(e)}
                 )
+                return web.json_response(format_error_response(error, 400), status=400)
 
             # Check if game exists
             lobby = self.game_server.lobby_manager.get_lobby(game_id)
             if not lobby:
-                return web.json_response({"error": "Game not found"}, status=404)
+                error = ServerError(
+                    ErrorCode.GAME_NOT_FOUND, "Game not found", {"game_id": game_id}
+                )
+                return web.json_response(format_error_response(error, 404), status=404)
 
             # Check if game already started
             from server.lobby import GameStatus
 
             if lobby.status != GameStatus.WAITING:
-                return web.json_response(
-                    {"error": "Game already started or finished"}, status=410
+                error = ServerError(
+                    ErrorCode.GAME_ALREADY_STARTED, "Game already started or finished"
                 )
+                return web.json_response(format_error_response(error, 410), status=410)
 
             # Generate player ID
             player_id = str(uuid.uuid7())
@@ -254,9 +268,10 @@ class HTTPHandler:
             )
 
             if not updated_lobby:
-                return web.json_response(
-                    {"error": "Failed to join game (may be full)"}, status=400
+                error = ServerError(
+                    ErrorCode.LOBBY_FULL, "Failed to join game (may be full)"
                 )
+                return web.json_response(format_error_response(error, 400), status=400)
 
             # Automatically mark as ready (HTTP clients auto-ready)
             self.game_server.lobby_manager.set_ready(game_id, player_id, True)
@@ -289,19 +304,30 @@ class HTTPHandler:
 
         except ValueError as e:
             logger.error(f"Validation error in HTTP join: {e}")
-            return web.json_response({"error": str(e)}, status=400)
+            error = ValidationError(
+                "request", ErrorCode.INVALID_VALUE, {"details": str(e)}
+            )
+            return web.json_response(format_error_response(error, 400), status=400)
         except KeyError as e:
             logger.error(f"Missing field in HTTP join: {e}")
-            return web.json_response({"error": "Missing required field"}, status=400)
+            error = ValidationError(
+                "request", ErrorCode.MISSING_FIELD, {"field": str(e)}
+            )
+            return web.json_response(format_error_response(error, 400), status=400)
         except jwt.InvalidTokenError as e:
             if "exp" in str(e).lower():
                 logger.warning(f"Token expired: {e}")
-                return web.json_response({"error": "Token expired"}, status=401)
+                error = ServerError(ErrorCode.TOKEN_EXPIRED, "Token expired")
+                return web.json_response(format_error_response(error, 401), status=401)
             logger.warning(f"Invalid JWT token: {e}")
-            return web.json_response({"error": "Invalid token"}, status=401)
+            error = ServerError(ErrorCode.TOKEN_INVALID, "Invalid token")
+            return web.json_response(format_error_response(error, 401), status=401)
         except Exception as e:
             logger.error(f"Unexpected error in HTTP join: {e}", exc_info=True)
-            return web.json_response({"error": "Internal server error"}, status=500)
+            error = ServerError(
+                ErrorCode.INTERNAL_ERROR, "Internal server error", {"details": str(e)}
+            )
+            return web.json_response(format_error_response(error, 500), status=500)
 
     async def handle_action_http(self, request: web.Request) -> web.Response:
         """
@@ -330,7 +356,10 @@ class HTTPHandler:
             500: Server error
         """
         if not self.game_server:
-            return web.json_response({"error": "Server not initialized"}, status=500)
+            error = ServerError(
+                ErrorCode.SERVER_NOT_INITIALIZED, "Server not initialized"
+            )
+            return web.json_response(format_error_response(error, 500), status=500)
 
         game_id = request.match_info["game_id"]
 
@@ -339,25 +368,32 @@ class HTTPHandler:
         token = extract_token_from_header(auth_header)
 
         if not token:
-            return web.json_response(
-                {"error": "Missing or invalid Authorization header"}, status=401
+            error = ServerError(
+                ErrorCode.UNAUTHORIZED, "Missing or invalid Authorization header"
             )
+            return web.json_response(format_error_response(error, 401), status=401)
 
         try:
             payload = verify_player_token(token, self.jwt_secret)
         except jwt.ExpiredSignatureError:
-            return web.json_response({"error": "Token expired"}, status=401)
+            error = ServerError(ErrorCode.TOKEN_EXPIRED, "Token expired")
+            return web.json_response(format_error_response(error, 401), status=401)
         except jwt.InvalidTokenError:
-            return web.json_response({"error": "Invalid token"}, status=401)
+            error = ServerError(ErrorCode.TOKEN_INVALID, "Invalid token")
+            return web.json_response(format_error_response(error, 401), status=401)
 
         if not payload:
-            return web.json_response({"error": "Invalid token payload"}, status=401)
+            error = ServerError(ErrorCode.TOKEN_INVALID, "Invalid token payload")
+            return web.json_response(format_error_response(error, 401), status=401)
 
         # Validate token is for this game
         if not validate_token_for_game(payload, game_id):
-            return web.json_response(
-                {"error": "Token not valid for this game"}, status=403
+            error = ServerError(
+                ErrorCode.FORBIDDEN,
+                "Token not valid for this game",
+                {"game_id": game_id},
             )
+            return web.json_response(format_error_response(error, 403), status=403)
 
         player_id = payload.player_id
 
@@ -367,25 +403,32 @@ class HTTPHandler:
             action_type = action_data.get("type", "").strip()
 
             if not action_type:
-                return web.json_response(
-                    {"error": "Action type is required"}, status=400
-                )
+                error = ValidationError("type", ErrorCode.MISSING_FIELD)
+                return web.json_response(format_error_response(error, 400), status=400)
 
             # Validate action data based on type
             if action_type in ["MOVE", "move"]:
                 token_id = action_data.get("token_id")
                 destination = action_data.get("destination")
                 if token_id is None:
+                    error = ValidationError(
+                        "token_id", ErrorCode.MISSING_FIELD, {"action": "MOVE"}
+                    )
                     return web.json_response(
-                        {"error": "token_id is required for MOVE action"}, status=400
+                        format_error_response(error, 400), status=400
                     )
                 if (
                     not destination
                     or not isinstance(destination, list)
                     or len(destination) != 2
                 ):
+                    error = ValidationError(
+                        "destination",
+                        ErrorCode.INVALID_VALUE,
+                        {"expected": "[x, y] coordinates"},
+                    )
                     return web.json_response(
-                        {"error": "destination must be [x, y] coordinates"}, status=400
+                        format_error_response(error, 400), status=400
                     )
             elif action_type in ["ATTACK", "attack"]:
                 attacker_id = action_data.get("attacker_id")
@@ -393,41 +436,59 @@ class HTTPHandler:
                     "target_id"
                 )
                 if attacker_id is None:
+                    error = ValidationError(
+                        "attacker_id", ErrorCode.MISSING_FIELD, {"action": "ATTACK"}
+                    )
                     return web.json_response(
-                        {"error": "attacker_id is required for ATTACK action"},
-                        status=400,
+                        format_error_response(error, 400), status=400
                     )
                 if defender_id is None:
+                    error = ValidationError(
+                        "defender_id",
+                        ErrorCode.MISSING_FIELD,
+                        {"action": "ATTACK", "alternative": "target_id"},
+                    )
                     return web.json_response(
-                        {
-                            "error": "defender_id or target_id is required for ATTACK action"
-                        },
-                        status=400,
+                        format_error_response(error, 400), status=400
                     )
             elif action_type in ["DEPLOY", "deploy"]:
                 health_value = action_data.get("health_value")
                 position = action_data.get("position")
                 if health_value is None:
+                    error = ValidationError(
+                        "health_value", ErrorCode.MISSING_FIELD, {"action": "DEPLOY"}
+                    )
                     return web.json_response(
-                        {"error": "health_value is required for DEPLOY action"},
-                        status=400,
+                        format_error_response(error, 400), status=400
                     )
                 if not position or not isinstance(position, list) or len(position) != 2:
+                    error = ValidationError(
+                        "position",
+                        ErrorCode.INVALID_VALUE,
+                        {"expected": "[x, y] coordinates"},
+                    )
                     return web.json_response(
-                        {"error": "position must be [x, y] coordinates"}, status=400
+                        format_error_response(error, 400), status=400
                     )
             elif action_type not in ["END_TURN", "end_turn"]:
-                return web.json_response(
-                    {"error": f"Unknown action type: {action_type}"}, status=400
+                error = ValidationError(
+                    "type",
+                    ErrorCode.INVALID_VALUE,
+                    {
+                        "value": action_type,
+                        "allowed": ["MOVE", "ATTACK", "DEPLOY", "END_TURN"],
+                    },
                 )
+                return web.json_response(format_error_response(error, 400), status=400)
 
             # Convert action type to MessageType enum
             try:
                 msg_type = MessageType(action_type)
             except ValueError:
-                return web.json_response(
-                    {"error": f"Invalid action type: {action_type}"}, status=400
+                error = ValidationError(
+                    "type", ErrorCode.INVALID_VALUE, {"value": action_type}
                 )
+                return web.json_response(format_error_response(error, 400), status=400)
 
             # Create network message for action conversion
             from network.protocol import NetworkMessage
@@ -444,9 +505,10 @@ class HTTPHandler:
             try:
                 action = self.protocol.message_to_action(message)
             except (KeyError, ValueError) as e:
-                return web.json_response(
-                    {"error": f"Invalid action data: {e}"}, status=400
+                error = ValidationError(
+                    "action_data", ErrorCode.INVALID_VALUE, {"details": str(e)}
                 )
+                return web.json_response(format_error_response(error, 400), status=400)
 
             # Execute action via game coordinator
             success, message_text, result_data, game_session = (
@@ -454,10 +516,13 @@ class HTTPHandler:
             )
 
             if not success:
+                error = ActionError(
+                    action_type.upper(), "validation_failed", {"message": message_text}
+                )
                 return web.json_response(
                     {
                         "success": False,
-                        "message": message_text,
+                        **format_error_response(error, 422),
                         "action_type": action_type,
                     },
                     status=422,  # Unprocessable Entity (valid request, invalid action)
@@ -486,16 +551,24 @@ class HTTPHandler:
 
         except ValueError as e:
             logger.error(f"Validation error in HTTP action: {e}")
-            return web.json_response({"error": str(e)}, status=400)
+            error = ValidationError(
+                "request", ErrorCode.INVALID_VALUE, {"details": str(e)}
+            )
+            return web.json_response(format_error_response(error, 400), status=400)
         except KeyError as e:
             logger.error(f"Missing field in HTTP action: {e}")
-            return web.json_response({"error": "Missing required field"}, status=400)
+            error = ValidationError(
+                "request", ErrorCode.MISSING_FIELD, {"field": str(e)}
+            )
+            return web.json_response(format_error_response(error, 400), status=400)
         except jwt.InvalidTokenError as e:
             if "exp" in str(e).lower():
                 logger.warning(f"Token expired: {e}")
-                return web.json_response({"error": "Token expired"}, status=401)
+                error = ServerError(ErrorCode.TOKEN_EXPIRED, "Token expired")
+                return web.json_response(format_error_response(error, 401), status=401)
             logger.warning(f"Invalid JWT token: {e}")
-            return web.json_response({"error": "Invalid token"}, status=401)
+            error = ServerError(ErrorCode.TOKEN_INVALID, "Invalid token")
+            return web.json_response(format_error_response(error, 401), status=401)
         except Exception as e:
             logger.error(f"Unexpected error in HTTP action: {e}", exc_info=True)
             return web.json_response({"error": "Internal server error"}, status=500)

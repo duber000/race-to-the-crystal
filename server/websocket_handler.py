@@ -18,6 +18,12 @@ from network.messages import MessageType, ClientType
 from network.protocol import NetworkMessage
 from server.rate_limiter import RateLimiter
 from server.lobby import validate_player_name
+from shared.errors import (
+    ServerError,
+    ValidationError,
+    ErrorCode,
+    format_websocket_error,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -176,29 +182,39 @@ class WebSocketHandler:
                 await self._handle_client_disconnect(client)
             else:
                 logger.warning(f"Unknown WebSocket message type: {msg_type}")
-                await self._send_error(client, f"Unknown message type: {msg_type}")
+                await self._send_error(
+                    client, f"Unknown message type: {msg_type}", ErrorCode.INVALID_VALUE
+                )
 
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON from {client.client_id}: {e}")
-            await self._send_error(client, "Invalid JSON format")
+            await self._send_error(
+                client, "Invalid JSON format", ErrorCode.INVALID_VALUE
+            )
         except ValueError as e:
             logger.warning(f"Invalid message data from {client.client_id}: {e}")
-            await self._send_error(client, f"Invalid request: {e}")
+            await self._send_error(
+                client, f"Invalid request: {e}", ErrorCode.INVALID_VALUE
+            )
         except KeyError as e:
             logger.warning(f"Missing message field from {client.client_id}: {e}")
-            await self._send_error(client, f"Missing field: {e}")
+            await self._send_error(
+                client, f"Missing field: {e}", ErrorCode.MISSING_FIELD
+            )
         except Exception as e:
             logger.error(
                 f"Unexpected error handling WebSocket message: {e}", exc_info=True
             )
-            await self._send_error(client, f"Server error: {e}")
+            await self._send_error(
+                client, f"Server error: {e}", ErrorCode.INTERNAL_ERROR
+            )
 
     async def _delegate_to_server(
         self, client: WebSocketClient, message: NetworkMessage
     ) -> None:
         """Delegate a NetworkMessage to the main server for handling."""
         if not self.game_server or not client.player_id:
-            await self._send_error(client, "Not connected")
+            await self._send_error(client, "Not connected", ErrorCode.UNAUTHORIZED)
             return
 
         await self.game_server._handle_message(client.player_id, message)
@@ -214,7 +230,9 @@ class WebSocketHandler:
     async def _handle_connect(self, client: WebSocketClient, data: dict) -> None:
         """Handle web client connection."""
         if not self.game_server:
-            await self._send_error(client, "Server not initialized")
+            await self._send_error(
+                client, "Server not initialized", ErrorCode.SERVER_NOT_INITIALIZED
+            )
             return
 
         player_name = data.get("player_name", "WebPlayer")
@@ -223,7 +241,9 @@ class WebSocketHandler:
         try:
             validate_player_name(player_name)
         except ValueError as e:
-            await self._send_error(client, f"Invalid player name: {e}")
+            await self._send_error(
+                client, f"Invalid player name: {e}", ErrorCode.INVALID_VALUE
+            )
             logger.warning(f"Invalid player name rejected: {player_name} - {e}")
             return
 
@@ -258,13 +278,13 @@ class WebSocketHandler:
     async def _handle_create_game(self, client: WebSocketClient, data: dict) -> None:
         """Handle create game request from web client."""
         if not self.game_server or not client.player_id:
-            await self._send_error(client, "Not connected")
+            await self._send_error(client, "Not connected", ErrorCode.UNAUTHORIZED)
             return
 
         # Check game creation rate limit
         allowed, error_msg = self.rate_limiter.check_game_creation(client.player_id)
         if not allowed:
-            await self._send_error(client, error_msg)
+            await self._send_error(client, error_msg, ErrorCode.FORBIDDEN)
             return
 
         game_name = data.get("game_name", "Web Game")
@@ -273,7 +293,9 @@ class WebSocketHandler:
         # Validate max_players
         if not isinstance(max_players, int) or max_players < 2 or max_players > 4:
             await self._send_error(
-                client, "Invalid max_players: must be between 2 and 4"
+                client,
+                "Invalid max_players: must be between 2 and 4",
+                ErrorCode.INVALID_VALUE,
             )
             return
 
@@ -293,12 +315,14 @@ class WebSocketHandler:
     async def _handle_join_game(self, client: WebSocketClient, data: dict) -> None:
         """Handle join game request from web client."""
         if not self.game_server or not client.player_id:
-            await self._send_error(client, "Not connected")
+            await self._send_error(client, "Not connected", ErrorCode.UNAUTHORIZED)
             return
 
         game_id = data.get("game_id")
         if not game_id:
-            await self._send_error(client, "No game_id provided")
+            await self._send_error(
+                client, "No game_id provided", ErrorCode.MISSING_FIELD
+            )
             return
         message = NetworkMessage(
             type=MessageType.JOIN_GAME,
@@ -326,7 +350,7 @@ class WebSocketHandler:
     async def _handle_list_games(self, client: WebSocketClient) -> None:
         """Handle list games request from web client."""
         if not self.game_server or not client.player_id:
-            await self._send_error(client, "Not connected")
+            await self._send_error(client, "Not connected", ErrorCode.UNAUTHORIZED)
             return
 
         message = NetworkMessage(
@@ -339,7 +363,9 @@ class WebSocketHandler:
     async def _handle_ready(self, client: WebSocketClient, data: dict) -> None:
         """Handle ready status update from web client."""
         if not self.game_server or not client.game_id:
-            await self._send_error(client, "Not in a game")
+            await self._send_error(
+                client, "Not in a game", ErrorCode.PLAYER_NOT_IN_GAME
+            )
             return
 
         is_ready = data.get("ready", True)
@@ -354,7 +380,9 @@ class WebSocketHandler:
     async def _handle_start_game(self, client: WebSocketClient, data: dict) -> None:
         """Handle start game request from web client - delegates to main server."""
         if not self.game_server or not client.game_id:
-            await self._send_error(client, "Not in a game")
+            await self._send_error(
+                client, "Not in a game", ErrorCode.PLAYER_NOT_IN_GAME
+            )
             return
 
         message = NetworkMessage(
@@ -368,18 +396,20 @@ class WebSocketHandler:
     async def _handle_game_action(self, client: WebSocketClient, data: dict) -> None:
         """Handle game action from web client."""
         if not self.game_server or not client.player_id:
-            await self._send_error(client, "Not connected")
+            await self._send_error(client, "Not connected", ErrorCode.UNAUTHORIZED)
             return
 
         # Check action rate limit
         allowed, error_msg = self.rate_limiter.check_action(client.player_id)
         if not allowed:
-            await self._send_error(client, error_msg)
+            await self._send_error(client, error_msg, ErrorCode.FORBIDDEN)
             return
 
         msg_type = data.get("type")
         if not msg_type:
-            await self._send_error(client, "Missing message type")
+            await self._send_error(
+                client, "Missing message type", ErrorCode.MISSING_FIELD
+            )
             return
 
         # Validate action data based on type
@@ -387,7 +417,9 @@ class WebSocketHandler:
         if msg_type_lower in ["move", "attack", "deploy"]:
             if msg_type_lower == "move":
                 if data.get("token_id") is None:
-                    await self._send_error(client, "token_id is required for MOVE")
+                    await self._send_error(
+                        client, "token_id is required for MOVE", ErrorCode.MISSING_FIELD
+                    )
                     return
                 destination = data.get("destination")
                 if (
@@ -396,7 +428,9 @@ class WebSocketHandler:
                     or len(destination) != 2
                 ):
                     await self._send_error(
-                        client, "destination must be [x, y] coordinates"
+                        client,
+                        "destination must be [x, y] coordinates",
+                        ErrorCode.INVALID_VALUE,
                     )
                     return
             elif msg_type_lower == "attack":
@@ -639,9 +673,15 @@ class WebSocketHandler:
         self.game_server.lobby_manager.finish_game(game_session.game_id)
         logger.info(f"Game {game_session.game_id} ended. Winner: {winner_name}")
 
-    async def _send_error(self, client: WebSocketClient, error_msg: str | None) -> None:
-        """Send error message to client."""
-        response = {"type": "ERROR", "error": error_msg or "Unknown error"}
+    async def _send_error(
+        self,
+        client: WebSocketClient,
+        error_msg: str | None,
+        error_code: str = "unknown_error",
+    ) -> None:
+        """Send error message to client using standardized format."""
+        error = ServerError(error_code, error_msg or "Unknown error")
+        response = format_websocket_error(error)
         try:
             if client.websocket:
                 await client.websocket.send_json(response)
