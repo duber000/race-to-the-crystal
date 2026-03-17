@@ -107,9 +107,7 @@ class GameView(arcade.View):
             font_size=24,
             bold=True,
         )
-        self.turn_text = arcade.Text(
-            "", 10, 0, HUD_TEXT_COLOR_SECONDARY, font_size=16
-        )
+        self.turn_text = arcade.Text("", 10, 0, HUD_TEXT_COLOR_SECONDARY, font_size=16)
         self.phase_text = arcade.Text(
             "", 200, 0, HUD_TEXT_COLOR_SECONDARY, font_size=16
         )
@@ -399,6 +397,7 @@ class GameView(arcade.View):
                 # Use camera transform for 2D mode
                 with self.camera_controller.camera_2d.activate():
                     from shared.constants import CELL_SIZE
+
                     screen_x = crystal_pos[0] * CELL_SIZE + CELL_SIZE / 2
                     screen_y = crystal_pos[1] * CELL_SIZE + CELL_SIZE / 2
                     self.crystal_effect_animator.draw(screen_x, screen_y)
@@ -444,124 +443,128 @@ class GameView(arcade.View):
         Args:
             delta_time: Time since last update in seconds
         """
-        # Check if game has ended
-        if not self.victory_shown and self.game_state.phase == GamePhase.ENDED:
-            # Start countdown to victory screen (let final effects play first)
-            self.victory_delay += delta_time
+        if self._check_victory_condition(delta_time):
+            return
 
-            if self.victory_delay >= self.victory_delay_duration:
-                self.victory_shown = True
-                winner = self.game_state.get_winner()
-                if winner:
-                    winner_name = winner.name
-                    # Create and show victory view
-                    victory_view = VictoryViewSimple(winner_name)
-                    victory_view.on_return_to_menu = self._on_victory_return_to_menu
-                    self.window.show_view(victory_view)
-                    return
+        self._update_animations(delta_time)
+        self._update_mystery_animations(delta_time)
+        self._update_crystal_effects()
+        self._update_board_shapes()
 
-        # Update animations
+    def _check_victory_condition(self, delta_time: float) -> bool:
+        """Check if game has ended and show victory screen."""
+        if self.victory_shown or self.game_state.phase != GamePhase.ENDED:
+            return False
+
+        self.victory_delay += delta_time
+
+        if self.victory_delay >= self.victory_delay_duration:
+            self.victory_shown = True
+            winner = self.game_state.get_winner()
+            if winner:
+                victory_view = VictoryViewSimple(winner.name)
+                victory_view.on_return_to_menu = self._on_victory_return_to_menu
+                self.window.show_view(victory_view)
+            return True
+        return False
+
+    def _update_animations(self, delta_time: float) -> None:
+        """Update all animation systems."""
         self.renderer_2d.update(delta_time)
         self.renderer_3d.update(delta_time)
         self.ui_sprites.update()
 
-        # Update chat widget
         if self.chat_widget:
             self.chat_widget.update(delta_time)
 
-        # Process pending mystery animations (start when token arrives)
         self.action_handler.process_pending_mystery_animations(self.mystery_animations)
+        self.crystal_effect_animator.update(delta_time)
+        self.renderer_3d.update_mystery_animations(self.mystery_animations)
 
-        # Update mystery square coin flip animations
+    def _update_mystery_animations(self, delta_time: float) -> None:
+        """Update mystery square coin flip animations."""
         positions_to_remove = []
         for position, progress in self.mystery_animations.items():
-            # Advance animation
             new_progress = progress + (delta_time / self.mystery_animation_duration)
             if new_progress >= 1.0:
-                # Animation complete
                 positions_to_remove.append(position)
             else:
                 self.mystery_animations[position] = new_progress
 
-        # Remove completed animations
         for position in positions_to_remove:
             del self.mystery_animations[position]
 
-        # Check for newly triggered crystal effects
-        if self.game_state.last_triggered_crystal_effect:
-            player_id, effect_type = self.game_state.last_triggered_crystal_effect
+    def _update_crystal_effects(self) -> None:
+        """Check for and process newly triggered crystal effects."""
+        if not self.game_state.last_triggered_crystal_effect:
+            return
 
-            # Get crystal position
-            if self.game_state.crystal:
-                crystal_pos = self.game_state.crystal.position
+        player_id, effect_type = self.game_state.last_triggered_crystal_effect
 
-                # Get affected tokens for lightning effect
-                affected_tokens = []
-                if effect_type == CrystalEffect.DAMAGE_BOOST:
-                    # If player_id is None, effect affects all players
-                    if player_id is None:
-                        affected_tokens = [
-                            t for t in self.game_state.tokens.values()
-                            if t.is_deployed and t.is_alive
-                        ]
-                    else:
-                        affected_tokens = [
-                            t for t in self.game_state.tokens.values()
-                            if t.player_id == player_id and t.is_deployed and t.is_alive
-                        ]
+        if self.game_state.crystal:
+            crystal_pos = self.game_state.crystal.position
+            affected_tokens = self._get_affected_tokens(player_id, effect_type)
+            self.crystal_effect_animator.start_effect_animation(
+                effect_type, crystal_pos, affected_tokens
+            )
+            self._play_crystal_effect_sound(effect_type)
 
-                # Start animation
-                self.crystal_effect_animator.start_effect_animation(
-                    effect_type, crystal_pos, affected_tokens
-                )
+        self.game_state.last_triggered_crystal_effect = None
 
-                # Play sound effect
-                if effect_type == CrystalEffect.FOG_OF_WAR:
-                    self.audio_manager.play_fog_horn_sound()
-                elif effect_type == CrystalEffect.PHANTOM_ENEMIES:
-                    self.audio_manager.play_ghost_sound()
-                elif effect_type == CrystalEffect.DAMAGE_BOOST:
-                    self.audio_manager.play_lightning_sound()
-                elif effect_type == CrystalEffect.SPEED_BOOST:
-                    self.audio_manager.play_whoosh_sound()
+    def _get_affected_tokens(
+        self, player_id: str | None, effect_type: CrystalEffect
+    ) -> list:
+        """Get tokens affected by a crystal effect."""
+        if effect_type != CrystalEffect.DAMAGE_BOOST:
+            return []
 
-            # Clear the trigger
-            self.game_state.last_triggered_crystal_effect = None
+        if player_id is None:
+            return [
+                t
+                for t in self.game_state.tokens.values()
+                if t.is_deployed and t.is_alive
+            ]
+        return [
+            t
+            for t in self.game_state.tokens.values()
+            if t.player_id == player_id and t.is_deployed and t.is_alive
+        ]
 
-        # Update crystal effect animator
-        self.crystal_effect_animator.update(delta_time)
+    def _play_crystal_effect_sound(self, effect_type: CrystalEffect) -> None:
+        """Play sound effect for a crystal effect."""
+        sound_methods = {
+            CrystalEffect.FOG_OF_WAR: self.audio_manager.play_fog_horn_sound,
+            CrystalEffect.PHANTOM_ENEMIES: self.audio_manager.play_ghost_sound,
+            CrystalEffect.DAMAGE_BOOST: self.audio_manager.play_lightning_sound,
+            CrystalEffect.SPEED_BOOST: self.audio_manager.play_whoosh_sound,
+        }
+        if effect_type in sound_methods:
+            sound_methods[effect_type]()
 
-        # Update 3D mystery animations if there are any active
-        self.renderer_3d.update_mystery_animations(self.mystery_animations)
-
-        # Recreate board shapes every frame to update animations (glowing lines, crystal pulse)
-        # Check if board data is valid before animating
+    def _update_board_shapes(self) -> None:
+        """Recreate board shapes for animation updates."""
         renderer_board = getattr(self.renderer_2d, "board", None)
         renderer_generators = getattr(self.renderer_2d, "generators", None)
         renderer_crystal = getattr(self.renderer_2d, "crystal", None)
         renderer_mystery = getattr(self.renderer_2d, "mystery_animations", None)
 
-        if (
-            renderer_board is not None
-            and renderer_generators is not None
-            and renderer_crystal is not None
-            and renderer_mystery is not None
+        if None in (
+            renderer_board,
+            renderer_generators,
+            renderer_crystal,
+            renderer_mystery,
         ):
-            # Board data is valid, animate
-            crystal_pos = (
-                self.renderer_2d.crystal.position if self.renderer_2d.crystal else None
-            )
-            assert self.renderer_2d.board is not None
-            assert self.renderer_2d.generators is not None
-            self.renderer_2d.board_shapes = create_board_shapes(
-                self.renderer_2d.board,
-                generators=self.renderer_2d.generators,
-                crystal_pos=crystal_pos,
-                mystery_animations=self.mystery_animations,
-            )
-        else:
-            # Board data missing, animation loop skipped
-            pass
+            return
+
+        crystal_pos = (
+            self.renderer_2d.crystal.position if self.renderer_2d.crystal else None
+        )
+        self.renderer_2d.board_shapes = create_board_shapes(
+            self.renderer_2d.board,
+            generators=self.renderer_2d.generators,
+            crystal_pos=crystal_pos,
+            mystery_animations=self.mystery_animations,
+        )
 
     def on_resize(self, width: int, height: int):
         """

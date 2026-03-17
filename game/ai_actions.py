@@ -237,6 +237,80 @@ class AIActionExecutor:
     are invalid.
     """
 
+    def _validate_game_phase(self, game_state: GameState) -> ValidationResult | None:
+        """Validate that game is in PLAYING phase."""
+        if game_state.phase != GamePhase.PLAYING:
+            return ValidationResult(
+                False,
+                f"ACTION_FAILED: wrong_game_phase | current={game_state.phase.name} | required=PLAYING",
+            )
+        return None
+
+    def _validate_player_turn(
+        self, game_state: GameState, player_id: PlayerID
+    ) -> ValidationResult | None:
+        """Validate that it's the player's turn."""
+        if game_state.current_turn_player_id != player_id:
+            return ValidationResult(
+                False,
+                f"ACTION_FAILED: not_your_turn | current_player={game_state.current_turn_player_id} | you={player_id}",
+            )
+        return None
+
+    def _validate_turn_phase(
+        self, game_state: GameState, required_phase: TurnPhase, action_name: str
+    ) -> ValidationResult | None:
+        """Validate that game is in the required turn phase."""
+        if game_state.turn_phase != required_phase:
+            return ValidationResult(
+                False,
+                f"{action_name}_FAILED: wrong_phase | current={game_state.turn_phase.name} | required={required_phase.name}",
+            )
+        return None
+
+    def _validate_token_exists(
+        self, game_state: GameState, token_id: TokenID, action_name: str
+    ) -> tuple[ValidationResult, Token] | tuple[ValidationResult, None]:
+        """Validate that a token exists and return it."""
+        token = game_state.get_token(token_id)
+        if not token:
+            return ValidationResult(
+                False,
+                f"{action_name}_FAILED: token_not_found | token_id={token_id}",
+            ), None
+        return ValidationResult(True, ""), token
+
+    def _validate_token_ownership(
+        self, token: Token, player_id: PlayerID, action_name: str
+    ) -> ValidationResult:
+        """Validate that player owns the token."""
+        if token.player_id != player_id:
+            return ValidationResult(
+                False,
+                f"{action_name}_FAILED: not_owner | token_id={token.id} | owner={token.player_id}",
+            )
+        return ValidationResult(True, "")
+
+    def _validate_token_deployed(
+        self, token: Token, action_name: str
+    ) -> ValidationResult:
+        """Validate that token is deployed."""
+        if not token.is_deployed:
+            return ValidationResult(
+                False,
+                f"{action_name}_FAILED: not_deployed | token_id={token.id} | hint=Use DEPLOY action first",
+            )
+        return ValidationResult(True, "")
+
+    def _validate_token_alive(self, token: Token, action_name: str) -> ValidationResult:
+        """Validate that token is alive."""
+        if not token.is_alive:
+            return ValidationResult(
+                False,
+                f"{action_name}_FAILED: token_dead | token_id={token.id}",
+            )
+        return ValidationResult(True, "")
+
     def validate_action(
         self, action: AIAction, game_state: GameState, player_id: PlayerID
     ) -> ValidationResult:
@@ -251,19 +325,11 @@ class AIActionExecutor:
         Returns:
             ValidationResult with is_valid flag and message
         """
-        # Check game phase
-        if game_state.phase != GamePhase.PLAYING:
-            return ValidationResult(
-                False,
-                f"ACTION_FAILED: wrong_game_phase | current={game_state.phase.name} | required=PLAYING",
-            )
+        if result := self._validate_game_phase(game_state):
+            return result
 
-        # Check if it's the player's turn
-        if game_state.current_turn_player_id != player_id:
-            return ValidationResult(
-                False,
-                f"ACTION_FAILED: not_your_turn | current_player={game_state.current_turn_player_id} | you={player_id}",
-            )
+        if result := self._validate_player_turn(game_state, player_id):
+            return result
 
         # Validate based on action type using pattern matching
         match action:
@@ -360,7 +426,10 @@ class AIActionExecutor:
         # Check destination is valid (with effective movement range considering speed boost)
         effective_range = game_state.get_token_movement_range(token)
         valid_moves = MovementSystem.get_valid_moves(
-            token, game_state.board, max_range=effective_range, tokens_dict=game_state.tokens
+            token,
+            game_state.board,
+            max_range=effective_range,
+            tokens_dict=game_state.tokens,
         )
         if action.destination not in valid_moves:
             x, y = action.destination

@@ -557,49 +557,28 @@ cleanup() {
 
 ## Low Priority (Address When Time Permits)
 
-### 13. Performance Optimization
+### 13. Performance Optimization ✅ RESOLVED 2026-03-16
 
-**Files:** `game_client.js:637-692`, `renderer.base.js:255-373`  
+**Status:** Resolved (Partial)  
+**Date Fixed:** 2026-03-16
+
+**Files:** `renderer.base.js:255-373`  
 **Severity:** Low  
 **Impact:** Frame rate degradation on low-end devices
 
 **Problem:**
-- `updateValidMoves()` recalculates BFS on every token selection
-- Board creation generates 1000+ individual line meshes
+- Board creation generates 1800+ individual line meshes
 
-**Evidence:**
-```javascript
-// game_client.js:637-692
-updateValidMoves(token) {
-  this.validMoves = new Set();
-  // BFS pathfinding - runs every selection
-  const moveRange = token.health >= 7 ? 1 : 2;
-  const visited = new Set();
-  const queue = [[start, 0]];
-  // ...
-}
+**Resolution:**
+Optimized `createBoard()` in `renderer.base.js`:
+- Consolidated vertical grid lines into single mesh (was 625 individual meshes)
+- Consolidated horizontal cage lines into single mesh (was ~1200 individual meshes)
+- Reduced from 1800+ meshes to just 2 meshes
+- Significant performance improvement for 3D rendering initialization
 
-// renderer.base.js:255-373
-createBoard() {
-  // Creates 1000+ individual line meshes
-  for (let x = 0; x <= BOARD_WIDTH; x++) {
-    for (let y = 0; y <= BOARD_HEIGHT; y++) {
-      const line = BABYLON.MeshBuilder.CreateLines(...);
-      boardMeshes.push(line);
-    }
-  }
-}
-```
+**Note:** `updateValidMoves()` BFS caching skipped per user request (testing/caching excluded)
 
-**Recommendation:**
-- Cache valid moves calculation per token
-- Use instanced meshes for board lines
-- Profile with Chrome DevTools to identify hot paths
-- Implement level-of-detail (LOD) for distant objects
-
-**Files to Update:**
-- `game_client.js`
-- `renderer.base.js`
+**Completed:** Sprint 3 (2026-03-16)
 
 ---
 

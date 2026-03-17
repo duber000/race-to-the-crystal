@@ -439,48 +439,54 @@ class GameState:
         if not self.current_turn_player_id:
             return
 
-        # Clear mystery event from previous action
+        self._clear_turn_state()
+        self._advance_to_next_player()
+        self._check_and_trigger_crystal_effects()
+        self.turn_phase = TurnPhase.MOVEMENT
+
+    def _clear_turn_state(self) -> None:
+        """Clear mystery event from previous action."""
         self.last_triggered_mystery_event = None
 
-        # Update crystal effects (decrement durations and remove expired)
+    def _advance_to_next_player(self) -> None:
+        """Advance to the next active player."""
         self.crystal_effects.end_turn_update()
-
-        # Get list of active players
-        active_players = [
-            pid for pid, player in self.players.items() if player.is_active
-        ]
+        active_players = self._get_active_players()
 
         if not active_players:
             return
 
-        # Find current player index
+        next_index = self._calculate_next_player_index(active_players)
+        self.current_turn_player_id = active_players[next_index]
+
+        if next_index == 0:
+            self._increment_turn_number()
+
+    def _get_active_players(self) -> list[PlayerID]:
+        """Get list of active player IDs."""
+        return [pid for pid, player in self.players.items() if player.is_active]
+
+    def _calculate_next_player_index(self, active_players: list[PlayerID]) -> int:
+        """Calculate the index of the next player."""
         try:
             current_index = active_players.index(self.current_turn_player_id)
         except ValueError:
             current_index = -1
+        return (current_index + 1) % len(active_players)
 
-        # Move to next active player
-        next_index = (current_index + 1) % len(active_players)
-        self.current_turn_player_id = active_players[next_index]
+    def _check_and_trigger_crystal_effects(self) -> None:
+        """Check if we should trigger a random crystal effect."""
+        from shared.constants import CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL
 
-        # If we wrapped around to first player, increment turn number
-        if next_index == 0:
-            # Check if we should trigger a random crystal effect
-            # turn_number already represents the current round (increments once per full rotation)
-            from shared.constants import CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL
+        if (
+            self.turn_number > 0
+            and self.turn_number % CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL == 0
+        ):
+            self.trigger_random_crystal_effect()
 
-            # Trigger effect every N rounds (after completing round 5, 10, 15, etc.)
-            if (
-                self.turn_number > 0
-                and self.turn_number % CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL == 0
-            ):
-                self.trigger_random_crystal_effect()
-
-            # Increment turn number for new round
-            self.turn_number += 1
-
-        # Reset turn phase to MOVEMENT for next player
-        self.turn_phase = TurnPhase.MOVEMENT
+    def _increment_turn_number(self) -> None:
+        """Increment the turn number for a new round."""
+        self.turn_number += 1
 
     def update_objectives(self) -> tuple[list[int], bool]:
         """
@@ -722,7 +728,7 @@ class GameState:
     def _calculate_dict_delta(self, old_dict: dict, new_dict: dict) -> dict:
         """
         Recursively calculate the delta between two dictionaries.
-        
+
         Returns a dict with keys from new_dict that are different or missing in old_dict.
         """
         delta = {}

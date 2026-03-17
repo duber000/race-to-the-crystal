@@ -253,72 +253,65 @@ class Renderer3D {
     }
 
     createBoard() {
-        const boardMeshes = [];
+        // Build all line points in arrays for single mesh creation
+        const verticalLines = [];
+        const horizontalLines = [];
+        const cageLines = [];
 
+        // Vertical grid lines (X direction)
         for (let x = 0; x <= BOARD_WIDTH; x++) {
+            const worldX = x * CELL_SIZE;
             for (let y = 0; y <= BOARD_HEIGHT; y++) {
-                const worldX = x * CELL_SIZE;
                 const worldZ = y * CELL_SIZE;
-
-                const line = BABYLON.MeshBuilder.CreateLines(
-                    `gridLine_${x}_${y}`,
-                    {
-                        points: [
-                            new BABYLON.Vector3(worldX, 0, worldZ),
-                            new BABYLON.Vector3(worldX, WALL_HEIGHT, worldZ),
-                        ],
-                    },
-                    this.scene,
+                verticalLines.push(
+                    new BABYLON.Vector3(worldX, 0, worldZ),
+                    new BABYLON.Vector3(worldX, WALL_HEIGHT, worldZ)
                 );
-                line.color = CYAN_GLOW;
-                boardMeshes.push(line);
             }
         }
 
+        // Horizontal cage lines (top of walls)
         for (let y = 0; y <= BOARD_HEIGHT; y++) {
+            const worldZ = y * CELL_SIZE;
             for (let x = 0; x < BOARD_WIDTH; x++) {
-                const worldZ = y * CELL_SIZE;
                 const x1 = x * CELL_SIZE;
                 const x2 = (x + 1) * CELL_SIZE;
-
-                const line = BABYLON.MeshBuilder.CreateLines(
-                    `hLineX_${x}_${y}`,
-                    {
-                        points: [
-                            new BABYLON.Vector3(x1, WALL_HEIGHT, worldZ),
-                            new BABYLON.Vector3(x2, WALL_HEIGHT, worldZ),
-                        ],
-                    },
-                    this.scene,
+                cageLines.push(
+                    new BABYLON.Vector3(x1, WALL_HEIGHT, worldZ),
+                    new BABYLON.Vector3(x2, WALL_HEIGHT, worldZ)
                 );
-                line.color = CYAN_GLOW;
-                boardMeshes.push(line);
             }
         }
 
         for (let x = 0; x <= BOARD_WIDTH; x++) {
+            const worldX = x * CELL_SIZE;
             for (let y = 0; y < BOARD_HEIGHT; y++) {
-                const worldX = x * CELL_SIZE;
                 const z1 = y * CELL_SIZE;
                 const z2 = (y + 1) * CELL_SIZE;
-
-                const line = BABYLON.MeshBuilder.CreateLines(
-                    `hLineY_${x}_${y}`,
-                    {
-                        points: [
-                            new BABYLON.Vector3(worldX, WALL_HEIGHT, z1),
-                            new BABYLON.Vector3(worldX, WALL_HEIGHT, z2),
-                        ],
-                    },
-                    this.scene,
+                cageLines.push(
+                    new BABYLON.Vector3(worldX, WALL_HEIGHT, z1),
+                    new BABYLON.Vector3(worldX, WALL_HEIGHT, z2)
                 );
-                line.color = CYAN_GLOW;
-                boardMeshes.push(line);
             }
         }
 
-        this.board3D = boardMeshes;
-        console.log("Board created with", boardMeshes.length, "meshes");
+        // Create single meshes for each line type
+        const verticalMesh = BABYLON.MeshBuilder.CreateLines(
+            "gridVertical",
+            { points: verticalLines },
+            this.scene
+        );
+        verticalMesh.color = CYAN_GLOW;
+
+        const cageMesh = BABYLON.MeshBuilder.CreateLines(
+            "gridCage",
+            { points: cageLines },
+            this.scene
+        );
+        cageMesh.color = CYAN_GLOW;
+
+        this.board3D = [verticalMesh, cageMesh];
+        console.log("Board created with 2 optimized meshes (was 1800+ individual meshes)");
 
         const ground = BABYLON.MeshBuilder.CreateGround(
             "boardGround",
