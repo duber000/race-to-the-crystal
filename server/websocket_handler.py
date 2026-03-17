@@ -456,12 +456,20 @@ class WebSocketHandler:
                     )
                     return
 
+        # Validate defender_id for attack actions
+        defender_id = data.get("defender_id") or data.get("target_id")
+        if msg_type_lower == "attack" and defender_id is None:
+            await self._send_error(
+                client, "defender_id or target_id is required for ATTACK"
+            )
+            return
+
         action_data = {
             "type": msg_type_lower,
             "token_id": data.get("token_id"),
             "destination": data.get("destination"),
             "attacker_id": data.get("attacker_id"),
-            "defender_id": data.get("defender_id") or data.get("target_id"),
+            "defender_id": defender_id,
             "position": data.get("position"),
             "health_value": data.get("health_value"),
             "player_id": client.player_id,
@@ -492,6 +500,9 @@ class WebSocketHandler:
         game_session = self.game_server.game_coordinator.get_game(game_id)
         if game_session:
             state_dict = game_session.get_game_state_for_player(player_id)
+            if state_dict is None:
+                logger.warning(f"Could not get game state for player {player_id[:8]}")
+                return
             response = {"type": "FULL_STATE", "game_state": state_dict}
             try:
                 if client.websocket:
@@ -596,6 +607,11 @@ class WebSocketHandler:
         if game_session.network_to_game_id:
             first_player = next(iter(game_session.network_to_game_id.keys()))
             mercure_state = game_session.get_game_state_for_player(first_player)
+            if mercure_state is None:
+                logger.warning(
+                    f"Could not get game state for player {first_player[:8]}"
+                )
+                return
             if mercure_state and self.game_server.mercure_publisher:
                 mercure_success = (
                     await self.game_server.mercure_publisher.publish_game_state(
@@ -624,6 +640,11 @@ class WebSocketHandler:
 
                 if should_send_websocket:
                     state_dict = game_session.get_game_state_for_player(net_player_id)
+                    if state_dict is None:
+                        logger.warning(
+                            f"Could not get game state for player {net_player_id[:8]}"
+                        )
+                        continue
                     logger.info(
                         f"[WebSocket] Sending state to {net_player_id[:8]} - turn_phase: {state_dict.get('turn_phase')}"
                     )

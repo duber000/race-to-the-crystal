@@ -5,7 +5,6 @@ This module handles execution of all game actions including movement,
 combat, deployment, and turn management.
 """
 
-
 from client.sprites.token_sprite import TokenSprite
 from game.combat import CombatSystem
 from game.mystery_square import MysterySquareSystem
@@ -58,9 +57,7 @@ class GameActionHandler:
 
         # Track mystery animations that should start after token movement completes
         # Maps token_id -> (target_position, should_play_sound)
-        self.pending_mystery_animations: dict[
-            TokenID[tuple[int, int], bool]
-        ] = {}
+        self.pending_mystery_animations: dict[TokenID[tuple[int, int], bool]] = {}
 
     def process_pending_mystery_animations(
         self, mystery_animations: dict[tuple[int, int], float]
@@ -108,7 +105,7 @@ class GameActionHandler:
         mystery_animations: dict[tuple[int, int], float],
         ctx,
         animate: bool = True,
-    ) -> tuple[bool[tuple[int, int]]]:
+    ) -> tuple[bool, tuple[int, int] | None]:
         """
         Execute a token move action.
 

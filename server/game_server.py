@@ -724,6 +724,9 @@ class GameServer:
         logger.info(f"Sending FULL_STATE to {len(lobby.players)} players")
         for net_player_id in lobby.players.keys():
             state_dict = game_session.get_game_state_for_player(net_player_id)
+            if state_dict is None:
+                logger.warning(f"Could not get game state for player {net_player_id}")
+                continue
             logger.info(f"  -> Sending FULL_STATE to player {net_player_id}")
 
             state_msg = self.protocol.create_full_state_message(
@@ -791,6 +794,9 @@ class GameServer:
         # Import SSE_CAPABLE_CLIENTS for client type checking
         from network.messages import SSE_CAPABLE_CLIENTS
 
+        # Track Mercure publish success for SSE-primary mode
+        mercure_success = False
+
         # Publish to Mercure hub for SSE-capable clients
         if game_session.network_to_game_id:
             # Get perspective for first player (generic for public fields)
@@ -805,6 +811,11 @@ class GameServer:
                 )
             else:
                 full_state = game_session.get_game_state_for_player(first_net_id)
+                if full_state is None:
+                    logger.warning(
+                        f"Could not get game state for player {first_net_id[:8]}"
+                    )
+                    return
                 mercure_success = await self.mercure_publisher.publish_full_state(
                     game_session.game_id, full_state
                 )
@@ -821,7 +832,11 @@ class GameServer:
             client_type = self.player_client_types.get(net_player_id)
 
             # In SSE-primary mode: skip SSE-capable clients IF Mercure succeeded
-            if self.sse_primary_mode and client_type in SSE_CAPABLE_CLIENTS and mercure_success:
+            if (
+                self.sse_primary_mode
+                and client_type in SSE_CAPABLE_CLIENTS
+                and mercure_success
+            ):
                 continue
 
             # Determine whether to send FULL_STATE or STATE_UPDATE
@@ -866,6 +881,9 @@ class GameServer:
             return
 
         state_dict = game_session.get_game_state_for_player(player_id)
+        if state_dict is None:
+            logger.warning(f"Could not get game state for player {player_id}")
+            return
         state_msg = self.protocol.create_full_state_message(state_dict, player_id)
         await self._send_to_player(player_id, state_msg)
 

@@ -275,7 +275,7 @@ class GameView(arcade.View):
         # Corner indicator is drawn directly in _draw_hud() in screen space
         pass
 
-    def _draw_hud(self):
+    def _draw_hud(self) -> None:
         """Draw the heads-up display with game information."""
         # Get current player
         current_player = self.game_state.get_current_player()
@@ -344,7 +344,7 @@ class GameView(arcade.View):
             assert self.deployment_controller is not None
             self.deployment_controller.draw_indicator(current_player)
 
-    def on_draw(self):
+    def on_draw(self) -> None:
         """
         Render the screen.
 

@@ -49,9 +49,9 @@ class HTTPHandler:
     def __init__(
         self,
         static_dir: Optional[Path] = None,
-        game_server=None,
+        game_server: Optional["GameServer"] = None,
         jwt_secret: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize HTTP handler.
 

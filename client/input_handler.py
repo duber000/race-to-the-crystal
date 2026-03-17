@@ -5,7 +5,6 @@ This module handles all input events (mouse, keyboard, text) and coordinates
 with other controllers to execute game actions.
 """
 
-
 import arcade
 
 from client.audio_manager import AudioManager
@@ -47,7 +46,7 @@ class InputHandler:
         renderer_3d: Renderer3D,
         movement_system: MovementSystem,
         audio_manager: AudioManager,
-    ):
+    ) -> None:
         """
         Initialize the input handler.
 
@@ -96,7 +95,9 @@ class InputHandler:
         """Check the authoritative turn phase from game state."""
         return self.game_state.turn_phase == phase
 
-    def handle_mouse_motion(self, x: int, y: int, dx: int, dy: int, window) -> bool:
+    def handle_mouse_motion(
+        self, x: int, y: int, dx: int, dy: int, window: arcade.Window
+    ) -> bool:
         """
         Handle mouse motion for UI hover effects and mouse-look in 3D mode.
 
@@ -161,7 +162,7 @@ class InputHandler:
         return True
 
     def handle_mouse_press(
-        self, x: int, y: int, button: int, modifiers: int, window
+        self, x: int, y: int, button: int, modifiers: int, window: arcade.Window
     ) -> bool:
         """
         Handle mouse press events with support for 2D and 3D picking.
@@ -196,7 +197,7 @@ class InputHandler:
         return False
 
     def handle_mouse_release(
-        self, x: int, y: int, button: int, modifiers: int, window
+        self, x: int, y: int, button: int, modifiers: int, window: arcade.Window
     ) -> bool:
         """
         Handle mouse release events.
@@ -256,7 +257,9 @@ class InputHandler:
                 if grid_pos and self.game_state.board.is_valid_position(
                     grid_pos[0], grid_pos[1]
                 ):
-                    clicked_on_token = self._find_token_at_position(grid_pos) is not None
+                    clicked_on_token = (
+                        self._find_token_at_position(grid_pos) is not None
+                    )
 
                 # In 3D first-person mode, if raycasting found nothing AND we have a controlled token,
                 # assume the user is clicking on the controlled token (looking directly at it)
@@ -267,7 +270,9 @@ class InputHandler:
                 ):
                     controlled_token_id = self.camera_controller.controlled_token_id
                     if controlled_token_id is not None:
-                        controlled_token = self.game_state.get_token(controlled_token_id)
+                        controlled_token = self.game_state.get_token(
+                            controlled_token_id
+                        )
                         if (
                             controlled_token
                             and controlled_token.is_alive
@@ -560,9 +565,8 @@ class InputHandler:
         """Handle clicking on empty cell."""
         if self.selected_token_id is not None and self._is_in_phase(TurnPhase.MOVEMENT):
             self._try_move_selected_token(grid_pos)
-        elif (
-            self.deployment_controller.selected_deploy_health
-            and self._is_in_phase(TurnPhase.MOVEMENT)
+        elif self.deployment_controller.selected_deploy_health and self._is_in_phase(
+            TurnPhase.MOVEMENT
         ):
             self._try_deploy_token(grid_pos, current_player)
 
@@ -580,8 +584,9 @@ class InputHandler:
             if self.camera_controller.camera_mode == "3D" and self.valid_moves:
                 nearest_move = min(
                     self.valid_moves,
-                    key=lambda pos: (pos[0] - grid_pos[0]) ** 2
-                    + (pos[1] - grid_pos[1]) ** 2,
+                    key=lambda pos: (
+                        (pos[0] - grid_pos[0]) ** 2 + (pos[1] - grid_pos[1]) ** 2
+                    ),
                 )
                 distance = (
                     (nearest_move[0] - grid_pos[0]) ** 2
