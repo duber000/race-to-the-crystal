@@ -436,7 +436,7 @@ class GameView(arcade.View):
                     )
                     self.deployment_controller.draw_menu(current_player, reserve_counts)
 
-    def on_update(self, delta_time: float):
+    def on_update(self, delta_time: float) -> None:
         """
         Update game state and animations.
 
@@ -450,6 +450,10 @@ class GameView(arcade.View):
         self._update_mystery_animations(delta_time)
         self._update_crystal_effects()
         self._update_board_shapes()
+
+        # Update chat widget if present
+        if self.chat_widget:
+            self.chat_widget.update(delta_time)
 
     def _check_victory_condition(self, delta_time: float) -> bool:
         """Check if game has ended and show victory screen."""
