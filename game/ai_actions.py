@@ -10,6 +10,7 @@ from game.game_state import GameState
 from game.movement import MovementSystem
 from game.combat import CombatSystem
 from game.mystery_square import MysterySquareSystem
+from game.token import Token
 from shared.enums import TurnPhase, GamePhase, CellType
 from shared.types import TokenID, PlayerID
 
@@ -65,7 +66,16 @@ class AIAction:
 
     def to_dict(self) -> dict:
         """Convert action to dictionary for serialization."""
-        return {"action_type": self.action_type}
+        result: dict[str, object] = {"action_type": self.action_type}
+        # Add all fields from the dataclass except action_type (already added)
+        for field_name in self.__dataclass_fields__:
+            if field_name != "action_type":
+                value = getattr(self, field_name)
+                # Convert tuples to lists for JSON serialization
+                if isinstance(value, tuple):
+                    value = list(value)
+                result[field_name] = value
+        return result
 
 
 @dataclass
@@ -101,13 +111,6 @@ class MoveAction(AIAction):
         super().__init__(action_type="MOVE")
         self.token_id = token_id
         self.destination = destination
-
-    def to_dict(self) -> dict:
-        return {
-            "action_type": self.action_type,
-            "token_id": self.token_id,
-            "destination": list(self.destination),
-        }
 
 
 @dataclass
@@ -148,13 +151,6 @@ class AttackAction(AIAction):
         self.attacker_id = attacker_id
         self.defender_id = defender_id
 
-    def to_dict(self) -> dict:
-        return {
-            "action_type": self.action_type,
-            "attacker_id": self.attacker_id,
-            "defender_id": self.defender_id,
-        }
-
 
 @dataclass
 class DeployAction(AIAction):
@@ -192,13 +188,6 @@ class DeployAction(AIAction):
         super().__init__(action_type="DEPLOY")
         self.health_value = health_value
         self.position = position
-
-    def to_dict(self) -> dict:
-        return {
-            "action_type": self.action_type,
-            "health_value": self.health_value,
-            "position": list(self.position),
-        }
 
 
 @dataclass
@@ -445,6 +434,8 @@ class AIActionExecutor:
     ) -> ActionResult:
         """Execute a move action."""
         token = game_state.get_token(action.token_id)
+        if token is None:
+            return ActionResult(False, f"Token {action.token_id} not found", None)
         old_pos = token.position
         new_pos = action.destination
 
@@ -581,6 +572,15 @@ class AIActionExecutor:
         """Execute an attack action."""
         attacker = game_state.get_token(action.attacker_id)
         defender = game_state.get_token(action.defender_id)
+
+        if attacker is None:
+            return ActionResult(
+                False, f"Attacker token {action.attacker_id} not found", None
+            )
+        if defender is None:
+            return ActionResult(
+                False, f"Defender token {action.defender_id} not found", None
+            )
 
         # Calculate damage
         damage = attacker.health // 2

@@ -37,6 +37,15 @@ class AIObserver:
     SYMBOL_MYSTERY = "M"
     SYMBOL_CORNER = "*"
 
+    # Separator line constants
+    SEPARATOR_WIDTH = 60
+    SEPARATOR_CHAR = "="
+
+    @staticmethod
+    def _separator_line(char: str = "=") -> str:
+        """Generate a separator line of the standard width."""
+        return char * AIObserver.SEPARATOR_WIDTH
+
     @staticmethod
     def _get_generator_status(generator, game_state: GameState) -> str:
         """Get human-readable status string for a generator."""
@@ -87,11 +96,11 @@ class AIObserver:
             Formatted multi-line string describing the complete game state
         """
         lines = []
-        lines.append("=" * 60)
+        lines.append(AIObserver._separator_line())
 
         # Game header
         AIObserver._add_game_header(lines, game_state, perspective_player_id)
-        lines.append("=" * 60)
+        lines.append(AIObserver._separator_line())
         lines.append("")
 
         # Turn phase information
@@ -114,7 +123,7 @@ class AIObserver:
         if game_state.crystal:
             AIObserver._add_crystal_info(lines, game_state)
 
-        lines.append("=" * 60)
+        lines.append(AIObserver._separator_line())
         return "\n".join(lines)
 
     @staticmethod
@@ -161,9 +170,15 @@ class AIObserver:
         lines: list, game_state: GameState, player_id: PlayerID
     ) -> None:
         """Add deployed and reserve token information for player."""
+        player = game_state.get_player(player_id)
+        if player is None:
+            lines.append("YOUR TOKENS: (player not found)")
+            lines.append("")
+            return
+
         deployed_tokens = [
             game_state.tokens[tid]
-            for tid in game_state.get_player(player_id).token_ids
+            for tid in player.token_ids
             if tid in game_state.tokens and game_state.tokens[tid].is_deployed
         ]
         reserve_tokens = game_state.get_reserve_tokens(player_id)
@@ -225,6 +240,9 @@ class AIObserver:
         """Add generator status information."""
         lines.append("GENERATORS:")
         for i, gen in enumerate(game_state.generators, 1):
+            if gen is None:
+                lines.append(f"  G{i}: (not available)")
+                continue
             status = AIObserver._get_generator_status(gen, game_state)
             lines.append(f"  G{i} @ ({gen.position[0]},{gen.position[1]}): {status}")
         lines.append("")
@@ -233,6 +251,11 @@ class AIObserver:
     def _add_crystal_info(lines: list, game_state: GameState) -> None:
         """Add crystal status and holder information."""
         crystal = game_state.crystal
+        if crystal is None:
+            lines.append("CRYSTAL: (not available)")
+            lines.append("")
+            return
+
         cx, cy = crystal.position
         disabled_gens = sum(1 for g in game_state.generators if g.is_disabled)
         tokens_required = max(
@@ -468,6 +491,9 @@ class AIObserver:
         actions: list, game_state: GameState, player_id: PlayerID, player
     ) -> None:
         """Add deployment actions for tokens in reserve."""
+        if player is None:
+            return
+
         reserve_counts = game_state.get_reserve_token_counts(player_id)
         corner_positions = AIObserver._get_deployable_positions(
             game_state.board, player.color.value
@@ -475,12 +501,11 @@ class AIObserver:
         for health_value in [10, 8, 6, 4]:
             if reserve_counts[health_value] > 0:
                 # Check which corner positions are actually available
-                available_corners = [
-                    pos
-                    for pos in corner_positions
-                    if game_state.board.get_cell_at(pos)
-                    and not game_state.board.get_cell_at(pos).is_occupied()
-                ]
+                available_corners = []
+                for pos in corner_positions:
+                    cell = game_state.board.get_cell_at(pos)
+                    if cell is not None and not cell.is_occupied():
+                        available_corners.append(pos)
                 if available_corners:
                     actions.append(
                         {

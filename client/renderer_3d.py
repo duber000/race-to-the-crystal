@@ -161,22 +161,10 @@ class Renderer3D:
                 for token_id in player.token_ids:
                     token = game_state.get_token(token_id)
                     if token and token.is_alive and token.is_deployed:
-                        try:
-                            token_3d = Token3D(
-                                token, player_color, ctx, self.shader_3d, height=TOKEN_HEIGHT_3D
-                            )
+                        if token_3d := self._create_token_3d_safe(
+                            token, player_color, ctx
+                        ):
                             self.tokens_3d.append(token_3d)
-                        except ValueError as e:
-                            logger.error(f"Invalid token data for 3D: {token_id}: {e}")
-                        except RuntimeError as e:
-                            logger.error(
-                                f"OpenGL error creating 3D token {token_id}: {e}"
-                            )
-                        except Exception as e:
-                            logger.error(
-                                f"Unexpected error creating 3D token: {e}",
-                                exc_info=True,
-                            )
         else:
             # Apply crystal effects - get visible tokens for this player
             visible_tokens, phantom_tokens = game_state.get_visible_tokens_for_player(
@@ -187,32 +175,18 @@ class Renderer3D:
             for token in visible_tokens:
                 player = game_state.players[token.player_id]
                 player_color = PLAYER_COLORS[player.color.value]
-                try:
-                    token_3d = Token3D(
-                        token, player_color, ctx, self.shader_3d, height=TOKEN_HEIGHT_3D
-                    )
+                if token_3d := self._create_token_3d_safe(token, player_color, ctx):
                     self.tokens_3d.append(token_3d)
-                except ValueError as e:
-                    logger.error(f"Invalid token data for 3D: {token.id}: {e}")
-                except RuntimeError as e:
-                    logger.error(f"OpenGL error creating 3D token {token.id}: {e}")
-                except Exception as e:
-                    logger.error(
-                        f"Unexpected error creating 3D token: {e}", exc_info=True
-                    )
 
             # Create 3D phantom tokens
             for phantom in phantom_tokens:
                 player_color = PLAYER_COLORS[
                     game_state.players[phantom.apparent_player_id].color.value
                 ]
-                try:
-                    phantom_3d = PhantomToken3D(phantom, player_color, ctx, self.shader_3d)
+                if phantom_3d := self._create_phantom_3d_safe(
+                    phantom, player_color, ctx
+                ):
                     self.phantom_tokens_3d.append(phantom_3d)
-                except Exception as e:
-                    logger.error(
-                        f"Failed to create 3D phantom token {phantom.phantom_id}: {e}"
-                    )
 
         logger.debug(
             f"Created {len(self.tokens_3d)} real 3D tokens and {len(self.phantom_tokens_3d)} phantom 3D tokens"
@@ -227,16 +201,9 @@ class Renderer3D:
             player_color: RGB color tuple
             ctx: OpenGL context from Arcade window
         """
-        try:
-            token_3d = Token3D(token, player_color, ctx, self.shader_3d, height=TOKEN_HEIGHT_3D)
+        if token_3d := self._create_token_3d_safe(token, player_color, ctx):
             self.tokens_3d.append(token_3d)
             logger.debug(f"Added 3D token {token.id}")
-        except ValueError as e:
-            logger.error(f"Invalid token data for 3D: {token.id}: {e}")
-        except RuntimeError as e:
-            logger.error(f"OpenGL error creating 3D token {token.id}: {e}")
-        except Exception as e:
-            logger.error(f"Unexpected error creating 3D token: {e}", exc_info=True)
 
     def sync_tokens(
         self, game_state, ctx, viewing_player_id: str | None = None
@@ -396,15 +363,74 @@ class Renderer3D:
         """
         return self.board_3d is not None and self.shader_3d is not None
 
+    def _iter_tokens_with_cleanup(self, token_list: list, cleanup: bool = True) -> None:
+        """
+        Iterate over tokens and optionally cleanup each one.
+
+        Args:
+            token_list: List of Token3D objects
+            cleanup: Whether to call cleanup() on each token
+        """
+        if cleanup:
+            for token_3d in token_list:
+                token_3d.cleanup()
+        token_list.clear()
+
+    def _cleanup_and_clear_tokens(self) -> None:
+        """Cleanup all 3D tokens and clear the lists."""
+        self._iter_tokens_with_cleanup(self.tokens_3d, cleanup=True)
+        self._iter_tokens_with_cleanup(self.phantom_tokens_3d, cleanup=True)
+
+    def _create_token_3d_safe(
+        self, token, player_color: tuple[int, int, int], ctx
+    ) -> Token3D | None:
+        """
+        Create a Token3D with standardized error handling.
+
+        Args:
+            token: Token object to render
+            player_color: RGB color tuple
+            ctx: OpenGL context
+
+        Returns:
+            Token3D instance or None if creation failed
+        """
+        try:
+            return Token3D(token, player_color, ctx)
+        except ValueError as e:
+            logger.error(f"Invalid token data for 3D: {token.id}: {e}")
+        except RuntimeError as e:
+            logger.error(f"OpenGL error creating 3D token {token.id}: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error creating 3D token: {e}", exc_info=True)
+        return None
+
+    def _create_phantom_3d_safe(
+        self, phantom, player_color: tuple[int, int, int], ctx
+    ) -> PhantomToken3D | None:
+        """
+        Create a PhantomToken3D with standardized error handling.
+
+        Args:
+            phantom: Phantom token object to render
+            player_color: RGB color tuple
+            ctx: OpenGL context
+
+        Returns:
+            PhantomToken3D instance or None if creation failed
+        """
+        try:
+            return PhantomToken3D(phantom, player_color, ctx)
+        except Exception as e:
+            logger.error(f"Failed to create 3D phantom token {phantom.phantom_id}: {e}")
+        return None
+
     def cleanup(self) -> None:
         """Clean up 3D rendering resources."""
         if self.board_3d is not None:
             self.board_3d.cleanup()
             self.board_3d = None
 
-        for token_3d in self.tokens_3d:
-            token_3d.cleanup()
-        self.tokens_3d.clear()
-
+        self._cleanup_and_clear_tokens()
         self.shader_3d = None
         logger.debug("Cleaned up 3D renderer")

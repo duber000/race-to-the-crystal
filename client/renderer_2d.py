@@ -6,6 +6,7 @@ and selection visuals.
 """
 
 import math
+from collections.abc import Sequence
 
 import arcade
 from arcade import SpriteList
@@ -275,30 +276,9 @@ class Renderer2D:
                 half = size / 2
 
                 # Glow layers for selection
-                for i in range(6, 0, -1):
-                    alpha = int(180 / (i + 1))
-                    glow_size = size + (i * 4)
-                    glow_half = glow_size / 2
-                    # Clamp coordinates to prevent negative values (fixes clipping at board edges)
-                    points = [
-                        (max(0, x - glow_half), max(0, y - glow_half)),
-                        (max(0, x + glow_half), max(0, y - glow_half)),
-                        (max(0, x + glow_half), max(0, y + glow_half)),
-                        (max(0, x - glow_half), max(0, y + glow_half)),
-                        (max(0, x - glow_half), max(0, y - glow_half)),
-                    ]
-                    for j in range(len(points) - 1):
-                        line = create_line(
-                            points[j][0],
-                            points[j][1],
-                            points[j + 1][0],
-                            points[j + 1][1],
-                            (255, 255, 0, alpha),
-                            max(1, 4 - i // 2),
-                        )
-                        self.selection_shapes.append(line)
+                self._draw_glow_box(x, y, size, 6, (255, 255, 0), 180, 4)
 
-                # Bright main selection square (clamp coordinates)
+                # Bright main selection square
                 points = [
                     (max(0, x - half), max(0, y - half)),
                     (max(0, x + half), max(0, y - half)),
@@ -306,64 +286,19 @@ class Renderer2D:
                     (max(0, x - half), max(0, y + half)),
                     (max(0, x - half), max(0, y - half)),
                 ]
-                for j in range(len(points) - 1):
-                    line = create_line(
-                        points[j][0],
-                        points[j][1],
-                        points[j + 1][0],
-                        points[j + 1][1],
-                        (255, 255, 100, 255),
-                        4,
-                    )
-                    self.selection_shapes.append(line)
+                self._draw_polygon_lines(points, (255, 255, 100, 255), 4)
 
         # Draw valid move indicators as glowing circles
         for move in valid_moves:
             x = move[0] * CELL_SIZE + CELL_SIZE // 2
             y = move[1] * CELL_SIZE + CELL_SIZE // 2
             radius = CELL_SIZE * 0.3
-            segments = CIRCLE_SEGMENTS
 
-            # Glow layers (clamp coordinates to prevent negative values)
-            for i in range(4, 0, -1):
-                alpha = int(120 / (i + 1))
-                glow_radius = radius + (i * 3)
-                points = []
-                for seg in range(segments + 1):
-                    angle = (seg / segments) * 2 * math.pi
-                    px = max(0, x + glow_radius * math.cos(angle))
-                    py = max(0, y + glow_radius * math.sin(angle))
-                    points.append((px, py))
+            # Glow layers
+            self._draw_glow_circle(x, y, radius, 4, (0, 255, 0), 120, 3)
 
-                for j in range(len(points) - 1):
-                    line = create_line(
-                        points[j][0],
-                        points[j][1],
-                        points[j + 1][0],
-                        points[j + 1][1],
-                        (0, 255, 0, alpha),
-                        max(1, 3 - i // 2),
-                    )
-                    self.selection_shapes.append(line)
-
-            # Bright main circle (clamp coordinates)
-            points = []
-            for seg in range(segments + 1):
-                angle = (seg / segments) * 2 * math.pi
-                px = max(0, x + radius * math.cos(angle))
-                py = max(0, y + radius * math.sin(angle))
-                points.append((px, py))
-
-            for j in range(len(points) - 1):
-                line = create_line(
-                    points[j][0],
-                    points[j][1],
-                    points[j + 1][0],
-                    points[j + 1][1],
-                    (100, 255, 100, 255),
-                    3,
-                )
-                self.selection_shapes.append(line)
+            # Bright main circle
+            self._draw_circle_lines(x, y, radius, (100, 255, 100, 255), 3)
 
     def update(self, delta_time: float) -> None:
         """
@@ -406,6 +341,133 @@ class Renderer2D:
             self.token_sprites.draw()
             # Draw phantom tokens on top of real tokens
             self.phantom_token_sprites.draw()
+
+    def _draw_glow_box(
+        self,
+        center_x: float,
+        center_y: float,
+        size: float,
+        layers: int,
+        base_color: tuple[int, int, int],
+        max_alpha: int,
+        max_width: int,
+    ) -> None:
+        """
+        Draw a glowing box with multiple layers.
+
+        Args:
+            center_x: Center X coordinate
+            center_y: Center Y coordinate
+            size: Base size of the box
+            layers: Number of glow layers
+            base_color: RGB color tuple
+            max_alpha: Maximum alpha value for innermost layer
+            max_width: Maximum line width for innermost layer
+        """
+        for i in range(layers, 0, -1):
+            alpha = int(max_alpha / (i + 1))
+            glow_size = size + (i * 4)
+            glow_half = glow_size / 2
+            points = [
+                (max(0, center_x - glow_half), max(0, center_y - glow_half)),
+                (max(0, center_x + glow_half), max(0, center_y - glow_half)),
+                (max(0, center_x + glow_half), max(0, center_y + glow_half)),
+                (max(0, center_x - glow_half), max(0, center_y + glow_half)),
+                (max(0, center_x - glow_half), max(0, center_y - glow_half)),
+            ]
+            self._draw_polygon_lines(
+                points, (*base_color, alpha), max(1, max_width - i // 2)
+            )
+
+    def _draw_polygon_lines(
+        self,
+        points: Sequence[tuple[float, float]],
+        color: tuple[int, int, int, int],
+        line_width: int,
+    ) -> None:
+        """
+        Draw lines connecting a sequence of points.
+
+        Args:
+            points: List of (x, y) coordinate tuples
+            color: RGBA color tuple
+            line_width: Width of the lines
+        """
+        for j in range(len(points) - 1):
+            line = create_line(
+                points[j][0],
+                points[j][1],
+                points[j + 1][0],
+                points[j + 1][1],
+                color,
+                line_width,
+            )
+            self.selection_shapes.append(line)
+
+    def _draw_glow_circle(
+        self,
+        center_x: float,
+        center_y: float,
+        radius: float,
+        layers: int,
+        base_color: tuple[int, int, int],
+        max_alpha: int,
+        max_width: int,
+        segments: int = CIRCLE_SEGMENTS,
+    ) -> None:
+        """
+        Draw a glowing circle with multiple layers.
+
+        Args:
+            center_x: Center X coordinate
+            center_y: Center Y coordinate
+            radius: Base radius
+            layers: Number of glow layers
+            base_color: RGB color tuple
+            max_alpha: Maximum alpha value for innermost layer
+            max_width: Maximum line width for innermost layer
+            segments: Number of line segments to use for the circle
+        """
+        for i in range(layers, 0, -1):
+            alpha = int(max_alpha / (i + 1))
+            glow_radius = radius + (i * 3)
+            points = []
+            for seg in range(segments + 1):
+                angle = (seg / segments) * 2 * math.pi
+                px = max(0, center_x + glow_radius * math.cos(angle))
+                py = max(0, center_y + glow_radius * math.sin(angle))
+                points.append((px, py))
+            self._draw_polygon_lines(
+                points, (*base_color, alpha), max(1, max_width - i // 2)
+            )
+
+    def _draw_circle_lines(
+        self,
+        center_x: float,
+        center_y: float,
+        radius: float,
+        color: tuple[int, int, int, int],
+        line_width: int,
+        segments: int = CIRCLE_SEGMENTS,
+    ) -> None:
+        """
+        Draw a circle as a series of connected lines.
+
+        Args:
+            center_x: Center X coordinate
+            center_y: Center Y coordinate
+            radius: Circle radius
+            color: RGBA color tuple
+            line_width: Width of the lines
+            segments: Number of line segments to use
+        """
+        points = []
+        for seg in range(segments + 1):
+            angle = (seg / segments) * 2 * math.pi
+            px = max(0, center_x + radius * math.cos(angle))
+            py = max(0, center_y + radius * math.sin(angle))
+            points.append((px, py))
+        self._draw_polygon_lines(points, color, line_width)
 
     def cleanup(self) -> None:
         """Clean up rendering resources."""
