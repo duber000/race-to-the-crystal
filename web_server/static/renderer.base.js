@@ -158,6 +158,12 @@ class Renderer3D {
 
     initGodRays(mesh) {
         if (this.vls || !mesh || !this.scene || !this.scene.activeCamera) return;
+        
+        if (this.deviceCapabilities && this.deviceCapabilities.shouldOptimizePerformance()) {
+            console.log('[Renderer3D] Skipping God Rays for performance optimization');
+            return;
+        }
+
         try {
             this.vls = new BABYLON.VolumetricLightScatteringPostProcess(
                 'vls', 1.0, this.scene.activeCamera, mesh, 100,

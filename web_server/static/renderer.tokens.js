@@ -22,6 +22,13 @@ class TokenRenderer {
         this.tokens3D = new Map();
         this.phantomTokens3D = new Map();
         this.localPlayerId = null;
+
+        // Caches for materials and textures to prevent memory leaks and reduce draw calls
+        this.sharedMaterials = new Map();
+        this.sharedPhantomMaterials = new Map();
+        this.sharedHealthMaterials = new Map();
+        this.sharedPhantomHealthMaterials = new Map();
+        this.highlightMaterial = null;
     }
 
     updateTokens(gameState) {
@@ -154,25 +161,19 @@ class TokenRenderer {
         );
         hexagon.position = new BABYLON.Vector3(worldX, TOKEN_CENTER_Y, worldZ);
 
-        const material = new BABYLON.PBRMaterial(`tokenMat_${token.id}`, this.scene);
-        material.emissiveColor = playerColor;
-        material.albedoColor = new BABYLON.Color3(0, 0, 0);
-        material.metallic = 0.5;
-        material.roughness = 0.4;
-        material.emissiveIntensity = 1.0;
-        material.alpha = 0.9;
-        material.backFaceCulling = false;
-        hexagon.material = material;
-
-        const tokenLight = new BABYLON.PointLight(
-            `tokenLight_${token.id}`,
-            hexagon.position,
-            this.scene
-        );
-        tokenLight.diffuse = playerColor;
-        tokenLight.intensity = 0.3;
-        tokenLight.range = CELL_SIZE * 1.5;
-        tokenLight.parent = hexagon;
+        const colorKey = playerColor.toHexString();
+        if (!this.sharedMaterials.has(colorKey)) {
+            const material = new BABYLON.PBRMaterial(`tokenMatShared_${colorKey}`, this.scene);
+            material.emissiveColor = playerColor;
+            material.albedoColor = new BABYLON.Color3(0, 0, 0);
+            material.metallic = 0.5;
+            material.roughness = 0.4;
+            material.emissiveIntensity = 1.0;
+            material.alpha = 0.9;
+            material.backFaceCulling = false;
+            this.sharedMaterials.set(colorKey, material);
+        }
+        hexagon.material = this.sharedMaterials.get(colorKey);
 
         const healthLabel = this.createHealthLabel(token, hexagon.position);
 
@@ -197,24 +198,24 @@ class TokenRenderer {
         );
         hexagon.position = new BABYLON.Vector3(worldX, TOKEN_CENTER_Y, worldZ);
 
-        const material = new BABYLON.PBRMaterial(
-            `phantomMat_${phantom.phantom_id}`,
-            this.scene
-        );
-        material.emissiveColor = playerColor;
-        material.albedoColor = new BABYLON.Color3(0, 0, 0);
-        material.metallic = 0.2;
-        material.roughness = 0.8;
-        material.emissiveIntensity = 0.5;
-        material.alpha = 0.4;
-        material.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
-        material.backFaceCulling = false;
-
-        hexagon.material = material;
+        const colorKey = playerColor.toHexString();
+        if (!this.sharedPhantomMaterials.has(colorKey)) {
+            const material = new BABYLON.PBRMaterial(`phantomMatShared_${colorKey}`, this.scene);
+            material.emissiveColor = playerColor;
+            material.albedoColor = new BABYLON.Color3(0, 0, 0);
+            material.metallic = 0.2;
+            material.roughness = 0.8;
+            material.emissiveIntensity = 0.5;
+            material.alpha = 0.4;
+            material.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
+            material.backFaceCulling = false;
+            this.sharedPhantomMaterials.set(colorKey, material);
+        }
+        hexagon.material = this.sharedPhantomMaterials.get(colorKey);
 
         const healthLabel = this.createPhantomHealthLabel(phantom, hexagon.position);
 
-        this.addPhantomFlickerAnimation(hexagon, material);
+        this.addPhantomFlickerAnimation(hexagon, hexagon.material);
 
         this.phantomTokens3D.set(phantom.phantom_id, {
             mesh: hexagon,
@@ -226,58 +227,65 @@ class TokenRenderer {
         return hexagon;
     }
 
+    getSharedHealthMaterial(health, isPhantom = false) {
+        const pool = isPhantom ? this.sharedPhantomHealthMaterials : this.sharedHealthMaterials;
+        if (!pool.has(health)) {
+            const texture = new BABYLON.DynamicTexture(
+                `healthTex_${isPhantom ? 'phantom_' : ''}${health}`,
+                { width: 256, height: 128 },
+                this.scene,
+                false
+            );
+            const ctx = texture.getContext();
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, 256, 128);
+            ctx.font = "bold 80px monospace";
+            ctx.fillStyle = isPhantom ? "rgba(255, 255, 255, 0.7)" : "white";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(`${health}hp`, 128, 64);
+            texture.update();
+
+            const material = new BABYLON.StandardMaterial(
+                `healthMat_${isPhantom ? 'phantom_' : ''}${health}`, 
+                this.scene
+            );
+            material.diffuseTexture = texture;
+            material.emissiveTexture = texture;
+            material.opacityTexture = texture;
+            if (isPhantom) {
+                material.alpha = 0.7;
+            }
+            pool.set(health, material);
+        }
+        return pool.get(health);
+    }
+
     createPhantomHealthLabel(phantom, position) {
         const plane = BABYLON.MeshBuilder.CreatePlane(
             `phantomHealthLabel_${phantom.phantom_id}`,
             { width: CELL_SIZE * 0.6, height: CELL_SIZE * 0.3 },
             this.scene,
         );
-
         plane.position = new BABYLON.Vector3(position.x, position.y, position.z + TOKEN_HEIGHT);
         plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
-
-        const texture = new BABYLON.DynamicTexture(
-            `phantomHealthTexture_${phantom.phantom_id}`,
-            { width: 256, height: 128 },
-            this.scene,
-        );
-
-        const ctx = texture.getContext();
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, 256, 128);
-        ctx.font = "bold 80px monospace";
-        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(`${phantom.apparent_health}hp`, 128, 64);
-        texture.update();
-
-        const material = new BABYLON.StandardMaterial(
-            `phantomHealthMat_${phantom.phantom_id}`,
-            this.scene
-        );
-        material.diffuseTexture = texture;
-        material.emissiveTexture = texture;
-        material.opacityTexture = texture;
-        material.alpha = 0.7;
-        plane.material = material;
-
+        plane.material = this.getSharedHealthMaterial(phantom.apparent_health, true);
         return plane;
     }
 
     addPhantomFlickerAnimation(mesh, material) {
         const flicker = new BABYLON.Animation(
             `phantomFlicker_${mesh.name}`,
-            "material.alpha",
+            "visibility",
             30,
             BABYLON.Animation.ANIMATIONTYPE_FLOAT,
             BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE
         );
 
         const keys = [
-            { frame: 0, value: 0.5 },
-            { frame: 15, value: 0.3 },
-            { frame: 30, value: 0.5 },
+            { frame: 0, value: 1.0 },
+            { frame: 15, value: 0.5 },
+            { frame: 30, value: 1.0 },
         ];
 
         flicker.setKeys(keys);
@@ -291,32 +299,9 @@ class TokenRenderer {
             { width: CELL_SIZE * 0.6, height: CELL_SIZE * 0.3 },
             this.scene,
         );
-
         plane.position = new BABYLON.Vector3(position.x, position.y, position.z + TOKEN_HEIGHT);
         plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
-
-        const texture = new BABYLON.DynamicTexture(
-            `healthTexture_${token.id}`,
-            { width: 256, height: 128 },
-            this.scene,
-        );
-
-        const ctx = texture.getContext();
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, 256, 128);
-        ctx.font = "bold 80px monospace";
-        ctx.fillStyle = "white";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(`${token.health}hp`, 128, 64);
-        texture.update();
-
-        const material = new BABYLON.StandardMaterial(`healthMat_${token.id}`, this.scene);
-        material.diffuseTexture = texture;
-        material.emissiveTexture = texture;
-        material.opacityTexture = texture;
-        plane.material = material;
-
+        plane.material = this.getSharedHealthMaterial(token.health, false);
         return plane;
     }
 
@@ -337,6 +322,7 @@ class TokenRenderer {
         );
 
         if (tokenData.healthLabel) {
+            tokenData.healthLabel.material = this.getSharedHealthMaterial(token.health, false);
             BABYLON.Animation.CreateAndStartAnimation(
                 "labelMove",
                 tokenData.healthLabel,
@@ -347,34 +333,32 @@ class TokenRenderer {
                 new BABYLON.Vector3(worldX, TOKEN_CENTER_Y + (TOKEN_HEIGHT / 2) + 10, worldZ),
                 BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT,
             );
-
-            const texture = tokenData.healthLabel.material.diffuseTexture;
-            const ctx = texture.getContext();
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, 256, 128);
-            ctx.font = "bold 80px monospace";
-            ctx.fillStyle = "white";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(`${token.health}hp`, 128, 64);
-            texture.update();
         }
     }
 
     updateTokenSelectionGlow(selectedTokenId) {
         this.tokens3D.forEach((tokenData, tokenId) => {
             if (tokenData.mesh && tokenData.mesh.material) {
-                tokenData.mesh.material.emissiveColor = tokenData.color;
-                tokenData.mesh.material.alpha = 0.9;
+                const colorKey = tokenData.color.toHexString();
+                tokenData.mesh.material = this.sharedMaterials.get(colorKey) || tokenData.mesh.material;
                 tokenData.mesh.scaling = new BABYLON.Vector3(1, 1, 1);
             }
         });
 
         if (selectedTokenId !== null) {
             const selectedData = this.tokens3D.get(selectedTokenId);
-            if (selectedData && selectedData.mesh && selectedData.mesh.material) {
-                selectedData.mesh.material.emissiveColor = new BABYLON.Color3(1, 1, 1);
-                selectedData.mesh.material.alpha = 1.0;
+            if (selectedData && selectedData.mesh) {
+                if (!this.highlightMaterial) {
+                    this.highlightMaterial = new BABYLON.PBRMaterial("highlightMat", this.scene);
+                    this.highlightMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1);
+                    this.highlightMaterial.albedoColor = new BABYLON.Color3(0, 0, 0);
+                    this.highlightMaterial.metallic = 0.5;
+                    this.highlightMaterial.roughness = 0.4;
+                    this.highlightMaterial.emissiveIntensity = 1.5;
+                    this.highlightMaterial.alpha = 1.0;
+                    this.highlightMaterial.backFaceCulling = false;
+                }
+                selectedData.mesh.material = this.highlightMaterial;
                 selectedData.mesh.scaling = new BABYLON.Vector3(1.2, 1.2, 1.2);
             }
         }
@@ -392,6 +376,19 @@ class TokenRenderer {
             if (phantomData.healthLabel) phantomData.healthLabel.dispose();
         });
         this.phantomTokens3D.clear();
+
+        this.sharedMaterials.forEach(m => m.dispose(false, true));
+        this.sharedMaterials.clear();
+        this.sharedPhantomMaterials.forEach(m => m.dispose(false, true));
+        this.sharedPhantomMaterials.clear();
+        this.sharedHealthMaterials.forEach(m => m.dispose(false, true));
+        this.sharedHealthMaterials.clear();
+        this.sharedPhantomHealthMaterials.forEach(m => m.dispose(false, true));
+        this.sharedPhantomHealthMaterials.clear();
+        if (this.highlightMaterial) {
+            this.highlightMaterial.dispose(false, true);
+            this.highlightMaterial = null;
+        }
     }
 }
 

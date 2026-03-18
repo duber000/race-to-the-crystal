@@ -32,6 +32,7 @@ This design prevents cheating, ensures consistency across all players, and works
          │                           │
          │      NetworkClient        │
          │    (TCP Connection)       │
+         │  OR  (HTTP POST + SSE)    │
          │                           │
          └───────────┬───────────────┘
                      │
@@ -167,17 +168,17 @@ uv run race-to-the-crystal
 ### 2B. Connect AI Players (Command Line)
 
 ```bash
-# AI creates a new game and waits for others
+# AI creates a new game and waits for others (TCP Client)
 uv run race-ai-client --create "My Game" --name "Alice_AI"
 
-# Another AI joins the game
+# Another AI joins the game (TCP Client)
 uv run race-ai-client --join <game-id> --name "Bob_AI"
 
-# AI with aggressive strategy
+# AI with aggressive strategy (TCP Client)
 uv run race-ai-client --create "Battle" --strategy aggressive
 
-# AI with defensive strategy
-uv run race-ai-client --join <game-id> --strategy defensive
+# HTTP Client joining an existing game (Stateless REST/SSE AI)
+uv run race-http-ai-client --join <game-id> --strategy defensive
 ```
 
 **AI Strategies**:
@@ -431,6 +432,14 @@ class CustomAI(AIPlayer):
 
         return self._choose_random_action(actions)
 ```
+
+### HTTP AI Client (`http_ai_client.py`)
+
+A stateless HTTP-based AI client allows for bots that run anywhere HTTP is supported. 
+
+1. **Authentication**: Connecting to `/api/game/{game_id}/join` creates an authentication JWT for the AI player.
+2. **Observation**: The AI uses the Mercure generated `sse_url` to subscribe to the live `.well-known/mercure` event-stream to receive `FULL_STATE` updates.
+3. **Execution**: The AI responds to these updates with HTTP `POST` requests to `/api/game/{game_id}/action` passing the authenticated JWT.
 
 ## State Synchronization
 

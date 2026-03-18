@@ -19,9 +19,9 @@ Race to the Crystal is a turn-based strategy game where players compete to captu
 
 ## Tech Stack
 
-- **Backend**: Python with asyncio, TCP/WebSocket servers
+- **Backend**: Python with asyncio, TCP/WebSocket, and HTTP REST (JWT Authentication) servers
 - **Desktop Client**: Arcade with OpenGL shaders
-- **Web Client**: Babylon.js 8 with WebSocket sync
+- **Web Client**: Babylon.js 8 with Mercure (SSE) state synchronization
 - **Testing**: 276 unit tests with pytest
 
 ## Quick Start
@@ -67,9 +67,12 @@ uv run race-to-the-crystal
 
 **Option C: AI Players**
 ```bash
-# AI creates/joins games via command line
+# TCP AI Client (Creates/Joins via socket)
 uv run race-ai-client --create "My Game" --name "Bot"
 uv run race-ai-client --join <game-id> --strategy aggressive
+
+# HTTP AI Client (Joins via REST/SSE)
+uv run race-http-ai-client --join <game-id> --strategy defensive
 ```
 
 All client types (desktop, web, AI) can play together in the same game!
