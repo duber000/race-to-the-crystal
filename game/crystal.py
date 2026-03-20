@@ -10,6 +10,7 @@ from shared.constants import (
     CRYSTAL_CAPTURE_TURNS_REQUIRED,
 )
 from shared.types import TokenID, PlayerID
+from game.capture_utils import count_tokens_by_player, find_dominant_player
 
 
 @dataclass
@@ -54,49 +55,6 @@ class Crystal:
         reduction = disabled_generators * 2
         required = self.base_tokens_required - reduction
         return max(1, required)
-
-    def _count_tokens_by_player(
-        self, tokens_at_position: list[tuple[TokenID, PlayerID]]
-    ) -> dict[PlayerID, list[TokenID]]:
-        """
-        Group tokens by their controlling player.
-
-        Args:
-            tokens_at_position: List of (token_id, player_id) tuples
-
-        Returns:
-            Dictionary mapping player_id to list of their token_ids
-        """
-        player_token_counts: dict[PlayerID, list[TokenID]] = {}
-        for token_id, player_id in tokens_at_position:
-            if player_id not in player_token_counts:
-                player_token_counts[player_id] = []
-            player_token_counts[player_id].append(token_id)
-        return player_token_counts
-
-    def _find_dominant_player(
-        self, player_token_counts: dict[PlayerID, list[TokenID]]
-    ) -> tuple[PlayerID | None, int]:
-        """
-        Determine which player has the most tokens, if any.
-
-        Args:
-            player_token_counts: Dictionary mapping player_id to token_ids
-
-        Returns:
-            Tuple of (dominant_player_id, token_count). Returns (None, count) if contested.
-        """
-        dominant_player: PlayerID | None = None
-        dominant_count = 0
-
-        for player_id, token_ids in player_token_counts.items():
-            if len(token_ids) > dominant_count:
-                dominant_player = player_id
-                dominant_count = len(token_ids)
-            elif len(token_ids) == dominant_count and dominant_count > 0:
-                dominant_player = None  # Contested
-
-        return (dominant_player, dominant_count)
 
     def _process_win_logic(
         self,
@@ -151,8 +109,8 @@ class Crystal:
         """
         self.holding_token_ids.clear()
 
-        player_token_counts = self._count_tokens_by_player(tokens_at_position)
-        dominant_player, dominant_count = self._find_dominant_player(
+        player_token_counts = count_tokens_by_player(tokens_at_position)
+        dominant_player, dominant_count = find_dominant_player(
             player_token_counts
         )
         required_tokens = self.get_tokens_required(disabled_generators)

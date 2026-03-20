@@ -10,6 +10,36 @@
 
 import { GAME_PHASE, TurnPhase, STATE } from './game_client.constants.js';
 
+/**
+ * Recursive merge of delta into target object.
+ * Shared utility used by both StateManager and NetworkManager.
+ * - null values delete the key
+ * - Arrays are replaced wholesale
+ * - Objects are recursively merged
+ * - Primitives are overwritten
+ */
+function mergeDelta(target, delta) {
+    if (!delta || typeof delta !== 'object') return delta;
+
+    // If target is not an object, just replace it
+    if (!target || typeof target !== 'object') return delta;
+
+    for (const key in delta) {
+        const value = delta[key];
+
+        if (value === null) {
+            delete target[key];
+        } else if (Array.isArray(value)) {
+            target[key] = value;
+        } else if (typeof value === 'object' && !Array.isArray(value)) {
+            target[key] = mergeDelta(target[key] || {}, value);
+        } else {
+            target[key] = value;
+        }
+    }
+    return target;
+}
+
 class StateManager {
     constructor() {
         this.gameState = null;
@@ -56,30 +86,11 @@ class StateManager {
     }
 
     /**
-     * Recursive merge of delta into target object
+     * Recursive merge of delta into target object.
+     * Delegates to the shared mergeDelta utility.
      */
     mergeDelta(target, delta) {
-        if (!delta || typeof delta !== 'object') return delta;
-        
-        // If target is not an object, just replace it
-        if (!target || typeof target !== 'object') return delta;
-
-        // Clone target for immutability if needed (usually we mutate in place for game state performance)
-        for (const key in delta) {
-            const value = delta[key];
-            
-            if (value === null) {
-                delete target[key];
-            } else if (Array.isArray(value)) {
-                // For arrays, we currently just overwrite them (delta logic for lists is simple replace)
-                target[key] = value;
-            } else if (typeof value === 'object' && !Array.isArray(value)) {
-                target[key] = this.mergeDelta(target[key] || {}, value);
-            } else {
-                target[key] = value;
-            }
-        }
-        return target;
+        return mergeDelta(target, delta);
     }
 
     /**
@@ -136,4 +147,4 @@ class StateManager {
     }
 }
 
-export { StateManager };
+export { StateManager, mergeDelta };

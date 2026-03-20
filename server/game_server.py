@@ -367,29 +367,40 @@ class GameServer:
 
         return player_id
 
-    async def _handle_disconnect(self, player_id: str, explicit: bool = False) -> None:
+    async def handle_player_disconnect(
+        self, player_id: str, explicit: bool = False, allow_reconnect: bool = True
+    ) -> None:
         """
-        Handle player disconnection.
+        Unified player disconnection handler for all transport types.
 
         Args:
             player_id: Disconnecting player
             explicit: True if player explicitly disconnected, False if connection lost
+            allow_reconnect: True to allow reconnection (TCP), False for permanent removal (WebSocket)
         """
-        logger.info(f"Player disconnected: {player_id[:8]} (explicit={explicit})")
+        logger.info(
+            f"Player disconnected: {player_id[:8]} (explicit={explicit}, allow_reconnect={allow_reconnect})"
+        )
 
-        # Remove connection
+        # Remove connection tracking
         self.player_connections.pop(player_id, None)
 
-        # Check if player is in an active game
+        # Get context before any cleanup
         game_session = self.game_coordinator.get_player_game(player_id)
+        lobby = self.lobby_manager.get_player_lobby(player_id)
+        player_name = "Unknown"
+        game_id = None
 
-        if game_session and not explicit:
-            # Keep client_type for reconnection
-            # Save disconnection info for reconnection
-            lobby = self.lobby_manager.get_player_lobby(player_id)
+        if lobby:
+            player_info = lobby.players.get(player_id)
+            player_name = player_info.player_name if player_info else "Unknown"
+            game_id = lobby.game_id
+
+        if allow_reconnect and game_session and not explicit:
+            # Temporary disconnect — save for reconnection
             self.disconnected_players[player_id] = {
                 "disconnect_time": time.time(),
-                "game_id": lobby.game_id if lobby else None,
+                "game_id": game_id,
                 "game_session": game_session,
             }
             logger.info(
@@ -398,8 +409,6 @@ class GameServer:
 
             # Notify other players that player disconnected but can reconnect
             if lobby:
-                player_info = lobby.players.get(player_id)
-                player_name = player_info.player_name if player_info else "Unknown"
                 disconnect_msg = NetworkMessage(
                     type=MessageType.PLAYER_DISCONNECTED,
                     timestamp=time.time(),
@@ -411,30 +420,17 @@ class GameServer:
                 )
 
                 if game_session:
-                    # In active game
                     await self._broadcast_to_game(lobby.game_id, disconnect_msg)
                 else:
-                    # In lobby
                     await self._broadcast_to_lobby(lobby.game_id, disconnect_msg)
         else:
-            # Explicit disconnect or not in game - remove completely
-            # Get player info before removing
-            lobby = self.lobby_manager.get_player_lobby(player_id)
-            player_name = "Unknown"
-            game_id = None
-
-            if lobby:
-                player_info = lobby.players.get(player_id)
-                player_name = player_info.player_name if player_info else "Unknown"
-                game_id = lobby.game_id
-
-            # Remove from lobby/game and client type tracking
+            # Permanent disconnect — remove completely
             self.lobby_manager.remove_player_from_all(player_id)
             self.game_coordinator.remove_player(player_id)
             self.player_client_types.pop(player_id, None)
             logger.info(f"Player {player_id[:8]} removed from all games")
 
-            # Notify other players in lobby/game
+            # Notify other players
             if game_id:
                 disconnect_msg = NetworkMessage(
                     type=MessageType.PLAYER_LEFT,
@@ -443,13 +439,15 @@ class GameServer:
                 )
 
                 if lobby and lobby.status == GameStatus.IN_PROGRESS:
-                    # Was in active game
                     game_session = self.game_coordinator.get_game(game_id)
                     if game_session:
                         await self._broadcast_to_game(game_id, disconnect_msg)
                 else:
-                    # Was in lobby
                     await self._broadcast_to_lobby(game_id, disconnect_msg)
+
+    async def _handle_disconnect(self, player_id: str, explicit: bool = False) -> None:
+        """Handle TCP player disconnection."""
+        await self.handle_player_disconnect(player_id, explicit=explicit, allow_reconnect=True)
 
     async def _handle_message(self, player_id: str, message: NetworkMessage) -> None:
         """

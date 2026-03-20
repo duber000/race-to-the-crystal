@@ -541,32 +541,14 @@ class WebSocketHandler:
         await self._handle_disconnect(client)
 
     async def _handle_disconnect(self, client: WebSocketClient) -> None:
-        """Handle client disconnection."""
+        """Handle client disconnection by delegating to GameServer."""
         if not self.game_server:
             return
 
         if client.player_id:
-            game_session = self.game_server.game_coordinator.get_player_game(
-                client.player_id
+            await self.game_server.handle_player_disconnect(
+                client.player_id, explicit=False, allow_reconnect=False
             )
-            lobby = self.game_server.lobby_manager.get_player_lobby(client.player_id)
-
-            # Clean up game server tracking
-            self.game_server.player_connections.pop(client.player_id, None)
-            self.game_server.player_client_types.pop(client.player_id, None)
-            self.game_server.lobby_manager.remove_player_from_all(client.player_id)
-            self.game_server.game_coordinator.remove_player(client.player_id)
-
-            if game_session:
-                disconnect_event = {
-                    "type": "PLAYER_DISCONNECTED",
-                    "player_id": client.player_id,
-                    "player_name": client.player_name,
-                    "can_reconnect": False,
-                }
-                await self._broadcast_to_game(
-                    lobby.game_id if lobby else None, disconnect_event
-                )
 
         logger.info(f"WebSocket client disconnected: {client.client_id}")
 

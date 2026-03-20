@@ -73,7 +73,7 @@ uv run --group dev pytest
 
 ## Test Structure
 
-The project has 268 unit tests organized by component:
+The project has 475+ unit tests organized by component:
 
 - `tests/test_token.py` - Token mechanics and state
 - `tests/test_board.py` - Board and cell management

@@ -95,72 +95,6 @@ class MercureClient {
     this.onFallbackCallback = onFallback;
     this.onErrorCallback = onError;
 
-  /**
-   * Initialize Mercure client by fetching configuration from server.
-   * @returns {Promise<boolean>} Success status
-   */
-  async init() {
-    try {
-      const response = await fetch("/api/config");
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to fetch config`);
-      }
-      
-      const data = await response.json();
-      
-      // Validate required config fields
-      if (!data.mercure_hub_url || !data.mercure_topic) {
-        throw new Error("Invalid config: missing mercure_hub_url or mercure_topic");
-      }
-      
-      this.config = data;
-      console.log("✓ Mercure config loaded:", this.config);
-
-      if (!this.config.mercure_enabled) {
-        console.warn("⚠ Mercure is disabled - falling back to WebSocket");
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Failed to load Mercure config:", error.message || error);
-      if (this.onErrorCallback) {
-        this.onErrorCallback("Mercure config failed: " + (error.message || error));
-      }
-      return false;
-    }
-  }
-
-  /**
-   * Update the Mercure topic to subscribe to.
-   * Call this before subscribe() to set the correct topic (e.g., with game_id).
-   *
-   * @param {string} topic - The topic URL to subscribe to
-   */
-  setTopic(topic) {
-    if (this.config) {
-      this.config.mercure_topic = topic;
-      console.log(`Updated Mercure topic to: ${topic}`);
-    }
-  }
-
-  /**
-   * Subscribe to Mercure events
-   * @param {Function} onUpdate - Callback for state updates
-   * @param {Function} onFallback - Callback when SSE fails (triggers WebSocket fallback)
-   * @param {Function} onError - Optional callback for error notifications
-   */
-  subscribe(onUpdate, onFallback = null, onError = null) {
-    if (!this.config || !this.config.mercure_enabled) {
-      console.warn("Mercure not enabled");
-      return;
-    }
-
-    this.onUpdateCallback = onUpdate;
-    this.onFallbackCallback = onFallback;
-    this.onErrorCallback = onError;
-
     // Build Mercure subscription URL
     const hubUrl = new URL(this.config.mercure_hub_url);
     hubUrl.searchParams.append("topic", this.config.mercure_topic);
@@ -303,59 +237,6 @@ class MercureClient {
   /**
    * Check if Mercure is connected.
    * @returns {boolean} True if connected
-   */
-  isConnected() {
-    return this.connected;
-  }
-}
-
-  /**
-   * Start silence detection timer (30-second timeout).
-   * If no messages received for 30 seconds, trigger fallback.
-   */
-  _startSilenceDetection() {
-    this._stopSilenceDetection(); // Clear existing timer
-
-    this.silenceTimer = setInterval(() => {
-      const timeSinceLastMessage = Date.now() - this.lastMessageTime;
-
-      if (timeSinceLastMessage > TIMEOUT_CONFIG.SSE_SILENCE_MS) {
-        console.warn("⚠ SSE silent for 30+ seconds - triggering fallback");
-        this._stopSilenceDetection();
-
-        if (this.onFallbackCallback) {
-          this.onFallbackCallback();
-        }
-      }
-    }, TIMEOUT_CONFIG.SSE_CHECK_INTERVAL_MS);
-  }
-
-  /**
-   * Stop silence detection timer.
-   */
-  _stopSilenceDetection() {
-    if (this.silenceTimer) {
-      clearInterval(this.silenceTimer);
-      this.silenceTimer = null;
-    }
-  }
-
-  /**
-   * Close the Mercure connection.
-   */
-  disconnect() {
-    this._stopSilenceDetection();
-
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
-      this.connected = false;
-      console.log("Mercure disconnected");
-    }
-  }
-
-  /**
-   * Check if Mercure is connected.
    */
   isConnected() {
     return this.connected;

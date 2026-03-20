@@ -33,13 +33,14 @@ class Player:
     team: int | None = None
 
     @property
-    def alive_token_count(self) -> int:
-        """
-        Get count of alive tokens.
-        Note: This should be calculated by the game state,
-        this is just a cached value.
-        """
+    def token_count(self) -> int:
+        """Get count of tokens currently owned by this player."""
         return len(self.token_ids)
+
+    @property
+    def alive_token_count(self) -> int:
+        """Get count of tokens currently owned by this player."""
+        return self.token_count
 
     def add_token(self, token_id: TokenID) -> None:
         """

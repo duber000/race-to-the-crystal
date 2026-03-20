@@ -241,12 +241,18 @@ class ProtocolHandler:
         data = message.data or {}
 
         if action_type == MessageType.MOVE:
+            if data.get("token_id") is None:
+                raise ValueError("MOVE message missing required 'token_id' field")
             if data.get("destination") is None:
                 raise ValueError("MOVE message missing required 'destination' field")
             return MoveAction(
                 token_id=data["token_id"], destination=tuple(data["destination"])
             )
         elif action_type == MessageType.ATTACK:
+            if data.get("attacker_id") is None:
+                raise ValueError("ATTACK message missing required 'attacker_id' field")
+            if data.get("defender_id") is None:
+                raise ValueError("ATTACK message missing required 'defender_id' field")
             return AttackAction(
                 attacker_id=data["attacker_id"], defender_id=data["defender_id"]
             )

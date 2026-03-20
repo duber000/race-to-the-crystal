@@ -423,10 +423,6 @@ class GameState:
         for player_id, player in self.players.items():
             self._auto_deploy_starting_tokens(player_id, player.color.value)
 
-        # Initialize generators and crystal (will implement when those classes exist)
-        # self.generators = [...]
-        # self.crystal = Crystal(...)
-
         # Set first player
         if self.players:
             self.current_turn_player_id = list(self.players.keys())[0]
