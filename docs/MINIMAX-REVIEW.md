@@ -13,17 +13,9 @@ This review originally identified **33 distinct issues** across the codebase. Af
 
 ## CRITICAL Issues
 
-### 1. ~~Dead Code Comment in GameState (`game_state.py:426-428`)~~ [CORRECTED]
+### 1. ~~Dead Code Comment in GameState (`game_state.py:426-428`)~~ [CORRECTED] [FIXED]
 
-```python
-# Initialize generators and crystal (will implement when those classes exist)
-# self.generators = [...]
-# self.crystal = Crystal(...)
-```
-
-**Correction:** While the commented-out code does exist in `start_game()`, `generators` and `crystal` ARE properly initialized as dataclass fields (`generators: list = field(default_factory=list)` and `crystal: "Crystal | None" = None`). The code that references them (lines 500, 516, 529) includes defensive checks (`if not self.generators or not self.crystal:`). The comment is stale/misleading but there is no crash risk or missing initialization.
-
-**Revised Impact:** Stale comment only — cosmetic issue, not a functional bug. Should be downgraded from CRITICAL to MINOR.
+**Correction:** The comment was stale/misleading but not a functional bug — downgraded to MINOR. **Fixed:** Stale comment removed.
 
 ### 2. God Classes Everywhere
 
@@ -37,41 +29,17 @@ This review originally identified **33 distinct issues** across the codebase. Af
 
 **Impact:** Extremely difficult to maintain, test, or extend. Violates Single Responsibility Principle.
 
-### 3. WebSocketHandler Directly Modifies GameServer Internals (`websocket_handler.py:543-571`)
+### 3. ~~WebSocketHandler Directly Modifies GameServer Internals (`websocket_handler.py:543-571`)~~ [FIXED]
 
-```python
-# Creates tight coupling between WebSocketHandler and GameServer
-self.game_server.player_connections.pop(client.player_id, None)
-self.game_server.player_client_types.pop(client.player_id, None)
-self.game_server.lobby_manager.remove_player_from_all(client.player_id)
-self.game_server.game_coordinator.remove_player(client.player_id)
-```
+**Fixed:** Created unified `GameServer.handle_player_disconnect(player_id, explicit, allow_reconnect)` method. WebSocketHandler now delegates to this single entry point instead of reaching into GameServer internals.
 
-**Impact:** Changes to GameServer internals may break WebSocketHandler. Duplicated cleanup logic.
+### 4. ~~Duplicate Disconnect Handling (3 places)~~ [FIXED]
 
-### 4. Duplicate Disconnect Handling (3 places)
+**Fixed:** Disconnect logic consolidated into `GameServer.handle_player_disconnect()`. Both TCP and WebSocket handlers delegate to this method. The `allow_reconnect` parameter preserves the semantic difference (TCP clients can reconnect, WebSocket clients cannot).
 
-Disconnection logic exists in three locations with different implementations:
-- `GameServer._handle_disconnect()` — TCP disconnect handling
-- `WebSocketHandler._handle_disconnect()` — WebSocket disconnect handling  
-- `WebSocketHandler._broadcast_to_game()` — broadcasts within websocket context
+### 5. ~~Duplicate Code in MercureClient (`web_server/static/mercure_client.js`)~~ [FIXED]
 
-**Impact:** Inconsistent behavior. Bug fixes must be applied in three places.
-
-### 5. Duplicate Code in MercureClient (`web_server/static/mercure_client.js`)
-
-Lines 98-133 and 102-133 are **identical** — clear copy-paste error:
-```javascript
-// First occurrence (lines 98-133)
-async init() { /* ... */ }
-
-// Second occurrence (lines 102-133) - DUPLICATE!
-async init() { /* ... */ }
-```
-
-Similarly, `_startSilenceDetection()`, `_stopSilenceDetection()`, `disconnect()`, and `isConnected()` are duplicated at lines 261-363.
-
-**Impact:** One definition overwrites the other, or one becomes dead code. Confusing maintenance.
+**Fixed:** Removed ~120 lines of duplicate code. File had corrupted copy-paste: duplicate `init()`, `setTopic()`, partial `subscribe()` pasted inside `subscribe()` body, plus duplicate `_startSilenceDetection`, `_stopSilenceDetection`, `disconnect`, `isConnected` outside the class. File reduced from 394 → 275 lines.
 
 ---
 
@@ -89,35 +57,17 @@ def _validate_turn_phase(self, game_state: GameState, required_phase: TurnPhase,
 
 **Revised Impact:** One unused helper method (`_validate_turn_phase`), not three. Downgrade from HIGH to MINOR.
 
-### 7. Code Duplication: Generator and Crystal (`generator.py` & `crystal.py`)
+### 7. ~~Code Duplication: Generator and Crystal (`generator.py` & `crystal.py`)~~ [FIXED]
 
-Both classes contain nearly identical methods:
-- `_count_tokens_by_player()`
-- `_find_dominant_player()`
-- `_process_capture_logic()` / `_process_win_logic()`
+**Fixed:** Extracted `count_tokens_by_player()` and `find_dominant_player()` into `game/capture_utils.py`. Both `Generator` and `Crystal` now import from the shared module. Domain-specific logic (`_process_capture_logic` / `_process_win_logic`) remains in each class.
 
-**Impact:** Bug fixes must be applied in two places. Violates DRY principle.
+### 8. ~~Misleading Property (`player.py:35-42`)~~ [FIXED]
 
-### 8. Misleading Property (`player.py:35-42`)
+**Fixed:** Added properly-named `token_count` property. `alive_token_count` kept as backward-compatible alias with corrected docstring.
 
-```python
-@property
-def alive_token_count(self) -> int:
-    """Get count of alive tokens."""
-    return len(self.token_ids)  # Returns TOTAL tokens, not alive ones!
-```
+### 9. ~~Unsafe Dictionary Access (`network/protocol.py:244-257`)~~ [FIXED]
 
-**Impact:** Logic bug. Callers expecting alive count get total count.
-
-### 9. Unsafe Dictionary Access (`network/protocol.py:244-257`)
-
-```python
-if data.get("destination") is None:
-    raise ValueError("MOVE message missing required 'destination' field")
-return MoveAction(token_id=data["token_id"], ...)  # token_id NOT validated!
-```
-
-**Impact:** Missing validation allows malformed data to cause TypeError at runtime.
+**Fixed:** Added explicit validation for `token_id` in MOVE messages and `attacker_id`/`defender_id` in ATTACK messages. All required fields are now validated before access, raising descriptive `ValueError` instead of `KeyError`.
 
 ### 10. ~~Buffer Concatenation O(n²) Performance (`network/connection.py:147`)~~ [CORRECTED]
 
