@@ -193,12 +193,13 @@ Contains all game mechanics, rules, and state management. These modules have NO 
 - `movement.py`: BFS pathfinding for token movement
 - `combat.py`: Combat resolution (damage = attacker.health // 2)
   - Clean, self-documenting code without redundant comments
+- `capture_utils.py`: Shared utilities for token counting and dominance logic
+  - Functions: `count_tokens_by_player()`, `find_dominant_player()`
+  - Used by both `generator.py` and `crystal.py` to avoid code duplication
 - `generator.py`: Generator capture mechanics (2 tokens for 2 turns)
-  - Uses helper methods: `_count_tokens_by_player()`, `_find_dominant_player()`, `_process_capture_logic()`
-  - Self-documenting method names eliminate need for "what" comments
+  - Imports shared helpers from `capture_utils.py`; implements `_process_capture_logic()`
 - `crystal.py`: Win condition tracking (12 tokens for 3 turns, reduced by disabled generators)
-  - Uses helper methods: `_count_tokens_by_player()`, `_find_dominant_player()`, `_process_win_logic()`
-  - Self-documenting method names eliminate need for "what" comments
+  - Imports shared helpers from `capture_utils.py`; implements `_process_win_logic()`
 - `mystery_square.py`: Random events (heal or teleport)
 
 **Critical architectural detail:** The `api.py`, `ai_observation.py` and `ai_actions.py` modules provide a complete text-based API for interacting with the game. This enables:
@@ -407,7 +408,7 @@ Browser-based 3D client using Babylon.js 8 for rendering.
 **See [docs/WEB.md](docs/WEB.md) for complete web client documentation.**
 
 #### `tests/` - Unit Tests
-276 pytest tests covering all game mechanics. Tests use pure game logic without rendering.
+475+ pytest tests covering all game mechanics. Tests use pure game logic without rendering.
 
 ---
 
@@ -576,7 +577,7 @@ while game_state.phase == GamePhase.PLAYING:
 
 ## Testing Strategy
 
-The project has 276 unit tests organized by game system:
+The project has 475+ unit tests organized by game system:
 
 - `test_board.py`: Grid and cell management
 - `test_token.py`: Token state and behavior
@@ -588,7 +589,7 @@ The project has 276 unit tests organized by game system:
 - `test_ai_observation.py`: AI observation API
 - `test_ai_actions.py`: AI action execution
 
-**Playtesting:** Use the `/playtesting` skill or `test_gameplay_flaws.py` to run automated AI playtests. This is especially useful after implementing new features to verify end-to-end gameplay.
+**Playtesting:** Use the `/playtesting` skill to run automated AI playtests. This is especially useful after implementing new features to verify end-to-end gameplay.
 
 ---
 

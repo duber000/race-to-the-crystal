@@ -360,4 +360,4 @@ Despite the issues above, the codebase has several strengths:
 3. **Parameter objects**: `ui_config.py` groups related parameters
 4. **Type aliases**: `TokenID`, `PlayerID`, `Position` improve clarity
 5. **Dual rendering modes**: Good 2D/3D toggle implementation
-6. **276 unit tests**: Comprehensive game logic coverage
+6. **475+ unit tests**: Comprehensive game logic coverage

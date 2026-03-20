@@ -22,7 +22,7 @@ Race to the Crystal is a turn-based strategy game where players compete to captu
 - **Backend**: Python with asyncio, TCP/WebSocket, and HTTP REST (JWT Authentication) servers
 - **Desktop Client**: Arcade with OpenGL shaders
 - **Web Client**: Babylon.js 8 with Mercure (SSE) state synchronization
-- **Testing**: 276 unit tests with pytest
+- **Testing**: 475+ unit tests with pytest
 
 ## Quick Start
 
@@ -122,7 +122,7 @@ race-to-the-crystal/
 │   ├── dockerfiles/ # Container images
 │   ├── development/ # Dev quadlets
 │   └── production/  # Production quadlets
-├── tests/         # 276 unit tests
+├── tests/         # 475+ unit tests
 └── docs/          # Detailed documentation
 ```
 

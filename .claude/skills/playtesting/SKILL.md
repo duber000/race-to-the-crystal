@@ -271,7 +271,6 @@ If user doesn't provide `game_id`, Claude can:
 ## Files to Use
 
 **Local Testing:**
-- **Main test script**: `test_gameplay_flaws.py`
 - **Game state**: `game/game_state.py`
 - **AI observer**: `game/ai_observation.py`
 - **AI executor**: `game/ai_actions.py`
@@ -332,6 +331,5 @@ Always conclude playtesting with:
 
 - Use direct `game_state` manipulation for setting up test scenarios (bypass deployment validation)
 - The AI API is designed for normal gameplay; tests may need to work around restrictions
-- Always run `test_gameplay_flaws.py` as a baseline before manual testing
 - Create focused test functions for specific mechanics rather than one large test
 - Keep test games deterministic where possible (use fixed seeds)
