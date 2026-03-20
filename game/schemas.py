@@ -133,34 +133,38 @@ class AvailableActionsResponse(TypedDict):
 
 
 # Action result data schemas
-class MoveResultData(TypedDict, total=False):
+class MoveResultData(TypedDict):
     """Data returned from a successful move action."""
 
     token_id: TokenID
     old_position: list[int]
     new_position: list[int]
+
+
+class MoveResultDataWithMystery(MoveResultData, total=False):
+    """Move result with optional mystery square fields."""
+
     mystery_triggered: bool
     mystery_effect: str
 
 
-class AttackResultData(TypedDict, total=False):
+class AttackResultData(TypedDict):
     """Data returned from a successful attack action."""
 
     attacker_id: TokenID
     defender_id: TokenID
     damage_dealt: int
     defender_killed: bool
-    attacker_position: list[int]
-    defender_position: list[int]
 
 
-class DeployResultData(TypedDict, total=False):
+class DeployResultData(TypedDict):
     """Data returned from a successful deploy action."""
 
-    token_id: TokenID
+    new_token_id: TokenID
     health_value: int
     position: list[int]
+    tokens_remaining: int
 
 
 # Union type for action result data
-ActionResultData = MoveResultData | AttackResultData | DeployResultData | None
+ActionResultData = MoveResultData | MoveResultDataWithMystery | AttackResultData | DeployResultData | None

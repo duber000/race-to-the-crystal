@@ -113,13 +113,9 @@ elif action_type == MessageType.MOVE:
 
 **Impact:** Low risk. Forward/reverse mappings naturally require parallel definitions.
 
-### 13. Duplicate Delta Merging Logic
+### 13. ~~Duplicate Delta Merging Logic~~ [FIXED]
 
-Nearly identical implementations:
-- `StateManager.mergeDelta()` (`state_manager.js`)
-- `NetworkManager._mergeDelta()` (`network_manager.js`)
-
-**Impact:** Code duplication. Bug fixes must be applied twice.
+**Fixed:** Extracted shared `mergeDelta()` function in `state_manager.js` and exported it. `NetworkManager._mergeDelta()` now imports and delegates to this shared function. The `StateManager` version (which correctly handles null deletion and arrays) is the canonical implementation.
 
 ### 14. ~~Inconsistent Error Message Formats~~ [CORRECTED]
 
@@ -175,19 +171,9 @@ def calculate_damage_preview(attacker: Token, defender: Token) -> [int]:
 
 **Revised Impact:** Non-issue. Remove from list.
 
-### 19. Schema Mismatch (`schemas.py`)
+### 19. ~~Schema Mismatch (`schemas.py`)~~ [FIXED]
 
-`MoveResultData` marks fields optional (`total=False`), but `ai_actions.py` always includes them:
-```python
-class MoveResultData(TypedDict, total=False):
-    mystery_triggered: bool  # Optional
-    mystery_effect: str     # Optional
-
-# But _execute_move always includes both
-return ActionResult(data={"mystery_triggered": True, "mystery_effect": "heal", ...})
-```
-
-**Impact:** Schema doesn't reflect actual return value.
+**Fixed:** Split `MoveResultData` into base (required: `token_id`, `old_position`, `new_position`) and `MoveResultDataWithMystery` (adds optional `mystery_triggered`, `mystery_effect`). Fixed `AttackResultData` to use required fields matching actual returns and removed phantom `attacker_position`/`defender_position` fields. Fixed `DeployResultData` to use actual field names (`new_token_id`, `tokens_remaining`).
 
 ### 20. Circular Dependency Risk (`ai_actions.py`)
 

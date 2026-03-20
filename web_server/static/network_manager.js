@@ -10,6 +10,7 @@
  */
 
 import { STATE } from './game_client.constants.js';
+import { mergeDelta } from './state_manager.js';
 
 class NetworkManager {
   constructor() {
@@ -97,26 +98,14 @@ class NetworkManager {
 
   /**
    * Recursively merge a delta into a base object.
+   * Delegates to the shared mergeDelta utility from state_manager.js.
    * @param {Object} base - The object to update
    * @param {Object} delta - The changes to apply
    * @returns {Object} The updated object
    * @private
    */
   _mergeDelta(base, delta) {
-    if (!base) return delta;
-    if (!delta) return base;
-
-    for (const key in delta) {
-      if (Object.prototype.hasOwnProperty.call(delta, key)) {
-        if (delta[key] !== null && typeof delta[key] === 'object' && !Array.isArray(delta[key]) && 
-            base[key] !== null && typeof base[key] === 'object' && !Array.isArray(base[key])) {
-          this._mergeDelta(base[key], delta[key]);
-        } else {
-          base[key] = delta[key];
-        }
-      }
-    }
-    return base;
+    return mergeDelta(base || {}, delta || {});
   }
 
   /**
