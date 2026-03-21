@@ -15,6 +15,8 @@ from game.board import Board
 from shared.enums import CellType
 from shared.constants import (
     BOARD_HEIGHT,
+    BOARD_WIDTH,
+    CELL_SIZE,
     WALL_HEIGHT,
     GENERATOR_HEIGHT_3D,
     CRYSTAL_HEIGHT_3D,

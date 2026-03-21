@@ -305,7 +305,7 @@ class GameView(arcade.View):
 
         # Turn phase (check if input_handler exists)
         if self.input_handler:
-            self.phase_text.text = f"Phase: {self.input_handler.turn_phase.name}"
+            self.phase_text.text = f"Phase: {self.game_state.turn_phase.name}"
         else:
             self.phase_text.text = "Phase: MOVEMENT"
         self.phase_text.y = self.window.height - 60
@@ -317,14 +317,14 @@ class GameView(arcade.View):
             assert self.camera_controller is not None
             if self.deployment_controller.selected_deploy_health:
                 instruction = f"Selected {self.deployment_controller.selected_deploy_health}hp token - click a corner position to deploy (ESC to cancel)"
-            elif self.input_handler.turn_phase == TurnPhase.MOVEMENT:
+            elif self.game_state.turn_phase == TurnPhase.MOVEMENT:
                 if self.camera_controller.camera_mode == "3D":
                     instruction = "Hold LMB to move | Click token to select | RMB drag to look/pan"
                 else:
                     instruction = (
                         "Hold LMB to move | Click token to select | RMB drag to pan"
                     )
-            elif self.input_handler.turn_phase == TurnPhase.ACTION:
+            elif self.game_state.turn_phase == TurnPhase.ACTION:
                 instruction = (
                     "Click an adjacent enemy to attack, or press SPACE to end turn"
                 )
