@@ -15,6 +15,7 @@ from shared.constants import (
     BOARD_HEIGHT,
     CRYSTAL_BASE_TOKENS_REQUIRED,
     GENERATOR_TOKEN_REDUCTION,
+    TOKEN_HEALTH_VALUES,
 )
 from shared.types import PlayerID
 
@@ -74,12 +75,6 @@ class AIObserver:
                 player_counts[token.player_id] = 0
             player_counts[token.player_id] += 1
         return player_counts
-
-    @staticmethod
-    def _get_deployable_positions(board, player_index: int) -> list[tuple[int, int]]:
-        """Get valid deployment positions for a player (3x3 corner area)."""
-        # Reuse the board helper so network validation matches the UI and board config
-        return board.get_deployable_positions(player_index)
 
     @staticmethod
     def describe_game_state(
@@ -495,10 +490,8 @@ class AIObserver:
             return
 
         reserve_counts = game_state.get_reserve_token_counts(player_id)
-        corner_positions = AIObserver._get_deployable_positions(
-            game_state.board, player.color.value
-        )
-        for health_value in [10, 8, 6, 4]:
+        corner_positions = game_state.board.get_deployable_positions(player.color.value)
+        for health_value in TOKEN_HEALTH_VALUES:
             if reserve_counts[health_value] > 0:
                 # Check which corner positions are actually available
                 available_corners = []

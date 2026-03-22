@@ -570,46 +570,32 @@ class AIActionExecutor:
         self, action: AttackAction, game_state: GameState, player_id: PlayerID
     ) -> ActionResult:
         """Execute an attack action."""
-        attacker = game_state.get_token(action.attacker_id)
         defender = game_state.get_token(action.defender_id)
-
-        if attacker is None:
-            return ActionResult(
-                False, f"Attacker token {action.attacker_id} not found", None
-            )
         if defender is None:
             return ActionResult(
                 False, f"Defender token {action.defender_id} not found", None
             )
-
-        # Capture pre-combat info for reporting
-        damage = attacker.health // 2
         defender_player = game_state.get_player(defender.player_id)
         defender_owner = defender_player.name if defender_player else "Unknown"
 
-        # Execute combat (applies damage and rounds health down to nearest valid value)
-        CombatSystem.resolve_combat(attacker, defender)
+        # Delegate to game_state.attack_token() so crystal damage boosts and
+        # any other state-level effects are applied consistently.
+        outcome = game_state.attack_token(action.attacker_id, action.defender_id)
+        if outcome is None:
+            return ActionResult(False, "Attack failed (invalid attacker or defender)", None)
 
-        # Check kill AFTER combat: take_damage kills tokens whose health rounds below 4,
-        # so "damage >= defender.health" would miss cases like 6hp attacker vs 6hp defender
-        was_killed = not defender.is_alive
-
-        if was_killed:
-            # Remove dead token from board and player token list
-            game_state.remove_token(action.defender_id)
-
-        # Build result message
-        message = f"✓ Token #{action.attacker_id} attacked token #{action.defender_id} ({defender_owner})"
-        message += f"\n→ Dealt {damage} damage"
-
+        message = (
+            f"✓ Token #{action.attacker_id} attacked token #{action.defender_id} ({defender_owner})"
+            f"\n→ Dealt {outcome.damage_dealt} damage"
+        )
         result_data = {
-            "attacker_id": action.attacker_id,
-            "defender_id": action.defender_id,
-            "damage_dealt": damage,
-            "defender_killed": was_killed,
+            "attacker_id": outcome.attacker_id,
+            "defender_id": outcome.defender_id,
+            "damage_dealt": outcome.damage_dealt,
+            "defender_killed": outcome.defender_killed,
         }
 
-        if was_killed:
+        if outcome.defender_killed:
             message += f"\n→ Token #{action.defender_id} was KILLED!"
         else:
             message += f"\n→ Token #{action.defender_id} now has {defender.health}hp"
