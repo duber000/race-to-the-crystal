@@ -5,12 +5,10 @@ Provides token bucket and sliding window rate limiting for connections
 and actions to prevent DoS attacks and abuse.
 """
 
+import logging
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from typing import Dict, Optional
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +127,7 @@ class RateLimiter:
     def __init__(self):
         """Initialize rate limiter."""
         # Connection tracking per IP
-        self.ip_connections: Dict[str, SlidingWindowCounter] = defaultdict(
+        self.ip_connections: dict[str, SlidingWindowCounter] = defaultdict(
             lambda: SlidingWindowCounter(
                 max_events=MAX_CONNECTIONS_PER_IP,
                 window_seconds=CONNECTION_WINDOW_SECONDS
@@ -137,7 +135,7 @@ class RateLimiter:
         )
 
         # Action rate limiting per player (token bucket)
-        self.player_actions: Dict[str, TokenBucket] = defaultdict(
+        self.player_actions: dict[str, TokenBucket] = defaultdict(
             lambda: TokenBucket(
                 capacity=MAX_ACTIONS_PER_SECOND * 2,  # Allow bursts
                 refill_rate=MAX_ACTIONS_PER_SECOND
@@ -145,7 +143,7 @@ class RateLimiter:
         )
 
         # Game creation rate limiting per player
-        self.player_game_creation: Dict[str, SlidingWindowCounter] = defaultdict(
+        self.player_game_creation: dict[str, SlidingWindowCounter] = defaultdict(
             lambda: SlidingWindowCounter(
                 max_events=MAX_GAMES_CREATED_PER_HOUR,
                 window_seconds=3600  # 1 hour
@@ -153,9 +151,9 @@ class RateLimiter:
         )
 
         # Track active connections per IP
-        self.active_connections: Dict[str, int] = defaultdict(int)
+        self.active_connections: dict[str, int] = defaultdict(int)
 
-    def check_connection(self, ip_address: str) -> tuple[bool, Optional[str]]:
+    def check_connection(self, ip_address: str) -> tuple[bool, str | None]:
         """
         Check if connection from IP is allowed.
 
@@ -206,7 +204,7 @@ class RateLimiter:
             if self.active_connections[ip_address] == 0:
                 del self.active_connections[ip_address]
 
-    def check_action(self, player_id: str) -> tuple[bool, Optional[str]]:
+    def check_action(self, player_id: str) -> tuple[bool, str | None]:
         """
         Check if player action is allowed.
 
@@ -231,7 +229,7 @@ class RateLimiter:
 
         return (True, None)
 
-    def check_game_creation(self, player_id: str) -> tuple[bool, Optional[str]]:
+    def check_game_creation(self, player_id: str) -> tuple[bool, str | None]:
         """
         Check if player can create a game.
 

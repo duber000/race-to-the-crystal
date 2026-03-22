@@ -385,7 +385,7 @@ class AIActionExecutor:
         # Check token exists
         if not (token := game_state.get_token(action.token_id)):
             player = game_state.get_player(player_id)
-            valid_tokens = [tid for tid in (player.token_ids if player else [])]
+            valid_tokens = player.token_ids if player else []
             return ValidationResult(
                 False,
                 f"MOVE_FAILED: token_not_found | token_id={action.token_id} | valid_tokens={valid_tokens[:5]}",
@@ -667,11 +667,7 @@ class AIActionExecutor:
                 f"DEPLOY_FAILED: player_not_found | player_id={player_id}",
             )
 
-        from game.ai_observation import AIObserver
-
-        valid_positions = AIObserver._get_deployable_positions(
-            game_state.board, player.color.value
-        )
+        valid_positions = game_state.board.get_deployable_positions(player.color.value)
 
         if action.position not in valid_positions:
             return ValidationResult(

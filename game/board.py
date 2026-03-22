@@ -76,11 +76,15 @@ class Board:
         width: Width of the board
         height: Height of the board
         grid: 2D array of cells
+        _generator_positions: Cached generator positions (set at init, never changes)
+        _mystery_positions: Cached mystery square positions (set at init, never changes)
     """
 
     width: int = BOARD_WIDTH
     height: int = BOARD_HEIGHT
     grid: list[list[Cell]] = field(default_factory=list)
+    _generator_positions: list[tuple[int, int]] = field(default_factory=list)
+    _mystery_positions: list[tuple[int, int]] = field(default_factory=list)
 
     def __post_init__(self):
         """Initialize the board grid if not provided."""
@@ -126,6 +130,8 @@ class Board:
 
         for x, y in generators:
             self.grid[y][x].cell_type = CellType.GENERATOR
+
+        self._generator_positions = generators
 
     def _place_mystery_squares(self) -> None:
         """Place mystery squares randomly in each quadrant."""
@@ -174,6 +180,7 @@ class Board:
                 # Only place on normal cells
                 if cell.cell_type == CellType.NORMAL:
                     cell.cell_type = CellType.MYSTERY
+                    self._mystery_positions.append((x, y))
                     placed += 1
 
                 attempts += 1
@@ -297,21 +304,11 @@ class Board:
 
     def get_generator_positions(self) -> list[tuple[int, int]]:
         """Get positions of all generators."""
-        generators = []
-        for y in range(self.height):
-            for x in range(self.width):
-                if self.grid[y][x].cell_type == CellType.GENERATOR:
-                    generators.append((x, y))
-        return generators
+        return list(self._generator_positions)
 
     def get_mystery_positions(self) -> list[tuple[int, int]]:
         """Get positions of all mystery squares."""
-        mystery = []
-        for y in range(self.height):
-            for x in range(self.width):
-                if self.grid[y][x].cell_type == CellType.MYSTERY:
-                    mystery.append((x, y))
-        return mystery
+        return list(self._mystery_positions)
 
     def to_dict(self) -> dict:
         """Convert board to dictionary for serialization."""
@@ -327,6 +324,19 @@ class Board:
         board = cls(width=data["width"], height=data["height"])
         board.grid = [
             [Cell.from_dict(cell_data) for cell_data in row] for row in data["grid"]
+        ]
+        # Rebuild position caches from the deserialized grid
+        board._generator_positions = [
+            (x, y)
+            for y, row in enumerate(board.grid)
+            for x, cell in enumerate(row)
+            if cell.cell_type == CellType.GENERATOR
+        ]
+        board._mystery_positions = [
+            (x, y)
+            for y, row in enumerate(board.grid)
+            for x, cell in enumerate(row)
+            if cell.cell_type == CellType.MYSTERY
         ]
         return board
 
