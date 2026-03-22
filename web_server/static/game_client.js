@@ -47,11 +47,26 @@ class GameClient {
     this.turnPhase = GAME_PHASE.MOVEMENT;
 
     // Direct access for convenience (optional)
-    Object.defineProperty(this, 'gameState', { get: () => this.stateManager.gameState });
-    Object.defineProperty(this, 'localPlayerId', { get: () => this.stateManager.localPlayerId });
-    Object.defineProperty(this, 'selectedTokenId', { get: () => this.stateManager.selectedTokenId });
-    Object.defineProperty(this, 'controlledTokenId', { get: () => this.stateManager.controlledTokenId });
-    Object.defineProperty(this, 'validMoves', { get: () => this.stateManager.validMoves });
+    Object.defineProperty(this, 'gameState', {
+      get: () => this.stateManager.gameState,
+      set: (v) => { this.stateManager.gameState = v; }
+    });
+    Object.defineProperty(this, 'localPlayerId', {
+      get: () => this.stateManager.localPlayerId,
+      set: (v) => { this.stateManager.localPlayerId = v; }
+    });
+    Object.defineProperty(this, 'selectedTokenId', {
+      get: () => this.stateManager.selectedTokenId,
+      set: (v) => { this.stateManager.selectedTokenId = v; }
+    });
+    Object.defineProperty(this, 'controlledTokenId', {
+      get: () => this.stateManager.controlledTokenId,
+      set: (v) => { this.stateManager.controlledTokenId = v; }
+    });
+    Object.defineProperty(this, 'validMoves', {
+      get: () => this.stateManager.validMoves,
+      set: (v) => { this.stateManager.validMoves = v; }
+    });
 
     // Setup state change callback
     this.stateManager.setChangeCallback((state) => this.handleStateChanged(state));

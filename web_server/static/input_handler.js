@@ -418,7 +418,6 @@ class InputHandler {
                 this.emit('keydown', { key: 'move_token_left' });
                 break;
             case 'arrowright':
-            case 'd':
                 this.emit('keydown', { key: 'move_token_right' });
                 break;
             case 'm':
