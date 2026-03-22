@@ -881,10 +881,10 @@ class GameClient {
     }
 
     // Check if it's a valid move by calculating valid moves for this token
-    this.updateValidMoves(token);
+    const validMoves = this.calculateValidMoves(token);
     const moveKey = `${destX},${destY}`;
 
-    if (this.validMoves.has(moveKey)) {
+    if (validMoves.has(moveKey)) {
       this.networkManager.moveToken(this.controlledTokenId, destination);
       this.renderer.playSound("move");
       this.validMoves = new Set();
