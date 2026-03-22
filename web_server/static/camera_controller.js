@@ -87,8 +87,12 @@ class CameraController {
         this.camera.wheelPrecision = config.wheelPrecision;
         this.camera.fov = 0.7;  // Wider FOV to see edges of board (default ~0.8-1.0)
 
-        // Disable built-in RMB panning - we handle panning via LMB through handlePan()
-        // RMB is used only for rotation (alpha) in our custom input handler
+        // Disable BabylonJS built-in mouse button orbit/pan so left-click is free
+        // for game interactions and right-click is free for custom panning.
+        // Camera rotation is handled via keyboard (Q/E) and scroll zoom still works.
+        if (this.camera.inputs.attached.pointers) {
+            this.camera.inputs.attached.pointers.buttons = [];
+        }
         this.camera.panningSensibility = 0;
 
         this.camera.inertia = config.inertia;
