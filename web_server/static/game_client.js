@@ -47,11 +47,26 @@ class GameClient {
     this.turnPhase = GAME_PHASE.MOVEMENT;
 
     // Direct access for convenience (optional)
-    Object.defineProperty(this, 'gameState', { get: () => this.stateManager.gameState });
-    Object.defineProperty(this, 'localPlayerId', { get: () => this.stateManager.localPlayerId });
-    Object.defineProperty(this, 'selectedTokenId', { get: () => this.stateManager.selectedTokenId });
-    Object.defineProperty(this, 'controlledTokenId', { get: () => this.stateManager.controlledTokenId });
-    Object.defineProperty(this, 'validMoves', { get: () => this.stateManager.validMoves });
+    Object.defineProperty(this, 'gameState', {
+      get: () => this.stateManager.gameState,
+      set: (v) => { this.stateManager.gameState = v; }
+    });
+    Object.defineProperty(this, 'localPlayerId', {
+      get: () => this.stateManager.localPlayerId,
+      set: (v) => { this.stateManager.localPlayerId = v; }
+    });
+    Object.defineProperty(this, 'selectedTokenId', {
+      get: () => this.stateManager.selectedTokenId,
+      set: (v) => { this.stateManager.selectedTokenId = v; }
+    });
+    Object.defineProperty(this, 'controlledTokenId', {
+      get: () => this.stateManager.controlledTokenId,
+      set: (v) => { this.stateManager.controlledTokenId = v; }
+    });
+    Object.defineProperty(this, 'validMoves', {
+      get: () => this.stateManager.validMoves,
+      set: (v) => { this.stateManager.validMoves = v; }
+    });
 
     // Setup state change callback
     this.stateManager.setChangeCallback((state) => this.handleStateChanged(state));
@@ -80,6 +95,9 @@ class GameClient {
   }
 
   connectToServer(host, port, playerName) {
+    // Clear any existing handlers to prevent accumulation on reconnect
+    this.networkManager.eventHandlers.clear();
+
     this.networkManager.on("connecting", () => {
       this.uiManager.showConnectionStatus("Connecting to server...");
       this.updateUIState(STATE.CONNECTING);
@@ -323,7 +341,7 @@ class GameClient {
     // Update local state (health, destruction)
     const defender = this.gameState.tokens[data.defender_id];
     if (defender) {
-      defender.health -= data.damage;
+      defender.health = Math.max(0, defender.health - data.damage);
       if (data.defender_destroyed) {
         defender.is_alive = false;
       }
@@ -515,7 +533,7 @@ class GameClient {
           }
           this.renderer.updateTokenSelectionGlow(this.selectedTokenId);
         }
-        this.renderer.playSound("deploy");
+        this.renderer.playSound("whoosh");
       }
     } else {
       const selectedToken = this.gameState.tokens[this.selectedTokenId];
