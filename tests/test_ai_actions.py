@@ -312,6 +312,51 @@ class TestAttackActionExecution:
         assert data["defender_killed"]
         assert not defender.is_alive
 
+    def test_execute_attack_kill_via_health_rounding(self):
+        """Test that kills caused by health rounding below 4 are detected correctly.
+
+        A 6hp attacker deals 3 damage. A 6hp defender takes 3 damage → health=3,
+        which is below the minimum valid health of 4, so the defender is killed.
+        The old code used 'damage >= defender.health' (3 >= 6 = False), which would
+        miss this kill and leave the dead token on the board blocking movement.
+        """
+        game_state = create_test_game()
+        executor = AIActionExecutor()
+
+        attacker = game_state.deploy_token("player_0", 6, (5, 5))  # 6hp = 3 damage
+        defender = game_state.deploy_token("player_1", 6, (5, 6))  # 6hp: 6-3=3 < 4 → dies
+        defender_id = defender.id
+        game_state.turn_phase = TurnPhase.ACTION
+
+        action = AttackAction(attacker_id=attacker.id, defender_id=defender_id)
+        success, msg, data = executor.execute_action(action, game_state, "player_0")
+
+        assert success
+        assert data["defender_killed"], "6hp vs 6hp: 3 damage rounds health to 3 (< 4 min), should kill"
+        assert not defender.is_alive
+        # Dead token must be cleared from the board so it doesn't block movement
+        cell = game_state.board.get_cell_at(defender.position)
+        assert defender_id not in cell.occupants, "Dead token should be removed from board occupants"
+
+    def test_execute_attack_kill_via_health_rounding_8hp_attacker(self):
+        """Test kill-via-rounding: 8hp attacker (4 dmg) vs 6hp defender (6-4=2 < 4 → dies)."""
+        game_state = create_test_game()
+        executor = AIActionExecutor()
+
+        attacker = game_state.deploy_token("player_0", 8, (5, 5))  # 8hp = 4 damage
+        defender = game_state.deploy_token("player_1", 6, (5, 6))  # 6hp: 6-4=2 < 4 → dies
+        defender_id = defender.id
+        game_state.turn_phase = TurnPhase.ACTION
+
+        action = AttackAction(attacker_id=attacker.id, defender_id=defender_id)
+        success, msg, data = executor.execute_action(action, game_state, "player_0")
+
+        assert success
+        assert data["defender_killed"]
+        assert not defender.is_alive
+        cell = game_state.board.get_cell_at(defender.position)
+        assert defender_id not in cell.occupants
+
 
 class TestDeployActionValidation:
     """Test deploy action validation."""

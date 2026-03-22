@@ -158,6 +158,9 @@ def validate_token_for_game(payload: TokenPayload | None, game_id: str) -> bool:
         >>> if not validate_token_for_game(payload, requested_game_id):
         ...     return 403  # Forbidden
     """
+    if payload is None:
+        return False
+
     if payload.game_id != game_id:
         logger.warning(
             f"Token game_id mismatch: token={payload.game_id[:8]}, "

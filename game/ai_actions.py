@@ -385,7 +385,7 @@ class AIActionExecutor:
         # Check token exists
         if not (token := game_state.get_token(action.token_id)):
             player = game_state.get_player(player_id)
-            valid_tokens = [tid for tid in (player.token_ids if player else [])]
+            valid_tokens = player.token_ids if player else []
             return ValidationResult(
                 False,
                 f"MOVE_FAILED: token_not_found | token_id={action.token_id} | valid_tokens={valid_tokens[:5]}",
@@ -570,44 +570,33 @@ class AIActionExecutor:
         self, action: AttackAction, game_state: GameState, player_id: PlayerID
     ) -> ActionResult:
         """Execute an attack action."""
-        attacker = game_state.get_token(action.attacker_id)
         defender = game_state.get_token(action.defender_id)
-
-        if attacker is None:
-            return ActionResult(
-                False, f"Attacker token {action.attacker_id} not found", None
-            )
         if defender is None:
             return ActionResult(
                 False, f"Defender token {action.defender_id} not found", None
             )
-
-        # Calculate damage
-        damage = attacker.health // 2
-        will_kill = damage >= defender.health
-
-        # Execute combat
-        CombatSystem.resolve_combat(attacker, defender)
-
-        # Build result message
         defender_player = game_state.get_player(defender.player_id)
         defender_owner = defender_player.name if defender_player else "Unknown"
 
-        message = f"✓ Token #{action.attacker_id} attacked token #{action.defender_id} ({defender_owner})"
-        message += f"\n→ Dealt {damage} damage"
+        # Delegate to game_state.attack_token() so crystal damage boosts and
+        # any other state-level effects are applied consistently.
+        outcome = game_state.attack_token(action.attacker_id, action.defender_id)
+        if outcome is None:
+            return ActionResult(False, "Attack failed (invalid attacker or defender)", None)
 
+        message = (
+            f"✓ Token #{action.attacker_id} attacked token #{action.defender_id} ({defender_owner})"
+            f"\n→ Dealt {outcome.damage_dealt} damage"
+        )
         result_data = {
-            "attacker_id": action.attacker_id,
-            "defender_id": action.defender_id,
-            "damage_dealt": damage,
-            "defender_killed": will_kill,
+            "attacker_id": outcome.attacker_id,
+            "defender_id": outcome.defender_id,
+            "damage_dealt": outcome.damage_dealt,
+            "defender_killed": outcome.defender_killed,
         }
 
-        if will_kill:
+        if outcome.defender_killed:
             message += f"\n→ Token #{action.defender_id} was KILLED!"
-            result_data["defender_killed"] = True
-            # Remove dead token from game
-            game_state.remove_token(action.defender_id)
         else:
             message += f"\n→ Token #{action.defender_id} now has {defender.health}hp"
 
@@ -664,11 +653,7 @@ class AIActionExecutor:
                 f"DEPLOY_FAILED: player_not_found | player_id={player_id}",
             )
 
-        from game.ai_observation import AIObserver
-
-        valid_positions = AIObserver._get_deployable_positions(
-            game_state.board, player.color.value
-        )
+        valid_positions = game_state.board.get_deployable_positions(player.color.value)
 
         if action.position not in valid_positions:
             return ValidationResult(

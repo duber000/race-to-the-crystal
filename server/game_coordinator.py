@@ -154,7 +154,7 @@ class GameSession:
 
         return success, message, result_data
 
-    def get_game_state_for_player(self, network_player_id: str) -> [dict]:
+    def get_game_state_for_player(self, network_player_id: str) -> dict | None:
         """
         Get serialized game state from a player's perspective.
 
@@ -177,7 +177,7 @@ class GameSession:
 
         return state_dict
 
-    def get_situation_report(self, network_player_id: str) -> [str]:
+    def get_situation_report(self, network_player_id: str) -> str | None:
         """
         Get AI-friendly text description of game state.
 
@@ -193,7 +193,7 @@ class GameSession:
 
         return AIObserver.get_situation_report(self.game_state, game_player_id)
 
-    def get_current_network_player_id(self) -> [str]:
+    def get_current_network_player_id(self) -> str | None:
         """
         Get network player ID of current turn player.
 
@@ -209,7 +209,7 @@ class GameSession:
 
         return self.game_state.phase == GamePhase.ENDED
 
-    def get_winner_network_id(self) -> [str]:
+    def get_winner_network_id(self) -> str | None:
         """Get network player ID of winner (if game ended)."""
         if not self.is_game_over():
             return None
@@ -257,7 +257,7 @@ class GameCoordinator:
 
         return game_session
 
-    def get_game(self, game_id: str) -> [GameSession]:
+    def get_game(self, game_id: str) -> GameSession | None:
         """
         Get an active game session.
 
@@ -269,7 +269,7 @@ class GameCoordinator:
         """
         return self.active_games.get(game_id)
 
-    def get_player_game(self, player_id: str) -> [GameSession]:
+    def get_player_game(self, player_id: str) -> GameSession | None:
         """
         Get the game session a player is in.
 
@@ -331,7 +331,7 @@ class GameCoordinator:
         logger.info(f"Ended game session {game_id}")
         return True
 
-    def remove_player(self, player_id: str) -> [str]:
+    def remove_player(self, player_id: str) -> str | None:
         """
         Remove a player from their game (on disconnect).
 

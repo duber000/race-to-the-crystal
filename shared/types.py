@@ -6,9 +6,9 @@ This module defines custom types for better type safety and code clarity.
 
 from typing import NewType, TypeAlias
 
-# Type definitions for better type safety
-TokenID: TypeAlias = NewType("TokenID", int)
-PlayerID: TypeAlias = NewType("PlayerID", str)
+# NewType creates distinct types for type-checker enforcement
+TokenID = NewType("TokenID", int)
+PlayerID = NewType("PlayerID", str)
 
 # Common compound types
 Position: TypeAlias = tuple[int, int]

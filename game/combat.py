@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from game.token import Token
 from shared.enums import CombatResult
+from shared.types import TokenID
 
 
 @dataclass
@@ -23,8 +24,8 @@ class CombatOutcome:
 
     result: CombatResult
     damage_dealt: int
-    attacker_id: int
-    defender_id: int
+    attacker_id: TokenID
+    defender_id: TokenID
     defender_killed: bool
 
     def to_dict(self) -> dict:
@@ -127,7 +128,7 @@ class CombatSystem:
         return attackable
 
     @staticmethod
-    def calculate_damage_preview(attacker: Token, defender: Token) -> [int]:
+    def calculate_damage_preview(attacker: Token, defender: Token) -> int | None:
         """
         Calculate how much damage an attack would deal (without executing).
 

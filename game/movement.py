@@ -6,6 +6,7 @@ from collections import deque
 
 from game.token import Token
 from game.board import Board
+from shared.enums import CellType
 from shared.types import TokenID
 
 
@@ -85,8 +86,6 @@ class MovementSystem:
                     if cell.has_enemy_tokens(player_id, tokens_dict):
                         continue
                     # Friendly tokens - only allow stacking on generator and crystal cells
-                    from shared.enums import CellType
-
                     if cell.cell_type not in (CellType.GENERATOR, CellType.CRYSTAL):
                         # Can't stack on regular cells with friendly tokens
                         continue

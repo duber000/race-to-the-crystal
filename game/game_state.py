@@ -2,29 +2,34 @@
 Central game state management.
 """
 
+import json
+import random
 from dataclasses import dataclass, field
 from typing import Self
-import json
 
 from shared.enums import (
     CellType,
+    CombatResult,
+    CrystalEffect,
     GamePhase,
     PlayerColor,
     TurnPhase,
-    CrystalEffect,
 )
 from shared.constants import (
+    CRYSTAL_DAMAGE_BOOST_MULTIPLIER,
+    CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL,
+    CRYSTAL_SPEED_BOOST_AMOUNT,
     TOKEN_HEALTH_VALUES,
     TOKENS_PER_HEALTH_VALUE,
 )
 from shared.types import TokenID, PlayerID
 from game.board import Board
-from game.combat import CombatOutcome
+from game.combat import CombatOutcome, CombatSystem
+from game.crystal import Crystal, CrystalManager
+from game.crystal_effects import CrystalEffectsManager
+from game.generator import Generator, GeneratorManager
 from game.player import Player
 from game.token import Token
-from game.generator import Generator
-from game.crystal import Crystal
-from game.crystal_effects import CrystalEffectsManager
 
 SERIALIZATION_VERSION = 1
 
@@ -173,7 +178,7 @@ class GameState:
             Dictionary mapping health value to count
         """
         reserve = self.get_reserve_tokens(player_id)
-        counts = {10: 0, 8: 0, 6: 0, 4: 0}
+        counts = {hv: 0 for hv in TOKEN_HEALTH_VALUES}
         for token in reserve:
             if token.max_health in counts:
                 counts[token.max_health] += 1
@@ -213,8 +218,6 @@ class GameState:
         """Get the current player whose turn it is."""
         if self.current_turn_player_id:
             return self.get_player(self.current_turn_player_id)
-        elif self.current_player_id:
-            return self.get_player(self.current_player_id)
         return None
 
     def get_tokens_at_position(self, position: tuple) -> list[Token]:
@@ -263,8 +266,6 @@ class GameState:
         Returns:
             Effective movement range
         """
-        from shared.constants import CRYSTAL_SPEED_BOOST_AMOUNT
-
         base_range = token.movement_range
 
         # Apply speed boost if player has the effect
@@ -332,10 +333,6 @@ class GameState:
         Returns:
             CombatOutcome with damage information, or None if attack was invalid
         """
-        from game.combat import CombatSystem, CombatOutcome
-        from shared.constants import CRYSTAL_DAMAGE_BOOST_MULTIPLIER
-        from shared.enums import CombatResult
-
         attacker = self.get_token(attacker_id)
         defender = self.get_token(defender_id)
 
@@ -416,7 +413,7 @@ class GameState:
             return
 
         # Create tokens for all players
-        for player_id in self.players.keys():
+        for player_id in self.players:
             self.create_tokens_for_player(player_id)
 
         # Auto-deploy tokens to starting positions for all players
@@ -472,8 +469,6 @@ class GameState:
 
     def _check_and_trigger_crystal_effects(self) -> None:
         """Check if we should trigger a random crystal effect."""
-        from shared.constants import CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL
-
         if (
             self.turn_number > 0
             and self.turn_number % CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL == 0
@@ -506,8 +501,6 @@ class GameState:
                 tokens_by_position[pos].append((token.id, token.player_id))
 
         # Update generators
-        from game.generator import GeneratorManager
-
         newly_disabled, capturing_players = GeneratorManager.update_all_generators(
             self.generators, tokens_by_position
         )
@@ -519,8 +512,6 @@ class GameState:
             )
 
         # Update crystal and check for winner
-        from game.crystal import CrystalManager
-
         tokens_at_crystal = tokens_by_position.get(self.crystal.position, [])
         disabled_count = GeneratorManager.count_disabled_generators(self.generators)
 
@@ -651,8 +642,6 @@ class GameState:
         Returns:
             Tuple of (None, effect_type) if triggered (None indicates all players), None otherwise
         """
-        import random
-
         # Get active players
         active_players = [
             pid for pid, player in self.players.items() if player.is_active
@@ -725,7 +714,9 @@ class GameState:
         """
         Recursively calculate the delta between two dictionaries.
 
-        Returns a dict with keys from new_dict that are different or missing in old_dict.
+        Returns a dict with keys from new_dict that differ from old_dict, plus
+        keys that were deleted (present in old_dict but absent in new_dict), marked
+        with a sentinel value of None so receivers can detect removals.
         """
         delta = {}
         for key, value in new_dict.items():
@@ -737,6 +728,10 @@ class GameState:
                     delta[key] = nested_delta
             elif value != old_dict.get(key):
                 delta[key] = value
+        # Mark deleted keys so receivers know to remove them
+        for key in old_dict:
+            if key not in new_dict:
+                delta[key] = None
         return delta
 
     @classmethod
@@ -773,8 +768,6 @@ class GameState:
         # Handle last_triggered_crystal_effect deserialization
         effect_data = data.get("last_triggered_crystal_effect")
         if effect_data:
-            from shared.enums import CrystalEffect
-
             state.last_triggered_crystal_effect = (
                 effect_data[0],
                 CrystalEffect(effect_data[1]),
