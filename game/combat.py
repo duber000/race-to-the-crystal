@@ -127,7 +127,7 @@ class CombatSystem:
         return attackable
 
     @staticmethod
-    def calculate_damage_preview(attacker: Token, defender: Token) -> [int]:
+    def calculate_damage_preview(attacker: Token, defender: Token) -> int | None:
         """
         Calculate how much damage an attack would deal (without executing).
 

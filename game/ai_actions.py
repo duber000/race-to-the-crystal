@@ -582,17 +582,23 @@ class AIActionExecutor:
                 False, f"Defender token {action.defender_id} not found", None
             )
 
-        # Calculate damage
+        # Capture pre-combat info for reporting
         damage = attacker.health // 2
-        will_kill = damage >= defender.health
-
-        # Execute combat
-        CombatSystem.resolve_combat(attacker, defender)
-
-        # Build result message
         defender_player = game_state.get_player(defender.player_id)
         defender_owner = defender_player.name if defender_player else "Unknown"
 
+        # Execute combat (applies damage and rounds health down to nearest valid value)
+        CombatSystem.resolve_combat(attacker, defender)
+
+        # Check kill AFTER combat: take_damage kills tokens whose health rounds below 4,
+        # so "damage >= defender.health" would miss cases like 6hp attacker vs 6hp defender
+        was_killed = not defender.is_alive
+
+        if was_killed:
+            # Remove dead token from board and player token list
+            game_state.remove_token(action.defender_id)
+
+        # Build result message
         message = f"✓ Token #{action.attacker_id} attacked token #{action.defender_id} ({defender_owner})"
         message += f"\n→ Dealt {damage} damage"
 
@@ -600,14 +606,11 @@ class AIActionExecutor:
             "attacker_id": action.attacker_id,
             "defender_id": action.defender_id,
             "damage_dealt": damage,
-            "defender_killed": will_kill,
+            "defender_killed": was_killed,
         }
 
-        if will_kill:
+        if was_killed:
             message += f"\n→ Token #{action.defender_id} was KILLED!"
-            result_data["defender_killed"] = True
-            # Remove dead token from game
-            game_state.remove_token(action.defender_id)
         else:
             message += f"\n→ Token #{action.defender_id} now has {defender.health}hp"
 
