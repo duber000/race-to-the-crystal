@@ -95,6 +95,9 @@ class GameClient {
   }
 
   connectToServer(host, port, playerName) {
+    // Clear any existing handlers to prevent accumulation on reconnect
+    this.networkManager.eventHandlers.clear();
+
     this.networkManager.on("connecting", () => {
       this.uiManager.showConnectionStatus("Connecting to server...");
       this.updateUIState(STATE.CONNECTING);
@@ -338,7 +341,7 @@ class GameClient {
     // Update local state (health, destruction)
     const defender = this.gameState.tokens[data.defender_id];
     if (defender) {
-      defender.health -= data.damage;
+      defender.health = Math.max(0, defender.health - data.damage);
       if (data.defender_destroyed) {
         defender.is_alive = false;
       }
@@ -530,7 +533,7 @@ class GameClient {
           }
           this.renderer.updateTokenSelectionGlow(this.selectedTokenId);
         }
-        this.renderer.playSound("deploy");
+        this.renderer.playSound("whoosh");
       }
     } else {
       const selectedToken = this.gameState.tokens[this.selectedTokenId];

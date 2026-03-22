@@ -285,12 +285,20 @@ class UIManager {
             const maxPlayers = game.max_players || 4;
             const item = document.createElement("div");
             item.className = "game-item";
-            item.innerHTML = `
-                <div class="game-info">
-                    <strong>${name}</strong>
-                    <span>${playerCount}/${maxPlayers} players</span>
-                </div>
-            `;
+
+            const info = document.createElement("div");
+            info.className = "game-info";
+
+            const strong = document.createElement("strong");
+            strong.textContent = name;
+
+            const span = document.createElement("span");
+            span.textContent = `${playerCount}/${maxPlayers} players`;
+
+            info.appendChild(strong);
+            info.appendChild(span);
+            item.appendChild(info);
+
             item.onclick = () => {
                 if (this.onJoinGame) {
                     this.onJoinGame(id);
@@ -360,10 +368,18 @@ class UIManager {
                 const ready = player.is_ready || player.ready;
                 const item = document.createElement("div");
                 item.className = "player-item";
-                item.innerHTML = `
-                    <span class="player-name">${name}</span>
-                    <span class="player-status" style="color: ${ready ? '#0f0' : '#f80'}">${ready ? "Ready!" : "Not ready"}</span>
-                `;
+
+                const nameSpan = document.createElement("span");
+                nameSpan.className = "player-name";
+                nameSpan.textContent = name;
+
+                const statusSpan = document.createElement("span");
+                statusSpan.className = "player-status";
+                statusSpan.style.color = ready ? '#0f0' : '#f80';
+                statusSpan.textContent = ready ? "Ready!" : "Not ready";
+
+                item.appendChild(nameSpan);
+                item.appendChild(statusSpan);
                 playersList.appendChild(item);
             });
         }

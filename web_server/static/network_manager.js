@@ -211,6 +211,11 @@ class NetworkManager {
     this.isReady = false;
     this.availableGames = [];
     this.connectionState = STATE.DISCONNECTED;
+    // Reset state sync fields so a fresh connection starts clean
+    this.lastStateVersion = null;
+    this.stateUpdateLock = false;
+    this.stateUpdateQueue = [];
+    this.usingSSEForState = false;
     this.emit("disconnect");
   }
 
@@ -581,13 +586,7 @@ class NetworkManager {
       player_id: this.playerId,
       game_id: this.currentGameId,
     });
-
-    this.currentGameId = null;
-    this.currentLobby = null;
-    this.isHost = false;
-    this.isReady = false;
-    this.connectionState = STATE.CONNECTED;
-    this.emit("lobby_left");
+    // State transition and lobby_left event are driven by the server's LEAVE_GAME response
   }
 
   toggleReady() {

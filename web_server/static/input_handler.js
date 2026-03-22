@@ -217,7 +217,7 @@ class InputHandler {
             const deltaY = event.clientY - this.lmbDownPosition.y;
             const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             
-            if (distance < 5) { // Click threshold
+            if (distance < INPUT_CONFIG.DRAG_THRESHOLD) {
                 this.handleClick(event);
             }
         } else if (event.button === 2 && this.isRMBDown) { // Right mouse button
@@ -321,8 +321,10 @@ class InputHandler {
      * @param {TouchEvent} event - Touch event
      */
     handleTouchMove(event) {
-        // Prevent default scrolling behavior
-        event.preventDefault();
+        // Prevent default scrolling behavior (only when event is cancelable)
+        if (event.cancelable) {
+            event.preventDefault();
+        }
         
         // Update touch data for tap detection
         for (let i = 0; i < event.touches.length; i++) {

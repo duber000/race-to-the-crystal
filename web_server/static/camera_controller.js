@@ -144,15 +144,17 @@ class CameraController {
     _setupOverviewCamera() {
         // Re-attach built-in camera controls for overview mode
         this.camera.attachControl(this.canvas, true);
-        // Reset to default overview position
+        // Reset ArcRotateCamera to default overview: set target to board center and radius
         const boardRealWidth = this.boardWidth * this.cellSize;
         const boardRealHeight = this.boardHeight * this.cellSize;
         const boardCenterX = boardRealWidth / 2;
         const boardCenterY = boardRealHeight / 2;
+        const boardDiagonal = Math.sqrt(boardRealWidth * boardRealWidth + boardRealHeight * boardRealHeight);
 
-        this.camera.setPosition(new BABYLON.Vector3(boardCenterX, 0, boardCenterY));
-        this.camera.setTarget(new BABYLON.Vector3(boardCenterX, 0, boardCenterY));
-        this.camera.radius = Math.sqrt(Math.pow(boardRealWidth, 2) + Math.pow(boardRealHeight, 2)) * 0.8;
+        this.camera.target = new BABYLON.Vector3(boardCenterX, 0, boardCenterY);
+        this.camera.radius = boardDiagonal * 0.8;
+        this.camera.alpha = Math.PI / 4;
+        this.camera.beta = Math.PI / 3;
     }
 
     /**
