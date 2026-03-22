@@ -11,6 +11,14 @@
  *     console.log('Game state updated:', update);
  * });
  */
+// Timeout defaults (may be overridden by window.TIMEOUT_CONFIG from game_client.constants.js)
+const _MERCURE_TIMEOUTS = (typeof TIMEOUT_CONFIG !== 'undefined') ? TIMEOUT_CONFIG : {
+  SSE_SILENCE_MS: 30000,
+  SSE_CHECK_INTERVAL_MS: 5000,
+  RECONNECT_MAX_DELAY_MS: 30000,
+  RECONNECT_MAX_ATTEMPTS: 4
+};
+
 class MercureClient {
   /**
    * Create a Mercure client instance.
@@ -23,7 +31,7 @@ class MercureClient {
     this.eventHandlers = new Map(); // Type-specific event handlers
     this.lastEventId = null; // For resuming from last event
     this.reconnectAttempts = 0;
-    this.maxReconnectDelay = TIMEOUT_CONFIG.RECONNECT_MAX_DELAY_MS;
+    this.maxReconnectDelay = _MERCURE_TIMEOUTS.RECONNECT_MAX_DELAY_MS;
     this.lastMessageTime = null;
     this.silenceTimer = null;
     this.onFallbackCallback = null; // Called when SSE fails
@@ -166,7 +174,7 @@ class MercureClient {
       setTimeout(() => {
         if (!this.connected) {
       // After max attempts failed, trigger fallback
-      if (this.reconnectAttempts >= TIMEOUT_CONFIG.RECONNECT_MAX_ATTEMPTS && this.onFallbackCallback) {
+      if (this.reconnectAttempts >= _MERCURE_TIMEOUTS.RECONNECT_MAX_ATTEMPTS && this.onFallbackCallback) {
             console.warn("⚠ SSE reconnection failed - triggering WebSocket fallback");
             this.onFallbackCallback();
           } else {
@@ -198,7 +206,7 @@ class MercureClient {
     this.silenceTimer = setInterval(() => {
       const timeSinceLastMessage = Date.now() - this.lastMessageTime;
 
-      if (timeSinceLastMessage > TIMEOUT_CONFIG.SSE_SILENCE_MS) {
+      if (timeSinceLastMessage > _MERCURE_TIMEOUTS.SSE_SILENCE_MS) {
         console.warn("⚠ SSE silent for 30+ seconds - triggering fallback");
         this._stopSilenceDetection();
 
@@ -206,7 +214,7 @@ class MercureClient {
           this.onFallbackCallback();
         }
       }
-    }, TIMEOUT_CONFIG.SSE_CHECK_INTERVAL_MS); // Check every 5 seconds
+    }, _MERCURE_TIMEOUTS.SSE_CHECK_INTERVAL_MS); // Check every 5 seconds
   }
 
   /**
