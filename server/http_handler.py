@@ -10,7 +10,10 @@ import os
 import uuid
 import jwt
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from server.game_server import GameServer
 
 from aiohttp import web
 
@@ -23,6 +26,7 @@ from server.auth import (
     validate_token_for_game,
 )
 from server.lobby import validate_player_name
+from server.action_validation import validate_action_fields
 from shared.errors import (
     ValidationError,
     ServerError,
@@ -406,78 +410,13 @@ class HTTPHandler:
                 error = ValidationError("type", ErrorCode.MISSING_FIELD)
                 return web.json_response(format_error_response(error, 400), status=400)
 
-            # Validate action data based on type
-            if action_type in ["MOVE", "move"]:
-                token_id = action_data.get("token_id")
-                destination = action_data.get("destination")
-                if token_id is None:
-                    error = ValidationError(
-                        "token_id", ErrorCode.MISSING_FIELD, {"action": "MOVE"}
-                    )
-                    return web.json_response(
-                        format_error_response(error, 400), status=400
-                    )
-                if (
-                    not destination
-                    or not isinstance(destination, list)
-                    or len(destination) != 2
-                ):
-                    error = ValidationError(
-                        "destination",
-                        ErrorCode.INVALID_VALUE,
-                        {"expected": "[x, y] coordinates"},
-                    )
-                    return web.json_response(
-                        format_error_response(error, 400), status=400
-                    )
-            elif action_type in ["ATTACK", "attack"]:
-                attacker_id = action_data.get("attacker_id")
-                defender_id = action_data.get("defender_id") or action_data.get(
-                    "target_id"
-                )
-                if attacker_id is None:
-                    error = ValidationError(
-                        "attacker_id", ErrorCode.MISSING_FIELD, {"action": "ATTACK"}
-                    )
-                    return web.json_response(
-                        format_error_response(error, 400), status=400
-                    )
-                if defender_id is None:
-                    error = ValidationError(
-                        "defender_id",
-                        ErrorCode.MISSING_FIELD,
-                        {"action": "ATTACK", "alternative": "target_id"},
-                    )
-                    return web.json_response(
-                        format_error_response(error, 400), status=400
-                    )
-            elif action_type in ["DEPLOY", "deploy"]:
-                health_value = action_data.get("health_value")
-                position = action_data.get("position")
-                if health_value is None:
-                    error = ValidationError(
-                        "health_value", ErrorCode.MISSING_FIELD, {"action": "DEPLOY"}
-                    )
-                    return web.json_response(
-                        format_error_response(error, 400), status=400
-                    )
-                if not position or not isinstance(position, list) or len(position) != 2:
-                    error = ValidationError(
-                        "position",
-                        ErrorCode.INVALID_VALUE,
-                        {"expected": "[x, y] coordinates"},
-                    )
-                    return web.json_response(
-                        format_error_response(error, 400), status=400
-                    )
-            elif action_type not in ["END_TURN", "end_turn"]:
+            # Validate action fields using shared validation
+            validation_error = validate_action_fields(action_type, action_data)
+            if validation_error:
                 error = ValidationError(
-                    "type",
+                    "action_data",
                     ErrorCode.INVALID_VALUE,
-                    {
-                        "value": action_type,
-                        "allowed": ["MOVE", "ATTACK", "DEPLOY", "END_TURN"],
-                    },
+                    {"details": validation_error},
                 )
                 return web.json_response(format_error_response(error, 400), status=400)
 

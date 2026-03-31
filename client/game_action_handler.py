@@ -57,7 +57,9 @@ class GameActionHandler:
 
         # Track mystery animations that should start after token movement completes
         # Maps token_id -> (target_position, should_play_sound)
-        self.pending_mystery_animations: dict[TokenID[tuple[int, int], bool]] = {}
+        self.pending_mystery_animations: dict[
+            TokenID, tuple[tuple[int, int], bool]
+        ] = {}
 
     def process_pending_mystery_animations(
         self, mystery_animations: dict[tuple[int, int], float]

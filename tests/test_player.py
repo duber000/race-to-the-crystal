@@ -2,8 +2,6 @@
 Unit tests for Player class.
 """
 
-import pytest
-
 from game.player import Player
 from shared.enums import PlayerColor
 

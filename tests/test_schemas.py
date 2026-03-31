@@ -2,9 +2,6 @@
 Unit tests for action schemas.
 """
 
-import pytest
-from typing import get_type_hints
-
 from game.schemas import (
     MoveActionSchema,
     AttackActionSchema,

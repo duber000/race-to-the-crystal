@@ -7,6 +7,7 @@ for choosing between local and network games.
 
 import arcade
 import arcade.gui
+import json
 import logging
 from typing import TYPE_CHECKING, Optional
 

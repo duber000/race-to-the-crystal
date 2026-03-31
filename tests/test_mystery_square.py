@@ -2,7 +2,6 @@
 Unit tests for MysterySquareSystem.
 """
 
-import pytest
 from unittest.mock import MagicMock
 
 from game.mystery_square import MysterySquareSystem, MysteryEventResult

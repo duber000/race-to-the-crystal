@@ -2,12 +2,9 @@
 Unit tests for GameAPI facade.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-
 from game.api import GameAPI
 from game.game_state import GameState
-from shared.enums import GamePhase, TurnPhase, PlayerColor
+from shared.enums import PlayerColor
 
 
 class TestGameAPICreation:

@@ -7,14 +7,7 @@ This module handles all 3D rendering including board, tokens, and shaders.
 from client.board_3d import Board3D
 from client.token_3d import Token3D
 from client.phantom_token_3d import PhantomToken3D
-from game.ai_observation import AIObserver
-from shared.enums import TurnPhase, CrystalEffect
-from shared.constants import (
-    PLAYER_COLORS,
-    CELL_SIZE,
-    WALL_HEIGHT,
-    TOKEN_HEIGHT_3D,
-)
+from shared.constants import PLAYER_COLORS
 from shared.logging_config import setup_logger
 from shared.types import TokenID
 

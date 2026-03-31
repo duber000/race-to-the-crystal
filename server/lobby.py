@@ -378,7 +378,7 @@ class LobbyManager:
 
         return lobby
 
-    def get_lobby(self, game_id: str) -> [GameLobby]:
+    def get_lobby(self, game_id: str) -> GameLobby | None:
         """
         Get a lobby by ID.
 
@@ -392,7 +392,7 @@ class LobbyManager:
 
     def join_lobby(
         self, game_id: str, player_id: str, player_name: str, client_type: ClientType
-    ) -> [GameLobby]:
+    ) -> GameLobby | None:
         """
         Join an existing lobby.
 
@@ -462,7 +462,7 @@ class LobbyManager:
 
         return lobby.set_player_ready(player_id, is_ready)
 
-    def start_game(self, game_id: str) -> [GameLobby]:
+    def start_game(self, game_id: str) -> GameLobby | None:
         """
         Start a game (if all players ready).
 
@@ -537,7 +537,7 @@ class LobbyManager:
 
         return available
 
-    def get_player_lobby(self, player_id: str) -> [GameLobby]:
+    def get_player_lobby(self, player_id: str) -> GameLobby | None:
         """
         Find which lobby a player is in.
 
@@ -553,7 +553,7 @@ class LobbyManager:
 
         return None
 
-    def get_lobby_by_player(self, player_id: str) -> [GameLobby]:
+    def get_lobby_by_player(self, player_id: str) -> GameLobby | None:
         """
         Backward-compatible alias for get_player_lobby().
         """

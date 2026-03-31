@@ -447,7 +447,9 @@ class GameServer:
 
     async def _handle_disconnect(self, player_id: str, explicit: bool = False) -> None:
         """Handle TCP player disconnection."""
-        await self.handle_player_disconnect(player_id, explicit=explicit, allow_reconnect=True)
+        await self.handle_player_disconnect(
+            player_id, explicit=explicit, allow_reconnect=True
+        )
 
     async def _handle_message(self, player_id: str, message: NetworkMessage) -> None:
         """
@@ -799,7 +801,6 @@ class GameServer:
         if game_session.network_to_game_id:
             # Get perspective for first player (generic for public fields)
             first_net_id = next(iter(game_session.network_to_game_id.keys()))
-            first_game_id = game_session.network_to_game_id[first_net_id]
 
             # In SSE, we publish one message for all subscribers of the topic.
             # We add perspective info that is generic enough or handled by client.

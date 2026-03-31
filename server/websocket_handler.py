@@ -18,9 +18,9 @@ from network.messages import MessageType, ClientType
 from network.protocol import NetworkMessage
 from server.rate_limiter import RateLimiter
 from server.lobby import validate_player_name
+from server.action_validation import validate_action_fields, normalize_action_data
 from shared.errors import (
     ServerError,
-    ValidationError,
     ErrorCode,
     format_websocket_error,
 )
@@ -412,68 +412,14 @@ class WebSocketHandler:
             )
             return
 
-        # Validate action data based on type
-        msg_type_lower = msg_type.lower()
-        if msg_type_lower in ["move", "attack", "deploy"]:
-            if msg_type_lower == "move":
-                if data.get("token_id") is None:
-                    await self._send_error(
-                        client, "token_id is required for MOVE", ErrorCode.MISSING_FIELD
-                    )
-                    return
-                destination = data.get("destination")
-                if (
-                    not destination
-                    or not isinstance(destination, list)
-                    or len(destination) != 2
-                ):
-                    await self._send_error(
-                        client,
-                        "destination must be [x, y] coordinates",
-                        ErrorCode.INVALID_VALUE,
-                    )
-                    return
-            elif msg_type_lower == "attack":
-                if data.get("attacker_id") is None:
-                    await self._send_error(client, "attacker_id is required for ATTACK")
-                    return
-                defender_id = data.get("defender_id") or data.get("target_id")
-                if defender_id is None:
-                    await self._send_error(
-                        client, "defender_id or target_id is required for ATTACK"
-                    )
-                    return
-            elif msg_type_lower == "deploy":
-                if data.get("health_value") is None:
-                    await self._send_error(
-                        client, "health_value is required for DEPLOY"
-                    )
-                    return
-                position = data.get("position")
-                if not position or not isinstance(position, list) or len(position) != 2:
-                    await self._send_error(
-                        client, "position must be [x, y] coordinates"
-                    )
-                    return
-
-        # Validate defender_id for attack actions
-        defender_id = data.get("defender_id") or data.get("target_id")
-        if msg_type_lower == "attack" and defender_id is None:
-            await self._send_error(
-                client, "defender_id or target_id is required for ATTACK"
-            )
+        # Validate action data using shared validation
+        error = validate_action_fields(msg_type, data)
+        if error:
+            await self._send_error(client, error, ErrorCode.MISSING_FIELD)
             return
 
-        action_data = {
-            "type": msg_type_lower,
-            "token_id": data.get("token_id"),
-            "destination": data.get("destination"),
-            "attacker_id": data.get("attacker_id"),
-            "defender_id": defender_id,
-            "position": data.get("position"),
-            "health_value": data.get("health_value"),
-            "player_id": client.player_id,
-        }
+        action_data = normalize_action_data(data)
+        action_data["player_id"] = client.player_id
 
         message = NetworkMessage(
             type=MessageType(msg_type),
@@ -570,111 +516,24 @@ class WebSocketHandler:
                     logger.error(f"Unexpected error broadcasting: {e}", exc_info=True)
 
     async def _broadcast_game_state(self, game_session) -> None:
-        """Broadcast updated game state to all clients in the game."""
+        """Broadcast updated game state to all clients in the game.
+
+        Delegates to the main game server to avoid duplication.
+        """
         if not self.game_server:
             return
 
-        logger.info(
-            f"[WebSocket] Broadcasting game state to {len(game_session.network_to_game_id)} players"
-        )
-        logger.info(
-            f"[WebSocket] Game state - turn_phase: {game_session.game_state.turn_phase.name}, "
-            f"current_turn: {game_session.game_state.current_turn_player_id}"
-        )
-
-        # Check if SSE-primary mode is enabled
-        sse_primary_mode = getattr(self.game_server, "sse_primary_mode", False)
-
-        # Publish to Mercure for SSE-capable clients
-        if game_session.network_to_game_id:
-            first_player = next(iter(game_session.network_to_game_id.keys()))
-            mercure_state = game_session.get_game_state_for_player(first_player)
-            if mercure_state is None:
-                logger.warning(
-                    f"Could not get game state for player {first_player[:8]}"
-                )
-                return
-            if mercure_state and self.game_server.mercure_publisher:
-                mercure_success = (
-                    await self.game_server.mercure_publisher.publish_game_state(
-                        game_session.game_id, mercure_state
-                    )
-                )
-                if mercure_success:
-                    logger.debug("[Mercure] Successfully published state to SSE")
-                else:
-                    logger.warning(
-                        "[Mercure] Publish failed, WebSocket will be used for all clients"
-                    )
-
-        # Send via WebSocket based on SSE-primary mode
-        for net_player_id in game_session.network_to_game_id.keys():
-            if net_player_id in self.clients:
-                client = self.clients[net_player_id]
-
-                # In SSE-primary mode, skip WebSocket for web browser clients
-                should_send_websocket = True
-                if sse_primary_mode and client.client_type == ClientType.WEB_BROWSER:
-                    should_send_websocket = False
-                    logger.debug(
-                        f"[WebSocket] Skipping FULL_STATE for {net_player_id[:8]} (WEB_BROWSER) - using SSE"
-                    )
-
-                if should_send_websocket:
-                    state_dict = game_session.get_game_state_for_player(net_player_id)
-                    if state_dict is None:
-                        logger.warning(
-                            f"Could not get game state for player {net_player_id[:8]}"
-                        )
-                        continue
-                    logger.info(
-                        f"[WebSocket] Sending state to {net_player_id[:8]} - turn_phase: {state_dict.get('turn_phase')}"
-                    )
-                    response = {"type": "FULL_STATE", "game_state": state_dict}
-                    try:
-                        if client.websocket:
-                            await client.websocket.send_json(response)
-                        logger.info(
-                            f"[WebSocket] Successfully sent state to {net_player_id[:8]}"
-                        )
-                    except aiohttp.ClientError as e:
-                        logger.warning(f"WebSocket error sending state: {e}")
-                    except ConnectionError as e:
-                        logger.warning(f"Connection lost sending state: {e}")
-                    except Exception as e:
-                        logger.error(
-                            f"Unexpected error sending state: {e}", exc_info=True
-                        )
-            else:
-                logger.warning(
-                    f"[WebSocket] Player {net_player_id[:8]} not in clients dict, delegating to game_server"
-                )
-                await self.game_server._broadcast_game_state(game_session)
-                break
+        await self.game_server._broadcast_game_state(game_session)
 
     async def _handle_game_over(self, game_session) -> None:
-        """Handle game ending."""
+        """Handle game ending.
+
+        Delegates to the main game server to avoid duplication.
+        """
         if not self.game_server:
             return
 
-        winner_id = game_session.get_winner_network_id()
-        winner_name = "Unknown"
-
-        if winner_id:
-            game_player_id = game_session.network_to_game_id[winner_id]
-            winner_player = game_session.game_state.get_player(game_player_id)
-            if winner_player:
-                winner_name = winner_player.name
-
-        won_msg = {
-            "type": "GAME_WON",
-            "winner_id": winner_id or "",
-            "winner_name": winner_name,
-        }
-        await self._broadcast_to_game(game_session.game_id, won_msg)
-
-        self.game_server.lobby_manager.finish_game(game_session.game_id)
-        logger.info(f"Game {game_session.game_id} ended. Winner: {winner_name}")
+        await self.game_server._handle_game_over(game_session)
 
     async def _send_error(
         self,

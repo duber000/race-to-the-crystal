@@ -18,10 +18,6 @@ from shared.constants import (
     BOARD_WIDTH,
     BOARD_HEIGHT,
     GENERATOR_COLOR_3D,
-    CRYSTAL_COLOR_3D,
-    MYSTERY_COLOR_3D,
-    GEN_CRYSTAL_LINE_COLOR_3D,
-    DEPLOYMENT_ZONE_COLOR_3D,
     GRID_LINE_COLOR,
     GRID_LINE_WIDTH,
 )
@@ -138,7 +134,9 @@ def create_board_shapes(
             )
             shape_list.append(line)
         # Main bright line
-        line = create_line(x_pos, 0, x_pos, BOARD_HEIGHT * CELL_SIZE, grid_color, GRID_LINE_WIDTH + 1)
+        line = create_line(
+            x_pos, 0, x_pos, BOARD_HEIGHT * CELL_SIZE, grid_color, GRID_LINE_WIDTH + 1
+        )
         shape_list.append(line)
 
     # Draw horizontal grid lines with glow
@@ -153,7 +151,9 @@ def create_board_shapes(
             )
             shape_list.append(line)
         # Main bright line
-        line = create_line(0, y_pos, BOARD_WIDTH * CELL_SIZE, y_pos, grid_color, GRID_LINE_WIDTH + 1)
+        line = create_line(
+            0, y_pos, BOARD_WIDTH * CELL_SIZE, y_pos, grid_color, GRID_LINE_WIDTH + 1
+        )
         shape_list.append(line)
 
     # Draw special cells with wireframe vector graphics

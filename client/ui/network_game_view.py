@@ -5,6 +5,7 @@ Integrates GameWindow with NetworkClient for server-authoritative gameplay.
 
 import arcade
 import arcade.gui
+import json
 import logging
 from typing import Optional, Callable
 from queue import Queue
