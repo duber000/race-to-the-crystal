@@ -413,9 +413,10 @@ class WebSocketHandler:
             return
 
         # Validate action data using shared validation
-        error = validate_action_fields(msg_type, data)
-        if error:
-            await self._send_error(client, error, ErrorCode.MISSING_FIELD)
+        validation_result = validate_action_fields(msg_type, data)
+        if validation_result:
+            _, error_code, error_msg = validation_result
+            await self._send_error(client, error_msg, error_code)
             return
 
         action_data = normalize_action_data(data)

@@ -411,13 +411,10 @@ class HTTPHandler:
                 return web.json_response(format_error_response(error, 400), status=400)
 
             # Validate action fields using shared validation
-            validation_error = validate_action_fields(action_type, action_data)
-            if validation_error:
-                error = ValidationError(
-                    "action_data",
-                    ErrorCode.INVALID_VALUE,
-                    {"details": validation_error},
-                )
+            validation_result = validate_action_fields(action_type, action_data)
+            if validation_result:
+                field, error_code, message = validation_result
+                error = ValidationError(field, error_code, {"details": message})
                 return web.json_response(format_error_response(error, 400), status=400)
 
             # Convert action type to MessageType enum
