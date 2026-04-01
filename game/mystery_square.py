@@ -4,7 +4,7 @@ Mystery square random event handling.
 
 from dataclasses import dataclass
 import random
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from game.token import Token
 from shared.enums import MysteryEffect
@@ -30,8 +30,8 @@ class MysteryEventResult:
 
     effect: MysteryEffect
     token_id: TokenID
-    old_position: Tuple[int, int]
-    new_position: Tuple[int, int]
+    old_position: tuple[int, int]
+    new_position: tuple[int, int]
     old_health: int
     new_health: int
 

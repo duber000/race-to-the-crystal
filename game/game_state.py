@@ -55,9 +55,7 @@ class GameState:
     board: Board = field(default_factory=Board)
     players: dict[PlayerID, Player] = field(default_factory=dict)
     tokens: dict[TokenID, Token] = field(default_factory=dict)
-    generators: list = field(
-        default_factory=list
-    )  # Will be list[Generator] when created
+    generators: list[Generator] = field(default_factory=list)
     crystal: "Crystal | None" = None  # Will be Crystal object when created
     crystal_effects: CrystalEffectsManager = field(
         default_factory=CrystalEffectsManager

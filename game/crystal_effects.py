@@ -11,6 +11,7 @@ from shared.constants import (
     CRYSTAL_EFFECT_INITIAL_DURATION,
     CRYSTAL_EFFECT_REDUCTION_PER_GENERATOR,
     PHANTOM_ENEMIES_COUNT,
+    TOKEN_HEALTH_VALUES,
 )
 from shared.types import PlayerID
 
@@ -271,7 +272,7 @@ class CrystalEffectsManager:
                     )
 
                     # Random health
-                    apparent_health = random.choice([4, 6, 8, 10])
+                    apparent_health = random.choice(TOKEN_HEALTH_VALUES)
 
                     phantom = PhantomToken(
                         phantom_id=self._next_phantom_id,

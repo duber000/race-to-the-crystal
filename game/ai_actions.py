@@ -12,6 +12,7 @@ from game.combat import CombatSystem
 from game.mystery_square import MysterySquareSystem
 from game.token import Token
 from shared.enums import TurnPhase, GamePhase, CellType
+from shared.constants import TOKEN_HEALTH_VALUES
 from shared.types import TokenID, PlayerID
 
 
@@ -314,10 +315,12 @@ class AIActionExecutor:
         Returns:
             ValidationResult with is_valid flag and message
         """
-        if result := self._validate_game_phase(game_state):
+        if (result := self._validate_game_phase(game_state)) and not result.is_valid:
             return result
 
-        if result := self._validate_player_turn(game_state, player_id):
+        if (
+            result := self._validate_player_turn(game_state, player_id)
+        ) and not result.is_valid:
             return result
 
         # Validate based on action type using pattern matching
@@ -375,42 +378,31 @@ class AIActionExecutor:
         self, action: MoveAction, game_state: GameState, player_id: PlayerID
     ) -> ValidationResult:
         """Validate a move action."""
-        # Check phase
-        if game_state.turn_phase != TurnPhase.MOVEMENT:
-            return ValidationResult(
-                False,
-                f"MOVE_FAILED: wrong_phase | current={game_state.turn_phase.name} | required=MOVEMENT",
-            )
+        if (
+            result := self._validate_turn_phase(game_state, TurnPhase.MOVEMENT, "MOVE")
+        ) and not result.is_valid:
+            return result
 
-        # Check token exists
-        if not (token := game_state.get_token(action.token_id)):
-            player = game_state.get_player(player_id)
-            valid_tokens = player.token_ids if player else []
-            return ValidationResult(
-                False,
-                f"MOVE_FAILED: token_not_found | token_id={action.token_id} | valid_tokens={valid_tokens[:5]}",
-            )
+        token_result, token = self._validate_token_exists(
+            game_state, action.token_id, "MOVE"
+        )
+        if token is None:
+            return token_result
 
-        # Check token ownership
-        if token.player_id != player_id:
-            return ValidationResult(
-                False,
-                f"MOVE_FAILED: not_owner | token_id={action.token_id} | owner={token.player_id}",
-            )
+        if (
+            result := self._validate_token_ownership(token, player_id, "MOVE")
+        ) and not result.is_valid:
+            return result
 
-        # Check token is deployed
-        if not token.is_deployed:
-            return ValidationResult(
-                False,
-                f"MOVE_FAILED: not_deployed | token_id={action.token_id} | hint=Use DEPLOY action first",
-            )
+        if (
+            result := self._validate_token_deployed(token, "MOVE")
+        ) and not result.is_valid:
+            return result
 
-        # Check token is alive
-        if not token.is_alive:
-            return ValidationResult(
-                False,
-                f"MOVE_FAILED: token_dead | token_id={action.token_id}",
-            )
+        if (
+            result := self._validate_token_alive(token, "MOVE")
+        ) and not result.is_valid:
+            return result
 
         # Check destination is valid (with effective movement range considering speed boost)
         effective_range = game_state.get_token_movement_range(token)
@@ -498,66 +490,56 @@ class AIActionExecutor:
         self, action: AttackAction, game_state: GameState, player_id: PlayerID
     ) -> ValidationResult:
         """Validate an attack action."""
-        # Check phase
-        if game_state.turn_phase != TurnPhase.ACTION:
-            return ValidationResult(
-                False,
-                f"ATTACK_FAILED: wrong_phase | current={game_state.turn_phase.name} | required=ACTION",
-            )
+        if (
+            result := self._validate_turn_phase(game_state, TurnPhase.ACTION, "ATTACK")
+        ) and not result.is_valid:
+            return result
 
-        # Check attacker exists
-        if not (attacker := game_state.get_token(action.attacker_id)):
-            return ValidationResult(
-                False,
-                f"ATTACK_FAILED: attacker_not_found | attacker_id={action.attacker_id}",
-            )
+        # Validate attacker
+        attacker_result, attacker = self._validate_token_exists(
+            game_state, action.attacker_id, "ATTACK"
+        )
+        if attacker is None:
+            return attacker_result
 
-        # Check attacker ownership
-        if attacker.player_id != player_id:
-            return ValidationResult(
-                False,
-                f"ATTACK_FAILED: not_owner | attacker_id={action.attacker_id} | owner={attacker.player_id}",
-            )
+        if (
+            result := self._validate_token_ownership(attacker, player_id, "ATTACK")
+        ) and not result.is_valid:
+            return result
 
-        # Check attacker is deployed and alive
-        if not attacker.is_deployed:
-            return ValidationResult(
-                False,
-                f"ATTACK_FAILED: attacker_not_deployed | attacker_id={action.attacker_id}",
-            )
-        if not attacker.is_alive:
-            return ValidationResult(
-                False,
-                f"ATTACK_FAILED: attacker_dead | attacker_id={action.attacker_id}",
-            )
+        if (
+            result := self._validate_token_deployed(attacker, "ATTACK")
+        ) and not result.is_valid:
+            return result
 
-        # Check defender exists
-        if not (defender := game_state.get_token(action.defender_id)):
-            return ValidationResult(
-                False,
-                f"ATTACK_FAILED: defender_not_found | defender_id={action.defender_id}",
-            )
+        if (
+            result := self._validate_token_alive(attacker, "ATTACK")
+        ) and not result.is_valid:
+            return result
 
-        # Check defender is not owned by attacker
+        # Validate defender
+        defender_result, defender = self._validate_token_exists(
+            game_state, action.defender_id, "ATTACK"
+        )
+        if defender is None:
+            return defender_result
+
         if defender.player_id == player_id:
             return ValidationResult(
                 False,
                 f"ATTACK_FAILED: friendly_fire | defender_id={action.defender_id} | hint=Cannot attack own tokens",
             )
 
-        # Check defender is deployed and alive
-        if not defender.is_deployed:
-            return ValidationResult(
-                False,
-                f"ATTACK_FAILED: defender_not_deployed | defender_id={action.defender_id}",
-            )
-        if not defender.is_alive:
-            return ValidationResult(
-                False,
-                f"ATTACK_FAILED: defender_already_dead | defender_id={action.defender_id}",
-            )
+        if (
+            result := self._validate_token_deployed(defender, "ATTACK")
+        ) and not result.is_valid:
+            return result
 
-        # Check tokens are adjacent
+        if (
+            result := self._validate_token_alive(defender, "ATTACK")
+        ) and not result.is_valid:
+            return result
+
         if not CombatSystem.can_attack(attacker, defender):
             return ValidationResult(
                 False,
@@ -582,7 +564,9 @@ class AIActionExecutor:
         # any other state-level effects are applied consistently.
         outcome = game_state.attack_token(action.attacker_id, action.defender_id)
         if outcome is None:
-            return ActionResult(False, "Attack failed (invalid attacker or defender)", None)
+            return ActionResult(
+                False, "Attack failed (invalid attacker or defender)", None
+            )
 
         message = (
             f"✓ Token #{action.attacker_id} attacked token #{action.defender_id} ({defender_owner})"
@@ -608,18 +592,18 @@ class AIActionExecutor:
         self, action: DeployAction, game_state: GameState, player_id: PlayerID
     ) -> ValidationResult:
         """Validate a deploy action."""
-        # Check phase
-        if game_state.turn_phase != TurnPhase.MOVEMENT:
-            return ValidationResult(
-                False,
-                f"DEPLOY_FAILED: wrong_phase | current={game_state.turn_phase.name} | required=MOVEMENT",
+        if (
+            result := self._validate_turn_phase(
+                game_state, TurnPhase.MOVEMENT, "DEPLOY"
             )
+        ) and not result.is_valid:
+            return result
 
         # Check health value is valid
-        if action.health_value not in [10, 8, 6, 4]:
+        if action.health_value not in TOKEN_HEALTH_VALUES:
             return ValidationResult(
                 False,
-                f"DEPLOY_FAILED: invalid_health | value={action.health_value} | valid=[10,8,6,4]",
+                f"DEPLOY_FAILED: invalid_health | value={action.health_value} | valid={TOKEN_HEALTH_VALUES}",
             )
 
         # Check player has tokens of this type in reserve

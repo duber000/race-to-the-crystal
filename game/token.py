@@ -32,6 +32,16 @@ class Token:
     is_alive: bool = True
     is_deployed: bool = False
 
+    def __post_init__(self) -> None:
+        if self.health < 0:
+            raise ValueError(f"health must be >= 0, got {self.health}")
+        if self.max_health < 0:
+            raise ValueError(f"max_health must be >= 0, got {self.max_health}")
+        if self.health > self.max_health:
+            raise ValueError(
+                f"health ({self.health}) cannot exceed max_health ({self.max_health})"
+            )
+
     @property
     def movement_range(self) -> int:
         """

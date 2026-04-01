@@ -36,7 +36,7 @@ class TestPlayerCreation:
             token_ids=[1, 2, 3],
         )
         assert player.token_ids == [1, 2, 3]
-        assert player.alive_token_count == 3
+        assert player.token_count == 3
 
 
 class TestPlayerTokenManagement:
@@ -47,7 +47,7 @@ class TestPlayerTokenManagement:
         player = Player(id="p1", name="Player", color=PlayerColor.CYAN)
         player.add_token(1)
         assert 1 in player.token_ids
-        assert player.alive_token_count == 1
+        assert player.token_count == 1
 
     def test_add_multiple_tokens(self):
         """Test adding multiple tokens."""
@@ -56,7 +56,7 @@ class TestPlayerTokenManagement:
         player.add_token(2)
         player.add_token(3)
         assert player.token_ids == [1, 2, 3]
-        assert player.alive_token_count == 3
+        assert player.token_count == 3
 
     def test_add_duplicate_token_ignored(self):
         """Test that adding duplicate token is ignored."""
@@ -64,7 +64,7 @@ class TestPlayerTokenManagement:
         player.add_token(1)
         player.add_token(1)  # Duplicate
         assert player.token_ids == [1]  # Still just one
-        assert player.alive_token_count == 1
+        assert player.token_count == 1
 
     def test_remove_token(self):
         """Test removing a token from player."""
@@ -224,35 +224,35 @@ class TestPlayerSerialization:
 class TestPlayerProperties:
     """Test cases for player properties."""
 
-    def test_alive_token_count_empty(self):
+    def test_token_count_empty(self):
         """Test token count with no tokens."""
         player = Player(id="p1", name="Player", color=PlayerColor.CYAN)
-        assert player.alive_token_count == 0
+        assert player.token_count == 0
 
-    def test_alive_token_count_with_tokens(self):
+    def test_token_count_with_tokens(self):
         """Test token count with tokens."""
         player = Player(
             id="p1", name="Player", color=PlayerColor.CYAN, token_ids=[1, 2, 3, 4, 5]
         )
-        assert player.alive_token_count == 5
+        assert player.token_count == 5
 
-    def test_alive_token_count_after_add(self):
+    def test_token_count_after_add(self):
         """Test token count updates after adding tokens."""
         player = Player(id="p1", name="Player", color=PlayerColor.CYAN)
-        assert player.alive_token_count == 0
+        assert player.token_count == 0
         player.add_token(1)
-        assert player.alive_token_count == 1
+        assert player.token_count == 1
         player.add_token(2)
-        assert player.alive_token_count == 2
+        assert player.token_count == 2
 
-    def test_alive_token_count_after_remove(self):
+    def test_token_count_after_remove(self):
         """Test token count updates after removing tokens."""
         player = Player(
             id="p1", name="Player", color=PlayerColor.CYAN, token_ids=[1, 2, 3]
         )
-        assert player.alive_token_count == 3
+        assert player.token_count == 3
         player.remove_token(2)
-        assert player.alive_token_count == 2
+        assert player.token_count == 2
 
 
 class TestPlayerRepresentation:
@@ -319,4 +319,4 @@ class TestPlayerEdgeCases:
             id="p1", name="Player", color=PlayerColor.CYAN, token_ids=large_ids
         )
         assert player.has_token(2000000) is True
-        assert player.alive_token_count == 3
+        assert player.token_count == 3

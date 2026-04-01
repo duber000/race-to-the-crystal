@@ -37,11 +37,6 @@ class Player:
         """Get count of tokens currently owned by this player."""
         return len(self.token_ids)
 
-    @property
-    def alive_token_count(self) -> int:
-        """Get count of tokens currently owned by this player."""
-        return self.token_count
-
     def add_token(self, token_id: TokenID) -> None:
         """
         Add a token to this player's collection.
