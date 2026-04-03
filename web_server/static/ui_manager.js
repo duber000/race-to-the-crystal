@@ -3,6 +3,7 @@
 // ==========================================================================
 
 import { TurnPhase } from './game_client.constants.js';
+import { UIUtils } from './ui.utils.js';
 
 class UIManager {
     constructor() {
@@ -22,32 +23,32 @@ class UIManager {
     // ==========================================================================
 
     showScreen(screenName) {
-        this._setHiddenById("connection-screen", true);
-        this._setHiddenById("lobby-browser-screen", true);
-        this._setHiddenById("waiting-room-screen", true);
+        UIUtils.setHiddenById("connection-screen", true);
+        UIUtils.setHiddenById("lobby-browser-screen", true);
+        UIUtils.setHiddenById("waiting-room-screen", true);
 
         if (this.canvas) {
             this.canvas.classList.add("hidden");
         }
 
-        this._setHiddenById("hud", true);
-        this._setHiddenById("controls", true);
-        this._setHiddenById("connectionStatus", true);
+        UIUtils.setHiddenById("hud", true);
+        UIUtils.setHiddenById("controls", true);
+        UIUtils.setHiddenById("connectionStatus", true);
 
         switch (screenName) {
             case 'disconnected':
             case 'connecting':
-                this._setHiddenById("connection-screen", false);
+                UIUtils.setHiddenById("connection-screen", false);
                 break;
             case 'connected':
-                this._setHiddenById("lobby-browser-screen", false);
+                UIUtils.setHiddenById("lobby-browser-screen", false);
                 break;
             case 'lobby':
-                this._setHiddenById("waiting-room-screen", false);
+                UIUtils.setHiddenById("waiting-room-screen", false);
                 break;
             case 'game':
             case 'game_starting':
-                this._setHiddenById("waiting-room-screen", false);
+                UIUtils.setHiddenById("waiting-room-screen", false);
                 break;
             case 'in_game':
                 if (this.canvas) {
@@ -55,21 +56,13 @@ class UIManager {
                     this.canvas.setAttribute("tabindex", "1");
                     this.canvas.focus();
                 }
-                this._setHiddenById("hud", false);
-                this._setHiddenById("controls", false);
-                this._setHiddenById("connectionStatus", false);
+                UIUtils.setHiddenById("hud", false);
+                UIUtils.setHiddenById("controls", false);
+                UIUtils.setHiddenById("connectionStatus", false);
                 break;
             default:
                 console.warn(`[UI] Unknown screen: ${screenName}`);
         }
-    }
-
-    _setHiddenById(elementId, hidden) {
-        const element = document.getElementById(elementId);
-        if (!element) {
-            return;
-        }
-        element.classList.toggle("hidden", hidden);
     }
 
     setupConnectionScreen(connectCallback) {
@@ -101,10 +94,7 @@ class UIManager {
     }
 
     showConnectionError(message) {
-        const errorMsg = document.getElementById("connection-error");
-        if (errorMsg) {
-            errorMsg.textContent = message;
-        }
+        UIUtils.showTemporaryMessage(null, "connection-error", message, 0);
     }
 
     showLobbyError(message) {
