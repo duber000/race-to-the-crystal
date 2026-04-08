@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "race_to_the_crystal",
+  "project_id": "ca6da51e-f966-468b-b105-b00b957fac83"
+}
