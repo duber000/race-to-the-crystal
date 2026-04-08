@@ -8,7 +8,6 @@ using the AIObserver and AIActionExecutor.
 import asyncio
 import argparse
 import logging
-import random
 
 from client.network_client import NetworkClient
 from network.messages import MessageType, ClientType
@@ -16,6 +15,7 @@ from network.protocol import NetworkMessage
 from game.game_state import GameState
 from game.ai_observation import AIObserver
 from game.ai_actions import MoveAction, AttackAction, DeployAction, EndTurnAction
+from game.ai_strategy import AIStrategy
 from shared.enums import GamePhase
 
 
@@ -40,7 +40,7 @@ class AIPlayer(NetworkClient):
         """
         super().__init__(player_name, ClientType.AI)
 
-        self.strategy = strategy
+        self.strategy = AIStrategy(strategy)
         self.game_active = False
         self.my_turn = False
 
@@ -194,17 +194,24 @@ class AIPlayer(NetworkClient):
                 return
 
             # Choose an action based on strategy
-            chosen_action = self._choose_action(
+            chosen = self.strategy.choose_action(
                 actions, game_state, perspective_player_id
             )
 
-            if not chosen_action:
+            if not chosen:
                 logger.warning("No action chosen")
                 return
 
+            # Convert ChosenAction to AIAction
+            ai_action = self._chosen_to_ai_action(chosen)
+
+            if not ai_action:
+                logger.warning("Failed to convert chosen action")
+                return
+
             # Send action to server
-            logger.info(f"Sending action: {chosen_action.action_type}")
-            success = await self.send_action(chosen_action)
+            logger.info(f"Sending action: {ai_action.action_type}")
+            success = await self.send_action(ai_action)
 
             if not success:
                 logger.error("Failed to send action")
@@ -214,158 +221,36 @@ class AIPlayer(NetworkClient):
         except Exception as e:
             logger.error(f"Error taking turn: {e}", exc_info=True)
 
-    def _choose_action(self, actions, game_state, player_id):
+    def _chosen_to_ai_action(self, chosen):
         """
-        Choose an action based on AI strategy.
+        Convert a ChosenAction to an AIAction object.
 
         Args:
-            actions: List of available action dictionaries
-            game_state: Current GameState
-            player_id: AI's player ID
+            chosen: ChosenAction from AIStrategy
 
         Returns:
-            Chosen AIAction
+            AIAction object, or None
         """
-        if self.strategy == "random":
-            return self._choose_random_action(actions)
-        elif self.strategy == "aggressive":
-            return self._choose_aggressive_action(actions)
-        elif self.strategy == "defensive":
-            return self._choose_defensive_action(actions)
-        else:
-            return self._choose_random_action(actions)
-
-    def _choose_random_action(self, actions):
-        """Choose a random action from available actions."""
-        if not actions:
-            return None
-
-        action_dict = random.choice(actions)
-        return self._action_dict_to_ai_action(action_dict)
-
-    def _choose_aggressive_action(self, actions):
-        """Choose aggressive action (prioritize attacks and moving toward objectives)."""
-        # Prioritize attacks
-        attacks = [a for a in actions if a["type"] == "ATTACK"]
-        if attacks:
-            # Choose attack that will kill if possible
-            killing_attacks = [a for a in attacks if a.get("will_kill", False)]
-            if killing_attacks:
-                action_dict = random.choice(killing_attacks)
-            else:
-                action_dict = random.choice(attacks)
-            return self._action_dict_to_ai_action(action_dict)
-
-        # Prioritize moves toward objectives (crystal or generators)
-        moves = [a for a in actions if a["type"] == "MOVE"]
-        if moves:
-            # Score each move by proximity to crystal (center at 12, 12)
-            best_move = None
-            best_dest = None
-            best_score = float("inf")
-
-            for move in moves:
-                # Evaluate ALL valid destinations for this move
-                for dest_list in move["valid_destinations"]:
-                    dest = tuple(dest_list)
-
-                    # Manhattan distance to crystal at (12, 12)
-                    dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
-
-                    # Lower distance = better score
-                    if dist_to_crystal < best_score:
-                        best_score = dist_to_crystal
-                        best_move = move
-                        best_dest = dest
-
-            if best_move:
-                return self._action_dict_to_ai_action(best_move, best_dest)
-            return self._action_dict_to_ai_action(random.choice(moves))
-
-        # Deploy or end turn
-        return self._choose_random_action(actions)
-
-    def _choose_defensive_action(self, actions):
-        """Choose defensive action (prioritize deployment and safe movement toward objectives)."""
-        # Prioritize deployment to build up forces
-        deploys = [a for a in actions if a["type"] == "DEPLOY"]
-        if deploys and random.random() > 0.5:
-            action_dict = random.choice(deploys)
-            return self._action_dict_to_ai_action(action_dict)
-
-        # Then prioritize safe moves toward crystal
-        moves = [a for a in actions if a["type"] == "MOVE"]
-        if moves:
-            # Score each move by proximity to crystal (center at 12, 12)
-            best_move = None
-            best_dest = None
-            best_score = float("inf")
-
-            for move in moves:
-                # Evaluate ALL valid destinations for this move
-                for dest_list in move["valid_destinations"]:
-                    dest = tuple(dest_list)
-
-                    # Manhattan distance to crystal at (12, 12)
-                    dist_to_crystal = abs(dest[0] - 12) + abs(dest[1] - 12)
-
-                    # Lower distance = better score
-                    if dist_to_crystal < best_score:
-                        best_score = dist_to_crystal
-                        best_move = move
-                        best_dest = dest
-
-            if best_move:
-                return self._action_dict_to_ai_action(best_move, best_dest)
-
-        # Then opportunistic attacks if no good moves
-        attacks = [a for a in actions if a["type"] == "ATTACK"]
-        if attacks and random.random() > 0.3:
-            action_dict = random.choice(attacks)
-            return self._action_dict_to_ai_action(action_dict)
-
-        # Otherwise random action
-        return self._choose_random_action(actions)
-
-    def _action_dict_to_ai_action(self, action_dict, destination=None):
-        """
-        Convert action dictionary to AIAction object.
-
-        Args:
-            action_dict: Action dictionary from AIObserver
-            destination: Optional specific destination for MOVE actions
-
-        Returns:
-            AIAction object
-        """
-        action_type = action_dict["type"]
-
-        if action_type == "MOVE":
-            # Use provided destination if available, otherwise choose first valid dest
-            dest = (
-                destination
-                if destination
-                else tuple(action_dict["valid_destinations"][0])
-            )
-            return MoveAction(token_id=action_dict["token_id"], destination=dest)
-
-        elif action_type == "ATTACK":
-            return AttackAction(
-                attacker_id=action_dict["attacker_id"],
-                defender_id=action_dict["defender_id"],
-            )
-
-        elif action_type == "DEPLOY":
-            positions = action_dict["positions"]
-            return DeployAction(
-                health_value=action_dict["health_value"],
-                position=tuple(positions[0]),  # Choose first valid position
-            )
-
-        elif action_type == "END_TURN":
-            return EndTurnAction()
-
-        return None
+        match chosen.action_type:
+            case "MOVE":
+                return MoveAction(
+                    token_id=chosen.params["token_id"],
+                    destination=tuple(chosen.params["destination"]),
+                )
+            case "ATTACK":
+                return AttackAction(
+                    attacker_id=chosen.params["attacker_id"],
+                    defender_id=chosen.params["defender_id"],
+                )
+            case "DEPLOY":
+                return DeployAction(
+                    health_value=chosen.params["health_value"],
+                    position=tuple(chosen.params["position"]),
+                )
+            case "END_TURN":
+                return EndTurnAction()
+            case _:
+                return None
 
 
 async def main():

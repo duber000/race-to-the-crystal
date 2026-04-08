@@ -9,7 +9,6 @@ import asyncio
 import argparse
 import logging
 import json
-import random
 from typing import Optional
 
 import httpx
@@ -17,6 +16,7 @@ from httpx_sse import aconnect_sse
 
 from game.game_state import GameState
 from game.ai_observation import AIObserver
+from game.ai_strategy import AIStrategy
 from shared.enums import GamePhase
 
 
@@ -46,7 +46,7 @@ class HTTPAIPlayer:
         """
         self.base_url = base_url.rstrip("/")
         self.player_name = player_name
-        self.strategy = strategy
+        self.strategy = AIStrategy(strategy)
         self.player_id: Optional[str] = None
         self.token: Optional[str] = None
         self.game_id: Optional[str] = None
@@ -225,9 +225,11 @@ class HTTPAIPlayer:
                 return
 
             # Choose and execute action
-            action = self._choose_action(actions["actions"], game_state)
-            if action:
-                await self._send_action(action)
+            chosen = self.strategy.choose_action(
+                actions["actions"], game_state, perspective_player_id
+            )
+            if chosen:
+                await self._send_action(chosen)
             else:
                 logger.warning("No action chosen")
 
@@ -240,73 +242,12 @@ class HTTPAIPlayer:
                 f"Unexpected error processing state update: {e}", exc_info=True
             )
 
-    def _choose_action(
-        self, available_actions: list, game_state: GameState
-    ) -> Optional[dict]:
-        """
-        Choose an action based on AI strategy.
-
-        Args:
-            available_actions: List of available action dicts
-            game_state: Current game state
-
-        Returns:
-            Action dict to execute, or None
-        """
-        if not available_actions:
-            return None
-
-        if self.strategy == "random":
-            return random.choice(available_actions)
-
-        elif self.strategy == "aggressive":
-            # Prefer attacks, then moves, then deploy, then end turn
-            attacks = [a for a in available_actions if a["type"] == "ATTACK"]
-            if attacks:
-                # Choose attack that deals most damage or kills
-                attacks.sort(
-                    key=lambda a: (-int(a.get("will_kill", False)), -a.get("damage", 0))
-                )
-                return attacks[0]
-
-            moves = [a for a in available_actions if a["type"] == "MOVE"]
-            if moves:
-                return random.choice(moves)
-
-            deploys = [a for a in available_actions if a["type"] == "DEPLOY"]
-            if deploys:
-                # Prefer highest health
-                deploys.sort(key=lambda a: -a.get("health_value", 0))
-                return deploys[0]
-
-            return available_actions[0]
-
-        elif self.strategy == "defensive":
-            # Prefer deploy, then end turn, then move, then attack
-            deploys = [a for a in available_actions if a["type"] == "DEPLOY"]
-            if deploys:
-                return random.choice(deploys)
-
-            end_turns = [a for a in available_actions if a["type"] == "END_TURN"]
-            if end_turns:
-                return end_turns[0]
-
-            moves = [a for a in available_actions if a["type"] == "MOVE"]
-            if moves:
-                return random.choice(moves)
-
-            return available_actions[0]
-
-        else:
-            # Unknown strategy, use random
-            return random.choice(available_actions)
-
-    async def _send_action(self, action: dict) -> None:
+    async def _send_action(self, chosen) -> None:
         """
         Send action to server via HTTP POST.
 
         Args:
-            action: Action dict from AIObserver
+            chosen: ChosenAction from AIStrategy
         """
         if not self.token or not self.game_id:
             logger.error("Cannot send action: not authenticated")
@@ -315,30 +256,20 @@ class HTTPAIPlayer:
         url = f"{self.base_url}/api/game/{self.game_id}/action"
         headers = {"Authorization": f"Bearer {self.token}"}
 
-        # Convert action format to match API expectations
-        action_data = {
-            "type": action["type"],
-        }
+        # Convert ChosenAction to API payload
+        action_data = {"type": chosen.action_type}
 
-        # Add type-specific fields
-        if action["type"] == "MOVE":
-            action_data["token_id"] = action["token_id"]
-            action_data["destination"] = action["valid_destinations"][
-                0
-            ]  # Pick first valid destination
+        if chosen.action_type == "MOVE":
+            action_data["token_id"] = chosen.params["token_id"]
+            action_data["destination"] = chosen.params["destination"]
 
-        elif action["type"] == "ATTACK":
-            action_data["attacker_id"] = action["attacker_id"]
-            action_data["defender_id"] = action["defender_id"]
+        elif chosen.action_type == "ATTACK":
+            action_data["attacker_id"] = chosen.params["attacker_id"]
+            action_data["defender_id"] = chosen.params["defender_id"]
 
-        elif action["type"] == "DEPLOY":
-            action_data["health_value"] = action["health_value"]
-            action_data["position"] = action["positions"][
-                0
-            ]  # Pick first valid position
-
-        elif action["type"] == "END_TURN":
-            pass  # No additional fields needed
+        elif chosen.action_type == "DEPLOY":
+            action_data["health_value"] = chosen.params["health_value"]
+            action_data["position"] = chosen.params["position"]
 
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -347,7 +278,7 @@ class HTTPAIPlayer:
 
                 result = response.json()
                 if result.get("success"):
-                    logger.info(f"Action executed: {action['type']}")
+                    logger.info(f"Action executed: {chosen.action_type}")
                 else:
                     logger.warning(f"Action failed: {result.get('message')}")
 
