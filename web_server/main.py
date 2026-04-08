@@ -255,7 +255,7 @@ async def apply_crystal_effect(
 
     Args:
         player_id: Player to affect (e.g., 'player_0')
-        effect_type: Effect type ('fog_of_war' or 'phantom_enemies')
+        effect_type: Effect type ('fog_of_war', 'phantom_enemies', 'damage_boost', or 'speed_boost')
         duration: Optional duration in turns (defaults to 4)
     """
     if not game_manager.game_state:
@@ -267,6 +267,8 @@ async def apply_crystal_effect(
     effect_map = {
         "fog_of_war": CrystalEffect.FOG_OF_WAR,
         "phantom_enemies": CrystalEffect.PHANTOM_ENEMIES,
+        "damage_boost": CrystalEffect.DAMAGE_BOOST,
+        "speed_boost": CrystalEffect.SPEED_BOOST,
     }
 
     effect = effect_map.get(effect_type.lower())

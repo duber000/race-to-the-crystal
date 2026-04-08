@@ -6,7 +6,7 @@ combat, deployment, and turn management.
 """
 
 from client.sprites.token_sprite import TokenSprite
-from game.combat import CombatSystem
+from game.combat import CombatResult, CombatSystem
 from game.mystery_square import MysterySquareSystem
 from shared.constants import PLAYER_COLORS
 from shared.enums import CellType
@@ -219,27 +219,27 @@ class GameActionHandler:
             logger.warning("Target is not adjacent")
             return False
 
-        # Perform attack
-        result = CombatSystem.resolve_combat(attacker, target_token)
+        # Perform attack (delegates to game_state which applies DAMAGE_BOOST)
+        outcome = self.game_state.attack_token(attacker.id, target_id)
 
-        logger.debug(f"Token {attacker.id} attacked token {target_token.id}: {result}")
+        if not outcome:
+            return False
+
+        logger.debug(f"Token {attacker.id} attacked token {target_token.id}: {outcome}")
 
         # Update token sprite health or remove if killed
         for sprite in self.renderer_2d.token_sprites:
             if isinstance(sprite, TokenSprite) and sprite.token.id == target_id:
-                if target_token.is_alive:
-                    sprite.update_health()
-                else:
+                if outcome.result == CombatResult.KILLED:
                     # Play flushing sound when enemy token is defeated
                     self.audio_manager.play_flushing_sound()
-                    logger.info(f"💀 Token {target_id} defeated! Playing flush sound")
+                    logger.info(f"Token {target_id} defeated! Playing flush sound")
 
                     self.renderer_2d.token_sprites.remove(sprite)
-                    self.game_state.board.clear_occupant(
-                        target_token.position, target_token.id
-                    )
                     # Remove 3D token if exists
                     self.renderer_3d.remove_token(target_id)
+                else:
+                    sprite.update_health()
                 break
 
         # Update UI to reflect state changes
