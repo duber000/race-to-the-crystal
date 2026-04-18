@@ -135,7 +135,8 @@ from game.ai_actions import AIActionExecutor, MoveAction, AttackAction, DeployAc
 #### Movement System
 ```python
 # Test: Move tokens with different health values
-# Expected: 6hp and 4hp move 2 spaces, others move 1 space
+# Expected: health <= 6 moves 2 spaces, health >= 7 moves 1 space
+#           (damaged tokens gain mobility as they take damage)
 # Watch for: Boundary checking, pathfinding, occupied cells
 ```
 

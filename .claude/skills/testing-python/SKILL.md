@@ -84,9 +84,23 @@ The project has 475+ unit tests organized by component:
 - `tests/test_game_state.py` - State management and turn flow
 - `tests/test_ai_observation.py` - AI observation API
 - `tests/test_ai_actions.py` - AI action execution
-- `tests/test_3d_controls.py` - 3D camera and controls
-- `tests/test_network_*.py` - Network multiplayer functionality
-- And more...
+- `tests/test_ai_strategy.py` - AI strategy modes
+- `tests/test_ai_integration.py` - AI integration tests
+- `tests/test_complete_3d_controls.py` - 3D camera and controls
+- `tests/test_game_window_initialization.py` - Window/view initialization
+- `tests/test_network_protocol.py` - Network protocol
+- `tests/test_network_multiplayer_integration.py` - Multiplayer integration
+- `tests/test_game_coordinator_integration.py` - Server game coordinator
+- `tests/test_lobby_message_handling.py` - Lobby messaging
+- `tests/test_http_api.py` - HTTP REST API
+- `tests/test_sse_integration.py` / `test_sse_primary_mode.py` - SSE/Mercure
+- `tests/test_chat_integration.py` - In-game chat
+- `tests/test_rate_limiter.py` - Rate limiting
+- `tests/test_security_validation.py` - Input validation / security
+- `tests/test_crystal_effects.py` - Crystal effect mechanics
+- `tests/test_schemas.py` - Action schema validation
+- `tests/test_sound_effects.py` - Audio system
+- `tests/test_game_creation.py` - Game creation flow
 
 ## Test Configuration
 
