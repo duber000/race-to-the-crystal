@@ -1,0 +1,50 @@
+petiole game
+
+import "race-to-the-crystal/shared/types" as types
+import "race-to-the-crystal/shared/enums" as enums
+
+type CombatOutcome
+    result          enums.CombatResult
+    damage_dealt    int
+    attacker_id     types.TokenID
+    defender_id     types.TokenID
+    defender_killed bool
+
+func can_attack(attacker: reference Token, defender: reference Token) bool
+    if not attacker.is_alive or not defender.is_alive
+        return false
+    if attacker.player_id == defender.player_id
+        return false
+    if not attacker.is_adjacent_to(defender.position)
+        return false
+    return true
+
+func resolve_combat(attacker: reference Token, defender: reference Token) CombatOutcome
+    if not can_attack(attacker, defender)
+        return CombatOutcome{
+            result: enums.INVALID, damage_dealt: 0,
+            attacker_id: attacker.id, defender_id: defender.id,
+            defender_killed: false,
+        }
+
+    damage := attacker.attack_power()
+    was_killed := defender.take_damage(damage)
+
+    if was_killed
+        return CombatOutcome{
+            result: enums.KILLED, damage_dealt: damage,
+            attacker_id: attacker.id, defender_id: defender.id,
+            defender_killed: true,
+        }
+    else
+        return CombatOutcome{
+            result: enums.HIT, damage_dealt: damage,
+            attacker_id: attacker.id, defender_id: defender.id,
+            defender_killed: false,
+        }
+
+func would_kill(attacker: reference Token, defender: reference Token) bool
+    if not can_attack(attacker, defender)
+        return false
+    damage := attacker.attack_power()
+    return defender.health <= damage

@@ -1,0 +1,34 @@
+petiole game
+
+import "race-to-the-crystal/shared/types" as types
+import "github.com/kukichalang/kukicha/stdlib/maps"
+
+type TokenAtPos
+    token_id  types.TokenID
+    player_id types.PlayerID
+
+func count_tokens_by_player(tokens: list of TokenAtPos) map of types.PlayerID to list of types.TokenID
+    result := make(map of types.PlayerID to list of types.TokenID)
+    for tap in tokens
+        if not maps.Contains(result, tap.player_id)
+            result[tap.player_id] = list of types.TokenID{}
+        result[tap.player_id] = append(result[tap.player_id], tap.token_id)
+    return result
+
+func find_dominant_player(counts: map of types.PlayerID to list of types.TokenID) (types.PlayerID, int, bool)
+    dominant_player := ""
+    dominant_count := 0
+    contested := false
+    for player_id, token_ids in counts
+        n := len(token_ids)
+        if n > dominant_count
+            dominant_player = player_id
+            dominant_count = n
+            contested = false
+        else if n == dominant_count and dominant_count > 0
+            contested = true
+    if contested
+        return "", dominant_count, false
+    if dominant_count > 0
+        return dominant_player, dominant_count, true
+    return "", 0, false

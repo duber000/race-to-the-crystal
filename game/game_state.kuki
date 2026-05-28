@@ -1,0 +1,354 @@
+petiole game
+
+import "race-to-the-crystal/shared/types" as types
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/constants" as constants
+import "github.com/kukichalang/kukicha/stdlib/random"
+import "github.com/kukichalang/kukicha/stdlib/slice"
+
+type CrystalEvent
+    player_id    types.PlayerID
+    effect_type  enums.CrystalEffect
+
+type MysteryEvent
+    token_id  types.TokenID
+    position  types.Position
+    effect    string
+
+type GameState
+    board                        Board
+    players                      map of types.PlayerID to Player
+    tokens                       map of types.TokenID to Token
+    generators                   list of Generator
+    crystal_instance             nullable reference Crystal
+    crystal_effects              CrystalEffectsManager
+    current_turn_player_id       types.PlayerID
+    turn_number                  int
+    phase                        enums.GamePhase
+    turn_phase                   enums.TurnPhase
+    winner_id                    types.PlayerID
+    _next_token_id               int
+    last_triggered_crystal_effect nullable reference CrystalEvent
+    last_triggered_mystery_event  nullable reference MysteryEvent
+
+func NewGameState() GameState
+    return GameState{
+        board: NewBoard(),
+        players: make(map of types.PlayerID to Player),
+        tokens: make(map of types.TokenID to Token),
+        generators: list of Generator{},
+        crystal_effects: NewCrystalEffectsManager(),
+        phase: enums.SETUP,
+        turn_phase: enums.MOVEMENT,
+        _next_token_id: 0,
+    }
+
+func CreateGame(num_players: int) GameState
+    gs := NewGameState()
+    colors := list of enums.PlayerColor{enums.CYAN, enums.MAGENTA, enums.YELLOW, enums.GREEN}
+    ids := list of types.PlayerID{"cyan", "magenta", "yellow", "green"}
+
+    for i from 0 to num_players
+        p := NewPlayer(ids[i], ids[i], colors[i])
+        gs.players[ids[i]] = p
+
+    gen_positions := gs.board.get_generator_positions()
+    gs.generators = create_generators(gen_positions)
+
+    crystal_pos := gs.board.get_crystal_position()
+    c := NewCrystal(crystal_pos)
+    gs.crystal_instance = &c
+
+    return gs
+
+func (gs: reference GameState) add_player(player_id: types.PlayerID, name: string, color: enums.PlayerColor) Player
+    p := NewPlayer(player_id, name, color)
+    gs.players[player_id] = p
+    return p
+
+func (gs: reference GameState) remove_player(player_id: types.PlayerID)
+    delete gs.players[player_id]
+
+func (gs: reference GameState) get_player(player_id: types.PlayerID) nullable reference Player
+    p, ok := gs.players[player_id]
+    if ok
+        return &p
+    return empty
+
+func (gs: reference GameState) get_current_player() nullable reference Player
+    return gs.get_player(gs.current_turn_player_id)
+
+func (gs: reference GameState) get_token(token_id: types.TokenID) nullable reference Token
+    t, ok := gs.tokens[token_id]
+    if ok
+        return &t
+    return empty
+
+func (gs: reference GameState) create_tokens_for_player(player_id: types.PlayerID)
+    p_ref := gs.get_player(player_id) onerr return
+    p := dereference p_ref
+
+    corner_pos := gs.board.get_starting_position(p.color.Value())
+
+    for hv in constants.TOKEN_HEALTH_VALUES
+        for _ from 0 to constants.TOKENS_PER_HEALTH_VALUE
+            tid := types.TokenID(gs._next_token_id)
+            t := NewToken(tid, player_id, hv, hv, corner_pos)
+            gs.tokens[tid] = t
+            p.add_token(tid)
+            gs._next_token_id = gs._next_token_id + 1
+
+func (gs: reference GameState) get_player_tokens(player_id: types.PlayerID) list of Token
+    result := list of Token{}
+    p_ref := gs.get_player(player_id)
+    if p_ref equals empty
+        return result
+    p := dereference p_ref
+    for tid in p.token_ids
+        t_ref := gs.get_token(tid)
+        if t_ref isnt empty
+            t := dereference t_ref
+            if t.is_alive and t.is_deployed
+                result = append(result, t)
+    return result
+
+func (gs: reference GameState) get_reserve_tokens(player_id: types.PlayerID) list of Token
+    result := list of Token{}
+    p_ref := gs.get_player(player_id)
+    if p_ref equals empty
+        return result
+    p := dereference p_ref
+    for tid in p.token_ids
+        t_ref := gs.get_token(tid)
+        if t_ref isnt empty
+            t := dereference t_ref
+            if not t.is_deployed
+                result = append(result, t)
+    return result
+
+func (gs: reference GameState) get_reserve_token_counts(player_id: types.PlayerID) map of int to int
+    counts := make(map of int to int)
+    for hv in constants.TOKEN_HEALTH_VALUES
+        counts[hv] = 0
+    reserve := gs.get_reserve_tokens(player_id)
+    for t in reserve
+        counts[t.max_health] = counts[t.max_health] + 1
+    return counts
+
+func (gs: reference GameState) deploy_token(player_id: types.PlayerID, health_value: int, position: types.Position) nullable reference Token
+    reserve := gs.get_reserve_tokens(player_id)
+    for i from 0 to len(reserve)
+        if reserve[i].max_health == health_value
+            t_ref := gs.get_token(reserve[i].id) onerr return empty
+            t := dereference t_ref
+            t.position = position
+            t.is_deployed = true
+            gs.board.set_occupant(position, t.id)
+            return t_ref
+    return empty
+
+func (gs: reference GameState) get_tokens_at_position(pos: types.Position) list of Token
+    result := list of Token{}
+    for _, t in gs.tokens
+        if t.position == pos and t.is_alive
+            result = append(result, t)
+    return result
+
+func (gs: reference GameState) get_token_movement_range(tok: reference Token) int
+    base := tok.movement_range()
+    pe := gs.crystal_effects.get_player_effects(tok.player_id)
+    if pe.has_effect(enums.SPEED_BOOST)
+        return base + constants.CRYSTAL_SPEED_BOOST_AMOUNT
+    return base
+
+func (gs: reference GameState) move_token(token_id: types.TokenID, new_pos: types.Position) bool
+    t_ref := gs.get_token(token_id) onerr return false
+    t := dereference t_ref
+    if not t.is_alive
+        return false
+
+    gs.board.clear_occupant(t.position, token_id)
+    t.move_to(new_pos)
+    gs.board.set_occupant(new_pos, token_id)
+    return true
+
+func (gs: reference GameState) remove_token(token_id: types.TokenID)
+    t_ref := gs.get_token(token_id) onerr return
+    t := dereference t_ref
+
+    gs.board.clear_occupant(t.position, token_id)
+
+    p_ref := gs.get_player(t.player_id)
+    if p_ref isnt empty
+        dereference p_ref |> .remove_token(token_id)
+
+    t.is_alive = false
+
+func (gs: reference GameState) attack_token(attacker_id: types.TokenID, defender_id: types.TokenID) nullable reference CombatOutcome
+    a_ref := gs.get_token(attacker_id) onerr return empty
+    d_ref := gs.get_token(defender_id) onerr return empty
+    a := dereference a_ref
+    d := dereference d_ref
+
+    if not can_attack(&a, &d)
+        return empty
+
+    damage := a.attack_power()
+    pe := gs.crystal_effects.get_player_effects(a.player_id)
+    if pe.has_effect(enums.DAMAGE_BOOST)
+        damage = int(float64(damage) * constants.CRYSTAL_DAMAGE_BOOST_MULTIPLIER)
+
+    was_killed := d.take_damage(damage)
+    if was_killed
+        gs.remove_token(defender_id)
+
+    var result enums.CombatResult
+    if was_killed
+        result = enums.KILLED
+    else
+        result = enums.HIT
+    outcome := CombatOutcome{
+        result: result, damage_dealt: damage,
+        attacker_id: attacker_id, defender_id: defender_id,
+        defender_killed: was_killed,
+    }
+    return &outcome
+
+func (gs: reference GameState) _auto_deploy_starting_tokens(player_id: types.PlayerID, player_index: int)
+    deploy_positions := gs.board.get_deployable_positions(player_index)
+    reserve := gs.get_reserve_tokens(player_id)
+
+    sort_slice(reserve)  # strongest first
+    deployed := 0
+
+    for pos in deploy_positions
+        if deployed >= 3
+            break
+        cell := gs.board.get_cell_at(pos)
+        if cell equals empty
+            continue
+        dc := dereference cell
+        if dc.is_occupied()
+            continue
+        if dc.cell_type != enums.NORMAL
+            continue
+
+        t := &reserve[deployed]
+        t.position = pos
+        t.is_deployed = true
+        gs.board.set_occupant(pos, t.id)
+        deployed = deployed + 1
+
+func sort_slice(tokens: list of Token)
+    slice.Sort(tokens, (a: Token, b: Token) => a.max_health > b.max_health)
+
+func (gs: reference GameState) start_game()
+    if gs.phase != enums.SETUP
+        return
+
+    for pid, _ in gs.players
+        gs.create_tokens_for_player(pid)
+
+    for pid, p_ref in gs.players
+        gs._auto_deploy_starting_tokens(pid, dereference p_ref |> .color.Value())
+
+    for pid, _ in gs.players
+        gs.current_turn_player_id = pid
+        break
+
+    gs.phase = enums.PLAYING
+    gs.turn_number = 1
+
+func (gs: reference GameState) end_turn()
+    if gs.current_turn_player_id == ""
+        return
+
+    gs.clear_turn_state()
+    gs.advance_to_next_player()
+    gs.turn_phase = enums.MOVEMENT
+
+func (gs: reference GameState) clear_turn_state()
+    gs.last_triggered_mystery_event = empty
+
+func (gs: reference GameState) advance_to_next_player()
+    gs.crystal_effects.end_turn_update()
+    active := gs.get_active_players()
+
+    if len(active) == 0
+        return
+
+    next_idx := gs.calculate_next_player_index(active)
+    gs.current_turn_player_id = active[next_idx]
+
+    if next_idx == 0
+        gs.turn_number = gs.turn_number + 1
+        if gs.turn_number > 0 and gs.turn_number % constants.CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL == 0
+            gs.trigger_random_crystal_effect()
+
+func (gs: reference GameState) get_active_players() list of types.PlayerID
+    result := list of types.PlayerID{}
+    for pid, p_ref in gs.players
+        if dereference p_ref |> .is_active
+            result = append(result, pid)
+    return result
+
+func (gs: reference GameState) calculate_next_player_index(active: list of types.PlayerID) int
+    current_idx := -1
+    for i, pid in active
+        if pid == gs.current_turn_player_id
+            current_idx = i
+            break
+    return (current_idx + 1) % len(active)
+
+func (gs: reference GameState) trigger_random_crystal_effect() (types.PlayerID, enums.CrystalEffect, bool)
+    if len(gs.players) == 0
+        return "", "", false
+
+    effects := list of enums.CrystalEffect{enums.FOG_OF_WAR, enums.PHANTOM_ENEMIES, enums.DAMAGE_BOOST, enums.SPEED_BOOST}
+    effect := effects[random.Int(0, len(effects))]
+    target_player := ""
+
+    for pid, _ in gs.players
+        target_player = pid
+        break
+
+    gs.crystal_effects.apply_effect(target_player, effect, gs.turn_number, constants.CRYSTAL_EFFECT_INITIAL_DURATION)
+    gs.last_triggered_crystal_effect = &CrystalEvent{player_id: target_player, effect_type: effect}
+    return target_player, effect, true
+
+func (gs: reference GameState) update_generators_and_crystal() (list of int, bool)
+    tokens_by_pos := make(map of types.Position to list of TokenAtPos)
+
+    for _, t in gs.tokens
+        if t.is_alive and t.is_deployed
+            taps := TokenAtPos{token_id: t.id, player_id: t.player_id}
+            tokens_by_pos[t.position] = append(tokens_by_pos[t.position], taps)
+
+    newly_disabled, capturing_players := update_all_generators(gs.generators, tokens_by_pos)
+
+    disabled_count := count_disabled_generators(gs.generators)
+
+    crystal_captured := false
+    if gs.crystal_instance isnt empty
+        c := dereference gs.crystal_instance
+        crystal_pos := c.position
+        taps := tokens_by_pos[crystal_pos]
+        outcome := c.update_capture_status(taps, disabled_count)
+        if outcome.is_winner
+            gs.winner_id = outcome.winner_id
+            gs.phase = enums.ENDED
+            crystal_captured = true
+
+    return newly_disabled, crystal_captured
+
+func (gs: reference GameState) end_turn_with_objective_update() (list of int, bool, bool)
+    newly_disabled, crystal_captured := gs.update_generators_and_crystal()
+    gs.end_turn()
+    return newly_disabled, crystal_captured, gs.phase == enums.ENDED
+
+func (gs: reference GameState) set_winner(player_id: types.PlayerID)
+    gs.winner_id = player_id
+    gs.phase = enums.ENDED
+
+func (gs: reference GameState) apply_crystal_effect(player_id: types.PlayerID, et: enums.CrystalEffect, duration: int)
+    gs.crystal_effects.apply_effect(player_id, et, gs.turn_number, duration)

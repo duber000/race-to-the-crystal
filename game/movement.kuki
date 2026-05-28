@@ -1,0 +1,161 @@
+petiole game
+
+import "race-to-the-crystal/shared/types" as types
+import "race-to-the-crystal/shared/enums" as enums
+
+type DirOffset
+    dx int
+    dy int
+
+var DIRECTIONS = list of DirOffset{
+    DirOffset{dx: -1, dy: -1}, DirOffset{dx: -1, dy: 0}, DirOffset{dx: -1, dy: 1},
+    DirOffset{dx: 0, dy: -1}, DirOffset{dx: 0, dy: 1},
+    DirOffset{dx: 1, dy: -1}, DirOffset{dx: 1, dy: 0}, DirOffset{dx: 1, dy: 1},
+}
+
+type BfsItem
+    pos  types.Position
+    dist int
+
+type PathItem
+    pos  types.Position
+    path list of types.Position
+
+func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int, tokens_map: map of types.TokenID to Token) list of types.Position
+    result := list of types.Position{}
+    if not tok.is_alive
+        return result
+
+    start := tok.position
+    player_id := tok.player_id
+
+    visited := make(map of types.Position to bool)
+    visited[start] = true
+
+    queue := list of BfsItem{}
+    queue = append(queue, BfsItem{pos: start, dist: 0})
+
+    for len(queue) > 0
+        item := queue[0]
+        queue = queue[1:]
+        x := item.pos.X
+        y := item.pos.Y
+        distance := item.dist
+
+        if distance >= max_range
+            continue
+
+        for dir in DIRECTIONS
+            nx := x + dir.dx
+            ny := y + dir.dy
+            npos := types.Pos(nx, ny)
+
+            _, seen := visited[npos]
+            if seen
+                continue
+
+            if not brd.is_valid_position(nx, ny)
+                continue
+
+            cell := brd.get_cell(nx, ny)
+            if cell equals empty
+                continue
+
+            dc := dereference cell
+            if dc.is_occupied() and tokens_map isnt empty
+                if dc.has_enemy_tokens(player_id, tokens_map)
+                    continue
+                if dc.cell_type != enums.GENERATOR and dc.cell_type != enums.CRYSTAL
+                    continue
+
+            visited[npos] = true
+
+            if npos != start
+                result = append(result, npos)
+
+            queue = append(queue, BfsItem{pos: npos, dist: distance + 1})
+
+    return result
+
+func is_valid_move(tok: reference Token, dest: types.Position, brd: reference Board, tokens_map: map of types.TokenID to Token) bool
+    if not tok.is_alive
+        return false
+    moves := get_valid_moves(tok, brd, tok.movement_range(), tokens_map)
+    for m in moves
+        if m == dest
+            return true
+    return false
+
+func find_path(start: types.Position, end: types.Position, brd: reference Board, max_distance: int) (list of types.Position, bool)
+    if start == end
+        return list of types.Position{start}, true
+
+    visited := make(map of types.Position to bool)
+    visited[start] = true
+
+    queue := list of PathItem{}
+    queue = append(queue, PathItem{pos: start, path: list of types.Position{start}})
+
+    for len(queue) > 0
+        item := queue[0]
+        queue = queue[1:]
+        x := item.pos.X
+        y := item.pos.Y
+
+        if len(item.path) > max_distance
+            continue
+
+        for dir in DIRECTIONS
+            nx := x + dir.dx
+            ny := y + dir.dy
+            npos := types.Pos(nx, ny)
+
+            _, seen := visited[npos]
+            if seen
+                continue
+
+            if not brd.is_valid_position(nx, ny)
+                continue
+
+            if npos == end
+                new_path := append(item.path, npos)
+                return new_path, true
+
+            cell := brd.get_cell(nx, ny)
+            if cell equals empty
+                continue
+            if dereference cell |> .is_occupied()
+                continue
+
+            visited[npos] = true
+            new_path := append(item.path, npos)
+            queue = append(queue, PathItem{pos: npos, path: new_path})
+
+    return list of types.Position{}, false
+
+func get_distance(pos1: types.Position, pos2: types.Position) int
+    dx := pos1.X - pos2.X
+    if dx < 0
+        dx = -dx
+    dy := pos1.Y - pos2.Y
+    if dy < 0
+        dy = -dy
+    return dx + dy
+
+func is_adjacent(pos1: types.Position, pos2: types.Position) bool
+    dx := pos1.X - pos2.X
+    if dx < 0
+        dx = -dx
+    dy := pos1.Y - pos2.Y
+    if dy < 0
+        dy = -dy
+    return dx <= 1 and dy <= 1 and (dx + dy) > 0
+
+func get_adjacent_positions(pos: types.Position, brd: reference Board) list of types.Position
+    result := list of types.Position{}
+    for dir in DIRECTIONS
+        nx := pos.X + dir.dx
+        ny := pos.Y + dir.dy
+        if brd.is_valid_position(nx, ny)
+            result = append(result, types.Pos(nx, ny))
+    return result

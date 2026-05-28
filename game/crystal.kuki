@@ -1,0 +1,67 @@
+petiole game
+
+import "race-to-the-crystal/shared/types" as types
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/constants" as constants
+
+type CrystalOutcome
+    winner_id    types.PlayerID
+    is_winner    bool
+
+type Crystal
+    position                types.Position
+    holding_player_id       types.PlayerID
+    holding_token_ids       list of types.TokenID
+    turns_held              int
+    base_tokens_required    int
+
+func NewCrystal(position: types.Position) Crystal
+    return Crystal{
+        position: position, holding_player_id: "",
+        holding_token_ids: list of types.TokenID{},
+        turns_held: 0, base_tokens_required: constants.CRYSTAL_BASE_TOKENS_REQUIRED,
+    }
+
+func (c: reference Crystal) turns_required() int
+    return constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
+
+func (c: reference Crystal) get_tokens_required(disabled_generators: int) int
+    reduction := disabled_generators * constants.GENERATOR_TOKEN_REDUCTION
+    required := c.base_tokens_required - reduction
+    if required < 1
+        return 1
+    return required
+
+func (c: reference Crystal) update_capture_status(tokens_at_pos: list of TokenAtPos, disabled_generators: int) CrystalOutcome
+    c.holding_token_ids = list of types.TokenID{}
+
+    counts := count_tokens_by_player(tokens_at_pos)
+    dominant_player, dominant_count, found := find_dominant_player(counts)
+    required_tokens := c.get_tokens_required(disabled_generators)
+
+    if found and dominant_count >= required_tokens
+        if dominant_player == c.holding_player_id
+            c.turns_held = c.turns_held + 1
+            c.holding_token_ids = counts[dominant_player]
+            if c.turns_held >= constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
+                return CrystalOutcome{winner_id: dominant_player, is_winner: true}
+        else
+            c.holding_player_id = dominant_player
+            c.turns_held = 1
+            c.holding_token_ids = counts[dominant_player]
+    else
+        c.holding_player_id = ""
+        c.turns_held = 0
+
+    return CrystalOutcome{winner_id: "", is_winner: false}
+
+func (c: reference Crystal) reset_capture()
+    c.holding_player_id = ""
+    c.turns_held = 0
+    c.holding_token_ids = list of types.TokenID{}
+
+func (c: reference Crystal) get_capture_progress() (int, int)
+    return c.turns_held, constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
+
+func (c: reference Crystal) is_contested() bool
+    return c.holding_player_id == "" and len(c.holding_token_ids) > 0

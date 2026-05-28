@@ -1,0 +1,193 @@
+petiole game
+
+import "race-to-the-crystal/shared/types" as types
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/constants" as constants
+import "github.com/kukichalang/kukicha/stdlib/slice"
+import "github.com/kukichalang/kukicha/stdlib/random"
+
+type Cell
+    position   types.Position
+    cell_type  enums.CellType
+    occupants  list of types.TokenID
+
+func NewCell(x: int, y: int) Cell
+    return Cell{position: types.Pos(x, y), cell_type: enums.NORMAL, occupants: list of types.TokenID{}}
+
+func (c: Cell) is_occupied() bool
+    return len(c.occupants) > 0
+
+func (c: Cell) has_enemy_tokens(player_id: types.PlayerID, tokens_map: map of types.TokenID to Token) bool
+    for tid in c.occupants
+        tok, ok := tokens_map[tid]
+        if ok and tok.player_id != player_id
+            return true
+    return false
+
+func (c: reference Cell) add_occupant(token_id: types.TokenID)
+    if not slice.Contains(c.occupants, token_id)
+        c.occupants = append(c.occupants, token_id)
+
+func (c: reference Cell) remove_occupant(token_id: types.TokenID)
+    if slice.Contains(c.occupants, token_id)
+        c.occupants = slice.Filter(c.occupants, (tid: types.TokenID) => tid != token_id)
+
+func (c: reference Cell) clear_occupants()
+    c.occupants = list of types.TokenID{}
+
+type Quadrant
+    x_min int
+    x_max int
+    y_min int
+    y_max int
+
+type Board
+    width                int
+    height               int
+    grid                 list of list of Cell
+    _gen_positions       list of types.Position
+    _mystery_positions   list of types.Position
+
+func NewBoard() Board
+    b := Board{
+        width: constants.BOARD_WIDTH, height: constants.BOARD_HEIGHT,
+    }
+    b.initialize_grid()
+    return b
+
+func (b: reference Board) initialize_grid()
+    h := b.height
+    w := b.width
+    b.grid = make(list of list of Cell, h)
+    for y from 0 to h
+        row := make(list of Cell, w)
+        for x from 0 to w
+            row[x] = NewCell(x, y)
+        b.grid[y] = row
+    b.place_crystal()
+    b.place_generators()
+    b.place_mystery_squares()
+
+func (b: reference Board) place_crystal()
+    cx := b.width / 2
+    cy := b.height / 2
+    b.grid[cy][cx].cell_type = enums.CRYSTAL
+
+func (b: reference Board) place_generators()
+    mid_x := b.width / 2
+    mid_y := b.height / 2
+    qx := b.width / 4
+    qy := b.height / 4
+
+    gens := list of types.Position{
+        types.Pos(qx, qy),
+        types.Pos(mid_x + qx, qy),
+        types.Pos(qx, mid_y + qy),
+        types.Pos(mid_x + qx, mid_y + qy),
+    }
+
+    for pos in gens
+        b.grid[pos.Y][pos.X].cell_type = enums.GENERATOR
+    b._gen_positions = gens
+
+func (b: reference Board) place_mystery_squares()
+    if b.width < 10 or b.height < 10
+        return
+
+    mid_x := b.width / 2
+    mid_y := b.height / 2
+    m := 2
+
+    quads := list of Quadrant{
+        Quadrant{x_min: m, x_max: mid_x - m, y_min: m, y_max: mid_y - m},
+        Quadrant{x_min: mid_x + m, x_max: b.width - m, y_min: m, y_max: mid_y - m},
+        Quadrant{x_min: m, x_max: mid_x - m, y_min: mid_y + m, y_max: b.height - m},
+        Quadrant{x_min: mid_x + m, x_max: b.width - m, y_min: mid_y + m, y_max: b.height - m},
+    }
+
+    for q in quads
+        if q.x_max < q.x_min or q.y_max < q.y_min
+            continue
+
+        placed := 0
+        for _ from 0 to constants.MYSTERY_PLACEMENT_MAX_ATTEMPTS
+            if placed >= constants.MYSTERY_SQUARES_PER_QUADRANT
+                break
+            x := random.Int(q.x_min, q.x_max + 1)
+            y := random.Int(q.y_min, q.y_max + 1)
+
+            if b.grid[y][x].cell_type == enums.NORMAL
+                b.grid[y][x].cell_type = enums.MYSTERY
+                b._mystery_positions = append(b._mystery_positions, types.Pos(x, y))
+                placed = placed + 1
+
+func (b: reference Board) get_cell(x: int, y: int) nullable reference Cell
+    if not b.is_valid_position(x, y)
+        return empty
+    return &b.grid[y][x]
+
+func (b: reference Board) get_cell_at(pos: types.Position) nullable reference Cell
+    return b.get_cell(pos.X, pos.Y)
+
+func (b: Board) is_valid_position(x: int, y: int) bool
+    return x >= 0 and x < b.width and y >= 0 and y < b.height
+
+func (b: reference Board) set_occupant(pos: types.Position, token_id: types.TokenID)
+    cell := b.get_cell_at(pos)
+    if cell isnt empty
+        dereference cell |> .add_occupant(token_id)
+
+func (b: reference Board) clear_occupant(pos: types.Position, token_id: types.TokenID)
+    cell := b.get_cell_at(pos)
+    if cell isnt empty
+        dereference cell |> .remove_occupant(token_id)
+
+func (b: reference Board) clear_all_occupants(pos: types.Position)
+    cell := b.get_cell_at(pos)
+    if cell isnt empty
+        dereference cell |> .clear_occupants()
+
+func (b: Board) get_starting_position(player_index: int) types.Position
+    if player_index == 0
+        return types.Pos(0, 0)
+    else if player_index == 1
+        return types.Pos(b.width - 1, 0)
+    else if player_index == 2
+        return types.Pos(0, b.height - 1)
+    else
+        return types.Pos(b.width - 1, b.height - 1)
+
+func (b: Board) get_deployable_positions(player_index: int) list of types.Position
+    if player_index == 0
+        return list of types.Position{
+            types.Pos(0, 0), types.Pos(1, 0), types.Pos(2, 0),
+            types.Pos(0, 1), types.Pos(1, 1), types.Pos(2, 1),
+            types.Pos(0, 2), types.Pos(1, 2), types.Pos(2, 2),
+        }
+    else if player_index == 1
+        return list of types.Position{
+            types.Pos(21, 0), types.Pos(22, 0), types.Pos(23, 0),
+            types.Pos(21, 1), types.Pos(22, 1), types.Pos(23, 1),
+            types.Pos(21, 2), types.Pos(22, 2), types.Pos(23, 2),
+        }
+    else if player_index == 2
+        return list of types.Position{
+            types.Pos(0, 21), types.Pos(1, 21), types.Pos(2, 21),
+            types.Pos(0, 22), types.Pos(1, 22), types.Pos(2, 22),
+            types.Pos(0, 23), types.Pos(1, 23), types.Pos(2, 23),
+        }
+    else
+        return list of types.Position{
+            types.Pos(21, 21), types.Pos(22, 21), types.Pos(23, 21),
+            types.Pos(21, 22), types.Pos(22, 22), types.Pos(23, 22),
+            types.Pos(21, 23), types.Pos(22, 23), types.Pos(23, 23),
+        }
+
+func (b: Board) get_crystal_position() types.Position
+    return types.Pos(b.width / 2, b.height / 2)
+
+func (b: Board) get_generator_positions() list of types.Position
+    return b._gen_positions
+
+func (b: Board) get_mystery_positions() list of types.Position
+    return b._mystery_positions

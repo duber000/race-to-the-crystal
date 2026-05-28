@@ -1,0 +1,49 @@
+petiole enums
+
+enum CellType
+    NORMAL
+    GENERATOR
+    CRYSTAL
+    MYSTERY
+    START
+
+enum GamePhase
+    SETUP
+    PLAYING
+    ENDED
+
+enum TurnPhase
+    MOVEMENT
+    ACTION
+    END_TURN
+
+enum PlayerColor: string
+    CYAN    = "cyan"
+    MAGENTA = "magenta"
+    YELLOW  = "yellow"
+    GREEN   = "green"
+
+enum MysteryEffect
+    HEAL
+    TELEPORT
+
+enum CombatResult
+    HIT
+    KILLED
+    INVALID
+
+enum CrystalEffect: string
+    FOG_OF_WAR      = "fog_of_war"
+    PHANTOM_ENEMIES = "phantom_enemies"
+    DAMAGE_BOOST    = "damage_boost"
+    SPEED_BOOST     = "speed_boost"
+
+enum Direction
+    UP
+    DOWN
+    LEFT
+    RIGHT
+    UP_LEFT
+    UP_RIGHT
+    DOWN_LEFT
+    DOWN_RIGHT

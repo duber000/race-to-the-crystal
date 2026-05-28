@@ -1,62 +1,32 @@
-.PHONY: test test-verbose test-watch clean help
+.PHONY: help check build test test-verbose test-specific clean lint format
 
 help: ## Show this help message
 	@echo "Race to the Crystal - Available Commands:"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+check: ## Validate all Kukicha syntax
+	kukicha check ./...
+
+build: ## Transpile and build all Kukicha packages
+	kukicha build ./...
 
 test: ## Run all tests
-	@if [ -f .venv/bin/pytest ]; then \
-		.venv/bin/pytest; \
-	else \
-		uv run --group dev pytest; \
-	fi
+	kukicha build ./...
+	go test ./...
 
 test-verbose: ## Run tests with verbose output
-	@if [ -f .venv/bin/pytest ]; then \
-		.venv/bin/pytest -vv; \
-	else \
-		uv run --group dev pytest -vv; \
-	fi
+	kukicha build ./...
+	go test -v ./...
 
-test-coverage: ## Run tests with coverage report
-	uv run --group dev --with pytest-cov pytest --cov=game --cov=shared --cov-report=term-missing
+test-specific: ## Run specific test (usage: make test-specific PKG=./game/...)
+	kukicha build $(PKG)
+	go test $(PKG)
 
-test-watch: ## Run tests in watch mode (requires pytest-watch)
-	uv run --group dev --with pytest-watch ptw
+clean: ## Remove build artifacts
+	find . -type f -name '*.go' ! -path './.kukicha/*' -delete
 
-test-fast: ## Run tests with minimal output
-	@if [ -f .venv/bin/pytest ]; then \
-		.venv/bin/pytest -q; \
-	else \
-		uv run --group dev pytest -q; \
-	fi
+lint: ## Check formatting
+	kukicha fmt -w --check .
 
-test-failed: ## Run only previously failed tests
-	@if [ -f .venv/bin/pytest ]; then \
-		.venv/bin/pytest --lf; \
-	else \
-		uv run --group dev pytest --lf; \
-	fi
-
-test-specific: ## Run specific test file (usage: make test-specific FILE=tests/test_token.py)
-	@if [ -f .venv/bin/pytest ]; then \
-		.venv/bin/pytest $(FILE); \
-	else \
-		uv run --group dev pytest $(FILE); \
-	fi
-
-clean: ## Remove Python cache files
-	find . -type d -name __pycache__ -exec rm -rf {} +
-	find . -type f -name '*.pyc' -delete
-	find . -type d -name .pytest_cache -exec rm -rf {} +
-	find . -type d -name .coverage -exec rm -rf {} +
-
-lint: ## Run code formatting checks (requires ruff)
-	uv run --with ruff ruff check .
-
-format: ## Auto-format code (requires ruff)
-	uv run --with ruff ruff format .
-
-sync: ## Sync dependencies
-	uv sync --group dev
+format: ## Auto-format all Kukicha files
+	kukicha fmt -w .

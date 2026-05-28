@@ -1,0 +1,11 @@
+petiole types
+
+type TokenID int
+type PlayerID string
+
+type Position
+    X int
+    Y int
+
+func Pos(x: int, y: int) Position
+    return Position{X: x, Y: y}
