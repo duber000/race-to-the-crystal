@@ -4,6 +4,23 @@
 
 Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://kukicha.dev), a near-superset of Go. The JS web client (Babylon.js) stays as-is.
 
+## Current Status (2026-05-28)
+
+| Phase | Description | Status | LOC |
+|-------|-------------|--------|-----|
+| Phase 0 | Project setup (go.mod, Makefile, kukicha init) | **COMPLETE** | — |
+| Phase 1 | `shared/` (types, enums, constants, errors) | **COMPLETE** | 166 LOC |
+| Phase 2 | `game/` (game logic, 11 files) | **SKELETON DONE — not validated against Python** | 1,305 LOC |
+| Phase 3 | `server/` | **NOT STARTED** | — |
+| Phase 4 | `client/ai_client` | **NOT STARTED** | — |
+| Phase 5 | `client/desktop` (ebitengine) | **NOT STARTED** | — |
+| Phase 6 | `web_server/` | **NOT STARTED** | — |
+| Phase 7 | Tests (`*_test.kuki`) | **NOT STARTED** | — |
+
+**What works:** `kukicha check ./...` passes cleanly (only 3 lint warnings about `panic()` in `token.kuki`).
+
+**What's next:** Add missing `game/` files (schemas, ai_actions, ai_observation, ai_strategy, api) to complete the plan's 15-file target, then start backfilling unit tests against the Python originals (Phase 7 in parallel with Phase 2).
+
 ### Key Architectural Decisions
 
 1. **Drop TCP entirely** — All clients communicate via HTTP/WebSocket only. The `network/` protocol layer and TCP server are **removed**, not converted.
@@ -62,10 +79,14 @@ Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://
 ```
 race-to-the-crystal/
 ├── shared/
-│   ├── types.kuki
-│   ├── enums.kuki
-│   ├── constants.kuki
-│   └── errors.kuki
+│   ├── types/
+│   │   └── types.kuki
+│   ├── enums/
+│   │   └── enums.kuki
+│   ├── constants/
+│   │   └── constants.kuki
+│   └── errs/
+│       └── errors.kuki
 ├── game/
 │   ├── token.kuki
 │   ├── player.kuki
@@ -141,8 +162,11 @@ race-to-the-crystal/
 
 | Petiole | Files | Imports from |
 |---------|-------|-------------|
-| `shared` | `types.kuki`, `enums.kuki`, `constants.kuki`, `errors.kuki` | nothing |
-| `game` | `token.kuki`–`api.kuki` (17 files) | `shared` |
+| `types` | `shared/types/types.kuki` | nothing |
+| `enums` | `shared/enums/enums.kuki` | nothing |
+| `constants` | `shared/constants/constants.kuki` | nothing |
+| `errs` | `shared/errs/errors.kuki` | nothing |
+| `game` | `token.kuki`–`api.kuki` (17 files) | `shared/*` |
 | `server` | `auth.kuki`–`server_main.kuki` (~10 files) | `shared`, `game`, `stdlib/*` |
 | `client` | `ai_client.kuki`, `http_ai_client.kuki` (standalone) | `shared`, `game`, `stdlib/fetch` |
 | `client/desktop` | `main.kuki`–`ui/victory_view.kuki` (~7 files) | `shared`, `game`, `github.com/kukichalang/game` |
