@@ -10,69 +10,69 @@ type GameAPI
 func NewGameAPI(gs: reference GameState, pid: types.PlayerID) GameAPI
     return GameAPI{game_state: gs, player_id: pid}
 
-func (api: reference GameAPI) observe() string
+func (api: reference GameAPI) Observe() string
     if api.game_state equals empty
         return ""
     return get_situation_report(api.game_state, api.player_id)
 
-func (api: reference GameAPI) actions() list of map of string to any
+func (api: reference GameAPI) Actions() list of map of string to any
     if api.game_state equals empty
         return list of map of string to any{}
     result := list_available_actions(api.game_state, api.player_id)
     return result.actions
 
-func (api: reference GameAPI) actions_with_phase() AvailableActionsResponse
+func (api: reference GameAPI) ActionsWithPhase() AvailableActionsResponse
     if api.game_state equals empty
         return AvailableActionsResponse{phase: "NOT_PLAYING", actions: list of map of string to any{}}
     return list_available_actions(api.game_state, api.player_id)
 
-func (api: reference GameAPI) board_map() string
+func (api: reference GameAPI) BoardMap() string
     if api.game_state equals empty
         return ""
     return get_board_map(api.game_state, api.player_id)
 
-func (api: reference GameAPI) describe() string
+func (api: reference GameAPI) Describe() string
     if api.game_state equals empty
         return ""
     return describe_game_state(api.game_state, api.player_id)
 
-func (api: reference GameAPI) victory_conditions() string
+func (api: reference GameAPI) VictoryConditions() string
     if api.game_state equals empty
         return ""
     return explain_victory_conditions(api.game_state)
 
-func (api: reference GameAPI) move(token_id: types.TokenID, x: int, y: int) ActionResult
+func (api: reference GameAPI) Move(TokenID: types.TokenID, x: int, y: int) ActionResult
     if api.game_state equals empty
         return FailureResult("No game state")
     dest := types.Pos(x, y)
-    action := Move{token_id: token_id, destination: dest}
-    return execute_action(action, api.game_state, api.player_id)
+    action := Move{TokenID: TokenID, Destination: dest}
+    return ExecuteAction(action, api.game_state, api.player_id)
 
-func (api: reference GameAPI) attack(attacker_id: types.TokenID, defender_id: types.TokenID) ActionResult
+func (api: reference GameAPI) Attack(AttackerID: types.TokenID, DefenderID: types.TokenID) ActionResult
     if api.game_state equals empty
         return FailureResult("No game state")
-    action := Attack{attacker_id: attacker_id, defender_id: defender_id}
-    return execute_action(action, api.game_state, api.player_id)
+    action := Attack{AttackerID: AttackerID, DefenderID: DefenderID}
+    return ExecuteAction(action, api.game_state, api.player_id)
 
-func (api: reference GameAPI) deploy(health_value: int, x: int, y: int) ActionResult
+func (api: reference GameAPI) Deploy(HealthValue: int, x: int, y: int) ActionResult
     if api.game_state equals empty
         return FailureResult("No game state")
     pos := types.Pos(x, y)
-    action := Deploy{health_value: health_value, position: pos}
-    return execute_action(action, api.game_state, api.player_id)
+    action := Deploy{HealthValue: HealthValue, Position: pos}
+    return ExecuteAction(action, api.game_state, api.player_id)
 
-func (api: reference GameAPI) end_turn() ActionResult
+func (api: reference GameAPI) EndTurn() ActionResult
     if api.game_state equals empty
         return FailureResult("No game state")
     action := EndTurn{}
-    return execute_action(action, api.game_state, api.player_id)
+    return ExecuteAction(action, api.game_state, api.player_id)
 
-func (api: reference GameAPI) is_my_turn() bool
+func (api: reference GameAPI) IsMyTurn() bool
     if api.game_state equals empty
         return false
     return (dereference api.game_state).current_turn_player_id == api.player_id
 
-func (api: reference GameAPI) get_phase() string
+func (api: reference GameAPI) GetPhase() string
     if api.game_state equals empty
         return "NOT_PLAYING"
     gs := dereference api.game_state
@@ -80,17 +80,17 @@ func (api: reference GameAPI) get_phase() string
         return enums.GamePhaseName(gs.phase)
     return enums.TurnPhaseName(gs.turn_phase)
 
-func (api: reference GameAPI) get_my_tokens() list of map of string to any
+func (api: reference GameAPI) GetMyTokens() list of map of string to any
     if api.game_state equals empty
         return list of map of string to any{}
     gs := dereference api.game_state
-    p_ref := gs.get_player(api.player_id)
+    p_ref := gs.GetPlayer(api.player_id)
     if p_ref equals empty
         return list of map of string to any{}
     p := dereference p_ref
     result := list of map of string to any{}
     for tid in p.token_ids
-        t_ref := gs.get_token(tid)
+        t_ref := gs.GetToken(tid)
         if t_ref isnt empty
             t := dereference t_ref
             m := make(map of string to any)
@@ -104,8 +104,8 @@ func (api: reference GameAPI) get_my_tokens() list of map of string to any
             result = append(result, m)
     return result
 
-func (api: reference GameAPI) get_deployed_tokens() list of map of string to any
-    all := api.get_my_tokens()
+func (api: reference GameAPI) GetDeployedTokens() list of map of string to any
+    all := api.GetMyTokens()
     result := list of map of string to any{}
     for t in all
         deployed, has := t["is_deployed"]
@@ -113,7 +113,7 @@ func (api: reference GameAPI) get_deployed_tokens() list of map of string to any
             result = append(result, t)
     return result
 
-func (api: reference GameAPI) get_reserve_counts() map of int to int
+func (api: reference GameAPI) GetReserveCounts() map of int to int
     if api.game_state equals empty
         return make(map of int to int)
-    return (dereference api.game_state).get_reserve_token_counts(api.player_id)
+    return (dereference api.game_state).GetReserveTokenCounts(api.player_id)

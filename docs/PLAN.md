@@ -11,7 +11,7 @@ Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://
 | Phase 0 | Project setup (go.mod, Makefile, kukicha init) | **COMPLETE** | — |
 | Phase 1 | `shared/` (types, enums, constants, errors) | **COMPLETE** | 166 LOC |
 | Phase 2 | `game/` (game logic, 16 files) | **COMPLETE** | 2,626 LOC |
-| Phase 3 | `server/` | **NOT STARTED** | — |
+| Phase 3 | `server/` | **IN PROGRESS (Day 1-2 done)** | — |
 | Phase 4 | `client/ai_client` | **NOT STARTED** | — |
 | Phase 5 | `client/desktop` (ebitengine) | **NOT STARTED** | — |
 | Phase 6 | `web_server/` | **NOT STARTED** | — |

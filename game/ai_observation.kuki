@@ -49,7 +49,7 @@ func generator_status(gen: reference Generator, gs: reference GameState) string
     if gen.is_disabled
         return "DISABLED"
     if gen.capturing_player_id != ""
-        p_ref := gs.get_player(gen.capturing_player_id)
+        p_ref := gs.GetPlayer(gen.capturing_player_id)
         if p_ref isnt empty
             p := dereference p_ref
             cn := color_name(p.color)
@@ -60,7 +60,7 @@ func generator_status(gen: reference Generator, gs: reference GameState) string
 
 func crystal_holders(crys: reference Crystal, gs: reference GameState) map of types.PlayerID to int
     result := make(map of types.PlayerID to int)
-    tokens_at := gs.get_tokens_at_position(crys.position)
+    tokens_at := gs.GetTokensAtPosition(crys.position)
     for t in tokens_at
         _, exists := result[t.player_id]
         if not exists
@@ -81,7 +81,7 @@ func describe_game_state(gs: reference GameState, perspective: types.PlayerID) s
     lines = append(lines, separator_line())
 
     if gs.phase == enums.ENDED
-        winner_ref := gs.get_player(gs.winner_id)
+        winner_ref := gs.GetPlayer(gs.winner_id)
         winner_name := "Unknown"
         if winner_ref isnt empty
             winner_name = (dereference winner_ref).name
@@ -89,7 +89,7 @@ func describe_game_state(gs: reference GameState, perspective: types.PlayerID) s
     else if gs.phase == enums.SETUP
         lines = append(lines, "GAME SETUP - Waiting for players")
     else
-        current_ref := gs.get_current_player()
+        current_ref := gs.GetCurrentPlayer()
         is_your_turn := gs.current_turn_player_id == perspective
         turn_indicator := "YOUR TURN"
         if not is_your_turn
@@ -125,7 +125,7 @@ func describe_game_state(gs: reference GameState, perspective: types.PlayerID) s
     return join_lines(lines)
 
 func append_player_tokens(lines: list of string, gs: reference GameState, player_id: types.PlayerID) list of string
-    p_ref := gs.get_player(player_id)
+    p_ref := gs.GetPlayer(player_id)
     if p_ref equals empty
         lines = append(lines, "YOUR TOKENS: (player not found)")
         lines = append(lines, "")
@@ -134,14 +134,14 @@ func append_player_tokens(lines: list of string, gs: reference GameState, player
 
     deployed := list of Token{}
     for tid in p.token_ids
-        t_ref := gs.get_token(tid)
+        t_ref := gs.GetToken(tid)
         if t_ref isnt empty
             t := dereference t_ref
             if t.is_deployed and t.is_alive
                 deployed = append(deployed, t)
 
-    reserve := gs.get_reserve_tokens(player_id)
-    reserve_counts := gs.get_reserve_token_counts(player_id)
+    reserve := gs.GetReserveTokens(player_id)
+    reserve_counts := gs.GetReserveTokenCounts(player_id)
 
     lines = append(lines, "YOUR TOKENS ({len(deployed)} deployed, {len(reserve)} in reserve):")
     if len(deployed) > 0
@@ -163,7 +163,7 @@ func append_enemy_tokens(lines: list of string, gs: reference GameState, perspec
             continue
         enemy_deployed := list of Token{}
         for tid in p_ref.token_ids
-            t_ref := gs.get_token(tid)
+            t_ref := gs.GetToken(tid)
             if t_ref isnt empty
                 t := dereference t_ref
                 if t.is_deployed and t.is_alive
@@ -205,7 +205,7 @@ func append_crystal_info(lines: list of string, gs: reference GameState) list of
     if len(holders) > 0
         lines = append(lines, "  Current holders:")
         for pid, count in holders
-            hp_ref := gs.get_player(pid)
+            hp_ref := gs.GetPlayer(pid)
             if hp_ref isnt empty
                 hp := dereference hp_ref
                 cn := color_name(hp.color)
@@ -262,7 +262,7 @@ func mark_special_cells(grid: list of list of string, gs: reference GameState) l
 func place_tokens_on_grid(grid: list of list of string, gs: reference GameState, perspective: types.PlayerID) list of list of string
     for _, t in gs.tokens
         if t.is_deployed and t.is_alive
-            p_ref := gs.get_player(t.player_id)
+            p_ref := gs.GetPlayer(t.player_id)
             if p_ref isnt empty
                 p := dereference p_ref
                 sym := token_symbol(p.color)
@@ -304,7 +304,7 @@ func render_board_footer(lines: list of string, gs: reference GameState) list of
 
 func render_legend(lines: list of string, gs: reference GameState, perspective: types.PlayerID) list of string
     lines = append(lines, "LEGEND:")
-    p_ref := gs.get_player(perspective)
+    p_ref := gs.GetPlayer(perspective)
     if p_ref isnt empty
         p := dereference p_ref
         your_sym := strpkg.ToUpper(token_symbol(p.color))
@@ -328,7 +328,7 @@ func list_available_actions(gs: reference GameState, player_id: types.PlayerID) 
     actions := list of map of string to any{}
     phase_str := enums.TurnPhaseName(gs.turn_phase)
 
-    p_ref := gs.get_player(player_id)
+    p_ref := gs.GetPlayer(player_id)
     if p_ref equals empty
         return AvailableActionsResponse{phase: phase_str, actions: actions}
 
@@ -336,7 +336,7 @@ func list_available_actions(gs: reference GameState, player_id: types.PlayerID) 
 
     deployed_tokens := list of Token{}
     for tid in p.token_ids
-        t_ref := gs.get_token(tid)
+        t_ref := gs.GetToken(tid)
         if t_ref isnt empty
             t := dereference t_ref
             if t.is_deployed and t.is_alive
@@ -353,10 +353,10 @@ func list_available_actions(gs: reference GameState, player_id: types.PlayerID) 
 
 func add_movement_actions(actions: list of map of string to any, deployed: list of Token, gs: reference GameState) list of map of string to any
     for t in deployed
-        t_ref := gs.get_token(t.id)
+        t_ref := gs.GetToken(t.id)
         if t_ref equals empty
             continue
-        effective_range := gs.get_token_movement_range(t_ref)
+        effective_range := gs.GetTokenMovementRange(t_ref)
         valid_moves := get_valid_moves(t_ref, &gs.board, effective_range, gs.tokens)
         if len(valid_moves) > 0
             dests := list of list of int{}
@@ -373,7 +373,7 @@ func add_movement_actions(actions: list of map of string to any, deployed: list 
     return actions
 
 func add_deployment_actions(actions: list of map of string to any, gs: reference GameState, player_id: types.PlayerID, p: Player) list of map of string to any
-    reserve_counts := gs.get_reserve_token_counts(player_id)
+    reserve_counts := gs.GetReserveTokenCounts(player_id)
     corner_positions := gs.board.get_deployable_positions(enums.PlayerIndex(p.color))
     for hv in constants.TOKEN_HEALTH_VALUES
         if reserve_counts[hv] > 0
@@ -394,14 +394,14 @@ func add_deployment_actions(actions: list of map of string to any, gs: reference
 
 func add_attack_actions(actions: list of map of string to any, deployed: list of Token, gs: reference GameState) list of map of string to any
     for t in deployed
-        t_ref := gs.get_token(t.id)
+        t_ref := gs.GetToken(t.id)
         if t_ref equals empty
             continue
         attackable := get_attackable_targets(t_ref, gs.tokens)
         for target in attackable
             damage := t.health / 2
             will_kill_target := would_kill(t_ref, &target)
-            target_player := gs.get_player(target.player_id)
+            target_player := gs.GetPlayer(target.player_id)
             target_color := "Unknown"
             if target_player isnt empty
                 target_color = color_name((dereference target_player).color)
@@ -462,7 +462,7 @@ func explain_victory_conditions(gs: reference GameState) string
         if len(holders) > 0
             lines = append(lines, "Current crystal progress:")
             for pid, count in holders
-                p_ref := gs.get_player(pid)
+                p_ref := gs.GetPlayer(pid)
                 if p_ref isnt empty
                     p := dereference p_ref
                     cn := color_name(p.color)

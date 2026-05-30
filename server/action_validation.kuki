@@ -1,0 +1,93 @@
+petiole server
+
+import "github.com/kukichalang/kukicha/stdlib/string" as strpkg
+import "github.com/kukichalang/kukicha/stdlib/cast"
+import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg
+import "race-to-the-crystal/shared/constants" as constants
+
+type ValidationResult
+    field      string
+    error_code string
+    message    string
+
+func ValidateActionFields(action_type: string, data: map of string to any) nullable reference ValidationResult
+    normalized := strpkg.ToLower(action_type)
+    switch normalized
+        when "move"
+            return ValidateMove(data)
+        when "attack"
+            return ValidateAttack(data)
+        when "deploy"
+            return ValidateDeploy(data)
+        when "end_turn"
+            return empty
+        default
+            return &ValidationResult{field: "type", error_code: "UNKNOWN_ACTION", message: "Unknown action type: {action_type}"}
+
+func ValidateMove(data: map of string to any) nullable reference ValidationResult
+    _, has_tid := data["token_id"]
+    if not has_tid
+        return &ValidationResult{field: "token_id", error_code: "MISSING_FIELD", message: "MOVE requires token_id"}
+    dest_val, has_dest := data["destination"]
+    if not has_dest
+        dest_val, has_dest = data["position"]
+    if not has_dest
+        return &ValidationResult{field: "destination", error_code: "MISSING_FIELD", message: "MOVE requires destination"}
+    _ = cast.SmartInt(data["token_id"]) onerr
+        return &ValidationResult{field: "token_id", error_code: "INVALID_TYPE", message: "token_id must be an integer"}
+    if not is_position_value(dest_val)
+        return &ValidationResult{field: "destination", error_code: "INVALID_TYPE", message: "destination must be [x, y]"}
+    return empty
+
+func ValidateAttack(data: map of string to any) nullable reference ValidationResult
+    _, has_atk := data["attacker_id"]
+    if not has_atk
+        return &ValidationResult{field: "attacker_id", error_code: "MISSING_FIELD", message: "ATTACK requires attacker_id"}
+    def_val, has_def := data["defender_id"]
+    if not has_def
+        def_val, has_def = data["target_id"]
+    if not has_def
+        return &ValidationResult{field: "defender_id", error_code: "MISSING_FIELD", message: "ATTACK requires defender_id"}
+    _ = cast.SmartInt(data["attacker_id"]) onerr
+        return &ValidationResult{field: "attacker_id", error_code: "INVALID_TYPE", message: "attacker_id must be an integer"}
+    _ = cast.SmartInt(def_val) onerr
+        return &ValidationResult{field: "defender_id", error_code: "INVALID_TYPE", message: "defender_id must be an integer"}
+    return empty
+
+func ValidateDeploy(data: map of string to any) nullable reference ValidationResult
+    hv_val, has_hv := data["health_value"]
+    if not has_hv
+        return &ValidationResult{field: "health_value", error_code: "MISSING_FIELD", message: "DEPLOY requires health_value"}
+    pos_val, has_pos := data["position"]
+    if not has_pos
+        return &ValidationResult{field: "position", error_code: "MISSING_FIELD", message: "DEPLOY requires position"}
+    hv_int := cast.SmartInt(hv_val) onerr
+        return &ValidationResult{field: "health_value", error_code: "INVALID_TYPE", message: "health_value must be an integer"}
+    valid_hv := false
+    for v in constants.TOKEN_HEALTH_VALUES
+        if v == hv_int
+            valid_hv = true
+    if not valid_hv
+        return &ValidationResult{field: "health_value", error_code: "INVALID_VALUE", message: "health_value must be one of {constants.TOKEN_HEALTH_VALUES}"}
+    if not is_position_value(pos_val)
+        return &ValidationResult{field: "position", error_code: "INVALID_TYPE", message: "position must be [x, y]"}
+    return empty
+
+func is_position_value(val: any) bool
+    pos := list of int{}
+    bytes := jsonpkg.Bytes(val) onerr return false
+    jsonpkg.ParseInto(bytes, &pos) onerr return false
+    return len(pos) == 2
+
+func NormalizeActionData(data: map of string to any) map of string to any
+    result := make(map of string to any)
+    for key, val in data
+        lower_key := strpkg.ToLower(key)
+        if lower_key == "type"
+            type_str := cast.SmartString(val) onerr discard
+            result["type"] = strpkg.ToLower(type_str)
+        else if lower_key == "target_id"
+            result["defender_id"] = val
+        else
+            result[lower_key] = val
+    return result

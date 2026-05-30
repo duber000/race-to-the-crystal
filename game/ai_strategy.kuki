@@ -119,7 +119,7 @@ func best_move(moves: list of map of string to any, gs: reference GameState, pla
         if not has
             continue
         tok_id := tok_id_any.(types.TokenID)
-        tok_ref := gs.get_token(tok_id)
+        tok_ref := gs.GetToken(tok_id)
         dests_any, has2 := move["valid_destinations"]
         if not has2
             continue

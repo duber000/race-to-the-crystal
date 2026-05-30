@@ -1,0 +1,160 @@
+petiole server
+
+import "time"
+
+const MAX_CONNECTIONS_PER_IP = 8
+const MAX_ACTIONS_PER_SECOND = 5
+const MAX_GAMES_CREATED_PER_HOUR = 10
+const CONNECTION_WINDOW_SECONDS = 60
+
+type TokenBucket
+    capacity   int
+    refill_rate float64
+    tokens     float64
+    last_refill float64
+
+func NewTokenBucket(capacity: int, refill_rate: float64) TokenBucket
+    now := float64(time.Now().UnixNano()) / 1e9
+    return TokenBucket{
+        capacity: capacity,
+        refill_rate: refill_rate,
+        tokens: float64(capacity),
+        last_refill: now,
+    }
+
+func (tb: reference TokenBucket) Consume(count: int) bool
+    tb.refill()
+    if tb.tokens < float64(count)
+        return false
+    tb.tokens = tb.tokens - float64(count)
+    return true
+
+func (tb: reference TokenBucket) refill()
+    now := float64(time.Now().UnixNano()) / 1e9
+    elapsed := now - tb.last_refill
+    if elapsed > 0.0
+        tb.tokens = tb.tokens + (elapsed * tb.refill_rate)
+        if tb.tokens > float64(tb.capacity)
+            tb.tokens = float64(tb.capacity)
+        tb.last_refill = now
+
+type TimedEvent
+    timestamp float64
+
+type SlidingWindowCounter
+    max_events    int
+    window_seconds int
+    events        list of TimedEvent
+
+func NewSlidingWindowCounter(max_events: int, window_seconds: int) SlidingWindowCounter
+    return SlidingWindowCounter{
+        max_events: max_events,
+        window_seconds: window_seconds,
+        events: list of TimedEvent{},
+    }
+
+func (sw: reference SlidingWindowCounter) TryEvent() bool
+    now := float64(time.Now().UnixNano()) / 1e9
+    cutoff := now - float64(sw.window_seconds)
+    filtered := list of TimedEvent{}
+    for evt in sw.events
+        if evt.timestamp >= cutoff
+            filtered = append(filtered, evt)
+    sw.events = filtered
+    if len(sw.events) >= sw.max_events
+        return false
+    sw.events = append(sw.events, TimedEvent{timestamp: now})
+    return true
+
+func (sw: reference SlidingWindowCounter) GetCount() int
+    now := float64(time.Now().UnixNano()) / 1e9
+    cutoff := now - float64(sw.window_seconds)
+    count := 0
+    for evt in sw.events
+        if evt.timestamp >= cutoff
+            count = count + 1
+    return count
+
+type RateLimiter
+    ip_connections      map of string to reference SlidingWindowCounter
+    player_actions      map of string to reference TokenBucket
+    player_game_creation map of string to reference SlidingWindowCounter
+    active_connections  map of string to int
+
+func NewRateLimiter() RateLimiter
+    return RateLimiter{
+        ip_connections: make(map of string to reference SlidingWindowCounter),
+        player_actions: make(map of string to reference TokenBucket),
+        player_game_creation: make(map of string to reference SlidingWindowCounter),
+        active_connections: make(map of string to int),
+    }
+
+func (rl: reference RateLimiter) get_ip_counter(ip: string) reference SlidingWindowCounter
+    counter, ok := rl.ip_connections[ip]
+    if ok
+        return counter
+    new_counter := NewSlidingWindowCounter(MAX_CONNECTIONS_PER_IP, CONNECTION_WINDOW_SECONDS)
+    rl.ip_connections[ip] = &new_counter
+    return rl.ip_connections[ip]
+
+func (rl: reference RateLimiter) get_action_bucket(player_id: string) reference TokenBucket
+    bucket, ok := rl.player_actions[player_id]
+    if ok
+        return bucket
+    new_bucket := NewTokenBucket(10, float64(MAX_ACTIONS_PER_SECOND))
+    rl.player_actions[player_id] = &new_bucket
+    return rl.player_actions[player_id]
+
+func (rl: reference RateLimiter) get_game_creation_counter(player_id: string) reference SlidingWindowCounter
+    counter, ok := rl.player_game_creation[player_id]
+    if ok
+        return counter
+    new_counter := NewSlidingWindowCounter(MAX_GAMES_CREATED_PER_HOUR, 3600)
+    rl.player_game_creation[player_id] = &new_counter
+    return rl.player_game_creation[player_id]
+
+func (rl: reference RateLimiter) CheckConnection(ip_address: string) (bool, string)
+    counter := rl.get_ip_counter(ip_address)
+    if not counter.TryEvent()
+        return false, "Too many connections from this IP"
+    current := 0
+    count, has := rl.active_connections[ip_address]
+    if has
+        current = count
+    if current >= MAX_CONNECTIONS_PER_IP
+        return false, "Maximum connections exceeded for this IP"
+    return true, ""
+
+func (rl: reference RateLimiter) ReleaseConnection(ip_address: string)
+    count, has := rl.active_connections[ip_address]
+    if has and count > 0
+        rl.active_connections[ip_address] = count - 1
+
+func (rl: reference RateLimiter) RecordConnection(ip_address: string)
+    count, has := rl.active_connections[ip_address]
+    if has
+        rl.active_connections[ip_address] = count + 1
+    else
+        rl.active_connections[ip_address] = 1
+
+func (rl: reference RateLimiter) CheckAction(player_id: string) (bool, string)
+    bucket := rl.get_action_bucket(player_id)
+    if not bucket.Consume(1)
+        return false, "Action rate limit exceeded"
+    return true, ""
+
+func (rl: reference RateLimiter) CheckGameCreation(player_id: string) (bool, string)
+    counter := rl.get_game_creation_counter(player_id)
+    if not counter.TryEvent()
+        return false, "Game creation rate limit exceeded"
+    return true, ""
+
+func (rl: reference RateLimiter) CleanupPlayer(player_id: string)
+    delete rl.player_actions[player_id]
+    delete rl.player_game_creation[player_id]
+
+func (rl: reference RateLimiter) GetStats() map of string to any
+    return map of string to any{
+        "active_ips": len(rl.ip_connections),
+        "tracked_players": len(rl.player_actions),
+    }

@@ -11,8 +11,8 @@ type CrystalEvent
     effect_type  enums.CrystalEffect
 
 type MysteryEvent
-    token_id  types.TokenID
-    position  types.Position
+    TokenID  types.TokenID
+    Position  types.Position
     effect    string
 
 type GameState
@@ -69,23 +69,23 @@ func (gs: reference GameState) add_player(player_id: types.PlayerID, name: strin
 func (gs: reference GameState) remove_player(player_id: types.PlayerID)
     delete gs.players[player_id]
 
-func (gs: reference GameState) get_player(player_id: types.PlayerID) nullable reference Player
+func (gs: reference GameState) GetPlayer(player_id: types.PlayerID) nullable reference Player
     p, ok := gs.players[player_id]
     if ok
         return &p
     return empty
 
-func (gs: reference GameState) get_current_player() nullable reference Player
-    return gs.get_player(gs.current_turn_player_id)
+func (gs: reference GameState) GetCurrentPlayer() nullable reference Player
+    return gs.GetPlayer(gs.current_turn_player_id)
 
-func (gs: reference GameState) get_token(token_id: types.TokenID) nullable reference Token
+func (gs: reference GameState) GetToken(token_id: types.TokenID) nullable reference Token
     t, ok := gs.tokens[token_id]
     if ok
         return &t
     return empty
 
 func (gs: reference GameState) create_tokens_for_player(player_id: types.PlayerID)
-    p_ref := gs.get_player(player_id)
+    p_ref := gs.GetPlayer(player_id)
     if p_ref equals empty
         return
     p := dereference p_ref
@@ -100,48 +100,48 @@ func (gs: reference GameState) create_tokens_for_player(player_id: types.PlayerI
             p.add_token(tid)
             gs._next_token_id = gs._next_token_id + 1
 
-func (gs: reference GameState) get_player_tokens(player_id: types.PlayerID) list of Token
+func (gs: reference GameState) GetPlayerTokens(player_id: types.PlayerID) list of Token
     result := list of Token{}
-    p_ref := gs.get_player(player_id)
+    p_ref := gs.GetPlayer(player_id)
     if p_ref equals empty
         return result
     p := dereference p_ref
     for tid in p.token_ids
-        t_ref := gs.get_token(tid)
+        t_ref := gs.GetToken(tid)
         if t_ref isnt empty
             t := dereference t_ref
             if t.is_alive and t.is_deployed
                 result = append(result, t)
     return result
 
-func (gs: reference GameState) get_reserve_tokens(player_id: types.PlayerID) list of Token
+func (gs: reference GameState) GetReserveTokens(player_id: types.PlayerID) list of Token
     result := list of Token{}
-    p_ref := gs.get_player(player_id)
+    p_ref := gs.GetPlayer(player_id)
     if p_ref equals empty
         return result
     p := dereference p_ref
     for tid in p.token_ids
-        t_ref := gs.get_token(tid)
+        t_ref := gs.GetToken(tid)
         if t_ref isnt empty
             t := dereference t_ref
             if not t.is_deployed
                 result = append(result, t)
     return result
 
-func (gs: reference GameState) get_reserve_token_counts(player_id: types.PlayerID) map of int to int
+func (gs: reference GameState) GetReserveTokenCounts(player_id: types.PlayerID) map of int to int
     counts := make(map of int to int)
     for hv in constants.TOKEN_HEALTH_VALUES
         counts[hv] = 0
-    reserve := gs.get_reserve_tokens(player_id)
+    reserve := gs.GetReserveTokens(player_id)
     for t in reserve
         counts[t.max_health] = counts[t.max_health] + 1
     return counts
 
-func (gs: reference GameState) deploy_token(player_id: types.PlayerID, health_value: int, position: types.Position) nullable reference Token
-    reserve := gs.get_reserve_tokens(player_id)
+func (gs: reference GameState) DeployToken(player_id: types.PlayerID, health_value: int, position: types.Position) nullable reference Token
+    reserve := gs.GetReserveTokens(player_id)
     for i from 0 to len(reserve)
         if reserve[i].max_health == health_value
-            t_ref := gs.get_token(reserve[i].id)
+            t_ref := gs.GetToken(reserve[i].id)
             if t_ref equals empty
                 return empty
             t := dereference t_ref
@@ -151,22 +151,22 @@ func (gs: reference GameState) deploy_token(player_id: types.PlayerID, health_va
             return t_ref
     return empty
 
-func (gs: reference GameState) get_tokens_at_position(pos: types.Position) list of Token
+func (gs: reference GameState) GetTokensAtPosition(pos: types.Position) list of Token
     result := list of Token{}
     for _, t in gs.tokens
         if t.position == pos and t.is_alive
             result = append(result, t)
     return result
 
-func (gs: reference GameState) get_token_movement_range(tok: reference Token) int
+func (gs: reference GameState) GetTokenMovementRange(tok: reference Token) int
     base := tok.movement_range()
     pe := gs.crystal_effects.get_player_effects(tok.player_id)
     if pe.has_effect(enums.SPEED_BOOST)
         return base + constants.CRYSTAL_SPEED_BOOST_AMOUNT
     return base
 
-func (gs: reference GameState) move_token(token_id: types.TokenID, new_pos: types.Position) bool
-    t_ref := gs.get_token(token_id)
+func (gs: reference GameState) MoveToken(token_id: types.TokenID, new_pos: types.Position) bool
+    t_ref := gs.GetToken(token_id)
     if t_ref equals empty
         return false
     t := dereference t_ref
@@ -179,24 +179,24 @@ func (gs: reference GameState) move_token(token_id: types.TokenID, new_pos: type
     return true
 
 func (gs: reference GameState) remove_token(token_id: types.TokenID)
-    t_ref := gs.get_token(token_id)
+    t_ref := gs.GetToken(token_id)
     if t_ref equals empty
         return
     t := dereference t_ref
 
     gs.board.clear_occupant(t.position, token_id)
 
-    p_ref := gs.get_player(t.player_id)
+    p_ref := gs.GetPlayer(t.player_id)
     if p_ref isnt empty
         p_ref.remove_token(token_id)
 
     t.is_alive = false
 
-func (gs: reference GameState) attack_token(attacker_id: types.TokenID, defender_id: types.TokenID) nullable reference CombatOutcome
-    a_ref := gs.get_token(attacker_id)
+func (gs: reference GameState) AttackToken(attacker_id: types.TokenID, defender_id: types.TokenID) nullable reference CombatOutcome
+    a_ref := gs.GetToken(attacker_id)
     if a_ref equals empty
         return empty
-    d_ref := gs.get_token(defender_id)
+    d_ref := gs.GetToken(defender_id)
     if d_ref equals empty
         return empty
     a := dereference a_ref
@@ -228,7 +228,7 @@ func (gs: reference GameState) attack_token(attacker_id: types.TokenID, defender
 
 func (gs: reference GameState) _auto_deploy_starting_tokens(player_id: types.PlayerID, player_index: int)
     deploy_positions := gs.board.get_deployable_positions(player_index)
-    reserve := gs.get_reserve_tokens(player_id)
+    reserve := gs.GetReserveTokens(player_id)
 
     sort_slice(reserve)  # strongest first
     deployed := 0
@@ -254,7 +254,7 @@ func (gs: reference GameState) _auto_deploy_starting_tokens(player_id: types.Pla
 func sort_slice(tokens: list of Token)
     sort.By(tokens, (a: Token, b: Token) => a.max_health > b.max_health)
 
-func (gs: reference GameState) start_game()
+func (gs: reference GameState) StartGame()
     if gs.phase != enums.SETUP
         return
 
@@ -271,7 +271,7 @@ func (gs: reference GameState) start_game()
     gs.phase = enums.PLAYING
     gs.turn_number = 1
 
-func (gs: reference GameState) end_turn()
+func (gs: reference GameState) EndTurn()
     if gs.current_turn_player_id == ""
         return
 
@@ -353,9 +353,9 @@ func (gs: reference GameState) update_generators_and_crystal() (list of int, boo
 
     return newly_disabled, crystal_captured
 
-func (gs: reference GameState) end_turn_with_objective_update() (list of int, bool, bool)
+func (gs: reference GameState) EndTurnWithObjectiveUpdate() (list of int, bool, bool)
     newly_disabled, crystal_captured := gs.update_generators_and_crystal()
-    gs.end_turn()
+    gs.EndTurn()
     return newly_disabled, crystal_captured, gs.phase == enums.ENDED
 
 func (gs: reference GameState) set_winner(player_id: types.PlayerID)
@@ -364,3 +364,38 @@ func (gs: reference GameState) set_winner(player_id: types.PlayerID)
 
 func (gs: reference GameState) apply_crystal_effect(player_id: types.PlayerID, et: enums.CrystalEffect, duration: int)
     gs.crystal_effects.apply_effect(player_id, et, gs.turn_number, duration)
+
+func (gs: GameState) Phase() enums.GamePhase
+    return gs.phase
+
+func (gs: GameState) WinnerID() types.PlayerID
+    return gs.winner_id
+
+func (gs: GameState) CurrentTurnPlayerID() types.PlayerID
+    return gs.current_turn_player_id
+
+func (gs: GameState) TurnNumber() int
+    return gs.turn_number
+
+func (gs: GameState) TurnPhase() enums.TurnPhase
+    return gs.turn_phase
+
+func (gs: GameState) ToDict() map of string to any
+    result := make(map of string to any)
+    result["phase"] = enums.GamePhaseName(gs.phase)
+    result["turn_number"] = gs.turn_number
+    result["current_turn_player_id"] = string(gs.current_turn_player_id)
+    if gs.winner_id != ""
+        result["winner_id"] = string(gs.winner_id)
+    result["turn_phase"] = enums.TurnPhaseName(gs.turn_phase)
+    player_list := list of map of string to any{}
+    for pid, p in gs.players
+        pd := map of string to any{
+            "id": string(pid),
+            "name": p.name,
+            "is_active": p.is_active,
+            "is_ready": p.is_ready,
+        }
+        player_list = append(player_list, pd)
+    result["players"] = player_list
+    return result
