@@ -36,6 +36,10 @@ race-secrets.env
 
 caddy
 
+# Kukicha generated files
+.kukicha/
+**/main.go
+
 # Babylon.js library files (downloaded from CDN)
 babylon.js
 babylonjs.loaders.min.js

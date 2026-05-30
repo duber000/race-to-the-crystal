@@ -135,17 +135,17 @@ func (b: Board) is_valid_position(x: int, y: int) bool
 func (b: reference Board) set_occupant(pos: types.Position, token_id: types.TokenID)
     cell := b.get_cell_at(pos)
     if cell isnt empty
-        dereference cell |> .add_occupant(token_id)
+        cell.add_occupant(token_id)
 
 func (b: reference Board) clear_occupant(pos: types.Position, token_id: types.TokenID)
     cell := b.get_cell_at(pos)
     if cell isnt empty
-        dereference cell |> .remove_occupant(token_id)
+        cell.remove_occupant(token_id)
 
 func (b: reference Board) clear_all_occupants(pos: types.Position)
     cell := b.get_cell_at(pos)
     if cell isnt empty
-        dereference cell |> .clear_occupants()
+        cell.clear_occupants()
 
 func (b: Board) get_starting_position(player_index: int) types.Position
     if player_index == 0

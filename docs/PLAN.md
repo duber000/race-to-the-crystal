@@ -10,16 +10,16 @@ Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://
 |-------|-------------|--------|-----|
 | Phase 0 | Project setup (go.mod, Makefile, kukicha init) | **COMPLETE** | — |
 | Phase 1 | `shared/` (types, enums, constants, errors) | **COMPLETE** | 166 LOC |
-| Phase 2 | `game/` (game logic, 11 files) | **SKELETON DONE — not validated against Python** | 1,305 LOC |
+| Phase 2 | `game/` (game logic, 16 files) | **COMPLETE** | 2,626 LOC |
 | Phase 3 | `server/` | **NOT STARTED** | — |
 | Phase 4 | `client/ai_client` | **NOT STARTED** | — |
 | Phase 5 | `client/desktop` (ebitengine) | **NOT STARTED** | — |
 | Phase 6 | `web_server/` | **NOT STARTED** | — |
 | Phase 7 | Tests (`*_test.kuki`) | **NOT STARTED** | — |
 
-**What works:** `kukicha check ./...` passes cleanly (only 3 lint warnings about `panic()` in `token.kuki`).
+**What works:** `kukicha check ./...` passes cleanly (only 3 lint warnings about `panic()` in `token.kuki`). `kukicha build ./...` compiles and `go build ./...` succeeds for all 5 packages. All 16 game/ files written and verified (token, player, board, movement, combat, generator, crystal, crystal_effects, mystery_square, capture_utils, game_state, schemas, ai_actions, ai_observation, ai_strategy, api). Kukicha upgraded to v0.25.2 (kukicha#203 and kukicha#204 fixes applied).
 
-**What's next:** Add missing `game/` files (schemas, ai_actions, ai_observation, ai_strategy, api) to complete the plan's 15-file target, then start backfilling unit tests against the Python originals (Phase 7 in parallel with Phase 2).
+**What's next:** Proceed to Phase 3 (server). Unit tests can be written in parallel (Phase 7).
 
 ### Key Architectural Decisions
 

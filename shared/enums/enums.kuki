@@ -12,10 +12,32 @@ enum GamePhase
     PLAYING
     ENDED
 
+func GamePhaseName(p: GamePhase) string
+    switch p
+        when SETUP
+            return "SETUP"
+        when PLAYING
+            return "PLAYING"
+        when ENDED
+            return "ENDED"
+        default
+            return "UNKNOWN"
+
 enum TurnPhase
     MOVEMENT
     ACTION
     END_TURN
+
+func TurnPhaseName(p: TurnPhase) string
+    switch p
+        when MOVEMENT
+            return "MOVEMENT"
+        when ACTION
+            return "ACTION"
+        when END_TURN
+            return "END_TURN"
+        default
+            return "UNKNOWN"
 
 enum PlayerColor: string
     CYAN    = "cyan"
@@ -23,9 +45,31 @@ enum PlayerColor: string
     YELLOW  = "yellow"
     GREEN   = "green"
 
+func PlayerIndex(c: PlayerColor) int
+    switch c
+        when PlayerColor.CYAN
+            return 0
+        when PlayerColor.MAGENTA
+            return 1
+        when PlayerColor.YELLOW
+            return 2
+        when PlayerColor.GREEN
+            return 3
+        default
+            return 0
+
 enum MysteryEffect
     HEAL
     TELEPORT
+
+func MysteryEffectName(e: MysteryEffect) string
+    switch e
+        when HEAL
+            return "HEAL"
+        when TELEPORT
+            return "TELEPORT"
+        default
+            return "UNKNOWN"
 
 enum CombatResult
     HIT

@@ -1,0 +1,253 @@
+petiole game
+
+import "race-to-the-crystal/shared/types" as types
+import "race-to-the-crystal/shared/constants" as constants
+import "github.com/kukichalang/kukicha/stdlib/random"
+
+enum AIStrategyName: string
+    RANDOM    = "random"
+    AGGRESSIVE = "aggressive"
+    DEFENSIVE = "defensive"
+
+type ChosenAction
+    action_type string
+    params      map of string to any
+
+func NewChosenAction(action_type: string, params: map of string to any) ChosenAction
+    return ChosenAction{action_type: action_type, params: params}
+
+func choose_action(strategy: AIStrategyName, actions: list of map of string to any, gs: reference GameState, player_id: types.PlayerID) nullable reference ChosenAction
+    if len(actions) == 0
+        return empty
+
+    switch strategy
+        when AIStrategyName.AGGRESSIVE
+            r := choose_aggressive(actions, gs, player_id)
+            return &r
+        when AIStrategyName.DEFENSIVE
+            r := choose_defensive(actions, gs, player_id)
+            return &r
+        default
+            r := choose_random(actions)
+            return &r
+
+func choose_random(actions: list of map of string to any) ChosenAction
+    idx := random.Int(0, len(actions))
+    return resolve_action(actions[idx])
+
+func choose_aggressive(actions: list of map of string to any, gs: reference GameState, player_id: types.PlayerID) ChosenAction
+    attacks := filter_by_type(actions, "ATTACK")
+    if len(attacks) > 0
+        return best_attack(attacks)
+
+    moves := filter_by_type(actions, "MOVE")
+    if len(moves) > 0
+        return best_move(moves, gs, player_id, false)
+
+    deploys := filter_by_type(actions, "DEPLOY")
+    if len(deploys) > 0
+        return best_deploy(deploys)
+
+    end_turns := filter_by_type(actions, "END_TURN")
+    if len(end_turns) > 0
+        return NewChosenAction("END_TURN", make(map of string to any))
+
+    return choose_random(actions)
+
+func choose_defensive(actions: list of map of string to any, gs: reference GameState, player_id: types.PlayerID) ChosenAction
+    deploys := filter_by_type(actions, "DEPLOY")
+    if len(deploys) > 0 and random.Int(0, 2) == 1
+        return best_deploy(deploys)
+
+    moves := filter_by_type(actions, "MOVE")
+    if len(moves) > 0
+        return best_move(moves, gs, player_id, true)
+
+    attacks := filter_by_type(actions, "ATTACK")
+    if len(attacks) > 0 and random.Int(0, 10) > 7
+        return best_attack(attacks)
+
+    end_turns := filter_by_type(actions, "END_TURN")
+    if len(end_turns) > 0
+        return NewChosenAction("END_TURN", make(map of string to any))
+
+    return choose_random(actions)
+
+func best_attack(attacks: list of map of string to any) ChosenAction
+    killing := list of map of string to any{}
+    for a in attacks
+        wk, has := a["will_kill"]
+        if has and wk.(bool)
+            killing = append(killing, a)
+
+    chosen := attacks[0]
+    if len(killing) > 0
+        best_dmg := 0
+        for k in killing
+            d, has := k["damage"]
+            if has
+                dmg := d.(int)
+                if dmg > best_dmg
+                    best_dmg = dmg
+                    chosen = k
+    else
+        best_dmg := 0
+        for a in attacks
+            d, has := a["damage"]
+            if has
+                dmg := d.(int)
+                if dmg > best_dmg
+                    best_dmg = dmg
+                    chosen = a
+
+    att_id, _ := chosen["attacker_id"]
+    def_id, _ := chosen["defender_id"]
+    params := make(map of string to any)
+    params["attacker_id"] = att_id
+    params["defender_id"] = def_id
+    return NewChosenAction("ATTACK", params)
+
+func best_move(moves: list of map of string to any, gs: reference GameState, player_id: types.PlayerID, prioritize_crystal: bool) ChosenAction
+    objectives := get_objectives(gs, player_id, prioritize_crystal)
+
+    best_move_ref := moves[0]
+    best_dest := list of int{0, 0}
+    best_score := 999999.0
+
+    for move in moves
+        tok_id_any, has := move["token_id"]
+        if not has
+            continue
+        tok_id := tok_id_any.(types.TokenID)
+        tok_ref := gs.get_token(tok_id)
+        dests_any, has2 := move["valid_destinations"]
+        if not has2
+            continue
+        dests := dests_any.(list of list of int)
+        for dest_list in dests
+            dest := types.Pos(dest_list[0], dest_list[1])
+            score := score_destination(dest, objectives, tok_ref)
+            if score < best_score
+                best_score = score
+                best_move_ref = move
+                best_dest = dest_list
+
+    tid, _ := best_move_ref["token_id"]
+    params := make(map of string to any)
+    params["token_id"] = tid
+    params["destination"] = best_dest
+    return NewChosenAction("MOVE", params)
+
+func best_deploy(deploys: list of map of string to any) ChosenAction
+    chosen := deploys[0]
+    best_hv := 0
+    for d in deploys
+        hv_any, has := d["health_value"]
+        if has
+            hv := hv_any.(int)
+            if hv > best_hv
+                best_hv = hv
+                chosen = d
+
+    positions_any, has := chosen["positions"]
+    if not has
+        return choose_random(deploys)
+    positions := positions_any.(list of list of int)
+    if len(positions) == 0
+        return choose_random(deploys)
+
+    hv, _ := chosen["health_value"]
+    params := make(map of string to any)
+    params["health_value"] = hv
+    params["position"] = positions[0]
+    return NewChosenAction("DEPLOY", params)
+
+func resolve_action(action: map of string to any) ChosenAction
+    action_type_any, _ := action["type"]
+    action_type := action_type_any.(string)
+
+    if action_type == "MOVE"
+        token_id, _ := action["token_id"]
+        dests_any, has := action["valid_destinations"]
+        dest := list of int{}
+        if has
+            dests := dests_any.(list of list of int)
+            if len(dests) > 1
+                idx := random.Int(0, len(dests))
+                dest = dests[idx]
+            else if len(dests) == 1
+                dest = dests[0]
+        params := make(map of string to any)
+        params["token_id"] = token_id
+        params["destination"] = dest
+        return NewChosenAction("MOVE", params)
+
+    if action_type == "ATTACK"
+        att_id, _ := action["attacker_id"]
+        def_id, _ := action["defender_id"]
+        params := make(map of string to any)
+        params["attacker_id"] = att_id
+        params["defender_id"] = def_id
+        return NewChosenAction("ATTACK", params)
+
+    if action_type == "DEPLOY"
+        hv, _ := action["health_value"]
+        positions_any, has := action["positions"]
+        pos := list of int{}
+        if has
+            positions := positions_any.(list of list of int)
+            if len(positions) > 1
+                idx := random.Int(0, len(positions))
+                pos = positions[idx]
+            else if len(positions) == 1
+                pos = positions[0]
+        params := make(map of string to any)
+        params["health_value"] = hv
+        params["position"] = pos
+        return NewChosenAction("DEPLOY", params)
+
+    return NewChosenAction("END_TURN", make(map of string to any))
+
+func filter_by_type(actions: list of map of string to any, type_str: string) list of map of string to any
+    result := list of map of string to any{}
+    for a in actions
+        t, has := a["type"]
+        if has and t.(string) == type_str
+            result = append(result, a)
+    return result
+
+func get_objectives(gs: reference GameState, player_id: types.PlayerID, crystal_only: bool) list of types.Position
+    crystal_pos := types.Pos(constants.BOARD_WIDTH / 2, constants.BOARD_HEIGHT / 2)
+    objectives := list of types.Position{crystal_pos}
+
+    if crystal_only
+        return objectives
+
+    for gen in gs.generators
+        if gen.is_disabled
+            continue
+        if gen.capturing_player_id == player_id
+            objectives = append(list of types.Position{gen.position}, objectives...)
+        else
+            objectives = append(objectives, gen.position)
+
+    return objectives
+
+func score_destination(dest: types.Position, objectives: list of types.Position, tok: nullable reference Token) float64
+    min_dist := 999999.0
+    for obj in objectives
+        dx := dest.X - obj.X
+        if dx < 0
+            dx = -dx
+        dy := dest.Y - obj.Y
+        if dy < 0
+            dy = -dy
+        dist := float64(dx + dy)
+        if dist < min_dist
+            min_dist = dist
+
+    if tok isnt empty
+        if (dereference tok).movement_range() >= 2
+            min_dist = min_dist - 0.5
+
+    return min_dist

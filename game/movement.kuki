@@ -124,7 +124,7 @@ func find_path(start: types.Position, end: types.Position, brd: reference Board,
             cell := brd.get_cell(nx, ny)
             if cell equals empty
                 continue
-            if dereference cell |> .is_occupied()
+            if cell.is_occupied()
                 continue
 
             visited[npos] = true

@@ -1,0 +1,77 @@
+petiole game
+
+import "race-to-the-crystal/shared/types" as types
+
+type MoveActionSchema
+    action_type string
+    token_id    types.TokenID
+    destination types.Position
+
+type AttackActionSchema
+    action_type string
+    attacker_id types.TokenID
+    defender_id types.TokenID
+
+type DeployActionSchema
+    action_type   string
+    health_value  int
+    position      types.Position
+
+type EndTurnActionSchema
+    action_type string
+
+type MoveActionResponse
+    type_             string
+    token_id          types.TokenID
+    token_position    list of int
+    token_health      string
+    valid_destinations list of list of int
+    description       string
+
+type AttackActionResponse
+    type_             string
+    attacker_id       types.TokenID
+    attacker_position list of int
+    defender_id       types.TokenID
+    defender_position list of int
+    defender_owner    string
+    damage            int
+    will_kill         bool
+    description       string
+
+type DeployActionResponse
+    type_         string
+    health_value  int
+    positions     list of list of int
+    remaining     int
+    description   string
+
+type EndTurnActionResponse
+    type_       string
+    description string
+
+type AvailableActionsResponse
+    phase   string
+    actions list of map of string to any
+
+type MoveResultData
+    token_id      types.TokenID
+    old_position  list of int
+    new_position  list of int
+
+type MoveResultDataWithMystery
+    move_data        MoveResultData
+    mystery_triggered bool
+    mystery_effect   string
+
+type AttackResultData
+    attacker_id    types.TokenID
+    defender_id    types.TokenID
+    damage_dealt   int
+    defender_killed bool
+
+type DeployResultData
+    new_token_id    types.TokenID
+    health_value    int
+    position        list of int
+    tokens_remaining int

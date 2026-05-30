@@ -16,7 +16,7 @@ func count_tokens_by_player(tokens: list of TokenAtPos) map of types.PlayerID to
     return result
 
 func find_dominant_player(counts: map of types.PlayerID to list of types.TokenID) (types.PlayerID, int, bool)
-    dominant_player := ""
+    dominant_player := types.PlayerID("")
     dominant_count := 0
     contested := false
     for player_id, token_ids in counts
@@ -28,7 +28,7 @@ func find_dominant_player(counts: map of types.PlayerID to list of types.TokenID
         else if n == dominant_count and dominant_count > 0
             contested = true
     if contested
-        return "", dominant_count, false
+        return types.PlayerID(""), dominant_count, false
     if dominant_count > 0
         return dominant_player, dominant_count, true
-    return "", 0, false
+    return types.PlayerID(""), 0, false

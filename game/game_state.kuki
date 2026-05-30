@@ -4,7 +4,7 @@ import "race-to-the-crystal/shared/types" as types
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/constants" as constants
 import "github.com/kukichalang/kukicha/stdlib/random"
-import "github.com/kukichalang/kukicha/stdlib/slice"
+import "github.com/kukichalang/kukicha/stdlib/sort"
 
 type CrystalEvent
     player_id    types.PlayerID
@@ -49,7 +49,7 @@ func CreateGame(num_players: int) GameState
     ids := list of types.PlayerID{"cyan", "magenta", "yellow", "green"}
 
     for i from 0 to num_players
-        p := NewPlayer(ids[i], ids[i], colors[i])
+        p := NewPlayer(ids[i], ids[i] as string, colors[i])
         gs.players[ids[i]] = p
 
     gen_positions := gs.board.get_generator_positions()
@@ -85,10 +85,12 @@ func (gs: reference GameState) get_token(token_id: types.TokenID) nullable refer
     return empty
 
 func (gs: reference GameState) create_tokens_for_player(player_id: types.PlayerID)
-    p_ref := gs.get_player(player_id) onerr return
+    p_ref := gs.get_player(player_id)
+    if p_ref equals empty
+        return
     p := dereference p_ref
 
-    corner_pos := gs.board.get_starting_position(p.color.Value())
+    corner_pos := gs.board.get_starting_position(enums.PlayerIndex(p.color))
 
     for hv in constants.TOKEN_HEALTH_VALUES
         for _ from 0 to constants.TOKENS_PER_HEALTH_VALUE
@@ -139,7 +141,9 @@ func (gs: reference GameState) deploy_token(player_id: types.PlayerID, health_va
     reserve := gs.get_reserve_tokens(player_id)
     for i from 0 to len(reserve)
         if reserve[i].max_health == health_value
-            t_ref := gs.get_token(reserve[i].id) onerr return empty
+            t_ref := gs.get_token(reserve[i].id)
+            if t_ref equals empty
+                return empty
             t := dereference t_ref
             t.position = position
             t.is_deployed = true
@@ -162,7 +166,9 @@ func (gs: reference GameState) get_token_movement_range(tok: reference Token) in
     return base
 
 func (gs: reference GameState) move_token(token_id: types.TokenID, new_pos: types.Position) bool
-    t_ref := gs.get_token(token_id) onerr return false
+    t_ref := gs.get_token(token_id)
+    if t_ref equals empty
+        return false
     t := dereference t_ref
     if not t.is_alive
         return false
@@ -173,20 +179,26 @@ func (gs: reference GameState) move_token(token_id: types.TokenID, new_pos: type
     return true
 
 func (gs: reference GameState) remove_token(token_id: types.TokenID)
-    t_ref := gs.get_token(token_id) onerr return
+    t_ref := gs.get_token(token_id)
+    if t_ref equals empty
+        return
     t := dereference t_ref
 
     gs.board.clear_occupant(t.position, token_id)
 
     p_ref := gs.get_player(t.player_id)
     if p_ref isnt empty
-        dereference p_ref |> .remove_token(token_id)
+        p_ref.remove_token(token_id)
 
     t.is_alive = false
 
 func (gs: reference GameState) attack_token(attacker_id: types.TokenID, defender_id: types.TokenID) nullable reference CombatOutcome
-    a_ref := gs.get_token(attacker_id) onerr return empty
-    d_ref := gs.get_token(defender_id) onerr return empty
+    a_ref := gs.get_token(attacker_id)
+    if a_ref equals empty
+        return empty
+    d_ref := gs.get_token(defender_id)
+    if d_ref equals empty
+        return empty
     a := dereference a_ref
     d := dereference d_ref
 
@@ -240,7 +252,7 @@ func (gs: reference GameState) _auto_deploy_starting_tokens(player_id: types.Pla
         deployed = deployed + 1
 
 func sort_slice(tokens: list of Token)
-    slice.Sort(tokens, (a: Token, b: Token) => a.max_health > b.max_health)
+    sort.By(tokens, (a: Token, b: Token) => a.max_health > b.max_health)
 
 func (gs: reference GameState) start_game()
     if gs.phase != enums.SETUP
@@ -250,7 +262,7 @@ func (gs: reference GameState) start_game()
         gs.create_tokens_for_player(pid)
 
     for pid, p_ref in gs.players
-        gs._auto_deploy_starting_tokens(pid, dereference p_ref |> .color.Value())
+        gs._auto_deploy_starting_tokens(pid, enums.PlayerIndex(p_ref.color))
 
     for pid, _ in gs.players
         gs.current_turn_player_id = pid
@@ -288,7 +300,7 @@ func (gs: reference GameState) advance_to_next_player()
 func (gs: reference GameState) get_active_players() list of types.PlayerID
     result := list of types.PlayerID{}
     for pid, p_ref in gs.players
-        if dereference p_ref |> .is_active
+        if p_ref.is_active
             result = append(result, pid)
     return result
 
@@ -302,11 +314,11 @@ func (gs: reference GameState) calculate_next_player_index(active: list of types
 
 func (gs: reference GameState) trigger_random_crystal_effect() (types.PlayerID, enums.CrystalEffect, bool)
     if len(gs.players) == 0
-        return "", "", false
+        return types.PlayerID(""), "", false
 
     effects := list of enums.CrystalEffect{enums.FOG_OF_WAR, enums.PHANTOM_ENEMIES, enums.DAMAGE_BOOST, enums.SPEED_BOOST}
     effect := effects[random.Int(0, len(effects))]
-    target_player := ""
+    target_player := types.PlayerID("")
 
     for pid, _ in gs.players
         target_player = pid
@@ -324,7 +336,7 @@ func (gs: reference GameState) update_generators_and_crystal() (list of int, boo
             taps := TokenAtPos{token_id: t.id, player_id: t.player_id}
             tokens_by_pos[t.position] = append(tokens_by_pos[t.position], taps)
 
-    newly_disabled, capturing_players := update_all_generators(gs.generators, tokens_by_pos)
+    newly_disabled, _ := update_all_generators(gs.generators, tokens_by_pos)
 
     disabled_count := count_disabled_generators(gs.generators)
 

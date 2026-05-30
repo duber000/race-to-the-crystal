@@ -666,7 +666,7 @@ defer resource.Close()
 
 # Block form (emits defer func() { ... }())
 defer
-    if r := recover(); r != empty
+    if r := recover(); r isnt empty
         tx.Rollback()
         panic(r)
 ```
@@ -828,7 +828,7 @@ The stdlib is extracted to `.kukicha/stdlib/` on `kukicha init` — **read the `
 
 **CLI & system.** `stdlib/cli` (flag/subcommand parser — prefer typed `BoolFlag`/`IntFlag`/`StringFlag` over generic `AddFlag`), `stdlib/input` (`Prompt`/`Confirm`/`Choose`, `NewForm`), `stdlib/table`, `stdlib/color`, `stdlib/term` (**single source of truth for tty/color/width — `IsTTY`/`VisibleWidth`/`PadRightVisible`**), `stdlib/log` (leveled structured logger), `stdlib/env` (`Get`/`GetOr`/`GetInt`/`GetBool`), `stdlib/must` (panic-on-error startup), `stdlib/signal` (`WaitFor`/`Context` with English signal names).
 
-**Concurrency & resilience.** `stdlib/concurrent` (`Parallel`/`Map`/`Go`), `stdlib/ctx` as `ctxpkg`, `stdlib/retry` (backoff + circuit breaker via `NewBudget`/`BudgetExceeded`), `stdlib/datetime`.
+**Concurrency & resilience.** `stdlib/concurrent` (`Parallel`/`Map`/`Go`), `stdlib/bus` (in-process pub/sub with per-subscriber Observer flag: load-bearing subs propagate backpressure errors, observers silently drop and track a `Dropped` counter), `stdlib/ctx` as `ctxpkg`, `stdlib/retry` (backoff + circuit breaker via `NewBudget`/`BudgetExceeded`), `stdlib/datetime`.
 
 **Data & storage.** `stdlib/db` as `dbpkg` (SQL with struct scanning: `Query |> ScanAll of T`), `stdlib/sqlite` (WAL/foreign-keys defaults; queries go through `stdlib/db`), `stdlib/sqliteext` (register ncruces extensions — process-global, one-shot at startup), `stdlib/audit` (tamper-evident hash-chained ed25519-signed decision log for agents — `audit.Record` for decisions, `log.Info` for breadcrumbs).
 
@@ -836,7 +836,7 @@ The stdlib is extracted to `.kukicha/stdlib/` on `kukicha init` — **read the `
 
 **DevOps.** `stdlib/git` (via `gh`), `stdlib/semver`, `stdlib/obs`.
 
-**AI & agents.** `stdlib/llm` (shared schema builders + unified `StreamEvent`/`Content` variants across providers), `stdlib/llm/chat`, `stdlib/llm/responses`, `stdlib/llm/anthropic` (same builder shape: `New |> System/User/Assistant |> Temperature/MaxTokens/Stream/Retry/AddTool |> Ask/Send/SendRaw`; chat-only: `AskJSON of T from prompt`, `AskStream`/`SendStream`), `stdlib/llm/embeddings` (OpenAI-compatible), `stdlib/llm/safe` (prompt-injection-resistant wrapping for adversarial input), `stdlib/mcp` (server + client; schema builders `Prop`/`Schema`/`Required`; `ToolWithOpts` for annotation hints — `ReadOnly`, `Destructive`, `Idempotent`, `OpenWorldHint`, `Title`; set `Enum` on a `SchemaProperty` to restrict allowed values).
+**AI & agents.** `stdlib/content` (unified `Content` variant enum re-exported by mcp + llm — Text/Thinking/Image/Audio/Link/Embedded/ToolUse/ToolResult/Reasoning; construct arms via `content.Text{...}`), `stdlib/llm` (shared schema builders + unified `StreamEvent` variant across providers), `stdlib/llm/chat`, `stdlib/llm/responses`, `stdlib/llm/anthropic` (same builder shape: `New |> System/User/Assistant |> Temperature/MaxTokens/Stream/Retry/AddTool |> Ask/Send/SendRaw`; chat-only: `AskJSON of T from prompt`, `AskStream`/`SendStream`), `stdlib/llm/embeddings` (OpenAI-compatible), `stdlib/llm/safe` (prompt-injection-resistant wrapping for adversarial input), `stdlib/mcp` (server + client; schema builders `Prop`/`Schema`/`Required`; `ToolWithOpts` for annotation hints — `ReadOnly`, `Destructive`, `Idempotent`, `OpenWorldHint`, `Title`; set `Enum` on a `SchemaProperty` to restrict allowed values), `stdlib/agentevent` (cross-agent normalized event shape — `AgentEvent` variant enum + `DecodeGooseEvent`/`DecodeClaudeCodeEvent` for goose + claude-code hook JSON; opencode bridges live in the host application).
 
 ```kukicha
 # Typed JSON decode — `of T from x` is the explicit-type-arg syntax

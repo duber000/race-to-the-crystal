@@ -1,0 +1,119 @@
+petiole game
+
+import "race-to-the-crystal/shared/types" as types
+import "race-to-the-crystal/shared/enums" as enums
+
+type GameAPI
+    game_state nullable reference GameState
+    player_id  types.PlayerID
+
+func NewGameAPI(gs: reference GameState, pid: types.PlayerID) GameAPI
+    return GameAPI{game_state: gs, player_id: pid}
+
+func (api: reference GameAPI) observe() string
+    if api.game_state equals empty
+        return ""
+    return get_situation_report(api.game_state, api.player_id)
+
+func (api: reference GameAPI) actions() list of map of string to any
+    if api.game_state equals empty
+        return list of map of string to any{}
+    result := list_available_actions(api.game_state, api.player_id)
+    return result.actions
+
+func (api: reference GameAPI) actions_with_phase() AvailableActionsResponse
+    if api.game_state equals empty
+        return AvailableActionsResponse{phase: "NOT_PLAYING", actions: list of map of string to any{}}
+    return list_available_actions(api.game_state, api.player_id)
+
+func (api: reference GameAPI) board_map() string
+    if api.game_state equals empty
+        return ""
+    return get_board_map(api.game_state, api.player_id)
+
+func (api: reference GameAPI) describe() string
+    if api.game_state equals empty
+        return ""
+    return describe_game_state(api.game_state, api.player_id)
+
+func (api: reference GameAPI) victory_conditions() string
+    if api.game_state equals empty
+        return ""
+    return explain_victory_conditions(api.game_state)
+
+func (api: reference GameAPI) move(token_id: types.TokenID, x: int, y: int) ActionResult
+    if api.game_state equals empty
+        return FailureResult("No game state")
+    dest := types.Pos(x, y)
+    action := Move{token_id: token_id, destination: dest}
+    return execute_action(action, api.game_state, api.player_id)
+
+func (api: reference GameAPI) attack(attacker_id: types.TokenID, defender_id: types.TokenID) ActionResult
+    if api.game_state equals empty
+        return FailureResult("No game state")
+    action := Attack{attacker_id: attacker_id, defender_id: defender_id}
+    return execute_action(action, api.game_state, api.player_id)
+
+func (api: reference GameAPI) deploy(health_value: int, x: int, y: int) ActionResult
+    if api.game_state equals empty
+        return FailureResult("No game state")
+    pos := types.Pos(x, y)
+    action := Deploy{health_value: health_value, position: pos}
+    return execute_action(action, api.game_state, api.player_id)
+
+func (api: reference GameAPI) end_turn() ActionResult
+    if api.game_state equals empty
+        return FailureResult("No game state")
+    action := EndTurn{}
+    return execute_action(action, api.game_state, api.player_id)
+
+func (api: reference GameAPI) is_my_turn() bool
+    if api.game_state equals empty
+        return false
+    return (dereference api.game_state).current_turn_player_id == api.player_id
+
+func (api: reference GameAPI) get_phase() string
+    if api.game_state equals empty
+        return "NOT_PLAYING"
+    gs := dereference api.game_state
+    if gs.phase != enums.PLAYING
+        return enums.GamePhaseName(gs.phase)
+    return enums.TurnPhaseName(gs.turn_phase)
+
+func (api: reference GameAPI) get_my_tokens() list of map of string to any
+    if api.game_state equals empty
+        return list of map of string to any{}
+    gs := dereference api.game_state
+    p_ref := gs.get_player(api.player_id)
+    if p_ref equals empty
+        return list of map of string to any{}
+    p := dereference p_ref
+    result := list of map of string to any{}
+    for tid in p.token_ids
+        t_ref := gs.get_token(tid)
+        if t_ref isnt empty
+            t := dereference t_ref
+            m := make(map of string to any)
+            m["id"] = t.id
+            m["player_id"] = t.player_id
+            m["health"] = t.health
+            m["max_health"] = t.max_health
+            m["position"] = list of int{t.position.X, t.position.Y}
+            m["is_alive"] = t.is_alive
+            m["is_deployed"] = t.is_deployed
+            result = append(result, m)
+    return result
+
+func (api: reference GameAPI) get_deployed_tokens() list of map of string to any
+    all := api.get_my_tokens()
+    result := list of map of string to any{}
+    for t in all
+        deployed, has := t["is_deployed"]
+        if has and deployed.(bool)
+            result = append(result, t)
+    return result
+
+func (api: reference GameAPI) get_reserve_counts() map of int to int
+    if api.game_state equals empty
+        return make(map of int to int)
+    return (dereference api.game_state).get_reserve_token_counts(api.player_id)

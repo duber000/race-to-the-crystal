@@ -90,7 +90,7 @@ func update_all_generators(generators: list of Generator, tokens_by_pos: map of 
     for i from 0 to len(generators)
         taps := tokens_by_pos[generators[i].position]
         gen_ref := &generators[i]
-        was_disabled := dereference gen_ref |> .update_capture_status(taps)
+        was_disabled := gen_ref.update_capture_status(taps)
 
         if was_disabled
             newly_disabled = append(newly_disabled, generators[i].id)

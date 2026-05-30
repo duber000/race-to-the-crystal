@@ -68,10 +68,10 @@ func NewCrystalEffectsManager() CrystalEffectsManager
 func (m: reference CrystalEffectsManager) get_player_effects(player_id: types.PlayerID) reference PlayerEffects
     pe, ok := m.player_effects[player_id]
     if ok
-        return dereference pe
+        return pe
     new_pe := PlayerEffects{player_id: player_id}
     m.player_effects[player_id] = &new_pe
-    return dereference m.player_effects[player_id]
+    return m.player_effects[player_id]
 
 func (m: reference CrystalEffectsManager) apply_effect(player_id: types.PlayerID, et: enums.CrystalEffect, turn_number: int, duration: int)
     if duration == 0
@@ -81,7 +81,7 @@ func (m: reference CrystalEffectsManager) apply_effect(player_id: types.PlayerID
 
 func (m: reference CrystalEffectsManager) end_turn_update()
     for _, pe_ref in m.player_effects
-        dereference pe_ref |> .reduce_all_durations(1)
+        pe_ref.reduce_all_durations(1)
 
 func (m: reference CrystalEffectsManager) generate_phantom_tokens(affected_player_id: types.PlayerID, other_player_ids: list of types.PlayerID, bw: int, bh: int, occupied: map of types.Position to bool) list of PhantomToken
     pe := m.get_player_effects(affected_player_id)
@@ -98,7 +98,7 @@ func (m: reference CrystalEffectsManager) generate_phantom_tokens(affected_playe
 
             _, occ := occupied[pos]
             if not occ
-                apparent_player := ""
+                apparent_player := types.PlayerID("")
                 if len(other_player_ids) > 0
                     idx := random.Int(0, len(other_player_ids))
                     apparent_player = other_player_ids[idx]
