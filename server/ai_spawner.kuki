@@ -1,0 +1,93 @@
+petiole server
+
+import "os"
+import "os/exec"
+
+import "github.com/kukichalang/kukicha/stdlib/log"
+
+type SpawnedAI
+    process_id int
+    player_name string
+    strategy string
+    game_id string
+
+type AISpawner
+    processes map of int to reference exec.Cmd
+    ai_counter int
+    strategies list of string
+
+func NewAISpawner() AISpawner
+    return AISpawner{
+        processes: make(map of int to reference exec.Cmd),
+        ai_counter: 0,
+        strategies: list of string{"random", "aggressive", "defensive"},
+    }
+
+func SpawnAIForGame on sp: reference AISpawner(game_id: string, num_ai: int, host: string, port: int, strategies: list of string) list of SpawnedAI
+    result := empty list of SpawnedAI
+    if len(strategies) == 0
+        strategies = sp.strategies
+
+    for i from 0 to num_ai
+        sp.ai_counter = sp.ai_counter + 1
+        ai_name := "AI-{sp.ai_counter}"
+        strategy := strategies[i % len(strategies)]
+
+        cmdname := "uv"
+        args := list of string{
+            "run",
+            "race-ai-client",
+            "--host",
+            host,
+            "--port",
+            "{port}",
+            "--game-id",
+            game_id,
+            "--player-name",
+            ai_name,
+            "--strategy",
+            strategy,
+        }
+
+        cmd := exec.Command(cmdname, many args)
+        cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr
+        err := cmd.Start()
+        if err != empty
+            log.Error("Failed to spawn AI process {ai_name}: {err}")
+            continue
+
+        spawned := SpawnedAI{
+            process_id: sp.ai_counter,
+            player_name: ai_name,
+            strategy: strategy,
+            game_id: game_id,
+        }
+        result = append(result, spawned)
+        sp.processes[sp.ai_counter] = cmd
+        log.Info("Spawned AI player {ai_name} (strategy={strategy}) for game {game_id}")
+
+    return result
+
+func CleanupAIForGame on sp: reference AISpawner(game_id: string)
+    to_remove := empty list of int
+    for pid, cmd in sp.processes
+        err := cmd.Process.Kill()
+        if err != empty
+            log.Error("Failed to kill AI process {pid}: {err}")
+        else
+            log.Info("Killed AI process {pid} for game {game_id}")
+        to_remove = append(to_remove, pid)
+
+    for pid in to_remove
+        delete sp.processes[pid]
+
+func CleanupAll on sp: reference AISpawner
+    for pid, cmd in sp.processes
+        err := cmd.Process.Kill()
+        if err != empty
+            log.Error("Failed to kill AI process {pid}: {err}")
+        else
+            log.Info("Killed AI process {pid}")
+    sp.processes = make(map of int to reference exec.Cmd)
+    sp.ai_counter = 0

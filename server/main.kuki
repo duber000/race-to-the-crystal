@@ -1,0 +1,252 @@
+petiole server
+
+import "net/http"
+import "os"
+import "path/filepath"
+import "strings"
+
+import "github.com/kukichalang/kukicha/stdlib/env"
+import "github.com/kukichalang/kukicha/stdlib/http" as httphelper
+import "github.com/kukichalang/kukicha/stdlib/log"
+import "github.com/kukichalang/kukicha/stdlib/signal"
+
+type ServerConfig
+    tcp_port int
+    http_port int
+    static_dir string
+    jwt_secret string
+    debug bool
+
+func ServerConfigFromEnv() ServerConfig
+    return ServerConfig{
+        tcp_port: env.GetIntOrDefault("TCP_PORT", 5555),
+        http_port: env.GetIntOrDefault("HTTP_PORT", 8080),
+        static_dir: env.GetOr("STATIC_DIR", ""),
+        jwt_secret: env.GetOr("JWT_SECRET_KEY", ""),
+        debug: env.GetBoolOrDefault("DEBUG", false),
+    }
+
+type GameServer
+    config ServerConfig
+    coordinator GameCoordinator
+    lobby_mgr LobbyManager
+    ws_handler WebSocketHandler
+    mercure MercurePublisher
+    http_handler HTTPHandler
+
+func NewGameServer(config: ServerConfig) GameServer
+    mercure_cfg := MercureConfigFromEnv()
+    if config.jwt_secret == ""
+        config.jwt_secret = GenerateSecretKey()
+
+    gs := GameServer{
+        config: config,
+        lobby_mgr: NewLobbyManager(),
+        ws_handler: NewWebSocketHandler(),
+        mercure: NewMercurePublisher(mercure_cfg),
+    }
+    gs.coordinator = NewGameCoordinator()
+    gs.http_handler = NewHTTPHandler(
+        reference of gs.coordinator,
+        reference of gs.lobby_mgr,
+        reference of gs.ws_handler,
+        mercure_cfg,
+        config.jwt_secret,
+        config.static_dir,
+    )
+    return gs
+
+func Start on gs: reference GameServer
+    mux := http.NewServeMux()
+    gs.registerRoutes(mux)
+
+    addr := ":{gs.config.http_port}"
+    log.Info("Starting HTTP server on {addr}")
+
+    go
+        err := http.ListenAndServe(addr, mux)
+        if err != empty
+            log.Error("HTTP server error: {err}")
+
+    log.Info("Server started. Press Ctrl+C to stop.")
+
+    signal.OnInterrupt(() =>
+        log.Info("Shutting down server...")
+    )
+
+func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
+    mux.HandleFunc("/", gs.handleHTTP)
+    mux.HandleFunc("/api/config", gs.handleAPIConfig)
+    mux.HandleFunc("/api/game/create", gs.handleCreateGameRoute)
+    mux.HandleFunc("/api/game/\{game_id\}/join", gs.handleJoinGameRoute)
+    mux.HandleFunc("/api/game/\{game_id\}/action", gs.handleActionRoute)
+    mux.HandleFunc("/api/game/\{game_id\}/state", gs.handleGetStateRoute)
+    mux.HandleFunc("/api/game/\{game_id\}/leave", gs.handleLeaveGameRoute)
+    mux.HandleFunc("/api/game/\{game_id\}/ready", gs.handleReadyRoute)
+    mux.HandleFunc("/api/game/\{game_id\}/start", gs.handleStartGameRoute)
+    mux.HandleFunc("/api/games", gs.handleListGamesRoute)
+
+func handleHTTP on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    if gs.config.static_dir == ""
+        httphelper.JSONNotFound(w, "no static files configured")
+        return
+
+    path := r.URL.Path
+    if path == "/"
+        path = "/index.html"
+
+    file_path := filepath.Join(gs.config.static_dir, path)
+    file_path = filepath.Clean(file_path)
+
+    prefix := filepath.Clean(gs.config.static_dir)
+    if not strings.HasPrefix(file_path, prefix)
+        httphelper.JSONNotFound(w, "not found")
+        return
+
+    http.ServeFile(w, r, file_path)
+
+func handleAPIConfig on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    config_data := gs.http_handler.GetConfig()
+    httphelper.JSON(w, config_data) onerr
+        log.Error("Failed to encode config JSON")
+
+func handleCreateGameRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    if not httphelper.IsPost(r)
+        httphelper.MethodNotAllowed(w, "POST")
+        return
+
+    ip := gs.http_handler.GetClientIP(
+        r.RemoteAddr,
+        httphelper.GetHeader(r, "X-Forwarded-For"),
+        httphelper.GetHeader(r, "X-Real-IP"),
+    )
+    auth_header := httphelper.GetHeader(r, "Authorization")
+
+    body := make(map of string to any)
+    httphelper.ReadJSON(r, reference of body) onerr
+        httphelper.JSONBadRequest(w, "invalid JSON body")
+        return
+
+    result := gs.http_handler.HandleCreateGame(auth_header, body, ip)
+    gs.writeAPIResponse(w, result)
+
+func handleJoinGameRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    if not httphelper.IsPost(r)
+        httphelper.MethodNotAllowed(w, "POST")
+        return
+
+    game_id := r.PathValue("game_id")
+    ip := gs.http_handler.GetClientIP(
+        r.RemoteAddr,
+        httphelper.GetHeader(r, "X-Forwarded-For"),
+        httphelper.GetHeader(r, "X-Real-IP"),
+    )
+
+    body := make(map of string to any)
+    httphelper.ReadJSON(r, reference of body) onerr
+        body = empty map of string to any
+
+    result := gs.http_handler.HandleJoinGame(game_id, body, ip)
+    gs.writeAPIResponse(w, result)
+
+func handleActionRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    if not httphelper.IsPost(r)
+        httphelper.MethodNotAllowed(w, "POST")
+        return
+
+    game_id := r.PathValue("game_id")
+    auth_header := httphelper.GetHeader(r, "Authorization")
+
+    body := make(map of string to any)
+    httphelper.ReadJSON(r, reference of body) onerr
+        httphelper.JSONBadRequest(w, "invalid JSON body")
+        return
+
+    result := gs.http_handler.HandleAction(game_id, auth_header, body)
+    gs.writeAPIResponse(w, result)
+
+func handleGetStateRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    if not httphelper.IsGet(r)
+        httphelper.MethodNotAllowed(w, "GET")
+        return
+
+    game_id := r.PathValue("game_id")
+    auth_header := httphelper.GetHeader(r, "Authorization")
+
+    result := gs.http_handler.HandleGetState(game_id, auth_header)
+    gs.writeAPIResponse(w, result)
+
+func handleLeaveGameRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    if not httphelper.IsPost(r)
+        httphelper.MethodNotAllowed(w, "POST")
+        return
+
+    game_id := r.PathValue("game_id")
+    auth_header := httphelper.GetHeader(r, "Authorization")
+
+    result := gs.http_handler.HandleLeaveGame(game_id, auth_header)
+    gs.writeAPIResponse(w, result)
+
+func handleReadyRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    if not httphelper.IsPost(r)
+        httphelper.MethodNotAllowed(w, "POST")
+        return
+
+    game_id := r.PathValue("game_id")
+    auth_header := httphelper.GetHeader(r, "Authorization")
+
+    body := make(map of string to any)
+    httphelper.ReadJSON(r, reference of body) onerr discard
+
+    result := gs.http_handler.HandleReady(game_id, auth_header, body)
+    gs.writeAPIResponse(w, result)
+
+func handleStartGameRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    if not httphelper.IsPost(r)
+        httphelper.MethodNotAllowed(w, "POST")
+        return
+
+    game_id := r.PathValue("game_id")
+    auth_header := httphelper.GetHeader(r, "Authorization")
+
+    result := gs.http_handler.HandleStartGame(game_id, auth_header)
+    gs.writeAPIResponse(w, result)
+
+func handleListGamesRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    if not httphelper.IsGet(r)
+        httphelper.MethodNotAllowed(w, "GET")
+        return
+
+    result := gs.http_handler.HandleListGames()
+    gs.writeAPIResponse(w, result)
+
+func writeAPIResponse on gs: reference GameServer(w: http.ResponseWriter, result: APIResponse)
+    status := 200
+    if not result.success
+        status = 400
+
+    response_data := map of string to any{
+        "success": result.success,
+        "message": result.message,
+        "data": result.data,
+    }
+
+    if result.success
+        httphelper.JSON(w, response_data) onerr discard
+    else
+        httphelper.JSONError(w, result.message, status) onerr discard
+
+func main()
+    config := ServerConfigFromEnv()
+    server := NewGameServer(config)
+    server.Start()

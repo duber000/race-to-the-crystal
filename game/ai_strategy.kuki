@@ -1,17 +1,18 @@
 petiole game
 
-import "race-to-the-crystal/shared/types" as types
 import "race-to-the-crystal/shared/constants" as constants
+import "race-to-the-crystal/shared/types" as types
+
 import "github.com/kukichalang/kukicha/stdlib/random"
 
 enum AIStrategyName: string
-    RANDOM    = "random"
+    RANDOM = "random"
     AGGRESSIVE = "aggressive"
     DEFENSIVE = "defensive"
 
 type ChosenAction
     action_type string
-    params      map of string to any
+    params map of string to any
 
 func NewChosenAction(action_type: string, params: map of string to any) ChosenAction
     return ChosenAction{action_type: action_type, params: params}
@@ -23,13 +24,13 @@ func choose_action(strategy: AIStrategyName, actions: list of map of string to a
     switch strategy
         when AIStrategyName.AGGRESSIVE
             r := choose_aggressive(actions, gs, player_id)
-            return &r
+            return reference of r
         when AIStrategyName.DEFENSIVE
             r := choose_defensive(actions, gs, player_id)
-            return &r
+            return reference of r
         default
             r := choose_random(actions)
-            return &r
+            return reference of r
 
 func choose_random(actions: list of map of string to any) ChosenAction
     idx := random.Int(0, len(actions))
@@ -74,7 +75,7 @@ func choose_defensive(actions: list of map of string to any, gs: reference GameS
     return choose_random(actions)
 
 func best_attack(attacks: list of map of string to any) ChosenAction
-    killing := list of map of string to any{}
+    killing := empty list of map of string to any
     for a in attacks
         wk, has := a["will_kill"]
         if has and wk.(bool)
@@ -169,7 +170,7 @@ func resolve_action(action: map of string to any) ChosenAction
     if action_type == "MOVE"
         token_id, _ := action["token_id"]
         dests_any, has := action["valid_destinations"]
-        dest := list of int{}
+        dest := empty list of int
         if has
             dests := dests_any.(list of list of int)
             if len(dests) > 1
@@ -193,7 +194,7 @@ func resolve_action(action: map of string to any) ChosenAction
     if action_type == "DEPLOY"
         hv, _ := action["health_value"]
         positions_any, has := action["positions"]
-        pos := list of int{}
+        pos := empty list of int
         if has
             positions := positions_any.(list of list of int)
             if len(positions) > 1
@@ -209,7 +210,7 @@ func resolve_action(action: map of string to any) ChosenAction
     return NewChosenAction("END_TURN", make(map of string to any))
 
 func filter_by_type(actions: list of map of string to any, type_str: string) list of map of string to any
-    result := list of map of string to any{}
+    result := empty list of map of string to any
     for a in actions
         t, has := a["type"]
         if has and t.(string) == type_str
@@ -227,7 +228,7 @@ func get_objectives(gs: reference GameState, player_id: types.PlayerID, crystal_
         if gen.is_disabled
             continue
         if gen.capturing_player_id == player_id
-            objectives = append(list of types.Position{gen.position}, objectives...)
+            objectives = append(list of types.Position{gen.position}, many objectives)
         else
             objectives = append(objectives, gen.position)
 
@@ -247,7 +248,8 @@ func score_destination(dest: types.Position, objectives: list of types.Position,
             min_dist = dist
 
     if tok isnt empty
-        if (dereference tok).movement_range() >= 2
+        tk := dereference tok
+        if tk.movement_range() >= 2
             min_dist = min_dist - 0.5
 
     return min_dist

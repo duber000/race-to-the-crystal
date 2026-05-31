@@ -1,6 +1,7 @@
 petiole types
 
 type TokenID int
+
 type PlayerID string
 
 type Position

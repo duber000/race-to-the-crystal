@@ -1,26 +1,28 @@
 petiole server
 
-import "race-to-the-crystal/shared/types" as types
-import "race-to-the-crystal/shared/enums" as enums
-import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/game" as gamepkg
-import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg
+import "race-to-the-crystal/shared/constants" as constants
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as typespkg
+
 import "github.com/kukichalang/kukicha/stdlib/cast"
+import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg
 
 type GameSession
-    game_id            string
-    game_name           string
-    game_state          gamepkg.GameState
-    network_to_game_id  map of string to string
-    game_to_network_id  map of string to string
-    last_state          nullable reference map of string to any
-    api_map             map of string to gamepkg.GameAPI
+    game_id string
+    game_name string
+    game_state gamepkg.GameState
+    network_to_game_id map of string to string
+    game_to_network_id map of string to string
+    last_state nullable reference map of string to any
+    api_map map of string to gamepkg.GameAPI
 
 func NewGameSession(game_id: string, lobby: reference GameLobby) GameSession
-    gs := gamepkg.CreateGame(len((dereference lobby).players))
+    lb := dereference lobby
+    gs := gamepkg.CreateGame(len(lb.players))
     session := GameSession{
         game_id: game_id,
-        game_name: (dereference lobby).game_name,
+        game_name: lb.game_name,
         game_state: gs,
         network_to_game_id: make(map of string to string),
         game_to_network_id: make(map of string to string),
@@ -31,17 +33,17 @@ func NewGameSession(game_id: string, lobby: reference GameLobby) GameSession
     session.game_state.StartGame()
     return session
 
-func (s: reference GameSession) initialize_players(lobby: reference GameLobby)
+func initialize_players on s: reference GameSession(lobby: reference GameLobby)
     idx := 0
     for _, info in lobby.players
         game_pid := "player_{idx}"
         s.network_to_game_id[info.player_id] = game_pid
         s.game_to_network_id[game_pid] = info.player_id
-        api := gamepkg.NewGameAPI(&s.game_state, types.PlayerID(game_pid))
+        api := gamepkg.NewGameAPI(reference of s.game_state, typespkg.PlayerID(game_pid))
         s.api_map[info.player_id] = api
         idx = idx + 1
 
-func (s: reference GameSession) execute_game_action(network_player_id: string, action: gamepkg.AIAction) (bool, string, nullable reference map of string to any)
+func execute_game_action on s: reference GameSession(network_player_id: string, action: gamepkg.AIAction) (bool, string, nullable reference map of string to any)
     _, has := s.network_to_game_id[network_player_id]
     if not has
         return false, "Player not in game", empty
@@ -58,20 +60,21 @@ func (s: reference GameSession) execute_game_action(network_player_id: string, a
             result = api.Deploy(a.HealthValue, a.Position.X, a.Position.Y)
         when gamepkg.EndTurn
             result = api.EndTurn()
+
     if result.Success
         return true, result.Message, result.Data
     return false, result.Message, empty
 
-func (s: reference GameSession) get_state_dict() map of string to any
+func get_state_dict on s: reference GameSession map of string to any
     return s.game_state.ToDict()
 
-func (s: reference GameSession) get_state_for_player(network_player_id: string) map of string to any
+func get_state_for_player on s: reference GameSession(network_player_id: string) map of string to any
     return s.game_state.ToDict()
 
-func (s: reference GameSession) is_game_over() bool
+func is_game_over on s: reference GameSession bool
     return s.game_state.Phase() == enums.ENDED
 
-func (s: reference GameSession) get_winner_network_id() string
+func get_winner_network_id on s: reference GameSession string
     wid := s.game_state.WinnerID()
     if wid == ""
         return ""
@@ -80,7 +83,7 @@ func (s: reference GameSession) get_winner_network_id() string
         return nid
     return ""
 
-func (s: reference GameSession) get_current_network_player_id() string
+func get_current_network_player_id on s: reference GameSession string
     cpid := s.game_state.CurrentTurnPlayerID()
     if cpid == ""
         return ""
@@ -90,7 +93,7 @@ func (s: reference GameSession) get_current_network_player_id() string
     return ""
 
 type GameCoordinator
-    active_games    map of string to reference GameSession
+    active_games map of string to reference GameSession
     player_to_game map of string to string
 
 func NewGameCoordinator() GameCoordinator
@@ -99,10 +102,10 @@ func NewGameCoordinator() GameCoordinator
         player_to_game: make(map of string to string),
     }
 
-func (gc: reference GameCoordinator) create_session(lobby: reference GameLobby) reference GameSession
+func create_session on gc: reference GameCoordinator(lobby: reference GameLobby) reference GameSession
     game_id := lobby.game_id
     session := NewGameSession(game_id, lobby)
-    gc.active_games[game_id] = &session
+    gc.active_games[game_id] = reference of session
     players := lobby.get_player_list()
     for info in players
         pid_val, has_id := info["player_id"]
@@ -112,23 +115,23 @@ func (gc: reference GameCoordinator) create_session(lobby: reference GameLobby) 
                 gc.player_to_game[pid_str] = game_id
     return gc.active_games[game_id]
 
-func (gc: reference GameCoordinator) get_session(game_id: string) nullable reference GameSession
+func get_session on gc: reference GameCoordinator(game_id: string) nullable reference GameSession
     session, ok := gc.active_games[game_id]
     if ok
         return session
     return empty
 
-func (gc: reference GameCoordinator) get_player_session(player_id: string) nullable reference GameSession
+func get_player_session on gc: reference GameCoordinator(player_id: string) nullable reference GameSession
     game_id, has := gc.player_to_game[player_id]
     if not has
         return empty
     return gc.get_session(game_id)
 
-func (gc: reference GameCoordinator) end_session(game_id: string) bool
+func end_session on gc: reference GameCoordinator(game_id: string) bool
     session := gc.get_session(game_id)
     if session equals empty
         return false
-    nids := list of string{}
+    nids := empty list of string
     for nid, _ in session.network_to_game_id
         nids = append(nids, nid)
     for nid in nids
@@ -136,21 +139,22 @@ func (gc: reference GameCoordinator) end_session(game_id: string) bool
     delete gc.active_games[game_id]
     return true
 
-func (gc: reference GameCoordinator) remove_player(player_id: string) string
+func remove_player on gc: reference GameCoordinator(player_id: string) string
     game_id, has := gc.player_to_game[player_id]
     if not has
         return ""
     delete gc.player_to_game[player_id]
     session := gc.get_session(game_id)
     if session isnt empty
-        delete (dereference session).network_to_game_id[player_id]
+        s := dereference session
+        delete s.network_to_game_id[player_id]
     return game_id
 
-func (gc: reference GameCoordinator) get_active_game_count() int
+func get_active_game_count on gc: reference GameCoordinator int
     return len(gc.active_games)
 
-func (gc: reference GameCoordinator) list_active_games() list of map of string to any
-    result := list of map of string to any{}
+func list_active_games on gc: reference GameCoordinator list of map of string to any
+    result := empty list of map of string to any
     for _, session in gc.active_games
         entry := map of string to any{
             "id": session.game_id,

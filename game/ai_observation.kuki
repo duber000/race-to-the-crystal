@@ -1,16 +1,22 @@
 petiole game
 
-import "race-to-the-crystal/shared/types" as types
-import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/constants" as constants
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+
 import "github.com/kukichalang/kukicha/stdlib/sort"
 import "github.com/kukichalang/kukicha/stdlib/string" as strpkg
 
 const SEPARATOR_WIDTH = 60
+
 const SYMBOL_EMPTY = "."
+
 const SYMBOL_GENERATOR = "G"
+
 const SYMBOL_CRYSTAL = "C"
+
 const SYMBOL_MYSTERY = "M"
+
 const SYMBOL_CORNER = "*"
 
 func separator_line() string
@@ -77,14 +83,15 @@ func join_lines(lines: list of string) string
     return result
 
 func describe_game_state(gs: reference GameState, perspective: types.PlayerID) string
-    lines := list of string{}
+    lines := empty list of string
     lines = append(lines, separator_line())
 
     if gs.phase == enums.ENDED
         winner_ref := gs.GetPlayer(gs.winner_id)
         winner_name := "Unknown"
         if winner_ref isnt empty
-            winner_name = (dereference winner_ref).name
+            wr := dereference winner_ref
+            winner_name = wr.name
         lines = append(lines, "GAME OVER - Winner: {winner_name}")
     else if gs.phase == enums.SETUP
         lines = append(lines, "GAME SETUP - Waiting for players")
@@ -100,7 +107,10 @@ func describe_game_state(gs: reference GameState, perspective: types.PlayerID) s
             cp := dereference current_ref
             player_name = cp.name
             player_color = color_name(cp.color)
-        lines = append(lines, "TURN {gs.turn_number} - {turn_indicator} (Current: {player_name} - {player_color})")
+        lines = append(
+            lines,
+            "TURN {gs.turn_number} - {turn_indicator} (Current: {player_name} - {player_color})",
+        )
     lines = append(lines, separator_line())
     lines = append(lines, "")
 
@@ -132,7 +142,7 @@ func append_player_tokens(lines: list of string, gs: reference GameState, player
         return lines
     p := dereference p_ref
 
-    deployed := list of Token{}
+    deployed := empty list of Token
     for tid in p.token_ids
         t_ref := gs.GetToken(tid)
         if t_ref isnt empty
@@ -147,13 +157,19 @@ func append_player_tokens(lines: list of string, gs: reference GameState, player
     if len(deployed) > 0
         sorted := sort.By(deployed, (a: Token, b: Token) => a.id < b.id)
         for t in sorted
-            lines = append(lines, "  Token #{t.id} @ ({t.position.X},{t.position.Y}) - {t.health}/{t.max_health}hp  [Move range: {t.movement_range()}]")
+            lines = append(
+                lines,
+                "  Token #{t.id} @ ({t.position.X},{t.position.Y}) - {t.health}/{t.max_health}hp  [Move range: {t.movement_range()}]",
+            )
     else
         lines = append(lines, "  (none deployed)")
 
     lines = append(lines, "")
     lines = append(lines, "RESERVE TOKENS:")
-    lines = append(lines, "  10hp: {reserve_counts[10]}  |  8hp: {reserve_counts[8]}  |  6hp: {reserve_counts[6]}  |  4hp: {reserve_counts[4]}")
+    lines = append(
+        lines,
+        "  10hp: {reserve_counts[10]}  |  8hp: {reserve_counts[8]}  |  6hp: {reserve_counts[6]}  |  4hp: {reserve_counts[4]}",
+    )
     lines = append(lines, "")
     return lines
 
@@ -161,7 +177,7 @@ func append_enemy_tokens(lines: list of string, gs: reference GameState, perspec
     for pid, p_ref in gs.players
         if pid == perspective
             continue
-        enemy_deployed := list of Token{}
+        enemy_deployed := empty list of Token
         for tid in p_ref.token_ids
             t_ref := gs.GetToken(tid)
             if t_ref isnt empty
@@ -172,14 +188,17 @@ func append_enemy_tokens(lines: list of string, gs: reference GameState, perspec
         lines = append(lines, "{p_ref.name} ({cn}): {len(enemy_deployed)} deployed")
         sorted := sort.By(enemy_deployed, (a: Token, b: Token) => a.id < b.id)
         for t in sorted
-            lines = append(lines, "  Token #{t.id} @ ({t.position.X},{t.position.Y}) - {t.health}/{t.max_health}hp")
+            lines = append(
+                lines,
+                "  Token #{t.id} @ ({t.position.X},{t.position.Y}) - {t.health}/{t.max_health}hp",
+            )
     lines = append(lines, "")
     return lines
 
 func append_generator_info(lines: list of string, gs: reference GameState) list of string
     lines = append(lines, "GENERATORS:")
     for i from 0 to len(gs.generators)
-        gen_ref := &gs.generators[i]
+        gen_ref := reference of gs.generators[i]
         status := generator_status(gen_ref, gs)
         gen := dereference gen_ref
         lines = append(lines, "  G{i + 1} @ ({gen.position.X},{gen.position.Y}): {status}")
@@ -199,7 +218,10 @@ func append_crystal_info(lines: list of string, gs: reference GameState) list of
     lines = append(lines, "  Location: ({crys.position.X},{crys.position.Y})")
     lines = append(lines, "  Tokens needed to capture: {tokens_required}")
     if disabled_count > 0
-        lines = append(lines, "  (Base: {constants.CRYSTAL_BASE_TOKENS_REQUIRED}, reduced by {disabled_count} disabled generator(s))")
+        lines = append(
+            lines,
+            "  (Base: {constants.CRYSTAL_BASE_TOKENS_REQUIRED}, reduced by {disabled_count} disabled generator(s))",
+        )
 
     holders := crystal_holders(gs.crystal_instance, gs)
     if len(holders) > 0
@@ -214,7 +236,7 @@ func append_crystal_info(lines: list of string, gs: reference GameState) list of
     return lines
 
 func get_board_map(gs: reference GameState, perspective: types.PlayerID) string
-    lines := list of string{}
+    lines := empty list of string
     lines = append(lines, "BOARD MAP (24x24):")
     lines = append(lines, "")
 
@@ -320,12 +342,15 @@ func render_legend(lines: list of string, gs: reference GameState, perspective: 
 
 func list_available_actions(gs: reference GameState, player_id: types.PlayerID) AvailableActionsResponse
     if gs.phase != enums.PLAYING
-        return AvailableActionsResponse{phase: "NOT_PLAYING", actions: list of map of string to any{}}
+        return AvailableActionsResponse{phase: "NOT_PLAYING", actions: empty list of map of string to any}
 
     if gs.current_turn_player_id != player_id
-        return AvailableActionsResponse{phase: "NOT_YOUR_TURN", actions: list of map of string to any{}}
+        return AvailableActionsResponse{
+            phase: "NOT_YOUR_TURN",
+            actions: empty list of map of string to any,
+        }
 
-    actions := list of map of string to any{}
+    actions := empty list of map of string to any
     phase_str := enums.TurnPhaseName(gs.turn_phase)
 
     p_ref := gs.GetPlayer(player_id)
@@ -334,7 +359,7 @@ func list_available_actions(gs: reference GameState, player_id: types.PlayerID) 
 
     p := dereference p_ref
 
-    deployed_tokens := list of Token{}
+    deployed_tokens := empty list of Token
     for tid in p.token_ids
         t_ref := gs.GetToken(tid)
         if t_ref isnt empty
@@ -357,9 +382,9 @@ func add_movement_actions(actions: list of map of string to any, deployed: list 
         if t_ref equals empty
             continue
         effective_range := gs.GetTokenMovementRange(t_ref)
-        valid_moves := get_valid_moves(t_ref, &gs.board, effective_range, gs.tokens)
+        valid_moves := get_valid_moves(t_ref, reference of gs.board, effective_range, gs.tokens)
         if len(valid_moves) > 0
-            dests := list of list of int{}
+            dests := empty list of list of int
             for m in valid_moves
                 dests = append(dests, list of int{m.X, m.Y})
             action := make(map of string to any)
@@ -377,11 +402,13 @@ func add_deployment_actions(actions: list of map of string to any, gs: reference
     corner_positions := gs.board.get_deployable_positions(enums.PlayerIndex(p.color))
     for hv in constants.TOKEN_HEALTH_VALUES
         if reserve_counts[hv] > 0
-            available := list of list of int{}
+            available := empty list of list of int
             for pos in corner_positions
                 cell := gs.board.get_cell_at(pos)
-                if cell isnt empty and not (dereference cell).is_occupied()
-                    available = append(available, list of int{pos.X, pos.Y})
+                if cell isnt empty
+                    cl := dereference cell
+                    if not cl.is_occupied()
+                        available = append(available, list of int{pos.X, pos.Y})
             if len(available) > 0
                 action := make(map of string to any)
                 action["type"] = "DEPLOY"
@@ -400,11 +427,12 @@ func add_attack_actions(actions: list of map of string to any, deployed: list of
         attackable := get_attackable_targets(t_ref, gs.tokens)
         for target in attackable
             damage := t.health / 2
-            will_kill_target := would_kill(t_ref, &target)
+            will_kill_target := would_kill(t_ref, reference of target)
             target_player := gs.GetPlayer(target.player_id)
             target_color := "Unknown"
             if target_player isnt empty
-                target_color = color_name((dereference target_player).color)
+                tp := dereference target_player
+                target_color = color_name(tp.color)
 
             kill_tag := ""
             if will_kill_target
@@ -431,7 +459,7 @@ func add_end_turn_action(actions: list of map of string to any) list of map of s
     return actions
 
 func get_attackable_targets(tok: reference Token, tokens_map: map of types.TokenID to Token) list of Token
-    result := list of Token{}
+    result := empty list of Token
     for _, t in tokens_map
         if t.is_alive and t.is_deployed and t.player_id != tok.player_id
             if tok.is_adjacent_to(t.position)
@@ -439,7 +467,7 @@ func get_attackable_targets(tok: reference Token, tokens_map: map of types.Token
     return result
 
 func explain_victory_conditions(gs: reference GameState) string
-    lines := list of string{}
+    lines := empty list of string
     lines = append(lines, "VICTORY CONDITIONS:")
     lines = append(lines, "")
 
@@ -450,10 +478,16 @@ func explain_victory_conditions(gs: reference GameState) string
     if base - reduction > 0
         tokens_required = base - reduction
 
-    lines = append(lines, "Win by holding the crystal with {tokens_required} tokens for 3 consecutive turns")
+    lines = append(
+        lines,
+        "Win by holding the crystal with {tokens_required} tokens for 3 consecutive turns",
+    )
     lines = append(lines, "  Base requirement: {constants.CRYSTAL_BASE_TOKENS_REQUIRED} tokens")
     if disabled_count > 0
-        lines = append(lines, "  Disabled generators: {disabled_count} (-{disabled_count * constants.GENERATOR_TOKEN_REDUCTION} tokens)")
+        lines = append(
+            lines,
+            "  Disabled generators: {disabled_count} (-{disabled_count * constants.GENERATOR_TOKEN_REDUCTION} tokens)",
+        )
     lines = append(lines, "")
 
     if gs.crystal_instance isnt empty
@@ -473,17 +507,26 @@ func explain_victory_conditions(gs: reference GameState) string
                     if count >= tokens_required and turns_held >= 3
                         lines = append(lines, "  {p.name} ({cn}): {progress} WINNING!")
                     else if count >= tokens_required
-                        lines = append(lines, "  {p.name} ({cn}): {progress} (needs {3 - turns_held} more turn(s))")
+                        lines = append(
+                            lines,
+                            "  {p.name} ({cn}): {progress} (needs {3 - turns_held} more turn(s))",
+                        )
                     else
-                        lines = append(lines, "  {p.name} ({cn}): {progress} (needs {tokens_required - count} more token(s))")
+                        lines = append(
+                            lines,
+                            "  {p.name} ({cn}): {progress} (needs {tokens_required - count} more token(s))",
+                        )
         else
             lines = append(lines, "  No players currently on crystal")
         lines = append(lines, "")
 
     lines = append(lines, "Generator bonuses:")
-    lines = append(lines, "  Disable generators to reduce crystal requirement (each generator = -{constants.GENERATOR_TOKEN_REDUCTION} tokens)")
+    lines = append(
+        lines,
+        "  Disable generators to reduce crystal requirement (each generator = -{constants.GENERATOR_TOKEN_REDUCTION} tokens)",
+    )
     for i from 0 to len(gs.generators)
-        gen_ref := &gs.generators[i]
+        gen_ref := reference of gs.generators[i]
         gen := dereference gen_ref
         if gen.is_disabled
             lines = append(lines, "  Generator {i + 1}: DISABLED")
@@ -494,7 +537,7 @@ func explain_victory_conditions(gs: reference GameState) string
     return join_lines(lines)
 
 func get_situation_report(gs: reference GameState, perspective: types.PlayerID) string
-    sections := list of string{}
+    sections := empty list of string
 
     sections = append(sections, describe_game_state(gs, perspective))
     sections = append(sections, get_board_map(gs, perspective))

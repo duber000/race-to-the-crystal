@@ -1,28 +1,33 @@
 petiole game
 
-import "race-to-the-crystal/shared/types" as types
 import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
 
 type DirOffset
     dx int
     dy int
 
 var DIRECTIONS = list of DirOffset{
-    DirOffset{dx: -1, dy: -1}, DirOffset{dx: -1, dy: 0}, DirOffset{dx: -1, dy: 1},
-    DirOffset{dx: 0, dy: -1}, DirOffset{dx: 0, dy: 1},
-    DirOffset{dx: 1, dy: -1}, DirOffset{dx: 1, dy: 0}, DirOffset{dx: 1, dy: 1},
+    DirOffset{dx: -1, dy: -1},
+    DirOffset{dx: -1, dy: 0},
+    DirOffset{dx: -1, dy: 1},
+    DirOffset{dx: 0, dy: -1},
+    DirOffset{dx: 0, dy: 1},
+    DirOffset{dx: 1, dy: -1},
+    DirOffset{dx: 1, dy: 0},
+    DirOffset{dx: 1, dy: 1},
 }
 
 type BfsItem
-    pos  types.Position
+    pos types.Position
     dist int
 
 type PathItem
-    pos  types.Position
+    pos types.Position
     path list of types.Position
 
 func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int, tokens_map: map of types.TokenID to Token) list of types.Position
-    result := list of types.Position{}
+    result := empty list of types.Position
     if not tok.is_alive
         return result
 
@@ -32,7 +37,7 @@ func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int,
     visited := make(map of types.Position to bool)
     visited[start] = true
 
-    queue := list of BfsItem{}
+    queue := empty list of BfsItem
     queue = append(queue, BfsItem{pos: start, dist: 0})
 
     for len(queue) > 0
@@ -93,7 +98,7 @@ func find_path(start: types.Position, end: types.Position, brd: reference Board,
     visited := make(map of types.Position to bool)
     visited[start] = true
 
-    queue := list of PathItem{}
+    queue := empty list of PathItem
     queue = append(queue, PathItem{pos: start, path: list of types.Position{start}})
 
     for len(queue) > 0
@@ -131,7 +136,7 @@ func find_path(start: types.Position, end: types.Position, brd: reference Board,
             new_path := append(item.path, npos)
             queue = append(queue, PathItem{pos: npos, path: new_path})
 
-    return list of types.Position{}, false
+    return empty list of types.Position, false
 
 func get_distance(pos1: types.Position, pos2: types.Position) int
     dx := pos1.X - pos2.X
@@ -149,10 +154,10 @@ func is_adjacent(pos1: types.Position, pos2: types.Position) bool
     dy := pos1.Y - pos2.Y
     if dy < 0
         dy = -dy
-    return dx <= 1 and dy <= 1 and (dx + dy) > 0
+    return dx <= 1 and dy <= 1 and dx + dy > 0
 
 func get_adjacent_positions(pos: types.Position, brd: reference Board) list of types.Position
-    result := list of types.Position{}
+    result := empty list of types.Position
     for dir in DIRECTIONS
         nx := pos.X + dir.dx
         ny := pos.Y + dir.dy

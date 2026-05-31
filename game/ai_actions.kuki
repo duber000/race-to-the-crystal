@@ -1,29 +1,29 @@
 petiole game
 
-import "race-to-the-crystal/shared/types" as types
-import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/constants" as constants
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
 
 enum AIAction
     Move
-        TokenID    types.TokenID
+        TokenID types.TokenID
         Destination types.Position
     Attack
         AttackerID types.TokenID
         DefenderID types.TokenID
     Deploy
         HealthValue int
-        Position      types.Position
+        Position types.Position
     EndTurn
 
 type ValidationResult
     IsValid bool
-    Message  string
+    Message string
 
 type ActionResult
     Success bool
     Message string
-    Data    nullable reference map of string to any
+    Data nullable reference map of string to any
 
 func ValidResult(msg: string) ValidationResult
     return ValidationResult{IsValid: true, Message: msg}
@@ -37,25 +37,29 @@ func SuccessResult(msg: string, d: nullable reference map of string to any) Acti
 func FailureResult(msg: string) ActionResult
     return ActionResult{Success: false, Message: msg, Data: empty}
 
-func (gs: reference GameState) ValidateGamePhase() nullable reference ValidationResult
+func ValidateGamePhase on gs: reference GameState nullable reference ValidationResult
     if gs.phase != enums.PLAYING
         r := InvalidResult("ACTION_FAILED: wrong_game_phase | current={gs.phase} | required=PLAYING")
-        return &r
+        return reference of r
     return empty
 
-func (gs: reference GameState) ValidatePlayerTurn(player_id: types.PlayerID) nullable reference ValidationResult
+func ValidatePlayerTurn on gs: reference GameState(player_id: types.PlayerID) nullable reference ValidationResult
     if gs.current_turn_player_id != player_id
-        r := InvalidResult("ACTION_FAILED: not_your_turn | current_player={gs.current_turn_player_id} | you={player_id}")
-        return &r
+        r := InvalidResult(
+            "ACTION_FAILED: not_your_turn | current_player={gs.current_turn_player_id} | you={player_id}",
+        )
+        return reference of r
     return empty
 
-func (gs: reference GameState) ValidateTurnPhase(required: enums.TurnPhase, action_name: string) nullable reference ValidationResult
+func ValidateTurnPhase on gs: reference GameState(required: enums.TurnPhase, action_name: string) nullable reference ValidationResult
     if gs.turn_phase != required
-        r := InvalidResult("{action_name}_FAILED: wrong_phase | current={gs.turn_phase} | required={required}")
-        return &r
+        r := InvalidResult(
+            "{action_name}_FAILED: wrong_phase | current={gs.turn_phase} | required={required}",
+        )
+        return reference of r
     return empty
 
-func (gs: reference GameState) ValidateTokenExists(TokenID: types.TokenID, action_name: string) (ValidationResult, nullable reference Token)
+func ValidateTokenExists on gs: reference GameState(TokenID: types.TokenID, action_name: string) (ValidationResult, nullable reference Token)
     tok := gs.GetToken(TokenID)
     if tok equals empty
         r := InvalidResult("{action_name}_FAILED: token_not_found | token_id={TokenID}")
@@ -69,7 +73,9 @@ func ValidateTokenOwnership(tok: reference Token, player_id: types.PlayerID, act
 
 func ValidateTokenDeployed(tok: reference Token, action_name: string) ValidationResult
     if not tok.is_deployed
-        return InvalidResult("{action_name}_FAILED: not_deployed | token_id={tok.id} | hint=Use DEPLOY action first")
+        return InvalidResult(
+            "{action_name}_FAILED: not_deployed | token_id={tok.id} | hint=Use DEPLOY action first",
+        )
     return ValidResult("")
 
 func ValidateTokenAlive(tok: reference Token, action_name: string) ValidationResult
@@ -118,14 +124,16 @@ func ValidateMove(TokenID: types.TokenID, dest: types.Position, gs: reference Ga
         return alive_result
 
     effective_range := gs.GetTokenMovementRange(tok_ref)
-    valid_moves := get_valid_moves(tok_ref, &gs.board, effective_range, gs.tokens)
+    valid_moves := get_valid_moves(tok_ref, reference of gs.board, effective_range, gs.tokens)
     found := false
     for m in valid_moves
         if m == dest
             found = true
             break
     if not found
-        return InvalidResult("MOVE_FAILED: invalid_destination | dest=({dest.X},{dest.Y}) | token_pos=({tok_ref.position.X},{tok_ref.position.Y}) | range={effective_range} | valid_count={len(valid_moves)}")
+        return InvalidResult(
+            "MOVE_FAILED: invalid_destination | dest=({dest.X},{dest.Y}) | token_pos=({tok_ref.position.X},{tok_ref.position.Y}) | range={effective_range} | valid_count={len(valid_moves)}",
+        )
     return ValidResult("Move is valid")
 
 func ValidateAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: reference GameState, player_id: types.PlayerID) ValidationResult
@@ -154,7 +162,9 @@ func ValidateAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: re
         return def_result
 
     if def_ref.player_id == player_id
-        return InvalidResult("ATTACK_FAILED: friendly_fire | defender_id={DefenderID} | hint=Cannot attack own tokens")
+        return InvalidResult(
+            "ATTACK_FAILED: friendly_fire | defender_id={DefenderID} | hint=Cannot attack own tokens",
+        )
 
     def_dep := ValidateTokenDeployed(def_ref, "ATTACK")
     if not def_dep.IsValid
@@ -165,7 +175,9 @@ func ValidateAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: re
         return def_alive
 
     if not can_attack(att_ref, def_ref)
-        return InvalidResult("ATTACK_FAILED: not_adjacent | attacker_pos=({att_ref.position.X},{att_ref.position.Y}) | defender_pos=({def_ref.position.X},{def_ref.position.Y})")
+        return InvalidResult(
+            "ATTACK_FAILED: not_adjacent | attacker_pos=({att_ref.position.X},{att_ref.position.Y}) | defender_pos=({def_ref.position.X},{def_ref.position.Y})",
+        )
     return ValidResult("Attack is valid")
 
 func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameState, player_id: types.PlayerID) ValidationResult
@@ -179,7 +191,9 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
             valid_hv = true
             break
     if not valid_hv
-        return InvalidResult("DEPLOY_FAILED: invalid_health | value={HealthValue} | valid={constants.TOKEN_HEALTH_VALUES}")
+        return InvalidResult(
+            "DEPLOY_FAILED: invalid_health | value={HealthValue} | valid={constants.TOKEN_HEALTH_VALUES}",
+        )
 
     reserve_counts := gs.GetReserveTokenCounts(player_id)
     if reserve_counts[HealthValue] <= 0
@@ -189,8 +203,10 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
         return InvalidResult("DEPLOY_FAILED: out_of_bounds | pos=({pos.X},{pos.Y}) | board_size=24x24")
 
     cell := gs.board.get_cell_at(pos)
-    if cell isnt empty and (dereference cell).is_occupied()
-        return InvalidResult("DEPLOY_FAILED: cell_occupied | pos=({pos.X},{pos.Y})")
+    if cell isnt empty
+        c := dereference cell
+        if c.is_occupied()
+            return InvalidResult("DEPLOY_FAILED: cell_occupied | pos=({pos.X},{pos.Y})")
 
     p_ref := gs.GetPlayer(player_id)
     if p_ref equals empty
@@ -245,31 +261,37 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
     result_data["new_position"] = list of int{dest.X, dest.Y}
 
     cell := gs.board.get_cell_at(dest)
-    if cell isnt empty and (dereference cell).cell_type == enums.MYSTERY
-        p_ref := gs.GetPlayer(player_id)
-        if p_ref isnt empty
-            p := dereference p_ref
-            player_index := enums.PlayerIndex(p.color)
-            mystery_result := trigger_mystery_event(tok_ref, &gs.board, player_index)
+    if cell isnt empty
+        c := dereference cell
+        if c.cell_type == enums.MYSTERY
+            p_ref := gs.GetPlayer(player_id)
+            if p_ref isnt empty
+                p := dereference p_ref
+                player_index := enums.PlayerIndex(p.color)
+                mystery_result := trigger_mystery_event(tok_ref, reference of gs.board, player_index)
 
-            gs.last_triggered_mystery_event = &MysteryEvent{TokenID: TokenID, Position: dest, effect: enums.MysteryEffectName(mystery_result.effect)}
+                gs.last_triggered_mystery_event = reference of MysteryEvent{
+                    TokenID: TokenID,
+                    Position: dest,
+                    effect: enums.MysteryEffectName(mystery_result.effect),
+                }
 
-            message = message + "\n  Token landed on a MYSTERY square!"
-            result_data["mystery_triggered"] = true
-            result_data["mystery_effect"] = enums.MysteryEffectName(mystery_result.effect)
+                message = message + "\n  Token landed on a MYSTERY square!"
+                result_data["mystery_triggered"] = true
+                result_data["mystery_effect"] = enums.MysteryEffectName(mystery_result.effect)
 
-            if mystery_result.effect == enums.HEAL
-                message = message + "\n  HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
-            else
-                gs.board.clear_occupant(dest, TokenID)
-                gs.board.set_occupant(mystery_result.new_position, TokenID)
-                message = message + "\n  TAILS! Token teleported back to deployment area ({mystery_result.new_position.X},{mystery_result.new_position.Y})!"
-                result_data["new_position"] = list of int{mystery_result.new_position.X, mystery_result.new_position.Y}
+                if mystery_result.effect == enums.HEAL
+                    message = message + "\n  HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
+                else
+                    gs.board.clear_occupant(dest, TokenID)
+                    gs.board.set_occupant(mystery_result.new_position, TokenID)
+                    message = message + "\n  TAILS! Token teleported back to deployment area ({mystery_result.new_position.X},{mystery_result.new_position.Y})!"
+                    result_data["new_position"] = list of int{mystery_result.new_position.X, mystery_result.new_position.Y}
 
     gs.turn_phase = enums.ACTION
     message = message + "\n  Phase changed to ACTION (you can attack or end turn)"
 
-    return SuccessResult(message, &result_data)
+    return SuccessResult(message, reference of result_data)
 
 func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: reference GameState, player_id: types.PlayerID) ActionResult
     def_ref := gs.GetToken(DefenderID)
@@ -279,7 +301,8 @@ func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: ref
     def_player := gs.GetPlayer(defn.player_id)
     def_owner := "Unknown"
     if def_player isnt empty
-        def_owner = (dereference def_player).name
+        dp := dereference def_player
+        def_owner = dp.name
 
     outcome := gs.AttackToken(AttackerID, DefenderID)
     if outcome equals empty
@@ -298,10 +321,11 @@ func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: ref
     else
         current_hp := defn.health
         if def_ref isnt empty
-            current_hp = (dereference def_ref).health
+            dr := dereference def_ref
+            current_hp = dr.health
         message = message + "\n  Token #{DefenderID} now has {current_hp}hp"
 
-    return SuccessResult(message, &result_data)
+    return SuccessResult(message, reference of result_data)
 
 func ExecuteDeploy(HealthValue: int, pos: types.Position, gs: reference GameState, player_id: types.PlayerID) ActionResult
     new_tok := gs.DeployToken(player_id, HealthValue, pos)
@@ -324,7 +348,7 @@ func ExecuteDeploy(HealthValue: int, pos: types.Position, gs: reference GameStat
     gs.turn_phase = enums.ACTION
     message = message + "\n  Phase changed to ACTION (you can attack or end turn)"
 
-    return SuccessResult(message, &result_data)
+    return SuccessResult(message, reference of result_data)
 
 func ExecuteEndTurn(gs: reference GameState) ActionResult
     newly_disabled, crystal_captured, _ := gs.EndTurnWithObjectiveUpdate()
@@ -332,7 +356,8 @@ func ExecuteEndTurn(gs: reference GameState) ActionResult
     new_player := gs.GetCurrentPlayer()
     new_player_name := "Unknown"
     if new_player isnt empty
-        new_player_name = (dereference new_player).name
+        np := dereference new_player
+        new_player_name = np.name
 
     message := "Turn ended\n  Turn {gs.turn_number} begins\n  Current player: {new_player_name}"
 
@@ -342,4 +367,16 @@ func ExecuteEndTurn(gs: reference GameState) ActionResult
     result_data["generators_disabled"] = newly_disabled
     result_data["crystal_captured"] = crystal_captured
 
-    return SuccessResult(message, &result_data)
+    return SuccessResult(message, reference of result_data)
+
+func NewMoveAction(token_id: types.TokenID, dest: types.Position) AIAction
+    return Move{TokenID: token_id, Destination: dest}
+
+func NewAttackAction(attacker_id: types.TokenID, defender_id: types.TokenID) AIAction
+    return Attack{AttackerID: attacker_id, DefenderID: defender_id}
+
+func NewDeployAction(health_value: int, pos: types.Position) AIAction
+    return Deploy{HealthValue: health_value, Position: pos}
+
+func NewEndTurnAction() AIAction
+    return EndTurn{}

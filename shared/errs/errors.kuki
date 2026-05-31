@@ -1,36 +1,62 @@
 petiole errs
 
-const TOKEN_NOT_FOUND       = "token_not_found"
-const TOKEN_NOT_DEPLOYED    = "token_not_deployed"
-const TOKEN_NOT_OWNED       = "token_not_owned"
-const TOKEN_DESTROYED       = "token_destroyed"
-const NOT_ADJACENT          = "not_adjacent"
-const NOT_IN_RANGE          = "not_in_range"
-const INVALID_POSITION      = "invalid_position"
-const CELL_OCCUPIED         = "cell_occupied"
-const WRONG_PHASE           = "wrong_phase"
-const NOT_PLAYER_TURN       = "not_player_turn"
-const GAME_NOT_PLAYING      = "game_not_playing"
-const GAME_NOT_FOUND        = "game_not_found"
-const GAME_ALREADY_STARTED  = "game_already_started"
-const GAME_FINISHED         = "game_finished"
-const PLAYER_NOT_IN_GAME    = "player_not_in_game"
-const LOBBY_FULL            = "lobby_full"
-const NOT_YOUR_TURN         = "not_your_turn"
-const MISSING_FIELD         = "missing_field"
-const INVALID_TYPE          = "invalid_type"
-const INVALID_VALUE         = "invalid_value"
-const TOO_SHORT             = "too_short"
-const TOO_LONG              = "too_long"
-const UNAUTHORIZED          = "unauthorized"
-const FORBIDDEN             = "forbidden"
-const TOKEN_EXPIRED         = "token_expired"
-const TOKEN_INVALID         = "token_invalid"
-const INTERNAL_ERROR        = "internal_error"
+const TOKEN_NOT_FOUND = "token_not_found"
+
+const TOKEN_NOT_DEPLOYED = "token_not_deployed"
+
+const TOKEN_NOT_OWNED = "token_not_owned"
+
+const TOKEN_DESTROYED = "token_destroyed"
+
+const NOT_ADJACENT = "not_adjacent"
+
+const NOT_IN_RANGE = "not_in_range"
+
+const INVALID_POSITION = "invalid_position"
+
+const CELL_OCCUPIED = "cell_occupied"
+
+const WRONG_PHASE = "wrong_phase"
+
+const NOT_PLAYER_TURN = "not_player_turn"
+
+const GAME_NOT_PLAYING = "game_not_playing"
+
+const GAME_NOT_FOUND = "game_not_found"
+
+const GAME_ALREADY_STARTED = "game_already_started"
+
+const GAME_FINISHED = "game_finished"
+
+const PLAYER_NOT_IN_GAME = "player_not_in_game"
+
+const LOBBY_FULL = "lobby_full"
+
+const NOT_YOUR_TURN = "not_your_turn"
+
+const MISSING_FIELD = "missing_field"
+
+const INVALID_TYPE = "invalid_type"
+
+const INVALID_VALUE = "invalid_value"
+
+const TOO_SHORT = "too_short"
+
+const TOO_LONG = "too_long"
+
+const UNAUTHORIZED = "unauthorized"
+
+const FORBIDDEN = "forbidden"
+
+const TOKEN_EXPIRED = "token_expired"
+
+const TOKEN_INVALID = "token_invalid"
+
+const INTERNAL_ERROR = "internal_error"
 
 type GameError
-    action  string
-    reason  string
+    action string
+    reason string
     context map of string to string
 
 func FormatGameError(e: GameError) string
@@ -41,8 +67,8 @@ func FormatGameError(e: GameError) string
     return result
 
 type ValidationError
-    field   string
-    reason  string
+    field string
+    reason string
     context map of string to string
 
 func FormatValidationError(e: ValidationError) string
@@ -53,8 +79,8 @@ func FormatValidationError(e: ValidationError) string
     return result
 
 type ActionError
-    action  string
-    reason  string
+    action string
+    reason string
     context map of string to string
 
 func FormatActionError(e: ActionError) string
@@ -65,7 +91,7 @@ func FormatActionError(e: ActionError) string
     return result
 
 type ServerError
-    code    string
+    code string
     message string
     details map of string to string
 

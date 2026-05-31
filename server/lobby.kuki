@@ -1,33 +1,35 @@
 petiole server
 
-import "github.com/kukichalang/kukicha/stdlib/regex"
 import "github.com/kukichalang/kukicha/stdlib/random"
+import "github.com/kukichalang/kukicha/stdlib/regex"
 import "github.com/kukichalang/kukicha/stdlib/string" as strpkg
 
 const MAX_GAME_NAME_LENGTH = 50
+
 const MAX_PLAYER_NAME_LENGTH = 30
+
 const ALLOWED_NAME_PATTERN = `^[a-zA-Z0-9_\- \.]+$`
 
 var NAME_REGEX = regex.MustCompile(ALLOWED_NAME_PATTERN)
 
 enum ClientType: string
-    HUMAN       = "HUMAN"
-    AI         = "AI"
+    HUMAN = "HUMAN"
+    AI = "AI"
     WEB_BROWSER = "WEB_BROWSER"
-    HTTP_AI    = "HTTP_AI"
+    HTTP_AI = "HTTP_AI"
 
 enum GameStatus: string
-    WAITING     = "WAITING"
-    READY       = "READY"
-    STARTING    = "STARTING"
+    WAITING = "WAITING"
+    READY = "READY"
+    STARTING = "STARTING"
     IN_PROGRESS = "IN_PROGRESS"
-    FINISHED    = "FINISHED"
+    FINISHED = "FINISHED"
 
 type PlayerInfo
-    player_id   string
+    player_id string
     player_name string
     client_type ClientType
-    is_ready    bool
+    is_ready bool
     color_index int
 
 func NewPlayerInfo(player_id: string, player_name: string, client_type: ClientType, color_index: int) PlayerInfo
@@ -39,7 +41,7 @@ func NewPlayerInfo(player_id: string, player_name: string, client_type: ClientTy
         color_index: color_index,
     }
 
-func (p: PlayerInfo) to_dict() map of string to any
+func to_dict on p: PlayerInfo map of string to any
     ct_str := p.client_type.String()
     return map of string to any{
         "player_id": p.player_id,
@@ -74,13 +76,13 @@ func ValidatePlayerName(player_name: string) error
     return empty
 
 type GameLobby
-    game_id        string
-    game_name      string
+    game_id string
+    game_name string
     host_player_id string
-    max_players    int
-    min_players    int
-    players        map of string to PlayerInfo
-    status         GameStatus
+    max_players int
+    min_players int
+    players map of string to PlayerInfo
+    status GameStatus
 
 func NewGameLobby(game_id: string, game_name: string, host_player_id: string, max_players: int) GameLobby
     return GameLobby{
@@ -93,7 +95,7 @@ func NewGameLobby(game_id: string, game_name: string, host_player_id: string, ma
         status: GameStatus.WAITING,
     }
 
-func (l: reference GameLobby) add_player(player_id: string, player_name: string, client_type: ClientType) bool
+func add_player on l: reference GameLobby(player_id: string, player_name: string, client_type: ClientType) bool
     err := ValidatePlayerName(player_name)
     if err isnt empty
         return false
@@ -110,7 +112,7 @@ func (l: reference GameLobby) add_player(player_id: string, player_name: string,
     l.players[player_id] = info
     return true
 
-func (l: reference GameLobby) remove_player(player_id: string) bool
+func remove_player on l: reference GameLobby(player_id: string) bool
     _, exists := l.players[player_id]
     if not exists
         return false
@@ -124,7 +126,7 @@ func (l: reference GameLobby) remove_player(player_id: string) bool
     l.reassign_colors()
     return true
 
-func (l: reference GameLobby) set_player_ready(player_id: string, is_ready: bool) bool
+func set_player_ready on l: reference GameLobby(player_id: string, is_ready: bool) bool
     info, exists := l.players[player_id]
     if not exists
         return false
@@ -132,7 +134,7 @@ func (l: reference GameLobby) set_player_ready(player_id: string, is_ready: bool
     l.players[player_id] = info
     return true
 
-func (l: reference GameLobby) all_players_ready() bool
+func all_players_ready on l: reference GameLobby bool
     if len(l.players) < l.min_players
         return false
     for _, info in l.players
@@ -140,15 +142,15 @@ func (l: reference GameLobby) all_players_ready() bool
             return false
     return true
 
-func (l: reference GameLobby) can_start() bool
+func can_start on l: reference GameLobby bool
     return l.status == GameStatus.WAITING and l.all_players_ready() and len(l.players) >= l.min_players
 
-func (l: reference GameLobby) get_ai_needed_count() int
+func get_ai_needed_count on l: reference GameLobby int
     if len(l.players) >= l.max_players
         return 0
     return l.max_players - len(l.players)
 
-func (l: reference GameLobby) reassign_colors()
+func reassign_colors on l: reference GameLobby
     idx := 0
     for _, info in l.players
         updated := info
@@ -156,13 +158,13 @@ func (l: reference GameLobby) reassign_colors()
         l.players[info.player_id] = updated
         idx = idx + 1
 
-func (l: reference GameLobby) get_player_list() list of map of string to any
-    result := list of map of string to any{}
+func get_player_list on l: reference GameLobby list of map of string to any
+    result := empty list of map of string to any
     for _, info in l.players
         result = append(result, info.to_dict())
     return result
 
-func (l: GameLobby) to_dict() map of string to any
+func to_dict on l: GameLobby map of string to any
     status_str := l.status as string
     return map of string to any{
         "game_id": l.game_id,
@@ -181,7 +183,7 @@ type LobbyManager
 func NewLobbyManager() LobbyManager
     return LobbyManager{lobbies: make(map of string to reference GameLobby)}
 
-func (lm: reference LobbyManager) create_lobby(player_id: string, player_name: string, game_name: string, client_type: ClientType, max_players: int) nullable reference GameLobby
+func create_lobby on lm: reference LobbyManager(player_id: string, player_name: string, game_name: string, client_type: ClientType, max_players: int) nullable reference GameLobby
     err := ValidateGameName(game_name)
     if err isnt empty
         return empty
@@ -197,79 +199,80 @@ func (lm: reference LobbyManager) create_lobby(player_id: string, player_name: s
     game_id := random.String(16)
     lobby := NewGameLobby(game_id, game_name, player_id, max_players)
     lobby.add_player(player_id, player_name, client_type)
-    lm.lobbies[game_id] = &lobby
+    lm.lobbies[game_id] = reference of lobby
     return lm.lobbies[game_id]
 
-func (lm: reference LobbyManager) get_lobby(game_id: string) nullable reference GameLobby
+func get_lobby on lm: reference LobbyManager(game_id: string) nullable reference GameLobby
     lobby, ok := lm.lobbies[game_id]
     if ok
         return lobby
     return empty
 
-func (lm: reference LobbyManager) join_lobby(game_id: string, player_id: string, player_name: string, client_type: ClientType) nullable reference GameLobby
+func join_lobby on lm: reference LobbyManager(game_id: string, player_id: string, player_name: string, client_type: ClientType) nullable reference GameLobby
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return empty
-    if (dereference lobby).status != GameStatus.WAITING
+    lb := dereference lobby
+    if lb.status != GameStatus.WAITING
         return empty
     success := lobby.add_player(player_id, player_name, client_type)
     if not success
         return empty
     return lobby
 
-func (lm: reference LobbyManager) leave_lobby(game_id: string, player_id: string) bool
+func leave_lobby on lm: reference LobbyManager(game_id: string, player_id: string) bool
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return false
     success := lobby.remove_player(player_id)
-    if len((dereference lobby).players) == 0
+    if len(lobby.players) == 0
         delete lm.lobbies[game_id]
     return success
 
-func (lm: reference LobbyManager) set_ready(game_id: string, player_id: string, is_ready: bool) bool
+func set_ready on lm: reference LobbyManager(game_id: string, player_id: string, is_ready: bool) bool
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return false
     return lobby.set_player_ready(player_id, is_ready)
 
-func (lm: reference LobbyManager) start_game(game_id: string) nullable reference GameLobby
+func start_game on lm: reference LobbyManager(game_id: string) nullable reference GameLobby
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return empty
-    if not (dereference lobby).can_start()
+    if not lobby.can_start()
         return empty
     lobby.status = GameStatus.STARTING
     return lobby
 
-func (lm: reference LobbyManager) set_game_in_progress(game_id: string) bool
+func set_game_in_progress on lm: reference LobbyManager(game_id: string) bool
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return false
     lobby.status = GameStatus.IN_PROGRESS
     return true
 
-func (lm: reference LobbyManager) finish_game(game_id: string) bool
+func finish_game on lm: reference LobbyManager(game_id: string) bool
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return false
     lobby.status = GameStatus.FINISHED
     return true
 
-func (lm: reference LobbyManager) list_available_lobbies() list of map of string to any
-    result := list of map of string to any{}
+func list_available_lobbies on lm: reference LobbyManager list of map of string to any
+    result := empty list of map of string to any
     for _, lobby in lm.lobbies
-        if (dereference lobby).status == GameStatus.WAITING and len((dereference lobby).players) < (dereference lobby).max_players
-            result = append(result, (dereference lobby).to_dict())
+        if lobby.status == GameStatus.WAITING and len(lobby.players) < lobby.max_players
+            result = append(result, lobby.to_dict())
     return result
 
-func (lm: reference LobbyManager) get_player_lobby(player_id: string) nullable reference GameLobby
+func get_player_lobby on lm: reference LobbyManager(player_id: string) nullable reference GameLobby
     for _, lobby in lm.lobbies
-        _, exists := (dereference lobby).players[player_id]
+        _, exists := lobby.players[player_id]
         if exists
             return lobby
     return empty
 
-func (lm: reference LobbyManager) remove_player_from_all(player_id: string)
+func remove_player_from_all on lm: reference LobbyManager(player_id: string)
     lobby := lm.get_player_lobby(player_id)
     if lobby isnt empty
-        lm.leave_lobby((dereference lobby).game_id, player_id)
+        lm.leave_lobby(lobby.game_id, player_id)

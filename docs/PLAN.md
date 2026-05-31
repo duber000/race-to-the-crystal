@@ -4,22 +4,24 @@
 
 Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://kukicha.dev), a near-superset of Go. The JS web client (Babylon.js) stays as-is.
 
-## Current Status (2026-05-28)
+## Current Status (2026-05-30)
 
 | Phase | Description | Status | LOC |
 |-------|-------------|--------|-----|
 | Phase 0 | Project setup (go.mod, Makefile, kukicha init) | **COMPLETE** | — |
 | Phase 1 | `shared/` (types, enums, constants, errors) | **COMPLETE** | 166 LOC |
-| Phase 2 | `game/` (game logic, 16 files) | **COMPLETE** | 2,626 LOC |
-| Phase 3 | `server/` | **IN PROGRESS (Day 1-2 done)** | — |
+| Phase 2 | `game/` (game logic, 16 files) | **COMPLETE** | 2,756 LOC |
+| Phase 3 | `server/` | **IN PROGRESS (Day 1-3 done)** | — |
 | Phase 4 | `client/ai_client` | **NOT STARTED** | — |
 | Phase 5 | `client/desktop` (ebitengine) | **NOT STARTED** | — |
 | Phase 6 | `web_server/` | **NOT STARTED** | — |
 | Phase 7 | Tests (`*_test.kuki`) | **NOT STARTED** | — |
 
-**What works:** `kukicha check ./...` passes cleanly (only 3 lint warnings about `panic()` in `token.kuki`). `kukicha build ./...` compiles and `go build ./...` succeeds for all 5 packages. All 16 game/ files written and verified (token, player, board, movement, combat, generator, crystal, crystal_effects, mystery_square, capture_utils, game_state, schemas, ai_actions, ai_observation, ai_strategy, api). Kukicha upgraded to v0.25.2 (kukicha#203 and kukicha#204 fixes applied).
+**What works:** `kukicha check ./...` and `kukicha build ./...` pass cleanly for all 6 packages (shared/* + game + server). `go build ./...` succeeds. All 16 game/ files and 10 server/ files compile. Server has auth, lobby, game_coordinator, WebSocket handler, Mercure publisher, HTTP handler, AI spawner, rate limiter, action validation, and server_main. Kukicha v0.25.2.
 
-**What's next:** Proceed to Phase 3 (server). Unit tests can be written in parallel (Phase 7).
+**Known kukicha compiler bug (workaround applied):** `dereference x.field` and `dereference x.method()` transpile to `*x.field` / `*x.method()` in Go, which Go parses as `*(x.field)` / `*(x.method())` — dereferencing the result instead of the receiver. Workaround: always bind with `v := dereference x` then use `v.field` / `v.method()`. Must file as kukicha#205.
+
+**What's next:** Complete Phase 3 server (verify all server endpoints work), then Phase 4 (AI client). Unit tests can be written in parallel (Phase 7).
 
 ### Key Architectural Decisions
 
@@ -639,6 +641,7 @@ func TestFeature(t: reference testing.T)
 | 7 | Random placement differs between Python `random.randint` and Kukicha `stdlib/random` | Board generation deterministic differences | Low | Accept difference; game rules same |
 | 8 | BFS with deque in Kukicha | Movement system performance | Low | Kukicha has `stdlib/slice` + goroutines; deque from linked list if needed |
 | 9 | BFS adjacency uses `collections.deque` in Python | Need to implement queue | Low | Use `stdlib/slice` as stack/queue (`append`, `PopFirst` with `slice[1:]`) |
+| 10 | `dereference x.field` transpiles to `*x.field` instead of `(*x).field` | Go build fails on valid Kukicha code | **Confirmed** (v0.25.2) | Workaround: bind with `v := dereference x` then `v.field`; file as kukicha#205 |
 
 ---
 

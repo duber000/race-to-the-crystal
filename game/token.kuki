@@ -1,40 +1,44 @@
 petiole game
 
-import "race-to-the-crystal/shared/types" as types
-import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/constants" as constants
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
 
 type Token
-    id          types.TokenID
-    player_id   types.PlayerID
-    health      int
-    max_health  int
-    position    types.Position
-    is_alive    bool
+    id types.TokenID
+    player_id types.PlayerID
+    health int
+    max_health int
+    position types.Position
+    is_alive bool
     is_deployed bool
 
 func NewToken(id: types.TokenID, player_id: types.PlayerID, health: int, max_health: int, position: types.Position) Token
     if health < 0
-        panic("health must be >= 0")
+        panic "health must be >= 0"
     if max_health < 0
-        panic("max_health must be >= 0")
+        panic "max_health must be >= 0"
     if health > max_health
-        panic("health cannot exceed max_health")
+        panic "health cannot exceed max_health"
     return Token{
-        id: id, player_id: player_id, health: health,
-        max_health: max_health, position: position,
-        is_alive: true, is_deployed: false,
+        id: id,
+        player_id: player_id,
+        health: health,
+        max_health: max_health,
+        position: position,
+        is_alive: true,
+        is_deployed: false,
     }
 
-func (t: reference Token) movement_range() int
+func movement_range on t: reference Token int
     if t.health <= 6
         return 2
     return 1
 
-func (t: reference Token) attack_power() int
+func attack_power on t: reference Token int
     return t.health / 2
 
-func (t: reference Token) take_damage(damage: int) bool
+func take_damage on t: reference Token(damage: int) bool
     t.health = t.health - damage
     if t.health <= 0
         t.health = 0
@@ -51,18 +55,18 @@ func (t: reference Token) take_damage(damage: int) bool
     t.health = valid_health
     return false
 
-func (t: reference Token) heal_to_full()
+func heal_to_full on t: reference Token
     t.health = t.max_health
 
-func (t: reference Token) heal(amount: int)
+func heal on t: reference Token(amount: int)
     t.health = t.health + amount
     if t.health > t.max_health
         t.health = t.max_health
 
-func (t: reference Token) move_to(new_position: types.Position)
+func move_to on t: reference Token(new_position: types.Position)
     t.position = new_position
 
-func (t: Token) distance_to(other: types.Position) int
+func distance_to on t: Token(other: types.Position) int
     dx := t.position.X - other.X
     if dx < 0
         dx = -dx
@@ -71,11 +75,11 @@ func (t: Token) distance_to(other: types.Position) int
         dy = -dy
     return dx + dy
 
-func (t: Token) is_adjacent_to(other: types.Position) bool
+func is_adjacent_to on t: Token(other: types.Position) bool
     dx := t.position.X - other.X
     if dx < 0
         dx = -dx
     dy := t.position.Y - other.Y
     if dy < 0
         dy = -dy
-    return dx <= 1 and dy <= 1 and (dx + dy) > 0
+    return dx <= 1 and dy <= 1 and dx + dy > 0

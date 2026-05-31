@@ -1,17 +1,18 @@
 petiole game
 
 import "race-to-the-crystal/shared/types" as types
+
 import "github.com/kukichalang/kukicha/stdlib/maps"
 
 type TokenAtPos
-    token_id  types.TokenID
+    token_id types.TokenID
     player_id types.PlayerID
 
 func count_tokens_by_player(tokens: list of TokenAtPos) map of types.PlayerID to list of types.TokenID
     result := make(map of types.PlayerID to list of types.TokenID)
     for tap in tokens
         if not maps.Contains(result, tap.player_id)
-            result[tap.player_id] = list of types.TokenID{}
+            result[tap.player_id] = empty list of types.TokenID
         result[tap.player_id] = append(result[tap.player_id], tap.token_id)
     return result
 

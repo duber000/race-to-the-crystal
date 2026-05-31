@@ -1,16 +1,17 @@
 petiole game
 
-import "race-to-the-crystal/shared/types" as types
 import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+
 import "github.com/kukichalang/kukicha/stdlib/random"
 
 type MysteryEventResult
-    effect       enums.MysteryEffect
-    token_id     types.TokenID
+    effect enums.MysteryEffect
+    token_id types.TokenID
     old_position types.Position
     new_position types.Position
-    old_health   int
-    new_health   int
+    old_health int
+    new_health int
 
 func trigger_mystery_event(tok: reference Token, brd: reference Board, player_index: int) MysteryEventResult
     old_pos := tok.position
@@ -21,9 +22,12 @@ func trigger_mystery_event(tok: reference Token, brd: reference Board, player_in
     if is_heads
         tok.heal_to_full()
         return MysteryEventResult{
-            effect: enums.HEAL, token_id: tok.id,
-            old_position: old_pos, new_position: tok.position,
-            old_health: old_hp, new_health: tok.health,
+            effect: enums.HEAL,
+            token_id: tok.id,
+            old_position: old_pos,
+            new_position: tok.position,
+            old_health: old_hp,
+            new_health: tok.health,
         }
 
     deploy_positions := brd.get_deployable_positions(player_index)
@@ -32,17 +36,22 @@ func trigger_mystery_event(tok: reference Token, brd: reference Board, player_in
 
     for pos in deploy_positions
         cell := brd.get_cell_at(pos)
-        if cell isnt empty and not (dereference cell).is_occupied()
-            teleport_pos = pos
-            found = true
-            break
+        if cell isnt empty
+            c := dereference cell
+            if not c.is_occupied()
+                teleport_pos = pos
+                found = true
+                break
 
     if not found
         teleport_pos = brd.get_starting_position(player_index)
 
     tok.move_to(teleport_pos)
     return MysteryEventResult{
-        effect: enums.TELEPORT, token_id: tok.id,
-        old_position: old_pos, new_position: tok.position,
-        old_health: old_hp, new_health: tok.health,
+        effect: enums.TELEPORT,
+        token_id: tok.id,
+        old_position: old_pos,
+        new_position: tok.position,
+        old_health: old_hp,
+        new_health: tok.health,
     }

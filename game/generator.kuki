@@ -1,39 +1,41 @@
 petiole game
 
-import "race-to-the-crystal/shared/types" as types
-import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/constants" as constants
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
 
 type Generator
-    id                   int
-    position             types.Position
-    capturing_player_id  types.PlayerID
-    capture_token_ids    list of types.TokenID
-    turns_held           int
-    is_disabled          bool
+    id int
+    position types.Position
+    capturing_player_id types.PlayerID
+    capture_token_ids list of types.TokenID
+    turns_held int
+    is_disabled bool
 
 func NewGenerator(id: int, position: types.Position) Generator
     return Generator{
-        id: id, position: position,
+        id: id,
+        position: position,
         capturing_player_id: "",
-        capture_token_ids: list of types.TokenID{},
-        turns_held: 0, is_disabled: false,
+        capture_token_ids: empty list of types.TokenID,
+        turns_held: 0,
+        is_disabled: false,
     }
 
-func (g: reference Generator) required_tokens() int
+func required_tokens on g: reference Generator int
     return constants.GENERATOR_CAPTURE_TOKENS_REQUIRED
 
-func (g: reference Generator) required_turns() int
+func required_turns on g: reference Generator int
     return constants.GENERATOR_CAPTURE_TURNS_REQUIRED
 
-func (g: reference Generator) token_reduction_value() int
+func token_reduction_value on g: reference Generator int
     return constants.GENERATOR_TOKEN_REDUCTION
 
-func (g: reference Generator) update_capture_status(tokens_at_pos: list of TokenAtPos) bool
+func update_capture_status on g: reference Generator(tokens_at_pos: list of TokenAtPos) bool
     if g.is_disabled
         return false
 
-    g.capture_token_ids = list of types.TokenID{}
+    g.capture_token_ids = empty list of types.TokenID
 
     counts := count_tokens_by_player(tokens_at_pos)
     dominant_player, dominant_count, found := find_dominant_player(counts)
@@ -55,17 +57,17 @@ func (g: reference Generator) update_capture_status(tokens_at_pos: list of Token
 
     return false
 
-func (g: reference Generator) reset_capture()
+func reset_capture on g: reference Generator
     if not g.is_disabled
         g.capturing_player_id = ""
         g.turns_held = 0
-        g.capture_token_ids = list of types.TokenID{}
+        g.capture_token_ids = empty list of types.TokenID
 
-func (g: reference Generator) get_capture_progress() (int, int)
+func get_capture_progress on g: reference Generator() (int, int)
     return g.turns_held, constants.GENERATOR_CAPTURE_TURNS_REQUIRED
 
 func create_generators(positions: list of types.Position) list of Generator
-    result := list of Generator{}
+    result := empty list of Generator
     for i, pos in positions
         result = append(result, NewGenerator(i, pos))
     return result
@@ -80,16 +82,16 @@ func count_disabled_generators(generators: list of Generator) int
 func get_generator_at_position(generators: list of Generator, pos: types.Position) nullable reference Generator
     for i from 0 to len(generators)
         if generators[i].position == pos
-            return &generators[i]
+            return reference of generators[i]
     return empty
 
 func update_all_generators(generators: list of Generator, tokens_by_pos: map of types.Position to list of TokenAtPos) (list of int, map of int to types.PlayerID)
-    newly_disabled := list of int{}
+    newly_disabled := empty list of int
     capturing_players := make(map of int to types.PlayerID)
 
     for i from 0 to len(generators)
         taps := tokens_by_pos[generators[i].position]
-        gen_ref := &generators[i]
+        gen_ref := reference of generators[i]
         was_disabled := gen_ref.update_capture_status(taps)
 
         if was_disabled

@@ -1,39 +1,41 @@
 petiole game
 
-import "race-to-the-crystal/shared/types" as types
-import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/constants" as constants
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
 
 type CrystalOutcome
-    winner_id    types.PlayerID
-    is_winner    bool
+    winner_id types.PlayerID
+    is_winner bool
 
 type Crystal
-    position                types.Position
-    holding_player_id       types.PlayerID
-    holding_token_ids       list of types.TokenID
-    turns_held              int
-    base_tokens_required    int
+    position types.Position
+    holding_player_id types.PlayerID
+    holding_token_ids list of types.TokenID
+    turns_held int
+    base_tokens_required int
 
 func NewCrystal(position: types.Position) Crystal
     return Crystal{
-        position: position, holding_player_id: "",
-        holding_token_ids: list of types.TokenID{},
-        turns_held: 0, base_tokens_required: constants.CRYSTAL_BASE_TOKENS_REQUIRED,
+        position: position,
+        holding_player_id: "",
+        holding_token_ids: empty list of types.TokenID,
+        turns_held: 0,
+        base_tokens_required: constants.CRYSTAL_BASE_TOKENS_REQUIRED,
     }
 
-func (c: reference Crystal) turns_required() int
+func turns_required on c: reference Crystal int
     return constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
 
-func (c: reference Crystal) get_tokens_required(disabled_generators: int) int
+func get_tokens_required on c: reference Crystal(disabled_generators: int) int
     reduction := disabled_generators * constants.GENERATOR_TOKEN_REDUCTION
     required := c.base_tokens_required - reduction
     if required < 1
         return 1
     return required
 
-func (c: reference Crystal) update_capture_status(tokens_at_pos: list of TokenAtPos, disabled_generators: int) CrystalOutcome
-    c.holding_token_ids = list of types.TokenID{}
+func update_capture_status on c: reference Crystal(tokens_at_pos: list of TokenAtPos, disabled_generators: int) CrystalOutcome
+    c.holding_token_ids = empty list of types.TokenID
 
     counts := count_tokens_by_player(tokens_at_pos)
     dominant_player, dominant_count, found := find_dominant_player(counts)
@@ -55,13 +57,13 @@ func (c: reference Crystal) update_capture_status(tokens_at_pos: list of TokenAt
 
     return CrystalOutcome{winner_id: "", is_winner: false}
 
-func (c: reference Crystal) reset_capture()
+func reset_capture on c: reference Crystal
     c.holding_player_id = ""
     c.turns_held = 0
-    c.holding_token_ids = list of types.TokenID{}
+    c.holding_token_ids = empty list of types.TokenID
 
-func (c: reference Crystal) get_capture_progress() (int, int)
+func get_capture_progress on c: reference Crystal() (int, int)
     return c.turns_held, constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
 
-func (c: reference Crystal) is_contested() bool
+func is_contested on c: reference Crystal bool
     return c.holding_player_id == "" and len(c.holding_token_ids) > 0

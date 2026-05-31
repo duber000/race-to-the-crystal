@@ -1,41 +1,45 @@
 petiole game
 
-import "race-to-the-crystal/shared/types" as types
 import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+
 import "github.com/kukichalang/kukicha/stdlib/slice"
 
 type Player
-    id          types.PlayerID
-    name        string
-    color       enums.PlayerColor
-    token_ids   list of types.TokenID
-    is_ready    bool
-    is_active   bool
-    team        nullable reference int
+    id types.PlayerID
+    name string
+    color enums.PlayerColor
+    token_ids list of types.TokenID
+    is_ready bool
+    is_active bool
+    team nullable reference int
 
 func NewPlayer(id: types.PlayerID, name: string, color: enums.PlayerColor) Player
     return Player{
-        id: id, name: name, color: color,
-        token_ids: list of types.TokenID{},
-        is_ready: false, is_active: true,
+        id: id,
+        name: name,
+        color: color,
+        token_ids: empty list of types.TokenID,
+        is_ready: false,
+        is_active: true,
     }
 
-func (p: reference Player) token_count() int
+func token_count on p: reference Player int
     return len(p.token_ids)
 
-func (p: reference Player) add_token(token_id: types.TokenID)
+func add_token on p: reference Player(token_id: types.TokenID)
     if not slice.Contains(p.token_ids, token_id)
         p.token_ids = append(p.token_ids, token_id)
 
-func (p: reference Player) remove_token(token_id: types.TokenID)
+func remove_token on p: reference Player(token_id: types.TokenID)
     if slice.Contains(p.token_ids, token_id)
         p.token_ids = slice.Filter(p.token_ids, (tid: types.TokenID) => tid != token_id)
 
-func (p: reference Player) has_token(token_id: types.TokenID) bool
+func has_token on p: reference Player(token_id: types.TokenID) bool
     return slice.Contains(p.token_ids, token_id)
 
-func (p: reference Player) set_ready(ready: bool)
+func set_ready on p: reference Player(ready: bool)
     p.is_ready = ready
 
-func (p: reference Player) eliminate()
+func eliminate on p: reference Player
     p.is_active = false
