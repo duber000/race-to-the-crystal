@@ -70,8 +70,7 @@ func EndTurn on api: reference GameAPI ActionResult
 func IsMyTurn on api: reference GameAPI bool
     if api.game_state equals empty
         return false
-    gs := dereference api.game_state
-    return gs.current_turn_player_id == api.player_id
+    return dereference api.game_state.current_turn_player_id == api.player_id
 
 func GetPhase on api: reference GameAPI string
     if api.game_state equals empty
@@ -117,5 +116,4 @@ func GetDeployedTokens on api: reference GameAPI list of map of string to any
 func GetReserveCounts on api: reference GameAPI map of int to int
     if api.game_state equals empty
         return make(map of int to int)
-    gs := dereference api.game_state
-    return gs.GetReserveTokenCounts(api.player_id)
+    return dereference api.game_state.GetReserveTokenCounts(api.player_id)

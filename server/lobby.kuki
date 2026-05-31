@@ -212,8 +212,7 @@ func join_lobby on lm: reference LobbyManager(game_id: string, player_id: string
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return empty
-    lb := dereference lobby
-    if lb.status != GameStatus.WAITING
+    if dereference lobby.status != GameStatus.WAITING
         return empty
     success := lobby.add_player(player_id, player_name, client_type)
     if not success
@@ -225,7 +224,7 @@ func leave_lobby on lm: reference LobbyManager(game_id: string, player_id: strin
     if lobby equals empty
         return false
     success := lobby.remove_player(player_id)
-    if len(lobby.players) == 0
+    if len(dereference lobby.players) == 0
         delete lm.lobbies[game_id]
     return success
 
@@ -239,7 +238,7 @@ func start_game on lm: reference LobbyManager(game_id: string) nullable referenc
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return empty
-    if not lobby.can_start()
+    if not dereference lobby.can_start()
         return empty
     lobby.status = GameStatus.STARTING
     return lobby
@@ -261,13 +260,14 @@ func finish_game on lm: reference LobbyManager(game_id: string) bool
 func list_available_lobbies on lm: reference LobbyManager list of map of string to any
     result := empty list of map of string to any
     for _, lobby in lm.lobbies
-        if lobby.status == GameStatus.WAITING and len(lobby.players) < lobby.max_players
-            result = append(result, lobby.to_dict())
+        if dereference lobby.status == GameStatus.WAITING and len(dereference lobby.players) < dereference lobby.max_players
+            result = append(result, dereference lobby.to_dict())
     return result
 
 func get_player_lobby on lm: reference LobbyManager(player_id: string) nullable reference GameLobby
     for _, lobby in lm.lobbies
-        _, exists := lobby.players[player_id]
+        lb := dereference lobby
+        _, exists := lb.players[player_id]
         if exists
             return lobby
     return empty
@@ -275,4 +275,4 @@ func get_player_lobby on lm: reference LobbyManager(player_id: string) nullable 
 func remove_player_from_all on lm: reference LobbyManager(player_id: string)
     lobby := lm.get_player_lobby(player_id)
     if lobby isnt empty
-        lm.leave_lobby(lobby.game_id, player_id)
+        lm.leave_lobby(dereference lobby.game_id, player_id)

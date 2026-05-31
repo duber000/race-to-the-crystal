@@ -4,7 +4,7 @@
 
 Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://kukicha.dev), a near-superset of Go. The JS web client (Babylon.js) stays as-is.
 
-## Current Status (2026-05-30)
+## Current Status (2026-05-31)
 
 | Phase | Description | Status | LOC |
 |-------|-------------|--------|-----|
@@ -17,9 +17,12 @@ Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://
 | Phase 6 | `web_server/` | **NOT STARTED** | — |
 | Phase 7 | Tests (`*_test.kuki`) | **NOT STARTED** | — |
 
-**What works:** `kukicha check ./...` and `kukicha build ./...` pass cleanly for all 6 packages (shared/* + game + server). `go build ./...` succeeds. All 16 game/ files and 10 server/ files compile. Server has auth, lobby, game_coordinator, WebSocket handler, Mercure publisher, HTTP handler, AI spawner, rate limiter, action validation, and server_main. Kukicha v0.25.2.
+**What works:** `kukicha check ./...` and `kukicha build ./...` pass cleanly for all 6 packages (shared/* + game + server). `go build ./...` succeeds. All 16 game/ files and 10 server/ files compile. Server has auth, lobby, game_coordinator, WebSocket handler, Mercure publisher, HTTP handler, AI spawner, rate limiter, action validation, and server_main. Kukicha v0.25.3.
 
-**Known kukicha compiler bug (workaround applied):** `dereference x.field` and `dereference x.method()` transpile to `*x.field` / `*x.method()` in Go, which Go parses as `*(x.field)` / `*(x.method())` — dereferencing the result instead of the receiver. Workaround: always bind with `v := dereference x` then use `v.field` / `v.method()`. Must file as kukicha#205.
+**Known kukicha compiler bugs (workarounds applied):**
+1. ~~#241 `dereference x.field` transpiles to `*x.field` instead of `(*x).field`~~ — **Fixed in v0.25.3.** Inline `dereference x.field` now works correctly.
+2. `delete dereference x.field[key]` — transpiler doesn't support `delete` on a dereferenced map expression. Workaround: bind with `v := dereference x` then `delete v.field[key]`.
+3. `nullable reference func(...)` maps to `*func(...)` in Go, which can't be called directly. Workaround: wrap in a callback struct (see `ConnectCallback`/`DisconnectCallback`/`MessageCallback` in `websocket_handler.kuki`). Must file as new kukicha issue.
 
 **What's next:** Complete Phase 3 server (verify all server endpoints work), then Phase 4 (AI client). Unit tests can be written in parallel (Phase 7).
 
@@ -641,7 +644,9 @@ func TestFeature(t: reference testing.T)
 | 7 | Random placement differs between Python `random.randint` and Kukicha `stdlib/random` | Board generation deterministic differences | Low | Accept difference; game rules same |
 | 8 | BFS with deque in Kukicha | Movement system performance | Low | Kukicha has `stdlib/slice` + goroutines; deque from linked list if needed |
 | 9 | BFS adjacency uses `collections.deque` in Python | Need to implement queue | Low | Use `stdlib/slice` as stack/queue (`append`, `PopFirst` with `slice[1:]`) |
-| 10 | `dereference x.field` transpiles to `*x.field` instead of `(*x).field` | Go build fails on valid Kukicha code | **Confirmed** (v0.25.2) | Workaround: bind with `v := dereference x` then `v.field`; file as kukicha#205 |
+| 10 | `dereference x.field` transpiles to `*x.field` instead of `(*x).field` | Go build fails on valid Kukicha code | **Fixed** (v0.25.3, #241) | N/A — inline `dereference x.field` now works |
+| 11 | `delete dereference x.field[key]` unsupported by transpiler | Can't delete map entries via dereferenced struct | Confirmed (#250) | Workaround: bind first `v := dereference x; delete v.field[key]` |
+| 12 | `nullable reference func(...)` generates uncallable `*func(...)` in Go | Callback fields can't be invoked | Confirmed (#251) | Workaround: wrap in callback struct |
 
 ---
 

@@ -2,7 +2,7 @@ module race-to-the-crystal
 
 go 1.26.3
 
-require github.com/kukichalang/kukicha/stdlib v0.25.2
+require github.com/kukichalang/kukicha/stdlib v0.25.3
 
 require golang.org/x/text v0.36.0 // indirect
 

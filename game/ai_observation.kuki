@@ -90,8 +90,7 @@ func describe_game_state(gs: reference GameState, perspective: types.PlayerID) s
         winner_ref := gs.GetPlayer(gs.winner_id)
         winner_name := "Unknown"
         if winner_ref isnt empty
-            wr := dereference winner_ref
-            winner_name = wr.name
+            winner_name = dereference winner_ref.name
         lines = append(lines, "GAME OVER - Winner: {winner_name}")
     else if gs.phase == enums.SETUP
         lines = append(lines, "GAME SETUP - Waiting for players")
@@ -405,10 +404,8 @@ func add_deployment_actions(actions: list of map of string to any, gs: reference
             available := empty list of list of int
             for pos in corner_positions
                 cell := gs.board.get_cell_at(pos)
-                if cell isnt empty
-                    cl := dereference cell
-                    if not cl.is_occupied()
-                        available = append(available, list of int{pos.X, pos.Y})
+                if cell isnt empty and not dereference cell.is_occupied()
+                    available = append(available, list of int{pos.X, pos.Y})
             if len(available) > 0
                 action := make(map of string to any)
                 action["type"] = "DEPLOY"
@@ -431,8 +428,7 @@ func add_attack_actions(actions: list of map of string to any, deployed: list of
             target_player := gs.GetPlayer(target.player_id)
             target_color := "Unknown"
             if target_player isnt empty
-                tp := dereference target_player
-                target_color = color_name(tp.color)
+                target_color = color_name(dereference target_player.color)
 
             kill_tag := ""
             if will_kill_target

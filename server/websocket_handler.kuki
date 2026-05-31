@@ -37,12 +37,21 @@ type WSMessage
 func NewWSMessage(game_id: string, data: map of string to any) WSMessage
     return WSMessage{game_id: game_id, data: data}
 
+type ConnectCallback
+    fn func(string, string, string)
+
+type DisconnectCallback
+    fn func(string)
+
+type MessageCallback
+    fn func(string, string, map of string to any)
+
 type WebSocketHandler
     clients map of string to WSClient
     game_sessions map of string to string
-    on_connect nullable reference func(string, string, string)
-    on_disconnect nullable reference func(string)
-    on_message nullable reference func(string, string, map of string to any)
+    on_connect nullable reference ConnectCallback
+    on_disconnect nullable reference DisconnectCallback
+    on_message nullable reference MessageCallback
 
 func NewWebSocketHandler() WebSocketHandler
     return WebSocketHandler{
@@ -51,27 +60,27 @@ func NewWebSocketHandler() WebSocketHandler
     }
 
 func SetOnConnect on wh: reference WebSocketHandler(handler: reference func(string, string, string))
-    wh.on_connect = handler
+    wh.on_connect = reference of ConnectCallback{fn: dereference handler}
 
 func SetOnDisconnect on wh: reference WebSocketHandler(handler: reference func(string))
-    wh.on_disconnect = handler
+    wh.on_disconnect = reference of DisconnectCallback{fn: dereference handler}
 
 func SetOnMessage on wh: reference WebSocketHandler(handler: reference func(string, string, map of string to any))
-    wh.on_message = handler
+    wh.on_message = reference of MessageCallback{fn: dereference handler}
 
 func RegisterClient on wh: reference WebSocketHandler(client: WSClient)
     wh.clients[client.client_id] = client
     wh.game_sessions[client.client_id] = client.game_id
     if wh.on_connect isnt empty
-        fn_connect := dereference wh.on_connect
-        fn_connect(client.client_id, client.player_id, client.game_id)
+        cb := dereference wh.on_connect
+        cb.fn(client.client_id, client.player_id, client.game_id)
 
 func UnregisterClient on wh: reference WebSocketHandler(client_id: string)
     delete wh.clients[client_id]
     delete wh.game_sessions[client_id]
     if wh.on_disconnect isnt empty
-        fn_disconnect := dereference wh.on_disconnect
-        fn_disconnect(client_id)
+        cb := dereference wh.on_disconnect
+        cb.fn(client_id)
 
 func UpdateClientGameID on wh: reference WebSocketHandler(client_id: string, game_id: string)
     client, ok := wh.clients[client_id]

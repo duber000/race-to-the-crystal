@@ -248,8 +248,7 @@ func score_destination(dest: types.Position, objectives: list of types.Position,
             min_dist = dist
 
     if tok isnt empty
-        tk := dereference tok
-        if tk.movement_range() >= 2
+        if dereference tok.movement_range() >= 2
             min_dist = min_dist - 0.5
 
     return min_dist

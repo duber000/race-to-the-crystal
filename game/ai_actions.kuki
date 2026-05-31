@@ -203,10 +203,8 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
         return InvalidResult("DEPLOY_FAILED: out_of_bounds | pos=({pos.X},{pos.Y}) | board_size=24x24")
 
     cell := gs.board.get_cell_at(pos)
-    if cell isnt empty
-        c := dereference cell
-        if c.is_occupied()
-            return InvalidResult("DEPLOY_FAILED: cell_occupied | pos=({pos.X},{pos.Y})")
+    if cell isnt empty and dereference cell.is_occupied()
+        return InvalidResult("DEPLOY_FAILED: cell_occupied | pos=({pos.X},{pos.Y})")
 
     p_ref := gs.GetPlayer(player_id)
     if p_ref equals empty
@@ -261,32 +259,30 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
     result_data["new_position"] = list of int{dest.X, dest.Y}
 
     cell := gs.board.get_cell_at(dest)
-    if cell isnt empty
-        c := dereference cell
-        if c.cell_type == enums.MYSTERY
-            p_ref := gs.GetPlayer(player_id)
-            if p_ref isnt empty
-                p := dereference p_ref
-                player_index := enums.PlayerIndex(p.color)
-                mystery_result := trigger_mystery_event(tok_ref, reference of gs.board, player_index)
+    if cell isnt empty and dereference cell.cell_type == enums.MYSTERY
+        p_ref := gs.GetPlayer(player_id)
+        if p_ref isnt empty
+            p := dereference p_ref
+            player_index := enums.PlayerIndex(p.color)
+            mystery_result := trigger_mystery_event(tok_ref, reference of gs.board, player_index)
 
-                gs.last_triggered_mystery_event = reference of MysteryEvent{
-                    TokenID: TokenID,
-                    Position: dest,
-                    effect: enums.MysteryEffectName(mystery_result.effect),
-                }
+            gs.last_triggered_mystery_event = reference of MysteryEvent{
+                TokenID: TokenID,
+                Position: dest,
+                effect: enums.MysteryEffectName(mystery_result.effect),
+            }
 
-                message = message + "\n  Token landed on a MYSTERY square!"
-                result_data["mystery_triggered"] = true
-                result_data["mystery_effect"] = enums.MysteryEffectName(mystery_result.effect)
+            message = message + "\n  Token landed on a MYSTERY square!"
+            result_data["mystery_triggered"] = true
+            result_data["mystery_effect"] = enums.MysteryEffectName(mystery_result.effect)
 
-                if mystery_result.effect == enums.HEAL
-                    message = message + "\n  HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
-                else
-                    gs.board.clear_occupant(dest, TokenID)
-                    gs.board.set_occupant(mystery_result.new_position, TokenID)
-                    message = message + "\n  TAILS! Token teleported back to deployment area ({mystery_result.new_position.X},{mystery_result.new_position.Y})!"
-                    result_data["new_position"] = list of int{mystery_result.new_position.X, mystery_result.new_position.Y}
+            if mystery_result.effect == enums.HEAL
+                message = message + "\n  HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
+            else
+                gs.board.clear_occupant(dest, TokenID)
+                gs.board.set_occupant(mystery_result.new_position, TokenID)
+                message = message + "\n  TAILS! Token teleported back to deployment area ({mystery_result.new_position.X},{mystery_result.new_position.Y})!"
+                result_data["new_position"] = list of int{mystery_result.new_position.X, mystery_result.new_position.Y}
 
     gs.turn_phase = enums.ACTION
     message = message + "\n  Phase changed to ACTION (you can attack or end turn)"
@@ -301,8 +297,7 @@ func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: ref
     def_player := gs.GetPlayer(defn.player_id)
     def_owner := "Unknown"
     if def_player isnt empty
-        dp := dereference def_player
-        def_owner = dp.name
+        def_owner = dereference def_player.name
 
     outcome := gs.AttackToken(AttackerID, DefenderID)
     if outcome equals empty
@@ -321,8 +316,7 @@ func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: ref
     else
         current_hp := defn.health
         if def_ref isnt empty
-            dr := dereference def_ref
-            current_hp = dr.health
+            current_hp = dereference def_ref.health
         message = message + "\n  Token #{DefenderID} now has {current_hp}hp"
 
     return SuccessResult(message, reference of result_data)
@@ -356,8 +350,7 @@ func ExecuteEndTurn(gs: reference GameState) ActionResult
     new_player := gs.GetCurrentPlayer()
     new_player_name := "Unknown"
     if new_player isnt empty
-        np := dereference new_player
-        new_player_name = np.name
+        new_player_name = dereference new_player.name
 
     message := "Turn ended\n  Turn {gs.turn_number} begins\n  Current player: {new_player_name}"
 

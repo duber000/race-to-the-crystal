@@ -18,11 +18,10 @@ type GameSession
     api_map map of string to gamepkg.GameAPI
 
 func NewGameSession(game_id: string, lobby: reference GameLobby) GameSession
-    lb := dereference lobby
-    gs := gamepkg.CreateGame(len(lb.players))
+    gs := gamepkg.CreateGame(len(dereference lobby.players))
     session := GameSession{
         game_id: game_id,
-        game_name: lb.game_name,
+        game_name: dereference lobby.game_name,
         game_state: gs,
         network_to_game_id: make(map of string to string),
         game_to_network_id: make(map of string to string),
