@@ -17,12 +17,12 @@ Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://
 | Phase 6 | `web_server/` | **NOT STARTED** | — |
 | Phase 7 | Tests (`*_test.kuki`) | **NOT STARTED** | — |
 
-**What works:** `kukicha check ./...` and `kukicha build ./...` pass cleanly for all 6 packages (shared/* + game + server). `go build ./...` succeeds. All 16 game/ files and 10 server/ files compile. Server has auth, lobby, game_coordinator, WebSocket handler, Mercure publisher, HTTP handler, AI spawner, rate limiter, action validation, and server_main. Kukicha v0.26.1.
+**What works:** `kukicha check ./...` and `kukicha build ./...` pass cleanly for all 6 packages (shared/* + game + server). `go build ./...` succeeds. All 16 game/ files and 10 server/ files compile. Server has auth, lobby, game_coordinator, WebSocket handler, Mercure publisher, HTTP handler, AI spawner, rate limiter, action validation, and server_main. Kukicha v0.26.2.
 
-**Kukicha compiler bugs (workarounds applied):**
+**Kukicha compiler bugs — all fixed:**
 1. ~~#241 `dereference x.field` transpiles to `*x.field`~~ — **Fixed in v0.25.3.**
 2. ~~#250 `delete dereference m.field[key]`~~ — **Fixed in v0.26.0.**
-3. **#251** `nullable reference func(...)` generates uncallable `*func(...)` in Go — **still broken in v0.26.1**. The transpiler generates `(*wh).on_connect(...)` but needs `(*(*wh).on_connect)(...)`. Workaround: wrap callbacks in structs (see `ConnectCallback`/`DisconnectCallback`/`MessageCallback` in `websocket_handler.kuki`).
+3. ~~#251 `nullable reference func(...)` generates uncallable `*func(...)` in Go~~ — **Fixed in v0.26.2.**
 
 **What's next:** Complete Phase 3 server (verify all server endpoints work), then Phase 4 (AI client). Unit tests can be written in parallel (Phase 7).
 
@@ -646,7 +646,7 @@ func TestFeature(t: reference testing.T)
 | 9 | BFS adjacency uses `collections.deque` in Python | Need to implement queue | Low | Use `stdlib/slice` as stack/queue (`append`, `PopFirst` with `slice[1:]`) |
 | 10 | `dereference x.field` transpiles to `*x.field` instead of `(*x).field` | Go build fails on valid Kukicha code | **Fixed** (v0.25.3, #241) | N/A — inline `dereference x.field` now works |
 | 11 | `delete dereference m.field[key]` not supported by transpiler | Can't delete map entries via dereferenced struct | **Fixed** (#250, v0.26.0) | N/A |
-| 12 | `nullable reference func(...)` generates uncallable `*func(...)` in Go | Callback fields can't be invoked | Open (#251) — v0.26.1 still broken | Workaround: wrap in callback struct |
+| 12 | `nullable reference func(...)` generates uncallable `*func(...)` in Go | Callback fields can't be invoked | **Fixed** (#251, v0.26.2) | N/A |
 
 ---
 
