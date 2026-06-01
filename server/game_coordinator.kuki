@@ -145,8 +145,7 @@ func remove_player on gc: reference GameCoordinator(player_id: string) string
     delete gc.player_to_game[player_id]
     session := gc.get_session(game_id)
     if session isnt empty
-        s := dereference session
-        delete s.network_to_game_id[player_id]
+        delete dereference session.network_to_game_id[player_id]
     return game_id
 
 func get_active_game_count on gc: reference GameCoordinator int
