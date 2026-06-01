@@ -1,4 +1,4 @@
-petiole server
+petiole main
 
 import "net"
 import "race-to-the-crystal/shared/types" as typespkg

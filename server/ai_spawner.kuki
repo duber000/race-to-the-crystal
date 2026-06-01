@@ -1,4 +1,4 @@
-petiole server
+petiole main
 
 import "os"
 import "os/exec"

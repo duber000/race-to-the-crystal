@@ -1,4 +1,4 @@
-petiole server
+petiole main
 
 import "net/http"
 import "os"
@@ -70,9 +70,12 @@ func Start on gs: reference GameServer
 
     log.Info("Server started. Press Ctrl+C to stop.")
 
+    ch := make(channel of bool)
     signal.OnInterrupt(() =>
         log.Info("Shutting down server...")
+        send true to ch
     )
+    receive from ch
 
 func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
     mux.HandleFunc("/", gs.handleHTTP)
@@ -204,7 +207,8 @@ func handleReadyRoute on gs: reference GameServer(w: http.ResponseWriter, r: ref
     auth_header := httphelper.GetHeader(r, "Authorization")
 
     body := make(map of string to any)
-    httphelper.ReadJSON(r, reference of body) onerr discard
+    httphelper.ReadJSON(r, reference of body) onerr
+        log.Debug("Ready endpoint: empty or invalid body, using defaults")
 
     result := gs.http_handler.HandleReady(game_id, auth_header, body)
     gs.writeAPIResponse(w, result)
@@ -242,9 +246,11 @@ func writeAPIResponse on gs: reference GameServer(w: http.ResponseWriter, result
     }
 
     if result.success
-        httphelper.JSON(w, response_data) onerr discard
+        httphelper.JSON(w, response_data) onerr
+            log.Error("Failed to write JSON response")
     else
-        httphelper.JSONError(w, result.message, status) onerr discard
+        httphelper.JSONError(w, result.message, status) onerr
+            log.Error("Failed to write JSON error response")
 
 func main()
     config := ServerConfigFromEnv()

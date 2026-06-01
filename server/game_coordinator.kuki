@@ -1,4 +1,4 @@
-petiole server
+petiole main
 
 import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/constants" as constants
@@ -109,7 +109,7 @@ func create_session on gc: reference GameCoordinator(lobby: reference GameLobby)
     for info in players
         pid_val, has_id := info["player_id"]
         if has_id
-            pid_str := cast.SmartString(pid_val) onerr discard
+            pid_str := cast.SmartString(pid_val) onerr ""
             if pid_str != ""
                 gc.player_to_game[pid_str] = game_id
     return gc.active_games[game_id]

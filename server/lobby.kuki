@@ -1,4 +1,4 @@
-petiole server
+petiole main
 
 import "github.com/kukichalang/kukicha/stdlib/random"
 import "github.com/kukichalang/kukicha/stdlib/regex"

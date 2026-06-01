@@ -1,4 +1,4 @@
-petiole server
+petiole main
 
 import "github.com/kukichalang/kukicha/stdlib/cast"
 import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg

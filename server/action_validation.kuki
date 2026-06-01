@@ -1,4 +1,4 @@
-petiole server
+petiole main
 
 import "race-to-the-crystal/shared/constants" as constants
 
@@ -154,7 +154,7 @@ func NormalizeActionData(data: map of string to any) map of string to any
     for key, val in data
         lower_key := strpkg.ToLower(key)
         if lower_key == "type"
-            type_str := cast.SmartString(val) onerr discard
+            type_str := cast.SmartString(val) onerr ""
             result["type"] = strpkg.ToLower(type_str)
         else if lower_key == "target_id"
             result["defender_id"] = val

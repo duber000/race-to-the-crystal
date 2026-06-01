@@ -4,27 +4,30 @@
 
 Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://kukicha.dev), a near-superset of Go. The JS web client (Babylon.js) stays as-is.
 
-## Current Status (2026-06-02)
+## Current Status (2026-06-01)
 
 | Phase | Description | Status | LOC |
 |-------|-------------|--------|-----|
 | Phase 0 | Project setup (go.mod, Makefile, kukicha init) | **COMPLETE** | — |
 | Phase 1 | `shared/` (types, enums, constants, errors) | **COMPLETE** | 166 LOC |
 | Phase 2 | `game/` (game logic, 16 files) | **COMPLETE** | 2,756 LOC |
-| Phase 3 | `server/` | **IN PROGRESS (Day 1-3 done)** | — |
+| Phase 3 | `server/` (10 files) | **COMPLETE** | 1,919 LOC |
 | Phase 4 | `client/ai_client` | **NOT STARTED** | — |
 | Phase 5 | `client/desktop` (ebitengine) | **NOT STARTED** | — |
 | Phase 6 | `web_server/` | **NOT STARTED** | — |
 | Phase 7 | Tests (`*_test.kuki`) | **NOT STARTED** | — |
 
-**What works:** `kukicha check ./...` and `kukicha build ./...` pass cleanly for all 6 packages (shared/* + game + server). `go build ./...` succeeds. All 16 game/ files and 10 server/ files compile. Server has auth, lobby, game_coordinator, WebSocket handler, Mercure publisher, HTTP handler, AI spawner, rate limiter, action validation, and server_main. Kukicha v0.26.2.
+**What works:** `kukicha check ./...` and `kukicha build ./...` pass cleanly for all 6 packages (shared/* + game + server). `go build ./...` succeeds. All 16 game/ files and 10 server/ files compile and run. Server HTTP endpoints tested: `/api/config`, `/api/games`, `/api/game/create`, `/api/game/{id}/join`, `/api/game/{id}/state`, `/api/game/{id}/action`, `/api/game/{id}/leave`, `/api/game/{id}/ready`, `/api/game/{id}/start`. Kukicha v0.26.2.
 
 **Kukicha compiler bugs — all fixed:**
 1. ~~#241 `dereference x.field` transpiles to `*x.field`~~ — **Fixed in v0.25.3.**
 2. ~~#250 `delete dereference m.field[key]`~~ — **Fixed in v0.26.0.**
 3. ~~#251 `nullable reference func(...)` generates uncallable `*func(...)` in Go~~ — **Fixed in v0.26.2.**
 
-**What's next:** Complete Phase 3 server (verify all server endpoints work), then Phase 4 (AI client). Unit tests can be written in parallel (Phase 7).
+**Kukicha stdlib issues found during Phase 3:**
+- `signal.OnInterrupt()` spawns a goroutine and returns immediately — doesn't block main goroutine. Fixed in server by using a channel-based blocking pattern.
+
+**What's next:** Phase 4 (AI client). Unit tests can be written in parallel (Phase 7).
 
 ### Key Architectural Decisions
 

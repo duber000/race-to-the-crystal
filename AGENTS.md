@@ -264,6 +264,7 @@ Rules:
 - `dereference x` on a `nullable reference T` is an error unless x is narrowed in the current branch (`if x isnt empty`, `if x equals empty: return`, or the Go-style `!= nil` / `== nil` forms).
 - `var p reference T` without an initializer is rejected — either initialize it or declare it `nullable reference T`.
 - Struct fields can't be bare `reference T` (the zero value would be `empty`); declare them `nullable reference T`.
+- **Calling a `reference func(...)` field needs no `dereference`** — after narrowing, just call it: `wh.on_connect(args)`. The compiler inserts the pointer deref for you. Writing `dereference wh.on_connect(args)` is a trap: `dereference` binds to the whole call, so it reads as "deref the receiver `wh`," not "deref the function pointer." It still compiles to the right thing now, but the bare call is what you mean.
 
 ```kukicha
 func Greet(u: reference User) string         # u is guaranteed non-empty
@@ -696,12 +697,13 @@ kukicha build <target>    # transpile + compile to binary
 kukicha run <target>      # transpile + compile + run
 kukicha fmt -w <target>   # format in place (use --check in CI)
 kukicha context <target>  # project metadata as JSON (for agents)
+kukicha context --graph <target>  # add the knowledge graph: nodes + call/import edges
 kukicha context --stdlib  # stdlib API index as JSON: signatures + docs + security/deprecated/panics tags
 kukicha brew <target>     # convert .kuki → standalone .go (publication only)
-kukicha explain <code>    # title + summary + reproducer + fix recipe for a diagnostic code (--list to enumerate)
+kukicha explain <code>    # title + summary + reproducer + fix recipe for a diagnostic code or concept/* construct (--list to enumerate)
 ```
 
-Run `kukicha <cmd> --help` for flags. Common ones: `--json` (structured diagnostics on `check`/`build`/`run`/`fmt`), `--wasm` (build), `--vulncheck` (build), `--strict-onerr` (check), `--package-context` (single-file `check`/`build` that resolves refs into sibling `.kuki` files). Also: `kukicha audit`, `kukicha pack`, `kukicha skills {add,list,remove,verify,update}`. When the compiler emits a diagnostic with a stable code (e.g. `[semantic/deref-nullable]`), `kukicha explain <code>` prints the full recipe. Run `kukicha fmt -w` before committing.
+Run `kukicha <cmd> --help` for flags. Common ones: `--json` (structured diagnostics on `check`/`build`/`run`/`fmt`), `--wasm` (build), `--vulncheck` (build), `--strict-onerr` (check), `--package-context` (single-file `check`/`build` that resolves refs into sibling `.kuki` files). Also: `kukicha audit`, `kukicha pack`, `kukicha skills {add,list,remove,verify,update}`. When the compiler emits a diagnostic with a stable code (e.g. `[semantic/deref-nullable]`), `kukicha explain <code>` prints the full recipe. The same command also teaches language constructs via the `concept/*` namespace (`kukicha explain concept/pipes`, `concept/onerr`, `concept/variant-enums`, `concept/fallback`, …); `--list` groups both diagnostics and concepts. Editors backed by `kukicha-lsp` surface these explanations on hover — both the diagnostic recipe under the cursor and a `concept/*` lesson when hovering a Kukicha-only keyword or `|>`/`=>`. Run `kukicha fmt -w` before committing.
 
 **Compiler directives** — `# kuki:...` comments attached above a declaration or statement:
 
@@ -811,6 +813,22 @@ flag is for.
 ```
 
 `entry_point` is omitted for library projects or when multiple `func main()` declarations are found across files. `effects` lists per-function transitive security categories (sql, html, fetch, files, redirect, shell, regex) and is omitted when no function reaches into `# kuki:security`-tagged stdlib. Names are deduplicated across files and sorted.
+
+Pass `--graph` to add two fields — `nodes` and `edges` — that form the project knowledge graph. Nodes cover the package, its functions/methods (`kind` `func`/`method`, with `file` and folded-in `effects`), and imported packages (`kind` `import`). Edges are `call` (caller→callee, type-resolved from the same call graph that drives effect inference) and `import` (package→imported path). Both endpoints of every edge are emitted as nodes. The default output is unchanged when `--graph` is absent.
+
+```json
+{
+  "nodes": [
+    {"id": "myapp", "kind": "package"},
+    {"id": "sync", "kind": "func", "file": "main.kuki", "effects": ["fetch", "sql"]},
+    {"id": "stdlib/db", "kind": "import"}
+  ],
+  "edges": [
+    {"from": "myapp", "to": "stdlib/db", "kind": "import"},
+    {"from": "main", "to": "sync", "kind": "call"}
+  ]
+}
+```
 
 ---
 
