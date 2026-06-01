@@ -1,0 +1,259 @@
+petiole main
+
+import "race-to-the-crystal/game" as gamepkg
+
+import "github.com/kukichalang/kukicha/stdlib/cast"
+import "github.com/kukichalang/kukicha/stdlib/cli"
+import "github.com/kukichalang/kukicha/stdlib/datetime"
+import "github.com/kukichalang/kukicha/stdlib/log"
+import "github.com/kukichalang/kukicha/stdlib/random"
+import "github.com/kukichalang/kukicha/stdlib/signal"
+
+const DEFAULT_BASE_URL = "http://localhost:8080"
+
+const DEFAULT_POLL_MS = 1500
+
+const DEFAULT_THINK_MS = 500
+
+type Mode
+    Mode string
+
+const POLL = "poll"
+
+const SSE = "sse"
+
+func parseStrategy(s: string) gamepkg.AIStrategyName
+    name, ok := gamepkg.ParseAIStrategyName(s)
+    if ok
+        return name
+    return gamepkg.AIStrategyNameRANDOM
+
+func defaultPlayerName() string
+    return "AI_{random.Int(1000, 9999)}"
+
+func openSession(args: cli.Args) Session
+    base_url := cli.GetStringOr(args, "server", DEFAULT_BASE_URL)
+    if cli.GetBool(args, "debug")
+        log.SetLevel(log.LevelDebug)
+
+    sess := NewSession(base_url)
+    sess.player_name = cli.GetStringOr(args, "name", defaultPlayerName())
+
+    join_id := cli.GetStringOr(args, "join", "")
+    create_name := cli.GetStringOr(args, "create", "")
+
+    if join_id != ""
+        log.Info("Joining game {join_id} as {sess.player_name}")
+        ok := sess.JoinGame(join_id, sess.player_name)
+        if not ok
+            log.Fatal("failed to join game {join_id}")
+        log.Info("Marking as ready")
+        sess.SetReady(true)
+    else if create_name != ""
+        log.Info("Creating game {create_name} as {sess.player_name}")
+        ok := sess.CreateGame(create_name, sess.player_name)
+        if not ok
+            log.Fatal("failed to create game {create_name}")
+        log.Info("Marking as ready")
+        sess.SetReady(true)
+    else
+        log.Fatal("--join <game-id> or --create <game-name> is required")
+
+    return sess
+
+func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
+    state := sess.FetchState()
+    if len(state) == 0
+        sess.TryAutoStart()
+        return
+
+    if IsGameOver(state)
+        log.Info("Game ended")
+        sess.active = false
+        return
+
+    perspective, has_p := state["perspective_player_id"]
+    var my_game_id string
+    if has_p
+        my_game_id = cast.SmartString(perspective) onerr ""
+
+    log.Debug("takeTurn: state size={len(state)}, perspective={my_game_id}, my_net_id={sess.player_id}")
+    if my_game_id == ""
+        return
+
+    cur, has := state["current_turn_player_id"]
+    if not has
+        return
+    cur_str := cast.SmartString(cur) onerr ""
+    log.Debug("takeTurn: current={cur_str}, my={my_game_id}")
+    if cur_str != my_game_id
+        return
+
+    log.Info("Our turn (turn {castInt(state, "turn_number")})")
+    datetime.SleepMilliseconds(DEFAULT_THINK_MS)
+
+    payload := sess.FetchActions()
+    if len(payload) == 0
+        log.Warn("empty actions response")
+        return
+
+    actions_any, has_actions := payload["actions"]
+    if not has_actions
+        return
+
+    actions_raw, raw_ok := actions_any.(list of any)
+    if not raw_ok
+        return
+
+    actions := empty list of map of string to any
+    for item in actions_raw
+        m, m_ok := item.(map of string to any)
+        if m_ok
+            actions = append(actions, m)
+    log.Info("Available actions: {len(actions)}")
+    if len(actions) == 0
+        return
+
+    chosen := PickAction(actions, strategy)
+    log.Info("Sending {chosen.ActionType}")
+    result := sess.SendAction(chosen)
+    if len(result) == 0
+        return
+
+    if msg, has := result["message"]; has
+        msg_str := cast.SmartString(msg) onerr ""
+        log.Debug("Server: {msg_str}")
+
+func castInt(m: map of string to any, key: string) int
+    v, has := m[key]
+    if not has
+        return 0
+    return cast.SmartInt(v) onerr 0
+
+func runPoll(args: cli.Args)
+    sess := openSession(args)
+    strategy := parseStrategy(cli.GetStringOr(args, "strategy", "random"))
+    poll_ms := cli.GetIntOr(args, "poll-interval", DEFAULT_POLL_MS)
+
+    log.Info("Polling every {poll_ms}ms with strategy {strategy}")
+
+    ch := make(channel of bool)
+    signal.OnInterrupt(() =>
+        log.Info("Shutting down")
+        send true to ch
+    )
+
+    for
+        select
+            when receive from ch
+                return
+            default
+                takeTurn(reference of sess, strategy)
+                if not sess.active
+                    return
+                datetime.SleepMilliseconds(int64(poll_ms))
+
+func runSSE(args: cli.Args)
+    sess := openSession(args)
+    strategy := parseStrategy(cli.GetStringOr(args, "strategy", "random"))
+
+    log.Info("Subscribing to SSE stream with strategy {strategy}")
+
+    sess.ConnectSSE((ev: SSEEvent) =>
+        evt_type := ev.event_type
+        if evt_type == "" or evt_type == "message"
+            evt_type = "message"
+
+        if evt_type == "GAME_WON" or evt_type == "GAME_OVER"
+            log.Info("Game over event received")
+            sess.active = false
+            return false
+
+        state := ExtractStateFromSSE(ev)
+        if len(state) == 0
+            return true
+
+        if IsGameOver(state)
+            log.Info("Game over (state)")
+            sess.active = false
+            return false
+
+        perspective, has_p := state["perspective_player_id"]
+        var my_game_id string
+        if has_p
+            my_game_id = cast.SmartString(perspective) onerr ""
+
+        if my_game_id == ""
+            return true
+
+        cur, has := state["current_turn_player_id"]
+        if not has
+            return true
+        cur_str := cast.SmartString(cur) onerr ""
+        if cur_str != my_game_id
+            return true
+
+        if not IsGameActive(state)
+            return true
+
+        log.Info("Our turn (turn {castInt(state, "turn_number")})")
+        datetime.SleepMilliseconds(DEFAULT_THINK_MS)
+
+        payload := sess.FetchActions()
+        if len(payload) == 0
+            return true
+
+        actions_any, has_actions := payload["actions"]
+        if not has_actions
+            return true
+
+        actions_raw, raw_ok := actions_any.(list of any)
+        if not raw_ok
+            return true
+
+        actions := empty list of map of string to any
+        for item in actions_raw
+            m, m_ok := item.(map of string to any)
+            if m_ok
+                actions = append(actions, m)
+        if len(actions) == 0
+            return true
+
+        chosen := PickAction(actions, strategy)
+        log.Info("Sending {chosen.ActionType}")
+        result := sess.SendAction(chosen)
+        if len(result) > 0
+            if msg, has := result["message"]; has
+                msg_str := cast.SmartString(msg) onerr ""
+                log.Debug("Server: {msg_str}")
+
+        return true
+    )
+
+func main()
+    poll_cmd := cli.NewCommand(POLL, "Polling-based AI client (GET /state on timer)")
+        |> .StringFlag("server", "Game server URL", DEFAULT_BASE_URL)
+        |> .StringFlag("join", "Game ID to join", "")
+        |> .StringFlag("create", "Game name to create", "")
+        |> .StringFlag("name", "AI player name", "")
+        |> .StringFlag("strategy", "AI strategy (random|aggressive|defensive)", "random")
+        |> .IntFlag("poll-interval", "Poll interval in ms", DEFAULT_POLL_MS)
+        |> .BoolFlag("debug", "Enable debug logging", false)
+        |> .Action(runPoll)
+
+    sse_cmd := cli.NewCommand(SSE, "SSE-based AI client (subscribe to Mercure stream)")
+        |> .StringFlag("server", "Game server URL", DEFAULT_BASE_URL)
+        |> .StringFlag("join", "Game ID to join", "")
+        |> .StringFlag("create", "Game name to create", "")
+        |> .StringFlag("name", "AI player name", "")
+        |> .StringFlag("strategy", "AI strategy (random|aggressive|defensive)", "random")
+        |> .BoolFlag("debug", "Enable debug logging", false)
+        |> .Action(runSSE)
+
+    app := cli.New("race-ai-client")
+        |> cli.Description("AI player for Race to the Crystal")
+        |> cli.Version("1.0.0")
+        |> cli.WithCommands(poll_cmd, sse_cmd)
+
+    cli.Run(app) onerr
+        cli.Fatal("race-ai-client: {error}")

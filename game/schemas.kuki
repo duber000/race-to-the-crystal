@@ -51,8 +51,8 @@ type EndTurnActionResponse
     description string
 
 type AvailableActionsResponse
-    phase string
-    actions list of map of string to any
+    Phase string
+    Actions list of map of string to any
 
 type MoveResultData
     token_id types.TokenID

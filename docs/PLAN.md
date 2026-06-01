@@ -12,12 +12,20 @@ Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://
 | Phase 1 | `shared/` (types, enums, constants, errors) | **COMPLETE** | 166 LOC |
 | Phase 2 | `game/` (game logic, 16 files) | **COMPLETE** | 2,756 LOC |
 | Phase 3 | `server/` (10 files) | **COMPLETE** | 1,919 LOC |
-| Phase 4 | `client/ai_client` | **NOT STARTED** | — |
+| Phase 4 | `client/ai_client` (poll + SSE) | **PAUSED — Kukicha bug** | ~500 LOC |
 | Phase 5 | `client/desktop` (ebitengine) | **NOT STARTED** | — |
 | Phase 6 | `web_server/` | **NOT STARTED** | — |
 | Phase 7 | Tests (`*_test.kuki`) | **NOT STARTED** | — |
 
-**What works:** `kukicha check ./...` and `kukicha build ./...` pass cleanly for all 6 packages (shared/* + game + server). `go build ./...` succeeds. All 16 game/ files and 10 server/ files compile and run. Server HTTP endpoints tested: `/api/config`, `/api/games`, `/api/game/create`, `/api/game/{id}/join`, `/api/game/{id}/state`, `/api/game/{id}/action`, `/api/game/{id}/leave`, `/api/game/{id}/ready`, `/api/game/{id}/start`. Kukicha v0.26.2.
+**What works:** `kukicha check ./...` and `kukicha build ./...` pass cleanly for all 7 packages (shared/* + game + server + client). `go build ./...` succeeds. All 16 game/ files, 10 server/ files, and 2 client/ files compile and run. Server HTTP endpoints tested: `/api/config`, `/api/games`, `/api/game/create`, `/api/game/{id}/join`, `/api/game/{id}/state`, `/api/game/{id}/action`, `/api/game/{id}/leave`, `/api/game/{id}/ready`, `/api/game/{id}/start`, `/api/game/{id}/actions`. AI client builds, runs, creates/joins games, auto-starts as host, fetches actions, picks strategies (random/aggressive/defensive), and submits them. Kukicha v0.26.2.
+
+**Phase 4 progress (paused):** AI client connects, creates/joins games, auto-starts when host and 2+ players are ready, fetches actions, picks strategy, and sends. **PAUSED** because of a Kukicha compiler bug: after `EndTurn`, the `next_player_id` in the action response is correct (player_1), but `get_state_dict()` returns stale `current_turn_player_id: player_0` — the state mutation through a pointer-receiver method on a value-typed field of a `*GameSession` is not visible to subsequent value-receiver method calls. Need to file GitHub issue before continuing.
+
+**Kukicha stdlib issues found during Phase 4 (besides the bug above):**
+- `stdlib/cast` needed for parsing JSON-decoded values (Go's `encoding/json` produces `[]interface{}`, not `[][]int`, and `interface{}` for nullable types — `.(int)`, `.(string)`, `.(bool)` panic on type mismatch).
+- `stdlib/cast.SmartInt` / `SmartString` are needed at every JSON boundary.
+- `if state == empty` on a `map[string]any` is always false (returns empty map, not nil). Use `len(state) == 0` or `KUKICHA_LINT_TYPED_NIL_EMPTY=0`.
+- `onerr` cannot be used in `and`/`or` boolean expressions. Must assign first, then check.
 
 **Kukicha compiler bugs — all fixed:**
 1. ~~#241 `dereference x.field` transpiles to `*x.field`~~ — **Fixed in v0.25.3.**
@@ -494,25 +502,19 @@ race-to-the-crystal/
 
 **Goal:** AI players using HTTP+SSE, converting `ai_client.py` and `http_ai_client.py`.
 
-1. `ai_client.kuki`:
-   - `type AIClientConfig struct {game_server_url string; player_name string; strategy AIStrategy; poll_interval int}`
-   - `main()`:
-     1. `cli.New("ai-client") |> cli.StringFlag("server", "s", "http://localhost:8080", "Game server URL") |> ...`
-     2. Connect to `POST /api/game` to create/join
-     3. Receive JWT token
-     4. Loop: `GET /api/game/{id}/state` → AI decides action → `POST /api/game/{id}/action`
-   - Or: SSE via Mercure for state updates instead of polling
-   - Uses `stdlib/fetch` for HTTP calls
-   - Uses `stdlib/llm/chat` if AI uses Claude/whatever for strategy
-   - Timer via `stdlib/datetime.SleepMilliseconds`
+**Status:** PAUSED. Code complete (both files compile, build, and the polling client runs end-to-end including auto-start, action selection, and submission), but full game-play verification is blocked on a Kukicha bug — `get_state_dict()` returns a stale `current_turn_player_id` after an `EndTurn` action, even though the action's `next_player_id` is correct. Filed as a GitHub issue, awaiting fix.
 
-2. `http_ai_client.kuki`:
-   - Simpler version — pure HTTP POST actions with SSE state subscription
-   - Similar structure but uses `fetch.GetJSON` for typed state responses
+**Files written:**
+1. `client/ai_client.kuki` — CLI with `poll` and `sse` subcommands. Auto-ready after create/join. Auto-starts as host when both players are ready. Polls `/state` (or subscribes to SSE), detects turn via `perspective_player_id` vs `current_turn_player_id`, picks action via `gamepkg.ChooseAction(strategy)`, sends via `POST /action`.
+2. `client/http_ai_client.kuki` — `Session` type with `NewSession`, `CreateGame`, `JoinGame`, `FillFromResponse`, `FetchState`, `FetchActions`, `SendAction`, `SetReady`, `StartGame`, `ListLobbies`, `GetLobby`, `TryAutoStart`, `IsMyTurn`, `IsGameOver`, `IsGameActive`, `PickAction`, `ConnectSSE`, `ExtractStateFromSSE`.
 
-**Stdlib usage:** `stdlib/fetch` for HTTP, `stdlib/cli` for CLI flags, `stdlib/llm/chat` for AI strategy (optional), `stdlib/datetime` for timing.
+**Server additions needed:**
+- `HandleGetState` (in `server/http_handler.kuki`) now enriches the state dict with `perspective_player_id` and `your_player_id` for the requesting player, so the AI client can match its network id to the game's player id.
+- `HandleGetActions` (new endpoint) returns the available actions for the current player via `api.ActionsWithPhase()`.
 
-**GitHub issue risk:** Low. `fetch.GetJSON of T from url` is well-established.
+**Stdlib usage:** `stdlib/fetch` for HTTP, `stdlib/cli` for CLI flags, `stdlib/cast` for type-safe JSON parsing, `stdlib/datetime` for polling timing, `stdlib/signal` for graceful shutdown, `stdlib/log` for output.
+
+**GitHub issue risk:** Resolved. `fetch.GetJSON of T from url` works. JSON unmarshaling quirks required `cast.SmartInt`/`SmartString` instead of direct `.()` assertions.
 
 ---
 

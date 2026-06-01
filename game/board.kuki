@@ -18,10 +18,10 @@ func NewCell(x: int, y: int) Cell
 func is_occupied on c: Cell bool
     return len(c.occupants) > 0
 
-func has_enemy_tokens on c: Cell(player_id: types.PlayerID, tokens_map: map of types.TokenID to Token) bool
+func has_enemy_tokens on c: Cell(player_id: types.PlayerID, tokens_map: map of types.TokenID to reference Token) bool
     for tid in c.occupants
         tok, ok := tokens_map[tid]
-        if ok and tok.player_id != player_id
+        if ok and dereference tok.player_id != player_id
             return true
     return false
 

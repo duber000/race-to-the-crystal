@@ -19,11 +19,11 @@ func Actions on api: reference GameAPI list of map of string to any
     if api.game_state equals empty
         return empty list of map of string to any
     result := list_available_actions(api.game_state, api.player_id)
-    return result.actions
+    return result.Actions
 
 func ActionsWithPhase on api: reference GameAPI AvailableActionsResponse
     if api.game_state equals empty
-        return AvailableActionsResponse{phase: "NOT_PLAYING", actions: empty list of map of string to any}
+        return AvailableActionsResponse{Phase: "NOT_PLAYING", Actions: empty list of map of string to any}
     return list_available_actions(api.game_state, api.player_id)
 
 func BoardMap on api: reference GameAPI string

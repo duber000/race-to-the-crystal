@@ -227,7 +227,48 @@ func HandleGetState on h: reference HTTPHandler(game_id: string, auth_header: st
             data: empty map of string to any,
         }
 
-    return APIResponse{success: true, message: "ok", data: session.get_state_dict()}
+    state := session.get_state_dict()
+    game_pid, has_pid := session.network_to_game_id[payload.player_id]
+    if has_pid
+        state["perspective_player_id"] = game_pid
+        state["your_player_id"] = game_pid
+
+    return APIResponse{success: true, message: "ok", data: state}
+
+func HandleGetActions on h: reference HTTPHandler(game_id: string, auth_header: string) APIResponse
+    token_str := ExtractTokenFromHeader(auth_header)
+    if token_str == ""
+        return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
+
+    payload := VerifyPlayerToken(token_str, h.jwt_secret)
+    if payload == empty
+        return APIResponse{success: false, message: "invalid token", data: empty map of string to any}
+
+    session := h.coordinator.get_session(game_id)
+    if session == empty
+        return APIResponse{
+            success: false,
+            message: "game session not found",
+            data: empty map of string to any,
+        }
+
+    api, api_has := session.api_map[payload.player_id]
+    if not api_has
+        return APIResponse{
+            success: false,
+            message: "no api for player",
+            data: empty map of string to any,
+        }
+
+    phase_resp := api.ActionsWithPhase()
+    return APIResponse{
+        success: true,
+        message: "ok",
+        data: map of string to any{
+            "phase": phase_resp.Phase,
+            "actions": phase_resp.Actions,
+        },
+    }
 
 func HandleListGames on h: reference HTTPHandler APIResponse
     lobbies := h.lobby_mgr.list_available_lobbies()

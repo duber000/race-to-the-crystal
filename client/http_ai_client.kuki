@@ -1,0 +1,481 @@
+petiole main
+
+import "bufio"
+import "strings"
+
+import "race-to-the-crystal/game" as gamepkg
+
+import "github.com/kukichalang/kukicha/stdlib/cast"
+import "github.com/kukichalang/kukicha/stdlib/fetch"
+import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg
+import "github.com/kukichalang/kukicha/stdlib/log"
+
+type Session
+    base_url string
+    player_id string
+    player_name string
+    token string
+    game_id string
+    sse_url string
+    active bool
+
+func NewSession(base_url: string) Session
+    return Session{base_url: strings.TrimRight(base_url, "/"), active: true}
+
+func CreateGame on s: reference Session(game_name: string, player_name: string) bool
+    url := "{s.base_url}/api/game/create"
+    body := map of string to any{
+        "game_name": game_name,
+        "player_name": player_name,
+    }
+    resp := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Body(body)
+        |> fetch.Do() onerr
+            log.Error("CreateGame: {error}")
+            return false
+
+    defer
+        if resp isnt empty
+            dereference resp.Body.Close()
+
+    status := cast.SmartInt(resp.StatusCode) onerr 0
+    if status != 200
+        log.Error("CreateGame: status {resp.StatusCode}")
+        return false
+
+    data := make(map of string to any)
+    fetch.Decode(resp, reference of data) onerr
+        log.Error("CreateGame: decode failed: {error}")
+        return false
+
+    success, has_ok := data["success"]
+    if not has_ok or not success.(bool)
+        msg, _ := data["message"]
+        msg_str := cast.SmartString(msg) onerr "unknown"
+        log.Error("CreateGame failed: {msg_str}")
+        return false
+
+    resp_data, has_d := data["data"]
+    if not has_d
+        return false
+
+    s.fillFromResponse(resp_data)
+    return true
+
+func JoinGame on s: reference Session(game_id: string, player_name: string) bool
+    url := "{s.base_url}/api/game/{game_id}/join"
+    body := map of string to any{"player_name": player_name}
+
+    resp := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Body(body)
+        |> fetch.Do() onerr
+            log.Error("JoinGame: {error}")
+            return false
+
+    defer
+        if resp isnt empty
+            dereference resp.Body.Close()
+
+    status := cast.SmartInt(resp.StatusCode) onerr 0
+    if status != 200
+        log.Error("JoinGame: status {resp.StatusCode}")
+        return false
+
+    data := make(map of string to any)
+    fetch.Decode(resp, reference of data) onerr
+        log.Error("JoinGame: decode failed: {error}")
+        return false
+
+    success, has_ok := data["success"]
+    if not has_ok or not success.(bool)
+        msg, _ := data["message"]
+        msg_str := cast.SmartString(msg) onerr "unknown"
+        log.Error("JoinGame failed: {msg_str}")
+        return false
+
+    resp_data, has_d := data["data"]
+    if not has_d
+        return false
+
+    s.fillFromResponse(resp_data)
+    return true
+
+func fillFromResponse on s: reference Session(data: any)
+    if data == empty
+        return
+    m, ok := data.(map of string to any)
+    if not ok
+        return
+
+    pid, has_pid := m["player_id"]
+    if has_pid
+        s.player_id = cast.SmartString(pid) onerr ""
+
+    name, has_n := m["player_name"]
+    if has_n
+        s.player_name = cast.SmartString(name) onerr ""
+
+    tok, has_t := m["token"]
+    if has_t
+        s.token = cast.SmartString(tok) onerr ""
+
+    gid, has_g := m["game_id"]
+    if has_g
+        s.game_id = cast.SmartString(gid) onerr ""
+
+    sse, has_sse := m["sse_url"]
+    if has_sse
+        s.sse_url = cast.SmartString(sse) onerr ""
+
+    log.Info("Authenticated as {s.player_name} (player_id={s.player_id}, game_id={s.game_id})")
+    if s.sse_url != ""
+        log.Info("SSE URL: {s.sse_url}")
+
+func FetchState on s: reference Session map of string to any
+    url := "{s.base_url}/api/game/{s.game_id}/state"
+    resp := fetch.New(url)
+        |> fetch.Method("GET")
+        |> fetch.Header("Authorization", "Bearer {s.token}")
+        |> fetch.Do() onerr
+            log.Error("FetchState: {error}")
+            return empty map of string to any
+
+    defer
+        if resp isnt empty
+            dereference resp.Body.Close()
+
+    status := cast.SmartInt(resp.StatusCode) onerr 0
+    if status == 400 or status == 404
+        return empty map of string to any
+    if status != 200
+        log.Error("FetchState: status {resp.StatusCode}")
+        return empty map of string to any
+
+    wrapper := make(map of string to any)
+    fetch.Decode(resp, reference of wrapper) onerr
+        log.Error("FetchState: decode failed: {error}")
+        return empty map of string to any
+
+    data, has_d := wrapper["data"]
+    if not has_d
+        return empty map of string to any
+
+    state, ok := data.(map of string to any)
+    if not ok
+        return empty map of string to any
+    return state
+
+func FetchActions on s: reference Session map of string to any
+    url := "{s.base_url}/api/game/{s.game_id}/actions"
+    resp := fetch.New(url)
+        |> fetch.Method("GET")
+        |> fetch.Header("Authorization", "Bearer {s.token}")
+        |> fetch.Do() onerr
+            log.Error("FetchActions: {error}")
+            return empty map of string to any
+
+    defer
+        if resp isnt empty
+            dereference resp.Body.Close()
+
+    status := cast.SmartInt(resp.StatusCode) onerr 0
+    if status == 400 or status == 404
+        return empty map of string to any
+    if status != 200
+        log.Error("FetchActions: status {resp.StatusCode}")
+        return empty map of string to any
+
+    wrapper := make(map of string to any)
+    fetch.Decode(resp, reference of wrapper) onerr
+        log.Error("FetchActions: decode failed: {error}")
+        return empty map of string to any
+
+    data, has_d := wrapper["data"]
+    if not has_d
+        return empty map of string to any
+
+    payload, ok := data.(map of string to any)
+    if not ok
+        return empty map of string to any
+    return payload
+
+func SendAction on s: reference Session(action: gamepkg.ChosenAction) map of string to any
+    url := "{s.base_url}/api/game/{s.game_id}/action"
+    body := map of string to any{
+        "type": action.ActionType,
+        "data": action.Params,
+    }
+
+    resp := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Header("Authorization", "Bearer {s.token}")
+        |> fetch.Body(body)
+        |> fetch.Do() onerr
+            log.Error("SendAction: {error}")
+            return empty map of string to any
+
+    defer
+        if resp isnt empty
+            dereference resp.Body.Close()
+
+    wrapper := make(map of string to any)
+    fetch.Decode(resp, reference of wrapper) onerr
+        log.Error("SendAction: decode failed: {error}")
+        return empty map of string to any
+    return wrapper
+
+func TryAutoStart on s: reference Session bool
+    lobby := s.GetLobby()
+    if lobby == empty
+        return false
+
+    host_id_any, has := lobby["host_player_id"]
+    if not has
+        return false
+    host_id := cast.SmartString(host_id_any) onerr ""
+    if host_id != s.player_id
+        return false
+
+    status_any, has_s := lobby["status"]
+    if not has_s
+        return false
+    status := cast.SmartString(status_any) onerr ""
+    if status != "WAITING"
+        return true
+
+    cur_any, has_c := lobby["current_players"]
+    if not has_c
+        return false
+    cur := cast.SmartInt(cur_any) onerr 0
+    min_any, has_m := lobby["min_players"]
+    if not has_m
+        return false
+    min_p := cast.SmartInt(min_any) onerr 0
+    if cur < min_p
+        return false
+
+    players_any, has_p := lobby["players"]
+    if not has_p
+        return false
+    players, players_ok := players_any.(list of any)
+    if not players_ok
+        return false
+    for p in players
+        p_map, p_ok := p.(map of string to any)
+        if not p_ok
+            return false
+        ready_any, has_r := p_map["is_ready"]
+        if not has_r
+            return false
+        ready := cast.SmartBool(ready_any) onerr false
+        if not ready
+            return false
+
+    log.Info("Auto-starting game as host")
+    return s.StartGame()
+
+func SetReady on s: reference Session(ready: bool) bool
+    url := "{s.base_url}/api/game/{s.game_id}/ready"
+    body := map of string to any{"ready": ready}
+
+    resp := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Header("Authorization", "Bearer {s.token}")
+        |> fetch.Body(body)
+        |> fetch.Do() onerr
+            log.Error("SetReady: {error}")
+            return false
+
+    defer
+        if resp isnt empty
+            dereference resp.Body.Close()
+
+    status := cast.SmartInt(resp.StatusCode) onerr 0
+    if status != 200
+        log.Error("SetReady: status {resp.StatusCode}")
+        return false
+    return true
+
+func StartGame on s: reference Session bool
+    url := "{s.base_url}/api/game/{s.game_id}/start"
+
+    resp := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Authorization", "Bearer {s.token}")
+        |> fetch.Do() onerr
+            log.Error("StartGame: {error}")
+            return false
+
+    defer
+        if resp isnt empty
+            dereference resp.Body.Close()
+
+    status := cast.SmartInt(resp.StatusCode) onerr 0
+    if status != 200
+        log.Error("StartGame: status {resp.StatusCode}")
+        return false
+    return true
+
+func ListLobbies on s: reference Session list of map of string to any
+    url := "{s.base_url}/api/games"
+    resp := fetch.New(url)
+        |> fetch.Method("GET")
+        |> fetch.Do() onerr
+            log.Error("ListLobbies: {error}")
+            return empty list of map of string to any
+
+    defer
+        if resp isnt empty
+            dereference resp.Body.Close()
+
+    status := cast.SmartInt(resp.StatusCode) onerr 0
+    if status != 200
+        return empty list of map of string to any
+
+    wrapper := make(map of string to any)
+    fetch.Decode(resp, reference of wrapper) onerr
+        return empty list of map of string to any
+
+    data_any, has := wrapper["data"]
+    if not has
+        return empty list of map of string to any
+
+    data, data_ok := data_any.(map of string to any)
+    if not data_ok
+        return empty list of map of string to any
+
+    games_any, games_ok := data["games"]
+    if not games_ok
+        return empty list of map of string to any
+
+    games_raw, raw_ok := games_any.(list of any)
+    if not raw_ok
+        return empty list of map of string to any
+
+    result := empty list of map of string to any
+    for item in games_raw
+        m, m_ok := item.(map of string to any)
+        if m_ok
+            result = append(result, m)
+    return result
+
+func GetLobby on s: reference Session map of string to any
+    lobbies := s.ListLobbies()
+    for lobby in lobbies
+        gid_any, has := lobby["game_id"]
+        if not has
+            continue
+        gid := cast.SmartString(gid_any) onerr ""
+        if gid == s.game_id
+            return lobby
+    return empty map of string to any
+
+func IsMyTurn(state: map of string to any, player_id: string) bool
+    if state == empty
+        return false
+    cur, has := state["current_turn_player_id"]
+    if not has
+        return false
+    cur_str := cast.SmartString(cur) onerr ""
+    return cur_str == player_id
+
+func IsGameOver(state: map of string to any) bool
+    if state == empty
+        return false
+    phase, has := state["phase"]
+    if not has
+        return false
+    phase_str := cast.SmartString(phase) onerr ""
+    return phase_str == "ENDED"
+
+func IsGameActive(state: map of string to any) bool
+    if state == empty
+        return false
+    phase, has := state["phase"]
+    if not has
+        return false
+    phase_str := cast.SmartString(phase) onerr ""
+    return phase_str == "PLAYING"
+
+func PickAction(actions: list of map of string to any, strategy: gamepkg.AIStrategyName) gamepkg.ChosenAction
+    if len(actions) == 0
+        return gamepkg.NewChosenAction("END_TURN", make(map of string to any))
+    chosen_ref := gamepkg.ChooseAction(strategy, actions, empty, "")
+    if chosen_ref equals empty
+        return gamepkg.NewChosenAction("END_TURN", make(map of string to any))
+    return dereference chosen_ref
+
+type SSEEvent
+    event_type string
+    data string
+
+func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
+    if s.sse_url == ""
+        log.Warn("ConnectSSE: no SSE URL configured")
+        return
+
+    resp := fetch.New(s.sse_url)
+        |> fetch.Method("GET")
+        |> fetch.Header("Authorization", "Bearer {s.token}")
+        |> fetch.Header("Accept", "text/event-stream")
+        |> fetch.Do() onerr
+            log.Error("SSE connect failed: {error}")
+            return
+
+    defer
+        dereference resp.Body.Close()
+
+    body := dereference resp.Body
+    scanner := bufio.NewScanner(body)
+    scanner.Buffer(make(list of byte, 0, 64*1024), 1024*1024)
+
+    current_event := "message"
+    data_buf := strings.Builder{}
+
+    for scanner.Scan()
+        line := scanner.Text()
+
+        switch
+            when line == ""
+                if data_buf.Len() > 0
+                    ev := SSEEvent{event_type: current_event, data: data_buf.String()}
+                    keep_going := handler(ev)
+                    data_buf.Reset()
+                    current_event = "message"
+                    if not keep_going
+                        return
+            when strings.HasPrefix(line, "event:")
+                current_event = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
+            when strings.HasPrefix(line, "data:")
+                chunk := strings.TrimPrefix(line, "data:")
+                if data_buf.Len() > 0
+                    data_buf.WriteString("\n")
+                data_buf.WriteString(strings.TrimLeft(chunk, " "))
+            default
+                continue
+
+    err := scanner.Err()
+    if err isnt empty
+        log.Error("SSE scan error: {err}")
+
+func ExtractStateFromSSE(ev: SSEEvent) map of string to any
+    parsed := make(map of string to any)
+    jsonpkg.ParseStringInto(ev.data, reference of parsed) onerr return empty map of string to any
+
+    state_any, has_state := parsed["state"]
+    if has_state
+        state := state_any.(map of string to any)
+        return state
+
+    gs_any, has_gs := parsed["game_state"]
+    if has_gs
+        gs := gs_any.(map of string to any)
+        return gs
+
+    return parsed

@@ -26,7 +26,7 @@ type PathItem
     pos types.Position
     path list of types.Position
 
-func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int, tokens_map: map of types.TokenID to Token) list of types.Position
+func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int, tokens_map: map of types.TokenID to reference Token) list of types.Position
     result := empty list of types.Position
     if not tok.is_alive
         return result
@@ -82,7 +82,7 @@ func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int,
 
     return result
 
-func is_valid_move(tok: reference Token, dest: types.Position, brd: reference Board, tokens_map: map of types.TokenID to Token) bool
+func is_valid_move(tok: reference Token, dest: types.Position, brd: reference Board, tokens_map: map of types.TokenID to reference Token) bool
     if not tok.is_alive
         return false
     moves := get_valid_moves(tok, brd, tok.movement_range(), tokens_map)

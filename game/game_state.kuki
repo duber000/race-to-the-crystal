@@ -18,8 +18,8 @@ type MysteryEvent
 
 type GameState
     board Board
-    players map of types.PlayerID to Player
-    tokens map of types.TokenID to Token
+    players map of types.PlayerID to reference Player
+    tokens map of types.TokenID to reference Token
     generators list of Generator
     crystal_instance nullable reference Crystal
     crystal_effects CrystalEffectsManager
@@ -35,8 +35,8 @@ type GameState
 func NewGameState() GameState
     return GameState{
         board: NewBoard(),
-        players: make(map of types.PlayerID to Player),
-        tokens: make(map of types.TokenID to Token),
+        players: make(map of types.PlayerID to reference Player),
+        tokens: make(map of types.TokenID to reference Token),
         generators: empty list of Generator,
         crystal_effects: NewCrystalEffectsManager(),
         phase: enums.SETUP,
@@ -47,11 +47,11 @@ func NewGameState() GameState
 func CreateGame(num_players: int) GameState
     gs := NewGameState()
     colors := list of enums.PlayerColor{enums.CYAN, enums.MAGENTA, enums.YELLOW, enums.GREEN}
-    ids := list of types.PlayerID{"cyan", "magenta", "yellow", "green"}
 
     for i from 0 to num_players
-        p := NewPlayer(ids[i], ids[i] as string, colors[i])
-        gs.players[ids[i]] = p
+        pid := types.PlayerID("player_{i}")
+        p := NewPlayer(pid, "Player {i + 1}", colors[i])
+        gs.players[pid] = reference of p
 
     gen_positions := gs.board.get_generator_positions()
     gs.generators = create_generators(gen_positions)
@@ -64,7 +64,7 @@ func CreateGame(num_players: int) GameState
 
 func add_player on gs: reference GameState(player_id: types.PlayerID, name: string, color: enums.PlayerColor) Player
     p := NewPlayer(player_id, name, color)
-    gs.players[player_id] = p
+    gs.players[player_id] = reference of p
     return p
 
 func remove_player on gs: reference GameState(player_id: types.PlayerID)
@@ -73,7 +73,7 @@ func remove_player on gs: reference GameState(player_id: types.PlayerID)
 func GetPlayer on gs: reference GameState(player_id: types.PlayerID) nullable reference Player
     p, ok := gs.players[player_id]
     if ok
-        return reference of p
+        return p
     return empty
 
 func GetCurrentPlayer on gs: reference GameState nullable reference Player
@@ -82,23 +82,22 @@ func GetCurrentPlayer on gs: reference GameState nullable reference Player
 func GetToken on gs: reference GameState(token_id: types.TokenID) nullable reference Token
     t, ok := gs.tokens[token_id]
     if ok
-        return reference of t
+        return t
     return empty
 
 func create_tokens_for_player on gs: reference GameState(player_id: types.PlayerID)
     p_ref := gs.GetPlayer(player_id)
     if p_ref equals empty
         return
-    p := dereference p_ref
 
-    corner_pos := gs.board.get_starting_position(enums.PlayerIndex(p.color))
+    corner_pos := gs.board.get_starting_position(enums.PlayerIndex(p_ref.color))
 
     for hv in constants.TOKEN_HEALTH_VALUES
         for _ from 0 to constants.TOKENS_PER_HEALTH_VALUE
             tid := types.TokenID(gs._next_token_id)
             t := NewToken(tid, player_id, hv, hv, corner_pos)
-            gs.tokens[tid] = t
-            p.add_token(tid)
+            gs.tokens[tid] = reference of t
+            p_ref.add_token(tid)
             gs._next_token_id = gs._next_token_id + 1
 
 func GetPlayerTokens on gs: reference GameState(player_id: types.PlayerID) list of Token
@@ -155,8 +154,9 @@ func DeployToken on gs: reference GameState(player_id: types.PlayerID, health_va
 func GetTokensAtPosition on gs: reference GameState(pos: types.Position) list of Token
     result := empty list of Token
     for _, t in gs.tokens
-        if t.position == pos and t.is_alive
-            result = append(result, t)
+        d := dereference t
+        if d.position == pos and d.is_alive
+            result = append(result, d)
     return result
 
 func GetTokenMovementRange on gs: reference GameState(tok: reference Token) int

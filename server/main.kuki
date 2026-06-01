@@ -84,6 +84,7 @@ func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
     mux.HandleFunc("/api/game/\{game_id\}/join", gs.handleJoinGameRoute)
     mux.HandleFunc("/api/game/\{game_id\}/action", gs.handleActionRoute)
     mux.HandleFunc("/api/game/\{game_id\}/state", gs.handleGetStateRoute)
+    mux.HandleFunc("/api/game/\{game_id\}/actions", gs.handleGetActionsRoute)
     mux.HandleFunc("/api/game/\{game_id\}/leave", gs.handleLeaveGameRoute)
     mux.HandleFunc("/api/game/\{game_id\}/ready", gs.handleReadyRoute)
     mux.HandleFunc("/api/game/\{game_id\}/start", gs.handleStartGameRoute)
@@ -183,6 +184,18 @@ func handleGetStateRoute on gs: reference GameServer(w: http.ResponseWriter, r: 
     auth_header := httphelper.GetHeader(r, "Authorization")
 
     result := gs.http_handler.HandleGetState(game_id, auth_header)
+    gs.writeAPIResponse(w, result)
+
+func handleGetActionsRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
+    httphelper.SetSecureHeaders(w)
+    if not httphelper.IsGet(r)
+        httphelper.MethodNotAllowed(w, "GET")
+        return
+
+    game_id := r.PathValue("game_id")
+    auth_header := httphelper.GetHeader(r, "Authorization")
+
+    result := gs.http_handler.HandleGetActions(game_id, auth_header)
     gs.writeAPIResponse(w, result)
 
 func handleLeaveGameRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)

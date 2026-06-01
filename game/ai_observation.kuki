@@ -341,12 +341,12 @@ func render_legend(lines: list of string, gs: reference GameState, perspective: 
 
 func list_available_actions(gs: reference GameState, player_id: types.PlayerID) AvailableActionsResponse
     if gs.phase != enums.PLAYING
-        return AvailableActionsResponse{phase: "NOT_PLAYING", actions: empty list of map of string to any}
+        return AvailableActionsResponse{Phase: "NOT_PLAYING", Actions: empty list of map of string to any}
 
     if gs.current_turn_player_id != player_id
         return AvailableActionsResponse{
-            phase: "NOT_YOUR_TURN",
-            actions: empty list of map of string to any,
+            Phase: "NOT_YOUR_TURN",
+            Actions: empty list of map of string to any,
         }
 
     actions := empty list of map of string to any
@@ -354,7 +354,7 @@ func list_available_actions(gs: reference GameState, player_id: types.PlayerID) 
 
     p_ref := gs.GetPlayer(player_id)
     if p_ref equals empty
-        return AvailableActionsResponse{phase: phase_str, actions: actions}
+        return AvailableActionsResponse{Phase: phase_str, Actions: actions}
 
     p := dereference p_ref
 
@@ -373,7 +373,7 @@ func list_available_actions(gs: reference GameState, player_id: types.PlayerID) 
         actions = add_attack_actions(actions, deployed_tokens, gs)
         actions = add_end_turn_action(actions)
 
-    return AvailableActionsResponse{phase: phase_str, actions: actions}
+    return AvailableActionsResponse{Phase: phase_str, Actions: actions}
 
 func add_movement_actions(actions: list of map of string to any, deployed: list of Token, gs: reference GameState) list of map of string to any
     for t in deployed
@@ -454,12 +454,13 @@ func add_end_turn_action(actions: list of map of string to any) list of map of s
     actions = append(actions, action)
     return actions
 
-func get_attackable_targets(tok: reference Token, tokens_map: map of types.TokenID to Token) list of Token
+func get_attackable_targets(tok: reference Token, tokens_map: map of types.TokenID to reference Token) list of Token
     result := empty list of Token
     for _, t in tokens_map
-        if t.is_alive and t.is_deployed and t.player_id != tok.player_id
-            if tok.is_adjacent_to(t.position)
-                result = append(result, t)
+        d := dereference t
+        if d.is_alive and d.is_deployed and d.player_id != tok.player_id
+            if tok.is_adjacent_to(d.position)
+                result = append(result, d)
     return result
 
 func explain_victory_conditions(gs: reference GameState) string
@@ -540,15 +541,15 @@ func get_situation_report(gs: reference GameState, perspective: types.PlayerID) 
 
     actions_data := list_available_actions(gs, perspective)
     sections = append(sections, "AVAILABLE ACTIONS:")
-    if len(actions_data.actions) > 0
-        for i, action in actions_data.actions
+    if len(actions_data.Actions) > 0
+        for i, action in actions_data.Actions
             desc, has_desc := action["description"]
             desc_str := ""
             if has_desc
                 desc_str = desc.(string)
             sections = append(sections, "  {i + 1}. {desc_str}")
     else
-        if actions_data.phase == "NOT_YOUR_TURN"
+        if actions_data.Phase == "NOT_YOUR_TURN"
             sections = append(sections, "  (waiting for other player's turn)")
         else
             sections = append(sections, "  (no actions available)")
