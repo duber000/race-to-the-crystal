@@ -3,7 +3,7 @@ petiole game
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
-import "github.com/kukichalang/kukicha/stdlib/slice"
+import "stdlib/slice"
 
 type Player
     id types.PlayerID

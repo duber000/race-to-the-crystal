@@ -5,10 +5,10 @@ import "os"
 import "path/filepath"
 import "strings"
 
-import "github.com/kukichalang/kukicha/stdlib/env"
-import "github.com/kukichalang/kukicha/stdlib/http" as httphelper
-import "github.com/kukichalang/kukicha/stdlib/log"
-import "github.com/kukichalang/kukicha/stdlib/signal"
+import "stdlib/env"
+import "stdlib/http" as httphelper
+import "stdlib/log"
+import "stdlib/signal"
 
 type ServerConfig
     tcp_port int

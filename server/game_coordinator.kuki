@@ -5,8 +5,9 @@ import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as typespkg
 
-import "github.com/kukichalang/kukicha/stdlib/cast"
-import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg
+import "stdlib/cast"
+import "stdlib/json" as jsonpkg
+import "stdlib/log"
 
 type GameSession
     game_id string
@@ -17,7 +18,7 @@ type GameSession
     last_state nullable reference map of string to any
     api_map map of string to gamepkg.GameAPI
 
-func NewGameSession(game_id: string, lobby: reference GameLobby) GameSession
+func NewGameSession(game_id: string, lobby: reference GameLobby) reference GameSession
     gs := gamepkg.CreateGame(len(dereference lobby.players))
     session := GameSession{
         game_id: game_id,
@@ -30,7 +31,7 @@ func NewGameSession(game_id: string, lobby: reference GameLobby) GameSession
     }
     session.initialize_players(lobby)
     session.game_state.StartGame()
-    return session
+    return reference of session
 
 func initialize_players on s: reference GameSession(lobby: reference GameLobby)
     idx := 0
@@ -39,6 +40,7 @@ func initialize_players on s: reference GameSession(lobby: reference GameLobby)
         s.network_to_game_id[info.player_id] = game_pid
         s.game_to_network_id[game_pid] = info.player_id
         api := gamepkg.NewGameAPI(reference of s.game_state, typespkg.PlayerID(game_pid))
+        log.Info("initialize_players: api created, api.game_state ref created")
         s.api_map[info.player_id] = api
         idx = idx + 1
 
@@ -49,6 +51,7 @@ func execute_game_action on s: reference GameSession(network_player_id: string, 
     api, api_has := s.api_map[network_player_id]
     if not api_has
         return false, "No API for player", empty
+    log.Info("Before action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}")
     var result gamepkg.ActionResult
     switch action as a
         when gamepkg.Move
@@ -58,8 +61,15 @@ func execute_game_action on s: reference GameSession(network_player_id: string, 
         when gamepkg.Deploy
             result = api.Deploy(a.HealthValue, a.Position.X, a.Position.Y)
         when gamepkg.EndTurn
-            result = api.EndTurn()
+            log.Info("EndTurn via api: action type")
+            log.Info("Calling s.game_state.EndTurn directly")
+            s.game_state.EndTurn()
+            log.Info("After direct EndTurn: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}")
+            result.Data = empty
+            result.Success = true
+            result.Message = "Turn ended"
 
+    log.Info("After action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}")
     if result.Success
         return true, result.Message, result.Data
     return false, result.Message, empty
@@ -104,7 +114,7 @@ func NewGameCoordinator() GameCoordinator
 func create_session on gc: reference GameCoordinator(lobby: reference GameLobby) reference GameSession
     game_id := lobby.game_id
     session := NewGameSession(game_id, lobby)
-    gc.active_games[game_id] = reference of session
+    gc.active_games[game_id] = session
     players := lobby.get_player_list()
     for info in players
         pid_val, has_id := info["player_id"]

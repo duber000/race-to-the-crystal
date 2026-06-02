@@ -4,8 +4,8 @@ import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
-import "github.com/kukichalang/kukicha/stdlib/random"
-import "github.com/kukichalang/kukicha/stdlib/slice"
+import "stdlib/random"
+import "stdlib/slice"
 
 type Cell
     position types.Position

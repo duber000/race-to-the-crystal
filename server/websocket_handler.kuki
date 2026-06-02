@@ -1,9 +1,9 @@
 petiole main
 
-import "github.com/kukichalang/kukicha/stdlib/cast"
-import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg
-import "github.com/kukichalang/kukicha/stdlib/log"
-import "github.com/kukichalang/kukicha/stdlib/string" as strpkg
+import "stdlib/cast"
+import "stdlib/json" as jsonpkg
+import "stdlib/log"
+import "stdlib/string" as strpkg
 
 const MAX_MESSAGE_SIZE = 1024
 

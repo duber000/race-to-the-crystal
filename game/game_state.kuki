@@ -4,8 +4,8 @@ import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
-import "github.com/kukichalang/kukicha/stdlib/random"
-import "github.com/kukichalang/kukicha/stdlib/sort"
+import "stdlib/random"
+import "stdlib/sort"
 
 type CrystalEvent
     player_id types.PlayerID
@@ -393,7 +393,7 @@ func TurnNumber on gs: GameState int
 func TurnPhase on gs: GameState enums.TurnPhase
     return gs.turn_phase
 
-func ToDict on gs: GameState map of string to any
+func ToDict on gs: reference GameState map of string to any
     result := make(map of string to any)
     result["phase"] = enums.GamePhaseName(gs.phase)
     result["turn_number"] = gs.turn_number

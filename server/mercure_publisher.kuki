@@ -2,12 +2,12 @@ petiole main
 
 import "time"
 
-import "github.com/kukichalang/kukicha/stdlib/crypto"
-import "github.com/kukichalang/kukicha/stdlib/encoding" as encpkg
-import "github.com/kukichalang/kukicha/stdlib/env"
-import "github.com/kukichalang/kukicha/stdlib/fetch"
-import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg
-import "github.com/kukichalang/kukicha/stdlib/log"
+import "stdlib/crypto"
+import "stdlib/encoding" as encpkg
+import "stdlib/env"
+import "stdlib/fetch"
+import "stdlib/json" as jsonpkg
+import "stdlib/log"
 
 type MercureConfig
     hub_url string

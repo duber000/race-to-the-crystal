@@ -1,8 +1,8 @@
 petiole main
 
-import "github.com/kukichalang/kukicha/stdlib/random"
-import "github.com/kukichalang/kukicha/stdlib/regex"
-import "github.com/kukichalang/kukicha/stdlib/string" as strpkg
+import "stdlib/random"
+import "stdlib/regex"
+import "stdlib/string" as strpkg
 
 const MAX_GAME_NAME_LENGTH = 50
 

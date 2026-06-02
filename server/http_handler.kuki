@@ -4,12 +4,12 @@ import "net"
 import "race-to-the-crystal/shared/types" as typespkg
 import "strings"
 
-import "github.com/kukichalang/kukicha/stdlib/cast"
-import "github.com/kukichalang/kukicha/stdlib/env"
-import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg
-import "github.com/kukichalang/kukicha/stdlib/log"
-import "github.com/kukichalang/kukicha/stdlib/random"
-import "github.com/kukichalang/kukicha/stdlib/string" as strpkg
+import "stdlib/cast"
+import "stdlib/env"
+import "stdlib/json" as jsonpkg
+import "stdlib/log"
+import "stdlib/random"
+import "stdlib/string" as strpkg
 
 type HTTPHandler
     coordinator nullable reference GameCoordinator

@@ -3,7 +3,7 @@ petiole main
 import "os"
 import "os/exec"
 
-import "github.com/kukichalang/kukicha/stdlib/log"
+import "stdlib/log"
 
 type SpawnedAI
     process_id int

@@ -1,40 +1,40 @@
 petiole enums
 
 enum CellType
-    NORMAL
-    GENERATOR
-    CRYSTAL
-    MYSTERY
-    START
+    NORMAL = 0
+    GENERATOR = 1
+    CRYSTAL = 2
+    MYSTERY = 3
+    START = 4
 
 enum GamePhase
-    SETUP
-    PLAYING
-    ENDED
+    SETUP = 0
+    PLAYING = 1
+    ENDED = 2
 
 func GamePhaseName(p: GamePhase) string
     switch p
-        when SETUP
+        when GamePhase.SETUP
             return "SETUP"
-        when PLAYING
+        when GamePhase.PLAYING
             return "PLAYING"
-        when ENDED
+        when GamePhase.ENDED
             return "ENDED"
         default
             return "UNKNOWN"
 
 enum TurnPhase
-    MOVEMENT
-    ACTION
-    END_TURN
+    MOVEMENT = 0
+    ACTION = 1
+    END_TURN = 2
 
 func TurnPhaseName(p: TurnPhase) string
     switch p
-        when MOVEMENT
+        when TurnPhase.MOVEMENT
             return "MOVEMENT"
-        when ACTION
+        when TurnPhase.ACTION
             return "ACTION"
-        when END_TURN
+        when TurnPhase.END_TURN
             return "END_TURN"
         default
             return "UNKNOWN"
@@ -59,22 +59,22 @@ func PlayerIndex(c: PlayerColor) int
             return 0
 
 enum MysteryEffect
-    HEAL
-    TELEPORT
+    HEAL = 0
+    TELEPORT = 1
 
 func MysteryEffectName(e: MysteryEffect) string
     switch e
-        when HEAL
+        when MysteryEffect.HEAL
             return "HEAL"
-        when TELEPORT
+        when MysteryEffect.TELEPORT
             return "TELEPORT"
         default
             return "UNKNOWN"
 
 enum CombatResult
-    HIT
-    KILLED
-    INVALID
+    HIT = 0
+    KILLED = 1
+    INVALID = 2
 
 enum CrystalEffect: string
     FOG_OF_WAR = "fog_of_war"
@@ -83,11 +83,11 @@ enum CrystalEffect: string
     SPEED_BOOST = "speed_boost"
 
 enum Direction
-    UP
-    DOWN
-    LEFT
-    RIGHT
-    UP_LEFT
-    UP_RIGHT
-    DOWN_LEFT
-    DOWN_RIGHT
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
+    UP_LEFT = 4
+    UP_RIGHT = 5
+    DOWN_LEFT = 6
+    DOWN_RIGHT = 7

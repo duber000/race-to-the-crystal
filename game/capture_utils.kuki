@@ -2,7 +2,7 @@ petiole game
 
 import "race-to-the-crystal/shared/types" as types
 
-import "github.com/kukichalang/kukicha/stdlib/maps"
+import "stdlib/maps"
 
 type TokenAtPos
     token_id types.TokenID

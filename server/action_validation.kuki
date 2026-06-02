@@ -2,9 +2,9 @@ petiole main
 
 import "race-to-the-crystal/shared/constants" as constants
 
-import "github.com/kukichalang/kukicha/stdlib/cast"
-import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg
-import "github.com/kukichalang/kukicha/stdlib/string" as strpkg
+import "stdlib/cast"
+import "stdlib/json" as jsonpkg
+import "stdlib/string" as strpkg
 
 type ValidationResult
     field string

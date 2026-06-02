@@ -4,8 +4,8 @@ import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
-import "github.com/kukichalang/kukicha/stdlib/sort"
-import "github.com/kukichalang/kukicha/stdlib/string" as strpkg
+import "stdlib/sort"
+import "stdlib/string" as strpkg
 
 const SEPARATOR_WIDTH = 60
 

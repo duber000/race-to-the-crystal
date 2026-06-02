@@ -2,12 +2,12 @@ petiole main
 
 import "race-to-the-crystal/game" as gamepkg
 
-import "github.com/kukichalang/kukicha/stdlib/cast"
-import "github.com/kukichalang/kukicha/stdlib/cli"
-import "github.com/kukichalang/kukicha/stdlib/datetime"
-import "github.com/kukichalang/kukicha/stdlib/log"
-import "github.com/kukichalang/kukicha/stdlib/random"
-import "github.com/kukichalang/kukicha/stdlib/signal"
+import "stdlib/cast"
+import "stdlib/cli"
+import "stdlib/datetime"
+import "stdlib/log"
+import "stdlib/random"
+import "stdlib/signal"
 
 const DEFAULT_BASE_URL = "http://localhost:8080"
 

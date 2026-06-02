@@ -721,7 +721,7 @@ Run `kukicha <cmd> --help` for flags. Common ones: `--json` (structured diagnost
 
 **Environment variables:** `KUKICHA_CACHE=1`, `KUKICHA_PROFILE=1`, `KUKICHA_JOBS=N`, `KUKICHA_LINT_SHADOW=0`, `KUKICHA_LINT_UNUSED_LOOP_VAR=0`, `KUKICHA_DISABLE_LIVE_GO_STDLIB=1`. See `docs/` or source for the full set.
 
-`kukicha skills` is Kukicha's native replacement for `npx skills add`. It fetches a GitHub tarball, extracts via `stdlib/archive` (zip-slip safe), and installs SKILL.md folders into `.claude/skills/` and/or `.agent/skills/` — whichever exist in the current dir (or both with `--global` writing to `~/.claude/skills/` and `~/.agent/skills/`). Multi-skill repos require `--skill <name>` or `--all`. Flags can appear in any position relative to the slug. Honors `GITHUB_TOKEN` for private repos and rate limits.
+`kukicha skills` is Kukicha's native replacement for `npx skills add`. It fetches a GitHub tarball, extracts via `stdlib/archive` (zip-slip safe, size-capped), and installs SKILL.md folders into `.claude/skills/` and/or `.agent/skills/` — whichever exist in the current dir (or both with `--global` writing to `~/.claude/skills/` and `~/.agent/skills/`). Multi-skill repos require `--skill <name>` or `--all`. Flags can appear in any position relative to the slug. Honors `GITHUB_TOKEN` for private repos and rate limits.
 
 ### Project layout & build flow
 
@@ -840,7 +840,7 @@ The stdlib is extracted to `.kukicha/stdlib/` on `kukicha init` — **read the `
 
 **Data & encoding.** `stdlib/json` as `jsonpkg`, `stdlib/parse` (typed `parse.JSON of T from text`, also YAML/Form/Env/CSV/Int/URL — auto-runs `Validate()`), `stdlib/encoding` (base64/hex), `stdlib/template`, `stdlib/markdown` (CommonMark+GFM, pair with `http.SafeHTML` for untrusted input).
 
-**I/O & files.** `stdlib/files` (`Read`/`Write`/`Copy`/`List`/`Watch`/…), `stdlib/archive` (zip+tar.gz, zip-slip safe), `stdlib/sandbox` (filesystem jail for HTTP handlers), `stdlib/shell` (`Output`/`Lines`/`Capture` + `shell.New |> .Dir |> .Env |> .Stdin |> .Output()` builder).
+**I/O & files.** `stdlib/files` (`Read`/`Write`/`Copy`/`List`/`Watch`/…), `stdlib/archive` (zip+tar.gz, zip-slip + decompression-bomb safe), `stdlib/sandbox` (filesystem jail for HTTP handlers), `stdlib/shell` (`Output`/`Lines`/`Capture` + `shell.New |> .Dir |> .Env |> .Stdin |> .Output()` builder).
 
 **HTTP & networking.** `stdlib/fetch` (client with builder, auth, retry, SSRF — `Get`/`SafeGet`/`GetJSON of T from url`), `stdlib/http` as `httphelper` (`JSON*` responders, `SafeRedirect`, `SafeHTML`, `TrustedHosts` middleware, `RealIP` for client-IP behind a proxy), `stdlib/html` (auto-escaping components), `stdlib/netguard` (SSRF guards), `stdlib/url` (parse/build/encode, `CleanPath`/`IsSubpath` for traversal-safe paths), `stdlib/shellguard` (subprocess allowlist for agent ops, fail-closed), `stdlib/policy` (approval-gate variant for agent ops, fail-closed).
 

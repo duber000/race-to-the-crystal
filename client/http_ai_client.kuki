@@ -5,10 +5,10 @@ import "strings"
 
 import "race-to-the-crystal/game" as gamepkg
 
-import "github.com/kukichalang/kukicha/stdlib/cast"
-import "github.com/kukichalang/kukicha/stdlib/fetch"
-import "github.com/kukichalang/kukicha/stdlib/json" as jsonpkg
-import "github.com/kukichalang/kukicha/stdlib/log"
+import "stdlib/cast"
+import "stdlib/fetch"
+import "stdlib/json" as jsonpkg
+import "stdlib/log"
 
 type Session
     base_url string
