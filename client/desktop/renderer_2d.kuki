@@ -1,0 +1,109 @@
+petiole main
+
+import "github.com/hajimehoshi/ebiten/v2"
+import "github.com/hajimehoshi/ebiten/v2/vector"
+import "github.com/hajimehoshi/ebiten/v2/ebitenutil"
+import "image/color"
+import "math"
+
+func DrawMainMenu(screen: reference ebiten.Image)
+    title := "RACE TO THE CRYSTAL"
+    DrawTextCentered(screen, title, WINDOW_WIDTH / 2, 100, ColorWhite)
+
+    items := list of string{"Local Game", "Network Game", "Quit"}
+    for i, text in items
+        y := 280 + i * 60
+        c := ColorLightGray
+        if app.menu_selection == i
+            c = ColorCyan
+        DrawTextCentered(screen, text, WINDOW_WIDTH / 2, y, c)
+
+    DrawTextCentered(screen, "Use UP/DOWN arrows, ENTER to select", WINDOW_WIDTH / 2, WINDOW_HEIGHT - 60, ColorGray)
+
+func DrawLobby(screen: reference ebiten.Image)
+    DrawTextCentered(screen, "GAME LOBBY", WINDOW_WIDTH / 2, 40, ColorWhite)
+
+    if app.game_state isnt empty
+        gs := dereference app.game_state
+        for i, p in gs.players
+            y := 120 + i * 40
+            pc := PlayerColorByName(p.color_name)
+            status := "Ready"
+            if p.is_active
+                status = "Waiting"
+            msg := "{p.name} ({p.color_name}) - {status}"
+            DrawText(screen, msg, 200, y, pc)
+
+    DrawTextCentered(screen, "Press ENTER to start game, ESC to return", WINDOW_WIDTH / 2, WINDOW_HEIGHT - 40, ColorGray)
+
+func DrawGame(screen: reference ebiten.Image)
+    if app.game_state isnt empty
+        gs := dereference app.game_state
+        offset_x := app.view_offset_x as int
+        offset_y := app.view_offset_y as int
+
+        DrawGrid(screen, gs.board_width, gs.board_height, offset_x, offset_y)
+
+        for g in gs.generators
+            sx := g.position.X * CELL_SIZE + offset_x
+            sy := g.position.Y * CELL_SIZE + offset_y
+            gc := ColorOrange
+            if g.is_disabled
+                gc = ColorGray
+            vector.DrawFilledRect(screen, sx as float32, sy as float32, CELL_SIZE as float32, CELL_SIZE as float32, gc, false)
+            vector.StrokeLine(screen, (sx + 4) as float32, (sy + 4) as float32, (sx + CELL_SIZE - 4) as float32, (sy + CELL_SIZE - 4) as float32, 2, gc, false)
+            vector.StrokeLine(screen, (sx + CELL_SIZE - 4) as float32, (sy + 4) as float32, (sx + 4) as float32, (sy + CELL_SIZE - 4) as float32, 2, gc, false)
+
+        cx := gs.crystal_pos.X * CELL_SIZE + offset_x
+        cy := gs.crystal_pos.Y * CELL_SIZE + offset_y
+        pulse := math.Sin(app.frame_count as float64 * 0.05) * 0.3 + 0.7
+        crystal_color := RGBA(200, 100, 255, (pulse * 255) as int)
+        vector.DrawFilledRect(screen, cx as float32, cy as float32, CELL_SIZE as float32, CELL_SIZE as float32, crystal_color, false)
+        DrawTextCentered(screen, "C", cx + CELL_SIZE / 2, cy + 8, ColorWhite)
+
+        for t in gs.tokens
+            if t.is_alive and t.is_deployed
+                tx := t.position.X * CELL_SIZE + offset_x
+                ty := t.position.Y * CELL_SIZE + offset_y
+                tc := PlayerColorByName(t.player_id)
+
+                if t.id == app.selected_token_id
+                    vector.StrokeCircle(screen, (tx + CELL_SIZE / 2) as float32, (ty + CELL_SIZE / 2) as float32, (CELL_SIZE / 2 - 2) as float32, 3, ColorWhite, false)
+
+                vector.DrawFilledCircle(screen, (tx + CELL_SIZE / 2) as float32, (ty + CELL_SIZE / 2) as float32, (CELL_SIZE / 2 - 2) as float32, tc, false)
+                hp_text := "{t.health}"
+                DrawTextCentered(screen, hp_text, tx + CELL_SIZE / 2, ty + 8, ColorBlack)
+
+        for mv in app.valid_moves
+            mx := mv.X * CELL_SIZE + offset_x
+            my := mv.Y * CELL_SIZE + offset_y
+            vector.StrokeCircle(screen, (mx + CELL_SIZE / 2) as float32, (my + CELL_SIZE / 2) as float32, 6, 2, ColorGreen, false)
+
+        hud := "Turn: {gs.current_turn_player} | Phase: {gs.turn_phase} | Arrow keys to pan"
+        DrawText(screen, hud, 10, WINDOW_HEIGHT - 20, ColorGray)
+
+        if len(app.message) > 0
+            DrawTextCentered(screen, app.message, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, ColorYellow)
+
+func DrawVictory(screen: reference ebiten.Image)
+    DrawTextCentered(screen, "VICTORY!", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 40, ColorYellow)
+    if app.game_state isnt empty
+        gs := dereference app.game_state
+        if len(gs.winner) > 0
+            msg := "{gs.winner} wins!"
+            DrawTextCentered(screen, msg, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 20, ColorWhite)
+    DrawTextCentered(screen, "Press ENTER for main menu", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 80, ColorGray)
+
+func DrawGrid(screen: reference ebiten.Image, w: int, h: int, ox: int, oy: int)
+    for x from 0 to w + 1
+        xp := x * CELL_SIZE + ox
+        vector.StrokeLine(screen, xp as float32, oy as float32, xp as float32, (h * CELL_SIZE + oy) as float32, 1, ColorDarkGray, false)
+    for y from 0 to h + 1
+        yp := y * CELL_SIZE + oy
+        vector.StrokeLine(screen, ox as float32, yp as float32, (w * CELL_SIZE + ox) as float32, yp as float32, 1, ColorDarkGray, false)
+
+func DrawText(screen: reference ebiten.Image, text: string, x: int, y: int, c: color.RGBA)
+    ebitenutil.DebugPrintAt(screen, text, x, y)
+
+func DrawTextCentered(screen: reference ebiten.Image, text: string, x: int, y: int, c: color.RGBA)
+    ebitenutil.DebugPrintAt(screen, text, x - len(text) * 4, y)

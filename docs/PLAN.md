@@ -13,13 +13,21 @@ Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://
 | Phase 2 | `game/` (game logic, 16 files) | **COMPLETE** | 2,756 LOC |
 | Phase 3 | `server/` (10 files) | **COMPLETE** | 1,919 LOC |
 | Phase 4 | `client/ai_client` (poll + SSE) | **COMPLETE** | ~500 LOC |
-| Phase 5 | `client/desktop` (ebitengine) | **NOT STARTED** | — |
+| Phase 5 | `client/desktop` (ebitengine) | **COMPLETE** | ~500 LOC |
 | Phase 6 | `web_server/` | **NOT STARTED** | — |
 | Phase 7 | Tests (`*_test.kuki`) | **NOT STARTED** | — |
 
-**What works:** `kukicha check ./...` and `kukicha build ./...` pass cleanly for all 7 packages (shared/* + game + server + client). `go build ./...` succeeds. All 16 game/ files, 10 server/ files, and 2 client/ files compile and run. Server HTTP endpoints tested: `/api/config`, `/api/games`, `/api/game/create`, `/api/game/{id}/join`, `/api/game/{id}/state`, `/api/game/{id}/action`, `/api/game/{id}/leave`, `/api/game/{id}/ready`, `/api/game/{id}/start`, `/api/game/{id}/actions`. AI client builds, runs, creates/joins games, auto-starts as host, fetches actions, picks strategies (random/aggressive/defensive), and submits them. End-to-end verified: 2 AI bots play full turns in sequence (deploy → end_turn cycles) with state mutations persisting correctly across both bots. Kukicha v0.48.0.
+**What works:** All 9 packages pass `kukicha check ./...`. `client/desktop/` builds to an ELF binary via `make desktop`. Server and AI client continue to work as before. Kukicha v0.48.1.
 
-**Phase 4 completed (2026-06-01):** The original "Kukicha bug" documented in v0.26.2 was actually two separate issues, both fixed:
+**Phase 5 completed (2026-06-02):** Desktop 2D client using ebitengine directly (not `github.com/kukichalang/game`, which is WASM-only with `//go:build js`). 
+
+**Key architectural decisions during Phase 5:**
+1. **Direct ebitengine, not `github.com/kukichalang/game`** — The game package has `//go:build js` constraint making it WASM-only. Desktop build uses ebitengine directly via Go interop (adapter.go + desktop_main.go).
+2. **Go interop for ebitengine.Game interface** — Kukicha cannot implement the `ebiten.Game` interface (its method definition syntax `func Update on a: reference Foo() error` fails to parse empty `()` parameter lists — a Kukicha parser bug in v0.48.1). A Go adapter file (`adapter.go`) implements `Update()`, `Draw()`, `Layout()` and delegates to Kukicha functions `updateFrame()`, `drawFrame()`, `layoutScreen()`.
+3. **CGO build requirements** — ebitengine needs X11 development headers. On systems using Homebrew, set `CGO_CFLAGS` and `CGO_LDFLAGS` via `pkg-config`. The `make desktop` target handles this automatically.
+
+**Kukicha compiler bug found during Phase 5:**
+1. **Empty `()` on `on`-style method definitions fails to parse** — `func Update on a: reference Adapter() error` produces `expected '(' after 'func'`. The parser expects an explicit parameter between the receiver and the return type. All existing project methods with `on` syntax have at least one parameter. Workaround: use regular Kukicha functions called from a Go adapter.
 1. **`reference of s.game_state.EndTurn()` workaround** at `server/game_coordinator.kuki:66` was invalid Go (calling `new()` on a void function result). Removed the workaround — pointer-receiver method calls on value-typed fields work correctly in Go.
 2. **Stale `current_turn_player_id`** in `get_state_dict()` was caused by `NewGameSession` returning a `GameSession` **by value**. The api_map was populated with pointers to the local `session` inside `NewGameSession`, but the returned value was a **copy** — so mutations via `api.game_state.EndTurn()` modified the original (abandoned) struct, while reads from `session.game_state` saw a different copy. Fixed by changing `NewGameSession` to return `reference GameSession`.
 
@@ -45,7 +53,7 @@ Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://
 ### Key Architectural Decisions
 
 1. **Drop TCP entirely** — All clients communicate via HTTP/WebSocket only. The `network/` protocol layer and TCP server are **removed**, not converted.
-2. **Desktop 2D via ebitengine** — Use `github.com/kukichalang/game` (ebitengine wrapper). Drop all 3D Python code. Rebuild `renderer_2d.kuki` + menus + input handling.
+2. **Desktop 2D via ebitengine directly** — `github.com/kukichalang/game` is WASM-only (`//go:build js`). Use ebitengine via Go interop. Drop all 3D Python code. Rebuild `renderer_2d.kuki` + menus + input handling.
 3. **File GitHub issues** for any Kukicha/stdlib bugs found during conversion — with minimal reproducers.
 
 ### What Gets Dropped (not converted)

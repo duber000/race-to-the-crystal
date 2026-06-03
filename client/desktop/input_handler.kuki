@@ -1,0 +1,97 @@
+petiole main
+
+import "github.com/hajimehoshi/ebiten/v2"
+import "github.com/hajimehoshi/ebiten/v2/inpututil"
+
+func HandleMainMenuInput()
+    if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp)
+        app.menu_selection = max_int(app.menu_selection - 1, 0)
+    if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown)
+        app.menu_selection = min_int(app.menu_selection + 1, 2)
+    if inpututil.IsKeyJustPressed(ebiten.KeyEnter)
+        switch app.menu_selection
+            when 0
+                SetScreen(ScreenKind.Game)
+            when 1
+                SetScreen(ScreenKind.Lobby)
+            when 2
+                SetScreen(ScreenKind.MainMenu)
+
+func HandleLobbyInput()
+    if inpututil.IsKeyJustPressed(ebiten.KeyEscape)
+        SetScreen(ScreenKind.MainMenu)
+    if inpututil.IsKeyJustPressed(ebiten.KeyEnter)
+        SetScreen(ScreenKind.Game)
+
+func HandleGameInput()
+    pan_speed := 8
+    if ebiten.IsKeyPressed(ebiten.KeyArrowLeft)
+        app.view_offset_x = app.view_offset_x + pan_speed as float64
+    if ebiten.IsKeyPressed(ebiten.KeyArrowRight)
+        app.view_offset_x = app.view_offset_x - pan_speed as float64
+    if ebiten.IsKeyPressed(ebiten.KeyArrowUp)
+        app.view_offset_y = app.view_offset_y + pan_speed as float64
+    if ebiten.IsKeyPressed(ebiten.KeyArrowDown)
+        app.view_offset_y = app.view_offset_y - pan_speed as float64
+
+    if inpututil.IsKeyJustPressed(ebiten.KeyEscape)
+        SetScreen(ScreenKind.Victory)
+
+    mx, my := ebiten.CursorPosition()
+    if app.game_state isnt empty
+        gs := dereference app.game_state
+        cell_x := (mx - app.view_offset_x as int) / CELL_SIZE
+        cell_y := (my - app.view_offset_y as int) / CELL_SIZE
+        app.hover_cell = DPos(cell_x, cell_y)
+
+        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+            for t in gs.tokens
+                if t.is_alive and t.is_deployed and t.position.X == cell_x and t.position.Y == cell_y
+                    if app.selected_token_id == t.id
+                        app.selected_token_id = -1
+                        app.valid_moves = empty list of DesktopPos
+                    else
+                        app.selected_token_id = t.id
+                        app.valid_moves = generate_valid_moves(t)
+                    return
+            if app.selected_token_id >= 0
+                for mv in app.valid_moves
+                    if mv.X == cell_x and mv.Y == cell_y
+                        app.selected_token_id = -1
+                        app.valid_moves = empty list of DesktopPos
+                        app.message = "Moved!"
+                        return
+                app.selected_token_id = -1
+                app.valid_moves = empty list of DesktopPos
+
+func HandleVictoryInput()
+    if inpututil.IsKeyJustPressed(ebiten.KeyEnter)
+        SetScreen(ScreenKind.MainMenu)
+
+func generate_valid_moves(tok: DesktopToken) list of DesktopPos
+    result := empty list of DesktopPos
+    for dx from -2 to 3
+        for dy from -2 to 3
+            if dx == 0 and dy == 0
+                continue
+            dist := abs(dx) + abs(dy)
+            if dist > 0 and dist <= 2
+                result = append(result, DPos(tok.position.X + dx, tok.position.Y + dy))
+    return result
+
+func abs(x: int) int
+    if x < 0
+        return -x
+    return x
+
+func max_int(a: int, b: int) int
+    if a > b
+        return a
+    return b
+
+func min_int(a: int, b: int) int
+    if a < b
+        return a
+    return b
+
+

@@ -1,0 +1,145 @@
+petiole main
+
+import "github.com/hajimehoshi/ebiten/v2"
+import "image/color"
+
+const WINDOW_WIDTH = 1280
+const WINDOW_HEIGHT = 720
+const CELL_SIZE = 32
+
+enum ScreenKind
+    MainMenu = 0
+    Lobby = 1
+    Game = 2
+    Victory = 3
+
+type DesktopPos
+    X int
+    Y int
+
+func DPos(x: int, y: int) DesktopPos
+    return DesktopPos{X: x, Y: y}
+
+type DesktopToken
+    id int
+    player_id string
+    health int
+    max_health int
+    position DesktopPos
+    is_alive bool
+    is_deployed bool
+
+type DesktopPlayer
+    id string
+    name string
+    color_name string
+    color_idx int
+    is_active bool
+
+type DesktopGenerator
+    position DesktopPos
+    capturing_player string
+    turns_held int
+    is_disabled bool
+
+type DesktopGameState
+    players list of DesktopPlayer
+    tokens list of DesktopToken
+    generators list of DesktopGenerator
+    crystal_pos DesktopPos
+    crystal_holder string
+    board_width int
+    board_height int
+    current_turn_player string
+    phase string
+    turn_phase string
+    winner string
+
+type DesktopApp
+    current_screen ScreenKind
+    game_state nullable reference DesktopGameState
+    selected_token_id int
+    valid_moves list of DesktopPos
+    hover_cell DesktopPos
+    menu_selection int
+    view_offset_x float64
+    view_offset_y float64
+    message string
+    frame_count int
+
+var app DesktopApp
+
+func init()
+    app = DesktopApp{
+        current_screen: ScreenKind.MainMenu,
+        view_offset_x: 0.0,
+        view_offset_y: 0.0,
+        menu_selection: 0,
+        frame_count: 0,
+        selected_token_id: -1,
+    }
+
+func RGBA(r: int, g: int, b: int, a: int) color.RGBA
+    return color.RGBA{R: r as uint8, G: g as uint8, B: b as uint8, A: a as uint8}
+
+var ColorBlack = RGBA(0, 0, 0, 255)
+var ColorWhite = RGBA(255, 255, 255, 255)
+var ColorGray = RGBA(60, 60, 60, 255)
+var ColorLightGray = RGBA(100, 100, 100, 255)
+var ColorDarkGray = RGBA(30, 30, 30, 255)
+var ColorCyan = RGBA(0, 255, 255, 255)
+var ColorMagenta = RGBA(255, 0, 255, 255)
+var ColorYellow = RGBA(255, 255, 0, 255)
+var ColorGreen = RGBA(0, 200, 0, 255)
+var ColorOrange = RGBA(255, 165, 0, 255)
+var ColorPurple = RGBA(180, 0, 255, 255)
+var ColorRed = RGBA(255, 50, 50, 255)
+
+var PlayerColors = list of color.RGBA{ColorCyan, ColorMagenta, ColorYellow, ColorGreen}
+
+func PlayerColorByName(name: string) color.RGBA
+    switch name
+        when "cyan"
+            return ColorCyan
+        when "magenta"
+            return ColorMagenta
+        when "yellow"
+            return ColorYellow
+        when "green"
+            return ColorGreen
+        default
+            return ColorWhite
+
+
+
+func updateFrame()
+    app.frame_count = app.frame_count + 1
+    switch app.current_screen
+        when ScreenKind.MainMenu
+            HandleMainMenuInput()
+        when ScreenKind.Lobby
+            HandleLobbyInput()
+        when ScreenKind.Game
+            HandleGameInput()
+        when ScreenKind.Victory
+            HandleVictoryInput()
+
+func drawFrame(screen: reference ebiten.Image)
+    screen.Fill(ColorBlack)
+    switch app.current_screen
+        when ScreenKind.MainMenu
+            DrawMainMenu(screen)
+        when ScreenKind.Lobby
+            DrawLobby(screen)
+        when ScreenKind.Game
+            DrawGame(screen)
+        when ScreenKind.Victory
+            DrawVictory(screen)
+
+func layoutScreen(outsideWidth: int, outsideHeight: int) (int, int)
+    return WINDOW_WIDTH, WINDOW_HEIGHT
+
+func SetScreen(s: ScreenKind)
+    app.current_screen = s
+    app.menu_selection = 0
+    app.message = ""
