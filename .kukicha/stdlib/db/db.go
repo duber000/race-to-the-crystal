@@ -238,7 +238,6 @@ func ScanAll[T any](rows Rows) ([]T, error) {
 //line stdlib/db/db.kuki:153
 		fieldPtrs := structScanners(elemPtr.Elem(), elemType, columns)
 //line stdlib/db/db.kuki:154
-		// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/db/db.kuki:154
 		err_12 := rows.rows.Scan(fieldPtrs...)
 //line stdlib/db/db.kuki:154
@@ -250,7 +249,6 @@ func ScanAll[T any](rows Rows) ([]T, error) {
 		resultSlice = reflect.Append(resultSlice, elemPtr.Elem())
 	}
 //line stdlib/db/db.kuki:157
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/db/db.kuki:157
 	err_13 := rows.rows.Err()
 //line stdlib/db/db.kuki:157
@@ -288,7 +286,6 @@ func ScanOne[T any](rows Rows) (T, error) {
 //line stdlib/db/db.kuki:176
 	if !rows.rows.Next() {
 //line stdlib/db/db.kuki:177
-		// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/db/db.kuki:177
 		err_15 := rows.rows.Err()
 //line stdlib/db/db.kuki:177
@@ -303,7 +300,6 @@ func ScanOne[T any](rows Rows) (T, error) {
 //line stdlib/db/db.kuki:180
 	fieldPtrs := structScanners(elemPtr.Elem(), elemType, columns)
 //line stdlib/db/db.kuki:181
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/db/db.kuki:181
 	err_16 := rows.rows.Scan(fieldPtrs...)
 //line stdlib/db/db.kuki:181
@@ -318,7 +314,6 @@ func ScanOne[T any](rows Rows) (T, error) {
 		return zero, errors.New("db.ScanOne: more than one row returned")
 	}
 //line stdlib/db/db.kuki:186
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/db/db.kuki:186
 	err_17 := rows.rows.Err()
 //line stdlib/db/db.kuki:186
@@ -347,7 +342,6 @@ func ScanRow[T any](row Row) (T, error) {
 //line stdlib/db/db.kuki:199
 	scanners := orderedFieldScanners(elemPtr.Elem(), elemType)
 //line stdlib/db/db.kuki:200
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/db/db.kuki:200
 	err_18 := row.row.Scan(scanners...)
 //line stdlib/db/db.kuki:200
@@ -401,311 +395,319 @@ func Transaction(pool Pool, fn func(Tx) error) error {
 	return sqlTx.Commit()
 }
 
+//line stdlib/db/db.kuki:238
+func toSQLLevel(level IsolationLevel) sql.IsolationLevel {
 //line stdlib/db/db.kuki:239
-func TransactionWith(pool Pool, opts TxOptions, fn func(Tx) error) error {
-//line stdlib/db/db.kuki:240
-	txOpts := sql.TxOptions{ReadOnly: opts.ReadOnly}
-//line stdlib/db/db.kuki:241
-	switch opts.IsolationLevel {
+	switch level {
 	case IsolationLevelDefault:
-//line stdlib/db/db.kuki:243
-		txOpts.Isolation = sql.LevelDefault
+//line stdlib/db/db.kuki:241
+		return sql.LevelDefault
 	case IsolationLevelReadUncommitted:
-//line stdlib/db/db.kuki:245
-		txOpts.Isolation = sql.LevelReadUncommitted
+//line stdlib/db/db.kuki:243
+		return sql.LevelReadUncommitted
 	case IsolationLevelReadCommitted:
-//line stdlib/db/db.kuki:247
-		txOpts.Isolation = sql.LevelReadCommitted
+//line stdlib/db/db.kuki:245
+		return sql.LevelReadCommitted
 	case IsolationLevelRepeatableRead:
-//line stdlib/db/db.kuki:249
-		txOpts.Isolation = sql.LevelRepeatableRead
+//line stdlib/db/db.kuki:247
+		return sql.LevelRepeatableRead
 	case IsolationLevelSerializable:
-//line stdlib/db/db.kuki:251
-		txOpts.Isolation = sql.LevelSerializable
+//line stdlib/db/db.kuki:249
+		return sql.LevelSerializable
 	}
-//line stdlib/db/db.kuki:253
+//line stdlib/db/db.kuki:250
+	return sql.LevelDefault
+}
+
+//line stdlib/db/db.kuki:254
+func TransactionWith(pool Pool, opts TxOptions, fn func(Tx) error) error {
+//line stdlib/db/db.kuki:255
+	txOpts := sql.TxOptions{ReadOnly: opts.ReadOnly, Isolation: toSQLLevel(opts.IsolationLevel)}
+//line stdlib/db/db.kuki:256
 	sqlTx, err_20 := pool.conn.BeginTx(ctxpkg.Background().Ctx, &txOpts)
-//line stdlib/db/db.kuki:253
+//line stdlib/db/db.kuki:256
 	if err_20 != nil {
-//line stdlib/db/db.kuki:253
+//line stdlib/db/db.kuki:256
 		return err_20
 	}
-//line stdlib/db/db.kuki:254
-	tx := Tx{tx: sqlTx}
-//line stdlib/db/db.kuki:256
-	defer func() {
 //line stdlib/db/db.kuki:257
-		if //line stdlib/db/db.kuki:257
-		r := recover(); r != nil {
-//line stdlib/db/db.kuki:258
-			sqlTx.Rollback()
+	tx := Tx{tx: sqlTx}
 //line stdlib/db/db.kuki:259
+	defer func() {
+//line stdlib/db/db.kuki:260
+		if //line stdlib/db/db.kuki:260
+		r := recover(); r != nil {
+//line stdlib/db/db.kuki:261
+			sqlTx.Rollback()
+//line stdlib/db/db.kuki:262
 			panic(r)
 		}
 	}()
-//line stdlib/db/db.kuki:261
-	err := fn(tx)
-//line stdlib/db/db.kuki:262
-	if err != nil {
-//line stdlib/db/db.kuki:263
-		sqlTx.Rollback()
 //line stdlib/db/db.kuki:264
+	err := fn(tx)
+//line stdlib/db/db.kuki:265
+	if err != nil {
+//line stdlib/db/db.kuki:266
+		sqlTx.Rollback()
+//line stdlib/db/db.kuki:267
 		return err
 	}
-//line stdlib/db/db.kuki:266
+//line stdlib/db/db.kuki:269
 	return sqlTx.Commit()
 }
 
-//line stdlib/db/db.kuki:271
+//line stdlib/db/db.kuki:274
 func TxQuery(tx Tx, query string, args ...any) (Rows, error) {
-//line stdlib/db/db.kuki:272
+//line stdlib/db/db.kuki:275
 	rows, err_21 := tx.tx.Query(query, args...)
-//line stdlib/db/db.kuki:272
+//line stdlib/db/db.kuki:275
 	if err_21 != nil {
 		var _zero0 Rows
-//line stdlib/db/db.kuki:272
+//line stdlib/db/db.kuki:275
 		return _zero0, err_21
 	}
-//line stdlib/db/db.kuki:273
+//line stdlib/db/db.kuki:276
 	result := Rows{rows: rows}
-//line stdlib/db/db.kuki:274
+//line stdlib/db/db.kuki:277
 	return result, nil
 }
 
-//line stdlib/db/db.kuki:279
+//line stdlib/db/db.kuki:282
 func TxQueryRow(tx Tx, query string, args ...any) Row {
-//line stdlib/db/db.kuki:280
+//line stdlib/db/db.kuki:283
 	row := tx.tx.QueryRow(query, args...)
-//line stdlib/db/db.kuki:281
+//line stdlib/db/db.kuki:284
 	return Row{row: row}
 }
 
-//line stdlib/db/db.kuki:287
+//line stdlib/db/db.kuki:290
 func TxExec(tx Tx, query string, args ...any) (int64, error) {
-//line stdlib/db/db.kuki:288
+//line stdlib/db/db.kuki:291
 	result, err_22 := tx.tx.Exec(query, args...)
-//line stdlib/db/db.kuki:288
+//line stdlib/db/db.kuki:291
 	if err_22 != nil {
-//line stdlib/db/db.kuki:288
+//line stdlib/db/db.kuki:291
 		return 0, err_22
 	}
-//line stdlib/db/db.kuki:289
+//line stdlib/db/db.kuki:292
 	affected, err_23 := result.RowsAffected()
-//line stdlib/db/db.kuki:289
+//line stdlib/db/db.kuki:292
 	if err_23 != nil {
-//line stdlib/db/db.kuki:289
+//line stdlib/db/db.kuki:292
 		return 0, err_23
 	}
-//line stdlib/db/db.kuki:290
+//line stdlib/db/db.kuki:293
 	return affected, nil
 }
 
-//line stdlib/db/db.kuki:299
+//line stdlib/db/db.kuki:302
 func Count(pool Pool, query string, args ...any) (int64, error) {
-//line stdlib/db/db.kuki:300
+//line stdlib/db/db.kuki:303
 	row := pool.conn.QueryRow(query, args...)
-//line stdlib/db/db.kuki:301
+//line stdlib/db/db.kuki:304
 	n := int64(0)
-//line stdlib/db/db.kuki:302
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/db/db.kuki:302
+//line stdlib/db/db.kuki:305
+//line stdlib/db/db.kuki:305
 	err_24 := row.Scan(&n)
-//line stdlib/db/db.kuki:302
+//line stdlib/db/db.kuki:305
 	if err_24 != nil {
-//line stdlib/db/db.kuki:302
+//line stdlib/db/db.kuki:305
 		return 0, err_24
 	}
-//line stdlib/db/db.kuki:303
+//line stdlib/db/db.kuki:306
 	return n, nil
 }
 
-//line stdlib/db/db.kuki:308
-func Exists(pool Pool, query string, args ...any) (bool, error) {
-//line stdlib/db/db.kuki:309
-	row := pool.conn.QueryRow(query, args...)
-//line stdlib/db/db.kuki:310
-	dummy := 0
 //line stdlib/db/db.kuki:311
-	if //line stdlib/db/db.kuki:311
-	err := row.Scan(&dummy); err != nil {
+func Exists(pool Pool, query string, args ...any) (bool, error) {
 //line stdlib/db/db.kuki:312
-		if errors.Is(err, sql.ErrNoRows) {
+	row := pool.conn.QueryRow(query, args...)
 //line stdlib/db/db.kuki:313
+	dummy := 0
+//line stdlib/db/db.kuki:314
+//line stdlib/db/db.kuki:314
+	err_25 := row.Scan(&dummy)
+//line stdlib/db/db.kuki:314
+	if err_25 != nil {
+//line stdlib/db/db.kuki:314
+		//line stdlib/db/db.kuki:315
+		if errors.Is(err_25, sql.ErrNoRows) {
+			//line stdlib/db/db.kuki:316
 			return false, nil
 		}
-//line stdlib/db/db.kuki:314
-		return false, err
+		//line stdlib/db/db.kuki:317
+		return false, err_25
 	}
-//line stdlib/db/db.kuki:315
+//line stdlib/db/db.kuki:319
 	return true, nil
 }
 
-//line stdlib/db/db.kuki:323
+//line stdlib/db/db.kuki:327
 func RawDB(pool Pool) *sql.DB {
-//line stdlib/db/db.kuki:324
+//line stdlib/db/db.kuki:328
 	return pool.conn
 }
 
-//line stdlib/db/db.kuki:328
+//line stdlib/db/db.kuki:332
 func NewPool(conn *sql.DB) Pool {
-//line stdlib/db/db.kuki:329
+//line stdlib/db/db.kuki:333
 	return Pool{conn: conn}
 }
 
-//line stdlib/db/db.kuki:337
+//line stdlib/db/db.kuki:341
 type nullSafeField struct {
 	target reflect.Value
 }
 
-//line stdlib/db/db.kuki:340
+//line stdlib/db/db.kuki:344
 func (s *nullSafeField) Scan(value any) error {
-//line stdlib/db/db.kuki:341
+//line stdlib/db/db.kuki:345
 	if value == nil {
-//line stdlib/db/db.kuki:343
+//line stdlib/db/db.kuki:347
 		return nil
 	}
-//line stdlib/db/db.kuki:346
+//line stdlib/db/db.kuki:350
 	if s.target.Kind() == reflect.Bool {
-//line stdlib/db/db.kuki:347
-		if //line stdlib/db/db.kuki:347
+//line stdlib/db/db.kuki:351
+		if //line stdlib/db/db.kuki:351
 		v, ok := value.(int64); ok {
-//line stdlib/db/db.kuki:348
-			s.target.SetBool((v != 0))
-//line stdlib/db/db.kuki:349
+//line stdlib/db/db.kuki:352
+			s.target.SetBool(v != 0)
+//line stdlib/db/db.kuki:353
 			return nil
 		}
-//line stdlib/db/db.kuki:350
-		if //line stdlib/db/db.kuki:350
+//line stdlib/db/db.kuki:354
+		if //line stdlib/db/db.kuki:354
 		v, ok := value.(int); ok {
-//line stdlib/db/db.kuki:351
-			s.target.SetBool((v != 0))
-//line stdlib/db/db.kuki:352
+//line stdlib/db/db.kuki:355
+			s.target.SetBool(v != 0)
+//line stdlib/db/db.kuki:356
 			return nil
 		}
 	}
-//line stdlib/db/db.kuki:354
+//line stdlib/db/db.kuki:358
 	src := reflect.ValueOf(value)
-//line stdlib/db/db.kuki:355
+//line stdlib/db/db.kuki:359
 	if src.Type().ConvertibleTo(s.target.Type()) {
-//line stdlib/db/db.kuki:356
+//line stdlib/db/db.kuki:360
 		s.target.Set(src.Convert(s.target.Type()))
 	} else {
-//line stdlib/db/db.kuki:359
+//line stdlib/db/db.kuki:363
 		if s.target.Kind() == reflect.String {
-//line stdlib/db/db.kuki:360
+//line stdlib/db/db.kuki:364
 			s.target.SetString(fmt.Sprintf("%v", value))
 		} else {
-//line stdlib/db/db.kuki:362
+//line stdlib/db/db.kuki:366
 			return fmt.Errorf("db: cannot convert %v to %v", src.Type(), s.target.Type())
 		}
 	}
-//line stdlib/db/db.kuki:363
+//line stdlib/db/db.kuki:367
 	return nil
 }
 
-//line stdlib/db/db.kuki:367
-func orderedFieldScanners(elem reflect.Value, elemType reflect.Type) []any {
-//line stdlib/db/db.kuki:368
-	numFields := elemType.NumField()
-//line stdlib/db/db.kuki:369
-	scanners := make([]any, 0, numFields)
-//line stdlib/db/db.kuki:370
-	for i := range numFields {
 //line stdlib/db/db.kuki:371
-		field := elemType.Field(i)
+func orderedFieldScanners(elem reflect.Value, elemType reflect.Type) []any {
 //line stdlib/db/db.kuki:372
-		if field.IsExported() {
+	numFields := elemType.NumField()
 //line stdlib/db/db.kuki:373
+	scanners := make([]any, 0, numFields)
+//line stdlib/db/db.kuki:374
+	for i := range numFields {
+//line stdlib/db/db.kuki:375
+		field := elemType.Field(i)
+//line stdlib/db/db.kuki:376
+		if field.IsExported() {
+//line stdlib/db/db.kuki:377
 			scanners = append(scanners, &nullSafeField{target: elem.Field(i)})
 		}
 	}
-//line stdlib/db/db.kuki:374
+//line stdlib/db/db.kuki:378
 	return scanners
 }
 
-//line stdlib/db/db.kuki:378
-func structScanners(elem reflect.Value, elemType reflect.Type, columns []string) []any {
-//line stdlib/db/db.kuki:379
-	numFields := elemType.NumField()
 //line stdlib/db/db.kuki:382
-	tagMap := make(map[string]int)
+func structScanners(elem reflect.Value, elemType reflect.Type, columns []string) []any {
 //line stdlib/db/db.kuki:383
-	nameMap := make(map[string]int)
-//line stdlib/db/db.kuki:384
-	snakeMap := make(map[string]int)
+	numFields := elemType.NumField()
 //line stdlib/db/db.kuki:386
-	for i := range numFields {
+	tagMap := make(map[string]int)
 //line stdlib/db/db.kuki:387
-		field := elemType.Field(i)
+	nameMap := make(map[string]int)
 //line stdlib/db/db.kuki:388
+	snakeMap := make(map[string]int)
+//line stdlib/db/db.kuki:390
+	for i := range numFields {
+//line stdlib/db/db.kuki:391
+		field := elemType.Field(i)
+//line stdlib/db/db.kuki:392
 		if !field.IsExported() {
-//line stdlib/db/db.kuki:389
+//line stdlib/db/db.kuki:393
 			continue
 		}
-//line stdlib/db/db.kuki:392
+//line stdlib/db/db.kuki:396
 		tag := field.Tag.Get("json")
-//line stdlib/db/db.kuki:393
-		if (tag != "") && (tag != "-") {
-//line stdlib/db/db.kuki:394
+//line stdlib/db/db.kuki:397
+		if tag != "" && tag != "-" {
+//line stdlib/db/db.kuki:398
 			parts := strpkg.Split(tag, ",")
-//line stdlib/db/db.kuki:395
+//line stdlib/db/db.kuki:399
 			tagMap[parts[0]] = i
 		}
-//line stdlib/db/db.kuki:398
+//line stdlib/db/db.kuki:402
 		nameMap[strpkg.ToLower(field.Name)] = i
-//line stdlib/db/db.kuki:401
+//line stdlib/db/db.kuki:405
 		snakeMap[camelToSnake(field.Name)] = i
 	}
-//line stdlib/db/db.kuki:404
-	ptrs := make([]any, len(columns))
-//line stdlib/db/db.kuki:405
-	for ci, col := range columns {
-//line stdlib/db/db.kuki:406
-		lowerCol := strpkg.ToLower(col)
-//line stdlib/db/db.kuki:407
-		if //line stdlib/db/db.kuki:407
-		idx, ok := tagMap[col]; ok {
 //line stdlib/db/db.kuki:408
-			ptrs[ci] = &nullSafeField{target: elem.Field(idx)}
-		} else if //line stdlib/db/db.kuki:409
-		idx, ok := nameMap[lowerCol]; ok {
+	ptrs := make([]any, len(columns))
+//line stdlib/db/db.kuki:409
+	for ci, col := range columns {
 //line stdlib/db/db.kuki:410
-			ptrs[ci] = &nullSafeField{target: elem.Field(idx)}
-		} else if //line stdlib/db/db.kuki:411
-		idx, ok := snakeMap[lowerCol]; ok {
+		lowerCol := strpkg.ToLower(col)
+//line stdlib/db/db.kuki:411
+		if //line stdlib/db/db.kuki:411
+		idx, ok := tagMap[col]; ok {
 //line stdlib/db/db.kuki:412
 			ptrs[ci] = &nullSafeField{target: elem.Field(idx)}
-		} else {
+		} else if //line stdlib/db/db.kuki:413
+		idx, ok := nameMap[lowerCol]; ok {
 //line stdlib/db/db.kuki:414
+			ptrs[ci] = &nullSafeField{target: elem.Field(idx)}
+		} else if //line stdlib/db/db.kuki:415
+		idx, ok := snakeMap[lowerCol]; ok {
+//line stdlib/db/db.kuki:416
+			ptrs[ci] = &nullSafeField{target: elem.Field(idx)}
+		} else {
+//line stdlib/db/db.kuki:418
 			throwaway := ""
-//line stdlib/db/db.kuki:415
+//line stdlib/db/db.kuki:419
 			ptrs[ci] = &throwaway
 		}
 	}
-//line stdlib/db/db.kuki:417
+//line stdlib/db/db.kuki:421
 	return ptrs
 }
 
-//line stdlib/db/db.kuki:420
-func camelToSnake(s string) string {
-//line stdlib/db/db.kuki:421
-	result := ""
-//line stdlib/db/db.kuki:422
-	for i, r := range s {
-//line stdlib/db/db.kuki:423
-		if unicode.IsUpper(r) {
 //line stdlib/db/db.kuki:424
-			if i > 0 {
+func camelToSnake(s string) string {
 //line stdlib/db/db.kuki:425
-				result = (result + "_")
-			}
+	result := ""
 //line stdlib/db/db.kuki:426
-			result = strpkg.ToLower((result + fmt.Sprintf("%c", r)))
-		} else {
+	for i, r := range s {
+//line stdlib/db/db.kuki:427
+		if unicode.IsUpper(r) {
 //line stdlib/db/db.kuki:428
-			result = (result + fmt.Sprintf("%c", r))
+			if i > 0 {
+//line stdlib/db/db.kuki:429
+				result = result + "_"
+			}
+//line stdlib/db/db.kuki:430
+			result = strpkg.ToLower(result + string(r))
+		} else {
+//line stdlib/db/db.kuki:432
+			result = result + string(r)
 		}
 	}
-//line stdlib/db/db.kuki:429
+//line stdlib/db/db.kuki:433
 	return result
 }

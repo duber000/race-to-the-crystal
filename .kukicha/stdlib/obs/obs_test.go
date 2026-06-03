@@ -58,7 +58,9 @@ func TestTimerFields(t *testing.T) {
 //line stdlib/obs/obs_test.kuki:42
 	test.AssertTrue(t, !timer.StartedAt.Before(before))
 //line stdlib/obs/obs_test.kuki:44
-	obs.Stop(timer, map[string]any{})
+	obs.Stop(timer)
 //line stdlib/obs/obs_test.kuki:45
-	obs.Fail(timer, "error", map[string]any{})
+	obs.Fail(timer, "error")
+//line stdlib/obs/obs_test.kuki:46
+	obs.Info(logger, "with fields", "port", 8080)
 }

@@ -217,7 +217,7 @@ func TestServerRegistration(t *testing.T) {
 //line stdlib/mcp/mcp_test.kuki:170
 	mcppkg.TextResource(server, "config://app", "App config", "Configuration", textFn)
 //line stdlib/mcp/mcp_test.kuki:172
-	uriTemplate := (("users://" + "{") + "id}/profile")
+	uriTemplate := "users://" + "{" + "id}/profile"
 //line stdlib/mcp/mcp_test.kuki:173
 	mcppkg.TextResourceTemplate(server, uriTemplate, "User profile", "Per-user profile", textFn)
 //line stdlib/mcp/mcp_test.kuki:175

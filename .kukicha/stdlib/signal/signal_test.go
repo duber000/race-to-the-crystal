@@ -18,7 +18,7 @@ func TestWaitFor(t *testing.T) {
 //line stdlib/signal/signal_test.kuki:16
 	go func() {
 //line stdlib/signal/signal_test.kuki:17
-		time.Sleep((10 * time.Millisecond))
+		time.Sleep(10 * time.Millisecond)
 //line stdlib/signal/signal_test.kuki:18
 		p, _ := os.FindProcess(os.Getpid())
 //line stdlib/signal/signal_test.kuki:19
@@ -29,7 +29,7 @@ func TestWaitFor(t *testing.T) {
 //line stdlib/signal/signal_test.kuki:22
 	test.AssertNoError(t, err)
 //line stdlib/signal/signal_test.kuki:23
-	test.AssertEqual(t, (sig == signal.UserDefined1), true)
+	test.AssertEqual(t, sig == signal.UserDefined1, true)
 }
 
 //line stdlib/signal/signal_test.kuki:25
@@ -37,7 +37,7 @@ func TestWaitForNoSignals(t *testing.T) {
 //line stdlib/signal/signal_test.kuki:26
 	_, err := signal.WaitFor()
 //line stdlib/signal/signal_test.kuki:27
-	test.AssertEqual(t, (err != nil), true)
+	test.AssertEqual(t, err != nil, true)
 }
 
 //line stdlib/signal/signal_test.kuki:30
@@ -56,7 +56,7 @@ func TestOnInterrupt(t *testing.T) {
 		wg.Done()
 	})
 //line stdlib/signal/signal_test.kuki:39
-	time.Sleep((10 * time.Millisecond))
+	time.Sleep(10 * time.Millisecond)
 //line stdlib/signal/signal_test.kuki:40
 	p, _ := os.FindProcess(os.Getpid())
 //line stdlib/signal/signal_test.kuki:41
@@ -76,21 +76,21 @@ func TestContext(t *testing.T) {
 //line stdlib/signal/signal_test.kuki:51
 	go func() {
 //line stdlib/signal/signal_test.kuki:52
-		time.Sleep((10 * time.Millisecond))
+		time.Sleep(10 * time.Millisecond)
 //line stdlib/signal/signal_test.kuki:53
 		p, _ := os.FindProcess(os.Getpid())
 //line stdlib/signal/signal_test.kuki:54
 		_ = p.Signal(syscall.SIGUSR2)
 	}()
 //line stdlib/signal/signal_test.kuki:56
-	deadline, cancel := context.WithTimeout(context.Background(), (2 * time.Second))
+	deadline, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 //line stdlib/signal/signal_test.kuki:57
 	defer cancel()
 //line stdlib/signal/signal_test.kuki:59
 	select {
 	case <-ctx.Done():
 //line stdlib/signal/signal_test.kuki:61
-		test.AssertEqual(t, (ctx.Err() != nil), true)
+		test.AssertEqual(t, ctx.Err() != nil, true)
 	case <-deadline.Done():
 //line stdlib/signal/signal_test.kuki:63
 		t.Fatal("signal.Context did not cancel within deadline")
@@ -104,5 +104,5 @@ func TestContextDefaults(t *testing.T) {
 //line stdlib/signal/signal_test.kuki:67
 	defer stop()
 //line stdlib/signal/signal_test.kuki:68
-	test.AssertEqual(t, (ctx == nil), false)
+	test.AssertEqual(t, ctx == nil, false)
 }

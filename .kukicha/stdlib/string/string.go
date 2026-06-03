@@ -151,7 +151,7 @@ func PadRight(s string, width int, padChar string) string {
 		return s
 	}
 //line stdlib/string/string.kuki:142
-	return (s + strings.Repeat(padChar, (width-length)))
+	return s + strings.Repeat(padChar, width-length)
 }
 
 //line stdlib/string/string.kuki:146
@@ -164,7 +164,7 @@ func PadLeft(s string, width int, padChar string) string {
 		return s
 	}
 //line stdlib/string/string.kuki:150
-	return (strings.Repeat(padChar, (width-length)) + s)
+	return strings.Repeat(padChar, width-length) + s
 }
 
 //line stdlib/string/string.kuki:156
@@ -177,13 +177,13 @@ func Center(s string, width int, padChar string) string {
 		return s
 	}
 //line stdlib/string/string.kuki:160
-	total := (width - length)
+	total := width - length
 //line stdlib/string/string.kuki:161
-	left := (total / 2)
+	left := total / 2
 //line stdlib/string/string.kuki:162
-	right := (total - left)
+	right := total - left
 //line stdlib/string/string.kuki:163
-	return ((strings.Repeat(padChar, left) + s) + strings.Repeat(padChar, right))
+	return strings.Repeat(padChar, left) + s + strings.Repeat(padChar, right)
 }
 
 //line stdlib/string/string.kuki:172
@@ -208,7 +208,7 @@ func Truncate(s string, maxLen int) string {
 		return string(runes[:maxLen])
 	}
 //line stdlib/string/string.kuki:181
-	return (string(runes[:(maxLen-3)]) + "...")
+	return string(runes[:maxLen-3]) + "..."
 }
 
 //line stdlib/string/string.kuki:187
@@ -242,7 +242,7 @@ func WithCommas(n int) string {
 //line stdlib/string/string.kuki:205
 		if negative {
 //line stdlib/string/string.kuki:206
-			return ("-" + s)
+			return "-" + s
 		}
 //line stdlib/string/string.kuki:207
 		return s
@@ -252,9 +252,9 @@ func WithCommas(n int) string {
 //line stdlib/string/string.kuki:211
 	for digits > 3 {
 //line stdlib/string/string.kuki:212
-		parts = append(parts, s[(digits-3):])
+		parts = append(parts, s[digits-3:])
 //line stdlib/string/string.kuki:213
-		s = s[:(digits - 3)]
+		s = s[:digits-3]
 //line stdlib/string/string.kuki:214
 		digits = len(s)
 	}
@@ -265,14 +265,14 @@ func WithCommas(n int) string {
 //line stdlib/string/string.kuki:219
 	for i := range len(parts) {
 //line stdlib/string/string.kuki:220
-		flipped = append(flipped, parts[((len(parts)-1)-i)])
+		flipped = append(flipped, parts[len(parts)-1-i])
 	}
 //line stdlib/string/string.kuki:221
 	out := strings.Join(flipped, ",")
 //line stdlib/string/string.kuki:223
 	if negative {
 //line stdlib/string/string.kuki:224
-		return ("-" + out)
+		return "-" + out
 	}
 //line stdlib/string/string.kuki:225
 	return out
@@ -293,15 +293,15 @@ func Compare(a string, b string) int {
 //line stdlib/string/string.kuki:243
 func IsBlank(s string) bool {
 //line stdlib/string/string.kuki:244
-	return (len(strings.TrimSpace(s)) == 0)
+	return len(strings.TrimSpace(s)) == 0
 }
 
 //line stdlib/string/string.kuki:250
-func OrDefault(s string, alt string) string {
+func Or(s string, defaultValue string) string {
 //line stdlib/string/string.kuki:251
 	if s == "" {
 //line stdlib/string/string.kuki:252
-		return alt
+		return defaultValue
 	}
 //line stdlib/string/string.kuki:253
 	return s

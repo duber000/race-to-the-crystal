@@ -88,11 +88,11 @@ func TestFormat(t *testing.T) {
 //line stdlib/semver/semver_test.kuki:77
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/semver/semver_test.kuki:78
-			v, err_1 := semver.Parse(tc.tag)
+			v, err_2 := semver.Parse(tc.tag)
 //line stdlib/semver/semver_test.kuki:78
-			if err_1 != nil {
+			if err_2 != nil {
 //line stdlib/semver/semver_test.kuki:78
-				panic(fmt.Sprintf("%v", err_1))
+				panic(fmt.Sprintf("%v", err_2))
 			}
 //line stdlib/semver/semver_test.kuki:79
 			got := semver.Format(v)
@@ -142,18 +142,18 @@ func TestCompare(t *testing.T) {
 //line stdlib/semver/semver_test.kuki:123
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/semver/semver_test.kuki:124
-			a, err_1 := semver.Parse(tc.a)
+			a, err_3 := semver.Parse(tc.a)
 //line stdlib/semver/semver_test.kuki:124
-			if err_1 != nil {
+			if err_3 != nil {
 //line stdlib/semver/semver_test.kuki:124
-				panic(fmt.Sprintf("%v", err_1))
+				panic(fmt.Sprintf("%v", err_3))
 			}
 //line stdlib/semver/semver_test.kuki:125
-			b, err_2 := semver.Parse(tc.b)
+			b, err_4 := semver.Parse(tc.b)
 //line stdlib/semver/semver_test.kuki:125
-			if err_2 != nil {
+			if err_4 != nil {
 //line stdlib/semver/semver_test.kuki:125
-				panic(fmt.Sprintf("%v", err_2))
+				panic(fmt.Sprintf("%v", err_4))
 			}
 //line stdlib/semver/semver_test.kuki:126
 			got := semver.Compare(a, b)

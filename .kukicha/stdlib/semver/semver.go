@@ -61,7 +61,7 @@ func Parse(tag string) (Version, error) {
 		return Version{}, fmt.Errorf("invalid semver: %v", tag)
 	}
 //line stdlib/semver/semver.kuki:43
-	if ((major < 0) || (minor < 0)) || (patch < 0) {
+	if major < 0 || minor < 0 || patch < 0 {
 //line stdlib/semver/semver.kuki:44
 		return Version{}, fmt.Errorf("invalid semver: %v", tag)
 	}
@@ -75,19 +75,19 @@ func Bump(v Version, level string) Version {
 	switch level {
 	case "major":
 //line stdlib/semver/semver.kuki:54
-		v.major = (v.major + 1)
+		v.major = v.major + 1
 //line stdlib/semver/semver.kuki:55
 		v.minor = 0
 //line stdlib/semver/semver.kuki:56
 		v.patch = 0
 	case "minor":
 //line stdlib/semver/semver.kuki:58
-		v.minor = (v.minor + 1)
+		v.minor = v.minor + 1
 //line stdlib/semver/semver.kuki:59
 		v.patch = 0
 	case "patch":
 //line stdlib/semver/semver.kuki:61
-		v.patch = (v.patch + 1)
+		v.patch = v.patch + 1
 	}
 //line stdlib/semver/semver.kuki:63
 	return v
@@ -102,9 +102,15 @@ func Format(v Version) string {
 //line stdlib/semver/semver.kuki:72
 func Valid(tag string) bool {
 //line stdlib/semver/semver.kuki:73
-	_, err := Parse(tag)
+//line stdlib/semver/semver.kuki:73
+	_, err_4 := Parse(tag)
+//line stdlib/semver/semver.kuki:73
+	if err_4 != nil {
+//line stdlib/semver/semver.kuki:73
+		return false
+	}
 //line stdlib/semver/semver.kuki:74
-	return (err == nil)
+	return true
 }
 
 //line stdlib/semver/semver.kuki:78
@@ -146,7 +152,7 @@ func Compare(a Version, b Version) int {
 //line stdlib/semver/semver.kuki:95
 func Greater(a Version, b Version) bool {
 //line stdlib/semver/semver.kuki:96
-	return (Compare(a, b) > 0)
+	return Compare(a, b) > 0
 }
 
 //line stdlib/semver/semver.kuki:101
@@ -163,9 +169,9 @@ func Highest(tags []string) (string, error) {
 //line stdlib/semver/semver.kuki:107
 	for _, tag := range valid {
 //line stdlib/semver/semver.kuki:108
-		v, err_4 := Parse(tag)
+		v, err_5 := Parse(tag)
 //line stdlib/semver/semver.kuki:108
-		if err_4 != nil {
+		if err_5 != nil {
 //line stdlib/semver/semver.kuki:108
 			continue
 		}
@@ -173,9 +179,9 @@ func Highest(tags []string) (string, error) {
 		parsed = append(parsed, v)
 	}
 //line stdlib/semver/semver.kuki:111
-	sorted := sort.By(parsed, func(a Version, b Version) bool { return (Compare(a, b) < 0) })
+	sorted := sort.By(parsed, func(a Version, b Version) bool { return Compare(a, b) < 0 })
 //line stdlib/semver/semver.kuki:112
-	best := sorted[(len(sorted) - 1)]
+	best := sorted[len(sorted)-1]
 //line stdlib/semver/semver.kuki:113
 	return Format(best), nil
 }

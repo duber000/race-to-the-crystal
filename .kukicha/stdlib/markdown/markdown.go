@@ -37,69 +37,70 @@ func ToHTMLWith(md string, opts Options) string {
 //line stdlib/markdown/markdown.kuki:50
 	buf := bytes.Buffer{}
 //line stdlib/markdown/markdown.kuki:53
-	err := md_engine.Convert([]byte(md), &buf)
-//line stdlib/markdown/markdown.kuki:54
-	if err != nil {
-//line stdlib/markdown/markdown.kuki:55
+//line stdlib/markdown/markdown.kuki:53
+	err_1 := md_engine.Convert([]byte(md), &buf)
+//line stdlib/markdown/markdown.kuki:53
+	if err_1 != nil {
+//line stdlib/markdown/markdown.kuki:53
 		return ""
 	}
-//line stdlib/markdown/markdown.kuki:56
+//line stdlib/markdown/markdown.kuki:54
 	return buf.String()
 }
 
-//line stdlib/markdown/markdown.kuki:58
+//line stdlib/markdown/markdown.kuki:56
 func newConverter(opts Options) goldmark.Markdown {
-//line stdlib/markdown/markdown.kuki:59
+//line stdlib/markdown/markdown.kuki:57
 	exts := []goldmark.Extender{}
-//line stdlib/markdown/markdown.kuki:60
+//line stdlib/markdown/markdown.kuki:58
 	if opts.Tables {
-//line stdlib/markdown/markdown.kuki:61
+//line stdlib/markdown/markdown.kuki:59
 		exts = append(exts, extension.Table)
 	}
-//line stdlib/markdown/markdown.kuki:62
+//line stdlib/markdown/markdown.kuki:60
 	if opts.Strikethrough {
-//line stdlib/markdown/markdown.kuki:63
+//line stdlib/markdown/markdown.kuki:61
 		exts = append(exts, extension.Strikethrough)
 	}
-//line stdlib/markdown/markdown.kuki:64
+//line stdlib/markdown/markdown.kuki:62
 	if opts.TaskList {
-//line stdlib/markdown/markdown.kuki:65
+//line stdlib/markdown/markdown.kuki:63
 		exts = append(exts, extension.TaskList)
 	}
-//line stdlib/markdown/markdown.kuki:66
+//line stdlib/markdown/markdown.kuki:64
 	if opts.Footnotes {
-//line stdlib/markdown/markdown.kuki:67
+//line stdlib/markdown/markdown.kuki:65
 		exts = append(exts, extension.Footnote)
 	}
-//line stdlib/markdown/markdown.kuki:68
+//line stdlib/markdown/markdown.kuki:66
 	if opts.DefinitionList {
-//line stdlib/markdown/markdown.kuki:69
+//line stdlib/markdown/markdown.kuki:67
 		exts = append(exts, extension.DefinitionList)
 	}
-//line stdlib/markdown/markdown.kuki:70
+//line stdlib/markdown/markdown.kuki:68
 	if opts.AutoLink {
-//line stdlib/markdown/markdown.kuki:71
+//line stdlib/markdown/markdown.kuki:69
 		exts = append(exts, extension.Linkify)
 	}
-//line stdlib/markdown/markdown.kuki:73
+//line stdlib/markdown/markdown.kuki:71
 	parserOpts := []parser.Option{}
-//line stdlib/markdown/markdown.kuki:74
+//line stdlib/markdown/markdown.kuki:72
 	if opts.AutoHeadingID {
-//line stdlib/markdown/markdown.kuki:75
+//line stdlib/markdown/markdown.kuki:73
 		parserOpts = append(parserOpts, parser.WithAutoHeadingID())
 	}
-//line stdlib/markdown/markdown.kuki:77
+//line stdlib/markdown/markdown.kuki:75
 	rendererOpts := []renderer.Option{}
-//line stdlib/markdown/markdown.kuki:78
+//line stdlib/markdown/markdown.kuki:76
 	if opts.HardWrap {
-//line stdlib/markdown/markdown.kuki:79
+//line stdlib/markdown/markdown.kuki:77
 		rendererOpts = append(rendererOpts, gmhtml.WithHardWraps())
 	}
-//line stdlib/markdown/markdown.kuki:80
+//line stdlib/markdown/markdown.kuki:78
 	if opts.AllowRawHTML {
-//line stdlib/markdown/markdown.kuki:81
+//line stdlib/markdown/markdown.kuki:79
 		rendererOpts = append(rendererOpts, gmhtml.WithUnsafe())
 	}
-//line stdlib/markdown/markdown.kuki:83
+//line stdlib/markdown/markdown.kuki:81
 	return goldmark.New(goldmark.WithExtensions(exts...), goldmark.WithParserOptions(parserOpts...), goldmark.WithRendererOptions(rendererOpts...))
 }

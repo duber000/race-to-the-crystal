@@ -78,11 +78,11 @@ func TestOpenAndClose(t *testing.T) {
 //line stdlib/db/db_test.kuki:52
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/db/db_test.kuki:53
-			pool, err_1 := db.Open("sqlite3", ":memory:")
+			pool, err_6 := db.Open("sqlite3", ":memory:")
 //line stdlib/db/db_test.kuki:53
-			if err_1 != nil {
+			if err_6 != nil {
 //line stdlib/db/db_test.kuki:53
-				panic(fmt.Sprintf("open: %v", err_1))
+				panic(fmt.Sprintf("open: %v", err_6))
 			}
 //line stdlib/db/db_test.kuki:54
 			err := db.Ping(pool)
@@ -139,11 +139,11 @@ func TestExec(t *testing.T) {
 //line stdlib/db/db_test.kuki:96
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/db/db_test.kuki:97
-			affected, err_1 := db.Exec(pool, tc.query)
+			affected, err_7 := db.Exec(pool, tc.query)
 //line stdlib/db/db_test.kuki:97
-			if err_1 != nil {
+			if err_7 != nil {
 //line stdlib/db/db_test.kuki:97
-				panic(fmt.Sprintf("exec: %v", err_1))
+				panic(fmt.Sprintf("exec: %v", err_7))
 			}
 //line stdlib/db/db_test.kuki:98
 			test.AssertEqual(t, affected, tc.wantAffected)
@@ -173,19 +173,19 @@ func TestScanAll(t *testing.T) {
 //line stdlib/db/db_test.kuki:130
 			// pipe step 1: db.Query(...)
 //line stdlib/db/db_test.kuki:130
-			pipe_1, err_2 := db.Query(pool, tc.query)
+			pipe_8, err_9 := db.Query(pool, tc.query)
 //line stdlib/db/db_test.kuki:130
-			if err_2 != nil {
+			if err_9 != nil {
 //line stdlib/db/db_test.kuki:130
-				panic(fmt.Sprintf("scan: %v", err_2))
+				panic(fmt.Sprintf("scan: %v", err_9))
 			}
 			// pipe step 2: db.ScanAll(...)
 //line stdlib/db/db_test.kuki:130
-			users, err_4 := db.ScanAll[User](pipe_1)
+			users, err_11 := db.ScanAll[User](pipe_8)
 //line stdlib/db/db_test.kuki:130
-			if err_4 != nil {
+			if err_11 != nil {
 //line stdlib/db/db_test.kuki:130
-				panic(fmt.Sprintf("scan: %v", err_4))
+				panic(fmt.Sprintf("scan: %v", err_11))
 			}
 //line stdlib/db/db_test.kuki:131
 			test.AssertEqual(t, len(users), tc.wantLen)
@@ -213,19 +213,19 @@ func TestScanAllValues(t *testing.T) {
 //line stdlib/db/db_test.kuki:145
 			// pipe step 1: db.Query(...)
 //line stdlib/db/db_test.kuki:145
-			pipe_1, err_2 := db.Query(pool, "SELECT id, name, email FROM users WHERE id = 1")
+			pipe_12, err_13 := db.Query(pool, "SELECT id, name, email FROM users WHERE id = 1")
 //line stdlib/db/db_test.kuki:146
-			if err_2 != nil {
+			if err_13 != nil {
 //line stdlib/db/db_test.kuki:146
-				panic(fmt.Sprintf("scan: %v", err_2))
+				panic(fmt.Sprintf("scan: %v", err_13))
 			}
 			// pipe step 2: db.ScanAll(...)
 //line stdlib/db/db_test.kuki:146
-			users, err_4 := db.ScanAll[User](pipe_1)
+			users, err_15 := db.ScanAll[User](pipe_12)
 //line stdlib/db/db_test.kuki:146
-			if err_4 != nil {
+			if err_15 != nil {
 //line stdlib/db/db_test.kuki:146
-				panic(fmt.Sprintf("scan: %v", err_4))
+				panic(fmt.Sprintf("scan: %v", err_15))
 			}
 //line stdlib/db/db_test.kuki:148
 			test.AssertEqual(t, len(users), 1)
@@ -296,11 +296,11 @@ func TestScanRow(t *testing.T) {
 //line stdlib/db/db_test.kuki:198
 			row := db.QueryRow(pool, "SELECT id, name, email FROM users WHERE id = 1")
 //line stdlib/db/db_test.kuki:199
-			user, err_1 := db.ScanRow[User](row)
+			user, err_16 := db.ScanRow[User](row)
 //line stdlib/db/db_test.kuki:199
-			if err_1 != nil {
+			if err_16 != nil {
 //line stdlib/db/db_test.kuki:199
-				panic(fmt.Sprintf("scan: %v", err_1))
+				panic(fmt.Sprintf("scan: %v", err_16))
 			}
 //line stdlib/db/db_test.kuki:200
 			test.AssertEqual(t, user.Name, "Alice")
@@ -329,11 +329,11 @@ func TestTransaction(t *testing.T) {
 			err := db.Transaction(pool, func(tx db.Tx) error {
 //line stdlib/db/db_test.kuki:215
 //line stdlib/db/db_test.kuki:215
-				_, err_1 := db.TxExec(tx, "INSERT INTO users (id, name, email) VALUES (?, ?, ?)", 4, "Diana", "diana@example.com")
+				_, err_17 := db.TxExec(tx, "INSERT INTO users (id, name, email) VALUES (?, ?, ?)", 4, "Diana", "diana@example.com")
 //line stdlib/db/db_test.kuki:221
-				if err_1 != nil {
+				if err_17 != nil {
 //line stdlib/db/db_test.kuki:221
-					return err_1
+					return err_17
 				}
 //line stdlib/db/db_test.kuki:222
 				return nil
@@ -341,11 +341,11 @@ func TestTransaction(t *testing.T) {
 //line stdlib/db/db_test.kuki:225
 			test.AssertNoError(t, err)
 //line stdlib/db/db_test.kuki:227
-			found, err_1 := db.Exists(pool, "SELECT 1 FROM users WHERE id = 4")
+			found, err_18 := db.Exists(pool, "SELECT 1 FROM users WHERE id = 4")
 //line stdlib/db/db_test.kuki:227
-			if err_1 != nil {
+			if err_18 != nil {
 //line stdlib/db/db_test.kuki:227
-				panic(fmt.Sprintf("exists: %v", err_1))
+				panic(fmt.Sprintf("exists: %v", err_18))
 			}
 //line stdlib/db/db_test.kuki:228
 			test.AssertTrue(t, found)
@@ -374,11 +374,11 @@ func TestTransactionRollback(t *testing.T) {
 			err := db.Transaction(pool, func(tx db.Tx) error {
 //line stdlib/db/db_test.kuki:243
 //line stdlib/db/db_test.kuki:243
-				_, err_1 := db.TxExec(tx, "INSERT INTO users (id, name, email) VALUES (?, ?, ?)", 5, "Eve", "eve@example.com")
+				_, err_19 := db.TxExec(tx, "INSERT INTO users (id, name, email) VALUES (?, ?, ?)", 5, "Eve", "eve@example.com")
 //line stdlib/db/db_test.kuki:249
-				if err_1 != nil {
+				if err_19 != nil {
 //line stdlib/db/db_test.kuki:249
-					return err_1
+					return err_19
 				}
 //line stdlib/db/db_test.kuki:250
 				return errors.New("deliberate rollback")
@@ -386,11 +386,11 @@ func TestTransactionRollback(t *testing.T) {
 //line stdlib/db/db_test.kuki:253
 			test.AssertError(t, err)
 //line stdlib/db/db_test.kuki:255
-			found, err_1 := db.Exists(pool, "SELECT 1 FROM users WHERE id = 5")
+			found, err_20 := db.Exists(pool, "SELECT 1 FROM users WHERE id = 5")
 //line stdlib/db/db_test.kuki:255
-			if err_1 != nil {
+			if err_20 != nil {
 //line stdlib/db/db_test.kuki:255
-				panic(fmt.Sprintf("exists: %v", err_1))
+				panic(fmt.Sprintf("exists: %v", err_20))
 			}
 //line stdlib/db/db_test.kuki:256
 			test.AssertFalse(t, found)
@@ -418,11 +418,11 @@ func TestCount(t *testing.T) {
 //line stdlib/db/db_test.kuki:274
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/db/db_test.kuki:275
-			n, err_1 := db.Count(pool, tc.query)
+			n, err_21 := db.Count(pool, tc.query)
 //line stdlib/db/db_test.kuki:275
-			if err_1 != nil {
+			if err_21 != nil {
 //line stdlib/db/db_test.kuki:275
-				panic(fmt.Sprintf("count: %v", err_1))
+				panic(fmt.Sprintf("count: %v", err_21))
 			}
 //line stdlib/db/db_test.kuki:276
 			test.AssertEqual(t, n, tc.wantCount)
@@ -450,11 +450,11 @@ func TestExists(t *testing.T) {
 //line stdlib/db/db_test.kuki:298
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/db/db_test.kuki:299
-			found, err_1 := db.Exists(pool, tc.query)
+			found, err_22 := db.Exists(pool, tc.query)
 //line stdlib/db/db_test.kuki:299
-			if err_1 != nil {
+			if err_22 != nil {
 //line stdlib/db/db_test.kuki:299
-				panic(fmt.Sprintf("exists: %v", err_1))
+				panic(fmt.Sprintf("exists: %v", err_22))
 			}
 //line stdlib/db/db_test.kuki:300
 			test.AssertEqual(t, found, tc.wantExists)
@@ -477,29 +477,29 @@ type NullCase struct {
 //line stdlib/db/db_test.kuki:312
 func TestNullHandling(t *testing.T) {
 //line stdlib/db/db_test.kuki:313
-	pool, err_6 := db.Open("sqlite3", ":memory:")
+	pool, err_23 := db.Open("sqlite3", ":memory:")
 //line stdlib/db/db_test.kuki:313
-	if err_6 != nil {
+	if err_23 != nil {
 //line stdlib/db/db_test.kuki:313
-		panic(fmt.Sprintf("open: %v", err_6))
+		panic(fmt.Sprintf("open: %v", err_23))
 	}
 //line stdlib/db/db_test.kuki:314
 	defer db.Close(pool)
 //line stdlib/db/db_test.kuki:315
 //line stdlib/db/db_test.kuki:315
-	_, err_7 := db.Exec(pool, "CREATE TABLE null_test (id INTEGER PRIMARY KEY, name TEXT, bio TEXT)")
+	_, err_24 := db.Exec(pool, "CREATE TABLE null_test (id INTEGER PRIMARY KEY, name TEXT, bio TEXT)")
 //line stdlib/db/db_test.kuki:315
-	if err_7 != nil {
+	if err_24 != nil {
 //line stdlib/db/db_test.kuki:315
-		panic(fmt.Sprintf("create: %v", err_7))
+		panic(fmt.Sprintf("create: %v", err_24))
 	}
 //line stdlib/db/db_test.kuki:316
 //line stdlib/db/db_test.kuki:316
-	_, err_8 := db.Exec(pool, "INSERT INTO null_test (id, name) VALUES (?, ?)", 1, "Alice")
+	_, err_25 := db.Exec(pool, "INSERT INTO null_test (id, name) VALUES (?, ?)", 1, "Alice")
 //line stdlib/db/db_test.kuki:316
-	if err_8 != nil {
+	if err_25 != nil {
 //line stdlib/db/db_test.kuki:316
-		panic(fmt.Sprintf("insert: %v", err_8))
+		panic(fmt.Sprintf("insert: %v", err_25))
 	}
 //line stdlib/db/db_test.kuki:318
 	cases := []NullCase{NullCase{name: "null becomes zero value"}}
@@ -510,11 +510,11 @@ func TestNullHandling(t *testing.T) {
 //line stdlib/db/db_test.kuki:322
 			row := db.QueryRow(pool, "SELECT id, name, bio FROM null_test WHERE id = 1")
 //line stdlib/db/db_test.kuki:323
-			user, err_1 := db.ScanRow[NullUser](row)
+			user, err_26 := db.ScanRow[NullUser](row)
 //line stdlib/db/db_test.kuki:323
-			if err_1 != nil {
+			if err_26 != nil {
 //line stdlib/db/db_test.kuki:323
-				panic(fmt.Sprintf("scan: %v", err_1))
+				panic(fmt.Sprintf("scan: %v", err_26))
 			}
 //line stdlib/db/db_test.kuki:324
 			test.AssertEqual(t, user.Name, "Alice")
@@ -537,19 +537,19 @@ func TestQueryCtx(t *testing.T) {
 //line stdlib/db/db_test.kuki:335
 	// pipe step 1: db.QueryCtx(...)
 //line stdlib/db/db_test.kuki:335
-	pipe_9, err_10 := db.QueryCtx(h, pool, "SELECT id, name, email FROM users WHERE id = 1")
+	pipe_27, err_28 := db.QueryCtx(h, pool, "SELECT id, name, email FROM users WHERE id = 1")
 //line stdlib/db/db_test.kuki:336
-	if err_10 != nil {
+	if err_28 != nil {
 //line stdlib/db/db_test.kuki:336
-		panic(fmt.Sprintf("scan: %v", err_10))
+		panic(fmt.Sprintf("scan: %v", err_28))
 	}
 	// pipe step 2: db.ScanAll(...)
 //line stdlib/db/db_test.kuki:336
-	users, err_12 := db.ScanAll[User](pipe_9)
+	users, err_30 := db.ScanAll[User](pipe_27)
 //line stdlib/db/db_test.kuki:336
-	if err_12 != nil {
+	if err_30 != nil {
 //line stdlib/db/db_test.kuki:336
-		panic(fmt.Sprintf("scan: %v", err_12))
+		panic(fmt.Sprintf("scan: %v", err_30))
 	}
 //line stdlib/db/db_test.kuki:337
 	test.AssertEqual(t, len(users), 1)
@@ -566,11 +566,11 @@ func TestExecCtx(t *testing.T) {
 //line stdlib/db/db_test.kuki:344
 	defer h.Cancel()
 //line stdlib/db/db_test.kuki:346
-	affected, err_13 := db.ExecCtx(h, pool, "UPDATE users SET name = 'Alice3' WHERE id = 1")
+	affected, err_31 := db.ExecCtx(h, pool, "UPDATE users SET name = 'Alice3' WHERE id = 1")
 //line stdlib/db/db_test.kuki:346
-	if err_13 != nil {
+	if err_31 != nil {
 //line stdlib/db/db_test.kuki:346
-		panic(fmt.Sprintf("exec: %v", err_13))
+		panic(fmt.Sprintf("exec: %v", err_31))
 	}
 //line stdlib/db/db_test.kuki:347
 	test.AssertEqual(t, affected, int64(1))
@@ -583,11 +583,11 @@ func TestLastInsertId(t *testing.T) {
 //line stdlib/db/db_test.kuki:352
 	defer db.Close(pool)
 //line stdlib/db/db_test.kuki:354
-	id, err_14 := db.LastInsertId(pool, "INSERT INTO users (name, email) VALUES (?, ?)", "Dave", "dave@example.com")
+	id, err_32 := db.LastInsertId(pool, "INSERT INTO users (name, email) VALUES (?, ?)", "Dave", "dave@example.com")
 //line stdlib/db/db_test.kuki:359
-	if err_14 != nil {
+	if err_32 != nil {
 //line stdlib/db/db_test.kuki:359
-		panic(fmt.Sprintf("exec: %v", err_14))
+		panic(fmt.Sprintf("exec: %v", err_32))
 	}
 //line stdlib/db/db_test.kuki:360
 	test.AssertEqual(t, id, int64(4))
@@ -602,54 +602,54 @@ type BoolRow struct {
 //line stdlib/db/db_test.kuki:368
 func TestBoolScan(t *testing.T) {
 //line stdlib/db/db_test.kuki:369
-	pool, err_15 := db.Open("sqlite3", ":memory:")
+	pool, err_33 := db.Open("sqlite3", ":memory:")
 //line stdlib/db/db_test.kuki:369
-	if err_15 != nil {
+	if err_33 != nil {
 //line stdlib/db/db_test.kuki:369
-		panic(fmt.Sprintf("open: %v", err_15))
+		panic(fmt.Sprintf("open: %v", err_33))
 	}
 //line stdlib/db/db_test.kuki:370
 	defer db.Close(pool)
 //line stdlib/db/db_test.kuki:371
 //line stdlib/db/db_test.kuki:371
-	_, err_16 := db.Exec(pool, "CREATE TABLE flags (id INTEGER PRIMARY KEY, active INTEGER NOT NULL)")
+	_, err_34 := db.Exec(pool, "CREATE TABLE flags (id INTEGER PRIMARY KEY, active INTEGER NOT NULL)")
 //line stdlib/db/db_test.kuki:371
-	if err_16 != nil {
+	if err_34 != nil {
 //line stdlib/db/db_test.kuki:371
-		panic(fmt.Sprintf("create: %v", err_16))
+		panic(fmt.Sprintf("create: %v", err_34))
 	}
 //line stdlib/db/db_test.kuki:372
 //line stdlib/db/db_test.kuki:372
-	_, err_17 := db.Exec(pool, "INSERT INTO flags (id, active) VALUES (1, 1)")
+	_, err_35 := db.Exec(pool, "INSERT INTO flags (id, active) VALUES (1, 1)")
 //line stdlib/db/db_test.kuki:372
-	if err_17 != nil {
+	if err_35 != nil {
 //line stdlib/db/db_test.kuki:372
-		panic(fmt.Sprintf("insert true: %v", err_17))
+		panic(fmt.Sprintf("insert true: %v", err_35))
 	}
 //line stdlib/db/db_test.kuki:373
 //line stdlib/db/db_test.kuki:373
-	_, err_18 := db.Exec(pool, "INSERT INTO flags (id, active) VALUES (2, 0)")
+	_, err_36 := db.Exec(pool, "INSERT INTO flags (id, active) VALUES (2, 0)")
 //line stdlib/db/db_test.kuki:373
-	if err_18 != nil {
+	if err_36 != nil {
 //line stdlib/db/db_test.kuki:373
-		panic(fmt.Sprintf("insert false: %v", err_18))
+		panic(fmt.Sprintf("insert false: %v", err_36))
 	}
 //line stdlib/db/db_test.kuki:375
 	// pipe step 1: db.Query(...)
 //line stdlib/db/db_test.kuki:375
-	pipe_19, err_20 := db.Query(pool, "SELECT id, active FROM flags ORDER BY id")
+	pipe_37, err_38 := db.Query(pool, "SELECT id, active FROM flags ORDER BY id")
 //line stdlib/db/db_test.kuki:375
-	if err_20 != nil {
+	if err_38 != nil {
 //line stdlib/db/db_test.kuki:375
-		panic(fmt.Sprintf("scan: %v", err_20))
+		panic(fmt.Sprintf("scan: %v", err_38))
 	}
 	// pipe step 2: db.ScanAll(...)
 //line stdlib/db/db_test.kuki:375
-	rows, err_22 := db.ScanAll[BoolRow](pipe_19)
+	rows, err_40 := db.ScanAll[BoolRow](pipe_37)
 //line stdlib/db/db_test.kuki:375
-	if err_22 != nil {
+	if err_40 != nil {
 //line stdlib/db/db_test.kuki:375
-		panic(fmt.Sprintf("scan: %v", err_22))
+		panic(fmt.Sprintf("scan: %v", err_40))
 	}
 //line stdlib/db/db_test.kuki:376
 	test.AssertEqual(t, len(rows), 2)

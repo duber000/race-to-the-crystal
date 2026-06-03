@@ -29,7 +29,7 @@ func Allow(g Guard, binary string, subcommands []string) Guard {
 //line stdlib/shellguard/shellguard.kuki:38
 	if !ok {
 //line stdlib/shellguard/shellguard.kuki:39
-		rule = Rule{Subcommands: make(map[string]bool), AnySubcommand: false, ArgValidator: nil}
+		rule = Rule{Subcommands: make(map[string]bool)}
 	}
 //line stdlib/shellguard/shellguard.kuki:40
 	for _, sub := range subcommands {
@@ -49,7 +49,7 @@ func AllowAny(g Guard, binary string) Guard {
 //line stdlib/shellguard/shellguard.kuki:49
 	if !ok {
 //line stdlib/shellguard/shellguard.kuki:50
-		rule = Rule{Subcommands: make(map[string]bool), AnySubcommand: true, ArgValidator: nil}
+		rule = Rule{Subcommands: make(map[string]bool), AnySubcommand: true}
 	} else {
 //line stdlib/shellguard/shellguard.kuki:52
 		rule.AnySubcommand = true
@@ -67,7 +67,7 @@ func WithArgValidator(g Guard, binary string, validator func([]string) error) Gu
 //line stdlib/shellguard/shellguard.kuki:61
 	if !ok {
 //line stdlib/shellguard/shellguard.kuki:62
-		rule = Rule{Subcommands: make(map[string]bool), AnySubcommand: false, ArgValidator: validator}
+		rule = Rule{Subcommands: make(map[string]bool), ArgValidator: validator}
 	} else {
 //line stdlib/shellguard/shellguard.kuki:64
 		rule.ArgValidator = validator
@@ -119,5 +119,5 @@ func Check(g Guard, name string, args ...string) error {
 //line stdlib/shellguard/shellguard.kuki:88
 func Allowed(g Guard, name string, args ...string) bool {
 //line stdlib/shellguard/shellguard.kuki:89
-	return (Check(g, name, args...) == nil)
+	return Check(g, name, args...) == nil
 }

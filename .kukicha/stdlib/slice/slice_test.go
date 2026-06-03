@@ -359,14 +359,14 @@ func TestFilter(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:271
 	t.Run("keeps 6-char strings", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:272
-		result := slice.Filter(items, func(s string) bool { return (len(s) == 6) })
+		result := slice.Filter(items, func(s string) bool { return len(s) == 6 })
 //line stdlib/slice/slice_test.kuki:273
 		test.AssertEqual(t, len(result), 2)
 	})
 //line stdlib/slice/slice_test.kuki:276
 	t.Run("all filtered out", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:277
-		none := slice.Filter(items, func(s string) bool { return (len(s) > 100) })
+		none := slice.Filter(items, func(s string) bool { return len(s) > 100 })
 //line stdlib/slice/slice_test.kuki:278
 		test.AssertEqual(t, len(none), 0)
 	})
@@ -379,7 +379,7 @@ func TestPartition(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:285
 	t.Run("splits by predicate", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:286
-		evens, odds := slice.Partition(nums, func(n int) bool { return ((n % 2) == 0) })
+		evens, odds := slice.Partition(nums, func(n int) bool { return n%2 == 0 })
 //line stdlib/slice/slice_test.kuki:287
 		test.AssertEqual(t, len(evens), 3)
 //line stdlib/slice/slice_test.kuki:288
@@ -392,7 +392,7 @@ func TestPartition(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:293
 	t.Run("all match", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:294
-		yes, no := slice.Partition(nums, func(n int) bool { return (n > 0) })
+		yes, no := slice.Partition(nums, func(n int) bool { return n > 0 })
 //line stdlib/slice/slice_test.kuki:295
 		test.AssertEqual(t, len(yes), 6)
 //line stdlib/slice/slice_test.kuki:296
@@ -401,7 +401,7 @@ func TestPartition(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:299
 	t.Run("none match", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:300
-		yes, no := slice.Partition(nums, func(n int) bool { return (n > 100) })
+		yes, no := slice.Partition(nums, func(n int) bool { return n > 100 })
 //line stdlib/slice/slice_test.kuki:301
 		test.AssertEqual(t, len(yes), 0)
 //line stdlib/slice/slice_test.kuki:302
@@ -410,7 +410,7 @@ func TestPartition(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:305
 	t.Run("preserves order", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:306
-		evens, odds := slice.Partition(nums, func(n int) bool { return ((n % 2) == 0) })
+		evens, odds := slice.Partition(nums, func(n int) bool { return n%2 == 0 })
 //line stdlib/slice/slice_test.kuki:307
 		test.AssertEqual(t, evens[0], 2)
 //line stdlib/slice/slice_test.kuki:308
@@ -431,7 +431,7 @@ func TestMap(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:317
 	items := []int{1, 2, 3}
 //line stdlib/slice/slice_test.kuki:318
-	result := slice.Map(items, func(n int) int { return (n * 2) })
+	result := slice.Map(items, func(n int) int { return n * 2 })
 //line stdlib/slice/slice_test.kuki:320
 	t.Run("length preserved", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:321
@@ -455,14 +455,14 @@ func TestFindIndex(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:334
 	t.Run("first match", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:335
-		idx := slice.FindIndex(items, func(n int) bool { return (n > 25) })
+		idx := slice.FindIndex(items, func(n int) bool { return n > 25 })
 //line stdlib/slice/slice_test.kuki:336
 		test.AssertEqual(t, idx, 2)
 	})
 //line stdlib/slice/slice_test.kuki:339
 	t.Run("no match returns -1", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:340
-		notFound := slice.FindIndex(items, func(n int) bool { return (n > 100) })
+		notFound := slice.FindIndex(items, func(n int) bool { return n > 100 })
 //line stdlib/slice/slice_test.kuki:341
 		test.AssertEqual(t, notFound, -1)
 	})
@@ -475,7 +475,7 @@ func TestFind(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:348
 	t.Run("found element", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:349
-		val, err := slice.Find(items, func(v string) bool { return (v == "banana") })
+		val, err := slice.Find(items, func(v string) bool { return v == "banana" })
 //line stdlib/slice/slice_test.kuki:350
 		test.AssertNoError(t, err)
 //line stdlib/slice/slice_test.kuki:351
@@ -484,7 +484,7 @@ func TestFind(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:354
 	t.Run("not found returns error", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:355
-		_, err := slice.Find(items, func(v string) bool { return (v == "grape") })
+		_, err := slice.Find(items, func(v string) bool { return v == "grape" })
 //line stdlib/slice/slice_test.kuki:356
 		test.AssertError(t, err)
 	})
@@ -497,14 +497,14 @@ func TestFindOr(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:363
 	t.Run("match found", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:364
-		val := slice.FindOr(items, func(s string) bool { return (len(s) == 6) }, "none")
+		val := slice.FindOr(items, func(s string) bool { return len(s) == 6 }, "none")
 //line stdlib/slice/slice_test.kuki:365
 		test.AssertEqual(t, val, "banana")
 	})
 //line stdlib/slice/slice_test.kuki:368
 	t.Run("no match uses default", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:369
-		def := slice.FindOr(items, func(s string) bool { return (len(s) > 100) }, "none")
+		def := slice.FindOr(items, func(s string) bool { return len(s) > 100 }, "none")
 //line stdlib/slice/slice_test.kuki:370
 		test.AssertEqual(t, def, "none")
 	})
@@ -631,7 +631,7 @@ func TestFindLast(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:451
 	t.Run("found last element", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:452
-		val, err := slice.FindLast(items, func(v string) bool { return (v == "banana") })
+		val, err := slice.FindLast(items, func(v string) bool { return v == "banana" })
 //line stdlib/slice/slice_test.kuki:453
 		test.AssertNoError(t, err)
 //line stdlib/slice/slice_test.kuki:454
@@ -642,7 +642,7 @@ func TestFindLast(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:462
 		itemsWithIds := []Item{Item{Id: 1, Name: "a"}, Item{Id: 2, Name: "b"}, Item{Id: 3, Name: "a"}}
 //line stdlib/slice/slice_test.kuki:464
-		val, err := slice.FindLast(itemsWithIds, func(v Item) bool { return (v.Name == "a") })
+		val, err := slice.FindLast(itemsWithIds, func(v Item) bool { return v.Name == "a" })
 //line stdlib/slice/slice_test.kuki:465
 		test.AssertNoError(t, err)
 //line stdlib/slice/slice_test.kuki:466
@@ -651,7 +651,7 @@ func TestFindLast(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:469
 	t.Run("not found returns error", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:470
-		_, err := slice.FindLast(items, func(v string) bool { return (v == "grape") })
+		_, err := slice.FindLast(items, func(v string) bool { return v == "grape" })
 //line stdlib/slice/slice_test.kuki:471
 		test.AssertError(t, err)
 	})
@@ -664,7 +664,7 @@ func TestFindLastOr(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:478
 	t.Run("match found", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:479
-		val := slice.FindLastOr(items, func(s string) bool { return (s == "banana") }, "none")
+		val := slice.FindLastOr(items, func(s string) bool { return s == "banana" }, "none")
 //line stdlib/slice/slice_test.kuki:480
 		test.AssertEqual(t, val, "banana")
 	})
@@ -673,14 +673,14 @@ func TestFindLastOr(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:484
 		itemsWithIds := []Item{Item{Id: 1, Name: "a"}, Item{Id: 2, Name: "b"}, Item{Id: 3, Name: "a"}}
 //line stdlib/slice/slice_test.kuki:486
-		val := slice.FindLastOr(itemsWithIds, func(v Item) bool { return (v.Name == "a") }, Item{Id: 0, Name: ""})
+		val := slice.FindLastOr(itemsWithIds, func(v Item) bool { return v.Name == "a" }, Item{Id: 0, Name: ""})
 //line stdlib/slice/slice_test.kuki:487
 		test.AssertEqual(t, Item(val).Id, 3)
 	})
 //line stdlib/slice/slice_test.kuki:490
 	t.Run("no match uses default", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:491
-		def := slice.FindLastOr(items, func(s string) bool { return (s == "grape") }, "none")
+		def := slice.FindLastOr(items, func(s string) bool { return s == "grape" }, "none")
 //line stdlib/slice/slice_test.kuki:492
 		test.AssertEqual(t, def, "none")
 	})
@@ -693,7 +693,7 @@ func TestReject(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:499
 	t.Run("drops matching items", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:500
-		result := slice.Reject(nums, func(n int) bool { return ((n % 2) == 0) })
+		result := slice.Reject(nums, func(n int) bool { return n%2 == 0 })
 //line stdlib/slice/slice_test.kuki:501
 		test.AssertEqual(t, len(result), 3)
 //line stdlib/slice/slice_test.kuki:502
@@ -706,21 +706,21 @@ func TestReject(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:507
 	t.Run("all rejected", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:508
-		none := slice.Reject(nums, func(n int) bool { return (n > 0) })
+		none := slice.Reject(nums, func(n int) bool { return n > 0 })
 //line stdlib/slice/slice_test.kuki:509
 		test.AssertEqual(t, len(none), 0)
 	})
 //line stdlib/slice/slice_test.kuki:512
 	t.Run("none rejected", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:513
-		all := slice.Reject(nums, func(n int) bool { return (n > 100) })
+		all := slice.Reject(nums, func(n int) bool { return n > 100 })
 //line stdlib/slice/slice_test.kuki:514
 		test.AssertEqual(t, len(all), 6)
 	})
 //line stdlib/slice/slice_test.kuki:517
 	t.Run("empty input", func(t *testing.T) {
 //line stdlib/slice/slice_test.kuki:518
-		result := slice.Reject([]int{}, func(n int) bool { return (n > 0) })
+		result := slice.Reject([]int{}, func(n int) bool { return n > 0 })
 //line stdlib/slice/slice_test.kuki:519
 		test.AssertEqual(t, len(result), 0)
 	})
@@ -845,7 +845,49 @@ func TestAverage(t *testing.T) {
 	})
 }
 
-//line stdlib/slice/slice_test.kuki:601
+//line stdlib/slice/slice_test.kuki:602
+func TestMinOr(t *testing.T) {
+//line stdlib/slice/slice_test.kuki:603
+	t.Run("returns smallest", func(t *testing.T) {
+//line stdlib/slice/slice_test.kuki:604
+		test.AssertEqual(t, slice.MinOr([]int{3, 1, 4, 1, 5}, 0), 1)
+	})
+//line stdlib/slice/slice_test.kuki:607
+	t.Run("empty returns defaultValue", func(t *testing.T) {
+//line stdlib/slice/slice_test.kuki:608
+		test.AssertEqual(t, slice.MinOr([]int{}, 99), 99)
+	})
+}
+
+//line stdlib/slice/slice_test.kuki:612
+func TestMaxOr(t *testing.T) {
+//line stdlib/slice/slice_test.kuki:613
+	t.Run("returns largest", func(t *testing.T) {
+//line stdlib/slice/slice_test.kuki:614
+		test.AssertEqual(t, slice.MaxOr([]int{3, 1, 4, 1, 5}, 0), 5)
+	})
+//line stdlib/slice/slice_test.kuki:617
+	t.Run("empty returns defaultValue", func(t *testing.T) {
+//line stdlib/slice/slice_test.kuki:618
+		test.AssertEqual(t, slice.MaxOr([]int{}, 99), 99)
+	})
+}
+
+//line stdlib/slice/slice_test.kuki:622
+func TestAverageOr(t *testing.T) {
+//line stdlib/slice/slice_test.kuki:623
+	t.Run("computes mean", func(t *testing.T) {
+//line stdlib/slice/slice_test.kuki:624
+		test.AssertEqual(t, slice.AverageOr([]float64{2.0, 4.0, 6.0}, 0.0), 4.0)
+	})
+//line stdlib/slice/slice_test.kuki:627
+	t.Run("empty returns defaultValue", func(t *testing.T) {
+//line stdlib/slice/slice_test.kuki:628
+		test.AssertEqual(t, slice.AverageOr([]float64{}, -1.0), -1.0)
+	})
+}
+
+//line stdlib/slice/slice_test.kuki:631
 type Item struct {
 	Id   int
 	Name string

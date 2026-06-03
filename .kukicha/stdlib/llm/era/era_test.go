@@ -97,7 +97,7 @@ func TestRunLoopWithStubs(t *testing.T) {
 //line stdlib/llm/era/era_test.kuki:167
 			test.AssertNoError(t, err)
 //line stdlib/llm/era/era_test.kuki:168
-			test.AssertTrue(t, (len(tree) >= tc.wantTreeMin))
+			test.AssertTrue(t, len(tree) >= tc.wantTreeMin)
 //line stdlib/llm/era/era_test.kuki:169
 			test.AssertTrue(t, winner.Valid)
 //line stdlib/llm/era/era_test.kuki:170

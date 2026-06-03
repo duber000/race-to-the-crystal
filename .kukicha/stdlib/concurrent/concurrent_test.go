@@ -64,7 +64,7 @@ func TestMap(t *testing.T) {
 //line stdlib/concurrent/concurrent_test.kuki:49
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/concurrent/concurrent_test.kuki:50
-			results := concurrent.Map(tc.input, func(n int) int { return (n * 2) })
+			results := concurrent.Map(tc.input, func(n int) int { return n * 2 })
 //line stdlib/concurrent/concurrent_test.kuki:51
 			test.AssertEqual(t, len(results), len(tc.expected))
 //line stdlib/concurrent/concurrent_test.kuki:52
@@ -93,7 +93,7 @@ func TestMapWithLimit(t *testing.T) {
 //line stdlib/concurrent/concurrent_test.kuki:87
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/concurrent/concurrent_test.kuki:88
-			results := concurrent.MapWithLimit(tc.input, tc.limit, func(n int) int { return (n * 10) })
+			results := concurrent.MapWithLimit(tc.input, tc.limit, func(n int) int { return n * 10 })
 //line stdlib/concurrent/concurrent_test.kuki:89
 			test.AssertEqual(t, len(results), len(tc.expected))
 //line stdlib/concurrent/concurrent_test.kuki:90
@@ -110,7 +110,7 @@ func TestMapPreservesOrder(t *testing.T) {
 //line stdlib/concurrent/concurrent_test.kuki:97
 	input := []int{5, 4, 3, 2, 1}
 //line stdlib/concurrent/concurrent_test.kuki:98
-	results := concurrent.Map(input, func(n int) int { return (n * n) })
+	results := concurrent.Map(input, func(n int) int { return n * n })
 //line stdlib/concurrent/concurrent_test.kuki:99
 	expected := []int{25, 16, 9, 4, 1}
 //line stdlib/concurrent/concurrent_test.kuki:100
@@ -137,13 +137,13 @@ func boomTask() error {
 //line stdlib/concurrent/concurrent_test.kuki:114
 func doubleOK(n int) (int, error) {
 //line stdlib/concurrent/concurrent_test.kuki:115
-	return (n * 2), nil
+	return n * 2, nil
 }
 
 //line stdlib/concurrent/concurrent_test.kuki:117
 func timesTen(n int) (int, error) {
 //line stdlib/concurrent/concurrent_test.kuki:118
-	return (n * 10), nil
+	return n * 10, nil
 }
 
 //line stdlib/concurrent/concurrent_test.kuki:120
@@ -189,7 +189,7 @@ func TestMapESuccess(t *testing.T) {
 //line stdlib/concurrent/concurrent_test.kuki:141
 	for i, v := range results {
 //line stdlib/concurrent/concurrent_test.kuki:142
-		test.AssertEqual(t, v, ((i + 1) * 2))
+		test.AssertEqual(t, v, (i+1)*2)
 	}
 }
 
@@ -219,7 +219,7 @@ func TestMapEWithLimitSuccess(t *testing.T) {
 //line stdlib/concurrent/concurrent_test.kuki:157
 	for i, v := range results {
 //line stdlib/concurrent/concurrent_test.kuki:158
-		test.AssertEqual(t, v, ((i + 1) * 10))
+		test.AssertEqual(t, v, (i+1)*10)
 	}
 }
 
@@ -265,7 +265,7 @@ func TestParallelCtxCancellation(t *testing.T) {
 //line stdlib/concurrent/concurrent_test.kuki:182
 func doubleOKCtx(ch ctxpkg.Handle, n int) (int, error) {
 //line stdlib/concurrent/concurrent_test.kuki:183
-	return (n * 2), nil
+	return n * 2, nil
 }
 
 //line stdlib/concurrent/concurrent_test.kuki:185
@@ -285,6 +285,6 @@ func TestMapCtxSuccess(t *testing.T) {
 //line stdlib/concurrent/concurrent_test.kuki:193
 	for i, v := range results {
 //line stdlib/concurrent/concurrent_test.kuki:194
-		test.AssertEqual(t, v, ((i + 1) * 2))
+		test.AssertEqual(t, v, (i+1)*2)
 	}
 }

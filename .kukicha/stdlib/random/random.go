@@ -27,7 +27,7 @@ func Int(min int, max int) int {
 		return min
 	}
 //line stdlib/random/random.kuki:32
-	return (min + rand.Intn((max - min)))
+	return min + rand.Intn(max-min)
 }
 
 //line stdlib/random/random.kuki:36
@@ -38,5 +38,5 @@ func Float(min float64, max float64) float64 {
 		return min
 	}
 //line stdlib/random/random.kuki:39
-	return (min + (rand.Float64() * (max - min)))
+	return min + rand.Float64()*(max-min)
 }

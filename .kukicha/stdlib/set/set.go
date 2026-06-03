@@ -24,7 +24,7 @@ func From[K comparable](items []K) map[K]bool {
 //line stdlib/set/set.kuki:25
 func Add[K comparable](s map[K]bool, item K) map[K]bool {
 //line stdlib/set/set.kuki:26
-	result := make(map[K]bool, (len(s) + 1))
+	result := make(map[K]bool, len(s)+1)
 //line stdlib/set/set.kuki:27
 	for k := range s {
 //line stdlib/set/set.kuki:28
@@ -86,7 +86,7 @@ func ToSlice[K comparable](s map[K]bool) []K {
 //line stdlib/set/set.kuki:70
 func Union[K comparable](a map[K]bool, b map[K]bool) map[K]bool {
 //line stdlib/set/set.kuki:71
-	result := make(map[K]bool, (len(a) + len(b)))
+	result := make(map[K]bool, len(a)+len(b))
 //line stdlib/set/set.kuki:72
 	for k := range a {
 //line stdlib/set/set.kuki:73

@@ -22,7 +22,7 @@ func resetBudgetCalls() {
 //line stdlib/retry/budget_test.kuki:16
 func budgetFail() error {
 //line stdlib/retry/budget_test.kuki:17
-	budgetCalls = (budgetCalls + 1)
+	budgetCalls = budgetCalls + 1
 //line stdlib/retry/budget_test.kuki:18
 	return errors.New("boom")
 }
@@ -30,7 +30,7 @@ func budgetFail() error {
 //line stdlib/retry/budget_test.kuki:20
 func budgetOK() error {
 //line stdlib/retry/budget_test.kuki:21
-	budgetCalls = (budgetCalls + 1)
+	budgetCalls = budgetCalls + 1
 //line stdlib/retry/budget_test.kuki:22
 	return nil
 }
@@ -88,7 +88,7 @@ func TestBudgetWindowRollover(t *testing.T) {
 //line stdlib/retry/budget_test.kuki:61
 	resetBudgetCalls()
 //line stdlib/retry/budget_test.kuki:62
-	b := retry.WithKey(retry.WithLimit(retry.NewBudget(), 2, (50*time.Millisecond)), "svc-c")
+	b := retry.WithKey(retry.WithLimit(retry.NewBudget(), 2, 50*time.Millisecond), "svc-c")
 //line stdlib/retry/budget_test.kuki:65
 	cfg := retry.Linear(retry.Delay(retry.Attempts(retry.New(), 1), 1))
 //line stdlib/retry/budget_test.kuki:67
@@ -98,7 +98,7 @@ func TestBudgetWindowRollover(t *testing.T) {
 //line stdlib/retry/budget_test.kuki:69
 	test.AssertTrue(t, retry.Open(b))
 //line stdlib/retry/budget_test.kuki:72
-	time.Sleep((80 * time.Millisecond))
+	time.Sleep(80 * time.Millisecond)
 //line stdlib/retry/budget_test.kuki:73
 	test.AssertFalse(t, retry.Open(b))
 }

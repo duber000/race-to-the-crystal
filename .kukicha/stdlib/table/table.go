@@ -39,304 +39,301 @@ func ParseStyle(s string) (Style, bool) {
 type Table struct {
 	Headers []string
 	Rows    [][]string
+	Style   Style
 }
 
-//line stdlib/table/table.kuki:35
-func New(headers []string) Table {
 //line stdlib/table/table.kuki:36
-	return Table{Headers: headers, Rows: make([][]string, 0)}
+func New(headers []string) Table {
+//line stdlib/table/table.kuki:37
+	return Table{Headers: headers, Rows: make([][]string, 0), Style: StylePlain}
 }
 
-//line stdlib/table/table.kuki:41
-func AddRow(t Table, row []string) Table {
 //line stdlib/table/table.kuki:42
-	padded := make([]string, len(t.Headers))
+func AddRow(t Table, row []string) Table {
 //line stdlib/table/table.kuki:43
-	for i := range len(t.Headers) {
+	padded := make([]string, len(t.Headers))
 //line stdlib/table/table.kuki:44
-		if i < len(row) {
+	for i := range len(t.Headers) {
 //line stdlib/table/table.kuki:45
+		if i < len(row) {
+//line stdlib/table/table.kuki:46
 			padded[i] = row[i]
 		}
 	}
-//line stdlib/table/table.kuki:46
-	t.Rows = append(t.Rows, padded)
 //line stdlib/table/table.kuki:47
+	t.Rows = append(t.Rows, padded)
+//line stdlib/table/table.kuki:48
 	return t
 }
 
 //line stdlib/table/table.kuki:52
-func Print(t Table) {
+func WithStyle(t Table, style Style) Table {
 //line stdlib/table/table.kuki:53
-	fmt.Println(renderTable(t, StylePlain))
+	t.Style = style
+//line stdlib/table/table.kuki:54
+	return t
 }
 
-//line stdlib/table/table.kuki:57
-func PrintWithStyle(t Table, style Style) {
 //line stdlib/table/table.kuki:58
-	fmt.Println(renderTable(t, style))
+func Print(t Table) {
+//line stdlib/table/table.kuki:59
+	fmt.Println(renderTable(t, t.Style))
 }
 
-//line stdlib/table/table.kuki:62
-func ToString(t Table) string {
 //line stdlib/table/table.kuki:63
-	return renderTable(t, StylePlain)
+func ToString(t Table) string {
+//line stdlib/table/table.kuki:64
+	return renderTable(t, t.Style)
 }
 
-//line stdlib/table/table.kuki:67
-func ToStringWithStyle(t Table, style Style) string {
-//line stdlib/table/table.kuki:68
-	return renderTable(t, style)
-}
-
-//line stdlib/table/table.kuki:74
+//line stdlib/table/table.kuki:70
 func renderTable(t Table, style Style) string {
-//line stdlib/table/table.kuki:75
+//line stdlib/table/table.kuki:71
 	widths := make([]int, len(t.Headers))
-//line stdlib/table/table.kuki:76
+//line stdlib/table/table.kuki:72
 	for i := range len(t.Headers) {
-//line stdlib/table/table.kuki:77
+//line stdlib/table/table.kuki:73
 		widths[i] = term.VisibleWidth(t.Headers[i])
 	}
-//line stdlib/table/table.kuki:78
+//line stdlib/table/table.kuki:74
 	for _, row := range t.Rows {
-//line stdlib/table/table.kuki:79
+//line stdlib/table/table.kuki:75
 		for i := range len(t.Headers) {
-//line stdlib/table/table.kuki:80
+//line stdlib/table/table.kuki:76
 			if i < len(row) {
-//line stdlib/table/table.kuki:81
+//line stdlib/table/table.kuki:77
 				w := term.VisibleWidth(row[i])
-//line stdlib/table/table.kuki:82
+//line stdlib/table/table.kuki:78
 				if w > widths[i] {
-//line stdlib/table/table.kuki:83
+//line stdlib/table/table.kuki:79
 					widths[i] = w
 				}
 			}
 		}
 	}
-//line stdlib/table/table.kuki:85
+//line stdlib/table/table.kuki:81
 	out := strings.Builder{}
-//line stdlib/table/table.kuki:87
+//line stdlib/table/table.kuki:83
 	switch style {
 	case StyleMarkdown:
-//line stdlib/table/table.kuki:89
+//line stdlib/table/table.kuki:85
 		out.WriteString(renderMarkdownRow(t.Headers, widths))
-//line stdlib/table/table.kuki:90
+//line stdlib/table/table.kuki:86
 		out.WriteString(renderMarkdownSep(widths))
-//line stdlib/table/table.kuki:91
+//line stdlib/table/table.kuki:87
 		for _, row := range t.Rows {
-//line stdlib/table/table.kuki:92
+//line stdlib/table/table.kuki:88
 			out.WriteString(renderMarkdownRow(row, widths))
 		}
 	case StyleBox:
-//line stdlib/table/table.kuki:94
+//line stdlib/table/table.kuki:90
 		out.WriteString(renderBoxTop(widths))
-//line stdlib/table/table.kuki:95
+//line stdlib/table/table.kuki:91
 		out.WriteString(renderBoxRow(t.Headers, widths))
-//line stdlib/table/table.kuki:96
+//line stdlib/table/table.kuki:92
 		out.WriteString(renderBoxMid(widths))
-//line stdlib/table/table.kuki:97
+//line stdlib/table/table.kuki:93
 		for _, row := range t.Rows {
-//line stdlib/table/table.kuki:98
+//line stdlib/table/table.kuki:94
 			out.WriteString(renderBoxRow(row, widths))
 		}
-//line stdlib/table/table.kuki:99
+//line stdlib/table/table.kuki:95
 		out.WriteString(renderBoxBottom(widths))
 	case StylePlain:
-//line stdlib/table/table.kuki:101
+//line stdlib/table/table.kuki:97
 		out.WriteString(renderPlainRow(t.Headers, widths))
-//line stdlib/table/table.kuki:102
+//line stdlib/table/table.kuki:98
 		out.WriteString(renderPlainSep(widths))
-//line stdlib/table/table.kuki:103
+//line stdlib/table/table.kuki:99
 		for _, row := range t.Rows {
-//line stdlib/table/table.kuki:104
+//line stdlib/table/table.kuki:100
 			out.WriteString(renderPlainRow(row, widths))
 		}
 	}
-//line stdlib/table/table.kuki:106
+//line stdlib/table/table.kuki:102
 	return out.String()
 }
 
-//line stdlib/table/table.kuki:108
+//line stdlib/table/table.kuki:104
 func renderPlainRow(cols []string, widths []int) string {
+//line stdlib/table/table.kuki:105
+	sb := strings.Builder{}
+//line stdlib/table/table.kuki:106
+	for i := range len(widths) {
+//line stdlib/table/table.kuki:107
+		val := ""
+//line stdlib/table/table.kuki:108
+		if i < len(cols) {
 //line stdlib/table/table.kuki:109
-	sb := strings.Builder{}
+			val = cols[i]
+		}
 //line stdlib/table/table.kuki:110
-	for i := range len(widths) {
-//line stdlib/table/table.kuki:111
-		val := ""
-//line stdlib/table/table.kuki:112
-		if i < len(cols) {
-//line stdlib/table/table.kuki:113
-			val = cols[i]
-		}
-//line stdlib/table/table.kuki:114
 		sb.WriteString(term.PadRightVisible(val, widths[i]))
-//line stdlib/table/table.kuki:115
-		if i < (len(widths) - 1) {
+//line stdlib/table/table.kuki:111
+		if i < len(widths)-1 {
+//line stdlib/table/table.kuki:112
+			sb.WriteString("  ")
+		}
+	}
+//line stdlib/table/table.kuki:113
+	sb.WriteString("\n")
+//line stdlib/table/table.kuki:114
+	return sb.String()
+}
+
 //line stdlib/table/table.kuki:116
-			sb.WriteString("  ")
-		}
-	}
-//line stdlib/table/table.kuki:117
-	sb.WriteString("\n")
-//line stdlib/table/table.kuki:118
-	return sb.String()
-}
-
-//line stdlib/table/table.kuki:120
 func renderPlainSep(widths []int) string {
-//line stdlib/table/table.kuki:121
+//line stdlib/table/table.kuki:117
 	sb := strings.Builder{}
-//line stdlib/table/table.kuki:122
+//line stdlib/table/table.kuki:118
 	for i := range len(widths) {
-//line stdlib/table/table.kuki:123
+//line stdlib/table/table.kuki:119
 		sb.WriteString(strpkg.Repeat("-", widths[i]))
-//line stdlib/table/table.kuki:124
-		if i < (len(widths) - 1) {
-//line stdlib/table/table.kuki:125
+//line stdlib/table/table.kuki:120
+		if i < len(widths)-1 {
+//line stdlib/table/table.kuki:121
 			sb.WriteString("  ")
 		}
 	}
-//line stdlib/table/table.kuki:126
+//line stdlib/table/table.kuki:122
 	sb.WriteString("\n")
-//line stdlib/table/table.kuki:127
+//line stdlib/table/table.kuki:123
 	return sb.String()
 }
 
-//line stdlib/table/table.kuki:129
+//line stdlib/table/table.kuki:125
 func renderMarkdownRow(cols []string, widths []int) string {
-//line stdlib/table/table.kuki:130
+//line stdlib/table/table.kuki:126
 	sb := strings.Builder{}
-//line stdlib/table/table.kuki:131
+//line stdlib/table/table.kuki:127
 	sb.WriteString("|")
-//line stdlib/table/table.kuki:132
+//line stdlib/table/table.kuki:128
 	for i := range len(widths) {
-//line stdlib/table/table.kuki:133
+//line stdlib/table/table.kuki:129
 		val := ""
-//line stdlib/table/table.kuki:134
+//line stdlib/table/table.kuki:130
 		if i < len(cols) {
-//line stdlib/table/table.kuki:135
+//line stdlib/table/table.kuki:131
 			val = cols[i]
 		}
-//line stdlib/table/table.kuki:136
+//line stdlib/table/table.kuki:132
 		sb.WriteString(fmt.Sprintf(" %v |", term.PadRightVisible(val, widths[i])))
 	}
-//line stdlib/table/table.kuki:137
+//line stdlib/table/table.kuki:133
 	sb.WriteString("\n")
-//line stdlib/table/table.kuki:138
+//line stdlib/table/table.kuki:134
 	return sb.String()
 }
 
-//line stdlib/table/table.kuki:140
+//line stdlib/table/table.kuki:136
 func renderMarkdownSep(widths []int) string {
-//line stdlib/table/table.kuki:141
+//line stdlib/table/table.kuki:137
 	sb := strings.Builder{}
-//line stdlib/table/table.kuki:142
+//line stdlib/table/table.kuki:138
 	sb.WriteString("|")
-//line stdlib/table/table.kuki:143
+//line stdlib/table/table.kuki:139
 	for i := range len(widths) {
-//line stdlib/table/table.kuki:144
+//line stdlib/table/table.kuki:140
 		dashes := max(widths[i], 3)
-//line stdlib/table/table.kuki:145
+//line stdlib/table/table.kuki:141
 		sb.WriteString(" ")
-//line stdlib/table/table.kuki:146
+//line stdlib/table/table.kuki:142
 		sb.WriteString(strpkg.Repeat("-", dashes))
-//line stdlib/table/table.kuki:147
+//line stdlib/table/table.kuki:143
 		sb.WriteString(" |")
 	}
-//line stdlib/table/table.kuki:148
+//line stdlib/table/table.kuki:144
 	sb.WriteString("\n")
-//line stdlib/table/table.kuki:149
+//line stdlib/table/table.kuki:145
 	return sb.String()
 }
 
-//line stdlib/table/table.kuki:151
+//line stdlib/table/table.kuki:147
 func renderBoxTop(widths []int) string {
-//line stdlib/table/table.kuki:152
+//line stdlib/table/table.kuki:148
 	sb := strings.Builder{}
-//line stdlib/table/table.kuki:153
+//line stdlib/table/table.kuki:149
 	sb.WriteString("┌")
-//line stdlib/table/table.kuki:154
+//line stdlib/table/table.kuki:150
 	for i := range len(widths) {
-//line stdlib/table/table.kuki:155
-		sb.WriteString(strpkg.Repeat("─", (widths[i] + 2)))
-//line stdlib/table/table.kuki:156
-		if i < (len(widths) - 1) {
-//line stdlib/table/table.kuki:157
+//line stdlib/table/table.kuki:151
+		sb.WriteString(strpkg.Repeat("─", widths[i]+2))
+//line stdlib/table/table.kuki:152
+		if i < len(widths)-1 {
+//line stdlib/table/table.kuki:153
 			sb.WriteString("┬")
 		}
 	}
-//line stdlib/table/table.kuki:158
+//line stdlib/table/table.kuki:154
 	sb.WriteString("┐\n")
-//line stdlib/table/table.kuki:159
+//line stdlib/table/table.kuki:155
 	return sb.String()
 }
 
-//line stdlib/table/table.kuki:161
+//line stdlib/table/table.kuki:157
 func renderBoxMid(widths []int) string {
-//line stdlib/table/table.kuki:162
+//line stdlib/table/table.kuki:158
 	sb := strings.Builder{}
-//line stdlib/table/table.kuki:163
+//line stdlib/table/table.kuki:159
 	sb.WriteString("├")
-//line stdlib/table/table.kuki:164
+//line stdlib/table/table.kuki:160
 	for i := range len(widths) {
-//line stdlib/table/table.kuki:165
-		sb.WriteString(strpkg.Repeat("─", (widths[i] + 2)))
-//line stdlib/table/table.kuki:166
-		if i < (len(widths) - 1) {
-//line stdlib/table/table.kuki:167
+//line stdlib/table/table.kuki:161
+		sb.WriteString(strpkg.Repeat("─", widths[i]+2))
+//line stdlib/table/table.kuki:162
+		if i < len(widths)-1 {
+//line stdlib/table/table.kuki:163
 			sb.WriteString("┼")
 		}
 	}
-//line stdlib/table/table.kuki:168
+//line stdlib/table/table.kuki:164
 	sb.WriteString("┤\n")
-//line stdlib/table/table.kuki:169
+//line stdlib/table/table.kuki:165
 	return sb.String()
 }
 
-//line stdlib/table/table.kuki:171
+//line stdlib/table/table.kuki:167
 func renderBoxBottom(widths []int) string {
-//line stdlib/table/table.kuki:172
+//line stdlib/table/table.kuki:168
 	sb := strings.Builder{}
-//line stdlib/table/table.kuki:173
+//line stdlib/table/table.kuki:169
 	sb.WriteString("└")
-//line stdlib/table/table.kuki:174
+//line stdlib/table/table.kuki:170
 	for i := range len(widths) {
-//line stdlib/table/table.kuki:175
-		sb.WriteString(strpkg.Repeat("─", (widths[i] + 2)))
-//line stdlib/table/table.kuki:176
-		if i < (len(widths) - 1) {
-//line stdlib/table/table.kuki:177
+//line stdlib/table/table.kuki:171
+		sb.WriteString(strpkg.Repeat("─", widths[i]+2))
+//line stdlib/table/table.kuki:172
+		if i < len(widths)-1 {
+//line stdlib/table/table.kuki:173
 			sb.WriteString("┴")
 		}
 	}
-//line stdlib/table/table.kuki:178
+//line stdlib/table/table.kuki:174
 	sb.WriteString("┘\n")
-//line stdlib/table/table.kuki:179
+//line stdlib/table/table.kuki:175
 	return sb.String()
 }
 
-//line stdlib/table/table.kuki:181
+//line stdlib/table/table.kuki:177
 func renderBoxRow(cols []string, widths []int) string {
-//line stdlib/table/table.kuki:182
+//line stdlib/table/table.kuki:178
 	sb := strings.Builder{}
-//line stdlib/table/table.kuki:183
+//line stdlib/table/table.kuki:179
 	sb.WriteString("│")
-//line stdlib/table/table.kuki:184
+//line stdlib/table/table.kuki:180
 	for i := range len(widths) {
-//line stdlib/table/table.kuki:185
+//line stdlib/table/table.kuki:181
 		val := ""
-//line stdlib/table/table.kuki:186
+//line stdlib/table/table.kuki:182
 		if i < len(cols) {
-//line stdlib/table/table.kuki:187
+//line stdlib/table/table.kuki:183
 			val = cols[i]
 		}
-//line stdlib/table/table.kuki:188
+//line stdlib/table/table.kuki:184
 		sb.WriteString(fmt.Sprintf(" %v │", term.PadRightVisible(val, widths[i])))
 	}
-//line stdlib/table/table.kuki:189
+//line stdlib/table/table.kuki:185
 	sb.WriteString("\n")
-//line stdlib/table/table.kuki:190
+//line stdlib/table/table.kuki:186
 	return sb.String()
 }

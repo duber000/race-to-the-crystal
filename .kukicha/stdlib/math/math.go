@@ -40,7 +40,7 @@ func RoundTo(x float64, digits int) float64 {
 //line stdlib/math/math.kuki:45
 	factor := gomath.Pow(10.0, float64(digits))
 //line stdlib/math/math.kuki:46
-	return (gomath.Round((x * factor)) / factor)
+	return gomath.Round(x*factor) / factor
 }
 
 //line stdlib/math/math.kuki:50

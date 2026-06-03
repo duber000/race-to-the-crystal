@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "formatter": {
+    "kukicha": {
+      "command": ["kukicha", "fmt", "-w"],
+      "extensions": [".kuki"]
+    }
+  },
+  "lsp": {
+    "kukicha": {
+      "command": ["kukicha-lsp"],
+      "extensions": [".kuki"]
+    }
+  }
+}

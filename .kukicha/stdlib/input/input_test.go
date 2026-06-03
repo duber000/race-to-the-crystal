@@ -73,7 +73,6 @@ func TestFormHappyPath(t *testing.T) {
 //line stdlib/input/input_test.kuki:44
 	f.Choose("repo", "repo?", []string{"api", "web", "infra"})
 //line stdlib/input/input_test.kuki:46
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/input/input_test.kuki:46
 	err_4 := f.Run()
 //line stdlib/input/input_test.kuki:46
@@ -118,7 +117,6 @@ func TestFormValidatorRetries(t *testing.T) {
 		}()
 	})
 //line stdlib/input/input_test.kuki:67
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/input/input_test.kuki:67
 	err_5 := f.Run()
 //line stdlib/input/input_test.kuki:67
@@ -149,7 +147,6 @@ func TestFormConfirmFalse(t *testing.T) {
 //line stdlib/input/input_test.kuki:81
 	f.Confirm("agree", "ok? ")
 //line stdlib/input/input_test.kuki:82
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/input/input_test.kuki:82
 	err_6 := f.Run()
 //line stdlib/input/input_test.kuki:82
@@ -186,7 +183,6 @@ func TestFormDefault(t *testing.T) {
 //line stdlib/input/input_test.kuki:100
 	f.Default("port", "8080")
 //line stdlib/input/input_test.kuki:102
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/input/input_test.kuki:102
 	err_7 := f.Run()
 //line stdlib/input/input_test.kuki:102

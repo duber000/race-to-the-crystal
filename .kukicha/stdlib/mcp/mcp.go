@@ -5,26 +5,95 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"github.com/kukichalang/kukicha/stdlib/content"
 	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
 	httppkg "github.com/kukichalang/kukicha/stdlib/http"
 	"github.com/kukichalang/kukicha/stdlib/json"
 	strpkg "github.com/kukichalang/kukicha/stdlib/string"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"maps"
 	"net/http"
 	"reflect"
 	"strings"
 )
 
-//line stdlib/mcp/mcp.kuki:18
+//line stdlib/mcp/mcp.kuki:20
 type JSONObject = map[string]any
 
-//line stdlib/mcp/mcp.kuki:22
+//line stdlib/mcp/mcp.kuki:23
+type LogLevel string
+
+const (
+	LogLevelDebug     LogLevel = "debug"
+	LogLevelInfo      LogLevel = "info"
+	LogLevelNotice    LogLevel = "notice"
+	LogLevelWarning   LogLevel = "warning"
+	LogLevelError     LogLevel = "error"
+	LogLevelCritical  LogLevel = "critical"
+	LogLevelAlert     LogLevel = "alert"
+	LogLevelEmergency LogLevel = "emergency"
+)
+
+func (e LogLevel) String() string {
+	return string(e)
+}
+
+func ParseLogLevel(s string) (LogLevel, bool) {
+	switch s {
+	case "debug":
+		return LogLevelDebug, true
+	case "info":
+		return LogLevelInfo, true
+	case "notice":
+		return LogLevelNotice, true
+	case "warning":
+		return LogLevelWarning, true
+	case "error":
+		return LogLevelError, true
+	case "critical":
+		return LogLevelCritical, true
+	case "alert":
+		return LogLevelAlert, true
+	case "emergency":
+		return LogLevelEmergency, true
+	}
+	var zero LogLevel
+	return zero, false
+}
+
+//line stdlib/mcp/mcp.kuki:34
+type ElicitAction string
+
+const (
+	ElicitActionAccept  ElicitAction = "accept"
+	ElicitActionDecline ElicitAction = "decline"
+	ElicitActionCancel  ElicitAction = "cancel"
+)
+
+func (e ElicitAction) String() string {
+	return string(e)
+}
+
+func ParseElicitAction(s string) (ElicitAction, bool) {
+	switch s {
+	case "accept":
+		return ElicitActionAccept, true
+	case "decline":
+		return ElicitActionDecline, true
+	case "cancel":
+		return ElicitActionCancel, true
+	}
+	var zero ElicitAction
+	return zero, false
+}
+
+//line stdlib/mcp/mcp.kuki:41
 type PromptArgs = map[string]string
 
-//line stdlib/mcp/mcp.kuki:25
+//line stdlib/mcp/mcp.kuki:44
 type ToolHandler func(JSONObject) (any, error)
 
-//line stdlib/mcp/mcp.kuki:32
+//line stdlib/mcp/mcp.kuki:51
 type SchemaProperty struct {
 	Name        string
 	Type        string
@@ -32,558 +101,511 @@ type SchemaProperty struct {
 	Enum        []any
 }
 
-//line stdlib/mcp/mcp.kuki:45
-type Content interface{ isContent() }
+//line stdlib/mcp/mcp.kuki:65
+type Content = content.Content
 
-type Text struct {
-	Body string
-}
-
-func (Text) isContent() {}
-
-type Image struct {
-	MIMEType string
-	Data     []byte
-}
-
-func (Image) isContent() {}
-
-type Audio struct {
-	MIMEType string
-	Data     []byte
-}
-
-func (Audio) isContent() {}
-
-type Link struct {
-	URI      string
-	MIMEType string
-}
-
-func (Link) isContent() {}
-
-type Embedded struct {
-	URI      string
-	MIMEType string
-	Text     string
-	Blob     []byte
-}
-
-func (Embedded) isContent() {}
-
-type ToolUse struct {
-	ID    string
-	Name  string
-	Input map[string]any
-}
-
-func (ToolUse) isContent() {}
-
-type ToolResult struct {
-	ToolUseID string
-	Items     []Content
-}
-
-func (ToolResult) isContent() {}
-
-//line stdlib/mcp/mcp.kuki:72
-func decodeContent(raw mcp.Content) Content {
-//line stdlib/mcp/mcp.kuki:73
+//line stdlib/mcp/mcp.kuki:69
+func decodeContent(raw mcp.Content) content.Content {
+//line stdlib/mcp/mcp.kuki:70
 	switch v := raw.(type) {
 	case *mcp.TextContent:
-//line stdlib/mcp/mcp.kuki:75
-		return Text{Body: v.Text}
+//line stdlib/mcp/mcp.kuki:72
+		return content.Text{Body: v.Text}
 	case *mcp.ImageContent:
-//line stdlib/mcp/mcp.kuki:77
-		return Image{MIMEType: v.MIMEType, Data: v.Data}
+//line stdlib/mcp/mcp.kuki:74
+		return content.Image{MIMEType: v.MIMEType, Data: v.Data}
 	case *mcp.AudioContent:
-//line stdlib/mcp/mcp.kuki:79
-		return Audio{MIMEType: v.MIMEType, Data: v.Data}
+//line stdlib/mcp/mcp.kuki:76
+		return content.Audio{MIMEType: v.MIMEType, Data: v.Data}
 	case *mcp.ResourceLink:
-//line stdlib/mcp/mcp.kuki:81
-		return Link{URI: v.URI, MIMEType: v.MIMEType}
+//line stdlib/mcp/mcp.kuki:78
+		return content.Link{URI: v.URI, MIMEType: v.MIMEType}
 	case *mcp.EmbeddedResource:
-//line stdlib/mcp/mcp.kuki:83
+//line stdlib/mcp/mcp.kuki:80
 		if v.Resource != nil {
-//line stdlib/mcp/mcp.kuki:84
-			return Embedded{URI: v.Resource.URI, MIMEType: v.Resource.MIMEType, Text: v.Resource.Text, Blob: v.Resource.Blob}
+//line stdlib/mcp/mcp.kuki:81
+			return content.Embedded{URI: v.Resource.URI, MIMEType: v.Resource.MIMEType, Text: v.Resource.Text, Blob: v.Resource.Blob}
 		}
-//line stdlib/mcp/mcp.kuki:90
-		return Embedded{}
+//line stdlib/mcp/mcp.kuki:87
+		return content.Embedded{}
 	case *mcp.ToolUseContent:
-//line stdlib/mcp/mcp.kuki:92
-		return ToolUse{ID: v.ID, Name: v.Name, Input: v.Input}
+//line stdlib/mcp/mcp.kuki:89
+		return content.ToolUse{ID: v.ID, Name: v.Name, Input: v.Input}
 	case *mcp.ToolResultContent:
-//line stdlib/mcp/mcp.kuki:94
-		items := make([]Content, len(v.Content))
-//line stdlib/mcp/mcp.kuki:95
+//line stdlib/mcp/mcp.kuki:91
+		items := make([]content.Content, len(v.Content))
+//line stdlib/mcp/mcp.kuki:92
 		for i, c := range v.Content {
-//line stdlib/mcp/mcp.kuki:96
+//line stdlib/mcp/mcp.kuki:93
 			items[i] = decodeContent(c)
 		}
-//line stdlib/mcp/mcp.kuki:97
-		return ToolResult{ToolUseID: v.ToolUseID, Items: items}
+//line stdlib/mcp/mcp.kuki:94
+		return content.ToolResult{ToolUseID: v.ToolUseID, Items: items}
 	}
-//line stdlib/mcp/mcp.kuki:99
+//line stdlib/mcp/mcp.kuki:96
 	data, _ := json.Bytes(raw)
-//line stdlib/mcp/mcp.kuki:100
-	return Text{Body: string(data)}
+//line stdlib/mcp/mcp.kuki:97
+	return content.Text{Body: string(data)}
 }
 
+//line stdlib/mcp/mcp.kuki:103
+func encodeContent(c content.Content) mcp.Content {
 //line stdlib/mcp/mcp.kuki:104
-func encodeContent(c Content) mcp.Content {
-//line stdlib/mcp/mcp.kuki:105
 	switch v := c.(type) {
-	case Text:
-//line stdlib/mcp/mcp.kuki:107
+	case content.Text:
+//line stdlib/mcp/mcp.kuki:106
 		return &mcp.TextContent{Text: v.Body}
-	case Image:
-//line stdlib/mcp/mcp.kuki:109
+	case content.Thinking:
+//line stdlib/mcp/mcp.kuki:108
+		return &mcp.TextContent{Text: v.Body}
+	case content.Image:
+//line stdlib/mcp/mcp.kuki:110
 		return &mcp.ImageContent{MIMEType: v.MIMEType, Data: v.Data}
-	case Audio:
-//line stdlib/mcp/mcp.kuki:111
+	case content.Audio:
+//line stdlib/mcp/mcp.kuki:112
 		return &mcp.AudioContent{MIMEType: v.MIMEType, Data: v.Data}
-	case Link:
-//line stdlib/mcp/mcp.kuki:113
+	case content.Link:
+//line stdlib/mcp/mcp.kuki:114
 		return &mcp.ResourceLink{URI: v.URI, MIMEType: v.MIMEType}
-	case Embedded:
-//line stdlib/mcp/mcp.kuki:115
+	case content.Embedded:
+//line stdlib/mcp/mcp.kuki:116
 		return &mcp.EmbeddedResource{Resource: &mcp.ResourceContents{URI: v.URI, MIMEType: v.MIMEType, Text: v.Text, Blob: v.Blob}}
-	case ToolUse:
-//line stdlib/mcp/mcp.kuki:124
-		return &mcp.ToolUseContent{ID: v.ID, Name: v.Name, Input: v.Input}
-	case ToolResult:
+	case content.ToolUse:
+//line stdlib/mcp/mcp.kuki:125
+		input, ok := v.Input.(map[string]any)
 //line stdlib/mcp/mcp.kuki:126
-		inner := make([]mcp.Content, len(v.Items))
+		if !ok {
 //line stdlib/mcp/mcp.kuki:127
-		for i, item := range v.Items {
+			input = nil
+		}
 //line stdlib/mcp/mcp.kuki:128
+		return &mcp.ToolUseContent{ID: v.ID, Name: v.Name, Input: input}
+	case content.ToolResult:
+//line stdlib/mcp/mcp.kuki:130
+		inner := make([]mcp.Content, len(v.Items))
+//line stdlib/mcp/mcp.kuki:131
+		for i, item := range v.Items {
+//line stdlib/mcp/mcp.kuki:132
 			inner[i] = encodeContent(item)
 		}
-//line stdlib/mcp/mcp.kuki:129
+//line stdlib/mcp/mcp.kuki:133
 		return &mcp.ToolResultContent{ToolUseID: v.ToolUseID, Content: inner}
-	default:
-		panic("unreachable")
+	case content.Reasoning:
+//line stdlib/mcp/mcp.kuki:135
+		data, _ := json.Bytes(v.Summary)
+//line stdlib/mcp/mcp.kuki:136
+		return &mcp.TextContent{Text: string(data)}
 	}
+//line stdlib/mcp/mcp.kuki:138
+	return &mcp.TextContent{}
 }
 
-//line stdlib/mcp/mcp.kuki:135
+//line stdlib/mcp/mcp.kuki:144
 func buildCallResult(res any) *mcp.CallToolResult {
-//line stdlib/mcp/mcp.kuki:136
+//line stdlib/mcp/mcp.kuki:145
 	switch r := res.(type) {
 	case *mcp.CallToolResult:
-//line stdlib/mcp/mcp.kuki:138
+//line stdlib/mcp/mcp.kuki:147
 		return r
 	case string:
-//line stdlib/mcp/mcp.kuki:140
-		return &mcp.CallToolResult{Content: []mcp.Content{encodeContent(Text{Body: r})}}
+//line stdlib/mcp/mcp.kuki:149
+		return &mcp.CallToolResult{Content: []mcp.Content{encodeContent(content.Text{Body: r})}}
 	}
-//line stdlib/mcp/mcp.kuki:144
-	data, _ := json.Bytes(res)
-//line stdlib/mcp/mcp.kuki:145
-	return &mcp.CallToolResult{Content: []mcp.Content{encodeContent(Text{Body: string(data)})}}
-}
-
-//line stdlib/mcp/mcp.kuki:152
-func errorCallResult(msg string) *mcp.CallToolResult {
 //line stdlib/mcp/mcp.kuki:153
-	return &mcp.CallToolResult{Content: []mcp.Content{encodeContent(Text{Body: msg})}, IsError: true}
+	data, _ := json.Bytes(res)
+//line stdlib/mcp/mcp.kuki:154
+	return &mcp.CallToolResult{Content: []mcp.Content{encodeContent(content.Text{Body: string(data)})}}
 }
 
 //line stdlib/mcp/mcp.kuki:161
-func New(name string, version string) *mcp.Server {
+func errorCallResult(msg string) *mcp.CallToolResult {
 //line stdlib/mcp/mcp.kuki:162
+	return &mcp.CallToolResult{Content: []mcp.Content{encodeContent(content.Text{Body: msg})}, IsError: true}
+}
+
+//line stdlib/mcp/mcp.kuki:170
+func New(name string, version string) *mcp.Server {
+//line stdlib/mcp/mcp.kuki:171
 	return mcp.NewServer(&mcp.Implementation{Name: name, Version: version}, nil)
 }
 
-//line stdlib/mcp/mcp.kuki:168
+//line stdlib/mcp/mcp.kuki:177
 func Serve(server *mcp.Server) error {
-//line stdlib/mcp/mcp.kuki:169
+//line stdlib/mcp/mcp.kuki:178
 	bg := ctxpkg.Background()
-//line stdlib/mcp/mcp.kuki:170
+//line stdlib/mcp/mcp.kuki:179
 	return server.Run(bg.Ctx, &mcp.StdioTransport{})
 }
 
-//line stdlib/mcp/mcp.kuki:173
+//line stdlib/mcp/mcp.kuki:182
 func Prop(name string, typ string, description string) SchemaProperty {
-//line stdlib/mcp/mcp.kuki:174
+//line stdlib/mcp/mcp.kuki:183
 	return SchemaProperty{Name: name, Type: typ, Description: description}
 }
 
-//line stdlib/mcp/mcp.kuki:177
+//line stdlib/mcp/mcp.kuki:186
 func Schema(props []SchemaProperty) JSONObject {
-//line stdlib/mcp/mcp.kuki:178
+//line stdlib/mcp/mcp.kuki:187
 	properties := make(JSONObject)
-//line stdlib/mcp/mcp.kuki:179
+//line stdlib/mcp/mcp.kuki:188
 	for _, prop := range props {
-//line stdlib/mcp/mcp.kuki:180
+//line stdlib/mcp/mcp.kuki:189
 		entry := map[string]any{"type": prop.Type, "description": prop.Description}
-//line stdlib/mcp/mcp.kuki:181
+//line stdlib/mcp/mcp.kuki:190
 		if len(prop.Enum) > 0 {
-//line stdlib/mcp/mcp.kuki:182
+//line stdlib/mcp/mcp.kuki:191
 			entry["enum"] = prop.Enum
 		}
-//line stdlib/mcp/mcp.kuki:183
+//line stdlib/mcp/mcp.kuki:192
 		properties[prop.Name] = entry
 	}
-//line stdlib/mcp/mcp.kuki:185
+//line stdlib/mcp/mcp.kuki:194
 	return map[string]any{"type": "object", "properties": properties}
 }
 
-//line stdlib/mcp/mcp.kuki:189
+//line stdlib/mcp/mcp.kuki:199
 func Required(schema JSONObject, names []string) JSONObject {
-//line stdlib/mcp/mcp.kuki:190
-	schema["required"] = names
-//line stdlib/mcp/mcp.kuki:191
-	return schema
+//line stdlib/mcp/mcp.kuki:200
+	out := make(JSONObject)
+//line stdlib/mcp/mcp.kuki:201
+	maps.Copy(out, schema)
+//line stdlib/mcp/mcp.kuki:202
+	out["required"] = names
+//line stdlib/mcp/mcp.kuki:203
+	return out
 }
 
-//line stdlib/mcp/mcp.kuki:195
+//line stdlib/mcp/mcp.kuki:207
 func TextResult(text string) any {
-//line stdlib/mcp/mcp.kuki:196
+//line stdlib/mcp/mcp.kuki:208
 	return buildCallResult(text)
 }
 
-//line stdlib/mcp/mcp.kuki:199
+//line stdlib/mcp/mcp.kuki:211
 func ErrorResult(msg string) any {
-//line stdlib/mcp/mcp.kuki:200
+//line stdlib/mcp/mcp.kuki:212
 	return errorCallResult(msg)
 }
 
-//line stdlib/mcp/mcp.kuki:203
+//line stdlib/mcp/mcp.kuki:215
 func isIntKind(k reflect.Kind) bool {
-//line stdlib/mcp/mcp.kuki:204
-	return ((((((((((k == reflect.Int) || (k == reflect.Int8)) || (k == reflect.Int16)) || (k == reflect.Int32)) || (k == reflect.Int64)) || (k == reflect.Uint)) || (k == reflect.Uint8)) || (k == reflect.Uint16)) || (k == reflect.Uint32)) || (k == reflect.Uint64))
+//line stdlib/mcp/mcp.kuki:216
+	return k == reflect.Int || k == reflect.Int8 || k == reflect.Int16 || k == reflect.Int32 || k == reflect.Int64 || k == reflect.Uint || k == reflect.Uint8 || k == reflect.Uint16 || k == reflect.Uint32 || k == reflect.Uint64
 }
 
-//line stdlib/mcp/mcp.kuki:211
+//line stdlib/mcp/mcp.kuki:223
 func kindMatchesSchemaType(k reflect.Kind, schemaType string) bool {
-//line stdlib/mcp/mcp.kuki:212
+//line stdlib/mcp/mcp.kuki:224
 	if k == reflect.Interface {
-//line stdlib/mcp/mcp.kuki:213
+//line stdlib/mcp/mcp.kuki:225
 		return true
 	}
-//line stdlib/mcp/mcp.kuki:214
+//line stdlib/mcp/mcp.kuki:226
 	switch schemaType {
 	case "string":
-//line stdlib/mcp/mcp.kuki:216
-		return (k == reflect.String)
+//line stdlib/mcp/mcp.kuki:228
+		return k == reflect.String
 	case "integer":
-//line stdlib/mcp/mcp.kuki:218
+//line stdlib/mcp/mcp.kuki:230
 		return isIntKind(k)
 	case "number":
-//line stdlib/mcp/mcp.kuki:220
-		return (((k == reflect.Float32) || (k == reflect.Float64)) || isIntKind(k))
+//line stdlib/mcp/mcp.kuki:232
+		return k == reflect.Float32 || k == reflect.Float64 || isIntKind(k)
 	case "boolean":
-//line stdlib/mcp/mcp.kuki:222
-		return (k == reflect.Bool)
+//line stdlib/mcp/mcp.kuki:234
+		return k == reflect.Bool
 	case "array":
-//line stdlib/mcp/mcp.kuki:224
-		return ((k == reflect.Slice) || (k == reflect.Array))
+//line stdlib/mcp/mcp.kuki:236
+		return k == reflect.Slice || k == reflect.Array
 	case "object":
-//line stdlib/mcp/mcp.kuki:226
-		return ((k == reflect.Struct) || (k == reflect.Map))
+//line stdlib/mcp/mcp.kuki:238
+		return k == reflect.Struct || k == reflect.Map
 	case "null":
-//line stdlib/mcp/mcp.kuki:228
+//line stdlib/mcp/mcp.kuki:240
 		return true
 	default:
-//line stdlib/mcp/mcp.kuki:230
+//line stdlib/mcp/mcp.kuki:242
 		return true
 	}
 }
 
-//line stdlib/mcp/mcp.kuki:240
+//line stdlib/mcp/mcp.kuki:252
 func validateToolSchema(toolName string, schema any, handler any) error {
-//line stdlib/mcp/mcp.kuki:241
-	hType := reflect.TypeOf(handler)
-//line stdlib/mcp/mcp.kuki:242
-	if ((hType == nil) || (hType.Kind() != reflect.Func)) || (hType.NumIn() == 0) {
-//line stdlib/mcp/mcp.kuki:243
-		return nil
-	}
-//line stdlib/mcp/mcp.kuki:245
-	argsType := hType.In((hType.NumIn() - 1))
-//line stdlib/mcp/mcp.kuki:246
-	if argsType.Kind() == reflect.Map {
-//line stdlib/mcp/mcp.kuki:247
-		return nil
-	}
-//line stdlib/mcp/mcp.kuki:248
-	if argsType.Kind() == reflect.Pointer {
-//line stdlib/mcp/mcp.kuki:249
-		argsType = argsType.Elem()
-	}
-//line stdlib/mcp/mcp.kuki:250
-	if argsType.Kind() != reflect.Struct {
-//line stdlib/mcp/mcp.kuki:251
-		return nil
-	}
 //line stdlib/mcp/mcp.kuki:253
-	schemaMap, ok := schema.(JSONObject)
+	hType := reflect.TypeOf(handler)
 //line stdlib/mcp/mcp.kuki:254
-	if !ok {
+	if hType == nil || hType.Kind() != reflect.Func || hType.NumIn() == 0 {
 //line stdlib/mcp/mcp.kuki:255
 		return nil
 	}
-//line stdlib/mcp/mcp.kuki:256
-	propsAny, hasProps := schemaMap["properties"]
 //line stdlib/mcp/mcp.kuki:257
-	if !hasProps {
+	argsType := hType.In(hType.NumIn() - 1)
 //line stdlib/mcp/mcp.kuki:258
-		return nil
-	}
+	if argsType.Kind() == reflect.Map {
 //line stdlib/mcp/mcp.kuki:259
-	props, propsOK := propsAny.(JSONObject)
-//line stdlib/mcp/mcp.kuki:260
-	if !propsOK {
-//line stdlib/mcp/mcp.kuki:261
 		return nil
 	}
+//line stdlib/mcp/mcp.kuki:260
+	if argsType.Kind() == reflect.Pointer {
+//line stdlib/mcp/mcp.kuki:261
+		argsType = argsType.Elem()
+	}
+//line stdlib/mcp/mcp.kuki:262
+	if argsType.Kind() != reflect.Struct {
 //line stdlib/mcp/mcp.kuki:263
-	fields := make(map[string]reflect.StructField)
-//line stdlib/mcp/mcp.kuki:264
-	hasField := make(map[string]bool)
+		return nil
+	}
 //line stdlib/mcp/mcp.kuki:265
-	numFields := argsType.NumField()
+	schemaMap, ok := schema.(JSONObject)
 //line stdlib/mcp/mcp.kuki:266
-	for i := range numFields {
+	if !ok {
 //line stdlib/mcp/mcp.kuki:267
-		f := argsType.Field(i)
+		return nil
+	}
 //line stdlib/mcp/mcp.kuki:268
-		if !f.IsExported() {
+	propsAny, hasProps := schemaMap["properties"]
 //line stdlib/mcp/mcp.kuki:269
+	if !hasProps {
+//line stdlib/mcp/mcp.kuki:270
+		return nil
+	}
+//line stdlib/mcp/mcp.kuki:271
+	props, propsOK := propsAny.(JSONObject)
+//line stdlib/mcp/mcp.kuki:272
+	if !propsOK {
+//line stdlib/mcp/mcp.kuki:273
+		return nil
+	}
+//line stdlib/mcp/mcp.kuki:275
+	fields := make(map[string]reflect.StructField)
+//line stdlib/mcp/mcp.kuki:276
+	hasField := make(map[string]bool)
+//line stdlib/mcp/mcp.kuki:277
+	numFields := argsType.NumField()
+//line stdlib/mcp/mcp.kuki:278
+	for i := range numFields {
+//line stdlib/mcp/mcp.kuki:279
+		f := argsType.Field(i)
+//line stdlib/mcp/mcp.kuki:280
+		if !f.IsExported() {
+//line stdlib/mcp/mcp.kuki:281
 			continue
 		}
-//line stdlib/mcp/mcp.kuki:270
+//line stdlib/mcp/mcp.kuki:282
 		name := f.Name
-//line stdlib/mcp/mcp.kuki:271
+//line stdlib/mcp/mcp.kuki:283
 		tag := f.Tag.Get("json")
-//line stdlib/mcp/mcp.kuki:272
+//line stdlib/mcp/mcp.kuki:284
 		if tag != "" {
-//line stdlib/mcp/mcp.kuki:273
+//line stdlib/mcp/mcp.kuki:285
 			parts := strings.SplitN(tag, ",", 2)
-//line stdlib/mcp/mcp.kuki:274
+//line stdlib/mcp/mcp.kuki:286
 			if parts[0] != "" {
-//line stdlib/mcp/mcp.kuki:275
+//line stdlib/mcp/mcp.kuki:287
 				name = parts[0]
 			}
 		}
-//line stdlib/mcp/mcp.kuki:276
+//line stdlib/mcp/mcp.kuki:288
 		key := strings.ToLower(name)
-//line stdlib/mcp/mcp.kuki:277
+//line stdlib/mcp/mcp.kuki:289
 		fields[key] = f
-//line stdlib/mcp/mcp.kuki:278
+//line stdlib/mcp/mcp.kuki:290
 		hasField[key] = true
 	}
-//line stdlib/mcp/mcp.kuki:280
-	missing := make([]string, 0)
-//line stdlib/mcp/mcp.kuki:281
-	for propName, propSchema := range props {
-//line stdlib/mcp/mcp.kuki:282
-		key := strings.ToLower(propName)
-//line stdlib/mcp/mcp.kuki:283
-		if !hasField[key] {
-//line stdlib/mcp/mcp.kuki:284
-			missing = append(missing, propName)
-//line stdlib/mcp/mcp.kuki:285
-			continue
-		}
-//line stdlib/mcp/mcp.kuki:286
-		propObj, propIsObj := propSchema.(JSONObject)
-//line stdlib/mcp/mcp.kuki:287
-		if !propIsObj {
-//line stdlib/mcp/mcp.kuki:288
-			continue
-		}
-//line stdlib/mcp/mcp.kuki:289
-		typAny, hasType := propObj["type"]
-//line stdlib/mcp/mcp.kuki:290
-		if !hasType {
-//line stdlib/mcp/mcp.kuki:291
-			continue
-		}
 //line stdlib/mcp/mcp.kuki:292
-		typStr, typOK := typAny.(string)
+	missing := make([]string, 0)
 //line stdlib/mcp/mcp.kuki:293
-		if !typOK {
+	for propName, propSchema := range props {
 //line stdlib/mcp/mcp.kuki:294
+		key := strings.ToLower(propName)
+//line stdlib/mcp/mcp.kuki:295
+		if !hasField[key] {
+//line stdlib/mcp/mcp.kuki:296
+			missing = append(missing, propName)
+//line stdlib/mcp/mcp.kuki:297
 			continue
 		}
-//line stdlib/mcp/mcp.kuki:295
-		field := fields[key]
-//line stdlib/mcp/mcp.kuki:296
-		ft := field.Type
-//line stdlib/mcp/mcp.kuki:297
-		if ft.Kind() == reflect.Pointer {
 //line stdlib/mcp/mcp.kuki:298
+		propObj, propIsObj := propSchema.(JSONObject)
+//line stdlib/mcp/mcp.kuki:299
+		if !propIsObj {
+//line stdlib/mcp/mcp.kuki:300
+			continue
+		}
+//line stdlib/mcp/mcp.kuki:301
+		typAny, hasType := propObj["type"]
+//line stdlib/mcp/mcp.kuki:302
+		if !hasType {
+//line stdlib/mcp/mcp.kuki:303
+			continue
+		}
+//line stdlib/mcp/mcp.kuki:304
+		typStr, typOK := typAny.(string)
+//line stdlib/mcp/mcp.kuki:305
+		if !typOK {
+//line stdlib/mcp/mcp.kuki:306
+			continue
+		}
+//line stdlib/mcp/mcp.kuki:307
+		field := fields[key]
+//line stdlib/mcp/mcp.kuki:308
+		ft := field.Type
+//line stdlib/mcp/mcp.kuki:309
+		if ft.Kind() == reflect.Pointer {
+//line stdlib/mcp/mcp.kuki:310
 			ft = ft.Elem()
 		}
-//line stdlib/mcp/mcp.kuki:299
+//line stdlib/mcp/mcp.kuki:311
 		if !kindMatchesSchemaType(ft.Kind(), typStr) {
-//line stdlib/mcp/mcp.kuki:300
+//line stdlib/mcp/mcp.kuki:312
 			return fmt.Errorf("mcp.Tool %v: schema property %v type \"%v\" is incompatible with args struct field %v (%v)", toolName, propName, typStr, field.Name, ft.Kind())
 		}
 	}
-//line stdlib/mcp/mcp.kuki:301
+//line stdlib/mcp/mcp.kuki:313
 	if len(missing) > 0 {
-//line stdlib/mcp/mcp.kuki:302
+//line stdlib/mcp/mcp.kuki:314
 		return fmt.Errorf("mcp.Tool %v: schema properties %v have no matching fields on args struct %v", toolName, missing, argsType.Name())
 	}
-//line stdlib/mcp/mcp.kuki:304
+//line stdlib/mcp/mcp.kuki:316
 	reqAny, hasReq := schemaMap["required"]
-//line stdlib/mcp/mcp.kuki:305
+//line stdlib/mcp/mcp.kuki:317
 	if hasReq {
-//line stdlib/mcp/mcp.kuki:306
+//line stdlib/mcp/mcp.kuki:318
 		reqList, reqOK := reqAny.([]string)
-//line stdlib/mcp/mcp.kuki:307
+//line stdlib/mcp/mcp.kuki:319
 		if reqOK {
-//line stdlib/mcp/mcp.kuki:308
+//line stdlib/mcp/mcp.kuki:320
 			missingReq := make([]string, 0)
-//line stdlib/mcp/mcp.kuki:309
+//line stdlib/mcp/mcp.kuki:321
 			for _, r := range reqList {
-//line stdlib/mcp/mcp.kuki:310
+//line stdlib/mcp/mcp.kuki:322
 				if !hasField[strings.ToLower(r)] {
-//line stdlib/mcp/mcp.kuki:311
+//line stdlib/mcp/mcp.kuki:323
 					missingReq = append(missingReq, r)
 				}
 			}
-//line stdlib/mcp/mcp.kuki:312
+//line stdlib/mcp/mcp.kuki:324
 			if len(missingReq) > 0 {
-//line stdlib/mcp/mcp.kuki:313
+//line stdlib/mcp/mcp.kuki:325
 				return fmt.Errorf("mcp.Tool %v: required fields %v missing from args struct %v", toolName, missingReq, argsType.Name())
 			}
 		}
 	}
-//line stdlib/mcp/mcp.kuki:315
+//line stdlib/mcp/mcp.kuki:327
 	return nil
 }
 
-//line stdlib/mcp/mcp.kuki:336
+//line stdlib/mcp/mcp.kuki:348
 func Tool[T any](server *mcp.Server, name string, description string, schema any, handler func(T) (any, error)) {
-//line stdlib/mcp/mcp.kuki:337
-//line stdlib/mcp/mcp.kuki:337
+//line stdlib/mcp/mcp.kuki:349
+//line stdlib/mcp/mcp.kuki:349
 	err_1 := validateToolSchema(name, schema, handler)
-//line stdlib/mcp/mcp.kuki:337
+//line stdlib/mcp/mcp.kuki:349
 	if err_1 != nil {
-//line stdlib/mcp/mcp.kuki:337
+//line stdlib/mcp/mcp.kuki:349
 		panic(fmt.Sprintf("%v", err_1))
 	}
-//line stdlib/mcp/mcp.kuki:338
+//line stdlib/mcp/mcp.kuki:350
 	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-//line stdlib/mcp/mcp.kuki:339
+//line stdlib/mcp/mcp.kuki:351
 		var args T
-//line stdlib/mcp/mcp.kuki:340
+//line stdlib/mcp/mcp.kuki:352
 		if len(req.Params.Arguments) > 0 {
-//line stdlib/mcp/mcp.kuki:341
+//line stdlib/mcp/mcp.kuki:353
 			unmarshalErr := json.ParseInto(req.Params.Arguments, &args)
-//line stdlib/mcp/mcp.kuki:342
+//line stdlib/mcp/mcp.kuki:354
 			if unmarshalErr != nil {
-//line stdlib/mcp/mcp.kuki:343
+//line stdlib/mcp/mcp.kuki:355
 				return nil, unmarshalErr
 			}
 		}
-//line stdlib/mcp/mcp.kuki:344
+//line stdlib/mcp/mcp.kuki:356
 		res, handlerErr := handler(args)
-//line stdlib/mcp/mcp.kuki:345
+//line stdlib/mcp/mcp.kuki:357
 		if handlerErr != nil {
-//line stdlib/mcp/mcp.kuki:346
+//line stdlib/mcp/mcp.kuki:358
 			return errorCallResult(handlerErr.Error()), nil
 		}
-//line stdlib/mcp/mcp.kuki:347
+//line stdlib/mcp/mcp.kuki:359
 		return buildCallResult(res), nil
 	})
 }
 
-//line stdlib/mcp/mcp.kuki:355
+//line stdlib/mcp/mcp.kuki:367
 type ToolSamplingHandler func(context.Context, *ServerSession, JSONObject) (any, error)
 
-//line stdlib/mcp/mcp.kuki:359
+//line stdlib/mcp/mcp.kuki:371
 type ServerSession struct {
 	inner *mcp.ServerSession
 }
 
-//line stdlib/mcp/mcp.kuki:365
+//line stdlib/mcp/mcp.kuki:377
 func (ss *ServerSession) CreateMessage(ctx context.Context, params *mcp.CreateMessageParams) (*mcp.CreateMessageResult, error) {
-//line stdlib/mcp/mcp.kuki:366
+//line stdlib/mcp/mcp.kuki:378
 	return ss.inner.CreateMessage(ctx, params)
 }
 
-//line stdlib/mcp/mcp.kuki:370
+//line stdlib/mcp/mcp.kuki:382
 func (ss *ServerSession) CreateMessageWithTools(ctx context.Context, params *mcp.CreateMessageWithToolsParams) (*mcp.CreateMessageWithToolsResult, error) {
-//line stdlib/mcp/mcp.kuki:371
+//line stdlib/mcp/mcp.kuki:383
 	return ss.inner.CreateMessageWithTools(ctx, params)
 }
 
-//line stdlib/mcp/mcp.kuki:390
+//line stdlib/mcp/mcp.kuki:402
 func ToolWithSampling[T any](server *mcp.Server, name string, description string, schema any, handler func(context.Context, *ServerSession, T) (any, error)) {
-//line stdlib/mcp/mcp.kuki:391
-//line stdlib/mcp/mcp.kuki:391
+//line stdlib/mcp/mcp.kuki:403
+//line stdlib/mcp/mcp.kuki:403
 	err_2 := validateToolSchema(name, schema, handler)
-//line stdlib/mcp/mcp.kuki:391
+//line stdlib/mcp/mcp.kuki:403
 	if err_2 != nil {
-//line stdlib/mcp/mcp.kuki:391
+//line stdlib/mcp/mcp.kuki:403
 		panic(fmt.Sprintf("%v", err_2))
 	}
-//line stdlib/mcp/mcp.kuki:392
+//line stdlib/mcp/mcp.kuki:404
 	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-//line stdlib/mcp/mcp.kuki:393
+//line stdlib/mcp/mcp.kuki:405
 		var args T
-//line stdlib/mcp/mcp.kuki:394
+//line stdlib/mcp/mcp.kuki:406
 		if len(req.Params.Arguments) > 0 {
-//line stdlib/mcp/mcp.kuki:395
+//line stdlib/mcp/mcp.kuki:407
 			unmarshalErr := json.ParseInto(req.Params.Arguments, &args)
-//line stdlib/mcp/mcp.kuki:396
+//line stdlib/mcp/mcp.kuki:408
 			if unmarshalErr != nil {
-//line stdlib/mcp/mcp.kuki:397
+//line stdlib/mcp/mcp.kuki:409
 				return nil, unmarshalErr
 			}
 		}
-//line stdlib/mcp/mcp.kuki:398
+//line stdlib/mcp/mcp.kuki:410
 		ss := &ServerSession{inner: req.Session}
-//line stdlib/mcp/mcp.kuki:399
+//line stdlib/mcp/mcp.kuki:411
 		res, handlerErr := handler(ctx, ss, args)
-//line stdlib/mcp/mcp.kuki:400
+//line stdlib/mcp/mcp.kuki:412
 		if handlerErr != nil {
-//line stdlib/mcp/mcp.kuki:401
+//line stdlib/mcp/mcp.kuki:413
 			return errorCallResult(handlerErr.Error()), nil
 		}
-//line stdlib/mcp/mcp.kuki:402
+//line stdlib/mcp/mcp.kuki:414
 		return buildCallResult(res), nil
 	})
 }
 
-//line stdlib/mcp/mcp.kuki:408
+//line stdlib/mcp/mcp.kuki:420
 type Client struct {
 	inner *mcp.Client
 }
 
-//line stdlib/mcp/mcp.kuki:413
+//line stdlib/mcp/mcp.kuki:425
 type SamplingHandler func(context.Context, *mcp.CreateMessageParams) (*mcp.CreateMessageResult, error)
 
-//line stdlib/mcp/mcp.kuki:417
+//line stdlib/mcp/mcp.kuki:429
 type SamplingWithToolsHandler func(context.Context, *mcp.CreateMessageWithToolsParams) (*mcp.CreateMessageWithToolsResult, error)
 
-//line stdlib/mcp/mcp.kuki:425
-func NewClientWithSampling(name string, version string, handler SamplingHandler) *Client {
-//line stdlib/mcp/mcp.kuki:426
-	opts := &mcp.ClientOptions{}
-//line stdlib/mcp/mcp.kuki:427
-	opts.CreateMessageHandler = func(ctx context.Context, req *mcp.CreateMessageRequest) (*mcp.CreateMessageResult, error) {
-//line stdlib/mcp/mcp.kuki:428
-		return handler(ctx, req.Params)
-	}
-//line stdlib/mcp/mcp.kuki:430
-	inner := mcp.NewClient(&mcp.Implementation{Name: name, Version: version}, opts)
-//line stdlib/mcp/mcp.kuki:431
-	return &Client{inner: inner}
-}
-
 //line stdlib/mcp/mcp.kuki:437
-func NewClientWithSamplingTools(name string, version string, handler SamplingWithToolsHandler) *Client {
+func NewClientWithSampling(name string, version string, handler SamplingHandler) *Client {
 //line stdlib/mcp/mcp.kuki:438
 	opts := &mcp.ClientOptions{}
 //line stdlib/mcp/mcp.kuki:439
-	opts.CreateMessageWithToolsHandler = func(ctx context.Context, req *mcp.CreateMessageWithToolsRequest) (*mcp.CreateMessageWithToolsResult, error) {
+	opts.CreateMessageHandler = func(ctx context.Context, req *mcp.CreateMessageRequest) (*mcp.CreateMessageResult, error) {
 //line stdlib/mcp/mcp.kuki:440
 		return handler(ctx, req.Params)
 	}
@@ -593,284 +615,303 @@ func NewClientWithSamplingTools(name string, version string, handler SamplingWit
 	return &Client{inner: inner}
 }
 
-//line stdlib/mcp/mcp.kuki:447
+//line stdlib/mcp/mcp.kuki:449
+func NewClientWithSamplingTools(name string, version string, handler SamplingWithToolsHandler) *Client {
+//line stdlib/mcp/mcp.kuki:450
+	opts := &mcp.ClientOptions{}
+//line stdlib/mcp/mcp.kuki:451
+	opts.CreateMessageWithToolsHandler = func(ctx context.Context, req *mcp.CreateMessageWithToolsRequest) (*mcp.CreateMessageWithToolsResult, error) {
+//line stdlib/mcp/mcp.kuki:452
+		return handler(ctx, req.Params)
+	}
+//line stdlib/mcp/mcp.kuki:454
+	inner := mcp.NewClient(&mcp.Implementation{Name: name, Version: version}, opts)
+//line stdlib/mcp/mcp.kuki:455
+	return &Client{inner: inner}
+}
+
+//line stdlib/mcp/mcp.kuki:459
 func (c *Client) Connect(ctx context.Context, endpoint string) (*ClientSession, error) {
-//line stdlib/mcp/mcp.kuki:448
+//line stdlib/mcp/mcp.kuki:460
 	return c.ConnectWith(ctx, endpoint, nil)
 }
 
-//line stdlib/mcp/mcp.kuki:454
+//line stdlib/mcp/mcp.kuki:466
 func (c *Client) ConnectWith(ctx context.Context, endpoint string, httpClient *http.Client) (*ClientSession, error) {
-//line stdlib/mcp/mcp.kuki:455
+//line stdlib/mcp/mcp.kuki:467
 	transport := &mcp.StreamableClientTransport{Endpoint: endpoint, HTTPClient: httpClient}
-//line stdlib/mcp/mcp.kuki:456
+//line stdlib/mcp/mcp.kuki:468
 	session, err_3 := c.inner.Connect(ctx, transport, nil)
-//line stdlib/mcp/mcp.kuki:456
+//line stdlib/mcp/mcp.kuki:468
 	if err_3 != nil {
-//line stdlib/mcp/mcp.kuki:456
+//line stdlib/mcp/mcp.kuki:468
 		return nil, fmt.Errorf("MCP connect to %v failed: %v", endpoint, err_3)
 	}
-//line stdlib/mcp/mcp.kuki:457
+//line stdlib/mcp/mcp.kuki:469
 	return &ClientSession{inner: session}, nil
 }
 
-//line stdlib/mcp/mcp.kuki:460
+//line stdlib/mcp/mcp.kuki:472
 type ClientSession struct {
 	inner *mcp.ClientSession
 }
 
-//line stdlib/mcp/mcp.kuki:464
+//line stdlib/mcp/mcp.kuki:476
 type ClientTool struct {
 	Name        string
 	Description string
 	InputSchema JSONObject
 }
 
-//line stdlib/mcp/mcp.kuki:475
+//line stdlib/mcp/mcp.kuki:487
 type CallToolResult struct {
 	Text    string
 	IsError bool
 	Content []Content
 }
 
-//line stdlib/mcp/mcp.kuki:481
+//line stdlib/mcp/mcp.kuki:493
 type bearerTransport struct {
 	token string
 	base  http.RoundTripper
 }
 
-//line stdlib/mcp/mcp.kuki:485
+//line stdlib/mcp/mcp.kuki:497
 func (t *bearerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-//line stdlib/mcp/mcp.kuki:486
+//line stdlib/mcp/mcp.kuki:498
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", t.token))
-//line stdlib/mcp/mcp.kuki:487
+//line stdlib/mcp/mcp.kuki:499
 	return t.base.RoundTrip(req)
 }
 
-//line stdlib/mcp/mcp.kuki:491
+//line stdlib/mcp/mcp.kuki:503
 func Connect(ctx context.Context, endpoint string) (*ClientSession, error) {
-//line stdlib/mcp/mcp.kuki:492
+//line stdlib/mcp/mcp.kuki:504
 	return ConnectWithClient(ctx, endpoint, nil)
 }
 
-//line stdlib/mcp/mcp.kuki:498
+//line stdlib/mcp/mcp.kuki:510
 func BearerConnect(ctx context.Context, endpoint string, token string) (*ClientSession, error) {
-//line stdlib/mcp/mcp.kuki:499
+//line stdlib/mcp/mcp.kuki:511
 	httpClient := &http.Client{Transport: &bearerTransport{token: token, base: http.DefaultTransport}}
-//line stdlib/mcp/mcp.kuki:500
+//line stdlib/mcp/mcp.kuki:512
 	return ConnectWithClient(ctx, endpoint, httpClient)
 }
 
-//line stdlib/mcp/mcp.kuki:506
+//line stdlib/mcp/mcp.kuki:518
 func ConnectWithClient(ctx context.Context, endpoint string, httpClient *http.Client) (*ClientSession, error) {
-//line stdlib/mcp/mcp.kuki:507
+//line stdlib/mcp/mcp.kuki:519
 	client := mcp.NewClient(&mcp.Implementation{Name: "kukicha-mcp-client", Version: "1.0.0"}, nil)
-//line stdlib/mcp/mcp.kuki:511
+//line stdlib/mcp/mcp.kuki:523
 	transport := &mcp.StreamableClientTransport{Endpoint: endpoint, HTTPClient: httpClient}
-//line stdlib/mcp/mcp.kuki:512
+//line stdlib/mcp/mcp.kuki:524
 	session, err_4 := client.Connect(ctx, transport, nil)
-//line stdlib/mcp/mcp.kuki:512
+//line stdlib/mcp/mcp.kuki:524
 	if err_4 != nil {
-//line stdlib/mcp/mcp.kuki:512
+//line stdlib/mcp/mcp.kuki:524
 		return nil, fmt.Errorf("MCP connect to %v failed: %v", endpoint, err_4)
 	}
-//line stdlib/mcp/mcp.kuki:513
+//line stdlib/mcp/mcp.kuki:525
 	return &ClientSession{inner: session}, nil
 }
 
-//line stdlib/mcp/mcp.kuki:518
+//line stdlib/mcp/mcp.kuki:530
 func ConnectFromSession(inner *mcp.ClientSession) *ClientSession {
-//line stdlib/mcp/mcp.kuki:519
+//line stdlib/mcp/mcp.kuki:531
 	return &ClientSession{inner: inner}
 }
 
-//line stdlib/mcp/mcp.kuki:522
+//line stdlib/mcp/mcp.kuki:534
 func Close(session *ClientSession) error {
-//line stdlib/mcp/mcp.kuki:523
+//line stdlib/mcp/mcp.kuki:535
 	return session.inner.Close()
 }
 
-//line stdlib/mcp/mcp.kuki:526
+//line stdlib/mcp/mcp.kuki:538
 func ListTools(ctx context.Context, session *ClientSession) ([]ClientTool, error) {
-//line stdlib/mcp/mcp.kuki:527
+//line stdlib/mcp/mcp.kuki:539
 	result, err_5 := session.inner.ListTools(ctx, nil)
-//line stdlib/mcp/mcp.kuki:527
+//line stdlib/mcp/mcp.kuki:539
 	if err_5 != nil {
-//line stdlib/mcp/mcp.kuki:527
+//line stdlib/mcp/mcp.kuki:539
 		return []ClientTool{}, fmt.Errorf("MCP ListTools failed: %v", err_5)
 	}
-//line stdlib/mcp/mcp.kuki:528
+//line stdlib/mcp/mcp.kuki:540
 	tools := make([]ClientTool, len(result.Tools))
-//line stdlib/mcp/mcp.kuki:529
+//line stdlib/mcp/mcp.kuki:541
 	for i, t := range result.Tools {
-//line stdlib/mcp/mcp.kuki:530
+//line stdlib/mcp/mcp.kuki:542
 		var schema JSONObject
-//line stdlib/mcp/mcp.kuki:531
+//line stdlib/mcp/mcp.kuki:543
 		switch m := t.InputSchema.(type) {
 		case JSONObject:
-//line stdlib/mcp/mcp.kuki:533
+//line stdlib/mcp/mcp.kuki:545
 			schema = m
 		}
-//line stdlib/mcp/mcp.kuki:535
+//line stdlib/mcp/mcp.kuki:547
 		tools[i] = ClientTool{Name: t.Name, Description: t.Description, InputSchema: schema}
 	}
-//line stdlib/mcp/mcp.kuki:536
+//line stdlib/mcp/mcp.kuki:548
 	return tools, nil
 }
 
-//line stdlib/mcp/mcp.kuki:540
+//line stdlib/mcp/mcp.kuki:552
 func CallTool(ctx context.Context, session *ClientSession, name string, args JSONObject) (CallToolResult, error) {
-//line stdlib/mcp/mcp.kuki:541
+//line stdlib/mcp/mcp.kuki:553
 	params := &mcp.CallToolParams{Name: name, Arguments: args}
-//line stdlib/mcp/mcp.kuki:542
+//line stdlib/mcp/mcp.kuki:554
 	result, err_6 := session.inner.CallTool(ctx, params)
-//line stdlib/mcp/mcp.kuki:542
+//line stdlib/mcp/mcp.kuki:554
 	if err_6 != nil {
-//line stdlib/mcp/mcp.kuki:542
+//line stdlib/mcp/mcp.kuki:554
 		return CallToolResult{}, fmt.Errorf("MCP CallTool \"%v\" failed: %v", name, err_6)
 	}
-//line stdlib/mcp/mcp.kuki:543
-	content := make([]Content, len(result.Content))
-//line stdlib/mcp/mcp.kuki:544
-	parts := make([]string, 0)
-//line stdlib/mcp/mcp.kuki:545
-	for i, c := range result.Content {
-//line stdlib/mcp/mcp.kuki:546
-		decoded := decodeContent(c)
-//line stdlib/mcp/mcp.kuki:547
-		content[i] = decoded
-//line stdlib/mcp/mcp.kuki:548
-		switch v := decoded.(type) {
-		case Text:
-//line stdlib/mcp/mcp.kuki:550
-			parts = append(parts, v.Body)
-		case Image:
-//line stdlib/mcp/mcp.kuki:552
-			parts = append(parts, fmt.Sprintf("[image: %v]", v.MIMEType))
-		case Audio:
-//line stdlib/mcp/mcp.kuki:554
-			parts = append(parts, fmt.Sprintf("[audio: %v]", v.MIMEType))
-		case Link:
+//line stdlib/mcp/mcp.kuki:555
+	items := make([]Content, len(result.Content))
 //line stdlib/mcp/mcp.kuki:556
-			parts = append(parts, fmt.Sprintf("[resource: %v]", v.URI))
-		case Embedded:
+	parts := make([]string, 0)
+//line stdlib/mcp/mcp.kuki:557
+	for i, c := range result.Content {
 //line stdlib/mcp/mcp.kuki:558
-			if v.Text != "" {
+		decoded := decodeContent(c)
 //line stdlib/mcp/mcp.kuki:559
+		items[i] = decoded
+//line stdlib/mcp/mcp.kuki:560
+		switch v := decoded.(type) {
+		case content.Text:
+//line stdlib/mcp/mcp.kuki:562
+			parts = append(parts, v.Body)
+		case content.Thinking:
+//line stdlib/mcp/mcp.kuki:564
+			parts = append(parts, v.Body)
+		case content.Image:
+//line stdlib/mcp/mcp.kuki:566
+			parts = append(parts, fmt.Sprintf("[image: %v]", v.MIMEType))
+		case content.Audio:
+//line stdlib/mcp/mcp.kuki:568
+			parts = append(parts, fmt.Sprintf("[audio: %v]", v.MIMEType))
+		case content.Link:
+//line stdlib/mcp/mcp.kuki:570
+			parts = append(parts, fmt.Sprintf("[resource: %v]", v.URI))
+		case content.Embedded:
+//line stdlib/mcp/mcp.kuki:572
+			if v.Text != "" {
+//line stdlib/mcp/mcp.kuki:573
 				parts = append(parts, v.Text)
 			} else {
-//line stdlib/mcp/mcp.kuki:561
+//line stdlib/mcp/mcp.kuki:575
 				parts = append(parts, fmt.Sprintf("[embedded: %v]", v.URI))
 			}
-		case ToolUse:
-//line stdlib/mcp/mcp.kuki:563
+		case content.ToolUse:
+//line stdlib/mcp/mcp.kuki:577
 			parts = append(parts, fmt.Sprintf("[tool_use: %v]", v.Name))
-		case ToolResult:
-//line stdlib/mcp/mcp.kuki:565
+		case content.ToolResult:
+//line stdlib/mcp/mcp.kuki:579
 			parts = append(parts, fmt.Sprintf("[tool_result: %v]", v.ToolUseID))
-		default:
-			panic("unreachable")
+		case content.Reasoning:
+//line stdlib/mcp/mcp.kuki:581
+			parts = append(parts, "[reasoning]")
 		}
 	}
-//line stdlib/mcp/mcp.kuki:567
+//line stdlib/mcp/mcp.kuki:583
 	text := strpkg.Join(parts, "\n")
-//line stdlib/mcp/mcp.kuki:568
-	return CallToolResult{Text: text, IsError: result.IsError, Content: content}, nil
+//line stdlib/mcp/mcp.kuki:584
+	return CallToolResult{Text: text, IsError: result.IsError, Content: items}, nil
 }
 
-//line stdlib/mcp/mcp.kuki:575
+//line stdlib/mcp/mcp.kuki:591
 type ResourceHandler = mcp.ResourceHandler
 
-//line stdlib/mcp/mcp.kuki:580
+//line stdlib/mcp/mcp.kuki:596
 type TextResourceFunc func(string) (string, error)
 
-//line stdlib/mcp/mcp.kuki:586
+//line stdlib/mcp/mcp.kuki:602
 func Resource(server *mcp.Server, uri string, name string, description string, mimeType string, handler ResourceHandler) {
-//line stdlib/mcp/mcp.kuki:587
+//line stdlib/mcp/mcp.kuki:603
 	server.AddResource(&mcp.Resource{URI: uri, Name: name, Description: description, MIMEType: mimeType}, handler)
 }
 
-//line stdlib/mcp/mcp.kuki:598
+//line stdlib/mcp/mcp.kuki:614
 func TextResource(server *mcp.Server, uri string, name string, description string, fn TextResourceFunc) {
-//line stdlib/mcp/mcp.kuki:608
+//line stdlib/mcp/mcp.kuki:624
 	Resource(server, uri, name, description, "text/plain", func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-//line stdlib/mcp/mcp.kuki:600
+//line stdlib/mcp/mcp.kuki:616
 		text, err := fn(req.Params.URI)
-//line stdlib/mcp/mcp.kuki:601
+//line stdlib/mcp/mcp.kuki:617
 		if err != nil {
-//line stdlib/mcp/mcp.kuki:602
+//line stdlib/mcp/mcp.kuki:618
 			return nil, err
 		}
-//line stdlib/mcp/mcp.kuki:603
+//line stdlib/mcp/mcp.kuki:619
 		return &mcp.ReadResourceResult{Contents: []*mcp.ResourceContents{&mcp.ResourceContents{URI: req.Params.URI, MIMEType: "text/plain", Text: text}}}, nil
 	})
 }
 
-//line stdlib/mcp/mcp.kuki:613
+//line stdlib/mcp/mcp.kuki:629
 func ResourceTemplate(server *mcp.Server, uriTemplate string, name string, description string, mimeType string, handler ResourceHandler) {
-//line stdlib/mcp/mcp.kuki:614
+//line stdlib/mcp/mcp.kuki:630
 	server.AddResourceTemplate(&mcp.ResourceTemplate{URITemplate: uriTemplate, Name: name, Description: description, MIMEType: mimeType}, handler)
 }
 
-//line stdlib/mcp/mcp.kuki:624
+//line stdlib/mcp/mcp.kuki:640
 func TextResourceTemplate(server *mcp.Server, uriTemplate string, name string, description string, fn TextResourceFunc) {
-//line stdlib/mcp/mcp.kuki:634
+//line stdlib/mcp/mcp.kuki:650
 	ResourceTemplate(server, uriTemplate, name, description, "text/plain", func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-//line stdlib/mcp/mcp.kuki:626
+//line stdlib/mcp/mcp.kuki:642
 		text, err := fn(req.Params.URI)
-//line stdlib/mcp/mcp.kuki:627
+//line stdlib/mcp/mcp.kuki:643
 		if err != nil {
-//line stdlib/mcp/mcp.kuki:628
+//line stdlib/mcp/mcp.kuki:644
 			return nil, err
 		}
-//line stdlib/mcp/mcp.kuki:629
+//line stdlib/mcp/mcp.kuki:645
 		return &mcp.ReadResourceResult{Contents: []*mcp.ResourceContents{&mcp.ResourceContents{URI: req.Params.URI, MIMEType: "text/plain", Text: text}}}, nil
 	})
 }
 
-//line stdlib/mcp/mcp.kuki:639
+//line stdlib/mcp/mcp.kuki:655
 type PromptArg struct {
 	Name        string
 	Description string
 	Required    bool
 }
 
-//line stdlib/mcp/mcp.kuki:646
+//line stdlib/mcp/mcp.kuki:662
 type PromptHandler = mcp.PromptHandler
 
-//line stdlib/mcp/mcp.kuki:650
+//line stdlib/mcp/mcp.kuki:666
 type UserPromptFunc func(PromptArgs) (string, error)
 
-//line stdlib/mcp/mcp.kuki:656
+//line stdlib/mcp/mcp.kuki:672
 func Prompt(server *mcp.Server, name string, description string, args []PromptArg, handler PromptHandler) {
-//line stdlib/mcp/mcp.kuki:657
+//line stdlib/mcp/mcp.kuki:673
 	promptArgs := make([]*mcp.PromptArgument, len(args))
-//line stdlib/mcp/mcp.kuki:658
+//line stdlib/mcp/mcp.kuki:674
 	for i, a := range args {
-//line stdlib/mcp/mcp.kuki:659
+//line stdlib/mcp/mcp.kuki:675
 		promptArgs[i] = &mcp.PromptArgument{Name: a.Name, Description: a.Description, Required: a.Required}
 	}
-//line stdlib/mcp/mcp.kuki:660
+//line stdlib/mcp/mcp.kuki:676
 	server.AddPrompt(&mcp.Prompt{Name: name, Description: description, Arguments: promptArgs}, handler)
 }
 
-//line stdlib/mcp/mcp.kuki:672
+//line stdlib/mcp/mcp.kuki:688
 func UserPrompt(server *mcp.Server, name string, description string, args []PromptArg, fn UserPromptFunc) {
-//line stdlib/mcp/mcp.kuki:683
+//line stdlib/mcp/mcp.kuki:699
 	Prompt(server, name, description, args, func(ctx context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
-//line stdlib/mcp/mcp.kuki:674
+//line stdlib/mcp/mcp.kuki:690
 		text, err := fn(req.Params.Arguments)
-//line stdlib/mcp/mcp.kuki:675
+//line stdlib/mcp/mcp.kuki:691
 		if err != nil {
-//line stdlib/mcp/mcp.kuki:676
+//line stdlib/mcp/mcp.kuki:692
 			return nil, err
 		}
-//line stdlib/mcp/mcp.kuki:677
-		return &mcp.GetPromptResult{Description: description, Messages: []*mcp.PromptMessage{&mcp.PromptMessage{Role: "user", Content: encodeContent(Text{Body: text})}}}, nil
+//line stdlib/mcp/mcp.kuki:693
+		return &mcp.GetPromptResult{Description: description, Messages: []*mcp.PromptMessage{&mcp.PromptMessage{Role: "user", Content: encodeContent(content.Text{Body: text})}}}, nil
 	})
 }
 
-//line stdlib/mcp/mcp.kuki:694
+//line stdlib/mcp/mcp.kuki:710
 type ToolOpts struct {
 	ReadOnly      bool
 	Destructive   bool
@@ -880,185 +921,185 @@ type ToolOpts struct {
 	OutputSchema  any
 }
 
-//line stdlib/mcp/mcp.kuki:708
+//line stdlib/mcp/mcp.kuki:724
 func ToolWithOpts[T any](server *mcp.Server, name string, description string, schema any, opts ToolOpts, handler func(T) (any, error)) {
-//line stdlib/mcp/mcp.kuki:709
-//line stdlib/mcp/mcp.kuki:709
+//line stdlib/mcp/mcp.kuki:725
+//line stdlib/mcp/mcp.kuki:725
 	err_7 := validateToolSchema(name, schema, handler)
-//line stdlib/mcp/mcp.kuki:709
+//line stdlib/mcp/mcp.kuki:725
 	if err_7 != nil {
-//line stdlib/mcp/mcp.kuki:709
+//line stdlib/mcp/mcp.kuki:725
 		panic(fmt.Sprintf("%v", err_7))
 	}
-//line stdlib/mcp/mcp.kuki:710
+//line stdlib/mcp/mcp.kuki:726
 	tool := &mcp.Tool{Name: name, Description: description, InputSchema: schema, OutputSchema: opts.OutputSchema}
-//line stdlib/mcp/mcp.kuki:717
-	if (((opts.ReadOnly || opts.Destructive) || opts.Idempotent) || opts.OpenWorldHint) || (opts.Title != "") {
-//line stdlib/mcp/mcp.kuki:718
+//line stdlib/mcp/mcp.kuki:733
+	if opts.ReadOnly || opts.Destructive || opts.Idempotent || opts.OpenWorldHint || opts.Title != "" {
+//line stdlib/mcp/mcp.kuki:734
 		a := &mcp.ToolAnnotations{}
-//line stdlib/mcp/mcp.kuki:719
+//line stdlib/mcp/mcp.kuki:735
 		if opts.ReadOnly {
-//line stdlib/mcp/mcp.kuki:720
+//line stdlib/mcp/mcp.kuki:736
 			a.ReadOnlyHint = true
 		}
-//line stdlib/mcp/mcp.kuki:721
+//line stdlib/mcp/mcp.kuki:737
 		if opts.Destructive {
-//line stdlib/mcp/mcp.kuki:722
+//line stdlib/mcp/mcp.kuki:738
 			v := true
-//line stdlib/mcp/mcp.kuki:723
+//line stdlib/mcp/mcp.kuki:739
 			a.DestructiveHint = &v
 		}
-//line stdlib/mcp/mcp.kuki:724
+//line stdlib/mcp/mcp.kuki:740
 		if opts.Idempotent {
-//line stdlib/mcp/mcp.kuki:725
+//line stdlib/mcp/mcp.kuki:741
 			a.IdempotentHint = true
 		}
-//line stdlib/mcp/mcp.kuki:726
+//line stdlib/mcp/mcp.kuki:742
 		if opts.OpenWorldHint {
-//line stdlib/mcp/mcp.kuki:727
+//line stdlib/mcp/mcp.kuki:743
 			v := true
-//line stdlib/mcp/mcp.kuki:728
+//line stdlib/mcp/mcp.kuki:744
 			a.OpenWorldHint = &v
 		}
-//line stdlib/mcp/mcp.kuki:729
+//line stdlib/mcp/mcp.kuki:745
 		if opts.Title != "" {
-//line stdlib/mcp/mcp.kuki:730
+//line stdlib/mcp/mcp.kuki:746
 			a.Title = opts.Title
 		}
-//line stdlib/mcp/mcp.kuki:731
+//line stdlib/mcp/mcp.kuki:747
 		tool.Annotations = a
 	}
-//line stdlib/mcp/mcp.kuki:732
+//line stdlib/mcp/mcp.kuki:748
 	server.AddTool(tool, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-//line stdlib/mcp/mcp.kuki:733
+//line stdlib/mcp/mcp.kuki:749
 		var args T
-//line stdlib/mcp/mcp.kuki:734
+//line stdlib/mcp/mcp.kuki:750
 		if len(req.Params.Arguments) > 0 {
-//line stdlib/mcp/mcp.kuki:735
+//line stdlib/mcp/mcp.kuki:751
 			unmarshalErr := json.ParseInto(req.Params.Arguments, &args)
-//line stdlib/mcp/mcp.kuki:736
+//line stdlib/mcp/mcp.kuki:752
 			if unmarshalErr != nil {
-//line stdlib/mcp/mcp.kuki:737
+//line stdlib/mcp/mcp.kuki:753
 				return nil, unmarshalErr
 			}
 		}
-//line stdlib/mcp/mcp.kuki:738
+//line stdlib/mcp/mcp.kuki:754
 		res, handlerErr := handler(args)
-//line stdlib/mcp/mcp.kuki:739
+//line stdlib/mcp/mcp.kuki:755
 		if handlerErr != nil {
-//line stdlib/mcp/mcp.kuki:740
+//line stdlib/mcp/mcp.kuki:756
 			return errorCallResult(handlerErr.Error()), nil
 		}
-//line stdlib/mcp/mcp.kuki:741
+//line stdlib/mcp/mcp.kuki:757
 		return buildCallResult(res), nil
 	})
 }
 
-//line stdlib/mcp/mcp.kuki:749
+//line stdlib/mcp/mcp.kuki:765
 type ToolContext struct {
 	inner         *mcp.ServerSession
 	progressToken any
 }
 
-//line stdlib/mcp/mcp.kuki:756
-func (tc *ToolContext) Log(ctx context.Context, level string, data any) error {
-//line stdlib/mcp/mcp.kuki:757
-	return tc.inner.Log(ctx, &mcp.LoggingMessageParams{Level: mcp.LoggingLevel(level), Data: data})
+//line stdlib/mcp/mcp.kuki:771
+func (tc *ToolContext) Log(ctx context.Context, level LogLevel, data any) error {
+//line stdlib/mcp/mcp.kuki:772
+	return tc.inner.Log(ctx, &mcp.LoggingMessageParams{Level: mcp.LoggingLevel(string(level)), Data: data})
 }
 
-//line stdlib/mcp/mcp.kuki:765
+//line stdlib/mcp/mcp.kuki:780
 func (tc *ToolContext) Progress(ctx context.Context, progress float64, total float64, msg string) error {
-//line stdlib/mcp/mcp.kuki:766
+//line stdlib/mcp/mcp.kuki:781
 	if tc.progressToken == nil {
-//line stdlib/mcp/mcp.kuki:767
+//line stdlib/mcp/mcp.kuki:782
 		return nil
 	}
-//line stdlib/mcp/mcp.kuki:768
+//line stdlib/mcp/mcp.kuki:783
 	return tc.inner.NotifyProgress(ctx, &mcp.ProgressNotificationParams{ProgressToken: tc.progressToken, Progress: progress, Total: total, Message: msg})
 }
 
-//line stdlib/mcp/mcp.kuki:779
-func (tc *ToolContext) Elicit(ctx context.Context, message string, schema any) (string, JSONObject, error) {
-//line stdlib/mcp/mcp.kuki:780
+//line stdlib/mcp/mcp.kuki:794
+func (tc *ToolContext) Elicit(ctx context.Context, message string, schema any) (ElicitAction, JSONObject, error) {
+//line stdlib/mcp/mcp.kuki:795
 	result, err := tc.inner.Elicit(ctx, &mcp.ElicitParams{Message: message, RequestedSchema: schema})
-//line stdlib/mcp/mcp.kuki:781
+//line stdlib/mcp/mcp.kuki:796
 	if err != nil {
-//line stdlib/mcp/mcp.kuki:782
-		return "", nil, err
+//line stdlib/mcp/mcp.kuki:797
+		return ElicitAction(""), nil, err
 	}
-//line stdlib/mcp/mcp.kuki:783
-	return result.Action, result.Content, nil
+//line stdlib/mcp/mcp.kuki:798
+	return ElicitAction(result.Action), result.Content, nil
 }
 
-//line stdlib/mcp/mcp.kuki:786
+//line stdlib/mcp/mcp.kuki:801
 func (tc *ToolContext) ListRoots(ctx context.Context) ([]*mcp.Root, error) {
-//line stdlib/mcp/mcp.kuki:787
+//line stdlib/mcp/mcp.kuki:802
 	result, err := tc.inner.ListRoots(ctx, nil)
-//line stdlib/mcp/mcp.kuki:788
+//line stdlib/mcp/mcp.kuki:803
 	if err != nil {
-//line stdlib/mcp/mcp.kuki:789
+//line stdlib/mcp/mcp.kuki:804
 		return []*mcp.Root{}, err
 	}
-//line stdlib/mcp/mcp.kuki:790
+//line stdlib/mcp/mcp.kuki:805
 	return result.Roots, nil
 }
 
-//line stdlib/mcp/mcp.kuki:795
+//line stdlib/mcp/mcp.kuki:810
 func (tc *ToolContext) CreateMessage(ctx context.Context, params *mcp.CreateMessageParams) (*mcp.CreateMessageResult, error) {
-//line stdlib/mcp/mcp.kuki:796
+//line stdlib/mcp/mcp.kuki:811
 	return tc.inner.CreateMessage(ctx, params)
 }
 
-//line stdlib/mcp/mcp.kuki:803
+//line stdlib/mcp/mcp.kuki:818
 type ToolRichHandler func(context.Context, *ToolContext, JSONObject) (any, error)
 
-//line stdlib/mcp/mcp.kuki:812
+//line stdlib/mcp/mcp.kuki:827
 func ToolRich[T any](server *mcp.Server, name string, description string, schema any, handler func(context.Context, *ToolContext, T) (any, error)) {
-//line stdlib/mcp/mcp.kuki:813
-//line stdlib/mcp/mcp.kuki:813
+//line stdlib/mcp/mcp.kuki:828
+//line stdlib/mcp/mcp.kuki:828
 	err_8 := validateToolSchema(name, schema, handler)
-//line stdlib/mcp/mcp.kuki:813
+//line stdlib/mcp/mcp.kuki:828
 	if err_8 != nil {
-//line stdlib/mcp/mcp.kuki:813
+//line stdlib/mcp/mcp.kuki:828
 		panic(fmt.Sprintf("%v", err_8))
 	}
-//line stdlib/mcp/mcp.kuki:814
+//line stdlib/mcp/mcp.kuki:829
 	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-//line stdlib/mcp/mcp.kuki:815
+//line stdlib/mcp/mcp.kuki:830
 		var args T
-//line stdlib/mcp/mcp.kuki:816
+//line stdlib/mcp/mcp.kuki:831
 		if len(req.Params.Arguments) > 0 {
-//line stdlib/mcp/mcp.kuki:817
+//line stdlib/mcp/mcp.kuki:832
 			unmarshalErr := json.ParseInto(req.Params.Arguments, &args)
-//line stdlib/mcp/mcp.kuki:818
+//line stdlib/mcp/mcp.kuki:833
 			if unmarshalErr != nil {
-//line stdlib/mcp/mcp.kuki:819
+//line stdlib/mcp/mcp.kuki:834
 				return nil, unmarshalErr
 			}
 		}
-//line stdlib/mcp/mcp.kuki:820
+//line stdlib/mcp/mcp.kuki:835
 		tc := &ToolContext{inner: req.Session, progressToken: req.Params.GetProgressToken()}
-//line stdlib/mcp/mcp.kuki:821
+//line stdlib/mcp/mcp.kuki:836
 		res, handlerErr := handler(ctx, tc, args)
-//line stdlib/mcp/mcp.kuki:822
+//line stdlib/mcp/mcp.kuki:837
 		if handlerErr != nil {
-//line stdlib/mcp/mcp.kuki:823
+//line stdlib/mcp/mcp.kuki:838
 			return errorCallResult(handlerErr.Error()), nil
 		}
-//line stdlib/mcp/mcp.kuki:824
+//line stdlib/mcp/mcp.kuki:839
 		return buildCallResult(res), nil
 	})
 }
 
-//line stdlib/mcp/mcp.kuki:834
+//line stdlib/mcp/mcp.kuki:849
 func ServeHTTP(server *mcp.Server, addr string) error {
-//line stdlib/mcp/mcp.kuki:835
+//line stdlib/mcp/mcp.kuki:850
 	handler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return server }, nil)
-//line stdlib/mcp/mcp.kuki:836
+//line stdlib/mcp/mcp.kuki:851
 	return httppkg.Serve(addr, handler)
 }
 
-//line stdlib/mcp/mcp.kuki:841
+//line stdlib/mcp/mcp.kuki:856
 type ClientResource struct {
 	URI         string
 	Name        string
@@ -1066,7 +1107,7 @@ type ClientResource struct {
 	MIMEType    string
 }
 
-//line stdlib/mcp/mcp.kuki:848
+//line stdlib/mcp/mcp.kuki:863
 type ClientResourceTemplate struct {
 	URITemplate string
 	Name        string
@@ -1074,291 +1115,291 @@ type ClientResourceTemplate struct {
 	MIMEType    string
 }
 
-//line stdlib/mcp/mcp.kuki:855
+//line stdlib/mcp/mcp.kuki:870
 type ClientPrompt struct {
 	Name        string
 	Description string
 	Arguments   []PromptArg
 }
 
-//line stdlib/mcp/mcp.kuki:861
+//line stdlib/mcp/mcp.kuki:876
 func ListResources(ctx context.Context, session *ClientSession) ([]ClientResource, error) {
-//line stdlib/mcp/mcp.kuki:862
+//line stdlib/mcp/mcp.kuki:877
 	result, err_9 := session.inner.ListResources(ctx, nil)
-//line stdlib/mcp/mcp.kuki:862
+//line stdlib/mcp/mcp.kuki:877
 	if err_9 != nil {
-//line stdlib/mcp/mcp.kuki:862
+//line stdlib/mcp/mcp.kuki:877
 		return []ClientResource{}, fmt.Errorf("MCP ListResources failed: %v", err_9)
 	}
-//line stdlib/mcp/mcp.kuki:863
+//line stdlib/mcp/mcp.kuki:878
 	out := make([]ClientResource, len(result.Resources))
-//line stdlib/mcp/mcp.kuki:864
+//line stdlib/mcp/mcp.kuki:879
 	for i, r := range result.Resources {
-//line stdlib/mcp/mcp.kuki:865
+//line stdlib/mcp/mcp.kuki:880
 		out[i] = ClientResource{URI: r.URI, Name: r.Name, Description: r.Description, MIMEType: r.MIMEType}
 	}
-//line stdlib/mcp/mcp.kuki:866
-	return out, nil
-}
-
-//line stdlib/mcp/mcp.kuki:869
-func ListResourceTemplates(ctx context.Context, session *ClientSession) ([]ClientResourceTemplate, error) {
-//line stdlib/mcp/mcp.kuki:870
-	result, err_10 := session.inner.ListResourceTemplates(ctx, nil)
-//line stdlib/mcp/mcp.kuki:870
-	if err_10 != nil {
-//line stdlib/mcp/mcp.kuki:870
-		return []ClientResourceTemplate{}, fmt.Errorf("MCP ListResourceTemplates failed: %v", err_10)
-	}
-//line stdlib/mcp/mcp.kuki:871
-	out := make([]ClientResourceTemplate, len(result.ResourceTemplates))
-//line stdlib/mcp/mcp.kuki:872
-	for i, r := range result.ResourceTemplates {
-//line stdlib/mcp/mcp.kuki:873
-		out[i] = ClientResourceTemplate{URITemplate: r.URITemplate, Name: r.Name, Description: r.Description, MIMEType: r.MIMEType}
-	}
-//line stdlib/mcp/mcp.kuki:879
+//line stdlib/mcp/mcp.kuki:881
 	return out, nil
 }
 
 //line stdlib/mcp/mcp.kuki:884
-func ReadResource(ctx context.Context, session *ClientSession, uri string) ([]*mcp.ResourceContents, error) {
+func ListResourceTemplates(ctx context.Context, session *ClientSession) ([]ClientResourceTemplate, error) {
 //line stdlib/mcp/mcp.kuki:885
-	result, err_11 := session.inner.ReadResource(ctx, &mcp.ReadResourceParams{URI: uri})
+	result, err_10 := session.inner.ListResourceTemplates(ctx, nil)
 //line stdlib/mcp/mcp.kuki:885
-	if err_11 != nil {
+	if err_10 != nil {
 //line stdlib/mcp/mcp.kuki:885
-		return []*mcp.ResourceContents{}, fmt.Errorf("MCP ReadResource \"%v\" failed: %v", uri, err_11)
+		return []ClientResourceTemplate{}, fmt.Errorf("MCP ListResourceTemplates failed: %v", err_10)
 	}
 //line stdlib/mcp/mcp.kuki:886
-	return result.Contents, nil
-}
-
-//line stdlib/mcp/mcp.kuki:889
-func ListPrompts(ctx context.Context, session *ClientSession) ([]ClientPrompt, error) {
-//line stdlib/mcp/mcp.kuki:890
-	result, err_12 := session.inner.ListPrompts(ctx, nil)
-//line stdlib/mcp/mcp.kuki:890
-	if err_12 != nil {
-//line stdlib/mcp/mcp.kuki:890
-		return []ClientPrompt{}, fmt.Errorf("MCP ListPrompts failed: %v", err_12)
+	out := make([]ClientResourceTemplate, len(result.ResourceTemplates))
+//line stdlib/mcp/mcp.kuki:887
+	for i, r := range result.ResourceTemplates {
+//line stdlib/mcp/mcp.kuki:888
+		out[i] = ClientResourceTemplate{URITemplate: r.URITemplate, Name: r.Name, Description: r.Description, MIMEType: r.MIMEType}
 	}
-//line stdlib/mcp/mcp.kuki:891
-	out := make([]ClientPrompt, len(result.Prompts))
-//line stdlib/mcp/mcp.kuki:892
-	for i, p := range result.Prompts {
-//line stdlib/mcp/mcp.kuki:893
-		args := make([]PromptArg, len(p.Arguments))
 //line stdlib/mcp/mcp.kuki:894
-		for j, a := range p.Arguments {
-//line stdlib/mcp/mcp.kuki:895
-			args[j] = PromptArg{Name: a.Name, Description: a.Description, Required: a.Required}
-		}
-//line stdlib/mcp/mcp.kuki:896
-		out[i] = ClientPrompt{Name: p.Name, Description: p.Description, Arguments: args}
-	}
-//line stdlib/mcp/mcp.kuki:897
 	return out, nil
 }
 
+//line stdlib/mcp/mcp.kuki:899
+func ReadResource(ctx context.Context, session *ClientSession, uri string) ([]*mcp.ResourceContents, error) {
 //line stdlib/mcp/mcp.kuki:900
-func GetPrompt(ctx context.Context, session *ClientSession, name string, args PromptArgs) (*mcp.GetPromptResult, error) {
+	result, err_11 := session.inner.ReadResource(ctx, &mcp.ReadResourceParams{URI: uri})
+//line stdlib/mcp/mcp.kuki:900
+	if err_11 != nil {
+//line stdlib/mcp/mcp.kuki:900
+		return []*mcp.ResourceContents{}, fmt.Errorf("MCP ReadResource \"%v\" failed: %v", uri, err_11)
+	}
 //line stdlib/mcp/mcp.kuki:901
+	return result.Contents, nil
+}
+
+//line stdlib/mcp/mcp.kuki:904
+func ListPrompts(ctx context.Context, session *ClientSession) ([]ClientPrompt, error) {
+//line stdlib/mcp/mcp.kuki:905
+	result, err_12 := session.inner.ListPrompts(ctx, nil)
+//line stdlib/mcp/mcp.kuki:905
+	if err_12 != nil {
+//line stdlib/mcp/mcp.kuki:905
+		return []ClientPrompt{}, fmt.Errorf("MCP ListPrompts failed: %v", err_12)
+	}
+//line stdlib/mcp/mcp.kuki:906
+	out := make([]ClientPrompt, len(result.Prompts))
+//line stdlib/mcp/mcp.kuki:907
+	for i, p := range result.Prompts {
+//line stdlib/mcp/mcp.kuki:908
+		args := make([]PromptArg, len(p.Arguments))
+//line stdlib/mcp/mcp.kuki:909
+		for j, a := range p.Arguments {
+//line stdlib/mcp/mcp.kuki:910
+			args[j] = PromptArg{Name: a.Name, Description: a.Description, Required: a.Required}
+		}
+//line stdlib/mcp/mcp.kuki:911
+		out[i] = ClientPrompt{Name: p.Name, Description: p.Description, Arguments: args}
+	}
+//line stdlib/mcp/mcp.kuki:912
+	return out, nil
+}
+
+//line stdlib/mcp/mcp.kuki:915
+func GetPrompt(ctx context.Context, session *ClientSession, name string, args PromptArgs) (*mcp.GetPromptResult, error) {
+//line stdlib/mcp/mcp.kuki:916
 	return session.inner.GetPrompt(ctx, &mcp.GetPromptParams{Name: name, Arguments: args})
 }
 
-//line stdlib/mcp/mcp.kuki:909
+//line stdlib/mcp/mcp.kuki:924
 type CompletionHandler func(context.Context, *mcp.CompleteRequest) (*mcp.CompleteResult, error)
 
-//line stdlib/mcp/mcp.kuki:918
+//line stdlib/mcp/mcp.kuki:933
 func NewWithCompletion(name string, version string, handler CompletionHandler) *mcp.Server {
-//line stdlib/mcp/mcp.kuki:919
+//line stdlib/mcp/mcp.kuki:934
 	opts := &mcp.ServerOptions{CompletionHandler: handler}
-//line stdlib/mcp/mcp.kuki:920
+//line stdlib/mcp/mcp.kuki:935
 	return mcp.NewServer(&mcp.Implementation{Name: name, Version: version}, opts)
 }
 
-//line stdlib/mcp/mcp.kuki:926
+//line stdlib/mcp/mcp.kuki:941
 func Completions(values []string) *mcp.CompleteResult {
-//line stdlib/mcp/mcp.kuki:927
+//line stdlib/mcp/mcp.kuki:942
 	return &mcp.CompleteResult{Completion: mcp.CompletionResultDetails{Values: values}}
 }
 
-//line stdlib/mcp/mcp.kuki:931
+//line stdlib/mcp/mcp.kuki:946
 func CompletionsPage(values []string, hasMore bool, total int) *mcp.CompleteResult {
-//line stdlib/mcp/mcp.kuki:932
+//line stdlib/mcp/mcp.kuki:947
 	return &mcp.CompleteResult{Completion: mcp.CompletionResultDetails{Values: values, HasMore: hasMore, Total: total}}
 }
 
-//line stdlib/mcp/mcp.kuki:939
+//line stdlib/mcp/mcp.kuki:954
 type PromptCompleter func(string, string, PromptArgs) []string
 
-//line stdlib/mcp/mcp.kuki:943
+//line stdlib/mcp/mcp.kuki:958
 type ResourceCompleter func(string, string, PromptArgs) []string
 
-//line stdlib/mcp/mcp.kuki:948
+//line stdlib/mcp/mcp.kuki:963
 type CompletionRouter struct {
 	prompts   map[string]PromptCompleter
 	resources map[string]ResourceCompleter
 }
 
-//line stdlib/mcp/mcp.kuki:953
+//line stdlib/mcp/mcp.kuki:968
 func NewRouter() *CompletionRouter {
-//line stdlib/mcp/mcp.kuki:954
+//line stdlib/mcp/mcp.kuki:969
 	return &CompletionRouter{prompts: make(map[string]PromptCompleter), resources: make(map[string]ResourceCompleter)}
 }
 
-//line stdlib/mcp/mcp.kuki:960
+//line stdlib/mcp/mcp.kuki:975
 func (r *CompletionRouter) AddPrompt(promptName string, completer PromptCompleter) {
-//line stdlib/mcp/mcp.kuki:961
+//line stdlib/mcp/mcp.kuki:976
 	r.prompts[promptName] = completer
 }
 
-//line stdlib/mcp/mcp.kuki:966
+//line stdlib/mcp/mcp.kuki:981
 func (r *CompletionRouter) AddResource(resourceURI string, completer ResourceCompleter) {
-//line stdlib/mcp/mcp.kuki:967
+//line stdlib/mcp/mcp.kuki:982
 	r.resources[resourceURI] = completer
 }
 
-//line stdlib/mcp/mcp.kuki:973
+//line stdlib/mcp/mcp.kuki:988
 func (r *CompletionRouter) Handler() CompletionHandler {
-//line stdlib/mcp/mcp.kuki:974
+//line stdlib/mcp/mcp.kuki:989
 	return func(ctx context.Context, req *mcp.CompleteRequest) (*mcp.CompleteResult, error) {
-//line stdlib/mcp/mcp.kuki:975
+//line stdlib/mcp/mcp.kuki:990
 		if req.Params.Ref == nil {
-//line stdlib/mcp/mcp.kuki:976
+//line stdlib/mcp/mcp.kuki:991
 			return Completions([]string{}), nil
 		}
-//line stdlib/mcp/mcp.kuki:977
+//line stdlib/mcp/mcp.kuki:992
 		argName := req.Params.Argument.Name
-//line stdlib/mcp/mcp.kuki:978
+//line stdlib/mcp/mcp.kuki:993
 		partial := req.Params.Argument.Value
-//line stdlib/mcp/mcp.kuki:979
+//line stdlib/mcp/mcp.kuki:994
 		prevArgs := *new(PromptArgs)
-//line stdlib/mcp/mcp.kuki:980
+//line stdlib/mcp/mcp.kuki:995
 		if req.Params.Context != nil {
-//line stdlib/mcp/mcp.kuki:981
+//line stdlib/mcp/mcp.kuki:996
 			prevArgs = req.Params.Context.Arguments
 		}
-//line stdlib/mcp/mcp.kuki:983
+//line stdlib/mcp/mcp.kuki:998
 		switch req.Params.Ref.Type {
 		case "ref/prompt":
-//line stdlib/mcp/mcp.kuki:985
+//line stdlib/mcp/mcp.kuki:1000
 			pc, ok1 := r.prompts[req.Params.Ref.Name]
-//line stdlib/mcp/mcp.kuki:986
+//line stdlib/mcp/mcp.kuki:1001
 			if ok1 {
-//line stdlib/mcp/mcp.kuki:987
+//line stdlib/mcp/mcp.kuki:1002
 				return Completions(pc(argName, partial, prevArgs)), nil
 			}
 		case "ref/resource":
-//line stdlib/mcp/mcp.kuki:989
+//line stdlib/mcp/mcp.kuki:1004
 			rc, ok2 := r.resources[req.Params.Ref.URI]
-//line stdlib/mcp/mcp.kuki:990
+//line stdlib/mcp/mcp.kuki:1005
 			if ok2 {
-//line stdlib/mcp/mcp.kuki:991
+//line stdlib/mcp/mcp.kuki:1006
 				return Completions(rc(argName, partial, prevArgs)), nil
 			}
 		}
-//line stdlib/mcp/mcp.kuki:993
+//line stdlib/mcp/mcp.kuki:1008
 		return Completions([]string{}), nil
 	}
 }
 
-//line stdlib/mcp/mcp.kuki:997
+//line stdlib/mcp/mcp.kuki:1012
 type Server = mcp.Server
 
-//line stdlib/mcp/mcp.kuki:1000
+//line stdlib/mcp/mcp.kuki:1015
 type AudioContent = mcp.AudioContent
 
-//line stdlib/mcp/mcp.kuki:1003
+//line stdlib/mcp/mcp.kuki:1018
 type ResourceLink = mcp.ResourceLink
 
-//line stdlib/mcp/mcp.kuki:1006
+//line stdlib/mcp/mcp.kuki:1021
 type EmbeddedResource = mcp.EmbeddedResource
 
-//line stdlib/mcp/mcp.kuki:1010
+//line stdlib/mcp/mcp.kuki:1025
 type ResourceContents = mcp.ResourceContents
 
-//line stdlib/mcp/mcp.kuki:1013
+//line stdlib/mcp/mcp.kuki:1028
 type TextContent = mcp.TextContent
 
-//line stdlib/mcp/mcp.kuki:1016
+//line stdlib/mcp/mcp.kuki:1031
 type ImageContent = mcp.ImageContent
 
-//line stdlib/mcp/mcp.kuki:1019
+//line stdlib/mcp/mcp.kuki:1034
 type CallToolParams = mcp.CallToolParams
 
-//line stdlib/mcp/mcp.kuki:1022
+//line stdlib/mcp/mcp.kuki:1037
 type SamplingMessage = mcp.SamplingMessage
 
-//line stdlib/mcp/mcp.kuki:1026
+//line stdlib/mcp/mcp.kuki:1041
 type SamplingMessageV2 = mcp.SamplingMessageV2
 
-//line stdlib/mcp/mcp.kuki:1029
+//line stdlib/mcp/mcp.kuki:1044
 type CreateMessageParams = mcp.CreateMessageParams
 
-//line stdlib/mcp/mcp.kuki:1033
+//line stdlib/mcp/mcp.kuki:1048
 type CreateMessageWithToolsParams = mcp.CreateMessageWithToolsParams
 
-//line stdlib/mcp/mcp.kuki:1036
+//line stdlib/mcp/mcp.kuki:1051
 type CreateMessageResult = mcp.CreateMessageResult
 
-//line stdlib/mcp/mcp.kuki:1040
+//line stdlib/mcp/mcp.kuki:1055
 type CreateMessageWithToolsResult = mcp.CreateMessageWithToolsResult
 
-//line stdlib/mcp/mcp.kuki:1044
+//line stdlib/mcp/mcp.kuki:1059
 type ToolUseContent = mcp.ToolUseContent
 
-//line stdlib/mcp/mcp.kuki:1048
+//line stdlib/mcp/mcp.kuki:1063
 type ToolResultContent = mcp.ToolResultContent
 
-//line stdlib/mcp/mcp.kuki:1051
+//line stdlib/mcp/mcp.kuki:1066
 type ToolChoice = mcp.ToolChoice
 
-//line stdlib/mcp/mcp.kuki:1054
+//line stdlib/mcp/mcp.kuki:1069
 type SamplingCapabilities = mcp.SamplingCapabilities
 
-//line stdlib/mcp/mcp.kuki:1057
+//line stdlib/mcp/mcp.kuki:1072
 type SamplingToolsCapabilities = mcp.SamplingToolsCapabilities
 
-//line stdlib/mcp/mcp.kuki:1061
+//line stdlib/mcp/mcp.kuki:1076
 type ReadResourceRequest = mcp.ReadResourceRequest
 
-//line stdlib/mcp/mcp.kuki:1065
+//line stdlib/mcp/mcp.kuki:1080
 type ReadResourceResult = mcp.ReadResourceResult
 
-//line stdlib/mcp/mcp.kuki:1069
+//line stdlib/mcp/mcp.kuki:1084
 type GetPromptRequest = mcp.GetPromptRequest
 
-//line stdlib/mcp/mcp.kuki:1073
+//line stdlib/mcp/mcp.kuki:1088
 type GetPromptResult = mcp.GetPromptResult
 
-//line stdlib/mcp/mcp.kuki:1076
+//line stdlib/mcp/mcp.kuki:1091
 type PromptMessage = mcp.PromptMessage
 
-//line stdlib/mcp/mcp.kuki:1080
+//line stdlib/mcp/mcp.kuki:1095
 type Root = mcp.Root
 
-//line stdlib/mcp/mcp.kuki:1084
+//line stdlib/mcp/mcp.kuki:1099
 type ProgressNotificationParams = mcp.ProgressNotificationParams
 
-//line stdlib/mcp/mcp.kuki:1088
+//line stdlib/mcp/mcp.kuki:1103
 type LoggingMessageParams = mcp.LoggingMessageParams
 
-//line stdlib/mcp/mcp.kuki:1092
+//line stdlib/mcp/mcp.kuki:1107
 type ElicitParams = mcp.ElicitParams
 
-//line stdlib/mcp/mcp.kuki:1096
+//line stdlib/mcp/mcp.kuki:1111
 type ElicitResult = mcp.ElicitResult
 
-//line stdlib/mcp/mcp.kuki:1102
+//line stdlib/mcp/mcp.kuki:1117
 type CompleteRequest = mcp.CompleteRequest
 
-//line stdlib/mcp/mcp.kuki:1106
+//line stdlib/mcp/mcp.kuki:1121
 type CompleteResult = mcp.CompleteResult
 
-//line stdlib/mcp/mcp.kuki:1109
+//line stdlib/mcp/mcp.kuki:1124
 type CompleteParams = mcp.CompleteParams
 
-//line stdlib/mcp/mcp.kuki:1113
+//line stdlib/mcp/mcp.kuki:1128
 type CompletionResultDetails = mcp.CompletionResultDetails

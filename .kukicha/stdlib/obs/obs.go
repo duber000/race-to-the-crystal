@@ -7,13 +7,14 @@ import (
 	"github.com/kukichalang/kukicha/stdlib/json"
 	"github.com/kukichalang/kukicha/stdlib/random"
 	"maps"
+	"os"
 	"time"
 )
 
-//line stdlib/obs/obs.kuki:14
+//line stdlib/obs/obs.kuki:15
 type Fields = map[string]any
 
-//line stdlib/obs/obs.kuki:18
+//line stdlib/obs/obs.kuki:19
 type Logger struct {
 	Service       string
 	Environment   string
@@ -21,130 +22,137 @@ type Logger struct {
 	CorrelationID string
 }
 
-//line stdlib/obs/obs.kuki:25
+//line stdlib/obs/obs.kuki:26
 type Timer struct {
 	Logger    Logger
 	Operation string
 	StartedAt time.Time
 }
 
-//line stdlib/obs/obs.kuki:31
-func New(service string, environment string) Logger {
 //line stdlib/obs/obs.kuki:32
+func New(service string, environment string) Logger {
+//line stdlib/obs/obs.kuki:33
 	return Logger{Service: service, Environment: environment, Component: "", CorrelationID: ""}
 }
 
-//line stdlib/obs/obs.kuki:35
-func NewCorrelationID() string {
 //line stdlib/obs/obs.kuki:36
+func NewCorrelationID() string {
+//line stdlib/obs/obs.kuki:37
 	return random.String(16)
 }
 
-//line stdlib/obs/obs.kuki:39
-func Debug(logger Logger, message string, fields Fields) {
-//line stdlib/obs/obs.kuki:40
-	Log(logger, "debug", message, fields)
-}
-
+//line stdlib/obs/obs.kuki:41
+func kvToFields(kv []any) Fields {
+//line stdlib/obs/obs.kuki:42
+	f := make(Fields)
 //line stdlib/obs/obs.kuki:43
-func Info(logger Logger, message string, fields Fields) {
+	i := 0
 //line stdlib/obs/obs.kuki:44
-	Log(logger, "info", message, fields)
-}
-
+	for i < len(kv)-1 {
+//line stdlib/obs/obs.kuki:45
+		f[fmt.Sprintf("%v", kv[i])] = kv[i+1]
+//line stdlib/obs/obs.kuki:46
+		i = i + 2
+	}
 //line stdlib/obs/obs.kuki:47
-func Warn(logger Logger, message string, fields Fields) {
-//line stdlib/obs/obs.kuki:48
-	Log(logger, "warn", message, fields)
+	return f
 }
 
 //line stdlib/obs/obs.kuki:51
-func Error(logger Logger, message string, fields Fields) {
+func Debug(logger Logger, message string, kv ...any) {
 //line stdlib/obs/obs.kuki:52
-	Log(logger, "error", message, fields)
+	Log(logger, "debug", message, kvToFields(kv))
 }
 
-//line stdlib/obs/obs.kuki:55
-func Log(logger Logger, level string, message string, fields Fields) {
 //line stdlib/obs/obs.kuki:56
+func Info(logger Logger, message string, kv ...any) {
+//line stdlib/obs/obs.kuki:57
+	Log(logger, "info", message, kvToFields(kv))
+}
+
+//line stdlib/obs/obs.kuki:60
+func Warn(logger Logger, message string, kv ...any) {
+//line stdlib/obs/obs.kuki:61
+	Log(logger, "warn", message, kvToFields(kv))
+}
+
+//line stdlib/obs/obs.kuki:64
+func Error(logger Logger, message string, kv ...any) {
+//line stdlib/obs/obs.kuki:65
+	Log(logger, "error", message, kvToFields(kv))
+}
+
+//line stdlib/obs/obs.kuki:68
+func Log(logger Logger, level string, message string, fields Fields) {
+//line stdlib/obs/obs.kuki:69
 	payload := map[string]any{"ts": time.Now().Format(time.RFC3339Nano), "level": level, "message": message}
-//line stdlib/obs/obs.kuki:62
+//line stdlib/obs/obs.kuki:75
 	if logger.Service != "" {
-//line stdlib/obs/obs.kuki:63
+//line stdlib/obs/obs.kuki:76
 		payload["service"] = logger.Service
 	}
-//line stdlib/obs/obs.kuki:64
+//line stdlib/obs/obs.kuki:77
 	if logger.Environment != "" {
-//line stdlib/obs/obs.kuki:65
+//line stdlib/obs/obs.kuki:78
 		payload["environment"] = logger.Environment
 	}
-//line stdlib/obs/obs.kuki:66
+//line stdlib/obs/obs.kuki:79
 	if logger.Component != "" {
-//line stdlib/obs/obs.kuki:67
+//line stdlib/obs/obs.kuki:80
 		payload["component"] = logger.Component
 	}
-//line stdlib/obs/obs.kuki:68
+//line stdlib/obs/obs.kuki:81
 	if logger.CorrelationID != "" {
-//line stdlib/obs/obs.kuki:69
+//line stdlib/obs/obs.kuki:82
 		payload["correlation_id"] = logger.CorrelationID
 	}
-//line stdlib/obs/obs.kuki:70
+//line stdlib/obs/obs.kuki:83
 	if fields != nil {
-//line stdlib/obs/obs.kuki:71
+//line stdlib/obs/obs.kuki:84
 		maps.Copy(payload, fields)
 	}
-//line stdlib/obs/obs.kuki:73
+//line stdlib/obs/obs.kuki:86
 	line, err_1 := json.Bytes(payload)
-//line stdlib/obs/obs.kuki:73
+//line stdlib/obs/obs.kuki:86
 	if err_1 != nil {
-//line stdlib/obs/obs.kuki:73
-		//line stdlib/obs/obs.kuki:74
-		fmt.Println(fmt.Sprintf("[obs:%v] %v", level, message))
-		//line stdlib/obs/obs.kuki:75
+//line stdlib/obs/obs.kuki:86
+		//line stdlib/obs/obs.kuki:87
+		fmt.Fprintf(os.Stderr, "[obs:%s] %s\n", level, message)
+		//line stdlib/obs/obs.kuki:88
 		return
 	}
-//line stdlib/obs/obs.kuki:77
-	fmt.Printf("%s\n", line)
-}
-
-//line stdlib/obs/obs.kuki:80
-func Start(logger Logger, operation string) Timer {
-//line stdlib/obs/obs.kuki:81
-	return Timer{Logger: logger, Operation: operation, StartedAt: time.Now()}
-}
-
-//line stdlib/obs/obs.kuki:84
-func Stop(timer Timer, fields Fields) {
-//line stdlib/obs/obs.kuki:85
-	elapsedMs := time.Since(timer.StartedAt).Milliseconds()
-//line stdlib/obs/obs.kuki:86
-	if fields == nil {
-//line stdlib/obs/obs.kuki:87
-		fields = *new(Fields)
-	}
-//line stdlib/obs/obs.kuki:88
-	fields["operation"] = timer.Operation
-//line stdlib/obs/obs.kuki:89
-	fields["duration_ms"] = elapsedMs
 //line stdlib/obs/obs.kuki:90
-	Info(timer.Logger, "operation complete", fields)
+	fmt.Fprintf(os.Stderr, "%s\n", line)
 }
 
 //line stdlib/obs/obs.kuki:93
-func Fail(timer Timer, reason string, fields Fields) {
+func Start(logger Logger, operation string) Timer {
 //line stdlib/obs/obs.kuki:94
-	elapsedMs := time.Since(timer.StartedAt).Milliseconds()
-//line stdlib/obs/obs.kuki:95
-	if fields == nil {
-//line stdlib/obs/obs.kuki:96
-		fields = *new(Fields)
-	}
-//line stdlib/obs/obs.kuki:97
-	fields["operation"] = timer.Operation
+	return Timer{Logger: logger, Operation: operation, StartedAt: time.Now()}
+}
+
 //line stdlib/obs/obs.kuki:98
-	fields["duration_ms"] = elapsedMs
+func Stop(timer Timer, kv ...any) {
 //line stdlib/obs/obs.kuki:99
-	fields["reason"] = reason
+	fields := kvToFields(kv)
 //line stdlib/obs/obs.kuki:100
-	Error(timer.Logger, "operation failed", fields)
+	fields["operation"] = timer.Operation
+//line stdlib/obs/obs.kuki:101
+	fields["duration_ms"] = time.Since(timer.StartedAt).Milliseconds()
+//line stdlib/obs/obs.kuki:102
+	Log(timer.Logger, "info", "operation complete", fields)
+}
+
+//line stdlib/obs/obs.kuki:106
+func Fail(timer Timer, reason string, kv ...any) {
+//line stdlib/obs/obs.kuki:107
+	fields := kvToFields(kv)
+//line stdlib/obs/obs.kuki:108
+	fields["operation"] = timer.Operation
+//line stdlib/obs/obs.kuki:109
+	fields["duration_ms"] = time.Since(timer.StartedAt).Milliseconds()
+//line stdlib/obs/obs.kuki:110
+	fields["reason"] = reason
+//line stdlib/obs/obs.kuki:111
+	Log(timer.Logger, "error", "operation failed", fields)
 }

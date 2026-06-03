@@ -105,7 +105,7 @@ func TestMarkdown(t *testing.T) {
 //line stdlib/table/table_test.kuki:70
 			tbl = table.AddRow(tbl, []string{"1", "2"})
 //line stdlib/table/table_test.kuki:71
-			s := table.ToStringWithStyle(tbl, table.StyleMarkdown)
+			s := table.ToString(table.WithStyle(tbl, table.StyleMarkdown))
 //line stdlib/table/table_test.kuki:72
 			test.AssertTrue(t, kukistring.Contains(s, "|"))
 //line stdlib/table/table_test.kuki:73
@@ -127,7 +127,7 @@ func TestAnsiCellAligns(t *testing.T) {
 //line stdlib/table/table_test.kuki:85
 	lines := kukistring.Split(s, "\n")
 //line stdlib/table/table_test.kuki:87
-	test.AssertTrue(t, (len(lines) >= 4))
+	test.AssertTrue(t, len(lines) >= 4)
 //line stdlib/table/table_test.kuki:88
 	plainRow := lines[2]
 //line stdlib/table/table_test.kuki:89
@@ -147,17 +147,17 @@ func stripAnsi(s string) string {
 //line stdlib/table/table_test.kuki:96
 	for i < n {
 //line stdlib/table/table_test.kuki:97
-		if ((s[i] == 0x1b) && ((i + 1) < n)) && (s[(i+1)] == 0x5b) {
+		if s[i] == 0x1b && i+1 < n && s[i+1] == 0x5b {
 //line stdlib/table/table_test.kuki:98
-			i = (i + 2)
+			i = i + 2
 //line stdlib/table/table_test.kuki:99
 			for i < n {
 //line stdlib/table/table_test.kuki:100
 				b := s[i]
 //line stdlib/table/table_test.kuki:101
-				i = (i + 1)
+				i = i + 1
 //line stdlib/table/table_test.kuki:102
-				if (b >= 0x40) && (b <= 0x7e) {
+				if b >= 0x40 && b <= 0x7e {
 //line stdlib/table/table_test.kuki:103
 					break
 				}
@@ -166,9 +166,9 @@ func stripAnsi(s string) string {
 			continue
 		}
 //line stdlib/table/table_test.kuki:105
-		out = (out + s[i:(i+1)])
+		out = out + s[i:i+1]
 //line stdlib/table/table_test.kuki:106
-		i = (i + 1)
+		i = i + 1
 	}
 //line stdlib/table/table_test.kuki:107
 	return out

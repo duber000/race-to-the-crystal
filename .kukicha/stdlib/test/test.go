@@ -153,7 +153,7 @@ func isNil(val any) bool {
 //line stdlib/test/test.kuki:94
 	kind := rv.Kind()
 //line stdlib/test/test.kuki:95
-	if (((((kind == reflect.Pointer) || (kind == reflect.Map)) || (kind == reflect.Slice)) || (kind == reflect.Chan)) || (kind == reflect.Func)) || (kind == reflect.Interface) {
+	if kind == reflect.Pointer || kind == reflect.Map || kind == reflect.Slice || kind == reflect.Chan || kind == reflect.Func || kind == reflect.Interface {
 //line stdlib/test/test.kuki:96
 		return rv.IsNil()
 	}

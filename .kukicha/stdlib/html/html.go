@@ -14,92 +14,105 @@ type Fragment struct {
 	Content string
 }
 
-//line stdlib/html/html.kuki:28
-func Render(htmlStr string) Fragment {
 //line stdlib/html/html.kuki:29
+func Render(htmlStr string) Fragment {
+//line stdlib/html/html.kuki:30
 	return Fragment{Content: htmlStr}
 }
 
-//line stdlib/html/html.kuki:34
-func Escape(s string) string {
 //line stdlib/html/html.kuki:35
+func Escape(s string) string {
+//line stdlib/html/html.kuki:36
 	return html.EscapeString(s)
 }
 
-//line stdlib/html/html.kuki:41
-func Embed(f Fragment) string {
 //line stdlib/html/html.kuki:42
+func Embed(f Fragment) string {
+//line stdlib/html/html.kuki:43
 	return f.Content
 }
 
-//line stdlib/html/html.kuki:46
-func WriteTo(w http.ResponseWriter, f Fragment) error {
 //line stdlib/html/html.kuki:47
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+func WriteTo(w http.ResponseWriter, f Fragment) error {
 //line stdlib/html/html.kuki:48
-	_, err := io.WriteString(w, f.Content)
-//line stdlib/html/html.kuki:49
-	return err
-}
-
-//line stdlib/html/html.kuki:53
-func WriteStatusTo(w http.ResponseWriter, f Fragment, status int) error {
-//line stdlib/html/html.kuki:54
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-//line stdlib/html/html.kuki:55
-	w.WriteHeader(status)
-//line stdlib/html/html.kuki:56
-	_, err := io.WriteString(w, f.Content)
-//line stdlib/html/html.kuki:57
-	return err
+//line stdlib/html/html.kuki:49
+//line stdlib/html/html.kuki:49
+	_, err_1 := io.WriteString(w, f.Content)
+//line stdlib/html/html.kuki:49
+	if err_1 != nil {
+//line stdlib/html/html.kuki:49
+		return err_1
+	}
+//line stdlib/html/html.kuki:50
+	return nil
 }
 
-//line stdlib/html/html.kuki:61
-func Join(fragments ...Fragment) Fragment {
+//line stdlib/html/html.kuki:54
+func WriteStatusTo(w http.ResponseWriter, f Fragment, status int) error {
+//line stdlib/html/html.kuki:55
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+//line stdlib/html/html.kuki:56
+	w.WriteHeader(status)
+//line stdlib/html/html.kuki:57
+//line stdlib/html/html.kuki:57
+	_, err_2 := io.WriteString(w, f.Content)
+//line stdlib/html/html.kuki:57
+	if err_2 != nil {
+//line stdlib/html/html.kuki:57
+		return err_2
+	}
+//line stdlib/html/html.kuki:58
+	return nil
+}
+
 //line stdlib/html/html.kuki:62
-	buf := bytes.Buffer{}
+func Join(fragments ...Fragment) Fragment {
 //line stdlib/html/html.kuki:63
-	for _, f := range fragments {
+	buf := bytes.Buffer{}
 //line stdlib/html/html.kuki:64
+	for _, f := range fragments {
+//line stdlib/html/html.kuki:65
 		buf.WriteString(f.Content)
 	}
-//line stdlib/html/html.kuki:65
+//line stdlib/html/html.kuki:66
 	return Fragment{Content: buf.String()}
 }
 
-//line stdlib/html/html.kuki:73
-func Map(items []any, f func(any) Fragment) Fragment {
 //line stdlib/html/html.kuki:74
-	buf := bytes.Buffer{}
+func Map(items []any, f func(any) Fragment) Fragment {
 //line stdlib/html/html.kuki:75
-	for _, item := range items {
+	buf := bytes.Buffer{}
 //line stdlib/html/html.kuki:76
-		result := f(item)
+	for _, item := range items {
 //line stdlib/html/html.kuki:77
+		result := f(item)
+//line stdlib/html/html.kuki:78
 		buf.WriteString(result.Content)
 	}
-//line stdlib/html/html.kuki:78
+//line stdlib/html/html.kuki:79
 	return Fragment{Content: buf.String()}
 }
 
-//line stdlib/html/html.kuki:82
-func When(condition bool, f Fragment) Fragment {
 //line stdlib/html/html.kuki:83
-	if condition {
+func When(condition bool, f Fragment) Fragment {
 //line stdlib/html/html.kuki:84
+	if condition {
+//line stdlib/html/html.kuki:85
 		return f
 	}
-//line stdlib/html/html.kuki:85
+//line stdlib/html/html.kuki:86
 	return Fragment{Content: ""}
 }
 
-//line stdlib/html/html.kuki:89
-func WhenElse(condition bool, ifTrue Fragment, ifFalse Fragment) Fragment {
 //line stdlib/html/html.kuki:90
-	if condition {
+func WhenElse(condition bool, ifTrue Fragment, ifFalse Fragment) Fragment {
 //line stdlib/html/html.kuki:91
-		return ifTrue
-	}
-//line stdlib/html/html.kuki:92
-	return ifFalse
+	return func() Fragment {
+		if condition {
+			return ifTrue
+		} else {
+			return ifFalse
+		}
+	}()
 }

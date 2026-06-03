@@ -63,7 +63,7 @@ func LengthBetween(s string, min int, max int) (string, error) {
 //line stdlib/validate/validate.kuki:47
 	length := len(s)
 //line stdlib/validate/validate.kuki:48
-	if (length < min) || (length > max) {
+	if length < min || length > max {
 //line stdlib/validate/validate.kuki:49
 		return s, fmt.Errorf("value must be between %v and %v characters", min, max)
 	}
@@ -119,7 +119,7 @@ func URL(s string) (string, error) {
 		return s, fmt.Errorf("invalid URL: %v", err_3)
 	}
 //line stdlib/validate/validate.kuki:76
-	if (parsed.Scheme == "") || (parsed.Host == "") {
+	if parsed.Scheme == "" || parsed.Host == "" {
 //line stdlib/validate/validate.kuki:77
 		return s, errors.New("URL must have scheme and host")
 	}
@@ -274,7 +274,7 @@ func NonZero(n int) (int, error) {
 //line stdlib/validate/validate.kuki:172
 func InRange(n int, min int, max int) (int, error) {
 //line stdlib/validate/validate.kuki:173
-	if (n < min) || (n > max) {
+	if n < min || n > max {
 //line stdlib/validate/validate.kuki:174
 		return n, fmt.Errorf("value must be between %v and %v", min, max)
 	}
@@ -318,7 +318,7 @@ func PositiveFloat(n float64) (float64, error) {
 //line stdlib/validate/validate.kuki:202
 func InRangeFloat(n float64, min float64, max float64) (float64, error) {
 //line stdlib/validate/validate.kuki:203
-	if (n < min) || (n > max) {
+	if n < min || n > max {
 //line stdlib/validate/validate.kuki:204
 		return n, fmt.Errorf("value must be between %v and %v", min, max)
 	}
@@ -375,12 +375,12 @@ func ParseBool(s string) (bool, error) {
 //line stdlib/validate/validate.kuki:233
 	lower := kukistring.ToLower(kukistring.TrimSpace(s))
 //line stdlib/validate/validate.kuki:234
-	if (((lower == "true") || (lower == "1")) || (lower == "yes")) || (lower == "on") {
+	if lower == "true" || lower == "1" || lower == "yes" || lower == "on" {
 //line stdlib/validate/validate.kuki:235
 		return true, nil
 	}
 //line stdlib/validate/validate.kuki:236
-	if (((lower == "false") || (lower == "0")) || (lower == "no")) || (lower == "off") {
+	if lower == "false" || lower == "0" || lower == "no" || lower == "off" {
 //line stdlib/validate/validate.kuki:237
 		return false, nil
 	}
@@ -457,12 +457,12 @@ func NoHTML(s string) (string, error) {
 //line stdlib/validate/validate.kuki:293
 func SafeFilename(s string) (string, error) {
 //line stdlib/validate/validate.kuki:294
-	if ((s == "") || (s == ".")) || (s == "..") {
+	if s == "" || s == "." || s == ".." {
 //line stdlib/validate/validate.kuki:295
 		return s, errors.New("unsafe filename")
 	}
 //line stdlib/validate/validate.kuki:296
-	if ((strings.Contains(s, "/") || strings.Contains(s, "\\")) || strings.Contains(s, "..")) || strings.Contains(s, "\x00") {
+	if strings.Contains(s, "/") || strings.Contains(s, "\\") || strings.Contains(s, "..") || strings.Contains(s, "\x00") {
 //line stdlib/validate/validate.kuki:297
 		return s, errors.New("filename contains unsafe characters")
 	}

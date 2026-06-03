@@ -207,11 +207,11 @@ func NotEmpty(s string, name string) {
 	}
 }
 
-//line stdlib/must/must.kuki:151
-func NotNil(value any, name string) {
-//line stdlib/must/must.kuki:152
-	if value == nil {
 //line stdlib/must/must.kuki:153
+func NotNil(value any, name string) {
+//line stdlib/must/must.kuki:154
+	if value == nil {
+//line stdlib/must/must.kuki:155
 		panic(fmt.Sprintf("%v cannot be nil", name))
 	}
 }

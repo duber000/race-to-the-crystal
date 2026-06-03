@@ -132,7 +132,6 @@ func TestOpenInsertsGenesisRow(t *testing.T) {
 //line stdlib/audit/audit_test.kuki:75
 	outcome := ""
 //line stdlib/audit/audit_test.kuki:76
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/audit/audit_test.kuki:76
 	err_9 := row.Scan(&seq, &outcome)
 //line stdlib/audit/audit_test.kuki:76
@@ -145,11 +144,11 @@ func TestOpenInsertsGenesisRow(t *testing.T) {
 //line stdlib/audit/audit_test.kuki:78
 	test.AssertEqual(t, outcome, "Genesis")
 //line stdlib/audit/audit_test.kuki:80
-	tailSeq, tailHash := audit.Tail(log)
+	tail := audit.Tail(log)
 //line stdlib/audit/audit_test.kuki:81
-	test.AssertEqual(t, tailSeq, int64(0))
+	test.AssertEqual(t, tail.Seq, int64(0))
 //line stdlib/audit/audit_test.kuki:82
-	test.AssertEqual(t, len(tailHash), 32)
+	test.AssertEqual(t, len(tail.Hash), 32)
 }
 
 //line stdlib/audit/audit_test.kuki:87
@@ -164,7 +163,7 @@ func TestOpenReusesExistingDatabase(t *testing.T) {
 		t.Fatalf("first Open: %v", err_10)
 	}
 //line stdlib/audit/audit_test.kuki:91
-	_, hash1 := audit.Tail(log1)
+	tail1 := audit.Tail(log1)
 //line stdlib/audit/audit_test.kuki:92
 //line stdlib/audit/audit_test.kuki:92
 	err_11 := audit.Close(log1)
@@ -183,11 +182,11 @@ func TestOpenReusesExistingDatabase(t *testing.T) {
 //line stdlib/audit/audit_test.kuki:95
 	defer audit.Close(log2)
 //line stdlib/audit/audit_test.kuki:96
-	seq2, hash2 := audit.Tail(log2)
+	tail2 := audit.Tail(log2)
 //line stdlib/audit/audit_test.kuki:98
-	test.AssertEqual(t, seq2, int64(0))
+	test.AssertEqual(t, tail2.Seq, int64(0))
 //line stdlib/audit/audit_test.kuki:99
-	test.AssertEqual(t, hash2, hash1)
+	test.AssertEqual(t, tail2.Hash, tail1.Hash)
 }
 
 //line stdlib/audit/audit_test.kuki:104
@@ -204,7 +203,7 @@ func TestRecordAppendsAndChains(t *testing.T) {
 //line stdlib/audit/audit_test.kuki:107
 	defer audit.Close(log)
 //line stdlib/audit/audit_test.kuki:109
-	_, genesisHash := audit.Tail(log)
+	genesisTail := audit.Tail(log)
 //line stdlib/audit/audit_test.kuki:111
 	event := audit.Event{Actor: "alert-triage-agent", Action: "kubectl-restart", Target: "frontend", Reason: "5xx spike", Outcome: audit.Done{Detail: "rollout restarted"}, Extra: map[string]string{"env": "prod"}}
 //line stdlib/audit/audit_test.kuki:119
@@ -216,11 +215,11 @@ func TestRecordAppendsAndChains(t *testing.T) {
 		t.Fatalf("Record: %v", err_14)
 	}
 //line stdlib/audit/audit_test.kuki:121
-	seq1, hash1 := audit.Tail(log)
+	tail1 := audit.Tail(log)
 //line stdlib/audit/audit_test.kuki:122
-	test.AssertEqual(t, seq1, int64(1))
+	test.AssertEqual(t, tail1.Seq, int64(1))
 //line stdlib/audit/audit_test.kuki:123
-	test.AssertNotEqual(t, hash1, genesisHash)
+	test.AssertNotEqual(t, tail1.Hash, genesisTail.Hash)
 //line stdlib/audit/audit_test.kuki:125
 	pool := openProbe(t, dbPath)
 //line stdlib/audit/audit_test.kuki:126
@@ -236,7 +235,6 @@ func TestRecordAppendsAndChains(t *testing.T) {
 //line stdlib/audit/audit_test.kuki:132
 	prevHash := []byte{}
 //line stdlib/audit/audit_test.kuki:133
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/audit/audit_test.kuki:133
 	err_15 := row.Scan(&actor, &action, &outcomeTag, &prevHash)
 //line stdlib/audit/audit_test.kuki:138
@@ -251,7 +249,7 @@ func TestRecordAppendsAndChains(t *testing.T) {
 //line stdlib/audit/audit_test.kuki:141
 	test.AssertEqual(t, outcomeTag, "Done")
 //line stdlib/audit/audit_test.kuki:142
-	test.AssertEqual(t, prevHash, genesisHash)
+	test.AssertEqual(t, prevHash, genesisTail.Hash)
 //line stdlib/audit/audit_test.kuki:144
 	extraCount, err_16 := db.Count(pool, "SELECT COUNT(*) FROM event_extra WHERE seq = 1")
 //line stdlib/audit/audit_test.kuki:144
@@ -270,17 +268,16 @@ func TestRecordAppendsAndChains(t *testing.T) {
 		t.Fatalf("Record 2: %v", err_17)
 	}
 //line stdlib/audit/audit_test.kuki:148
-	seq2, hash2 := audit.Tail(log)
+	tail2 := audit.Tail(log)
 //line stdlib/audit/audit_test.kuki:149
-	test.AssertEqual(t, seq2, int64(2))
+	test.AssertEqual(t, tail2.Seq, int64(2))
 //line stdlib/audit/audit_test.kuki:150
-	test.AssertNotEqual(t, hash2, hash1)
+	test.AssertNotEqual(t, tail2.Hash, tail1.Hash)
 //line stdlib/audit/audit_test.kuki:152
 	row2 := db.RawDB(pool).QueryRow("SELECT prev_hash FROM events WHERE seq = 2")
 //line stdlib/audit/audit_test.kuki:153
 	prev2 := []byte{}
 //line stdlib/audit/audit_test.kuki:154
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/audit/audit_test.kuki:154
 	err_18 := row2.Scan(&prev2)
 //line stdlib/audit/audit_test.kuki:154
@@ -289,7 +286,7 @@ func TestRecordAppendsAndChains(t *testing.T) {
 		t.Fatalf("scan 2: %v", err_18)
 	}
 //line stdlib/audit/audit_test.kuki:155
-	test.AssertEqual(t, prev2, hash1)
+	test.AssertEqual(t, prev2, tail1.Hash)
 }
 
 //line stdlib/audit/audit_test.kuki:160
@@ -606,528 +603,524 @@ func TestConcurrentWritersChainIntact(t *testing.T) {
 //line stdlib/audit/audit_test.kuki:313
 	wg.Wait()
 //line stdlib/audit/audit_test.kuki:315
-	tailSeq, _ := audit.Tail(log)
-//line stdlib/audit/audit_test.kuki:316
-	test.AssertEqual(t, tailSeq, int64((writers * perWriter)))
-//line stdlib/audit/audit_test.kuki:318
-//line stdlib/audit/audit_test.kuki:318
+	test.AssertEqual(t, audit.Tail(log).Seq, int64(writers*perWriter))
+//line stdlib/audit/audit_test.kuki:317
+//line stdlib/audit/audit_test.kuki:317
 	err_42 := audit.Verify(log)
-//line stdlib/audit/audit_test.kuki:318
+//line stdlib/audit/audit_test.kuki:317
 	if err_42 != nil {
-//line stdlib/audit/audit_test.kuki:318
+//line stdlib/audit/audit_test.kuki:317
 		t.Fatalf("Verify after concurrent writes: %v", err_42)
 	}
-//line stdlib/audit/audit_test.kuki:320
+//line stdlib/audit/audit_test.kuki:319
 	entries, err_43 := audit.Query(log, audit.Filter{})
-//line stdlib/audit/audit_test.kuki:320
+//line stdlib/audit/audit_test.kuki:319
 	if err_43 != nil {
-//line stdlib/audit/audit_test.kuki:320
+//line stdlib/audit/audit_test.kuki:319
 		t.Fatalf("Query: %v", err_43)
 	}
-//line stdlib/audit/audit_test.kuki:321
-	test.AssertEqual(t, len(entries), (writers * perWriter))
+//line stdlib/audit/audit_test.kuki:320
+	test.AssertEqual(t, len(entries), writers*perWriter)
 }
 
-//line stdlib/audit/audit_test.kuki:328
+//line stdlib/audit/audit_test.kuki:327
 func TestCrashRecoveryReopensCleanly(t *testing.T) {
-//line stdlib/audit/audit_test.kuki:329
+//line stdlib/audit/audit_test.kuki:328
 	dbPath := filepath.Join(t.TempDir(), "audit.db")
-//line stdlib/audit/audit_test.kuki:330
-	keyPath := (dbPath + ".key")
-//line stdlib/audit/audit_test.kuki:332
+//line stdlib/audit/audit_test.kuki:329
+	keyPath := dbPath + ".key"
+//line stdlib/audit/audit_test.kuki:331
 	log1, err_44 := audit.OpenWithKey(dbPath, keyPath)
-//line stdlib/audit/audit_test.kuki:332
+//line stdlib/audit/audit_test.kuki:331
 	if err_44 != nil {
-//line stdlib/audit/audit_test.kuki:332
+//line stdlib/audit/audit_test.kuki:331
 		t.Fatalf("first Open: %v", err_44)
 	}
-//line stdlib/audit/audit_test.kuki:333
-//line stdlib/audit/audit_test.kuki:333
+//line stdlib/audit/audit_test.kuki:332
+//line stdlib/audit/audit_test.kuki:332
 	err_45 := audit.Record(log1, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "1"}})
-//line stdlib/audit/audit_test.kuki:333
+//line stdlib/audit/audit_test.kuki:332
 	if err_45 != nil {
-//line stdlib/audit/audit_test.kuki:333
+//line stdlib/audit/audit_test.kuki:332
 		t.Fatalf("r1: %v", err_45)
 	}
-//line stdlib/audit/audit_test.kuki:334
-//line stdlib/audit/audit_test.kuki:334
+//line stdlib/audit/audit_test.kuki:333
+//line stdlib/audit/audit_test.kuki:333
 	err_46 := audit.Record(log1, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "2"}})
-//line stdlib/audit/audit_test.kuki:334
+//line stdlib/audit/audit_test.kuki:333
 	if err_46 != nil {
-//line stdlib/audit/audit_test.kuki:334
+//line stdlib/audit/audit_test.kuki:333
 		t.Fatalf("r2: %v", err_46)
 	}
-//line stdlib/audit/audit_test.kuki:335
-//line stdlib/audit/audit_test.kuki:335
+//line stdlib/audit/audit_test.kuki:334
+//line stdlib/audit/audit_test.kuki:334
 	err_47 := audit.Record(log1, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "3"}})
-//line stdlib/audit/audit_test.kuki:335
+//line stdlib/audit/audit_test.kuki:334
 	if err_47 != nil {
-//line stdlib/audit/audit_test.kuki:335
+//line stdlib/audit/audit_test.kuki:334
 		t.Fatalf("r3: %v", err_47)
 	}
+//line stdlib/audit/audit_test.kuki:336
+	before := audit.Tail(log1)
 //line stdlib/audit/audit_test.kuki:337
-	seqBefore, hashBefore := audit.Tail(log1)
-//line stdlib/audit/audit_test.kuki:338
-	test.AssertEqual(t, seqBefore, int64(3))
-//line stdlib/audit/audit_test.kuki:342
+	test.AssertEqual(t, before.Seq, int64(3))
+//line stdlib/audit/audit_test.kuki:341
 	log1 = audit.Log{}
-//line stdlib/audit/audit_test.kuki:344
+//line stdlib/audit/audit_test.kuki:343
 	log2, err_48 := audit.OpenWithKey(dbPath, keyPath)
-//line stdlib/audit/audit_test.kuki:344
+//line stdlib/audit/audit_test.kuki:343
 	if err_48 != nil {
-//line stdlib/audit/audit_test.kuki:344
+//line stdlib/audit/audit_test.kuki:343
 		t.Fatalf("reopen: %v", err_48)
 	}
-//line stdlib/audit/audit_test.kuki:345
+//line stdlib/audit/audit_test.kuki:344
 	defer audit.Close(log2)
+//line stdlib/audit/audit_test.kuki:346
+	after := audit.Tail(log2)
 //line stdlib/audit/audit_test.kuki:347
-	seqAfter, hashAfter := audit.Tail(log2)
+	test.AssertEqual(t, after.Seq, before.Seq)
 //line stdlib/audit/audit_test.kuki:348
-	test.AssertEqual(t, seqAfter, seqBefore)
-//line stdlib/audit/audit_test.kuki:349
-	test.AssertEqual(t, hashAfter, hashBefore)
-//line stdlib/audit/audit_test.kuki:351
-//line stdlib/audit/audit_test.kuki:351
+	test.AssertEqual(t, after.Hash, before.Hash)
+//line stdlib/audit/audit_test.kuki:350
+//line stdlib/audit/audit_test.kuki:350
 	err_49 := audit.Verify(log2)
-//line stdlib/audit/audit_test.kuki:351
+//line stdlib/audit/audit_test.kuki:350
 	if err_49 != nil {
-//line stdlib/audit/audit_test.kuki:351
+//line stdlib/audit/audit_test.kuki:350
 		t.Fatalf("Verify after reopen: %v", err_49)
 	}
-//line stdlib/audit/audit_test.kuki:353
-//line stdlib/audit/audit_test.kuki:353
+//line stdlib/audit/audit_test.kuki:352
+//line stdlib/audit/audit_test.kuki:352
 	err_50 := audit.Record(log2, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "4"}})
-//line stdlib/audit/audit_test.kuki:353
+//line stdlib/audit/audit_test.kuki:352
 	if err_50 != nil {
-//line stdlib/audit/audit_test.kuki:353
+//line stdlib/audit/audit_test.kuki:352
 		t.Fatalf("r4: %v", err_50)
 	}
+//line stdlib/audit/audit_test.kuki:353
+	test.AssertEqual(t, audit.Tail(log2).Seq, int64(4))
 //line stdlib/audit/audit_test.kuki:354
-	seq4, _ := audit.Tail(log2)
-//line stdlib/audit/audit_test.kuki:355
-	test.AssertEqual(t, seq4, int64(4))
-//line stdlib/audit/audit_test.kuki:356
-//line stdlib/audit/audit_test.kuki:356
+//line stdlib/audit/audit_test.kuki:354
 	err_51 := audit.Verify(log2)
-//line stdlib/audit/audit_test.kuki:356
+//line stdlib/audit/audit_test.kuki:354
 	if err_51 != nil {
-//line stdlib/audit/audit_test.kuki:356
+//line stdlib/audit/audit_test.kuki:354
 		t.Fatalf("Verify after fourth write: %v", err_51)
 	}
 }
 
-//line stdlib/audit/audit_test.kuki:361
+//line stdlib/audit/audit_test.kuki:359
 func TestVerifyIncrementalFallsBackToFullVerify(t *testing.T) {
-//line stdlib/audit/audit_test.kuki:362
+//line stdlib/audit/audit_test.kuki:360
 	dbPath := filepath.Join(t.TempDir(), "audit.db")
-//line stdlib/audit/audit_test.kuki:363
+//line stdlib/audit/audit_test.kuki:361
 	log, err_52 := audit.Open(dbPath)
-//line stdlib/audit/audit_test.kuki:363
+//line stdlib/audit/audit_test.kuki:361
 	if err_52 != nil {
-//line stdlib/audit/audit_test.kuki:363
+//line stdlib/audit/audit_test.kuki:361
 		t.Fatalf("Open: %v", err_52)
 	}
-//line stdlib/audit/audit_test.kuki:364
+//line stdlib/audit/audit_test.kuki:362
 	defer audit.Close(log)
-//line stdlib/audit/audit_test.kuki:365
+//line stdlib/audit/audit_test.kuki:363
 	audit.SetCheckpointInterval(log, 0)
-//line stdlib/audit/audit_test.kuki:367
+//line stdlib/audit/audit_test.kuki:365
 	for _, i := range []int{0, 1, 2} {
-//line stdlib/audit/audit_test.kuki:368
-//line stdlib/audit/audit_test.kuki:368
+//line stdlib/audit/audit_test.kuki:366
+//line stdlib/audit/audit_test.kuki:366
 		err_53 := audit.Record(log, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "iter"}})
-//line stdlib/audit/audit_test.kuki:372
+//line stdlib/audit/audit_test.kuki:370
 		if err_53 != nil {
-//line stdlib/audit/audit_test.kuki:372
+//line stdlib/audit/audit_test.kuki:370
 			t.Fatalf("Record %d: %v", i, err_53)
 		}
 	}
-//line stdlib/audit/audit_test.kuki:374
+//line stdlib/audit/audit_test.kuki:372
 	probe := openProbe(t, dbPath)
-//line stdlib/audit/audit_test.kuki:375
+//line stdlib/audit/audit_test.kuki:373
 	defer db.Close(probe)
-//line stdlib/audit/audit_test.kuki:376
+//line stdlib/audit/audit_test.kuki:374
 	cpCount, err_54 := db.Count(probe, "SELECT COUNT(*) FROM audit_checkpoints")
-//line stdlib/audit/audit_test.kuki:376
+//line stdlib/audit/audit_test.kuki:374
 	if err_54 != nil {
-//line stdlib/audit/audit_test.kuki:376
+//line stdlib/audit/audit_test.kuki:374
 		t.Fatalf("cp count: %v", err_54)
 	}
-//line stdlib/audit/audit_test.kuki:377
+//line stdlib/audit/audit_test.kuki:375
 	test.AssertEqual(t, cpCount, int64(0))
-//line stdlib/audit/audit_test.kuki:379
-//line stdlib/audit/audit_test.kuki:379
+//line stdlib/audit/audit_test.kuki:377
+//line stdlib/audit/audit_test.kuki:377
 	err_55 := audit.VerifyIncremental(log)
-//line stdlib/audit/audit_test.kuki:379
+//line stdlib/audit/audit_test.kuki:377
 	if err_55 != nil {
-//line stdlib/audit/audit_test.kuki:379
+//line stdlib/audit/audit_test.kuki:377
 		t.Fatalf("VerifyIncremental: %v", err_55)
 	}
 }
 
-//line stdlib/audit/audit_test.kuki:384
+//line stdlib/audit/audit_test.kuki:382
 func TestRecordAutoCheckpointsAtInterval(t *testing.T) {
-//line stdlib/audit/audit_test.kuki:385
+//line stdlib/audit/audit_test.kuki:383
 	dbPath := filepath.Join(t.TempDir(), "audit.db")
-//line stdlib/audit/audit_test.kuki:386
+//line stdlib/audit/audit_test.kuki:384
 	log, err_56 := audit.Open(dbPath)
-//line stdlib/audit/audit_test.kuki:386
+//line stdlib/audit/audit_test.kuki:384
 	if err_56 != nil {
-//line stdlib/audit/audit_test.kuki:386
+//line stdlib/audit/audit_test.kuki:384
 		t.Fatalf("Open: %v", err_56)
 	}
-//line stdlib/audit/audit_test.kuki:387
+//line stdlib/audit/audit_test.kuki:385
 	defer audit.Close(log)
-//line stdlib/audit/audit_test.kuki:388
+//line stdlib/audit/audit_test.kuki:386
 	audit.SetCheckpointInterval(log, 3)
-//line stdlib/audit/audit_test.kuki:390
+//line stdlib/audit/audit_test.kuki:388
 	for _, i := range []int{0, 1, 2, 3, 4, 5, 6} {
-//line stdlib/audit/audit_test.kuki:391
-//line stdlib/audit/audit_test.kuki:391
+//line stdlib/audit/audit_test.kuki:389
+//line stdlib/audit/audit_test.kuki:389
 		err_57 := audit.Record(log, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "iter"}})
-//line stdlib/audit/audit_test.kuki:395
+//line stdlib/audit/audit_test.kuki:393
 		if err_57 != nil {
-//line stdlib/audit/audit_test.kuki:395
+//line stdlib/audit/audit_test.kuki:393
 			t.Fatalf("Record %d: %v", i, err_57)
 		}
 	}
-//line stdlib/audit/audit_test.kuki:397
+//line stdlib/audit/audit_test.kuki:395
 	probe := openProbe(t, dbPath)
-//line stdlib/audit/audit_test.kuki:398
+//line stdlib/audit/audit_test.kuki:396
 	defer db.Close(probe)
-//line stdlib/audit/audit_test.kuki:399
+//line stdlib/audit/audit_test.kuki:397
 	cpCount, err_58 := db.Count(probe, "SELECT COUNT(*) FROM audit_checkpoints")
-//line stdlib/audit/audit_test.kuki:399
+//line stdlib/audit/audit_test.kuki:397
 	if err_58 != nil {
-//line stdlib/audit/audit_test.kuki:399
+//line stdlib/audit/audit_test.kuki:397
 		t.Fatalf("cp count: %v", err_58)
 	}
-//line stdlib/audit/audit_test.kuki:400
+//line stdlib/audit/audit_test.kuki:398
 	test.AssertEqual(t, cpCount, int64(2))
-//line stdlib/audit/audit_test.kuki:402
+//line stdlib/audit/audit_test.kuki:400
 	maxSeq, err_59 := db.Count(probe, "SELECT COALESCE(MAX(seq), 0) FROM audit_checkpoints")
-//line stdlib/audit/audit_test.kuki:402
+//line stdlib/audit/audit_test.kuki:400
 	if err_59 != nil {
-//line stdlib/audit/audit_test.kuki:402
+//line stdlib/audit/audit_test.kuki:400
 		t.Fatalf("max seq: %v", err_59)
 	}
-//line stdlib/audit/audit_test.kuki:403
+//line stdlib/audit/audit_test.kuki:401
 	test.AssertEqual(t, maxSeq, int64(6))
 }
 
-//line stdlib/audit/audit_test.kuki:408
+//line stdlib/audit/audit_test.kuki:406
 func TestVerifyIncrementalDetectsTamperAboveCheckpoint(t *testing.T) {
-//line stdlib/audit/audit_test.kuki:409
+//line stdlib/audit/audit_test.kuki:407
 	dbPath := filepath.Join(t.TempDir(), "audit.db")
-//line stdlib/audit/audit_test.kuki:410
+//line stdlib/audit/audit_test.kuki:408
 	log, err_60 := audit.Open(dbPath)
-//line stdlib/audit/audit_test.kuki:410
+//line stdlib/audit/audit_test.kuki:408
 	if err_60 != nil {
-//line stdlib/audit/audit_test.kuki:410
+//line stdlib/audit/audit_test.kuki:408
 		t.Fatalf("Open: %v", err_60)
 	}
-//line stdlib/audit/audit_test.kuki:411
+//line stdlib/audit/audit_test.kuki:409
 	defer audit.Close(log)
-//line stdlib/audit/audit_test.kuki:412
+//line stdlib/audit/audit_test.kuki:410
 	audit.SetCheckpointInterval(log, 0)
-//line stdlib/audit/audit_test.kuki:414
+//line stdlib/audit/audit_test.kuki:412
 	for _, i := range []int{0, 1, 2} {
-//line stdlib/audit/audit_test.kuki:415
-//line stdlib/audit/audit_test.kuki:415
+//line stdlib/audit/audit_test.kuki:413
+//line stdlib/audit/audit_test.kuki:413
 		err_61 := audit.Record(log, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "below"}})
-//line stdlib/audit/audit_test.kuki:418
+//line stdlib/audit/audit_test.kuki:416
 		if err_61 != nil {
-//line stdlib/audit/audit_test.kuki:418
+//line stdlib/audit/audit_test.kuki:416
 			t.Fatalf("Record below %d: %v", i, err_61)
 		}
 	}
-//line stdlib/audit/audit_test.kuki:419
-//line stdlib/audit/audit_test.kuki:419
+//line stdlib/audit/audit_test.kuki:417
+//line stdlib/audit/audit_test.kuki:417
 	err_62 := audit.Checkpoint(log)
-//line stdlib/audit/audit_test.kuki:419
+//line stdlib/audit/audit_test.kuki:417
 	if err_62 != nil {
-//line stdlib/audit/audit_test.kuki:419
+//line stdlib/audit/audit_test.kuki:417
 		t.Fatalf("Checkpoint: %v", err_62)
 	}
-//line stdlib/audit/audit_test.kuki:420
+//line stdlib/audit/audit_test.kuki:418
 	for _, i := range []int{0, 1, 2} {
-//line stdlib/audit/audit_test.kuki:421
-//line stdlib/audit/audit_test.kuki:421
+//line stdlib/audit/audit_test.kuki:419
+//line stdlib/audit/audit_test.kuki:419
 		err_63 := audit.Record(log, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "above"}})
-//line stdlib/audit/audit_test.kuki:424
+//line stdlib/audit/audit_test.kuki:422
 		if err_63 != nil {
-//line stdlib/audit/audit_test.kuki:424
+//line stdlib/audit/audit_test.kuki:422
 			t.Fatalf("Record above %d: %v", i, err_63)
 		}
 	}
-//line stdlib/audit/audit_test.kuki:426
+//line stdlib/audit/audit_test.kuki:424
 	probe := openProbe(t, dbPath)
-//line stdlib/audit/audit_test.kuki:427
+//line stdlib/audit/audit_test.kuki:425
 	defer db.Close(probe)
-//line stdlib/audit/audit_test.kuki:428
-//line stdlib/audit/audit_test.kuki:428
+//line stdlib/audit/audit_test.kuki:426
+//line stdlib/audit/audit_test.kuki:426
 	_, err_64 := db.Exec(probe, "UPDATE events SET reason = ? WHERE seq = 5", "spliced above")
-//line stdlib/audit/audit_test.kuki:428
+//line stdlib/audit/audit_test.kuki:426
 	if err_64 != nil {
-//line stdlib/audit/audit_test.kuki:428
+//line stdlib/audit/audit_test.kuki:426
 		t.Fatalf("tamper above: %v", err_64)
 	}
-//line stdlib/audit/audit_test.kuki:430
+//line stdlib/audit/audit_test.kuki:428
 	err := audit.VerifyIncremental(log)
-//line stdlib/audit/audit_test.kuki:431
+//line stdlib/audit/audit_test.kuki:429
 	test.AssertError(t, err)
 }
 
-//line stdlib/audit/audit_test.kuki:437
+//line stdlib/audit/audit_test.kuki:435
 func TestVerifyIncrementalSkipsBelowCheckpoint(t *testing.T) {
-//line stdlib/audit/audit_test.kuki:438
+//line stdlib/audit/audit_test.kuki:436
 	dbPath := filepath.Join(t.TempDir(), "audit.db")
-//line stdlib/audit/audit_test.kuki:439
+//line stdlib/audit/audit_test.kuki:437
 	log, err_65 := audit.Open(dbPath)
-//line stdlib/audit/audit_test.kuki:439
+//line stdlib/audit/audit_test.kuki:437
 	if err_65 != nil {
-//line stdlib/audit/audit_test.kuki:439
+//line stdlib/audit/audit_test.kuki:437
 		t.Fatalf("Open: %v", err_65)
 	}
-//line stdlib/audit/audit_test.kuki:440
+//line stdlib/audit/audit_test.kuki:438
 	defer audit.Close(log)
-//line stdlib/audit/audit_test.kuki:441
+//line stdlib/audit/audit_test.kuki:439
 	audit.SetCheckpointInterval(log, 0)
-//line stdlib/audit/audit_test.kuki:443
+//line stdlib/audit/audit_test.kuki:441
 	for _, i := range []int{0, 1, 2} {
-//line stdlib/audit/audit_test.kuki:444
-//line stdlib/audit/audit_test.kuki:444
+//line stdlib/audit/audit_test.kuki:442
+//line stdlib/audit/audit_test.kuki:442
 		err_66 := audit.Record(log, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "below"}})
-//line stdlib/audit/audit_test.kuki:447
+//line stdlib/audit/audit_test.kuki:445
 		if err_66 != nil {
-//line stdlib/audit/audit_test.kuki:447
+//line stdlib/audit/audit_test.kuki:445
 			t.Fatalf("Record below %d: %v", i, err_66)
 		}
 	}
-//line stdlib/audit/audit_test.kuki:448
-//line stdlib/audit/audit_test.kuki:448
+//line stdlib/audit/audit_test.kuki:446
+//line stdlib/audit/audit_test.kuki:446
 	err_67 := audit.Checkpoint(log)
-//line stdlib/audit/audit_test.kuki:448
+//line stdlib/audit/audit_test.kuki:446
 	if err_67 != nil {
-//line stdlib/audit/audit_test.kuki:448
+//line stdlib/audit/audit_test.kuki:446
 		t.Fatalf("Checkpoint: %v", err_67)
 	}
-//line stdlib/audit/audit_test.kuki:449
+//line stdlib/audit/audit_test.kuki:447
 	for _, i := range []int{0, 1, 2} {
-//line stdlib/audit/audit_test.kuki:450
-//line stdlib/audit/audit_test.kuki:450
+//line stdlib/audit/audit_test.kuki:448
+//line stdlib/audit/audit_test.kuki:448
 		err_68 := audit.Record(log, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "above"}})
-//line stdlib/audit/audit_test.kuki:453
+//line stdlib/audit/audit_test.kuki:451
 		if err_68 != nil {
-//line stdlib/audit/audit_test.kuki:453
+//line stdlib/audit/audit_test.kuki:451
 			t.Fatalf("Record above %d: %v", i, err_68)
 		}
 	}
-//line stdlib/audit/audit_test.kuki:455
+//line stdlib/audit/audit_test.kuki:453
 	probe := openProbe(t, dbPath)
-//line stdlib/audit/audit_test.kuki:456
+//line stdlib/audit/audit_test.kuki:454
 	defer db.Close(probe)
-//line stdlib/audit/audit_test.kuki:457
-//line stdlib/audit/audit_test.kuki:457
+//line stdlib/audit/audit_test.kuki:455
+//line stdlib/audit/audit_test.kuki:455
 	_, err_69 := db.Exec(probe, "UPDATE events SET reason = ? WHERE seq = 1", "spliced below")
-//line stdlib/audit/audit_test.kuki:457
+//line stdlib/audit/audit_test.kuki:455
 	if err_69 != nil {
-//line stdlib/audit/audit_test.kuki:457
+//line stdlib/audit/audit_test.kuki:455
 		t.Fatalf("tamper below: %v", err_69)
 	}
-//line stdlib/audit/audit_test.kuki:459
-//line stdlib/audit/audit_test.kuki:459
+//line stdlib/audit/audit_test.kuki:457
+//line stdlib/audit/audit_test.kuki:457
 	err_70 := audit.VerifyIncremental(log)
-//line stdlib/audit/audit_test.kuki:459
+//line stdlib/audit/audit_test.kuki:457
 	if err_70 != nil {
-//line stdlib/audit/audit_test.kuki:459
+//line stdlib/audit/audit_test.kuki:457
 		t.Fatalf("VerifyIncremental should skip below-checkpoint tamper: %v", err_70)
 	}
-//line stdlib/audit/audit_test.kuki:461
+//line stdlib/audit/audit_test.kuki:459
 	cpAfter, err_71 := db.Count(probe, "SELECT COALESCE(MAX(seq), 0) FROM audit_checkpoints")
-//line stdlib/audit/audit_test.kuki:461
+//line stdlib/audit/audit_test.kuki:459
 	if err_71 != nil {
-//line stdlib/audit/audit_test.kuki:461
+//line stdlib/audit/audit_test.kuki:459
 		t.Fatalf("max cp seq: %v", err_71)
 	}
-//line stdlib/audit/audit_test.kuki:462
+//line stdlib/audit/audit_test.kuki:460
 	test.AssertEqual(t, cpAfter, int64(6))
-//line stdlib/audit/audit_test.kuki:464
+//line stdlib/audit/audit_test.kuki:462
 	err := audit.Verify(log)
-//line stdlib/audit/audit_test.kuki:465
+//line stdlib/audit/audit_test.kuki:463
 	test.AssertError(t, err)
 }
 
-//line stdlib/audit/audit_test.kuki:471
+//line stdlib/audit/audit_test.kuki:469
 func TestVacuumDeletesOldRowsAndPreservesChain(t *testing.T) {
-//line stdlib/audit/audit_test.kuki:472
+//line stdlib/audit/audit_test.kuki:470
 	dbPath := filepath.Join(t.TempDir(), "audit.db")
-//line stdlib/audit/audit_test.kuki:473
+//line stdlib/audit/audit_test.kuki:471
 	log, err_72 := audit.Open(dbPath)
-//line stdlib/audit/audit_test.kuki:473
+//line stdlib/audit/audit_test.kuki:471
 	if err_72 != nil {
-//line stdlib/audit/audit_test.kuki:473
+//line stdlib/audit/audit_test.kuki:471
 		t.Fatalf("Open: %v", err_72)
 	}
-//line stdlib/audit/audit_test.kuki:474
+//line stdlib/audit/audit_test.kuki:472
 	defer audit.Close(log)
-//line stdlib/audit/audit_test.kuki:475
+//line stdlib/audit/audit_test.kuki:473
 	audit.SetCheckpointInterval(log, 0)
-//line stdlib/audit/audit_test.kuki:477
-//line stdlib/audit/audit_test.kuki:477
+//line stdlib/audit/audit_test.kuki:475
+//line stdlib/audit/audit_test.kuki:475
 	err_73 := audit.Record(log, audit.Event{Actor: "a", Action: "old", Outcome: audit.Done{Detail: "old1"}})
-//line stdlib/audit/audit_test.kuki:477
+//line stdlib/audit/audit_test.kuki:475
 	if err_73 != nil {
-//line stdlib/audit/audit_test.kuki:477
+//line stdlib/audit/audit_test.kuki:475
 		t.Fatalf("r1: %v", err_73)
 	}
-//line stdlib/audit/audit_test.kuki:478
-//line stdlib/audit/audit_test.kuki:478
+//line stdlib/audit/audit_test.kuki:476
+//line stdlib/audit/audit_test.kuki:476
 	err_74 := audit.Record(log, audit.Event{Actor: "a", Action: "old", Outcome: audit.Done{Detail: "old2"}})
-//line stdlib/audit/audit_test.kuki:478
+//line stdlib/audit/audit_test.kuki:476
 	if err_74 != nil {
-//line stdlib/audit/audit_test.kuki:478
+//line stdlib/audit/audit_test.kuki:476
 		t.Fatalf("r2: %v", err_74)
 	}
-//line stdlib/audit/audit_test.kuki:481
-	time.Sleep((10 * time.Millisecond))
-//line stdlib/audit/audit_test.kuki:482
+//line stdlib/audit/audit_test.kuki:479
+	time.Sleep(10 * time.Millisecond)
+//line stdlib/audit/audit_test.kuki:480
 	cutoff := time.Now()
+//line stdlib/audit/audit_test.kuki:481
+	time.Sleep(10 * time.Millisecond)
 //line stdlib/audit/audit_test.kuki:483
-	time.Sleep((10 * time.Millisecond))
-//line stdlib/audit/audit_test.kuki:485
-//line stdlib/audit/audit_test.kuki:485
+//line stdlib/audit/audit_test.kuki:483
 	err_75 := audit.Record(log, audit.Event{Actor: "a", Action: "new", Outcome: audit.Done{Detail: "new1"}})
-//line stdlib/audit/audit_test.kuki:485
+//line stdlib/audit/audit_test.kuki:483
 	if err_75 != nil {
-//line stdlib/audit/audit_test.kuki:485
+//line stdlib/audit/audit_test.kuki:483
 		t.Fatalf("r3: %v", err_75)
 	}
-//line stdlib/audit/audit_test.kuki:486
-//line stdlib/audit/audit_test.kuki:486
+//line stdlib/audit/audit_test.kuki:484
+//line stdlib/audit/audit_test.kuki:484
 	err_76 := audit.Record(log, audit.Event{Actor: "a", Action: "new", Outcome: audit.Done{Detail: "new2"}})
-//line stdlib/audit/audit_test.kuki:486
+//line stdlib/audit/audit_test.kuki:484
 	if err_76 != nil {
-//line stdlib/audit/audit_test.kuki:486
+//line stdlib/audit/audit_test.kuki:484
 		t.Fatalf("r4: %v", err_76)
 	}
-//line stdlib/audit/audit_test.kuki:488
-//line stdlib/audit/audit_test.kuki:488
+//line stdlib/audit/audit_test.kuki:486
+//line stdlib/audit/audit_test.kuki:486
 	err_77 := audit.Vacuum(log, cutoff)
-//line stdlib/audit/audit_test.kuki:488
+//line stdlib/audit/audit_test.kuki:486
 	if err_77 != nil {
-//line stdlib/audit/audit_test.kuki:488
+//line stdlib/audit/audit_test.kuki:486
 		t.Fatalf("Vacuum: %v", err_77)
 	}
-//line stdlib/audit/audit_test.kuki:490
+//line stdlib/audit/audit_test.kuki:488
 	probe := openProbe(t, dbPath)
-//line stdlib/audit/audit_test.kuki:491
+//line stdlib/audit/audit_test.kuki:489
 	defer db.Close(probe)
-//line stdlib/audit/audit_test.kuki:494
+//line stdlib/audit/audit_test.kuki:492
 	total, err_78 := db.Count(probe, "SELECT COUNT(*) FROM events")
-//line stdlib/audit/audit_test.kuki:494
+//line stdlib/audit/audit_test.kuki:492
 	if err_78 != nil {
-//line stdlib/audit/audit_test.kuki:494
+//line stdlib/audit/audit_test.kuki:492
 		t.Fatalf("count: %v", err_78)
 	}
-//line stdlib/audit/audit_test.kuki:495
+//line stdlib/audit/audit_test.kuki:493
 	test.AssertEqual(t, total, int64(4))
-//line stdlib/audit/audit_test.kuki:497
+//line stdlib/audit/audit_test.kuki:495
 	vacCount, err_79 := db.Count(probe, "SELECT COUNT(*) FROM events WHERE outcome = 'Vacuumed'")
-//line stdlib/audit/audit_test.kuki:497
+//line stdlib/audit/audit_test.kuki:495
 	if err_79 != nil {
-//line stdlib/audit/audit_test.kuki:497
+//line stdlib/audit/audit_test.kuki:495
 		t.Fatalf("vac count: %v", err_79)
 	}
-//line stdlib/audit/audit_test.kuki:498
+//line stdlib/audit/audit_test.kuki:496
 	test.AssertEqual(t, vacCount, int64(1))
-//line stdlib/audit/audit_test.kuki:500
+//line stdlib/audit/audit_test.kuki:498
 	oldCount, err_80 := db.Count(probe, "SELECT COUNT(*) FROM events WHERE action = 'old'")
-//line stdlib/audit/audit_test.kuki:500
+//line stdlib/audit/audit_test.kuki:498
 	if err_80 != nil {
-//line stdlib/audit/audit_test.kuki:500
+//line stdlib/audit/audit_test.kuki:498
 		t.Fatalf("old count: %v", err_80)
 	}
-//line stdlib/audit/audit_test.kuki:501
+//line stdlib/audit/audit_test.kuki:499
 	test.AssertEqual(t, oldCount, int64(0))
-//line stdlib/audit/audit_test.kuki:506
+//line stdlib/audit/audit_test.kuki:504
 	extraOrphans, err_81 := db.Count(probe, "SELECT COUNT(*) FROM event_extra WHERE seq NOT IN (SELECT seq FROM events)")
-//line stdlib/audit/audit_test.kuki:506
+//line stdlib/audit/audit_test.kuki:504
 	if err_81 != nil {
-//line stdlib/audit/audit_test.kuki:506
+//line stdlib/audit/audit_test.kuki:504
 		t.Fatalf("orphans: %v", err_81)
 	}
-//line stdlib/audit/audit_test.kuki:507
+//line stdlib/audit/audit_test.kuki:505
 	test.AssertEqual(t, extraOrphans, int64(0))
-//line stdlib/audit/audit_test.kuki:509
-//line stdlib/audit/audit_test.kuki:509
+//line stdlib/audit/audit_test.kuki:507
+//line stdlib/audit/audit_test.kuki:507
 	err_82 := audit.Verify(log)
-//line stdlib/audit/audit_test.kuki:509
+//line stdlib/audit/audit_test.kuki:507
 	if err_82 != nil {
-//line stdlib/audit/audit_test.kuki:509
+//line stdlib/audit/audit_test.kuki:507
 		t.Fatalf("Verify after vacuum: %v", err_82)
 	}
 }
 
-//line stdlib/audit/audit_test.kuki:514
+//line stdlib/audit/audit_test.kuki:512
 func TestVacuumOnEmptyRangeIsNoop(t *testing.T) {
-//line stdlib/audit/audit_test.kuki:515
+//line stdlib/audit/audit_test.kuki:513
 	dbPath := filepath.Join(t.TempDir(), "audit.db")
-//line stdlib/audit/audit_test.kuki:516
+//line stdlib/audit/audit_test.kuki:514
 	log, err_83 := audit.Open(dbPath)
-//line stdlib/audit/audit_test.kuki:516
+//line stdlib/audit/audit_test.kuki:514
 	if err_83 != nil {
-//line stdlib/audit/audit_test.kuki:516
+//line stdlib/audit/audit_test.kuki:514
 		t.Fatalf("Open: %v", err_83)
 	}
-//line stdlib/audit/audit_test.kuki:517
+//line stdlib/audit/audit_test.kuki:515
 	defer audit.Close(log)
-//line stdlib/audit/audit_test.kuki:519
-//line stdlib/audit/audit_test.kuki:519
+//line stdlib/audit/audit_test.kuki:517
+//line stdlib/audit/audit_test.kuki:517
 	err_84 := audit.Record(log, audit.Event{Actor: "a", Action: "x", Outcome: audit.Done{Detail: "1"}})
-//line stdlib/audit/audit_test.kuki:519
+//line stdlib/audit/audit_test.kuki:517
 	if err_84 != nil {
-//line stdlib/audit/audit_test.kuki:519
+//line stdlib/audit/audit_test.kuki:517
 		t.Fatalf("r1: %v", err_84)
 	}
+//line stdlib/audit/audit_test.kuki:518
+	seqBefore := audit.Tail(log).Seq
 //line stdlib/audit/audit_test.kuki:520
-	seqBefore, _ := audit.Tail(log)
-//line stdlib/audit/audit_test.kuki:522
-//line stdlib/audit/audit_test.kuki:522
+//line stdlib/audit/audit_test.kuki:520
 	err_85 := audit.Vacuum(log, time.Unix(0, 0))
-//line stdlib/audit/audit_test.kuki:522
+//line stdlib/audit/audit_test.kuki:520
 	if err_85 != nil {
-//line stdlib/audit/audit_test.kuki:522
+//line stdlib/audit/audit_test.kuki:520
 		t.Fatalf("Vacuum: %v", err_85)
 	}
-//line stdlib/audit/audit_test.kuki:524
-	seqAfter, _ := audit.Tail(log)
-//line stdlib/audit/audit_test.kuki:525
+//line stdlib/audit/audit_test.kuki:522
+	seqAfter := audit.Tail(log).Seq
+//line stdlib/audit/audit_test.kuki:523
 	test.AssertEqual(t, seqAfter, seqBefore)
-//line stdlib/audit/audit_test.kuki:527
+//line stdlib/audit/audit_test.kuki:525
 	probe := openProbe(t, dbPath)
-//line stdlib/audit/audit_test.kuki:528
+//line stdlib/audit/audit_test.kuki:526
 	defer db.Close(probe)
-//line stdlib/audit/audit_test.kuki:529
+//line stdlib/audit/audit_test.kuki:527
 	vacCount, err_86 := db.Count(probe, "SELECT COUNT(*) FROM events WHERE outcome = 'Vacuumed'")
-//line stdlib/audit/audit_test.kuki:529
+//line stdlib/audit/audit_test.kuki:527
 	if err_86 != nil {
-//line stdlib/audit/audit_test.kuki:529
+//line stdlib/audit/audit_test.kuki:527
 		t.Fatalf("vac count: %v", err_86)
 	}
-//line stdlib/audit/audit_test.kuki:530
+//line stdlib/audit/audit_test.kuki:528
 	test.AssertEqual(t, vacCount, int64(0))
 }
 
-//line stdlib/audit/audit_test.kuki:534
+//line stdlib/audit/audit_test.kuki:532
 func openProbe(t *testing.T, path string) db.Pool {
-//line stdlib/audit/audit_test.kuki:535
-	pool, err_87 := db.Open("sqlite3", (("file:" + path) + "?_pragma=journal_mode(WAL)"))
-//line stdlib/audit/audit_test.kuki:535
+//line stdlib/audit/audit_test.kuki:533
+	pool, err_87 := db.Open("sqlite3", "file:"+path+"?_pragma=journal_mode(WAL)")
+//line stdlib/audit/audit_test.kuki:533
 	if err_87 != nil {
-//line stdlib/audit/audit_test.kuki:535
+//line stdlib/audit/audit_test.kuki:533
 		t.Fatalf("openProbe: %v", err_87)
 	}
-//line stdlib/audit/audit_test.kuki:536
+//line stdlib/audit/audit_test.kuki:534
 	return pool
 }

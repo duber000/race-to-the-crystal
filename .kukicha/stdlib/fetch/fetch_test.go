@@ -293,7 +293,7 @@ func TestURLWithQuery(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:217
 			test.AssertNoError(t, err)
 //line stdlib/fetch/fetch_test.kuki:218
-			if (builtURL != tc.want1) && (builtURL != tc.want2) {
+			if builtURL != tc.want1 && builtURL != tc.want2 {
 //line stdlib/fetch/fetch_test.kuki:219
 				t.Errorf("Unexpected query URL: %v", builtURL)
 			}
@@ -366,7 +366,7 @@ func TestPost(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:263
 			postData := PostData{Name: "test", Value: 123}
 //line stdlib/fetch/fetch_test.kuki:264
-			resp, err := fetch.Post(postData, server.URL)
+			resp, err := fetch.Post(server.URL, postData)
 //line stdlib/fetch/fetch_test.kuki:265
 			test.AssertNoError(t, err)
 //line stdlib/fetch/fetch_test.kuki:266
@@ -413,7 +413,7 @@ func TestCheckStatus(t *testing.T) {
 				path = "/notfound"
 			}
 //line stdlib/fetch/fetch_test.kuki:296
-			resp, err := fetch.Get((server.URL + path))
+			resp, err := fetch.Get(server.URL + path)
 //line stdlib/fetch/fetch_test.kuki:297
 			test.AssertNoError(t, err)
 //line stdlib/fetch/fetch_test.kuki:299
@@ -555,7 +555,7 @@ func TestFormData(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:385
 			data := map[string]string{"key": "value"}
 //line stdlib/fetch/fetch_test.kuki:386
-			req := fetch.Method(fetch.FormData(fetch.New(server.URL), data), "POST")
+			req := fetch.Method(fetch.FormData(fetch.New(server.URL), data), fetch.HTTPMethodPOST)
 //line stdlib/fetch/fetch_test.kuki:387
 			resp, err := fetch.Do(req)
 //line stdlib/fetch/fetch_test.kuki:388
@@ -682,7 +682,7 @@ func TestWithContextTimeout(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:470
 	defer server.Close()
 //line stdlib/fetch/fetch_test.kuki:472
-	h := ctxpkg.WithTimeout(ctxpkg.Background(), (1 * time.Second))
+	h := ctxpkg.WithTimeout(ctxpkg.Background(), 1*time.Second)
 //line stdlib/fetch/fetch_test.kuki:473
 	defer h.Cancel()
 //line stdlib/fetch/fetch_test.kuki:475
@@ -699,5 +699,5 @@ func TestWithContextTimeout(t *testing.T) {
 		resp.Body.Close()
 	}
 //line stdlib/fetch/fetch_test.kuki:483
-	test.AssertTrue(t, (elapsed < datetime.Seconds(2)))
+	test.AssertTrue(t, elapsed < datetime.Seconds(2))
 }

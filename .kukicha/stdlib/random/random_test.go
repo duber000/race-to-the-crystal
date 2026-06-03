@@ -40,7 +40,7 @@ func TestRandomInt(t *testing.T) {
 //line stdlib/random/random_test.kuki:28
 		v := random.Int(5, 10)
 //line stdlib/random/random_test.kuki:29
-		if (v < 5) || (v >= 10) {
+		if v < 5 || v >= 10 {
 //line stdlib/random/random_test.kuki:30
 			t.Errorf("random.Int(5, 10) = %d, out of range", v)
 		}
@@ -58,7 +58,7 @@ func TestRandomFloat(t *testing.T) {
 //line stdlib/random/random_test.kuki:41
 		v := random.Float(1.0, 2.0)
 //line stdlib/random/random_test.kuki:42
-		if (v < 1.0) || (v >= 2.0) {
+		if v < 1.0 || v >= 2.0 {
 //line stdlib/random/random_test.kuki:43
 			t.Errorf("random.Float(1.0, 2.0) = %f, out of range", v)
 		}

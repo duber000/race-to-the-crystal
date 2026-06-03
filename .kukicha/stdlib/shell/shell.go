@@ -18,7 +18,7 @@ type Command struct {
 	name    string
 	args    []string
 	dir     string
-	timeout int
+	timeout time.Duration
 	env     map[string]string
 	stdin   []byte
 }
@@ -76,9 +76,9 @@ func Lines(name string, args ...string) ([]string, error) {
 //line stdlib/shell/shell.kuki:66
 	lines := kukistring.Lines(out)
 //line stdlib/shell/shell.kuki:67
-	if (len(lines) > 0) && (lines[(len(lines)-1)] == "") {
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
 //line stdlib/shell/shell.kuki:68
-		lines = lines[:(len(lines) - 1)]
+		lines = lines[:len(lines)-1]
 	}
 //line stdlib/shell/shell.kuki:69
 	return lines, nil
@@ -153,9 +153,9 @@ func (cmd Command) Env(key string, value string) Command {
 }
 
 //line stdlib/shell/shell.kuki:140
-func (cmd Command) Timeout(seconds int) Command {
+func (cmd Command) Timeout(d time.Duration) Command {
 //line stdlib/shell/shell.kuki:141
-	cmd.timeout = seconds
+	cmd.timeout = d
 //line stdlib/shell/shell.kuki:142
 	return cmd
 }
@@ -193,7 +193,7 @@ func (cmd Command) Execute() Result {
 //line stdlib/shell/shell.kuki:174
 	if cmd.timeout > 0 {
 //line stdlib/shell/shell.kuki:175
-		h := ctxpkg.WithTimeout(ctxpkg.Background(), (time.Duration(cmd.timeout) * time.Second))
+		h := ctxpkg.WithTimeout(ctxpkg.Background(), cmd.timeout)
 //line stdlib/shell/shell.kuki:176
 		defer h.Cancel()
 //line stdlib/shell/shell.kuki:177
@@ -293,7 +293,7 @@ func getExitCode(err error) int {
 //line stdlib/shell/shell.kuki:253
 func (result Result) Success() bool {
 //line stdlib/shell/shell.kuki:254
-	return ((result.ExitCode == 0) && (result.Err == nil))
+	return result.ExitCode == 0 && result.Err == nil
 }
 
 //line stdlib/shell/shell.kuki:259
@@ -314,7 +314,7 @@ func Which(name string) bool {
 //line stdlib/shell/shell.kuki:271
 	_, err := exec.LookPath(name)
 //line stdlib/shell/shell.kuki:272
-	return (err == nil)
+	return err == nil
 }
 
 //line stdlib/shell/shell.kuki:276

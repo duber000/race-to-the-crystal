@@ -51,7 +51,7 @@ func Run(h ctxpkg.Handle, ask func(string) (string, error), task Task, score fun
 //line stdlib/llm/era/era.kuki:103
 	rootScore, rootErr := score(task.Baseline)
 //line stdlib/llm/era/era.kuki:104
-	root := Candidate{Source: task.Baseline, Score: rootScore, Parent: -1, Valid: (rootErr == nil), Visits: 0}
+	root := Candidate{Source: task.Baseline, Score: rootScore, Parent: -1, Valid: rootErr == nil, Visits: 0}
 //line stdlib/llm/era/era.kuki:111
 	tree = append(tree, root)
 //line stdlib/llm/era/era.kuki:113
@@ -69,7 +69,7 @@ func Run(h ctxpkg.Handle, ask func(string) (string, error), task Task, score fun
 			break
 		}
 //line stdlib/llm/era/era.kuki:121
-		useRecombine := ((countValid(tree) >= DefaultTopK) && (rand.Float64() < RecombinationProbability))
+		useRecombine := countValid(tree) >= DefaultTopK && rand.Float64() < RecombinationProbability
 //line stdlib/llm/era/era.kuki:122
 		var proposal string
 //line stdlib/llm/era/era.kuki:123
@@ -83,7 +83,7 @@ func Run(h ctxpkg.Handle, ask func(string) (string, error), task Task, score fun
 			proposal, proposeErr = ProposeRewrite(ask, task, tree[parentIdx], best(tree, task.Higher))
 		}
 //line stdlib/llm/era/era.kuki:131
-		tree[parentIdx].Visits = (tree[parentIdx].Visits + 1)
+		tree[parentIdx].Visits = tree[parentIdx].Visits + 1
 //line stdlib/llm/era/era.kuki:132
 		if proposeErr != nil {
 //line stdlib/llm/era/era.kuki:133
@@ -100,7 +100,7 @@ func Run(h ctxpkg.Handle, ask func(string) (string, error), task Task, score fun
 			}
 		}()
 //line stdlib/llm/era/era.kuki:139
-		cand := Candidate{Source: proposal, Score: candScore, Parent: candParent, Valid: (candErr == nil), Visits: 0}
+		cand := Candidate{Source: proposal, Score: candScore, Parent: candParent, Valid: candErr == nil, Visits: 0}
 //line stdlib/llm/era/era.kuki:146
 		tree = append(tree, cand)
 	}
@@ -124,9 +124,9 @@ func SelectFUTS(tree []Candidate, higher bool, exploration float64) int {
 //line stdlib/llm/era/era.kuki:161
 		if c.Valid {
 //line stdlib/llm/era/era.kuki:162
-			validCount = (validCount + 1)
+			validCount = validCount + 1
 //line stdlib/llm/era/era.kuki:163
-			totalVisits = ((totalVisits + c.Visits) + 1)
+			totalVisits = totalVisits + c.Visits + 1
 		}
 	}
 //line stdlib/llm/era/era.kuki:164
@@ -137,7 +137,7 @@ func SelectFUTS(tree []Candidate, higher bool, exploration float64) int {
 //line stdlib/llm/era/era.kuki:167
 	lo, hi := minMaxValidScore(tree)
 //line stdlib/llm/era/era.kuki:168
-	span := (hi - lo)
+	span := hi - lo
 //line stdlib/llm/era/era.kuki:169
 	if span == 0.0 {
 //line stdlib/llm/era/era.kuki:170
@@ -157,14 +157,14 @@ func SelectFUTS(tree []Candidate, higher bool, exploration float64) int {
 			continue
 		}
 //line stdlib/llm/era/era.kuki:178
-		norm := ((c.Score - lo) / span)
+		norm := (c.Score - lo) / span
 //line stdlib/llm/era/era.kuki:179
 		if !higher {
 //line stdlib/llm/era/era.kuki:180
-			norm = (1.0 - norm)
+			norm = 1.0 - norm
 		}
 //line stdlib/llm/era/era.kuki:181
-		ucb := (norm + (exploration * math.Sqrt((math.Log(float64(totalVisits)) / float64((c.Visits + 1))))))
+		ucb := norm + exploration*math.Sqrt(math.Log(float64(totalVisits))/float64(c.Visits+1))
 //line stdlib/llm/era/era.kuki:182
 		if ucb > bestUCB {
 //line stdlib/llm/era/era.kuki:183
@@ -230,7 +230,7 @@ func ProposeRecombination(ask func(string) (string, error), task Task, top []Can
 //line stdlib/llm/era/era.kuki:208
 		c := top[i]
 //line stdlib/llm/era/era.kuki:209
-		label := fmt.Sprintf("CANDIDATE_%v_SCORE_%v", (i + 1), c.Score)
+		label := fmt.Sprintf("CANDIDATE_%v_SCORE_%v", i+1, c.Score)
 //line stdlib/llm/era/era.kuki:210
 		blocks = append(blocks, safe.Wrap(label, safe.Truncate(c.Source, MaxBlockBytes)))
 	}
@@ -366,9 +366,9 @@ func stripFences(s string) string {
 //line stdlib/llm/era/era.kuki:277
 	lines = lines[1:]
 //line stdlib/llm/era/era.kuki:278
-	if (len(lines) > 0) && strpkg.HasPrefix(lines[(len(lines)-1)], "```") {
+	if len(lines) > 0 && strpkg.HasPrefix(lines[len(lines)-1], "```") {
 //line stdlib/llm/era/era.kuki:279
-		lines = lines[:(len(lines) - 1)]
+		lines = lines[:len(lines)-1]
 	}
 //line stdlib/llm/era/era.kuki:280
 	return strpkg.TrimSpace(strpkg.Join(lines, "\n"))
@@ -383,7 +383,7 @@ func countValid(tree []Candidate) int {
 //line stdlib/llm/era/era.kuki:285
 		if c.Valid {
 //line stdlib/llm/era/era.kuki:286
-			n = (n + 1)
+			n = n + 1
 		}
 	}
 //line stdlib/llm/era/era.kuki:287
@@ -441,12 +441,12 @@ func best(tree []Candidate, higher bool) Candidate {
 			continue
 		}
 //line stdlib/llm/era/era.kuki:311
-		if higher && (c.Score > bestC.Score) {
+		if higher && c.Score > bestC.Score {
 //line stdlib/llm/era/era.kuki:312
 			bestC = c
 		}
 //line stdlib/llm/era/era.kuki:313
-		if !higher && (c.Score < bestC.Score) {
+		if !higher && c.Score < bestC.Score {
 //line stdlib/llm/era/era.kuki:314
 			bestC = c
 		}
@@ -471,9 +471,9 @@ func topK(tree []Candidate, higher bool, k int) []Candidate {
 	valid = sort.By(valid, func(a Candidate, b Candidate) bool {
 		return func() bool {
 			if higher {
-				return (a.Score > b.Score)
+				return a.Score > b.Score
 			} else {
-				return (a.Score < b.Score)
+				return a.Score < b.Score
 			}
 		}()
 	})
@@ -502,9 +502,9 @@ func parseBenchNsPerOp(out string, benchName string) (float64, error) {
 //line stdlib/llm/era/era.kuki:337
 		for i := range len(fields) {
 //line stdlib/llm/era/era.kuki:338
-			if (fields[i] == "ns/op") && (i > 0) {
+			if fields[i] == "ns/op" && i > 0 {
 //line stdlib/llm/era/era.kuki:339
-				return strconv.ParseFloat(fields[(i-1)], 64)
+				return strconv.ParseFloat(fields[i-1], 64)
 			}
 		}
 	}

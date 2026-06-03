@@ -182,7 +182,7 @@ func MapEWithLimit[T any, R any](items []T, limit int, fn func(T) (R, error)) ([
 //line stdlib/concurrent/concurrent.kuki:127
 		mu.Lock()
 //line stdlib/concurrent/concurrent.kuki:128
-		failed := (len(errs) > 0)
+		failed := len(errs) > 0
 //line stdlib/concurrent/concurrent.kuki:129
 		mu.Unlock()
 //line stdlib/concurrent/concurrent.kuki:130

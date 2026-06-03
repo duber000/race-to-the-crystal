@@ -397,246 +397,272 @@ func TestParseInvalidJSON(t *testing.T) {
 }
 
 //line stdlib/json/json_test.kuki:244
-func TestParseStringValueNull(t *testing.T) {
+func TestReadSample(t *testing.T) {
 //line stdlib/json/json_test.kuki:245
-	v, err := json.ParseStringValue("null")
+	reader := bytes.NewBufferString(`{"name": "Lena", "age": 44}`)
 //line stdlib/json/json_test.kuki:246
-	test.AssertNoError(t, err)
+	p, err := json.Read[Person](reader)
 //line stdlib/json/json_test.kuki:247
+	test.AssertNoError(t, err)
+//line stdlib/json/json_test.kuki:248
+	test.AssertEqual(t, p.Name, "Lena")
+//line stdlib/json/json_test.kuki:249
+	test.AssertEqual(t, p.Age, 44)
+}
+
+//line stdlib/json/json_test.kuki:252
+func TestParseStringMap(t *testing.T) {
+//line stdlib/json/json_test.kuki:253
+	counts, err := json.ParseString[map[string]int](`{"a": 1, "b": 2}`)
+//line stdlib/json/json_test.kuki:254
+	test.AssertNoError(t, err)
+//line stdlib/json/json_test.kuki:255
+	test.AssertEqual(t, counts["a"], 1)
+//line stdlib/json/json_test.kuki:256
+	test.AssertEqual(t, counts["b"], 2)
+}
+
+//line stdlib/json/json_test.kuki:259
+func TestParseStringValueNull(t *testing.T) {
+//line stdlib/json/json_test.kuki:260
+	v, err := json.ParseStringValue("null")
+//line stdlib/json/json_test.kuki:261
+	test.AssertNoError(t, err)
+//line stdlib/json/json_test.kuki:262
 	switch x := v.(type) {
 	case json.Null:
 		_ = x
-//line stdlib/json/json_test.kuki:249
+//line stdlib/json/json_test.kuki:264
 		return
 	}
-//line stdlib/json/json_test.kuki:251
+//line stdlib/json/json_test.kuki:266
 	t.Error("expected Null variant")
 }
 
-//line stdlib/json/json_test.kuki:253
+//line stdlib/json/json_test.kuki:268
 func TestParseStringValueBool(t *testing.T) {
-//line stdlib/json/json_test.kuki:254
+//line stdlib/json/json_test.kuki:269
 	v, err := json.ParseStringValue("true")
-//line stdlib/json/json_test.kuki:255
+//line stdlib/json/json_test.kuki:270
 	test.AssertNoError(t, err)
-//line stdlib/json/json_test.kuki:256
+//line stdlib/json/json_test.kuki:271
 	switch b := v.(type) {
 	case json.Bool:
-//line stdlib/json/json_test.kuki:258
+//line stdlib/json/json_test.kuki:273
 		test.AssertTrue(t, b.Value)
-//line stdlib/json/json_test.kuki:259
+//line stdlib/json/json_test.kuki:274
 		return
 	}
-//line stdlib/json/json_test.kuki:261
+//line stdlib/json/json_test.kuki:276
 	t.Error("expected Bool variant")
 }
 
-//line stdlib/json/json_test.kuki:263
+//line stdlib/json/json_test.kuki:278
 func TestParseStringValueNum(t *testing.T) {
-//line stdlib/json/json_test.kuki:264
+//line stdlib/json/json_test.kuki:279
 	v, err := json.ParseStringValue("42.5")
-//line stdlib/json/json_test.kuki:265
+//line stdlib/json/json_test.kuki:280
 	test.AssertNoError(t, err)
-//line stdlib/json/json_test.kuki:266
+//line stdlib/json/json_test.kuki:281
 	switch n := v.(type) {
 	case json.Num:
-//line stdlib/json/json_test.kuki:268
+//line stdlib/json/json_test.kuki:283
 		test.AssertEqual(t, n.Value, 42.5)
-//line stdlib/json/json_test.kuki:269
+//line stdlib/json/json_test.kuki:284
 		return
 	}
-//line stdlib/json/json_test.kuki:271
+//line stdlib/json/json_test.kuki:286
 	t.Error("expected Num variant")
 }
 
-//line stdlib/json/json_test.kuki:273
+//line stdlib/json/json_test.kuki:288
 func TestParseStringValueStr(t *testing.T) {
-//line stdlib/json/json_test.kuki:274
+//line stdlib/json/json_test.kuki:289
 	v, err := json.ParseStringValue(`"hello"`)
-//line stdlib/json/json_test.kuki:275
+//line stdlib/json/json_test.kuki:290
 	test.AssertNoError(t, err)
-//line stdlib/json/json_test.kuki:276
+//line stdlib/json/json_test.kuki:291
 	switch s := v.(type) {
 	case json.Str:
-//line stdlib/json/json_test.kuki:278
+//line stdlib/json/json_test.kuki:293
 		test.AssertEqual(t, s.Value, "hello")
-//line stdlib/json/json_test.kuki:279
+//line stdlib/json/json_test.kuki:294
 		return
 	}
-//line stdlib/json/json_test.kuki:281
+//line stdlib/json/json_test.kuki:296
 	t.Error("expected Str variant")
 }
 
-//line stdlib/json/json_test.kuki:284
+//line stdlib/json/json_test.kuki:299
 func TestParseStringValueNested(t *testing.T) {
-//line stdlib/json/json_test.kuki:285
+//line stdlib/json/json_test.kuki:300
 	raw := `{"name": "ada", "tags": ["x", 7, true, null]}`
-//line stdlib/json/json_test.kuki:286
+//line stdlib/json/json_test.kuki:301
 	v, err := json.ParseStringValue(raw)
-//line stdlib/json/json_test.kuki:287
+//line stdlib/json/json_test.kuki:302
 	test.AssertNoError(t, err)
-//line stdlib/json/json_test.kuki:289
+//line stdlib/json/json_test.kuki:304
 	obj := json.Object{}
-//line stdlib/json/json_test.kuki:290
+//line stdlib/json/json_test.kuki:305
 	switch o := v.(type) {
 	case json.Object:
-//line stdlib/json/json_test.kuki:292
+//line stdlib/json/json_test.kuki:307
 		obj = o
 	default:
-//line stdlib/json/json_test.kuki:294
+//line stdlib/json/json_test.kuki:309
 		t.Fatal("expected Object")
 	}
-//line stdlib/json/json_test.kuki:296
+//line stdlib/json/json_test.kuki:311
 	nameVal, ok := obj.Fields["name"]
-//line stdlib/json/json_test.kuki:297
+//line stdlib/json/json_test.kuki:312
 	test.AssertTrue(t, ok)
-//line stdlib/json/json_test.kuki:298
+//line stdlib/json/json_test.kuki:313
 	switch n := nameVal.(type) {
 	case json.Str:
-//line stdlib/json/json_test.kuki:300
+//line stdlib/json/json_test.kuki:315
 		test.AssertEqual(t, n.Value, "ada")
 	default:
-//line stdlib/json/json_test.kuki:302
+//line stdlib/json/json_test.kuki:317
 		t.Error("name should be Str")
 	}
-//line stdlib/json/json_test.kuki:304
+//line stdlib/json/json_test.kuki:319
 	tagsVal, ok2 := obj.Fields["tags"]
-//line stdlib/json/json_test.kuki:305
+//line stdlib/json/json_test.kuki:320
 	test.AssertTrue(t, ok2)
-//line stdlib/json/json_test.kuki:306
+//line stdlib/json/json_test.kuki:321
 	arr := json.Array{}
-//line stdlib/json/json_test.kuki:307
+//line stdlib/json/json_test.kuki:322
 	switch ta := tagsVal.(type) {
 	case json.Array:
-//line stdlib/json/json_test.kuki:309
+//line stdlib/json/json_test.kuki:324
 		arr = ta
 	default:
-//line stdlib/json/json_test.kuki:311
+//line stdlib/json/json_test.kuki:326
 		t.Fatal("expected Array for tags")
 	}
-//line stdlib/json/json_test.kuki:313
+//line stdlib/json/json_test.kuki:328
 	test.AssertEqual(t, len(arr.Items), 4)
 }
 
-//line stdlib/json/json_test.kuki:316
+//line stdlib/json/json_test.kuki:331
 func TestParseValueBytes(t *testing.T) {
-//line stdlib/json/json_test.kuki:317
+//line stdlib/json/json_test.kuki:332
 	v, err := json.ParseValue([]byte(`{"k":1}`))
-//line stdlib/json/json_test.kuki:318
+//line stdlib/json/json_test.kuki:333
 	test.AssertNoError(t, err)
-//line stdlib/json/json_test.kuki:319
+//line stdlib/json/json_test.kuki:334
 	switch o := v.(type) {
 	case json.Object:
-//line stdlib/json/json_test.kuki:321
+//line stdlib/json/json_test.kuki:336
 		test.AssertEqual(t, len(o.Fields), 1)
-//line stdlib/json/json_test.kuki:322
+//line stdlib/json/json_test.kuki:337
 		return
 	}
-//line stdlib/json/json_test.kuki:324
+//line stdlib/json/json_test.kuki:339
 	t.Error("expected Object variant")
 }
 
-//line stdlib/json/json_test.kuki:327
+//line stdlib/json/json_test.kuki:342
 func TestReadValueFromReader(t *testing.T) {
-//line stdlib/json/json_test.kuki:328
+//line stdlib/json/json_test.kuki:343
 	r := bytes.NewBufferString(`[1, 2, 3]`)
-//line stdlib/json/json_test.kuki:329
+//line stdlib/json/json_test.kuki:344
 	v, err := json.ReadValue(r)
-//line stdlib/json/json_test.kuki:330
+//line stdlib/json/json_test.kuki:345
 	test.AssertNoError(t, err)
-//line stdlib/json/json_test.kuki:331
+//line stdlib/json/json_test.kuki:346
 	switch a := v.(type) {
 	case json.Array:
-//line stdlib/json/json_test.kuki:333
+//line stdlib/json/json_test.kuki:348
 		test.AssertEqual(t, len(a.Items), 3)
-//line stdlib/json/json_test.kuki:334
+//line stdlib/json/json_test.kuki:349
 		return
 	}
-//line stdlib/json/json_test.kuki:336
+//line stdlib/json/json_test.kuki:351
 	t.Error("expected Array variant")
 }
 
-//line stdlib/json/json_test.kuki:339
+//line stdlib/json/json_test.kuki:354
 func TestParseStringValueInvalid(t *testing.T) {
-//line stdlib/json/json_test.kuki:340
+//line stdlib/json/json_test.kuki:355
 	_, err := json.ParseStringValue("not valid")
-//line stdlib/json/json_test.kuki:341
+//line stdlib/json/json_test.kuki:356
 	test.AssertError(t, err)
 }
 
-//line stdlib/json/json_test.kuki:344
+//line stdlib/json/json_test.kuki:359
 func TestFrozenCanonicalEquality(t *testing.T) {
-//line stdlib/json/json_test.kuki:345
+//line stdlib/json/json_test.kuki:360
 	a, errA := json.ParseStringFrozen(`{"b":2,"a":1}`)
-//line stdlib/json/json_test.kuki:346
+//line stdlib/json/json_test.kuki:361
 	test.AssertNoError(t, errA)
-//line stdlib/json/json_test.kuki:347
+//line stdlib/json/json_test.kuki:362
 	b, errB := json.ParseStringFrozen(`{"a":1,"b":2}`)
-//line stdlib/json/json_test.kuki:348
+//line stdlib/json/json_test.kuki:363
 	test.AssertNoError(t, errB)
-//line stdlib/json/json_test.kuki:349
+//line stdlib/json/json_test.kuki:364
 	test.AssertEqual(t, a.Canonical, b.Canonical)
-//line stdlib/json/json_test.kuki:350
+//line stdlib/json/json_test.kuki:365
 	if a != b {
-//line stdlib/json/json_test.kuki:351
+//line stdlib/json/json_test.kuki:366
 		t.Error("frozen values with same content should compare equal")
 	}
 }
 
-//line stdlib/json/json_test.kuki:354
+//line stdlib/json/json_test.kuki:369
 func TestFrozenAsMapKey(t *testing.T) {
-//line stdlib/json/json_test.kuki:355
+//line stdlib/json/json_test.kuki:370
 	seen := make(map[json.Frozen]bool)
-//line stdlib/json/json_test.kuki:356
+//line stdlib/json/json_test.kuki:371
 	a, err := json.ParseStringFrozen(`{"x":1}`)
-//line stdlib/json/json_test.kuki:357
+//line stdlib/json/json_test.kuki:372
 	test.AssertNoError(t, err)
-//line stdlib/json/json_test.kuki:358
+//line stdlib/json/json_test.kuki:373
 	seen[a] = true
-//line stdlib/json/json_test.kuki:360
+//line stdlib/json/json_test.kuki:375
 	b, err2 := json.ParseStringFrozen(`{"x": 1}`)
-//line stdlib/json/json_test.kuki:361
+//line stdlib/json/json_test.kuki:376
 	test.AssertNoError(t, err2)
-//line stdlib/json/json_test.kuki:362
+//line stdlib/json/json_test.kuki:377
 	if !seen[b] {
-//line stdlib/json/json_test.kuki:363
+//line stdlib/json/json_test.kuki:378
 		t.Error("frozen value with equivalent content should hit existing map key")
 	}
-//line stdlib/json/json_test.kuki:365
+//line stdlib/json/json_test.kuki:380
 	c, err3 := json.ParseStringFrozen(`{"x":2}`)
-//line stdlib/json/json_test.kuki:366
+//line stdlib/json/json_test.kuki:381
 	test.AssertNoError(t, err3)
-//line stdlib/json/json_test.kuki:367
+//line stdlib/json/json_test.kuki:382
 	if seen[c] {
-//line stdlib/json/json_test.kuki:368
+//line stdlib/json/json_test.kuki:383
 		t.Error("distinct frozen value should not hit existing map key")
 	}
 }
 
-//line stdlib/json/json_test.kuki:371
+//line stdlib/json/json_test.kuki:386
 func TestFrozenThawObject(t *testing.T) {
-//line stdlib/json/json_test.kuki:372
+//line stdlib/json/json_test.kuki:387
 	f, err := json.ParseStringFrozen(`{"name":"alice","age":30}`)
-//line stdlib/json/json_test.kuki:373
+//line stdlib/json/json_test.kuki:388
 	test.AssertNoError(t, err)
-//line stdlib/json/json_test.kuki:374
+//line stdlib/json/json_test.kuki:389
 	v := f.Thaw()
-//line stdlib/json/json_test.kuki:375
+//line stdlib/json/json_test.kuki:390
 	switch o := v.(type) {
 	case json.Object:
-//line stdlib/json/json_test.kuki:377
+//line stdlib/json/json_test.kuki:392
 		test.AssertEqual(t, len(o.Fields), 2)
-//line stdlib/json/json_test.kuki:378
+//line stdlib/json/json_test.kuki:393
 		return
 	}
-//line stdlib/json/json_test.kuki:380
+//line stdlib/json/json_test.kuki:395
 	t.Error("expected Object variant after Thaw")
 }
 
-//line stdlib/json/json_test.kuki:383
+//line stdlib/json/json_test.kuki:398
 func TestFrozenInvalid(t *testing.T) {
-//line stdlib/json/json_test.kuki:384
+//line stdlib/json/json_test.kuki:399
 	_, err := json.ParseStringFrozen("not valid")
-//line stdlib/json/json_test.kuki:385
+//line stdlib/json/json_test.kuki:400
 	test.AssertError(t, err)
 }

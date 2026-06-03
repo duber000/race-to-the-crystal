@@ -269,7 +269,7 @@ func TestWriteCSVError(t *testing.T) {
 //line stdlib/parse/parse_test.kuki:164
 	err := parse.WriteCSV("/nonexistent-dir-xyz/out.csv", [][]string{[]string{"a"}})
 //line stdlib/parse/parse_test.kuki:167
-	test.AssertEqual(t, (err != nil), true)
+	test.AssertEqual(t, err != nil, true)
 }
 
 //line stdlib/parse/parse_test.kuki:170
@@ -357,7 +357,7 @@ func TestDuration(t *testing.T) {
 //line stdlib/parse/parse_test.kuki:231
 	test.AssertNoError(t, err)
 //line stdlib/parse/parse_test.kuki:232
-	test.AssertEqual(t, d, (90 * time.Minute))
+	test.AssertEqual(t, d, 90*time.Minute)
 }
 
 //line stdlib/parse/parse_test.kuki:235

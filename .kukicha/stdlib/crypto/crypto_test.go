@@ -55,7 +55,7 @@ func TestHMAC(t *testing.T) {
 //line stdlib/crypto/crypto_test.kuki:49
 			mac3 := crypto.HMAC("other-key", "message")
 //line stdlib/crypto/crypto_test.kuki:50
-			test.AssertTrue(t, (mac1 != mac3))
+			test.AssertTrue(t, mac1 != mac3)
 		})
 	}
 }
@@ -81,7 +81,7 @@ func TestRandomToken(t *testing.T) {
 //line stdlib/crypto/crypto_test.kuki:68
 			test.AssertNoError(t, err)
 //line stdlib/crypto/crypto_test.kuki:69
-			test.AssertEqual(t, len(token), (tc.length * 2))
+			test.AssertEqual(t, len(token), tc.length*2)
 		})
 	}
 }

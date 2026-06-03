@@ -1,14 +1,12 @@
 petiole main
 
 import "bufio"
-import "strings"
-
 import "race-to-the-crystal/game" as gamepkg
-
 import "stdlib/cast"
 import "stdlib/fetch"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
+import "strings"
 
 type Session
     base_url string
@@ -105,8 +103,6 @@ func JoinGame on s: reference Session(game_id: string, player_name: string) bool
     return true
 
 func fillFromResponse on s: reference Session(data: any)
-    if data == empty
-        return
     m, ok := data.(map of string to any)
     if not ok
         return
@@ -227,6 +223,7 @@ func SendAction on s: reference Session(action: gamepkg.ChosenAction) map of str
     fetch.Decode(resp, reference of wrapper) onerr
         log.Error("SendAction: decode failed: {error}")
         return empty map of string to any
+
     return wrapper
 
 func TryAutoStart on s: reference Session bool
@@ -433,7 +430,7 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
 
     body := dereference resp.Body
     scanner := bufio.NewScanner(body)
-    scanner.Buffer(make(list of byte, 0, 64*1024), 1024*1024)
+    scanner.Buffer(make(list of byte, 0, 64 * 1024), 1024 * 1024)
 
     current_event := "message"
     data_buf := strings.Builder{}

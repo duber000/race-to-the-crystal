@@ -40,7 +40,7 @@ func TakeLast[T any](items []T, n int) []T {
 		return items
 	}
 //line stdlib/slice/slice.kuki:24
-	return items[(length - n):]
+	return items[length-n:]
 }
 
 //line stdlib/slice/slice.kuki:28
@@ -74,7 +74,7 @@ func SkipLast[T any](items []T, n int) []T {
 		return make([]T, 0)
 	}
 //line stdlib/slice/slice.kuki:43
-	return items[:(length - n)]
+	return items[:length-n]
 }
 
 //line stdlib/slice/slice.kuki:47
@@ -128,13 +128,13 @@ func Chunk[T any](items []T, size int) [][]T {
 //line stdlib/slice/slice.kuki:79
 	for i < length {
 //line stdlib/slice/slice.kuki:80
-		end := min((i + size), length)
+		end := min(i+size, length)
 //line stdlib/slice/slice.kuki:81
 		chunk := items[i:end]
 //line stdlib/slice/slice.kuki:82
 		result = append(result, chunk)
 //line stdlib/slice/slice.kuki:83
-		i = (i + size)
+		i = i + size
 	}
 //line stdlib/slice/slice.kuki:85
 	return result
@@ -159,7 +159,7 @@ func Concat[T any](slices [][]T) []T {
 //line stdlib/slice/slice.kuki:102
 	for _, slice := range slices {
 //line stdlib/slice/slice.kuki:103
-		totalLength = (totalLength + len(slice))
+		totalLength = totalLength + len(slice)
 	}
 //line stdlib/slice/slice.kuki:105
 	result := make([]T, 0, totalLength)
@@ -271,10 +271,10 @@ func Get[T any](items []T, index int) (T, error) {
 //line stdlib/slice/slice.kuki:179
 	if index < 0 {
 //line stdlib/slice/slice.kuki:180
-		actualIndex = (length + index)
+		actualIndex = length + index
 	}
 //line stdlib/slice/slice.kuki:182
-	if (actualIndex < 0) || (actualIndex >= length) {
+	if actualIndex < 0 || actualIndex >= length {
 //line stdlib/slice/slice.kuki:183
 		var _zero0 T
 		return _zero0, fmt.Errorf("index %v out of bounds for slice of length %v", index, length)
@@ -297,10 +297,10 @@ func GetOr[T any](items []T, index int, defaultValue T) T {
 //line stdlib/slice/slice.kuki:198
 	if index < 0 {
 //line stdlib/slice/slice.kuki:199
-		actualIndex = (length + index)
+		actualIndex = length + index
 	}
 //line stdlib/slice/slice.kuki:201
-	if (actualIndex < 0) || (actualIndex >= length) {
+	if actualIndex < 0 || actualIndex >= length {
 //line stdlib/slice/slice.kuki:202
 		return defaultValue
 	}
@@ -340,7 +340,7 @@ func Last[T any](items []T) (T, error) {
 		return _zero0, errors.New("slice is empty")
 	}
 //line stdlib/slice/slice.kuki:226
-	return items[(len(items) - 1)], nil
+	return items[len(items)-1], nil
 }
 
 //line stdlib/slice/slice.kuki:231
@@ -351,7 +351,7 @@ func LastOr[T any](items []T, defaultValue T) T {
 		return defaultValue
 	}
 //line stdlib/slice/slice.kuki:234
-	return items[(len(items) - 1)]
+	return items[len(items)-1]
 }
 
 //line stdlib/slice/slice.kuki:238
@@ -407,9 +407,10 @@ func FindLast[T any](items []T, predicate func(T) bool) (T, error) {
 	}
 //line stdlib/slice/slice.kuki:267
 	{
-		_iStart, _iEnd, _iStep := (len(items) - 1), 0, 1
+		_iStart, _iEnd := len(items)-1, 0
+		_iStep := _iStart - _iStart + 1
 		if _iStart > _iEnd {
-			_iStep = -1
+			_iStep = -_iStep
 		}
 		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
 //line stdlib/slice/slice.kuki:268
@@ -433,9 +434,10 @@ func FindLastOr[T any](items []T, predicate func(T) bool, defaultValue T) T {
 	}
 //line stdlib/slice/slice.kuki:277
 	{
-		_iStart, _iEnd, _iStep := (len(items) - 1), 0, 1
+		_iStart, _iEnd := len(items)-1, 0
+		_iStep := _iStart - _iStart + 1
 		if _iStart > _iEnd {
-			_iStep = -1
+			_iStep = -_iStep
 		}
 		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
 //line stdlib/slice/slice.kuki:278
@@ -458,7 +460,7 @@ func PopLast[T any](items []T) (T, []T, error) {
 		return _zero0, items, errors.New("cannot pop from empty slice")
 	}
 //line stdlib/slice/slice.kuki:288
-	return items[(len(items) - 1)], items[:(len(items) - 1)], nil
+	return items[len(items)-1], items[:len(items)-1], nil
 }
 
 //line stdlib/slice/slice.kuki:293
@@ -480,7 +482,7 @@ func Sum[K cmp.Ordered](items []K) K {
 //line stdlib/slice/slice.kuki:307
 	for _, item := range items {
 //line stdlib/slice/slice.kuki:308
-		total = (total + item)
+		total = total + item
 	}
 //line stdlib/slice/slice.kuki:309
 	return total
@@ -542,8 +544,68 @@ func Average(items []float64) (float64, error) {
 //line stdlib/slice/slice.kuki:340
 	for _, item := range items {
 //line stdlib/slice/slice.kuki:341
-		total = (total + item)
+		total = total + item
 	}
 //line stdlib/slice/slice.kuki:342
-	return (total / float64(len(items))), nil
+	return total / float64(len(items)), nil
+}
+
+//line stdlib/slice/slice.kuki:348
+func MinOr[K cmp.Ordered](items []K, defaultValue K) K {
+//line stdlib/slice/slice.kuki:349
+	if len(items) == 0 {
+//line stdlib/slice/slice.kuki:350
+		return defaultValue
+	}
+//line stdlib/slice/slice.kuki:351
+	best := items[0]
+//line stdlib/slice/slice.kuki:352
+	for _, item := range items[1:] {
+//line stdlib/slice/slice.kuki:353
+		if item < best {
+//line stdlib/slice/slice.kuki:354
+			best = item
+		}
+	}
+//line stdlib/slice/slice.kuki:355
+	return best
+}
+
+//line stdlib/slice/slice.kuki:361
+func MaxOr[K cmp.Ordered](items []K, defaultValue K) K {
+//line stdlib/slice/slice.kuki:362
+	if len(items) == 0 {
+//line stdlib/slice/slice.kuki:363
+		return defaultValue
+	}
+//line stdlib/slice/slice.kuki:364
+	best := items[0]
+//line stdlib/slice/slice.kuki:365
+	for _, item := range items[1:] {
+//line stdlib/slice/slice.kuki:366
+		if item > best {
+//line stdlib/slice/slice.kuki:367
+			best = item
+		}
+	}
+//line stdlib/slice/slice.kuki:368
+	return best
+}
+
+//line stdlib/slice/slice.kuki:374
+func AverageOr(items []float64, defaultValue float64) float64 {
+//line stdlib/slice/slice.kuki:375
+	if len(items) == 0 {
+//line stdlib/slice/slice.kuki:376
+		return defaultValue
+	}
+//line stdlib/slice/slice.kuki:377
+	total := 0.0
+//line stdlib/slice/slice.kuki:378
+	for _, item := range items {
+//line stdlib/slice/slice.kuki:379
+		total = total + item
+	}
+//line stdlib/slice/slice.kuki:380
+	return total / float64(len(items))
 }

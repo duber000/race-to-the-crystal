@@ -80,7 +80,7 @@ func TestBy(t *testing.T) {
 //line stdlib/sort/sort_test.kuki:73
 			words := []string{"banana", "fig", "apple", "kiwi"}
 //line stdlib/sort/sort_test.kuki:74
-			sorted := sort.By(words, func(a string, b string) bool { return (len(a) < len(b)) })
+			sorted := sort.By(words, func(a string, b string) bool { return len(a) < len(b) })
 //line stdlib/sort/sort_test.kuki:75
 			test.AssertEqual(t, sorted[0], "fig")
 		})
@@ -128,7 +128,7 @@ func TestReverse(t *testing.T) {
 //line stdlib/sort/sort_test.kuki:102
 			nums := []int{1, 3, 2}
 //line stdlib/sort/sort_test.kuki:103
-			sorted := sort.Reverse(nums, func(a int, b int) bool { return (a < b) })
+			sorted := sort.Reverse(nums, func(a int, b int) bool { return a < b })
 //line stdlib/sort/sort_test.kuki:104
 			test.AssertEqual(t, sorted[0], 3)
 		})

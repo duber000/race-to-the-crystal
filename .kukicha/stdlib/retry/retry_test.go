@@ -22,7 +22,7 @@ func resetCounter() {
 //line stdlib/retry/retry_test.kuki:17
 func alwaysOK() error {
 //line stdlib/retry/retry_test.kuki:18
-	testCalls = (testCalls + 1)
+	testCalls = testCalls + 1
 //line stdlib/retry/retry_test.kuki:19
 	return nil
 }
@@ -30,7 +30,7 @@ func alwaysOK() error {
 //line stdlib/retry/retry_test.kuki:21
 func alwaysFail() error {
 //line stdlib/retry/retry_test.kuki:22
-	testCalls = (testCalls + 1)
+	testCalls = testCalls + 1
 //line stdlib/retry/retry_test.kuki:23
 	return errors.New("always fails")
 }
@@ -38,7 +38,7 @@ func alwaysFail() error {
 //line stdlib/retry/retry_test.kuki:25
 func failUntilThree() error {
 //line stdlib/retry/retry_test.kuki:26
-	testCalls = (testCalls + 1)
+	testCalls = testCalls + 1
 //line stdlib/retry/retry_test.kuki:27
 	if testCalls < 3 {
 //line stdlib/retry/retry_test.kuki:28
@@ -131,7 +131,7 @@ func TestDoCtxSuccess(t *testing.T) {
 //line stdlib/retry/retry_test.kuki:71
 	err := retry.DoCtx(h, cfg, func(ch ctxpkg.Handle) error {
 //line stdlib/retry/retry_test.kuki:72
-		testCalls = (testCalls + 1)
+		testCalls = testCalls + 1
 //line stdlib/retry/retry_test.kuki:73
 		return nil
 	})
@@ -154,7 +154,7 @@ func TestDoCtxCancellation(t *testing.T) {
 //line stdlib/retry/retry_test.kuki:85
 	err := retry.DoCtx(h, cfg, func(ch ctxpkg.Handle) error {
 //line stdlib/retry/retry_test.kuki:86
-		testCalls = (testCalls + 1)
+		testCalls = testCalls + 1
 //line stdlib/retry/retry_test.kuki:87
 		return nil
 	})

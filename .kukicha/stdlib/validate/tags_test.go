@@ -24,7 +24,7 @@ func TestCheckNonEmpty(t *testing.T) {
 		t.Fatalf("CheckNonEmpty should reject empty string")
 	}
 //line stdlib/validate/tags_test.kuki:15
-	if (fe.Path != "Name") || (fe.Rule != "nonempty") {
+	if fe.Path != "Name" || fe.Rule != "nonempty" {
 //line stdlib/validate/tags_test.kuki:16
 		t.Fatalf("FieldError shape wrong: %v/%v", fe.Path, fe.Rule)
 	}

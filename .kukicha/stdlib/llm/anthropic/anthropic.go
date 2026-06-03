@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kukichalang/kukicha/stdlib/content"
 	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
 	"github.com/kukichalang/kukicha/stdlib/env"
 	"github.com/kukichalang/kukicha/stdlib/fetch"
@@ -15,7 +16,7 @@ import (
 	kukistring "github.com/kukichalang/kukicha/stdlib/string"
 )
 
-//line stdlib/llm/anthropic/anthropic.kuki:39
+//line stdlib/llm/anthropic/anthropic.kuki:40
 type rawContentBlock struct {
 	Type      string `json:"type"`
 	Text      string `json:"text,omitempty"`
@@ -28,37 +29,37 @@ type rawContentBlock struct {
 	Source    any    `json:"source,omitempty"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:52
+//line stdlib/llm/anthropic/anthropic.kuki:53
 type ThinkingConfig struct {
 	Type         string `json:"type"`
 	BudgetTokens int    `json:"budget_tokens,omitempty"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:57
+//line stdlib/llm/anthropic/anthropic.kuki:58
 type OutputConfig struct {
 	Format any `json:"format,omitempty"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:62
+//line stdlib/llm/anthropic/anthropic.kuki:63
 type Message struct {
 	Role    string `json:"role"`
 	Content any    `json:"content"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:67
+//line stdlib/llm/anthropic/anthropic.kuki:68
 type Tool struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	InputSchema any    `json:"input_schema"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:73
+//line stdlib/llm/anthropic/anthropic.kuki:74
 type ToolChoice struct {
 	Type string `json:"type"`
 	Name string `json:"name,omitempty"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:78
+//line stdlib/llm/anthropic/anthropic.kuki:79
 type Usage struct {
 	InputTokens              int `json:"input_tokens"`
 	OutputTokens             int `json:"output_tokens"`
@@ -66,7 +67,7 @@ type Usage struct {
 	CacheReadInputTokens     int `json:"cache_read_input_tokens,omitempty"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:86
+//line stdlib/llm/anthropic/anthropic.kuki:87
 type rawResponse struct {
 	ID           string            `json:"id"`
 	Type         string            `json:"type"`
@@ -78,19 +79,19 @@ type rawResponse struct {
 	Usage        Usage             `json:"usage"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:99
+//line stdlib/llm/anthropic/anthropic.kuki:100
 type Response struct {
 	ID           string
 	Type         string
 	Role         string
-	Content      []llm.Content
+	Content      []content.Content
 	Model        string
 	StopReason   string
 	StopSequence string
 	Usage        Usage
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:110
+//line stdlib/llm/anthropic/anthropic.kuki:111
 type MessagesRequest struct {
 	Model         string    `json:"model"`
 	Messages      []Message `json:"messages"`
@@ -110,7 +111,7 @@ type MessagesRequest struct {
 	InferenceGeo  string    `json:"inference_geo,omitempty"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:131
+//line stdlib/llm/anthropic/anthropic.kuki:132
 type rawStreamEvent struct {
 	Type         string          `json:"type"`
 	Index        int             `json:"index,omitempty"`
@@ -120,7 +121,7 @@ type rawStreamEvent struct {
 	Usage        Usage           `json:"usage,omitzero"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:140
+//line stdlib/llm/anthropic/anthropic.kuki:141
 type rawDelta struct {
 	Type         string `json:"type,omitempty"`
 	Text         string `json:"text,omitempty"`
@@ -130,7 +131,7 @@ type rawDelta struct {
 	StopSequence string `json:"stop_sequence,omitempty"`
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:149
+//line stdlib/llm/anthropic/anthropic.kuki:150
 type Client struct {
 	model            string
 	baseURL          string
@@ -158,898 +159,999 @@ type Client struct {
 	ctx              context.Context
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:176
-func decodeContentBlock(b rawContentBlock) llm.Content {
-//line stdlib/llm/anthropic/anthropic.kuki:177
-	if b.Type == "text" {
-//line stdlib/llm/anthropic/anthropic.kuki:178
-		return llm.Text{Body: b.Text}
-	}
 //line stdlib/llm/anthropic/anthropic.kuki:179
-	if b.Type == "thinking" {
+func decodeToolResultContent(raw any) []content.Content {
 //line stdlib/llm/anthropic/anthropic.kuki:180
-		return llm.Thinking{Body: b.Thinking}
-	}
+	if //line stdlib/llm/anthropic/anthropic.kuki:180
+	s, ok := raw.(string); ok {
 //line stdlib/llm/anthropic/anthropic.kuki:181
-	if b.Type == "tool_use" {
+		return []content.Content{content.Text{Body: s}}
+	}
 //line stdlib/llm/anthropic/anthropic.kuki:182
-		return llm.ToolUse{ID: b.ID, Name: b.Name, Input: b.Input}
-	}
+	if //line stdlib/llm/anthropic/anthropic.kuki:182
+	items, ok := raw.([]any); ok {
 //line stdlib/llm/anthropic/anthropic.kuki:183
-	if b.Type == "tool_result" {
+		out := []content.Content{}
 //line stdlib/llm/anthropic/anthropic.kuki:184
-		return llm.ToolResult{ToolUseID: b.ToolUseID, Body: b.Content}
-	}
+		for _, it := range items {
 //line stdlib/llm/anthropic/anthropic.kuki:185
-	if b.Type == "image" {
+			data, _ := json.Bytes(it)
 //line stdlib/llm/anthropic/anthropic.kuki:186
-		return llm.Image{Source: b.Source}
-	}
+			block := rawContentBlock{}
 //line stdlib/llm/anthropic/anthropic.kuki:187
-	return llm.Text{Body: ""}
+			err := json.ParseInto(data, &block)
+//line stdlib/llm/anthropic/anthropic.kuki:188
+			if err == nil {
+//line stdlib/llm/anthropic/anthropic.kuki:189
+				out = append(out, decodeContentBlock(block))
+			}
+		}
+//line stdlib/llm/anthropic/anthropic.kuki:190
+		return out
+	}
+//line stdlib/llm/anthropic/anthropic.kuki:191
+	return []content.Content{}
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:192
-func encodeContentBlock(c llm.Content) rawContentBlock {
-//line stdlib/llm/anthropic/anthropic.kuki:193
-	switch v := c.(type) {
-	case llm.Text:
 //line stdlib/llm/anthropic/anthropic.kuki:195
-		return rawContentBlock{Type: "text", Text: v.Body}
-	case llm.Thinking:
+func encodeToolResultContent(items []content.Content) any {
+//line stdlib/llm/anthropic/anthropic.kuki:196
+	if len(items) == 1 {
 //line stdlib/llm/anthropic/anthropic.kuki:197
-		return rawContentBlock{Type: "thinking", Thinking: v.Body}
-	case llm.ToolUse:
+		if //line stdlib/llm/anthropic/anthropic.kuki:197
+		t, ok := items[0].(content.Text); ok {
+//line stdlib/llm/anthropic/anthropic.kuki:198
+			return t.Body
+		}
+	}
 //line stdlib/llm/anthropic/anthropic.kuki:199
-		return rawContentBlock{Type: "tool_use", ID: v.ID, Name: v.Name, Input: v.Input}
-	case llm.ToolResult:
-//line stdlib/llm/anthropic/anthropic.kuki:201
-		return rawContentBlock{Type: "tool_result", ToolUseID: v.ToolUseID, Content: v.Body}
-	case llm.Image:
+	return encodeContent(items)
+}
+
+//line stdlib/llm/anthropic/anthropic.kuki:202
+func decodeContentBlock(b rawContentBlock) content.Content {
 //line stdlib/llm/anthropic/anthropic.kuki:203
-		return rawContentBlock{Type: "image", Source: v.Source}
+	if b.Type == "text" {
+//line stdlib/llm/anthropic/anthropic.kuki:204
+		return content.Text{Body: b.Text}
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:205
+	if b.Type == "thinking" {
+//line stdlib/llm/anthropic/anthropic.kuki:206
+		return content.Thinking{Body: b.Thinking}
+	}
+//line stdlib/llm/anthropic/anthropic.kuki:207
+	if b.Type == "tool_use" {
+//line stdlib/llm/anthropic/anthropic.kuki:208
+		return content.ToolUse{ID: b.ID, Name: b.Name, Input: b.Input}
+	}
+//line stdlib/llm/anthropic/anthropic.kuki:209
+	if b.Type == "tool_result" {
+//line stdlib/llm/anthropic/anthropic.kuki:210
+		return content.ToolResult{ToolUseID: b.ToolUseID, Items: decodeToolResultContent(b.Content)}
+	}
+//line stdlib/llm/anthropic/anthropic.kuki:211
+	if b.Type == "image" {
+//line stdlib/llm/anthropic/anthropic.kuki:212
+		return content.Image{Source: b.Source}
+	}
+//line stdlib/llm/anthropic/anthropic.kuki:213
+	return content.Text{Body: ""}
+}
+
+//line stdlib/llm/anthropic/anthropic.kuki:218
+func encodeContentBlock(c content.Content) rawContentBlock {
+//line stdlib/llm/anthropic/anthropic.kuki:219
+	switch v := c.(type) {
+	case content.Text:
+//line stdlib/llm/anthropic/anthropic.kuki:221
+		return rawContentBlock{Type: "text", Text: v.Body}
+	case content.Thinking:
+//line stdlib/llm/anthropic/anthropic.kuki:223
+		return rawContentBlock{Type: "thinking", Thinking: v.Body}
+	case content.ToolUse:
+//line stdlib/llm/anthropic/anthropic.kuki:225
+		return rawContentBlock{Type: "tool_use", ID: v.ID, Name: v.Name, Input: v.Input}
+	case content.ToolResult:
+//line stdlib/llm/anthropic/anthropic.kuki:227
+		return rawContentBlock{Type: "tool_result", ToolUseID: v.ToolUseID, Content: encodeToolResultContent(v.Items)}
+	case content.Image:
+//line stdlib/llm/anthropic/anthropic.kuki:229
+		return rawContentBlock{Type: "image", Source: v.Source}
+	}
+//line stdlib/llm/anthropic/anthropic.kuki:231
 	return rawContentBlock{}
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:208
+//line stdlib/llm/anthropic/anthropic.kuki:234
 func decodeResponse(r rawResponse) Response {
-//line stdlib/llm/anthropic/anthropic.kuki:209
-	blocks := []llm.Content{}
-//line stdlib/llm/anthropic/anthropic.kuki:210
+//line stdlib/llm/anthropic/anthropic.kuki:235
+	blocks := []content.Content{}
+//line stdlib/llm/anthropic/anthropic.kuki:236
 	for _, b := range r.Content {
-//line stdlib/llm/anthropic/anthropic.kuki:211
+//line stdlib/llm/anthropic/anthropic.kuki:237
 		blocks = append(blocks, decodeContentBlock(b))
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:212
+//line stdlib/llm/anthropic/anthropic.kuki:238
 	return Response{ID: r.ID, Type: r.Type, Role: r.Role, Content: blocks, Model: r.Model, StopReason: r.StopReason, StopSequence: r.StopSequence, Usage: r.Usage}
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:224
-func encodeContent(blocks []llm.Content) []rawContentBlock {
-//line stdlib/llm/anthropic/anthropic.kuki:225
+//line stdlib/llm/anthropic/anthropic.kuki:250
+func encodeContent(blocks []content.Content) []rawContentBlock {
+//line stdlib/llm/anthropic/anthropic.kuki:251
 	out := []rawContentBlock{}
-//line stdlib/llm/anthropic/anthropic.kuki:226
+//line stdlib/llm/anthropic/anthropic.kuki:252
 	for _, c := range blocks {
-//line stdlib/llm/anthropic/anthropic.kuki:227
+//line stdlib/llm/anthropic/anthropic.kuki:253
 		out = append(out, encodeContentBlock(c))
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:228
+//line stdlib/llm/anthropic/anthropic.kuki:254
 	return out
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:232
+//line stdlib/llm/anthropic/anthropic.kuki:258
 func New(model string) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:233
+//line stdlib/llm/anthropic/anthropic.kuki:259
 	return Client{model: model, apiVersion: "2023-06-01", maxTokens: 1024}
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:236
-func BaseURL(c Client, url string) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:237
-	c.baseURL = url
-//line stdlib/llm/anthropic/anthropic.kuki:238
-	return c
-}
-
-//line stdlib/llm/anthropic/anthropic.kuki:241
-func Path(c Client, path string) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:242
-	c.path = path
-//line stdlib/llm/anthropic/anthropic.kuki:243
-	return c
-}
-
-//line stdlib/llm/anthropic/anthropic.kuki:247
-func APIKey(c Client, key string) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:248
-	c.apiKey = key
-//line stdlib/llm/anthropic/anthropic.kuki:249
-	return c
-}
-
-//line stdlib/llm/anthropic/anthropic.kuki:252
-func APIVersion(c Client, version string) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:253
-	c.apiVersion = version
-//line stdlib/llm/anthropic/anthropic.kuki:254
-	return c
-}
-
-//line stdlib/llm/anthropic/anthropic.kuki:257
-func System(c Client, system string) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:258
-	c.system = system
-//line stdlib/llm/anthropic/anthropic.kuki:259
-	return c
-}
-
 //line stdlib/llm/anthropic/anthropic.kuki:262
-func User(c Client, content string) Client {
+func BaseURL(c Client, url string) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:263
-	c.messages = append(c.messages, Message{Role: "user", Content: content})
+	c.baseURL = url
 //line stdlib/llm/anthropic/anthropic.kuki:264
 	return c
 }
 
+//line stdlib/llm/anthropic/anthropic.kuki:267
+func Path(c Client, path string) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:268
-func Assistant(c Client, content string) Client {
+	c.path = path
 //line stdlib/llm/anthropic/anthropic.kuki:269
-	c.messages = append(c.messages, Message{Role: "assistant", Content: content})
-//line stdlib/llm/anthropic/anthropic.kuki:270
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:273
-func AddMessage(c Client, role string, content any) Client {
+func APIKey(c Client, key string) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:274
-	c.messages = append(c.messages, Message{Role: role, Content: content})
+	c.apiKey = key
 //line stdlib/llm/anthropic/anthropic.kuki:275
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:278
-func ToolResult(c Client, toolUseID string, result string) Client {
+func APIVersion(c Client, version string) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:279
-	block := rawContentBlock{}
+	c.apiVersion = version
 //line stdlib/llm/anthropic/anthropic.kuki:280
-	block.Type = "tool_result"
-//line stdlib/llm/anthropic/anthropic.kuki:281
-	block.ToolUseID = toolUseID
-//line stdlib/llm/anthropic/anthropic.kuki:282
-	block.Content = result
+	return c
+}
+
 //line stdlib/llm/anthropic/anthropic.kuki:283
-	c.messages = append(c.messages, Message{Role: "user", Content: []rawContentBlock{block}})
+func System(c Client, system string) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:284
+	c.system = system
+//line stdlib/llm/anthropic/anthropic.kuki:285
 	return c
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:287
-func MaxTokens(c Client, tokens int) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:288
-	c.maxTokens = tokens
+func User(c Client, content string) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:289
+	c.messages = append(c.messages, Message{Role: "user", Content: content})
+//line stdlib/llm/anthropic/anthropic.kuki:290
 	return c
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:292
-func Temperature(c Client, temp float64) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:293
-	c.temperature = temp
 //line stdlib/llm/anthropic/anthropic.kuki:294
+func Assistant(c Client, content string) Client {
+//line stdlib/llm/anthropic/anthropic.kuki:295
+	c.messages = append(c.messages, Message{Role: "assistant", Content: content})
+//line stdlib/llm/anthropic/anthropic.kuki:296
 	return c
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:297
-func TopP(c Client, p float64) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:298
-	c.topP = p
 //line stdlib/llm/anthropic/anthropic.kuki:299
+func AddMessage(c Client, role string, content any) Client {
+//line stdlib/llm/anthropic/anthropic.kuki:300
+	c.messages = append(c.messages, Message{Role: role, Content: content})
+//line stdlib/llm/anthropic/anthropic.kuki:301
 	return c
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:302
-func TopK(c Client, k int) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:303
-	c.topK = k
 //line stdlib/llm/anthropic/anthropic.kuki:304
-	return c
-}
-
+func ToolResult(c Client, toolUseID string, result string) Client {
+//line stdlib/llm/anthropic/anthropic.kuki:305
+	block := rawContentBlock{}
+//line stdlib/llm/anthropic/anthropic.kuki:306
+	block.Type = "tool_result"
 //line stdlib/llm/anthropic/anthropic.kuki:307
-func StopSequences(c Client, sequences []string) Client {
+	block.ToolUseID = toolUseID
 //line stdlib/llm/anthropic/anthropic.kuki:308
-	c.stopSequences = sequences
+	block.Content = result
 //line stdlib/llm/anthropic/anthropic.kuki:309
+	c.messages = append(c.messages, Message{Role: "user", Content: []rawContentBlock{block}})
+//line stdlib/llm/anthropic/anthropic.kuki:310
 	return c
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:312
-func AdaptiveThinking(c Client) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:313
-	c.thinking = ThinkingConfig{Type: "adaptive"}
+func MaxTokens(c Client, tokens int) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:314
+	c.maxTokens = tokens
+//line stdlib/llm/anthropic/anthropic.kuki:315
 	return c
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:317
-func Thinking(c Client, budgetTokens int) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:318
-	c.thinking = ThinkingConfig{Type: "enabled", BudgetTokens: budgetTokens}
+func Temperature(c Client, temp float64) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:319
+	c.temperature = temp
+//line stdlib/llm/anthropic/anthropic.kuki:320
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:323
-func Effort(c Client, effort string) Client {
+func TopP(c Client, p float64) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:324
-	c.effort = effort
+	c.topP = p
 //line stdlib/llm/anthropic/anthropic.kuki:325
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:328
-func OutputFormat(c Client, format any) Client {
+func TopK(c Client, k int) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:329
-	c.outputConfig = OutputConfig{Format: format}
+	c.topK = k
 //line stdlib/llm/anthropic/anthropic.kuki:330
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:333
-func InferenceGeo(c Client, geo string) Client {
+func StopSequences(c Client, sequences []string) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:334
-	c.inferenceGeo = geo
+	c.stopSequences = sequences
 //line stdlib/llm/anthropic/anthropic.kuki:335
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:338
-func AddTool(c Client, name string, description string, inputSchema any) Client {
+func AdaptiveThinking(c Client) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:339
-	c.tools = append(c.tools, Tool{Name: name, Description: description, InputSchema: inputSchema})
+	c.thinking = ThinkingConfig{Type: "adaptive"}
 //line stdlib/llm/anthropic/anthropic.kuki:340
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:343
-func ToolChoiceAuto(c Client) Client {
+func Thinking(c Client, budgetTokens int) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:344
-	c.toolChoice = ToolChoice{Type: "auto"}
+	c.thinking = ThinkingConfig{Type: "enabled", BudgetTokens: budgetTokens}
 //line stdlib/llm/anthropic/anthropic.kuki:345
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:348
-func ToolChoiceAny(c Client) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:349
-	c.toolChoice = ToolChoice{Type: "any"}
-//line stdlib/llm/anthropic/anthropic.kuki:350
-	return c
+type ThinkingEffort string
+
+const (
+	ThinkingEffortLow    ThinkingEffort = "low"
+	ThinkingEffortMedium ThinkingEffort = "medium"
+	ThinkingEffortHigh   ThinkingEffort = "high"
+	ThinkingEffortMax    ThinkingEffort = "max"
+)
+
+func (e ThinkingEffort) String() string {
+	return string(e)
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:353
-func ToolChoiceTool(c Client, name string) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:354
-	c.toolChoice = ToolChoice{Type: "tool", Name: name}
-//line stdlib/llm/anthropic/anthropic.kuki:355
-	return c
+func ParseThinkingEffort(s string) (ThinkingEffort, bool) {
+	switch s {
+	case "low":
+		return ThinkingEffortLow, true
+	case "medium":
+		return ThinkingEffortMedium, true
+	case "high":
+		return ThinkingEffortHigh, true
+	case "max":
+		return ThinkingEffortMax, true
+	}
+	var zero ThinkingEffort
+	return zero, false
 }
 
+//line stdlib/llm/anthropic/anthropic.kuki:356
+func Effort(c Client, effort ThinkingEffort) Client {
+//line stdlib/llm/anthropic/anthropic.kuki:357
+	c.effort = string(effort)
 //line stdlib/llm/anthropic/anthropic.kuki:358
-func Stream(c Client, handler func(string)) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:359
-	c.streamHandler = handler
-//line stdlib/llm/anthropic/anthropic.kuki:360
+	return c
+}
+
+//line stdlib/llm/anthropic/anthropic.kuki:361
+func OutputFormat(c Client, format any) Client {
+//line stdlib/llm/anthropic/anthropic.kuki:362
+	c.outputConfig = OutputConfig{Format: format}
+//line stdlib/llm/anthropic/anthropic.kuki:363
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:366
-func StreamEvents(c Client, handler func(llm.StreamEvent)) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:367
-	c.eventHandler = handler
-//line stdlib/llm/anthropic/anthropic.kuki:368
-	return c
+type InferenceRegion string
+
+const (
+	InferenceRegionGlobal InferenceRegion = "global"
+	InferenceRegionUS     InferenceRegion = "us"
+)
+
+func (e InferenceRegion) String() string {
+	return string(e)
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:371
-func Retry(c Client, maxAttempts int, delayMs int) Client {
+func ParseInferenceRegion(s string) (InferenceRegion, bool) {
+	switch s {
+	case "global":
+		return InferenceRegionGlobal, true
+	case "us":
+		return InferenceRegionUS, true
+	}
+	var zero InferenceRegion
+	return zero, false
+}
+
 //line stdlib/llm/anthropic/anthropic.kuki:372
-	c.retryMaxAttempts = maxAttempts
+func InferenceGeo(c Client, geo InferenceRegion) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:373
-	c.retryDelayMs = delayMs
+	c.inferenceGeo = string(geo)
 //line stdlib/llm/anthropic/anthropic.kuki:374
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:377
-func WithContext(c Client, h ctxpkg.Handle) Client {
+func AddTool(c Client, name string, description string, inputSchema any) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:378
-	c.ctx = h.Ctx
+	c.tools = append(c.tools, Tool{Name: name, Description: description, InputSchema: inputSchema})
 //line stdlib/llm/anthropic/anthropic.kuki:379
 	return c
 }
 
+//line stdlib/llm/anthropic/anthropic.kuki:382
+func ToolChoiceAuto(c Client) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:383
-func Ask(c Client, prompt string) (string, error) {
+	c.toolChoice = ToolChoice{Type: "auto"}
 //line stdlib/llm/anthropic/anthropic.kuki:384
-	c = User(c, prompt)
-//line stdlib/llm/anthropic/anthropic.kuki:385
-	return doExecute(c)
+	return c
 }
 
+//line stdlib/llm/anthropic/anthropic.kuki:387
+func ToolChoiceAny(c Client) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:388
-func Send(c Client) (string, error) {
+	c.toolChoice = ToolChoice{Type: "any"}
 //line stdlib/llm/anthropic/anthropic.kuki:389
-	return doExecute(c)
+	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:392
-func AskRaw(c Client, prompt string) (Response, error) {
+func ToolChoiceTool(c Client, name string) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:393
-	c = User(c, prompt)
+	c.toolChoice = ToolChoice{Type: "tool", Name: name}
 //line stdlib/llm/anthropic/anthropic.kuki:394
-	return doExecuteRaw(c)
+	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:397
-func SendRaw(c Client) (Response, error) {
+func Stream(c Client, handler func(string)) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:398
-	return doExecuteRaw(c)
-}
-
-//line stdlib/llm/anthropic/anthropic.kuki:401
-func Complete(model string, prompt string) (string, error) {
-//line stdlib/llm/anthropic/anthropic.kuki:402
-	return Ask(New(model), prompt)
+	c.streamHandler = handler
+//line stdlib/llm/anthropic/anthropic.kuki:399
+	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:405
-func CompleteWithSystem(model string, system string, prompt string) (string, error) {
+func StreamEvents(c Client, handler func(llm.StreamEvent)) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:406
-	c := New(model)
+	c.eventHandler = handler
 //line stdlib/llm/anthropic/anthropic.kuki:407
-	c = System(c, system)
-//line stdlib/llm/anthropic/anthropic.kuki:408
-	return Ask(c, prompt)
+	return c
 }
 
+//line stdlib/llm/anthropic/anthropic.kuki:410
+func Retry(c Client, maxAttempts int, delayMs int) Client {
+//line stdlib/llm/anthropic/anthropic.kuki:411
+	c.retryMaxAttempts = maxAttempts
+//line stdlib/llm/anthropic/anthropic.kuki:412
+	c.retryDelayMs = delayMs
 //line stdlib/llm/anthropic/anthropic.kuki:413
-func FromResponse(c Client, resp Response) Client {
-//line stdlib/llm/anthropic/anthropic.kuki:414
-	c.messages = append(c.messages, Message{Role: "assistant", Content: encodeContent(resp.Content)})
-//line stdlib/llm/anthropic/anthropic.kuki:415
+	return c
+}
+
+//line stdlib/llm/anthropic/anthropic.kuki:416
+func WithContext(c Client, h ctxpkg.Handle) Client {
+//line stdlib/llm/anthropic/anthropic.kuki:417
+	c.ctx = h.Ctx
+//line stdlib/llm/anthropic/anthropic.kuki:418
 	return c
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:422
-func ExecuteToolUses(c Client, resp Response, handlers map[string]func(string) string) (Client, error) {
+func Ask(c Client, prompt string) (string, error) {
 //line stdlib/llm/anthropic/anthropic.kuki:423
-	c = FromResponse(c, resp)
+	c = User(c, prompt)
 //line stdlib/llm/anthropic/anthropic.kuki:424
-	resultBlocks := []rawContentBlock{}
-//line stdlib/llm/anthropic/anthropic.kuki:425
-	hasAny := false
-//line stdlib/llm/anthropic/anthropic.kuki:426
-	for _, block := range resp.Content {
+	return doExecute(c)
+}
+
 //line stdlib/llm/anthropic/anthropic.kuki:427
-		if tu, _isOk := block.(llm.ToolUse); _isOk {
+func Send(c Client) (string, error) {
 //line stdlib/llm/anthropic/anthropic.kuki:428
-			hasAny = true
-//line stdlib/llm/anthropic/anthropic.kuki:429
-			handler, ok := handlers[tu.Name]
-//line stdlib/llm/anthropic/anthropic.kuki:430
-			if !ok {
+	return doExecute(c)
+}
+
 //line stdlib/llm/anthropic/anthropic.kuki:431
-				return c, fmt.Errorf("no handler registered for tool: %v", tu.Name)
-			}
+func AskRaw(c Client, prompt string) (Response, error) {
 //line stdlib/llm/anthropic/anthropic.kuki:432
-			argsJSON := ""
+	c = User(c, prompt)
 //line stdlib/llm/anthropic/anthropic.kuki:433
-			switch inputVal := tu.Input.(type) {
-			case string:
-//line stdlib/llm/anthropic/anthropic.kuki:435
-				argsJSON = inputVal
-			case map[string]any:
+	return doExecuteRaw(c)
+}
+
+//line stdlib/llm/anthropic/anthropic.kuki:436
+func SendRaw(c Client) (Response, error) {
 //line stdlib/llm/anthropic/anthropic.kuki:437
-				inputBytes, err_1 := json.Bytes(inputVal)
-//line stdlib/llm/anthropic/anthropic.kuki:437
-				if err_1 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:437
-					return c, fmt.Errorf("encode tool input: %v", err_1)
-				}
-//line stdlib/llm/anthropic/anthropic.kuki:438
-				argsJSON = string(inputBytes)
-			}
+	return doExecuteRaw(c)
+}
+
 //line stdlib/llm/anthropic/anthropic.kuki:440
-			result := handler(argsJSON)
+func Complete(model string, prompt string) (string, error) {
 //line stdlib/llm/anthropic/anthropic.kuki:441
-			resultBlocks = append(resultBlocks, rawContentBlock{Type: "tool_result", ToolUseID: tu.ID, Content: result})
-		}
-	}
+	return Ask(New(model), prompt)
+}
+
+//line stdlib/llm/anthropic/anthropic.kuki:444
+func CompleteWithSystem(model string, system string, prompt string) (string, error) {
+//line stdlib/llm/anthropic/anthropic.kuki:445
+	c := New(model)
 //line stdlib/llm/anthropic/anthropic.kuki:446
-	if !hasAny {
+	c = System(c, system)
 //line stdlib/llm/anthropic/anthropic.kuki:447
-		return c, nil
-	}
-//line stdlib/llm/anthropic/anthropic.kuki:448
-	c.messages = append(c.messages, Message{Role: "user", Content: resultBlocks})
-//line stdlib/llm/anthropic/anthropic.kuki:449
-	return c, nil
+	return Ask(c, prompt)
 }
 
 //line stdlib/llm/anthropic/anthropic.kuki:452
-func GetText(resp Response) string {
+func FromResponse(c Client, resp Response) Client {
 //line stdlib/llm/anthropic/anthropic.kuki:453
-	result := ""
+	c.messages = append(c.messages, Message{Role: "assistant", Content: encodeContent(resp.Content)})
 //line stdlib/llm/anthropic/anthropic.kuki:454
-	for _, block := range resp.Content {
-//line stdlib/llm/anthropic/anthropic.kuki:455
-		if t, _isOk := block.(llm.Text); _isOk {
-//line stdlib/llm/anthropic/anthropic.kuki:456
-			result = (result + t.Body)
-		}
-	}
-//line stdlib/llm/anthropic/anthropic.kuki:457
-	return result
+	return c
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:460
-func GetThinking(resp Response) string {
 //line stdlib/llm/anthropic/anthropic.kuki:461
-	result := ""
+func ExecuteToolUses(c Client, resp Response, handlers map[string]func(string) string) (Client, error) {
 //line stdlib/llm/anthropic/anthropic.kuki:462
-	for _, block := range resp.Content {
+	c = FromResponse(c, resp)
 //line stdlib/llm/anthropic/anthropic.kuki:463
-		if th, _isOk := block.(llm.Thinking); _isOk {
+	resultBlocks := []rawContentBlock{}
 //line stdlib/llm/anthropic/anthropic.kuki:464
-			result = (result + th.Body)
+	hasAny := false
+//line stdlib/llm/anthropic/anthropic.kuki:465
+	for _, block := range resp.Content {
+//line stdlib/llm/anthropic/anthropic.kuki:466
+		if tu, _isOk := block.(content.ToolUse); _isOk {
+//line stdlib/llm/anthropic/anthropic.kuki:467
+			hasAny = true
+//line stdlib/llm/anthropic/anthropic.kuki:468
+			handler, ok := handlers[tu.Name]
+//line stdlib/llm/anthropic/anthropic.kuki:469
+			if !ok {
+//line stdlib/llm/anthropic/anthropic.kuki:470
+				return c, fmt.Errorf("no handler registered for tool: %v", tu.Name)
+			}
+//line stdlib/llm/anthropic/anthropic.kuki:471
+			argsJSON := ""
+//line stdlib/llm/anthropic/anthropic.kuki:472
+			switch inputVal := tu.Input.(type) {
+			case string:
+//line stdlib/llm/anthropic/anthropic.kuki:474
+				argsJSON = inputVal
+			case map[string]any:
+//line stdlib/llm/anthropic/anthropic.kuki:476
+				inputBytes, err_1 := json.Bytes(inputVal)
+//line stdlib/llm/anthropic/anthropic.kuki:476
+				if err_1 != nil {
+//line stdlib/llm/anthropic/anthropic.kuki:476
+					return c, fmt.Errorf("encode tool input: %v", err_1)
+				}
+//line stdlib/llm/anthropic/anthropic.kuki:477
+				argsJSON = string(inputBytes)
+			}
+//line stdlib/llm/anthropic/anthropic.kuki:479
+			result := handler(argsJSON)
+//line stdlib/llm/anthropic/anthropic.kuki:480
+			resultBlocks = append(resultBlocks, rawContentBlock{Type: "tool_result", ToolUseID: tu.ID, Content: result})
 		}
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:465
+//line stdlib/llm/anthropic/anthropic.kuki:485
+	if !hasAny {
+//line stdlib/llm/anthropic/anthropic.kuki:486
+		return c, nil
+	}
+//line stdlib/llm/anthropic/anthropic.kuki:487
+	c.messages = append(c.messages, Message{Role: "user", Content: resultBlocks})
+//line stdlib/llm/anthropic/anthropic.kuki:488
+	return c, nil
+}
+
+//line stdlib/llm/anthropic/anthropic.kuki:491
+func GetText(resp Response) string {
+//line stdlib/llm/anthropic/anthropic.kuki:492
+	result := ""
+//line stdlib/llm/anthropic/anthropic.kuki:493
+	for _, block := range resp.Content {
+//line stdlib/llm/anthropic/anthropic.kuki:494
+		if t, _isOk := block.(content.Text); _isOk {
+//line stdlib/llm/anthropic/anthropic.kuki:495
+			result = result + t.Body
+		}
+	}
+//line stdlib/llm/anthropic/anthropic.kuki:496
 	return result
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:468
-func GetToolUses(resp Response) []llm.ToolUse {
-//line stdlib/llm/anthropic/anthropic.kuki:469
-	uses := []llm.ToolUse{}
-//line stdlib/llm/anthropic/anthropic.kuki:470
+//line stdlib/llm/anthropic/anthropic.kuki:499
+func GetThinking(resp Response) string {
+//line stdlib/llm/anthropic/anthropic.kuki:500
+	result := ""
+//line stdlib/llm/anthropic/anthropic.kuki:501
 	for _, block := range resp.Content {
-//line stdlib/llm/anthropic/anthropic.kuki:471
-		if tu, _isOk := block.(llm.ToolUse); _isOk {
-//line stdlib/llm/anthropic/anthropic.kuki:472
+//line stdlib/llm/anthropic/anthropic.kuki:502
+		if th, _isOk := block.(content.Thinking); _isOk {
+//line stdlib/llm/anthropic/anthropic.kuki:503
+			result = result + th.Body
+		}
+	}
+//line stdlib/llm/anthropic/anthropic.kuki:504
+	return result
+}
+
+//line stdlib/llm/anthropic/anthropic.kuki:507
+func GetToolUses(resp Response) []content.ToolUse {
+//line stdlib/llm/anthropic/anthropic.kuki:508
+	uses := []content.ToolUse{}
+//line stdlib/llm/anthropic/anthropic.kuki:509
+	for _, block := range resp.Content {
+//line stdlib/llm/anthropic/anthropic.kuki:510
+		if tu, _isOk := block.(content.ToolUse); _isOk {
+//line stdlib/llm/anthropic/anthropic.kuki:511
 			uses = append(uses, tu)
 		}
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:473
+//line stdlib/llm/anthropic/anthropic.kuki:512
 	return uses
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:476
+//line stdlib/llm/anthropic/anthropic.kuki:515
 func HasToolUses(resp Response) bool {
-//line stdlib/llm/anthropic/anthropic.kuki:477
-	return (resp.StopReason == "tool_use")
+//line stdlib/llm/anthropic/anthropic.kuki:516
+	return resp.StopReason == "tool_use"
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:479
+//line stdlib/llm/anthropic/anthropic.kuki:518
 func resolveAPIKey(c Client) string {
-//line stdlib/llm/anthropic/anthropic.kuki:480
+//line stdlib/llm/anthropic/anthropic.kuki:519
 	if c.apiKey != "" {
-//line stdlib/llm/anthropic/anthropic.kuki:481
+//line stdlib/llm/anthropic/anthropic.kuki:520
 		return c.apiKey
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:482
+//line stdlib/llm/anthropic/anthropic.kuki:521
 	return env.GetOr("ANTHROPIC_API_KEY", "")
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:484
+//line stdlib/llm/anthropic/anthropic.kuki:523
 func resolveBaseURL(c Client) string {
-//line stdlib/llm/anthropic/anthropic.kuki:485
+//line stdlib/llm/anthropic/anthropic.kuki:524
 	if c.baseURL != "" {
-//line stdlib/llm/anthropic/anthropic.kuki:486
+//line stdlib/llm/anthropic/anthropic.kuki:525
 		return c.baseURL
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:487
+//line stdlib/llm/anthropic/anthropic.kuki:526
 	return "https://api.anthropic.com"
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:489
+//line stdlib/llm/anthropic/anthropic.kuki:528
 func resolvePath(c Client) string {
-//line stdlib/llm/anthropic/anthropic.kuki:490
+//line stdlib/llm/anthropic/anthropic.kuki:529
 	if c.path != "" {
-//line stdlib/llm/anthropic/anthropic.kuki:491
+//line stdlib/llm/anthropic/anthropic.kuki:530
 		return c.path
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:492
+//line stdlib/llm/anthropic/anthropic.kuki:531
 	return "/v1/messages"
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:494
+//line stdlib/llm/anthropic/anthropic.kuki:533
 func buildRequest(c Client) MessagesRequest {
-//line stdlib/llm/anthropic/anthropic.kuki:495
+//line stdlib/llm/anthropic/anthropic.kuki:534
 	req := MessagesRequest{Model: c.model, Messages: c.messages, MaxTokens: c.maxTokens}
-//line stdlib/llm/anthropic/anthropic.kuki:496
+//line stdlib/llm/anthropic/anthropic.kuki:535
 	if c.system != "" {
-//line stdlib/llm/anthropic/anthropic.kuki:497
+//line stdlib/llm/anthropic/anthropic.kuki:536
 		req.System = c.system
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:498
+//line stdlib/llm/anthropic/anthropic.kuki:537
 	if c.temperature != 0.0 {
-//line stdlib/llm/anthropic/anthropic.kuki:499
+//line stdlib/llm/anthropic/anthropic.kuki:538
 		req.Temperature = c.temperature
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:500
+//line stdlib/llm/anthropic/anthropic.kuki:539
 	if c.topP != 0.0 {
-//line stdlib/llm/anthropic/anthropic.kuki:501
+//line stdlib/llm/anthropic/anthropic.kuki:540
 		req.TopP = c.topP
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:502
+//line stdlib/llm/anthropic/anthropic.kuki:541
 	if c.topK != 0 {
-//line stdlib/llm/anthropic/anthropic.kuki:503
+//line stdlib/llm/anthropic/anthropic.kuki:542
 		req.TopK = c.topK
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:504
+//line stdlib/llm/anthropic/anthropic.kuki:543
 	if len(c.stopSequences) > 0 {
-//line stdlib/llm/anthropic/anthropic.kuki:505
+//line stdlib/llm/anthropic/anthropic.kuki:544
 		req.StopSequences = c.stopSequences
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:506
+//line stdlib/llm/anthropic/anthropic.kuki:545
 	if len(c.tools) > 0 {
-//line stdlib/llm/anthropic/anthropic.kuki:507
+//line stdlib/llm/anthropic/anthropic.kuki:546
 		req.Tools = c.tools
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:508
+//line stdlib/llm/anthropic/anthropic.kuki:547
 	if c.toolChoice != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:509
+//line stdlib/llm/anthropic/anthropic.kuki:548
 		req.ToolChoice = c.toolChoice
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:510
+//line stdlib/llm/anthropic/anthropic.kuki:549
 	if c.metadata != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:511
+//line stdlib/llm/anthropic/anthropic.kuki:550
 		req.Metadata = c.metadata
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:512
+//line stdlib/llm/anthropic/anthropic.kuki:551
 	if c.thinking != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:513
+//line stdlib/llm/anthropic/anthropic.kuki:552
 		req.Thinking = c.thinking
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:514
+//line stdlib/llm/anthropic/anthropic.kuki:553
 	if c.effort != "" {
-//line stdlib/llm/anthropic/anthropic.kuki:515
+//line stdlib/llm/anthropic/anthropic.kuki:554
 		req.Effort = c.effort
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:516
+//line stdlib/llm/anthropic/anthropic.kuki:555
 	if c.outputConfig != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:517
+//line stdlib/llm/anthropic/anthropic.kuki:556
 		req.OutputConfig = c.outputConfig
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:518
+//line stdlib/llm/anthropic/anthropic.kuki:557
 	if c.inferenceGeo != "" {
-//line stdlib/llm/anthropic/anthropic.kuki:519
+//line stdlib/llm/anthropic/anthropic.kuki:558
 		req.InferenceGeo = c.inferenceGeo
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:520
-	if (c.streamHandler != nil) || (c.eventHandler != nil) {
-//line stdlib/llm/anthropic/anthropic.kuki:521
+//line stdlib/llm/anthropic/anthropic.kuki:559
+	if c.streamHandler != nil || c.eventHandler != nil {
+//line stdlib/llm/anthropic/anthropic.kuki:560
 		req.Stream = true
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:522
+//line stdlib/llm/anthropic/anthropic.kuki:561
 	return req
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:524
+//line stdlib/llm/anthropic/anthropic.kuki:563
 func doExecute(c Client) (string, error) {
-//line stdlib/llm/anthropic/anthropic.kuki:525
-	if (c.streamHandler != nil) || (c.eventHandler != nil) {
-//line stdlib/llm/anthropic/anthropic.kuki:526
+//line stdlib/llm/anthropic/anthropic.kuki:564
+	if c.streamHandler != nil || c.eventHandler != nil {
+//line stdlib/llm/anthropic/anthropic.kuki:565
 		return doExecuteStream(c)
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:527
+//line stdlib/llm/anthropic/anthropic.kuki:566
 	resp, err_2 := doExecuteRaw(c)
-//line stdlib/llm/anthropic/anthropic.kuki:527
+//line stdlib/llm/anthropic/anthropic.kuki:566
 	if err_2 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:527
+//line stdlib/llm/anthropic/anthropic.kuki:566
 		return "", err_2
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:528
+//line stdlib/llm/anthropic/anthropic.kuki:567
 	return GetText(resp), nil
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:530
+//line stdlib/llm/anthropic/anthropic.kuki:569
 func doExecuteRaw(c Client) (Response, error) {
-//line stdlib/llm/anthropic/anthropic.kuki:531
+//line stdlib/llm/anthropic/anthropic.kuki:570
 	url := fmt.Sprintf("%v%v", resolveBaseURL(c), resolvePath(c))
-//line stdlib/llm/anthropic/anthropic.kuki:532
+//line stdlib/llm/anthropic/anthropic.kuki:571
 	apiKey := resolveAPIKey(c)
-//line stdlib/llm/anthropic/anthropic.kuki:533
+//line stdlib/llm/anthropic/anthropic.kuki:572
 	body := buildRequest(c)
-//line stdlib/llm/anthropic/anthropic.kuki:535
-	req := fetch.Header(fetch.Header(fetch.Method(fetch.New(url), "POST"), "Content-Type", "application/json"), "anthropic-version", c.apiVersion)
-//line stdlib/llm/anthropic/anthropic.kuki:540
+//line stdlib/llm/anthropic/anthropic.kuki:574
+	req := fetch.Header(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), "anthropic-version", c.apiVersion)
+//line stdlib/llm/anthropic/anthropic.kuki:579
 	if c.ctx != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:541
+//line stdlib/llm/anthropic/anthropic.kuki:580
 		req = fetch.WithContext(req, ctxpkg.FromContext(c.ctx))
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:542
+//line stdlib/llm/anthropic/anthropic.kuki:581
 	if apiKey != "" {
-//line stdlib/llm/anthropic/anthropic.kuki:543
+//line stdlib/llm/anthropic/anthropic.kuki:582
 		req = fetch.Header(req, "x-api-key", apiKey)
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:545
+//line stdlib/llm/anthropic/anthropic.kuki:584
 	req = fetch.Body(req, body)
-//line stdlib/llm/anthropic/anthropic.kuki:547
+//line stdlib/llm/anthropic/anthropic.kuki:586
 	if c.retryMaxAttempts > 1 {
-//line stdlib/llm/anthropic/anthropic.kuki:548
+//line stdlib/llm/anthropic/anthropic.kuki:587
 		req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:550
+//line stdlib/llm/anthropic/anthropic.kuki:589
 	resp, err_3 := fetch.Do(req)
-//line stdlib/llm/anthropic/anthropic.kuki:550
+//line stdlib/llm/anthropic/anthropic.kuki:589
 	if err_3 != nil {
 		var _zero0 Response
-//line stdlib/llm/anthropic/anthropic.kuki:550
+//line stdlib/llm/anthropic/anthropic.kuki:589
 		return _zero0, err_3
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:552
+//line stdlib/llm/anthropic/anthropic.kuki:591
 	defer resp.Body.Close()
-//line stdlib/llm/anthropic/anthropic.kuki:554
+//line stdlib/llm/anthropic/anthropic.kuki:593
 	if resp.StatusCode >= 400 {
-//line stdlib/llm/anthropic/anthropic.kuki:555
+//line stdlib/llm/anthropic/anthropic.kuki:594
 		errBody, err_4 := fetch.Bytes(resp)
-//line stdlib/llm/anthropic/anthropic.kuki:555
+//line stdlib/llm/anthropic/anthropic.kuki:594
 		if err_4 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:555
+//line stdlib/llm/anthropic/anthropic.kuki:594
 			return Response{}, fmt.Errorf("Anthropic API request failed with status %v", resp.StatusCode)
 		}
-//line stdlib/llm/anthropic/anthropic.kuki:556
+//line stdlib/llm/anthropic/anthropic.kuki:595
 		return Response{}, fmt.Errorf("Anthropic API request failed (%v): %v", resp.StatusCode, string(errBody))
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:558
+//line stdlib/llm/anthropic/anthropic.kuki:597
 	raw := rawResponse{}
-//line stdlib/llm/anthropic/anthropic.kuki:559
-//line stdlib/llm/anthropic/anthropic.kuki:559
+//line stdlib/llm/anthropic/anthropic.kuki:598
+//line stdlib/llm/anthropic/anthropic.kuki:598
 	err_5 := json.ReadInto(resp.Body, &raw)
-//line stdlib/llm/anthropic/anthropic.kuki:559
+//line stdlib/llm/anthropic/anthropic.kuki:598
 	if err_5 != nil {
 		var _zero0 Response
-//line stdlib/llm/anthropic/anthropic.kuki:559
+//line stdlib/llm/anthropic/anthropic.kuki:598
 		return _zero0, err_5
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:560
+//line stdlib/llm/anthropic/anthropic.kuki:599
 	return decodeResponse(raw), nil
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:562
+//line stdlib/llm/anthropic/anthropic.kuki:601
 func doExecuteStream(c Client) (string, error) {
-//line stdlib/llm/anthropic/anthropic.kuki:563
+//line stdlib/llm/anthropic/anthropic.kuki:602
 	resp, err_6 := doExecuteStreamRaw(c)
-//line stdlib/llm/anthropic/anthropic.kuki:563
+//line stdlib/llm/anthropic/anthropic.kuki:602
 	if err_6 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:563
+//line stdlib/llm/anthropic/anthropic.kuki:602
 		return "", err_6
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:564
+//line stdlib/llm/anthropic/anthropic.kuki:603
 	return GetText(resp), nil
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:566
+//line stdlib/llm/anthropic/anthropic.kuki:605
 func emitStreamEvent(c Client, raw rawStreamEvent) {
-//line stdlib/llm/anthropic/anthropic.kuki:567
+//line stdlib/llm/anthropic/anthropic.kuki:606
 	if c.eventHandler == nil {
-//line stdlib/llm/anthropic/anthropic.kuki:568
+//line stdlib/llm/anthropic/anthropic.kuki:607
 		return
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:569
+//line stdlib/llm/anthropic/anthropic.kuki:608
 	if raw.Type == "content_block_start" {
-//line stdlib/llm/anthropic/anthropic.kuki:570
+//line stdlib/llm/anthropic/anthropic.kuki:609
 		if raw.ContentBlock.Type == "tool_use" {
-//line stdlib/llm/anthropic/anthropic.kuki:571
+//line stdlib/llm/anthropic/anthropic.kuki:610
 			c.eventHandler(llm.ToolCallStart{Index: raw.Index, ID: raw.ContentBlock.ID, Name: raw.ContentBlock.Name})
 		}
-//line stdlib/llm/anthropic/anthropic.kuki:576
+//line stdlib/llm/anthropic/anthropic.kuki:615
 		return
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:577
+//line stdlib/llm/anthropic/anthropic.kuki:616
 	if raw.Type == "content_block_delta" {
-//line stdlib/llm/anthropic/anthropic.kuki:578
+//line stdlib/llm/anthropic/anthropic.kuki:617
 		if raw.Delta.Type == "text_delta" {
-//line stdlib/llm/anthropic/anthropic.kuki:579
+//line stdlib/llm/anthropic/anthropic.kuki:618
 			c.eventHandler(llm.Delta{Body: raw.Delta.Text})
-//line stdlib/llm/anthropic/anthropic.kuki:580
+//line stdlib/llm/anthropic/anthropic.kuki:619
 			return
 		}
-//line stdlib/llm/anthropic/anthropic.kuki:581
+//line stdlib/llm/anthropic/anthropic.kuki:620
 		if raw.Delta.Type == "thinking_delta" {
-//line stdlib/llm/anthropic/anthropic.kuki:582
+//line stdlib/llm/anthropic/anthropic.kuki:621
 			c.eventHandler(llm.ThinkingDelta{Body: raw.Delta.Thinking})
-//line stdlib/llm/anthropic/anthropic.kuki:583
+//line stdlib/llm/anthropic/anthropic.kuki:622
 			return
 		}
-//line stdlib/llm/anthropic/anthropic.kuki:584
+//line stdlib/llm/anthropic/anthropic.kuki:623
 		if raw.Delta.Type == "input_json_delta" {
-//line stdlib/llm/anthropic/anthropic.kuki:585
+//line stdlib/llm/anthropic/anthropic.kuki:624
 			c.eventHandler(llm.ToolCallArgs{Index: raw.Index, Body: raw.Delta.PartialJSON})
-//line stdlib/llm/anthropic/anthropic.kuki:586
+//line stdlib/llm/anthropic/anthropic.kuki:625
 			return
 		}
-//line stdlib/llm/anthropic/anthropic.kuki:587
+//line stdlib/llm/anthropic/anthropic.kuki:626
 		return
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:588
+//line stdlib/llm/anthropic/anthropic.kuki:627
 	if raw.Type == "message_stop" {
-//line stdlib/llm/anthropic/anthropic.kuki:589
+//line stdlib/llm/anthropic/anthropic.kuki:628
 		c.eventHandler(llm.Completed{})
-//line stdlib/llm/anthropic/anthropic.kuki:590
+//line stdlib/llm/anthropic/anthropic.kuki:629
 		return
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:591
+//line stdlib/llm/anthropic/anthropic.kuki:630
 	if raw.Type == "error" {
-//line stdlib/llm/anthropic/anthropic.kuki:592
+//line stdlib/llm/anthropic/anthropic.kuki:631
 		c.eventHandler(llm.Error{Message: "Anthropic streaming error"})
-//line stdlib/llm/anthropic/anthropic.kuki:593
+//line stdlib/llm/anthropic/anthropic.kuki:632
 		return
 	}
 }
 
-//line stdlib/llm/anthropic/anthropic.kuki:595
+//line stdlib/llm/anthropic/anthropic.kuki:634
 func doExecuteStreamRaw(c Client) (Response, error) {
-//line stdlib/llm/anthropic/anthropic.kuki:596
+//line stdlib/llm/anthropic/anthropic.kuki:635
 	url := fmt.Sprintf("%v%v", resolveBaseURL(c), resolvePath(c))
-//line stdlib/llm/anthropic/anthropic.kuki:597
+//line stdlib/llm/anthropic/anthropic.kuki:636
 	apiKey := resolveAPIKey(c)
-//line stdlib/llm/anthropic/anthropic.kuki:598
+//line stdlib/llm/anthropic/anthropic.kuki:637
 	body := buildRequest(c)
-//line stdlib/llm/anthropic/anthropic.kuki:600
-	req := fetch.Header(fetch.Header(fetch.Header(fetch.Method(fetch.New(url), "POST"), "Content-Type", "application/json"), "Accept", "text/event-stream"), "anthropic-version", c.apiVersion)
-//line stdlib/llm/anthropic/anthropic.kuki:606
+//line stdlib/llm/anthropic/anthropic.kuki:639
+	req := fetch.Header(fetch.Header(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), "Accept", "text/event-stream"), "anthropic-version", c.apiVersion)
+//line stdlib/llm/anthropic/anthropic.kuki:645
 	if c.ctx != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:607
+//line stdlib/llm/anthropic/anthropic.kuki:646
 		req = fetch.WithContext(req, ctxpkg.FromContext(c.ctx))
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:608
+//line stdlib/llm/anthropic/anthropic.kuki:647
 	if apiKey != "" {
-//line stdlib/llm/anthropic/anthropic.kuki:609
+//line stdlib/llm/anthropic/anthropic.kuki:648
 		req = fetch.Header(req, "x-api-key", apiKey)
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:611
+//line stdlib/llm/anthropic/anthropic.kuki:650
 	req = fetch.Body(req, body)
-//line stdlib/llm/anthropic/anthropic.kuki:613
+//line stdlib/llm/anthropic/anthropic.kuki:652
 	if c.retryMaxAttempts > 1 {
-//line stdlib/llm/anthropic/anthropic.kuki:614
+//line stdlib/llm/anthropic/anthropic.kuki:653
 		req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:616
+//line stdlib/llm/anthropic/anthropic.kuki:655
 	resp, err_7 := fetch.Do(req)
-//line stdlib/llm/anthropic/anthropic.kuki:616
+//line stdlib/llm/anthropic/anthropic.kuki:655
 	if err_7 != nil {
 		var _zero0 Response
-//line stdlib/llm/anthropic/anthropic.kuki:616
+//line stdlib/llm/anthropic/anthropic.kuki:655
 		return _zero0, err_7
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:618
+//line stdlib/llm/anthropic/anthropic.kuki:657
 	defer resp.Body.Close()
-//line stdlib/llm/anthropic/anthropic.kuki:620
+//line stdlib/llm/anthropic/anthropic.kuki:659
 	if resp.StatusCode >= 400 {
-//line stdlib/llm/anthropic/anthropic.kuki:621
+//line stdlib/llm/anthropic/anthropic.kuki:660
 		errBody, err_8 := fetch.Bytes(resp)
-//line stdlib/llm/anthropic/anthropic.kuki:621
+//line stdlib/llm/anthropic/anthropic.kuki:660
 		if err_8 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:621
+//line stdlib/llm/anthropic/anthropic.kuki:660
 			return Response{}, fmt.Errorf("Anthropic API request failed with status %v", resp.StatusCode)
 		}
-//line stdlib/llm/anthropic/anthropic.kuki:622
+//line stdlib/llm/anthropic/anthropic.kuki:661
 		return Response{}, fmt.Errorf("Anthropic API request failed (%v): %v", resp.StatusCode, string(errBody))
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:624
+//line stdlib/llm/anthropic/anthropic.kuki:663
 	contentBlocks := make(map[int]rawContentBlock)
-//line stdlib/llm/anthropic/anthropic.kuki:625
+//line stdlib/llm/anthropic/anthropic.kuki:664
 	inputAccum := make(map[int]string)
-//line stdlib/llm/anthropic/anthropic.kuki:626
+//line stdlib/llm/anthropic/anthropic.kuki:665
 	maxIdx := -1
-//line stdlib/llm/anthropic/anthropic.kuki:627
+//line stdlib/llm/anthropic/anthropic.kuki:666
 	scanner := bufio.NewScanner(resp.Body)
-//line stdlib/llm/anthropic/anthropic.kuki:628
+//line stdlib/llm/anthropic/anthropic.kuki:667
 	for scanner.Scan() {
-//line stdlib/llm/anthropic/anthropic.kuki:629
+//line stdlib/llm/anthropic/anthropic.kuki:668
 		line := scanner.Text()
-//line stdlib/llm/anthropic/anthropic.kuki:630
-		if ((line == "") || kukistring.HasPrefix(line, "event:")) || kukistring.HasPrefix(line, ":") {
-//line stdlib/llm/anthropic/anthropic.kuki:631
+//line stdlib/llm/anthropic/anthropic.kuki:669
+		if line == "" || kukistring.HasPrefix(line, "event:") || kukistring.HasPrefix(line, ":") {
+//line stdlib/llm/anthropic/anthropic.kuki:670
 			continue
 		}
-//line stdlib/llm/anthropic/anthropic.kuki:632
+//line stdlib/llm/anthropic/anthropic.kuki:671
 		if kukistring.HasPrefix(line, "data: ") {
-//line stdlib/llm/anthropic/anthropic.kuki:633
+//line stdlib/llm/anthropic/anthropic.kuki:672
 			data := kukistring.TrimPrefix(line, "data: ")
-//line stdlib/llm/anthropic/anthropic.kuki:634
+//line stdlib/llm/anthropic/anthropic.kuki:673
 			evt := rawStreamEvent{}
-//line stdlib/llm/anthropic/anthropic.kuki:635
-//line stdlib/llm/anthropic/anthropic.kuki:635
+//line stdlib/llm/anthropic/anthropic.kuki:674
+//line stdlib/llm/anthropic/anthropic.kuki:674
 			err_9 := json.ParseInto([]byte(data), &evt)
-//line stdlib/llm/anthropic/anthropic.kuki:635
+//line stdlib/llm/anthropic/anthropic.kuki:674
 			if err_9 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:635
-				//line stdlib/llm/anthropic/anthropic.kuki:636
+//line stdlib/llm/anthropic/anthropic.kuki:674
+				//line stdlib/llm/anthropic/anthropic.kuki:675
 				continue
 			}
-//line stdlib/llm/anthropic/anthropic.kuki:638
+//line stdlib/llm/anthropic/anthropic.kuki:677
 			emitStreamEvent(c, evt)
-//line stdlib/llm/anthropic/anthropic.kuki:640
+//line stdlib/llm/anthropic/anthropic.kuki:679
 			if evt.Type == "content_block_start" {
-//line stdlib/llm/anthropic/anthropic.kuki:641
+//line stdlib/llm/anthropic/anthropic.kuki:680
 				idx := evt.Index
-//line stdlib/llm/anthropic/anthropic.kuki:642
+//line stdlib/llm/anthropic/anthropic.kuki:681
 				contentBlocks[idx] = evt.ContentBlock
-//line stdlib/llm/anthropic/anthropic.kuki:643
+//line stdlib/llm/anthropic/anthropic.kuki:682
 				if idx > maxIdx {
-//line stdlib/llm/anthropic/anthropic.kuki:644
+//line stdlib/llm/anthropic/anthropic.kuki:683
 					maxIdx = idx
 				}
 			}
-//line stdlib/llm/anthropic/anthropic.kuki:646
+//line stdlib/llm/anthropic/anthropic.kuki:685
 			if evt.Type == "content_block_delta" {
-//line stdlib/llm/anthropic/anthropic.kuki:647
+//line stdlib/llm/anthropic/anthropic.kuki:686
 				idx := evt.Index
-//line stdlib/llm/anthropic/anthropic.kuki:648
+//line stdlib/llm/anthropic/anthropic.kuki:687
 				block := contentBlocks[idx]
-//line stdlib/llm/anthropic/anthropic.kuki:649
+//line stdlib/llm/anthropic/anthropic.kuki:688
 				if evt.Delta.Type == "text_delta" {
-//line stdlib/llm/anthropic/anthropic.kuki:650
+//line stdlib/llm/anthropic/anthropic.kuki:689
 					block.Type = "text"
-//line stdlib/llm/anthropic/anthropic.kuki:651
-					block.Text = (block.Text + evt.Delta.Text)
-//line stdlib/llm/anthropic/anthropic.kuki:652
+//line stdlib/llm/anthropic/anthropic.kuki:690
+					block.Text = block.Text + evt.Delta.Text
+//line stdlib/llm/anthropic/anthropic.kuki:691
 					if c.streamHandler != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:653
+//line stdlib/llm/anthropic/anthropic.kuki:692
 						c.streamHandler(evt.Delta.Text)
 					}
 				}
-//line stdlib/llm/anthropic/anthropic.kuki:654
+//line stdlib/llm/anthropic/anthropic.kuki:693
 				if evt.Delta.Type == "input_json_delta" {
-//line stdlib/llm/anthropic/anthropic.kuki:655
+//line stdlib/llm/anthropic/anthropic.kuki:694
 					block.Type = "tool_use"
-//line stdlib/llm/anthropic/anthropic.kuki:656
-					inputAccum[idx] = (inputAccum[idx] + evt.Delta.PartialJSON)
-//line stdlib/llm/anthropic/anthropic.kuki:657
+//line stdlib/llm/anthropic/anthropic.kuki:695
+					inputAccum[idx] = inputAccum[idx] + evt.Delta.PartialJSON
+//line stdlib/llm/anthropic/anthropic.kuki:696
 					block.Input = inputAccum[idx]
 				}
-//line stdlib/llm/anthropic/anthropic.kuki:658
+//line stdlib/llm/anthropic/anthropic.kuki:697
 				contentBlocks[idx] = block
-//line stdlib/llm/anthropic/anthropic.kuki:659
+//line stdlib/llm/anthropic/anthropic.kuki:698
 				if idx > maxIdx {
-//line stdlib/llm/anthropic/anthropic.kuki:660
+//line stdlib/llm/anthropic/anthropic.kuki:699
 					maxIdx = idx
 				}
 			}
-//line stdlib/llm/anthropic/anthropic.kuki:662
+//line stdlib/llm/anthropic/anthropic.kuki:701
 			if evt.Type == "error" {
-//line stdlib/llm/anthropic/anthropic.kuki:663
+//line stdlib/llm/anthropic/anthropic.kuki:702
 				return Response{}, errors.New("Anthropic streaming error")
 			}
 		}
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:665
-//line stdlib/llm/anthropic/anthropic.kuki:665
+//line stdlib/llm/anthropic/anthropic.kuki:704
+//line stdlib/llm/anthropic/anthropic.kuki:704
 	err_10 := scanner.Err()
-//line stdlib/llm/anthropic/anthropic.kuki:665
+//line stdlib/llm/anthropic/anthropic.kuki:704
 	if err_10 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:665
+//line stdlib/llm/anthropic/anthropic.kuki:704
 		return Response{}, fmt.Errorf("%v", err_10)
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:667
-	blocks := []llm.Content{}
-//line stdlib/llm/anthropic/anthropic.kuki:668
+//line stdlib/llm/anthropic/anthropic.kuki:706
+	blocks := []content.Content{}
+//line stdlib/llm/anthropic/anthropic.kuki:707
 	for i := range maxIdx + 1 {
-//line stdlib/llm/anthropic/anthropic.kuki:669
+//line stdlib/llm/anthropic/anthropic.kuki:708
 		_, ok := contentBlocks[i]
-//line stdlib/llm/anthropic/anthropic.kuki:670
+//line stdlib/llm/anthropic/anthropic.kuki:709
 		if ok {
-//line stdlib/llm/anthropic/anthropic.kuki:671
+//line stdlib/llm/anthropic/anthropic.kuki:710
 			blocks = append(blocks, decodeContentBlock(contentBlocks[i]))
 		}
 	}
-//line stdlib/llm/anthropic/anthropic.kuki:673
+//line stdlib/llm/anthropic/anthropic.kuki:712
 	return Response{Content: blocks}, nil
 }

@@ -29,7 +29,7 @@ func IsTTY(f *os.File) bool {
 		return false
 	}
 //line stdlib/term/term.kuki:35
-	return ((info.Mode() & os.ModeCharDevice) != 0)
+	return info.Mode()&os.ModeCharDevice != 0
 }
 
 //line stdlib/term/term.kuki:44
@@ -86,17 +86,17 @@ func VisibleWidth(s string) int {
 //line stdlib/term/term.kuki:82
 	for i < n {
 //line stdlib/term/term.kuki:83
-		if ((s[i] == 0x1b) && ((i + 1) < n)) && (s[(i+1)] == 0x5b) {
+		if s[i] == 0x1b && i+1 < n && s[i+1] == 0x5b {
 //line stdlib/term/term.kuki:85
-			i = (i + 2)
+			i = i + 2
 //line stdlib/term/term.kuki:86
 			for i < n {
 //line stdlib/term/term.kuki:87
 				b := s[i]
 //line stdlib/term/term.kuki:88
-				i = (i + 1)
+				i = i + 1
 //line stdlib/term/term.kuki:89
-				if (b >= 0x40) && (b <= 0x7e) {
+				if b >= 0x40 && b <= 0x7e {
 //line stdlib/term/term.kuki:90
 					break
 				}
@@ -109,13 +109,13 @@ func VisibleWidth(s string) int {
 //line stdlib/term/term.kuki:93
 		if size == 0 {
 //line stdlib/term/term.kuki:94
-			i = (i + 1)
+			i = i + 1
 		} else {
 //line stdlib/term/term.kuki:96
-			i = (i + size)
+			i = i + size
 		}
 //line stdlib/term/term.kuki:97
-		width = (width + 1)
+		width = width + 1
 	}
 //line stdlib/term/term.kuki:98
 	return width
@@ -131,7 +131,7 @@ func PadRightVisible(s string, n int) string {
 		return s
 	}
 //line stdlib/term/term.kuki:107
-	pad := (n - w)
+	pad := n - w
 //line stdlib/term/term.kuki:108
 	out := s
 //line stdlib/term/term.kuki:109
@@ -139,9 +139,9 @@ func PadRightVisible(s string, n int) string {
 //line stdlib/term/term.kuki:110
 	for j < pad {
 //line stdlib/term/term.kuki:111
-		out = (out + " ")
+		out = out + " "
 //line stdlib/term/term.kuki:112
-		j = (j + 1)
+		j = j + 1
 	}
 //line stdlib/term/term.kuki:113
 	return out
@@ -157,9 +157,14 @@ func Width() int {
 		return 80
 	}
 //line stdlib/term/term.kuki:123
-	n, err := strconv.Atoi(cols)
+	n, err_2 := strconv.Atoi(cols)
+//line stdlib/term/term.kuki:123
+	if err_2 != nil {
+//line stdlib/term/term.kuki:123
+		return 80
+	}
 //line stdlib/term/term.kuki:124
-	if (err != nil) || (n <= 0) {
+	if n <= 0 {
 //line stdlib/term/term.kuki:125
 		return 80
 	}

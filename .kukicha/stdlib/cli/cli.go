@@ -88,7 +88,7 @@ func (cmd *SubcommandDef) Short(alias string) *SubcommandDef {
 		panic(fmt.Sprintf("cli.Short(%v): no flag to attach alias to — call Short after a Flag/StringFlag/BoolFlag/IntFlag/RequiredFlag in the builder chain", alias))
 	}
 //line stdlib/cli/cli.kuki:98
-	last := (len(cmd.Flags) - 1)
+	last := len(cmd.Flags) - 1
 //line stdlib/cli/cli.kuki:99
 	cmd.Flags[last].Aliases = append(cmd.Flags[last].Aliases, alias)
 //line stdlib/cli/cli.kuki:100
@@ -264,7 +264,7 @@ func Short(app *App, alias string) *App {
 		panic(fmt.Sprintf("cli.Short(%v): no flag to attach alias to — call Short after a Flag/StringFlag/BoolFlag/IntFlag/RequiredFlag in the builder chain", alias))
 	}
 //line stdlib/cli/cli.kuki:285
-	last := (len(app.Flags) - 1)
+	last := len(app.Flags) - 1
 //line stdlib/cli/cli.kuki:286
 	app.Flags[last].Aliases = append(app.Flags[last].Aliases, alias)
 //line stdlib/cli/cli.kuki:287
@@ -390,7 +390,7 @@ func Run(app *App) error {
 //line stdlib/cli/cli.kuki:393
 	sub := args[1]
 //line stdlib/cli/cli.kuki:394
-	if (sub == "--version") || (sub == "-v") {
+	if sub == "--version" || sub == "-v" {
 //line stdlib/cli/cli.kuki:395
 		if app.Version != "" {
 //line stdlib/cli/cli.kuki:396
@@ -403,7 +403,7 @@ func Run(app *App) error {
 		return nil
 	}
 //line stdlib/cli/cli.kuki:400
-	if ((sub == "help") || (sub == "-h")) || (sub == "--help") {
+	if sub == "help" || sub == "-h" || sub == "--help" {
 //line stdlib/cli/cli.kuki:401
 		printHelp(app)
 //line stdlib/cli/cli.kuki:402
@@ -530,7 +530,7 @@ func parseFlagsAndPositionals(args []string, start int, values map[string]string
 //line stdlib/cli/cli.kuki:475
 			values[canonical] = parts[1]
 //line stdlib/cli/cli.kuki:476
-			i = (i + 1)
+			i = i + 1
 		} else if kukistring.HasPrefix(arg, "--") {
 //line stdlib/cli/cli.kuki:478
 			name := kukistring.TrimPrefix(arg, "--")
@@ -547,25 +547,25 @@ func parseFlagsAndPositionals(args []string, start int, values map[string]string
 //line stdlib/cli/cli.kuki:481
 				values[canonical] = "true"
 //line stdlib/cli/cli.kuki:482
-				i = (i + 1)
-			} else if (typeMap[canonical] != "") && ((i + 1) < len(args)) {
+				i = i + 1
+			} else if typeMap[canonical] != "" && i+1 < len(args) {
 //line stdlib/cli/cli.kuki:484
-				values[canonical] = args[(i + 1)]
+				values[canonical] = args[i+1]
 //line stdlib/cli/cli.kuki:485
-				i = (i + 2)
+				i = i + 2
 			} else if typeMap[canonical] != "" {
 //line stdlib/cli/cli.kuki:487
-				i = (i + 1)
-			} else if ((i + 1) < len(args)) && !kukistring.HasPrefix(args[(i+1)], "-") {
+				i = i + 1
+			} else if i+1 < len(args) && !kukistring.HasPrefix(args[i+1], "-") {
 //line stdlib/cli/cli.kuki:489
-				values[canonical] = args[(i + 1)]
+				values[canonical] = args[i+1]
 //line stdlib/cli/cli.kuki:490
-				i = (i + 2)
+				i = i + 2
 			} else {
 //line stdlib/cli/cli.kuki:492
 				values[canonical] = "true"
 //line stdlib/cli/cli.kuki:493
-				i = (i + 1)
+				i = i + 1
 			}
 		} else if kukistring.HasPrefix(arg, "-") {
 //line stdlib/cli/cli.kuki:495
@@ -583,25 +583,25 @@ func parseFlagsAndPositionals(args []string, start int, values map[string]string
 //line stdlib/cli/cli.kuki:498
 				values[canonical] = "true"
 //line stdlib/cli/cli.kuki:499
-				i = (i + 1)
-			} else if (typeMap[canonical] != "") && ((i + 1) < len(args)) {
+				i = i + 1
+			} else if typeMap[canonical] != "" && i+1 < len(args) {
 //line stdlib/cli/cli.kuki:501
-				values[canonical] = args[(i + 1)]
+				values[canonical] = args[i+1]
 //line stdlib/cli/cli.kuki:502
-				i = (i + 2)
+				i = i + 2
 			} else if typeMap[canonical] != "" {
 //line stdlib/cli/cli.kuki:504
-				i = (i + 1)
-			} else if ((i + 1) < len(args)) && !kukistring.HasPrefix(args[(i+1)], "-") {
+				i = i + 1
+			} else if i+1 < len(args) && !kukistring.HasPrefix(args[i+1], "-") {
 //line stdlib/cli/cli.kuki:506
-				values[canonical] = args[(i + 1)]
+				values[canonical] = args[i+1]
 //line stdlib/cli/cli.kuki:507
-				i = (i + 2)
+				i = i + 2
 			} else {
 //line stdlib/cli/cli.kuki:509
 				values[canonical] = "true"
 //line stdlib/cli/cli.kuki:510
-				i = (i + 1)
+				i = i + 1
 			}
 		} else {
 //line stdlib/cli/cli.kuki:512
@@ -609,13 +609,13 @@ func parseFlagsAndPositionals(args []string, start int, values map[string]string
 //line stdlib/cli/cli.kuki:513
 				values[positionalNames[posIndex]] = arg
 //line stdlib/cli/cli.kuki:514
-				posIndex = (posIndex + 1)
+				posIndex = posIndex + 1
 			} else if restArgName != "" {
 //line stdlib/cli/cli.kuki:516
 				rest[restArgName] = append(rest[restArgName], arg)
 			}
 //line stdlib/cli/cli.kuki:517
-			i = (i + 1)
+			i = i + 1
 		}
 	}
 }
@@ -644,7 +644,7 @@ func runLeaf(app *App, leaf *SubcommandDef, args []string, argStart int) error {
 //line stdlib/cli/cli.kuki:540
 	for _, f := range leaf.Flags {
 //line stdlib/cli/cli.kuki:541
-		if f.Required && (values[f.Name] == "") {
+		if f.Required && values[f.Name] == "" {
 //line stdlib/cli/cli.kuki:542
 			return fmt.Errorf("flag --%v is required", f.Name)
 		}
@@ -652,7 +652,7 @@ func runLeaf(app *App, leaf *SubcommandDef, args []string, argStart int) error {
 //line stdlib/cli/cli.kuki:543
 	for _, a := range leaf.Args {
 //line stdlib/cli/cli.kuki:544
-		if a.Required && (values[a.Name] == "") {
+		if a.Required && values[a.Name] == "" {
 //line stdlib/cli/cli.kuki:545
 			return fmt.Errorf("argument %v is required", a.Name)
 		}
@@ -705,7 +705,7 @@ func matchNested(cmd *SubcommandDef, args []string, index int) (*SubcommandDef, 
 //line stdlib/cli/cli.kuki:569
 		if s.Name == nextSub {
 //line stdlib/cli/cli.kuki:570
-			return matchNested(s, args, (index + 1))
+			return matchNested(s, args, index+1)
 		}
 	}
 //line stdlib/cli/cli.kuki:571
@@ -730,7 +730,7 @@ func printHelp(app *App) {
 		fmt.Println(app.Description)
 	}
 //line stdlib/cli/cli.kuki:587
-	if (len(app.GlobalFlags) > 0) || (len(app.Flags) > 0) {
+	if len(app.GlobalFlags) > 0 || len(app.Flags) > 0 {
 //line stdlib/cli/cli.kuki:588
 		fmt.Println("")
 //line stdlib/cli/cli.kuki:589
@@ -784,12 +784,12 @@ func printFlagRow(s color.Styler, f FlagDef, width int) {
 //line stdlib/cli/cli.kuki:614
 	suffix := ""
 //line stdlib/cli/cli.kuki:615
-	if (f.DefaultValue != "") && (f.DefaultValue != "false") {
+	if f.DefaultValue != "" && f.DefaultValue != "false" {
 //line stdlib/cli/cli.kuki:616
 		suffix = fmt.Sprintf(" (default: %v)", f.DefaultValue)
 	}
 //line stdlib/cli/cli.kuki:617
-	fmt.Println(fmt.Sprintf("  %v  %v", s.Cyan(padded), s.Dim((f.Description + suffix))))
+	fmt.Println(fmt.Sprintf("  %v  %v", s.Cyan(padded), s.Dim(f.Description+suffix)))
 }
 
 //line stdlib/cli/cli.kuki:622
@@ -854,9 +854,9 @@ func padRight(text string, n int) string {
 		return text
 	}
 //line stdlib/cli/cli.kuki:651
-	pad := (n - len(text))
+	pad := n - len(text)
 //line stdlib/cli/cli.kuki:652
-	return (text + kukistring.Repeat(" ", pad))
+	return text + kukistring.Repeat(" ", pad)
 }
 
 //line stdlib/cli/cli.kuki:655
@@ -864,14 +864,14 @@ func IsJSON(args Args) bool {
 //line stdlib/cli/cli.kuki:656
 	val := args.values["json"]
 //line stdlib/cli/cli.kuki:657
-	if ((val == "true") || (val == "1")) || (val == "yes") {
+	if val == "true" || val == "1" || val == "yes" {
 //line stdlib/cli/cli.kuki:658
 		return true
 	}
 //line stdlib/cli/cli.kuki:659
 	val = args.values["output"]
 //line stdlib/cli/cli.kuki:660
-	return (val == "json")
+	return val == "json"
 }
 
 //line stdlib/cli/cli.kuki:663
@@ -908,7 +908,7 @@ func IsTTY() bool {
 		return false
 	}
 //line stdlib/cli/cli.kuki:676
-	return ((info.Mode() & os.ModeCharDevice) != 0)
+	return info.Mode()&os.ModeCharDevice != 0
 }
 
 //line stdlib/cli/cli.kuki:679
@@ -955,7 +955,7 @@ func GetBool(args Args, name string) bool {
 //line stdlib/cli/cli.kuki:704
 	val := args.values[name]
 //line stdlib/cli/cli.kuki:705
-	return (((val == "true") || (val == "1")) || (val == "yes"))
+	return val == "true" || val == "1" || val == "yes"
 }
 
 //line stdlib/cli/cli.kuki:708
@@ -968,7 +968,7 @@ func GetBoolOr(args Args, name string, defaultVal bool) bool {
 		return defaultVal
 	}
 //line stdlib/cli/cli.kuki:712
-	return (((val == "true") || (val == "1")) || (val == "yes"))
+	return val == "true" || val == "1" || val == "yes"
 }
 
 //line stdlib/cli/cli.kuki:715

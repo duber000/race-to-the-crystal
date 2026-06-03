@@ -76,7 +76,7 @@ func IsStructural(s string) bool {
 //line stdlib/llm/safe/safe.kuki:103
 	c := s[:1]
 //line stdlib/llm/safe/safe.kuki:104
-	if (((((c == "#") || (c == "-")) || (c == "*")) || (c == ">")) || (c == "+")) || (c == "`") {
+	if c == "#" || c == "-" || c == "*" || c == ">" || c == "+" || c == "`" {
 //line stdlib/llm/safe/safe.kuki:105
 		return true
 	}

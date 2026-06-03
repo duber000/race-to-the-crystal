@@ -29,7 +29,7 @@ func TestUnregisteredActionDenied(t *testing.T) {
 //line stdlib/policy/policy_test.kuki:19
 	if d, _isOk := decision.(policy.Denied); _isOk {
 //line stdlib/policy/policy_test.kuki:20
-		test.AssertTrue(t, (len(d.Reason) > 0))
+		test.AssertTrue(t, len(d.Reason) > 0)
 	} else {
 //line stdlib/policy/policy_test.kuki:22
 		t.Errorf("expected Denied for unregistered action")

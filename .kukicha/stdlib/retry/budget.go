@@ -60,7 +60,7 @@ func Open(b Budget) bool {
 //line stdlib/retry/budget.kuki:66
 	pruneLocked(b)
 //line stdlib/retry/budget.kuki:67
-	return (len(b.state.failures[b.Key]) >= b.MaxFailures)
+	return len(b.state.failures[b.Key]) >= b.MaxFailures
 }
 
 //line stdlib/retry/budget.kuki:73

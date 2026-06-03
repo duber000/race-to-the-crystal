@@ -8,6 +8,7 @@ import (
 	"github.com/kukichalang/kukicha/stdlib/test"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -22,7 +23,7 @@ func fakeStreamServer(frames []string) *httptest.Server {
 //line stdlib/llm/chat/chat_test.kuki:19
 		for _, frame := range frames {
 //line stdlib/llm/chat/chat_test.kuki:20
-			w.Write([]byte((("data: " + frame) + "\n\n")))
+			w.Write([]byte("data: " + frame + "\n\n"))
 		}
 //line stdlib/llm/chat/chat_test.kuki:21
 		w.Write([]byte("data: [DONE]\n\n"))
@@ -143,12 +144,12 @@ func TestAskStreamCollectsToolCalls(t *testing.T) {
 		switch e := evt.(type) {
 		case llm.ToolCallStart:
 //line stdlib/llm/chat/chat_test.kuki:99
-			starts = (starts + 1)
+			starts = starts + 1
 //line stdlib/llm/chat/chat_test.kuki:100
 			test.AssertEqual(t, e.Name, "do_thing")
 		case llm.ToolCallArgs:
 //line stdlib/llm/chat/chat_test.kuki:102
-			argsFragments = (argsFragments + e.Body)
+			argsFragments = argsFragments + e.Body
 		}
 	}
 //line stdlib/llm/chat/chat_test.kuki:104
@@ -177,7 +178,7 @@ func TestAskStreamCollectsToolCalls(t *testing.T) {
 //line stdlib/llm/chat/chat_test.kuki:119
 func fakeChatServer(quotedContent string) *httptest.Server {
 //line stdlib/llm/chat/chat_test.kuki:120
-	body := ((`{"id":"1","object":"chat.completion","model":"test","choices":[{"index":0,"message":{"role":"assistant","content":` + quotedContent) + `},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`)
+	body := `{"id":"1","object":"chat.completion","model":"test","choices":[{"index":0,"message":{"role":"assistant","content":` + quotedContent + `},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`
 //line stdlib/llm/chat/chat_test.kuki:121
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 //line stdlib/llm/chat/chat_test.kuki:122
@@ -268,4 +269,105 @@ func TestAskJSONStringBackedEnum(t *testing.T) {
 //line stdlib/llm/chat/chat_test.kuki:156
 		t.Errorf("expected Restart, got %v", v)
 	}
+}
+
+//line stdlib/llm/chat/chat_test.kuki:160
+func TestGetMessages(t *testing.T) {
+//line stdlib/llm/chat/chat_test.kuki:161
+	c := chat.Assistant(chat.User(chat.System(chat.New("openai:test"), "be helpful"), "hi"), "hello")
+//line stdlib/llm/chat/chat_test.kuki:166
+	msgs := chat.GetMessages(c)
+//line stdlib/llm/chat/chat_test.kuki:167
+	test.AssertEqual(t, len(msgs), 3)
+//line stdlib/llm/chat/chat_test.kuki:168
+	test.AssertEqual(t, string(msgs[0].Role), "system")
+//line stdlib/llm/chat/chat_test.kuki:169
+	test.AssertEqual(t, string(msgs[1].Role), "user")
+//line stdlib/llm/chat/chat_test.kuki:170
+	test.AssertEqual(t, string(msgs[2].Role), "assistant")
+}
+
+//line stdlib/llm/chat/chat_test.kuki:174
+type _WithToolEchoArgs struct {
+	Message string `json:"message"`
+}
+
+//line stdlib/llm/chat/chat_test.kuki:177
+func _withToolEchoServer() *httptest.Server {
+//line stdlib/llm/chat/chat_test.kuki:178
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line stdlib/llm/chat/chat_test.kuki:179
+		w.Header().Set("Content-Type", "application/json")
+//line stdlib/llm/chat/chat_test.kuki:180
+		w.WriteHeader(http.StatusOK)
+//line stdlib/llm/chat/chat_test.kuki:181
+		body := `{"id":"1","object":"chat.completion","model":"test","choices":[{"index":0,"message":{"role":"assistant","content":"","tool_calls":[{"id":"call_1","type":"function","function":{"name":"echo","arguments":"{\"message\":\"hi\"}"}}]},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}`
+//line stdlib/llm/chat/chat_test.kuki:182
+		w.Write([]byte(body))
+	}))
+}
+
+//line stdlib/llm/chat/chat_test.kuki:185
+func TestWithToolAndRunTools(t *testing.T) {
+//line stdlib/llm/chat/chat_test.kuki:186
+	server := _withToolEchoServer()
+//line stdlib/llm/chat/chat_test.kuki:187
+	defer server.Close()
+//line stdlib/llm/chat/chat_test.kuki:189
+	c := chat.WithTool[_WithToolEchoArgs](chat.User(newTestClient(server.URL), "say hi"), "echo", "echo back", nil, func(args _WithToolEchoArgs) (any, error) {
+//line stdlib/llm/chat/chat_test.kuki:192
+		return map[string]string{"echoed": args.Message}, nil
+	})
+//line stdlib/llm/chat/chat_test.kuki:195
+	comp, err_5 := chat.SendRaw(c)
+//line stdlib/llm/chat/chat_test.kuki:195
+	if err_5 != nil {
+//line stdlib/llm/chat/chat_test.kuki:195
+		//line stdlib/llm/chat/chat_test.kuki:196
+		t.Errorf("SendRaw failed: %v", err_5)
+		//line stdlib/llm/chat/chat_test.kuki:197
+		return
+	}
+//line stdlib/llm/chat/chat_test.kuki:199
+	test.AssertTrue(t, chat.HasToolCalls(comp))
+//line stdlib/llm/chat/chat_test.kuki:201
+	c, runErr := chat.RunTools(c, comp)
+//line stdlib/llm/chat/chat_test.kuki:202
+	test.AssertNoError(t, runErr)
+//line stdlib/llm/chat/chat_test.kuki:204
+	msgs := chat.GetMessages(c)
+//line stdlib/llm/chat/chat_test.kuki:206
+	test.AssertEqual(t, len(msgs), 3)
+//line stdlib/llm/chat/chat_test.kuki:207
+	test.AssertEqual(t, string(msgs[2].Role), "tool")
+//line stdlib/llm/chat/chat_test.kuki:208
+	test.AssertEqual(t, msgs[2].ToolCallID, "call_1")
+//line stdlib/llm/chat/chat_test.kuki:212
+	toolContent := msgs[2].Content.(string)
+//line stdlib/llm/chat/chat_test.kuki:213
+	test.AssertTrue(t, strings.Contains(toolContent, "echoed"))
+}
+
+//line stdlib/llm/chat/chat_test.kuki:215
+func TestRunToolsUnregisteredToolErrors(t *testing.T) {
+//line stdlib/llm/chat/chat_test.kuki:216
+	server := _withToolEchoServer()
+//line stdlib/llm/chat/chat_test.kuki:217
+	defer server.Close()
+//line stdlib/llm/chat/chat_test.kuki:219
+	c := chat.User(newTestClient(server.URL), "say hi")
+//line stdlib/llm/chat/chat_test.kuki:221
+	comp, err_6 := chat.SendRaw(c)
+//line stdlib/llm/chat/chat_test.kuki:221
+	if err_6 != nil {
+//line stdlib/llm/chat/chat_test.kuki:221
+		//line stdlib/llm/chat/chat_test.kuki:222
+		t.Errorf("SendRaw failed: %v", err_6)
+		//line stdlib/llm/chat/chat_test.kuki:223
+		return
+	}
+//line stdlib/llm/chat/chat_test.kuki:225
+	_, runErr := chat.RunTools(c, comp)
+//line stdlib/llm/chat/chat_test.kuki:226
+	test.AssertError(t, runErr)
 }

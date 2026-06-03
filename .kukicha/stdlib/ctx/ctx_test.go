@@ -24,7 +24,7 @@ func TestBackground(t *testing.T) {
 //line stdlib/ctx/ctx_test.kuki:19
 func TestWithTimeoutCancel(t *testing.T) {
 //line stdlib/ctx/ctx_test.kuki:20
-	h := ctx.WithTimeout(ctx.Background(), (60 * time.Second))
+	h := ctx.WithTimeout(ctx.Background(), 60*time.Second)
 //line stdlib/ctx/ctx_test.kuki:21
 	test.AssertEqual(t, h.Ctx.Err(), nil)
 //line stdlib/ctx/ctx_test.kuki:22

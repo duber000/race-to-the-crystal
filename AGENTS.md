@@ -132,6 +132,15 @@ Run: `kukicha run hello.kuki` · Build: `kukicha build hello.kuki`
 
 `func`/`var`/`const`/`enum` have aliases `function`/`variable`/`constant`/`enumeration`: use the short forms in production code; reserve the long forms for beginner/intermediate tutorials only.
 
+**`equals` and `isnt` replace every `==` and `!=` — not just nil/empty checks.**
+
+```kukicha
+if count equals 0           # not: count == 0
+if phase isnt enums.SETUP   # not: phase != enums.SETUP
+if name equals "admin"      # not: name == "admin"
+if pos equals dest          # not: pos == dest
+```
+
 ### Constants
 
 Constants are fixed values determined at compile time. Declare them one at a time with `const`, either at the top level or inside a function body for tunable parameters that should be visually flagged as immutable:
@@ -279,6 +288,22 @@ if caller isnt empty
 ```
 
 Mass-migrate existing code with `kukicha infer-nullable --apply <dir>` — it rewrites bindings that are observed assigned/compared to `empty`. Conservative and idempotent.
+
+**Constructors that build pointer-bearing state must return `reference T`, not `T`.** A value-returning constructor that stores a closure (or a `reference of local.field`) capturing the local it builds, then returns that local by value, hands the caller a *copy* at a different address — but the copy's closure still points at the discarded original. Mutations through it never reach the value the caller holds:
+
+```kukicha
+func NewOuter() Outer                 # value return — trap
+    o := Outer{}
+    o.handler = () => o.inner.SetVal()  # captures &local_o.inner
+    return o                            # COPY: handler points at the discarded o
+
+func NewOuter() reference Outer        # fix — stable shared address
+    o := Outer{}
+    o.handler = () => o.inner.SetVal()
+    return reference of o
+```
+
+The compiler flags the value-return form (`semantic/value-ctor-capture`; `kukicha explain semantic/value-ctor-capture`). Silence with `KUKICHA_LINT_VALUE_CTOR_CAPTURE=0` if you genuinely want the copy semantics.
 
 When you're choosing a return signature: use `nullable reference T` whenever absence is the only failure mode (lookups, optional config). Reserve `(reference T, error)` for genuine errors (I/O, parse, network) where the error message is part of the value. Wrapping a "not found" lookup in `(reference T, error)` reads as "something went wrong" when nothing did — `nullable reference T` is what the code means.
 

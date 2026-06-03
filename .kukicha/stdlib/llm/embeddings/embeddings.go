@@ -351,7 +351,7 @@ func executeRaw(c Client, input any) (Response, error) {
 //line stdlib/llm/embeddings/embeddings.kuki:224
 	apiKey := resolveAPIKey(c)
 //line stdlib/llm/embeddings/embeddings.kuki:226
-	req := fetch.Body(fetch.Header(fetch.Method(fetch.New(url), "POST"), "Content-Type", "application/json"), buildRequest(c, input))
+	req := fetch.Body(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), buildRequest(c, input))
 //line stdlib/llm/embeddings/embeddings.kuki:231
 	if c.ctx != nil {
 //line stdlib/llm/embeddings/embeddings.kuki:232

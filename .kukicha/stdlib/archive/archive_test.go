@@ -6,206 +6,325 @@ import (
 	"fmt"
 	"github.com/kukichalang/kukicha/stdlib/archive"
 	"github.com/kukichalang/kukicha/stdlib/files"
+	strpkg "github.com/kukichalang/kukicha/stdlib/string"
 	"github.com/kukichalang/kukicha/stdlib/test"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
-//line stdlib/archive/archive_test.kuki:12
-func writeFixture(t *testing.T, dir string, name string, body string) {
 //line stdlib/archive/archive_test.kuki:13
+func writeFixture(t *testing.T, dir string, name string, body string) {
+//line stdlib/archive/archive_test.kuki:14
 	full := filepath.Join(dir, name)
-//line stdlib/archive/archive_test.kuki:14
-//line stdlib/archive/archive_test.kuki:14
+//line stdlib/archive/archive_test.kuki:15
+//line stdlib/archive/archive_test.kuki:15
 	err_1 := files.MkDirAll(filepath.Dir(full))
-//line stdlib/archive/archive_test.kuki:14
+//line stdlib/archive/archive_test.kuki:15
 	if err_1 != nil {
-//line stdlib/archive/archive_test.kuki:14
+//line stdlib/archive/archive_test.kuki:15
 		t.Fatal(fmt.Sprintf("mkdir %v: %v", filepath.Dir(full), err_1))
 	}
-//line stdlib/archive/archive_test.kuki:15
-//line stdlib/archive/archive_test.kuki:15
+//line stdlib/archive/archive_test.kuki:16
+//line stdlib/archive/archive_test.kuki:16
 	err_2 := os.WriteFile(full, []byte(body), 0o644)
-//line stdlib/archive/archive_test.kuki:15
+//line stdlib/archive/archive_test.kuki:16
 	if err_2 != nil {
-//line stdlib/archive/archive_test.kuki:15
+//line stdlib/archive/archive_test.kuki:16
 		t.Fatal(fmt.Sprintf("write %v: %v", full, err_2))
 	}
 }
 
-//line stdlib/archive/archive_test.kuki:17
-func TestZipRoundTrip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:18
-	tmp := t.TempDir()
+func TestZipRoundTrip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:19
+	tmp := t.TempDir()
+//line stdlib/archive/archive_test.kuki:20
 	src := filepath.Join(tmp, "src")
-//line stdlib/archive/archive_test.kuki:20
-//line stdlib/archive/archive_test.kuki:20
+//line stdlib/archive/archive_test.kuki:21
+//line stdlib/archive/archive_test.kuki:21
 	err_3 := files.MkDirAll(src)
-//line stdlib/archive/archive_test.kuki:20
+//line stdlib/archive/archive_test.kuki:21
 	if err_3 != nil {
-//line stdlib/archive/archive_test.kuki:20
+//line stdlib/archive/archive_test.kuki:21
 		t.Fatal(fmt.Sprintf("mkdir src: %v", err_3))
 	}
-//line stdlib/archive/archive_test.kuki:21
-	writeFixture(t, src, "hello.txt", "hello world")
 //line stdlib/archive/archive_test.kuki:22
+	writeFixture(t, src, "hello.txt", "hello world")
+//line stdlib/archive/archive_test.kuki:23
 	writeFixture(t, src, "data.json", `{"ok":true}`)
-//line stdlib/archive/archive_test.kuki:25
+//line stdlib/archive/archive_test.kuki:26
 	cwd, err_4 := os.Getwd()
-//line stdlib/archive/archive_test.kuki:25
+//line stdlib/archive/archive_test.kuki:26
 	if err_4 != nil {
-//line stdlib/archive/archive_test.kuki:25
+//line stdlib/archive/archive_test.kuki:26
 		t.Fatal(fmt.Sprintf("getwd: %v", err_4))
 	}
-//line stdlib/archive/archive_test.kuki:26
-//line stdlib/archive/archive_test.kuki:26
+//line stdlib/archive/archive_test.kuki:27
+//line stdlib/archive/archive_test.kuki:27
 	err_5 := os.Chdir(tmp)
-//line stdlib/archive/archive_test.kuki:26
+//line stdlib/archive/archive_test.kuki:27
 	if err_5 != nil {
-//line stdlib/archive/archive_test.kuki:26
+//line stdlib/archive/archive_test.kuki:27
 		t.Fatal(fmt.Sprintf("chdir: %v", err_5))
 	}
-//line stdlib/archive/archive_test.kuki:27
+//line stdlib/archive/archive_test.kuki:28
 	defer os.Chdir(cwd)
-//line stdlib/archive/archive_test.kuki:29
+//line stdlib/archive/archive_test.kuki:30
 	rel := []string{filepath.Join("src", "hello.txt"), filepath.Join("src", "data.json")}
-//line stdlib/archive/archive_test.kuki:33
-//line stdlib/archive/archive_test.kuki:33
+//line stdlib/archive/archive_test.kuki:34
+//line stdlib/archive/archive_test.kuki:34
 	err_6 := archive.WriteZip("out.zip", rel)
-//line stdlib/archive/archive_test.kuki:33
+//line stdlib/archive/archive_test.kuki:34
 	if err_6 != nil {
-//line stdlib/archive/archive_test.kuki:33
+//line stdlib/archive/archive_test.kuki:34
 		t.Fatal(fmt.Sprintf("WriteZip: %v", err_6))
 	}
-//line stdlib/archive/archive_test.kuki:35
+//line stdlib/archive/archive_test.kuki:36
 	entries, err_7 := archive.List("out.zip")
-//line stdlib/archive/archive_test.kuki:35
+//line stdlib/archive/archive_test.kuki:36
 	if err_7 != nil {
-//line stdlib/archive/archive_test.kuki:35
+//line stdlib/archive/archive_test.kuki:36
 		t.Fatal(fmt.Sprintf("List: %v", err_7))
 	}
-//line stdlib/archive/archive_test.kuki:36
+//line stdlib/archive/archive_test.kuki:37
 	test.AssertEqual(t, len(entries), 2)
-//line stdlib/archive/archive_test.kuki:38
+//line stdlib/archive/archive_test.kuki:39
 	body, err_8 := archive.ReadEntry("out.zip", "src/hello.txt")
-//line stdlib/archive/archive_test.kuki:38
+//line stdlib/archive/archive_test.kuki:39
 	if err_8 != nil {
-//line stdlib/archive/archive_test.kuki:38
+//line stdlib/archive/archive_test.kuki:39
 		t.Fatal(fmt.Sprintf("ReadEntry: %v", err_8))
 	}
-//line stdlib/archive/archive_test.kuki:39
+//line stdlib/archive/archive_test.kuki:40
 	test.AssertEqual(t, string(body), "hello world")
-//line stdlib/archive/archive_test.kuki:41
-//line stdlib/archive/archive_test.kuki:41
+//line stdlib/archive/archive_test.kuki:42
+//line stdlib/archive/archive_test.kuki:42
 	err_9 := archive.Extract("out.zip", "extracted")
-//line stdlib/archive/archive_test.kuki:41
+//line stdlib/archive/archive_test.kuki:42
 	if err_9 != nil {
-//line stdlib/archive/archive_test.kuki:41
+//line stdlib/archive/archive_test.kuki:42
 		t.Fatal(fmt.Sprintf("Extract: %v", err_9))
 	}
-//line stdlib/archive/archive_test.kuki:42
+//line stdlib/archive/archive_test.kuki:43
 	extracted, err_10 := files.ReadString(filepath.Join("extracted", "src", "hello.txt"))
-//line stdlib/archive/archive_test.kuki:42
+//line stdlib/archive/archive_test.kuki:43
 	if err_10 != nil {
-//line stdlib/archive/archive_test.kuki:42
+//line stdlib/archive/archive_test.kuki:43
 		t.Fatal(fmt.Sprintf("read extracted: %v", err_10))
 	}
-//line stdlib/archive/archive_test.kuki:43
+//line stdlib/archive/archive_test.kuki:44
 	test.AssertEqual(t, extracted, "hello world")
 }
 
-//line stdlib/archive/archive_test.kuki:45
-func TestTarGzRoundTrip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:46
-	tmp := t.TempDir()
+func TestTarGzRoundTrip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:47
+	tmp := t.TempDir()
+//line stdlib/archive/archive_test.kuki:48
 	src := filepath.Join(tmp, "src")
-//line stdlib/archive/archive_test.kuki:48
-//line stdlib/archive/archive_test.kuki:48
+//line stdlib/archive/archive_test.kuki:49
+//line stdlib/archive/archive_test.kuki:49
 	err_11 := files.MkDirAll(filepath.Join(src, "sub"))
-//line stdlib/archive/archive_test.kuki:48
+//line stdlib/archive/archive_test.kuki:49
 	if err_11 != nil {
-//line stdlib/archive/archive_test.kuki:48
+//line stdlib/archive/archive_test.kuki:49
 		t.Fatal(fmt.Sprintf("mkdir src: %v", err_11))
 	}
-//line stdlib/archive/archive_test.kuki:49
-	writeFixture(t, src, "top.txt", "top-level")
 //line stdlib/archive/archive_test.kuki:50
+	writeFixture(t, src, "top.txt", "top-level")
+//line stdlib/archive/archive_test.kuki:51
 	writeFixture(t, src, filepath.Join("sub", "nested.txt"), "nested")
-//line stdlib/archive/archive_test.kuki:52
+//line stdlib/archive/archive_test.kuki:53
 	archivePath := filepath.Join(tmp, "out.tar.gz")
-//line stdlib/archive/archive_test.kuki:53
-//line stdlib/archive/archive_test.kuki:53
+//line stdlib/archive/archive_test.kuki:54
+//line stdlib/archive/archive_test.kuki:54
 	err_12 := archive.WriteTarGz(archivePath, src)
-//line stdlib/archive/archive_test.kuki:53
+//line stdlib/archive/archive_test.kuki:54
 	if err_12 != nil {
-//line stdlib/archive/archive_test.kuki:53
+//line stdlib/archive/archive_test.kuki:54
 		t.Fatal(fmt.Sprintf("WriteTarGz: %v", err_12))
 	}
-//line stdlib/archive/archive_test.kuki:55
+//line stdlib/archive/archive_test.kuki:56
 	entries, err_13 := archive.List(archivePath)
-//line stdlib/archive/archive_test.kuki:55
+//line stdlib/archive/archive_test.kuki:56
 	if err_13 != nil {
-//line stdlib/archive/archive_test.kuki:55
+//line stdlib/archive/archive_test.kuki:56
 		t.Fatal(fmt.Sprintf("List: %v", err_13))
 	}
-//line stdlib/archive/archive_test.kuki:56
-	test.AssertTrue(t, (len(entries) >= 3))
-//line stdlib/archive/archive_test.kuki:58
+//line stdlib/archive/archive_test.kuki:57
+	test.AssertTrue(t, len(entries) >= 3)
+//line stdlib/archive/archive_test.kuki:59
 	body, err_14 := archive.ReadEntry(archivePath, "sub/nested.txt")
-//line stdlib/archive/archive_test.kuki:58
+//line stdlib/archive/archive_test.kuki:59
 	if err_14 != nil {
-//line stdlib/archive/archive_test.kuki:58
+//line stdlib/archive/archive_test.kuki:59
 		t.Fatal(fmt.Sprintf("ReadEntry: %v", err_14))
 	}
-//line stdlib/archive/archive_test.kuki:59
+//line stdlib/archive/archive_test.kuki:60
 	test.AssertEqual(t, string(body), "nested")
-//line stdlib/archive/archive_test.kuki:61
+//line stdlib/archive/archive_test.kuki:62
 	dest := filepath.Join(tmp, "extracted")
-//line stdlib/archive/archive_test.kuki:62
-//line stdlib/archive/archive_test.kuki:62
+//line stdlib/archive/archive_test.kuki:63
+//line stdlib/archive/archive_test.kuki:63
 	err_15 := archive.Extract(archivePath, dest)
-//line stdlib/archive/archive_test.kuki:62
+//line stdlib/archive/archive_test.kuki:63
 	if err_15 != nil {
-//line stdlib/archive/archive_test.kuki:62
+//line stdlib/archive/archive_test.kuki:63
 		t.Fatal(fmt.Sprintf("Extract: %v", err_15))
 	}
-//line stdlib/archive/archive_test.kuki:64
+//line stdlib/archive/archive_test.kuki:65
 	top, err_16 := files.ReadString(filepath.Join(dest, "top.txt"))
-//line stdlib/archive/archive_test.kuki:64
+//line stdlib/archive/archive_test.kuki:65
 	if err_16 != nil {
-//line stdlib/archive/archive_test.kuki:64
+//line stdlib/archive/archive_test.kuki:65
 		t.Fatal(fmt.Sprintf("read top: %v", err_16))
 	}
-//line stdlib/archive/archive_test.kuki:65
+//line stdlib/archive/archive_test.kuki:66
 	test.AssertEqual(t, top, "top-level")
-//line stdlib/archive/archive_test.kuki:66
+//line stdlib/archive/archive_test.kuki:67
 	nested, err_17 := files.ReadString(filepath.Join(dest, "sub", "nested.txt"))
-//line stdlib/archive/archive_test.kuki:66
+//line stdlib/archive/archive_test.kuki:67
 	if err_17 != nil {
-//line stdlib/archive/archive_test.kuki:66
+//line stdlib/archive/archive_test.kuki:67
 		t.Fatal(fmt.Sprintf("read nested: %v", err_17))
 	}
-//line stdlib/archive/archive_test.kuki:67
+//line stdlib/archive/archive_test.kuki:68
 	test.AssertEqual(t, nested, "nested")
 }
 
-//line stdlib/archive/archive_test.kuki:69
-func TestExtractRejectsUnknownFormat(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:70
-	err := archive.Extract("file.rar", "/tmp/dest")
+func TestExtractRejectsUnknownFormat(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:71
+	err := archive.Extract("file.rar", "/tmp/dest")
+//line stdlib/archive/archive_test.kuki:72
 	test.AssertNotNil(t, err)
 }
 
-//line stdlib/archive/archive_test.kuki:73
-func TestWriteZipRejectsAbsolutePath(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:74
-	tmp := t.TempDir()
+func TestWriteZipRejectsAbsolutePath(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:75
-	err := archive.WriteZip(filepath.Join(tmp, "out.zip"), []string{"/etc/passwd"})
+	tmp := t.TempDir()
 //line stdlib/archive/archive_test.kuki:76
+	err := archive.WriteZip(filepath.Join(tmp, "out.zip"), []string{"/etc/passwd"})
+//line stdlib/archive/archive_test.kuki:77
 	test.AssertNotNil(t, err)
+}
+
+//line stdlib/archive/archive_test.kuki:79
+func TestExtractLimitRejectsOversizedZip(t *testing.T) {
+//line stdlib/archive/archive_test.kuki:80
+	tmp := t.TempDir()
+//line stdlib/archive/archive_test.kuki:81
+	cwd, err_18 := os.Getwd()
+//line stdlib/archive/archive_test.kuki:81
+	if err_18 != nil {
+//line stdlib/archive/archive_test.kuki:81
+		t.Fatal(fmt.Sprintf("getwd: %v", err_18))
+	}
+//line stdlib/archive/archive_test.kuki:82
+//line stdlib/archive/archive_test.kuki:82
+	err_19 := os.Chdir(tmp)
+//line stdlib/archive/archive_test.kuki:82
+	if err_19 != nil {
+//line stdlib/archive/archive_test.kuki:82
+		t.Fatal(fmt.Sprintf("chdir: %v", err_19))
+	}
+//line stdlib/archive/archive_test.kuki:83
+	defer os.Chdir(cwd)
+//line stdlib/archive/archive_test.kuki:85
+	writeFixture(t, "src", "big.txt", strpkg.Repeat("x", 500))
+//line stdlib/archive/archive_test.kuki:86
+//line stdlib/archive/archive_test.kuki:86
+	err_20 := archive.WriteZip("out.zip", []string{filepath.Join("src", "big.txt")})
+//line stdlib/archive/archive_test.kuki:86
+	if err_20 != nil {
+//line stdlib/archive/archive_test.kuki:86
+		t.Fatal(fmt.Sprintf("WriteZip: %v", err_20))
+	}
+//line stdlib/archive/archive_test.kuki:89
+	err := archive.ExtractLimit("out.zip", "extracted", 100)
+//line stdlib/archive/archive_test.kuki:90
+	test.AssertNotNil(t, err)
+}
+
+//line stdlib/archive/archive_test.kuki:92
+func TestExtractLimitRejectsOversizedTarGz(t *testing.T) {
+//line stdlib/archive/archive_test.kuki:93
+	tmp := t.TempDir()
+//line stdlib/archive/archive_test.kuki:94
+	src := filepath.Join(tmp, "src")
+//line stdlib/archive/archive_test.kuki:95
+//line stdlib/archive/archive_test.kuki:95
+	err_21 := files.MkDirAll(src)
+//line stdlib/archive/archive_test.kuki:95
+	if err_21 != nil {
+//line stdlib/archive/archive_test.kuki:95
+		t.Fatal(fmt.Sprintf("mkdir src: %v", err_21))
+	}
+//line stdlib/archive/archive_test.kuki:96
+	writeFixture(t, src, "big.txt", strpkg.Repeat("x", 500))
+//line stdlib/archive/archive_test.kuki:98
+	archivePath := filepath.Join(tmp, "out.tar.gz")
+//line stdlib/archive/archive_test.kuki:99
+//line stdlib/archive/archive_test.kuki:99
+	err_22 := archive.WriteTarGz(archivePath, src)
+//line stdlib/archive/archive_test.kuki:99
+	if err_22 != nil {
+//line stdlib/archive/archive_test.kuki:99
+		t.Fatal(fmt.Sprintf("WriteTarGz: %v", err_22))
+	}
+//line stdlib/archive/archive_test.kuki:101
+	dest := filepath.Join(tmp, "extracted")
+//line stdlib/archive/archive_test.kuki:102
+	err := archive.ExtractLimit(archivePath, dest, 100)
+//line stdlib/archive/archive_test.kuki:103
+	test.AssertNotNil(t, err)
+}
+
+//line stdlib/archive/archive_test.kuki:105
+func TestExtractLimitAllowsWithinBudget(t *testing.T) {
+//line stdlib/archive/archive_test.kuki:106
+	tmp := t.TempDir()
+//line stdlib/archive/archive_test.kuki:107
+	src := filepath.Join(tmp, "src")
+//line stdlib/archive/archive_test.kuki:108
+//line stdlib/archive/archive_test.kuki:108
+	err_23 := files.MkDirAll(src)
+//line stdlib/archive/archive_test.kuki:108
+	if err_23 != nil {
+//line stdlib/archive/archive_test.kuki:108
+		t.Fatal(fmt.Sprintf("mkdir src: %v", err_23))
+	}
+//line stdlib/archive/archive_test.kuki:109
+	writeFixture(t, src, "ok.txt", "small payload")
+//line stdlib/archive/archive_test.kuki:111
+	archivePath := filepath.Join(tmp, "out.tar.gz")
+//line stdlib/archive/archive_test.kuki:112
+//line stdlib/archive/archive_test.kuki:112
+	err_24 := archive.WriteTarGz(archivePath, src)
+//line stdlib/archive/archive_test.kuki:112
+	if err_24 != nil {
+//line stdlib/archive/archive_test.kuki:112
+		t.Fatal(fmt.Sprintf("WriteTarGz: %v", err_24))
+	}
+//line stdlib/archive/archive_test.kuki:114
+	dest := filepath.Join(tmp, "extracted")
+//line stdlib/archive/archive_test.kuki:115
+//line stdlib/archive/archive_test.kuki:115
+	err_25 := archive.ExtractLimit(archivePath, dest, 1048576)
+//line stdlib/archive/archive_test.kuki:115
+	if err_25 != nil {
+//line stdlib/archive/archive_test.kuki:115
+		t.Fatal(fmt.Sprintf("ExtractLimit: %v", err_25))
+	}
+//line stdlib/archive/archive_test.kuki:117
+	body, err_26 := files.ReadString(filepath.Join(dest, "ok.txt"))
+//line stdlib/archive/archive_test.kuki:117
+	if err_26 != nil {
+//line stdlib/archive/archive_test.kuki:117
+		t.Fatal(fmt.Sprintf("read extracted: %v", err_26))
+	}
+//line stdlib/archive/archive_test.kuki:118
+	test.AssertEqual(t, body, "small payload")
 }

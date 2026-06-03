@@ -2,44 +2,53 @@
 
 package llm
 
-//line stdlib/llm/llm.kuki:22
+import (
+	"github.com/kukichalang/kukicha/stdlib/content"
+	"maps"
+)
+
+//line stdlib/llm/llm.kuki:25
 type JSONObject = map[string]any
 
-//line stdlib/llm/llm.kuki:29
+//line stdlib/llm/llm.kuki:32
 type SchemaProperty struct {
 	Name        string
 	Type        string
 	Description string
 }
 
-//line stdlib/llm/llm.kuki:35
+//line stdlib/llm/llm.kuki:38
 func Prop(name string, typ string, description string) SchemaProperty {
-//line stdlib/llm/llm.kuki:36
+//line stdlib/llm/llm.kuki:39
 	return SchemaProperty{Name: name, Type: typ, Description: description}
 }
 
-//line stdlib/llm/llm.kuki:40
-func Schema(props []SchemaProperty) JSONObject {
-//line stdlib/llm/llm.kuki:41
-	properties := make(JSONObject)
-//line stdlib/llm/llm.kuki:42
-	for _, prop := range props {
 //line stdlib/llm/llm.kuki:43
+func Schema(props []SchemaProperty) JSONObject {
+//line stdlib/llm/llm.kuki:44
+	properties := make(JSONObject)
+//line stdlib/llm/llm.kuki:45
+	for _, prop := range props {
+//line stdlib/llm/llm.kuki:46
 		properties[prop.Name] = map[string]any{"type": prop.Type, "description": prop.Description}
 	}
-//line stdlib/llm/llm.kuki:47
+//line stdlib/llm/llm.kuki:50
 	return map[string]any{"type": "object", "properties": properties}
 }
 
-//line stdlib/llm/llm.kuki:54
+//line stdlib/llm/llm.kuki:58
 func Required(schema JSONObject, names []string) JSONObject {
-//line stdlib/llm/llm.kuki:55
-	schema["required"] = names
-//line stdlib/llm/llm.kuki:56
-	return schema
+//line stdlib/llm/llm.kuki:59
+	out := make(JSONObject)
+//line stdlib/llm/llm.kuki:60
+	maps.Copy(out, schema)
+//line stdlib/llm/llm.kuki:61
+	out["required"] = names
+//line stdlib/llm/llm.kuki:62
+	return out
 }
 
-//line stdlib/llm/llm.kuki:67
+//line stdlib/llm/llm.kuki:73
 type StreamEvent interface{ isStreamEvent() }
 
 type Delta struct {
@@ -79,44 +88,5 @@ type Error struct {
 
 func (Error) isStreamEvent() {}
 
-//line stdlib/llm/llm.kuki:88
-type Content interface{ isContent() }
-
-type Text struct {
-	Body string
-}
-
-func (Text) isContent() {}
-
-type Thinking struct {
-	Body string
-}
-
-func (Thinking) isContent() {}
-
-type ToolUse struct {
-	ID    string
-	Name  string
-	Input any
-}
-
-func (ToolUse) isContent() {}
-
-type ToolResult struct {
-	ToolUseID string
-	Body      any
-}
-
-func (ToolResult) isContent() {}
-
-type Image struct {
-	Source any
-}
-
-func (Image) isContent() {}
-
-type Reasoning struct {
-	Summary []any
-}
-
-func (Reasoning) isContent() {}
+//line stdlib/llm/llm.kuki:94
+type Content = content.Content

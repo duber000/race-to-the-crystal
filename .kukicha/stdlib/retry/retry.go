@@ -140,8 +140,8 @@ func calculateDelay(cfg Config, attempt int) int {
 //line stdlib/retry/retry.kuki:103
 	for range attempt {
 //line stdlib/retry/retry.kuki:104
-		multiplier = (multiplier * 2)
+		multiplier = multiplier * 2
 	}
 //line stdlib/retry/retry.kuki:106
-	return (cfg.InitialDelay * multiplier)
+	return cfg.InitialDelay * multiplier
 }

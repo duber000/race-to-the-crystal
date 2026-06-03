@@ -3,7 +3,6 @@ petiole game
 import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
-
 import "stdlib/random"
 import "stdlib/sort"
 
@@ -95,7 +94,7 @@ func create_tokens_for_player on gs: reference GameState(player_id: types.Player
     for hv in constants.TOKEN_HEALTH_VALUES
         for _ from 0 to constants.TOKENS_PER_HEALTH_VALUE
             tid := types.TokenID(gs._next_token_id)
-            t := NewToken(tid, player_id, hv, hv, corner_pos)
+            t := NewToken(tid, player_id, hv, hv, corner_pos) onerr continue
             gs.tokens[tid] = reference of t
             p_ref.add_token(tid)
             gs._next_token_id = gs._next_token_id + 1

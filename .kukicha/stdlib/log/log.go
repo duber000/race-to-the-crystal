@@ -125,240 +125,233 @@ func colorize(level Level, name string, w *os.File) string {
 //line stdlib/log/log.kuki:86
 	s := color.NewStyler(w)
 //line stdlib/log/log.kuki:87
-	if level == LevelDebug {
-//line stdlib/log/log.kuki:88
-		return s.Gray(name)
-	}
+	switch level {
+	case LevelDebug:
 //line stdlib/log/log.kuki:89
-	if level == LevelInfo {
-//line stdlib/log/log.kuki:90
-		return s.Cyan(name)
-	}
+		return s.Gray(name)
+	case LevelInfo:
 //line stdlib/log/log.kuki:91
-	if level == LevelWarn {
-//line stdlib/log/log.kuki:92
-		return s.Yellow(name)
-	}
+		return s.Cyan(name)
+	case LevelWarn:
 //line stdlib/log/log.kuki:93
-	if level == LevelError {
-//line stdlib/log/log.kuki:94
-		return s.Red(name)
-	}
+		return s.Yellow(name)
+	case LevelError:
 //line stdlib/log/log.kuki:95
-	if level == LevelFatal {
-//line stdlib/log/log.kuki:96
+		return s.Red(name)
+	case LevelFatal:
+//line stdlib/log/log.kuki:97
 		return s.Error(name)
 	}
-//line stdlib/log/log.kuki:97
+//line stdlib/log/log.kuki:98
 	return name
 }
 
-//line stdlib/log/log.kuki:101
-func needsQuoting(s string) bool {
 //line stdlib/log/log.kuki:102
-	if s == "" {
+func needsQuoting(s string) bool {
 //line stdlib/log/log.kuki:103
+	if s == "" {
+//line stdlib/log/log.kuki:104
 		return true
 	}
-//line stdlib/log/log.kuki:104
+//line stdlib/log/log.kuki:105
 	return strings.ContainsAny(s, " \t\n\"=")
 }
 
-//line stdlib/log/log.kuki:107
-func formatValue(v any) string {
 //line stdlib/log/log.kuki:108
-	s := fmt.Sprintf("%v", v)
+func formatValue(v any) string {
 //line stdlib/log/log.kuki:109
-	if !needsQuoting(s) {
+	s := fmt.Sprintf("%v", v)
 //line stdlib/log/log.kuki:110
+	if !needsQuoting(s) {
+//line stdlib/log/log.kuki:111
 		return s
 	}
-//line stdlib/log/log.kuki:112
+//line stdlib/log/log.kuki:113
 	return fmt.Sprintf("%q", s)
 }
 
-//line stdlib/log/log.kuki:116
+//line stdlib/log/log.kuki:117
 func encodeJSONValue(v any) string {
-//line stdlib/log/log.kuki:117
+//line stdlib/log/log.kuki:118
 	bytes, err_1 := json.Bytes(v)
-//line stdlib/log/log.kuki:117
+//line stdlib/log/log.kuki:118
 	if err_1 != nil {
-//line stdlib/log/log.kuki:117
-		//line stdlib/log/log.kuki:118
+//line stdlib/log/log.kuki:118
+		//line stdlib/log/log.kuki:119
 		return fmt.Sprintf("%q", fmt.Sprintf("%v", v))
 	}
-//line stdlib/log/log.kuki:120
+//line stdlib/log/log.kuki:121
 	return fmt.Sprintf("%s", bytes)
 }
 
-//line stdlib/log/log.kuki:124
-func emitText(l Logger, level Level, msg string, kv []any) {
 //line stdlib/log/log.kuki:125
-	var b strings.Builder
+func emitText(l Logger, level Level, msg string, kv []any) {
 //line stdlib/log/log.kuki:126
-	b.WriteString(time.Now().Format("15:04:05"))
+	var b strings.Builder
 //line stdlib/log/log.kuki:127
-	b.WriteString(" ")
+	b.WriteString(time.Now().Format("15:04:05"))
 //line stdlib/log/log.kuki:128
-	b.WriteString(colorize(level, levelName(level), l.W))
-//line stdlib/log/log.kuki:129
 	b.WriteString(" ")
+//line stdlib/log/log.kuki:129
+	b.WriteString(colorize(level, levelName(level), l.W))
 //line stdlib/log/log.kuki:130
-	b.WriteString(msg)
+	b.WriteString(" ")
 //line stdlib/log/log.kuki:131
-	i := 0
+	b.WriteString(msg)
 //line stdlib/log/log.kuki:132
-	for i < len(kv) {
+	i := 0
 //line stdlib/log/log.kuki:133
-		b.WriteString(" ")
+	for i < len(kv) {
 //line stdlib/log/log.kuki:134
-		key := fmt.Sprintf("%v", kv[i])
+		b.WriteString(" ")
 //line stdlib/log/log.kuki:135
-		b.WriteString(key)
+		key := fmt.Sprintf("%v", kv[i])
 //line stdlib/log/log.kuki:136
-		b.WriteString("=")
+		b.WriteString(key)
 //line stdlib/log/log.kuki:137
-		if (i + 1) < len(kv) {
+		b.WriteString("=")
 //line stdlib/log/log.kuki:138
-			b.WriteString(formatValue(kv[(i + 1)]))
+		if i+1 < len(kv) {
+//line stdlib/log/log.kuki:139
+			b.WriteString(formatValue(kv[i+1]))
 		} else {
-//line stdlib/log/log.kuki:140
+//line stdlib/log/log.kuki:141
 			b.WriteString("MISSING_VALUE")
 		}
-//line stdlib/log/log.kuki:141
-		i = (i + 2)
-	}
 //line stdlib/log/log.kuki:142
-	b.WriteString("\n")
+		i = i + 2
+	}
 //line stdlib/log/log.kuki:143
+	b.WriteString("\n")
+//line stdlib/log/log.kuki:144
 	fmt.Fprint(l.W, b.String())
 }
 
-//line stdlib/log/log.kuki:147
-func emitJSON(l Logger, level Level, msg string, kv []any) {
 //line stdlib/log/log.kuki:148
-	var b strings.Builder
+func emitJSON(l Logger, level Level, msg string, kv []any) {
 //line stdlib/log/log.kuki:149
-	b.WriteString("{\"time\":")
+	var b strings.Builder
 //line stdlib/log/log.kuki:150
-	b.WriteString(encodeJSONValue(time.Now().Format(time.RFC3339)))
+	b.WriteString("{\"time\":")
 //line stdlib/log/log.kuki:151
-	b.WriteString(",\"level\":")
+	b.WriteString(encodeJSONValue(time.Now().Format(time.RFC3339)))
 //line stdlib/log/log.kuki:152
-	b.WriteString(encodeJSONValue(levelName(level)))
+	b.WriteString(",\"level\":")
 //line stdlib/log/log.kuki:153
-	b.WriteString(",\"msg\":")
+	b.WriteString(encodeJSONValue(levelName(level)))
 //line stdlib/log/log.kuki:154
-	b.WriteString(encodeJSONValue(msg))
+	b.WriteString(",\"msg\":")
 //line stdlib/log/log.kuki:155
-	i := 0
+	b.WriteString(encodeJSONValue(msg))
 //line stdlib/log/log.kuki:156
-	for i < len(kv) {
+	i := 0
 //line stdlib/log/log.kuki:157
-		b.WriteString(",")
+	for i < len(kv) {
 //line stdlib/log/log.kuki:158
-		key := fmt.Sprintf("%v", kv[i])
+		b.WriteString(",")
 //line stdlib/log/log.kuki:159
-		b.WriteString(encodeJSONValue(key))
+		key := fmt.Sprintf("%v", kv[i])
 //line stdlib/log/log.kuki:160
-		b.WriteString(":")
+		b.WriteString(encodeJSONValue(key))
 //line stdlib/log/log.kuki:161
-		if (i + 1) < len(kv) {
+		b.WriteString(":")
 //line stdlib/log/log.kuki:162
-			b.WriteString(encodeJSONValue(kv[(i + 1)]))
+		if i+1 < len(kv) {
+//line stdlib/log/log.kuki:163
+			b.WriteString(encodeJSONValue(kv[i+1]))
 		} else {
-//line stdlib/log/log.kuki:164
+//line stdlib/log/log.kuki:165
 			b.WriteString(encodeJSONValue("MISSING_VALUE"))
 		}
-//line stdlib/log/log.kuki:165
-		i = (i + 2)
-	}
 //line stdlib/log/log.kuki:166
-	b.WriteString("}\n")
+		i = i + 2
+	}
 //line stdlib/log/log.kuki:167
+	b.WriteString("}\n")
+//line stdlib/log/log.kuki:168
 	fmt.Fprint(l.W, b.String())
 }
 
-//line stdlib/log/log.kuki:170
-func (l Logger) emit(level Level, msg string, kv []any) {
 //line stdlib/log/log.kuki:171
-	if level < l.Level {
+func (l Logger) emit(level Level, msg string, kv []any) {
 //line stdlib/log/log.kuki:172
+	if level < l.Level {
+//line stdlib/log/log.kuki:173
 		return
 	}
-//line stdlib/log/log.kuki:173
+//line stdlib/log/log.kuki:174
 	switch l.Format {
 	case FormatJSON:
-//line stdlib/log/log.kuki:175
+//line stdlib/log/log.kuki:176
 		emitJSON(l, level, msg, kv)
 	case FormatText:
-//line stdlib/log/log.kuki:177
+//line stdlib/log/log.kuki:178
 		emitText(l, level, msg, kv)
 	default:
 		panic("unreachable")
 	}
 }
 
-//line stdlib/log/log.kuki:181
-func (l Logger) Debug(msg string, kv ...any) {
 //line stdlib/log/log.kuki:182
+func (l Logger) Debug(msg string, kv ...any) {
+//line stdlib/log/log.kuki:183
 	l.emit(LevelDebug, msg, kv)
 }
 
-//line stdlib/log/log.kuki:184
-func (l Logger) Info(msg string, kv ...any) {
 //line stdlib/log/log.kuki:185
+func (l Logger) Info(msg string, kv ...any) {
+//line stdlib/log/log.kuki:186
 	l.emit(LevelInfo, msg, kv)
 }
 
-//line stdlib/log/log.kuki:187
-func (l Logger) Warn(msg string, kv ...any) {
 //line stdlib/log/log.kuki:188
+func (l Logger) Warn(msg string, kv ...any) {
+//line stdlib/log/log.kuki:189
 	l.emit(LevelWarn, msg, kv)
 }
 
-//line stdlib/log/log.kuki:190
-func (l Logger) Error(msg string, kv ...any) {
 //line stdlib/log/log.kuki:191
+func (l Logger) Error(msg string, kv ...any) {
+//line stdlib/log/log.kuki:192
 	l.emit(LevelError, msg, kv)
 }
 
-//line stdlib/log/log.kuki:194
-func (l Logger) Fatal(msg string, kv ...any) {
 //line stdlib/log/log.kuki:195
-	l.emit(LevelFatal, msg, kv)
+func (l Logger) Fatal(msg string, kv ...any) {
 //line stdlib/log/log.kuki:196
+	l.emit(LevelFatal, msg, kv)
+//line stdlib/log/log.kuki:197
 	os.Exit(1)
 }
 
-//line stdlib/log/log.kuki:200
-func Debug(msg string, kv ...any) {
 //line stdlib/log/log.kuki:201
+func Debug(msg string, kv ...any) {
+//line stdlib/log/log.kuki:202
 	defaultLogger.emit(LevelDebug, msg, kv)
 }
 
-//line stdlib/log/log.kuki:203
-func Info(msg string, kv ...any) {
 //line stdlib/log/log.kuki:204
+func Info(msg string, kv ...any) {
+//line stdlib/log/log.kuki:205
 	defaultLogger.emit(LevelInfo, msg, kv)
 }
 
-//line stdlib/log/log.kuki:206
-func Warn(msg string, kv ...any) {
 //line stdlib/log/log.kuki:207
+func Warn(msg string, kv ...any) {
+//line stdlib/log/log.kuki:208
 	defaultLogger.emit(LevelWarn, msg, kv)
 }
 
-//line stdlib/log/log.kuki:209
-func Error(msg string, kv ...any) {
 //line stdlib/log/log.kuki:210
+func Error(msg string, kv ...any) {
+//line stdlib/log/log.kuki:211
 	defaultLogger.emit(LevelError, msg, kv)
 }
 
-//line stdlib/log/log.kuki:212
-func Fatal(msg string, kv ...any) {
 //line stdlib/log/log.kuki:213
-	defaultLogger.emit(LevelFatal, msg, kv)
+func Fatal(msg string, kv ...any) {
 //line stdlib/log/log.kuki:214
+	defaultLogger.emit(LevelFatal, msg, kv)
+//line stdlib/log/log.kuki:215
 	os.Exit(1)
 }

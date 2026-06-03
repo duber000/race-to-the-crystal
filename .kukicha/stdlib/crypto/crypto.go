@@ -55,13 +55,14 @@ func RandomToken(length int) (string, error) {
 //line stdlib/crypto/crypto.kuki:59
 	b := make([]byte, length)
 //line stdlib/crypto/crypto.kuki:60
-	_, err := rand.Read(b)
 //line stdlib/crypto/crypto.kuki:60
-	if err != nil {
+	_, err_1 := rand.Read(b)
 //line stdlib/crypto/crypto.kuki:60
-		err = fmt.Errorf("crypto.RandomToken: %w", err)
+	if err_1 != nil {
 //line stdlib/crypto/crypto.kuki:60
-		return "", err
+		err_1 = fmt.Errorf("crypto.RandomToken: %w", err_1)
+//line stdlib/crypto/crypto.kuki:60
+		return "", err_1
 	}
 //line stdlib/crypto/crypto.kuki:61
 	return hex.EncodeToString(b), nil
@@ -72,13 +73,14 @@ func RandomBytes(n int) ([]byte, error) {
 //line stdlib/crypto/crypto.kuki:66
 	b := make([]byte, n)
 //line stdlib/crypto/crypto.kuki:67
-	_, err := rand.Read(b)
 //line stdlib/crypto/crypto.kuki:67
-	if err != nil {
+	_, err_2 := rand.Read(b)
 //line stdlib/crypto/crypto.kuki:67
-		err = fmt.Errorf("crypto.RandomBytes: %w", err)
+	if err_2 != nil {
 //line stdlib/crypto/crypto.kuki:67
-		return []byte{}, err
+		err_2 = fmt.Errorf("crypto.RandomBytes: %w", err_2)
+//line stdlib/crypto/crypto.kuki:67
+		return []byte{}, err_2
 	}
 //line stdlib/crypto/crypto.kuki:68
 	return b, nil

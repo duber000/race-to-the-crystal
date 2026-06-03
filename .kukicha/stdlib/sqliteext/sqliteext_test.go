@@ -38,13 +38,12 @@ func scalarString(pool db.Pool, query string) string {
 //line stdlib/sqliteext/sqliteext_test.kuki:45
 	out := ""
 //line stdlib/sqliteext/sqliteext_test.kuki:46
-	// kukicha: could not infer return count; use explicit capture if incorrect
 //line stdlib/sqliteext/sqliteext_test.kuki:46
-	err_1 := row.Scan(&out)
+	err_2 := row.Scan(&out)
 //line stdlib/sqliteext/sqliteext_test.kuki:46
-	if err_1 != nil {
+	if err_2 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:46
-		panic(fmt.Sprintf("scan: %v", err_1))
+		panic(fmt.Sprintf("scan: %v", err_2))
 	}
 //line stdlib/sqliteext/sqliteext_test.kuki:47
 	return out
@@ -53,11 +52,11 @@ func scalarString(pool db.Pool, query string) string {
 //line stdlib/sqliteext/sqliteext_test.kuki:49
 func TestRegister_Regexp(t *testing.T) {
 //line stdlib/sqliteext/sqliteext_test.kuki:50
-	pool, err_2 := sqlite.OpenMemory()
+	pool, err_3 := sqlite.OpenMemory()
 //line stdlib/sqliteext/sqliteext_test.kuki:50
-	if err_2 != nil {
+	if err_3 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:50
-		panic(fmt.Sprintf("open: %v", err_2))
+		panic(fmt.Sprintf("open: %v", err_3))
 	}
 //line stdlib/sqliteext/sqliteext_test.kuki:51
 	defer db.Close(pool)
@@ -66,11 +65,11 @@ func TestRegister_Regexp(t *testing.T) {
 //line stdlib/sqliteext/sqliteext_test.kuki:54
 	t.Run("regexp_like matches", func(t *testing.T) {
 //line stdlib/sqliteext/sqliteext_test.kuki:55
-		n, err_1 := db.Count(pool, "SELECT regexp_like('hello world', '^hello')")
+		n, err_4 := db.Count(pool, "SELECT regexp_like('hello world', '^hello')")
 //line stdlib/sqliteext/sqliteext_test.kuki:55
-		if err_1 != nil {
+		if err_4 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:55
-			panic(fmt.Sprintf("count: %v", err_1))
+			panic(fmt.Sprintf("count: %v", err_4))
 		}
 //line stdlib/sqliteext/sqliteext_test.kuki:56
 		test.AssertEqual(t, n, int64(1))
@@ -78,11 +77,11 @@ func TestRegister_Regexp(t *testing.T) {
 //line stdlib/sqliteext/sqliteext_test.kuki:59
 	t.Run("regexp_like does not match", func(t *testing.T) {
 //line stdlib/sqliteext/sqliteext_test.kuki:60
-		n, err_1 := db.Count(pool, "SELECT regexp_like('hello world', '^world')")
+		n, err_5 := db.Count(pool, "SELECT regexp_like('hello world', '^world')")
 //line stdlib/sqliteext/sqliteext_test.kuki:60
-		if err_1 != nil {
+		if err_5 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:60
-			panic(fmt.Sprintf("count: %v", err_1))
+			panic(fmt.Sprintf("count: %v", err_5))
 		}
 //line stdlib/sqliteext/sqliteext_test.kuki:61
 		test.AssertEqual(t, n, int64(0))
@@ -90,11 +89,11 @@ func TestRegister_Regexp(t *testing.T) {
 //line stdlib/sqliteext/sqliteext_test.kuki:64
 	t.Run("regexp_count counts matches", func(t *testing.T) {
 //line stdlib/sqliteext/sqliteext_test.kuki:65
-		n, err_1 := db.Count(pool, "SELECT regexp_count('a1b2c3d4', '[0-9]')")
+		n, err_6 := db.Count(pool, "SELECT regexp_count('a1b2c3d4', '[0-9]')")
 //line stdlib/sqliteext/sqliteext_test.kuki:65
-		if err_1 != nil {
+		if err_6 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:65
-			panic(fmt.Sprintf("count: %v", err_1))
+			panic(fmt.Sprintf("count: %v", err_6))
 		}
 //line stdlib/sqliteext/sqliteext_test.kuki:66
 		test.AssertEqual(t, n, int64(4))
@@ -117,26 +116,26 @@ func TestRegister_Regexp(t *testing.T) {
 	t.Run("REGEXP operator filters rows", func(t *testing.T) {
 //line stdlib/sqliteext/sqliteext_test.kuki:80
 //line stdlib/sqliteext/sqliteext_test.kuki:80
-		_, err_1 := db.Exec(pool, "CREATE TABLE words (w TEXT)")
+		_, err_7 := db.Exec(pool, "CREATE TABLE words (w TEXT)")
 //line stdlib/sqliteext/sqliteext_test.kuki:80
-		if err_1 != nil {
+		if err_7 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:80
-			panic(fmt.Sprintf("create: %v", err_1))
+			panic(fmt.Sprintf("create: %v", err_7))
 		}
 //line stdlib/sqliteext/sqliteext_test.kuki:81
 //line stdlib/sqliteext/sqliteext_test.kuki:81
-		_, err_2 := db.Exec(pool, "INSERT INTO words (w) VALUES ('apple'), ('banana'), ('cherry')")
+		_, err_8 := db.Exec(pool, "INSERT INTO words (w) VALUES ('apple'), ('banana'), ('cherry')")
 //line stdlib/sqliteext/sqliteext_test.kuki:81
-		if err_2 != nil {
+		if err_8 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:81
-			panic(fmt.Sprintf("insert: %v", err_2))
+			panic(fmt.Sprintf("insert: %v", err_8))
 		}
 //line stdlib/sqliteext/sqliteext_test.kuki:83
-		n, err_3 := db.Count(pool, "SELECT count(*) FROM words WHERE w REGEXP '^[ab]'")
+		n, err_9 := db.Count(pool, "SELECT count(*) FROM words WHERE w REGEXP '^[ab]'")
 //line stdlib/sqliteext/sqliteext_test.kuki:83
-		if err_3 != nil {
+		if err_9 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:83
-			panic(fmt.Sprintf("count: %v", err_3))
+			panic(fmt.Sprintf("count: %v", err_9))
 		}
 //line stdlib/sqliteext/sqliteext_test.kuki:84
 		test.AssertEqual(t, n, int64(2))
@@ -146,31 +145,31 @@ func TestRegister_Regexp(t *testing.T) {
 //line stdlib/sqliteext/sqliteext_test.kuki:92
 func TestRegister_AppliesToFreshPool(t *testing.T) {
 //line stdlib/sqliteext/sqliteext_test.kuki:93
-	setup, err_3 := sqlite.OpenMemory()
+	setup, err_10 := sqlite.OpenMemory()
 //line stdlib/sqliteext/sqliteext_test.kuki:93
-	if err_3 != nil {
+	if err_10 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:93
-		panic(fmt.Sprintf("open: %v", err_3))
+		panic(fmt.Sprintf("open: %v", err_10))
 	}
 //line stdlib/sqliteext/sqliteext_test.kuki:94
 	defer db.Close(setup)
 //line stdlib/sqliteext/sqliteext_test.kuki:95
 	ensureRegexp(setup)
 //line stdlib/sqliteext/sqliteext_test.kuki:97
-	fresh, err_4 := sqlite.OpenMemory()
+	fresh, err_11 := sqlite.OpenMemory()
 //line stdlib/sqliteext/sqliteext_test.kuki:97
-	if err_4 != nil {
+	if err_11 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:97
-		panic(fmt.Sprintf("open fresh: %v", err_4))
+		panic(fmt.Sprintf("open fresh: %v", err_11))
 	}
 //line stdlib/sqliteext/sqliteext_test.kuki:98
 	defer db.Close(fresh)
 //line stdlib/sqliteext/sqliteext_test.kuki:100
-	n, err_5 := db.Count(fresh, "SELECT regexp_like('foo', 'f.*')")
+	n, err_12 := db.Count(fresh, "SELECT regexp_like('foo', 'f.*')")
 //line stdlib/sqliteext/sqliteext_test.kuki:100
-	if err_5 != nil {
+	if err_12 != nil {
 //line stdlib/sqliteext/sqliteext_test.kuki:100
-		panic(fmt.Sprintf("count: %v", err_5))
+		panic(fmt.Sprintf("count: %v", err_12))
 	}
 //line stdlib/sqliteext/sqliteext_test.kuki:101
 	test.AssertEqual(t, n, int64(1))

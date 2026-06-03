@@ -204,7 +204,7 @@ func TestSearchFunctions(t *testing.T) {
 //line stdlib/string/string_test.kuki:171
 			got := kukistring.Contains(tc.input, tc.cutset)
 //line stdlib/string/string_test.kuki:172
-			wantBool := (tc.want == "true")
+			wantBool := tc.want == "true"
 //line stdlib/string/string_test.kuki:173
 			test.AssertEqual(t, got, wantBool)
 		})
@@ -393,7 +393,7 @@ func TestEqualFold(t *testing.T) {
 //line stdlib/string/string_test.kuki:333
 			got := kukistring.EqualFold(tc.input, tc.cutset)
 //line stdlib/string/string_test.kuki:334
-			wantBool := (tc.want == "true")
+			wantBool := tc.want == "true"
 //line stdlib/string/string_test.kuki:335
 			test.AssertEqual(t, got, wantBool)
 		})
@@ -454,21 +454,21 @@ func TestIsBlank(t *testing.T) {
 }
 
 //line stdlib/string/string_test.kuki:379
-func TestOrDefault(t *testing.T) {
+func TestOr(t *testing.T) {
 //line stdlib/string/string_test.kuki:380
-	t.Run("OrDefault/empty returns alt", func(t *testing.T) {
+	t.Run("Or/empty returns defaultValue", func(t *testing.T) {
 //line stdlib/string/string_test.kuki:381
-		test.AssertEqual(t, kukistring.OrDefault("", "<none>"), "<none>")
+		test.AssertEqual(t, kukistring.Or("", "<none>"), "<none>")
 	})
 //line stdlib/string/string_test.kuki:384
-	t.Run("OrDefault/non-empty returns input", func(t *testing.T) {
+	t.Run("Or/non-empty returns input", func(t *testing.T) {
 //line stdlib/string/string_test.kuki:385
-		test.AssertEqual(t, kukistring.OrDefault("v1.2.3", "<none>"), "v1.2.3")
+		test.AssertEqual(t, kukistring.Or("v1.2.3", "<none>"), "v1.2.3")
 	})
 //line stdlib/string/string_test.kuki:388
-	t.Run("OrDefault/whitespace is non-empty", func(t *testing.T) {
+	t.Run("Or/whitespace is non-empty", func(t *testing.T) {
 //line stdlib/string/string_test.kuki:389
-		test.AssertEqual(t, kukistring.OrDefault(" ", "<none>"), " ")
+		test.AssertEqual(t, kukistring.Or(" ", "<none>"), " ")
 	})
 }
 

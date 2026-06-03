@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kukichalang/kukicha/stdlib/content"
 	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
 	"github.com/kukichalang/kukicha/stdlib/env"
 	"github.com/kukichalang/kukicha/stdlib/fetch"
@@ -16,33 +17,33 @@ import (
 	"strings"
 )
 
-//line stdlib/llm/responses/responses.kuki:34
+//line stdlib/llm/responses/responses.kuki:35
 type ToolFunction struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Parameters  any    `json:"parameters"`
 }
 
-//line stdlib/llm/responses/responses.kuki:40
+//line stdlib/llm/responses/responses.kuki:41
 type Tool struct {
 	Type     string       `json:"type"`
 	Function ToolFunction `json:"function"`
 }
 
-//line stdlib/llm/responses/responses.kuki:45
+//line stdlib/llm/responses/responses.kuki:46
 type InputTextContent struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
 }
 
-//line stdlib/llm/responses/responses.kuki:50
+//line stdlib/llm/responses/responses.kuki:51
 type rawOutputTextContent struct {
 	Type        string `json:"type"`
 	Text        string `json:"text"`
 	Annotations []any  `json:"annotations,omitempty"`
 }
 
-//line stdlib/llm/responses/responses.kuki:57
+//line stdlib/llm/responses/responses.kuki:58
 type InputItem struct {
 	Type      string `json:"type"`
 	ID        string `json:"id,omitempty"`
@@ -55,7 +56,7 @@ type InputItem struct {
 	Output    string `json:"output,omitempty"`
 }
 
-//line stdlib/llm/responses/responses.kuki:71
+//line stdlib/llm/responses/responses.kuki:72
 type rawOutputItem struct {
 	Type      string `json:"type"`
 	ID        string `json:"id,omitempty"`
@@ -68,20 +69,20 @@ type rawOutputItem struct {
 	Summary   []any  `json:"summary,omitempty"`
 }
 
-//line stdlib/llm/responses/responses.kuki:83
+//line stdlib/llm/responses/responses.kuki:84
 type Usage struct {
 	InputTokens  int `json:"input_tokens"`
 	OutputTokens int `json:"output_tokens"`
 	TotalTokens  int `json:"total_tokens"`
 }
 
-//line stdlib/llm/responses/responses.kuki:89
+//line stdlib/llm/responses/responses.kuki:90
 type ResponseError struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-//line stdlib/llm/responses/responses.kuki:95
+//line stdlib/llm/responses/responses.kuki:96
 type rawResponse struct {
 	ID                 string            `json:"id"`
 	Object             string            `json:"object"`
@@ -104,7 +105,7 @@ type rawResponse struct {
 	Metadata           map[string]string `json:"metadata,omitempty"`
 }
 
-//line stdlib/llm/responses/responses.kuki:119
+//line stdlib/llm/responses/responses.kuki:120
 type Response struct {
 	ID                 string
 	Object             string
@@ -112,7 +113,7 @@ type Response struct {
 	CompletedAt        int
 	Status             string
 	Model              string
-	Output             []llm.Content
+	Output             []content.Content
 	Error              ResponseError
 	PreviousResponseID string
 	Instructions       string
@@ -127,7 +128,7 @@ type Response struct {
 	Metadata           map[string]string
 }
 
-//line stdlib/llm/responses/responses.kuki:141
+//line stdlib/llm/responses/responses.kuki:142
 type ResponseRequest struct {
 	Model              string            `json:"model"`
 	Input              any               `json:"input"`
@@ -147,7 +148,7 @@ type ResponseRequest struct {
 	Text               any               `json:"text,omitempty"`
 }
 
-//line stdlib/llm/responses/responses.kuki:162
+//line stdlib/llm/responses/responses.kuki:163
 type rawStreamEvent struct {
 	Type           string        `json:"type"`
 	SequenceNumber int           `json:"sequence_number"`
@@ -165,7 +166,7 @@ type rawStreamEvent struct {
 	Message        string        `json:"message,omitempty"`
 }
 
-//line stdlib/llm/responses/responses.kuki:179
+//line stdlib/llm/responses/responses.kuki:180
 type Client struct {
 	model              string
 	provider           string
@@ -193,177 +194,169 @@ type Client struct {
 	ctx                context.Context
 }
 
-//line stdlib/llm/responses/responses.kuki:209
-func decodeOutputItem(item rawOutputItem) []llm.Content {
 //line stdlib/llm/responses/responses.kuki:210
-	out := []llm.Content{}
+func decodeOutputItem(item rawOutputItem) []content.Content {
 //line stdlib/llm/responses/responses.kuki:211
-	if item.Type == "message" {
+	out := []content.Content{}
 //line stdlib/llm/responses/responses.kuki:212
-		for _, part := range item.Content {
+	if item.Type == "message" {
 //line stdlib/llm/responses/responses.kuki:213
+		for _, part := range item.Content {
+//line stdlib/llm/responses/responses.kuki:214
 			switch partMap := part.(type) {
 			case map[string]any:
-//line stdlib/llm/responses/responses.kuki:215
+//line stdlib/llm/responses/responses.kuki:216
 				ts_1 := partMap["type"]
 				if t, ok := ts_1.(string); ok && (t == "output_text") {
 					_ = t
-//line stdlib/llm/responses/responses.kuki:217
+//line stdlib/llm/responses/responses.kuki:218
 					switch textStr := partMap["text"].(type) {
 					case string:
-//line stdlib/llm/responses/responses.kuki:219
-						out = append(out, llm.Text{Body: textStr})
+//line stdlib/llm/responses/responses.kuki:220
+						out = append(out, content.Text{Body: textStr})
 					}
 				}
 			}
 		}
-//line stdlib/llm/responses/responses.kuki:221
-		return out
-	}
 //line stdlib/llm/responses/responses.kuki:222
-	if item.Type == "function_call" {
+		return out
+	}
 //line stdlib/llm/responses/responses.kuki:223
-		out = append(out, llm.ToolUse{ID: item.CallID, Name: item.Name, Input: item.Arguments})
+	if item.Type == "function_call" {
 //line stdlib/llm/responses/responses.kuki:224
-		return out
-	}
+		out = append(out, content.ToolUse{ID: item.CallID, Name: item.Name, Input: item.Arguments})
 //line stdlib/llm/responses/responses.kuki:225
-	if item.Type == "reasoning" {
-//line stdlib/llm/responses/responses.kuki:226
-		out = append(out, llm.Reasoning{Summary: item.Summary})
-//line stdlib/llm/responses/responses.kuki:227
 		return out
 	}
+//line stdlib/llm/responses/responses.kuki:226
+	if item.Type == "reasoning" {
+//line stdlib/llm/responses/responses.kuki:227
+		out = append(out, content.Reasoning{Summary: item.Summary})
 //line stdlib/llm/responses/responses.kuki:228
+		return out
+	}
+//line stdlib/llm/responses/responses.kuki:229
 	return out
 }
 
-//line stdlib/llm/responses/responses.kuki:231
-func decodeResponse(r rawResponse) Response {
 //line stdlib/llm/responses/responses.kuki:232
-	blocks := []llm.Content{}
+func decodeResponse(r rawResponse) Response {
 //line stdlib/llm/responses/responses.kuki:233
-	for _, item := range r.Output {
+	blocks := []content.Content{}
 //line stdlib/llm/responses/responses.kuki:234
-		for _, c := range decodeOutputItem(item) {
+	for _, item := range r.Output {
 //line stdlib/llm/responses/responses.kuki:235
+		for _, c := range decodeOutputItem(item) {
+//line stdlib/llm/responses/responses.kuki:236
 			blocks = append(blocks, c)
 		}
 	}
-//line stdlib/llm/responses/responses.kuki:236
+//line stdlib/llm/responses/responses.kuki:237
 	return Response{ID: r.ID, Object: r.Object, CreatedAt: r.CreatedAt, CompletedAt: r.CompletedAt, Status: r.Status, Model: r.Model, Output: blocks, Error: r.Error, PreviousResponseID: r.PreviousResponseID, Instructions: r.Instructions, Temperature: r.Temperature, TopP: r.TopP, MaxOutputTokens: r.MaxOutputTokens, Usage: r.Usage, Tools: r.Tools, ToolChoice: r.ToolChoice, Truncation: r.Truncation, Store: r.Store, Metadata: r.Metadata}
 }
 
-//line stdlib/llm/responses/responses.kuki:260
-func New(model string) Client {
 //line stdlib/llm/responses/responses.kuki:261
-	c := Client{}
+func New(model string) Client {
 //line stdlib/llm/responses/responses.kuki:262
-	if strings.Contains(model, ":") {
+	c := Client{}
 //line stdlib/llm/responses/responses.kuki:263
-		parts := kukistring.SplitN(model, ":", 2)
+	if strings.Contains(model, ":") {
 //line stdlib/llm/responses/responses.kuki:264
-		c.provider = parts[0]
+		parts := kukistring.SplitN(model, ":", 2)
 //line stdlib/llm/responses/responses.kuki:265
+		c.provider = parts[0]
+//line stdlib/llm/responses/responses.kuki:266
 		c.model = parts[1]
 	} else {
-//line stdlib/llm/responses/responses.kuki:267
+//line stdlib/llm/responses/responses.kuki:268
 		c.model = model
 	}
-//line stdlib/llm/responses/responses.kuki:268
+//line stdlib/llm/responses/responses.kuki:269
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:271
-func Provider(c Client, provider string) Client {
 //line stdlib/llm/responses/responses.kuki:272
-	c.provider = provider
+func Provider(c Client, provider string) Client {
 //line stdlib/llm/responses/responses.kuki:273
+	c.provider = provider
+//line stdlib/llm/responses/responses.kuki:274
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:276
-func BaseURL(c Client, url string) Client {
 //line stdlib/llm/responses/responses.kuki:277
-	c.baseURL = url
+func BaseURL(c Client, url string) Client {
 //line stdlib/llm/responses/responses.kuki:278
+	c.baseURL = url
+//line stdlib/llm/responses/responses.kuki:279
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:281
-func Path(c Client, path string) Client {
 //line stdlib/llm/responses/responses.kuki:282
-	c.path = path
+func Path(c Client, path string) Client {
 //line stdlib/llm/responses/responses.kuki:283
+	c.path = path
+//line stdlib/llm/responses/responses.kuki:284
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:286
-func APIKey(c Client, key string) Client {
 //line stdlib/llm/responses/responses.kuki:287
-	c.apiKey = key
+func APIKey(c Client, key string) Client {
 //line stdlib/llm/responses/responses.kuki:288
+	c.apiKey = key
+//line stdlib/llm/responses/responses.kuki:289
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:291
-func Instructions(c Client, instructions string) Client {
 //line stdlib/llm/responses/responses.kuki:292
-	c.instructions = instructions
+func Instructions(c Client, instructions string) Client {
 //line stdlib/llm/responses/responses.kuki:293
+	c.instructions = instructions
+//line stdlib/llm/responses/responses.kuki:294
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:296
-func PreviousResponse(c Client, id string) Client {
 //line stdlib/llm/responses/responses.kuki:297
-	c.previousResponseID = id
+func PreviousResponse(c Client, id string) Client {
 //line stdlib/llm/responses/responses.kuki:298
+	c.previousResponseID = id
+//line stdlib/llm/responses/responses.kuki:299
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:301
-func User(c Client, content string) Client {
 //line stdlib/llm/responses/responses.kuki:302
-	item := InputItem{}
+func addMessage(c Client, role string, content string) Client {
 //line stdlib/llm/responses/responses.kuki:303
-	item.Type = "message"
+	c.input = append(c.input, InputItem{Type: "message", Role: role, Content: content})
 //line stdlib/llm/responses/responses.kuki:304
-	item.Role = "user"
-//line stdlib/llm/responses/responses.kuki:305
-	item.Content = content
-//line stdlib/llm/responses/responses.kuki:306
-	c.input = append(c.input, item)
-//line stdlib/llm/responses/responses.kuki:307
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:310
-func System(c Client, content string) Client {
+//line stdlib/llm/responses/responses.kuki:307
+func User(c Client, content string) Client {
+//line stdlib/llm/responses/responses.kuki:308
+	return addMessage(c, "user", content)
+}
+
 //line stdlib/llm/responses/responses.kuki:311
-	item := InputItem{}
+func System(c Client, content string) Client {
 //line stdlib/llm/responses/responses.kuki:312
-	item.Type = "message"
-//line stdlib/llm/responses/responses.kuki:313
-	item.Role = "system"
-//line stdlib/llm/responses/responses.kuki:314
-	item.Content = content
+	return addMessage(c, "system", content)
+}
+
 //line stdlib/llm/responses/responses.kuki:315
-	c.input = append(c.input, item)
+func Developer(c Client, content string) Client {
 //line stdlib/llm/responses/responses.kuki:316
-	return c
+	return addMessage(c, "developer", content)
 }
 
 //line stdlib/llm/responses/responses.kuki:319
-func Developer(c Client, content string) Client {
+func Assistant(c Client, content string) Client {
 //line stdlib/llm/responses/responses.kuki:320
-	item := InputItem{}
-//line stdlib/llm/responses/responses.kuki:321
-	item.Type = "message"
-//line stdlib/llm/responses/responses.kuki:322
-	item.Role = "developer"
+	return addMessage(c, "assistant", content)
+}
+
 //line stdlib/llm/responses/responses.kuki:323
-	item.Content = content
+func AddInput(c Client, item InputItem) Client {
 //line stdlib/llm/responses/responses.kuki:324
 	c.input = append(c.input, item)
 //line stdlib/llm/responses/responses.kuki:325
@@ -371,15 +364,15 @@ func Developer(c Client, content string) Client {
 }
 
 //line stdlib/llm/responses/responses.kuki:328
-func Assistant(c Client, content string) Client {
+func FunctionCallOutput(c Client, callID string, output string) Client {
 //line stdlib/llm/responses/responses.kuki:329
 	item := InputItem{}
 //line stdlib/llm/responses/responses.kuki:330
-	item.Type = "message"
+	item.Type = "function_call_output"
 //line stdlib/llm/responses/responses.kuki:331
-	item.Role = "assistant"
+	item.CallID = callID
 //line stdlib/llm/responses/responses.kuki:332
-	item.Content = content
+	item.Output = output
 //line stdlib/llm/responses/responses.kuki:333
 	c.input = append(c.input, item)
 //line stdlib/llm/responses/responses.kuki:334
@@ -387,780 +380,758 @@ func Assistant(c Client, content string) Client {
 }
 
 //line stdlib/llm/responses/responses.kuki:337
-func AddInput(c Client, item InputItem) Client {
+func Temperature(c Client, temp float64) Client {
 //line stdlib/llm/responses/responses.kuki:338
-	c.input = append(c.input, item)
+	c.temperature = temp
 //line stdlib/llm/responses/responses.kuki:339
 	return c
 }
 
 //line stdlib/llm/responses/responses.kuki:342
-func FunctionCallOutput(c Client, callID string, output string) Client {
-//line stdlib/llm/responses/responses.kuki:343
-	item := InputItem{}
-//line stdlib/llm/responses/responses.kuki:344
-	item.Type = "function_call_output"
-//line stdlib/llm/responses/responses.kuki:345
-	item.CallID = callID
-//line stdlib/llm/responses/responses.kuki:346
-	item.Output = output
-//line stdlib/llm/responses/responses.kuki:347
-	c.input = append(c.input, item)
-//line stdlib/llm/responses/responses.kuki:348
-	return c
-}
-
-//line stdlib/llm/responses/responses.kuki:351
-func Temperature(c Client, temp float64) Client {
-//line stdlib/llm/responses/responses.kuki:352
-	c.temperature = temp
-//line stdlib/llm/responses/responses.kuki:353
-	return c
-}
-
-//line stdlib/llm/responses/responses.kuki:356
 func TopP(c Client, p float64) Client {
-//line stdlib/llm/responses/responses.kuki:357
+//line stdlib/llm/responses/responses.kuki:343
 	c.topP = p
-//line stdlib/llm/responses/responses.kuki:358
+//line stdlib/llm/responses/responses.kuki:344
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:361
+//line stdlib/llm/responses/responses.kuki:347
 func MaxOutputTokens(c Client, tokens int) Client {
-//line stdlib/llm/responses/responses.kuki:362
+//line stdlib/llm/responses/responses.kuki:348
 	c.maxOutputTokens = tokens
-//line stdlib/llm/responses/responses.kuki:363
+//line stdlib/llm/responses/responses.kuki:349
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:366
+//line stdlib/llm/responses/responses.kuki:352
 func PresencePenalty(c Client, penalty float64) Client {
-//line stdlib/llm/responses/responses.kuki:367
+//line stdlib/llm/responses/responses.kuki:353
 	c.presencePenalty = penalty
-//line stdlib/llm/responses/responses.kuki:368
+//line stdlib/llm/responses/responses.kuki:354
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:371
+//line stdlib/llm/responses/responses.kuki:357
 func FrequencyPenalty(c Client, penalty float64) Client {
-//line stdlib/llm/responses/responses.kuki:372
+//line stdlib/llm/responses/responses.kuki:358
 	c.frequencyPenalty = penalty
-//line stdlib/llm/responses/responses.kuki:373
+//line stdlib/llm/responses/responses.kuki:359
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:376
+//line stdlib/llm/responses/responses.kuki:362
 func AddTool(c Client, name string, description string, parameters any) Client {
-//line stdlib/llm/responses/responses.kuki:377
+//line stdlib/llm/responses/responses.kuki:363
 	fn := ToolFunction{Name: name, Description: description, Parameters: parameters}
-//line stdlib/llm/responses/responses.kuki:378
+//line stdlib/llm/responses/responses.kuki:364
 	c.tools = append(c.tools, Tool{Type: "function", Function: fn})
-//line stdlib/llm/responses/responses.kuki:379
+//line stdlib/llm/responses/responses.kuki:365
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:382
+//line stdlib/llm/responses/responses.kuki:368
 func ToolChoiceAuto(c Client) Client {
-//line stdlib/llm/responses/responses.kuki:383
+//line stdlib/llm/responses/responses.kuki:369
 	c.toolChoice = "auto"
-//line stdlib/llm/responses/responses.kuki:384
+//line stdlib/llm/responses/responses.kuki:370
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:387
+//line stdlib/llm/responses/responses.kuki:373
 func ToolChoiceRequired(c Client) Client {
-//line stdlib/llm/responses/responses.kuki:388
+//line stdlib/llm/responses/responses.kuki:374
 	c.toolChoice = "required"
-//line stdlib/llm/responses/responses.kuki:389
+//line stdlib/llm/responses/responses.kuki:375
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:392
+//line stdlib/llm/responses/responses.kuki:378
 func ToolChoiceNone(c Client) Client {
-//line stdlib/llm/responses/responses.kuki:393
+//line stdlib/llm/responses/responses.kuki:379
 	c.toolChoice = "none"
-//line stdlib/llm/responses/responses.kuki:394
+//line stdlib/llm/responses/responses.kuki:380
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:397
+//line stdlib/llm/responses/responses.kuki:383
 func JSONMode(c Client) Client {
-//line stdlib/llm/responses/responses.kuki:398
+//line stdlib/llm/responses/responses.kuki:384
 	c.textFormat = map[string]string{"type": "json_object"}
-//line stdlib/llm/responses/responses.kuki:399
+//line stdlib/llm/responses/responses.kuki:385
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:402
+//line stdlib/llm/responses/responses.kuki:388
 func JSONSchema(c Client, name string, schema any) Client {
-//line stdlib/llm/responses/responses.kuki:403
+//line stdlib/llm/responses/responses.kuki:389
 	c.textFormat = map[string]any{"type": "json_schema", "name": name, "schema": schema, "strict": true}
-//line stdlib/llm/responses/responses.kuki:404
+//line stdlib/llm/responses/responses.kuki:390
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:407
+//line stdlib/llm/responses/responses.kuki:393
 func Store(c Client) Client {
-//line stdlib/llm/responses/responses.kuki:408
+//line stdlib/llm/responses/responses.kuki:394
 	c.store = true
-//line stdlib/llm/responses/responses.kuki:409
+//line stdlib/llm/responses/responses.kuki:395
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:412
+//line stdlib/llm/responses/responses.kuki:398
 func Truncation(c Client, mode string) Client {
-//line stdlib/llm/responses/responses.kuki:413
+//line stdlib/llm/responses/responses.kuki:399
 	c.truncation = mode
-//line stdlib/llm/responses/responses.kuki:414
+//line stdlib/llm/responses/responses.kuki:400
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:417
+//line stdlib/llm/responses/responses.kuki:403
 func Metadata(c Client, meta map[string]string) Client {
-//line stdlib/llm/responses/responses.kuki:418
+//line stdlib/llm/responses/responses.kuki:404
 	c.metadata = meta
-//line stdlib/llm/responses/responses.kuki:419
+//line stdlib/llm/responses/responses.kuki:405
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:422
+//line stdlib/llm/responses/responses.kuki:408
 func Stream(c Client, handler func(string)) Client {
-//line stdlib/llm/responses/responses.kuki:423
+//line stdlib/llm/responses/responses.kuki:409
 	c.streamHandler = handler
+//line stdlib/llm/responses/responses.kuki:410
+	return c
+}
+
+//line stdlib/llm/responses/responses.kuki:416
+func StreamEvents(c Client, handler func(llm.StreamEvent)) Client {
+//line stdlib/llm/responses/responses.kuki:417
+	c.eventHandler = handler
+//line stdlib/llm/responses/responses.kuki:418
+	return c
+}
+
+//line stdlib/llm/responses/responses.kuki:421
+func Retry(c Client, maxAttempts int, delayMs int) Client {
+//line stdlib/llm/responses/responses.kuki:422
+	c.retryMaxAttempts = maxAttempts
+//line stdlib/llm/responses/responses.kuki:423
+	c.retryDelayMs = delayMs
 //line stdlib/llm/responses/responses.kuki:424
 	return c
 }
 
-//line stdlib/llm/responses/responses.kuki:430
-func StreamEvents(c Client, handler func(llm.StreamEvent)) Client {
-//line stdlib/llm/responses/responses.kuki:431
-	c.eventHandler = handler
-//line stdlib/llm/responses/responses.kuki:432
-	return c
-}
-
-//line stdlib/llm/responses/responses.kuki:435
-func Retry(c Client, maxAttempts int, delayMs int) Client {
-//line stdlib/llm/responses/responses.kuki:436
-	c.retryMaxAttempts = maxAttempts
-//line stdlib/llm/responses/responses.kuki:437
-	c.retryDelayMs = delayMs
-//line stdlib/llm/responses/responses.kuki:438
-	return c
-}
-
-//line stdlib/llm/responses/responses.kuki:441
+//line stdlib/llm/responses/responses.kuki:427
 func WithContext(c Client, h ctxpkg.Handle) Client {
-//line stdlib/llm/responses/responses.kuki:442
+//line stdlib/llm/responses/responses.kuki:428
 	c.ctx = h.Ctx
-//line stdlib/llm/responses/responses.kuki:443
+//line stdlib/llm/responses/responses.kuki:429
 	return c
+}
+
+//line stdlib/llm/responses/responses.kuki:433
+func Ask(c Client, prompt string) (string, error) {
+//line stdlib/llm/responses/responses.kuki:434
+	c = User(c, prompt)
+//line stdlib/llm/responses/responses.kuki:435
+	return doExecute(c)
+}
+
+//line stdlib/llm/responses/responses.kuki:438
+func Send(c Client) (string, error) {
+//line stdlib/llm/responses/responses.kuki:439
+	return doExecute(c)
+}
+
+//line stdlib/llm/responses/responses.kuki:442
+func AskRaw(c Client, prompt string) (Response, error) {
+//line stdlib/llm/responses/responses.kuki:443
+	c = User(c, prompt)
+//line stdlib/llm/responses/responses.kuki:444
+	return doExecuteRaw(c)
 }
 
 //line stdlib/llm/responses/responses.kuki:447
-func Ask(c Client, prompt string) (string, error) {
-//line stdlib/llm/responses/responses.kuki:448
-	c = User(c, prompt)
-//line stdlib/llm/responses/responses.kuki:449
-	return doExecute(c)
-}
-
-//line stdlib/llm/responses/responses.kuki:452
-func Send(c Client) (string, error) {
-//line stdlib/llm/responses/responses.kuki:453
-	return doExecute(c)
-}
-
-//line stdlib/llm/responses/responses.kuki:456
-func AskRaw(c Client, prompt string) (Response, error) {
-//line stdlib/llm/responses/responses.kuki:457
-	c = User(c, prompt)
-//line stdlib/llm/responses/responses.kuki:458
-	return doExecuteRaw(c)
-}
-
-//line stdlib/llm/responses/responses.kuki:461
 func SendRaw(c Client) (Response, error) {
-//line stdlib/llm/responses/responses.kuki:462
+//line stdlib/llm/responses/responses.kuki:448
 	return doExecuteRaw(c)
 }
 
-//line stdlib/llm/responses/responses.kuki:465
+//line stdlib/llm/responses/responses.kuki:451
 func Respond(model string, prompt string) (string, error) {
-//line stdlib/llm/responses/responses.kuki:466
+//line stdlib/llm/responses/responses.kuki:452
 	return Ask(New(model), prompt)
 }
 
-//line stdlib/llm/responses/responses.kuki:469
+//line stdlib/llm/responses/responses.kuki:455
 func RespondWithInstructions(model string, instructions string, prompt string) (string, error) {
-//line stdlib/llm/responses/responses.kuki:470
+//line stdlib/llm/responses/responses.kuki:456
 	c := New(model)
-//line stdlib/llm/responses/responses.kuki:471
+//line stdlib/llm/responses/responses.kuki:457
 	c = Instructions(c, instructions)
-//line stdlib/llm/responses/responses.kuki:472
+//line stdlib/llm/responses/responses.kuki:458
 	return Ask(c, prompt)
 }
 
-//line stdlib/llm/responses/responses.kuki:477
+//line stdlib/llm/responses/responses.kuki:463
 func FromResponse(c Client, resp Response) Client {
-//line stdlib/llm/responses/responses.kuki:478
+//line stdlib/llm/responses/responses.kuki:464
 	return PreviousResponse(c, resp.ID)
 }
 
-//line stdlib/llm/responses/responses.kuki:485
+//line stdlib/llm/responses/responses.kuki:471
 func ExecuteFunctionCalls(c Client, resp Response, handlers map[string]func(string) string) (Client, error) {
-//line stdlib/llm/responses/responses.kuki:486
+//line stdlib/llm/responses/responses.kuki:472
 	calls := GetFunctionCalls(resp)
-//line stdlib/llm/responses/responses.kuki:487
+//line stdlib/llm/responses/responses.kuki:473
 	if len(calls) == 0 {
-//line stdlib/llm/responses/responses.kuki:488
+//line stdlib/llm/responses/responses.kuki:474
 		return c, nil
 	}
-//line stdlib/llm/responses/responses.kuki:489
+//line stdlib/llm/responses/responses.kuki:475
 	c = FromResponse(c, resp)
-//line stdlib/llm/responses/responses.kuki:490
+//line stdlib/llm/responses/responses.kuki:476
 	for _, call := range calls {
-//line stdlib/llm/responses/responses.kuki:491
+//line stdlib/llm/responses/responses.kuki:477
 		handler, ok := handlers[call.Name]
-//line stdlib/llm/responses/responses.kuki:492
+//line stdlib/llm/responses/responses.kuki:478
 		if !ok {
-//line stdlib/llm/responses/responses.kuki:493
+//line stdlib/llm/responses/responses.kuki:479
 			return c, fmt.Errorf("no handler registered for function: %v", call.Name)
 		}
-//line stdlib/llm/responses/responses.kuki:494
+//line stdlib/llm/responses/responses.kuki:480
 		argsJSON := ""
-//line stdlib/llm/responses/responses.kuki:495
+//line stdlib/llm/responses/responses.kuki:481
 		switch inputVal := call.Input.(type) {
 		case string:
-//line stdlib/llm/responses/responses.kuki:497
+//line stdlib/llm/responses/responses.kuki:483
 			argsJSON = inputVal
 		case map[string]any:
-//line stdlib/llm/responses/responses.kuki:499
+//line stdlib/llm/responses/responses.kuki:485
 			inputBytes, err_2 := json.Bytes(inputVal)
-//line stdlib/llm/responses/responses.kuki:499
+//line stdlib/llm/responses/responses.kuki:485
 			if err_2 != nil {
-//line stdlib/llm/responses/responses.kuki:499
+//line stdlib/llm/responses/responses.kuki:485
 				return c, fmt.Errorf("encode tool input: %v", err_2)
 			}
-//line stdlib/llm/responses/responses.kuki:500
+//line stdlib/llm/responses/responses.kuki:486
 			argsJSON = string(inputBytes)
 		}
-//line stdlib/llm/responses/responses.kuki:502
+//line stdlib/llm/responses/responses.kuki:488
 		result := handler(argsJSON)
-//line stdlib/llm/responses/responses.kuki:503
+//line stdlib/llm/responses/responses.kuki:489
 		c = FunctionCallOutput(c, call.ID, result)
 	}
-//line stdlib/llm/responses/responses.kuki:504
+//line stdlib/llm/responses/responses.kuki:490
 	return c, nil
 }
 
-//line stdlib/llm/responses/responses.kuki:507
+//line stdlib/llm/responses/responses.kuki:493
 func GetText(resp Response) string {
-//line stdlib/llm/responses/responses.kuki:508
+//line stdlib/llm/responses/responses.kuki:494
+	result := ""
+//line stdlib/llm/responses/responses.kuki:495
 	for _, item := range resp.Output {
-//line stdlib/llm/responses/responses.kuki:509
-		if t, _isOk := item.(llm.Text); _isOk {
-//line stdlib/llm/responses/responses.kuki:510
-			return t.Body
+//line stdlib/llm/responses/responses.kuki:496
+		if t, _isOk := item.(content.Text); _isOk {
+//line stdlib/llm/responses/responses.kuki:497
+			result = result + t.Body
 		}
 	}
-//line stdlib/llm/responses/responses.kuki:511
-	return ""
+//line stdlib/llm/responses/responses.kuki:498
+	return result
 }
 
-//line stdlib/llm/responses/responses.kuki:514
-func GetFunctionCalls(resp Response) []llm.ToolUse {
-//line stdlib/llm/responses/responses.kuki:515
-	calls := []llm.ToolUse{}
-//line stdlib/llm/responses/responses.kuki:516
+//line stdlib/llm/responses/responses.kuki:501
+func GetFunctionCalls(resp Response) []content.ToolUse {
+//line stdlib/llm/responses/responses.kuki:502
+	calls := []content.ToolUse{}
+//line stdlib/llm/responses/responses.kuki:503
 	for _, item := range resp.Output {
-//line stdlib/llm/responses/responses.kuki:517
-		if tu, _isOk := item.(llm.ToolUse); _isOk {
-//line stdlib/llm/responses/responses.kuki:518
+//line stdlib/llm/responses/responses.kuki:504
+		if tu, _isOk := item.(content.ToolUse); _isOk {
+//line stdlib/llm/responses/responses.kuki:505
 			calls = append(calls, tu)
 		}
 	}
-//line stdlib/llm/responses/responses.kuki:519
+//line stdlib/llm/responses/responses.kuki:506
 	return calls
 }
 
-//line stdlib/llm/responses/responses.kuki:522
+//line stdlib/llm/responses/responses.kuki:509
 func HasFunctionCalls(resp Response) bool {
-//line stdlib/llm/responses/responses.kuki:523
-	return (len(GetFunctionCalls(resp)) > 0)
+//line stdlib/llm/responses/responses.kuki:510
+	return len(GetFunctionCalls(resp)) > 0
 }
 
-//line stdlib/llm/responses/responses.kuki:525
+//line stdlib/llm/responses/responses.kuki:512
 func providerDefaults(provider string) (string, string) {
-//line stdlib/llm/responses/responses.kuki:526
+//line stdlib/llm/responses/responses.kuki:513
 	if provider == "openai" {
-//line stdlib/llm/responses/responses.kuki:527
+//line stdlib/llm/responses/responses.kuki:514
 		return "OPENAI_API_KEY", "https://api.openai.com"
 	}
-//line stdlib/llm/responses/responses.kuki:528
+//line stdlib/llm/responses/responses.kuki:515
 	if provider == "mistral" {
-//line stdlib/llm/responses/responses.kuki:529
+//line stdlib/llm/responses/responses.kuki:516
 		return "MISTRAL_API_KEY", "https://api.mistral.ai"
 	}
-//line stdlib/llm/responses/responses.kuki:530
+//line stdlib/llm/responses/responses.kuki:517
 	if provider == "groq" {
-//line stdlib/llm/responses/responses.kuki:531
+//line stdlib/llm/responses/responses.kuki:518
 		return "GROQ_API_KEY", "https://api.groq.com/openai"
 	}
-//line stdlib/llm/responses/responses.kuki:532
+//line stdlib/llm/responses/responses.kuki:519
 	if provider == "together" {
-//line stdlib/llm/responses/responses.kuki:533
+//line stdlib/llm/responses/responses.kuki:520
 		return "TOGETHER_API_KEY", "https://api.together.xyz"
 	}
-//line stdlib/llm/responses/responses.kuki:534
+//line stdlib/llm/responses/responses.kuki:521
 	if provider == "deepseek" {
-//line stdlib/llm/responses/responses.kuki:535
+//line stdlib/llm/responses/responses.kuki:522
 		return "DEEPSEEK_API_KEY", "https://api.deepseek.com"
 	}
-//line stdlib/llm/responses/responses.kuki:536
+//line stdlib/llm/responses/responses.kuki:523
 	if provider == "xai" {
-//line stdlib/llm/responses/responses.kuki:537
+//line stdlib/llm/responses/responses.kuki:524
 		return "XAI_API_KEY", "https://api.x.ai"
 	}
-//line stdlib/llm/responses/responses.kuki:538
+//line stdlib/llm/responses/responses.kuki:525
 	if provider == "ollama" {
-//line stdlib/llm/responses/responses.kuki:539
+//line stdlib/llm/responses/responses.kuki:526
 		return "", "http://localhost:11434"
 	}
-//line stdlib/llm/responses/responses.kuki:540
-	if (provider == "fastflowlm") || (provider == "flm") {
-//line stdlib/llm/responses/responses.kuki:541
+//line stdlib/llm/responses/responses.kuki:527
+	if provider == "fastflowlm" || provider == "flm" {
+//line stdlib/llm/responses/responses.kuki:528
 		return "", "http://localhost:52625"
 	}
-//line stdlib/llm/responses/responses.kuki:542
+//line stdlib/llm/responses/responses.kuki:529
 	return "", ""
 }
 
-//line stdlib/llm/responses/responses.kuki:544
+//line stdlib/llm/responses/responses.kuki:531
 func resolveAPIKey(c Client) string {
-//line stdlib/llm/responses/responses.kuki:545
+//line stdlib/llm/responses/responses.kuki:532
 	if c.apiKey != "" {
-//line stdlib/llm/responses/responses.kuki:546
+//line stdlib/llm/responses/responses.kuki:533
 		return c.apiKey
 	}
-//line stdlib/llm/responses/responses.kuki:547
+//line stdlib/llm/responses/responses.kuki:534
 	envKey, _ := providerDefaults(c.provider)
-//line stdlib/llm/responses/responses.kuki:548
+//line stdlib/llm/responses/responses.kuki:535
 	if envKey != "" {
-//line stdlib/llm/responses/responses.kuki:549
+//line stdlib/llm/responses/responses.kuki:536
 		return env.GetOr(envKey, "")
 	}
-//line stdlib/llm/responses/responses.kuki:550
+//line stdlib/llm/responses/responses.kuki:537
 	return env.GetOr("LLM_API_KEY", "")
 }
 
-//line stdlib/llm/responses/responses.kuki:552
+//line stdlib/llm/responses/responses.kuki:539
 func resolveBaseURL(c Client) string {
-//line stdlib/llm/responses/responses.kuki:553
+//line stdlib/llm/responses/responses.kuki:540
 	if c.baseURL != "" {
-//line stdlib/llm/responses/responses.kuki:554
+//line stdlib/llm/responses/responses.kuki:541
 		return c.baseURL
 	}
-//line stdlib/llm/responses/responses.kuki:555
+//line stdlib/llm/responses/responses.kuki:542
 	_, baseURL := providerDefaults(c.provider)
-//line stdlib/llm/responses/responses.kuki:556
+//line stdlib/llm/responses/responses.kuki:543
 	if baseURL != "" {
-//line stdlib/llm/responses/responses.kuki:557
+//line stdlib/llm/responses/responses.kuki:544
 		return baseURL
 	}
-//line stdlib/llm/responses/responses.kuki:558
+//line stdlib/llm/responses/responses.kuki:545
 	envURL := env.GetOr("LLM_BASE_URL", "")
-//line stdlib/llm/responses/responses.kuki:559
+//line stdlib/llm/responses/responses.kuki:546
 	if envURL != "" {
-//line stdlib/llm/responses/responses.kuki:560
+//line stdlib/llm/responses/responses.kuki:547
 		return envURL
 	}
-//line stdlib/llm/responses/responses.kuki:561
+//line stdlib/llm/responses/responses.kuki:548
 	return "http://localhost:8000"
 }
 
-//line stdlib/llm/responses/responses.kuki:563
+//line stdlib/llm/responses/responses.kuki:550
 func resolvePath(c Client) string {
-//line stdlib/llm/responses/responses.kuki:564
+//line stdlib/llm/responses/responses.kuki:551
 	if c.path != "" {
-//line stdlib/llm/responses/responses.kuki:565
+//line stdlib/llm/responses/responses.kuki:552
 		return c.path
 	}
-//line stdlib/llm/responses/responses.kuki:566
+//line stdlib/llm/responses/responses.kuki:553
 	return "/v1/responses"
 }
 
-//line stdlib/llm/responses/responses.kuki:568
+//line stdlib/llm/responses/responses.kuki:555
 func buildRequest(c Client) ResponseRequest {
-//line stdlib/llm/responses/responses.kuki:569
+//line stdlib/llm/responses/responses.kuki:556
 	req := ResponseRequest{Model: c.model, Input: c.input}
-//line stdlib/llm/responses/responses.kuki:570
+//line stdlib/llm/responses/responses.kuki:557
 	if c.instructions != "" {
-//line stdlib/llm/responses/responses.kuki:571
+//line stdlib/llm/responses/responses.kuki:558
 		req.Instructions = c.instructions
 	}
-//line stdlib/llm/responses/responses.kuki:572
+//line stdlib/llm/responses/responses.kuki:559
 	if c.previousResponseID != "" {
-//line stdlib/llm/responses/responses.kuki:573
+//line stdlib/llm/responses/responses.kuki:560
 		req.PreviousResponseID = c.previousResponseID
 	}
-//line stdlib/llm/responses/responses.kuki:574
+//line stdlib/llm/responses/responses.kuki:561
 	if c.temperature != 0.0 {
-//line stdlib/llm/responses/responses.kuki:575
+//line stdlib/llm/responses/responses.kuki:562
 		req.Temperature = c.temperature
 	}
-//line stdlib/llm/responses/responses.kuki:576
+//line stdlib/llm/responses/responses.kuki:563
 	if c.topP != 0.0 {
-//line stdlib/llm/responses/responses.kuki:577
+//line stdlib/llm/responses/responses.kuki:564
 		req.TopP = c.topP
 	}
-//line stdlib/llm/responses/responses.kuki:578
+//line stdlib/llm/responses/responses.kuki:565
 	if c.maxOutputTokens != 0 {
-//line stdlib/llm/responses/responses.kuki:579
+//line stdlib/llm/responses/responses.kuki:566
 		req.MaxOutputTokens = c.maxOutputTokens
 	}
-//line stdlib/llm/responses/responses.kuki:580
+//line stdlib/llm/responses/responses.kuki:567
 	if c.presencePenalty != 0.0 {
-//line stdlib/llm/responses/responses.kuki:581
+//line stdlib/llm/responses/responses.kuki:568
 		req.PresencePenalty = c.presencePenalty
 	}
-//line stdlib/llm/responses/responses.kuki:582
+//line stdlib/llm/responses/responses.kuki:569
 	if c.frequencyPenalty != 0.0 {
-//line stdlib/llm/responses/responses.kuki:583
+//line stdlib/llm/responses/responses.kuki:570
 		req.FrequencyPenalty = c.frequencyPenalty
 	}
-//line stdlib/llm/responses/responses.kuki:584
+//line stdlib/llm/responses/responses.kuki:571
 	if len(c.tools) > 0 {
-//line stdlib/llm/responses/responses.kuki:585
+//line stdlib/llm/responses/responses.kuki:572
 		req.Tools = c.tools
 	}
-//line stdlib/llm/responses/responses.kuki:586
+//line stdlib/llm/responses/responses.kuki:573
 	if c.toolChoice != nil {
-//line stdlib/llm/responses/responses.kuki:587
+//line stdlib/llm/responses/responses.kuki:574
 		req.ToolChoice = c.toolChoice
 	}
-//line stdlib/llm/responses/responses.kuki:588
+//line stdlib/llm/responses/responses.kuki:575
 	if c.store {
-//line stdlib/llm/responses/responses.kuki:589
+//line stdlib/llm/responses/responses.kuki:576
 		req.Store = true
 	}
-//line stdlib/llm/responses/responses.kuki:590
+//line stdlib/llm/responses/responses.kuki:577
 	if c.truncation != "" {
-//line stdlib/llm/responses/responses.kuki:591
+//line stdlib/llm/responses/responses.kuki:578
 		req.Truncation = c.truncation
 	}
-//line stdlib/llm/responses/responses.kuki:592
+//line stdlib/llm/responses/responses.kuki:579
 	if len(c.metadata) > 0 {
-//line stdlib/llm/responses/responses.kuki:593
+//line stdlib/llm/responses/responses.kuki:580
 		req.Metadata = c.metadata
 	}
-//line stdlib/llm/responses/responses.kuki:594
+//line stdlib/llm/responses/responses.kuki:581
 	if c.textFormat != nil {
-//line stdlib/llm/responses/responses.kuki:595
+//line stdlib/llm/responses/responses.kuki:582
 		req.Text = c.textFormat
 	}
-//line stdlib/llm/responses/responses.kuki:596
-	if (c.streamHandler != nil) || (c.eventHandler != nil) {
-//line stdlib/llm/responses/responses.kuki:597
+//line stdlib/llm/responses/responses.kuki:583
+	if c.streamHandler != nil || c.eventHandler != nil {
+//line stdlib/llm/responses/responses.kuki:584
 		req.Stream = true
 	}
-//line stdlib/llm/responses/responses.kuki:598
+//line stdlib/llm/responses/responses.kuki:585
 	return req
 }
 
-//line stdlib/llm/responses/responses.kuki:600
+//line stdlib/llm/responses/responses.kuki:587
 func doExecute(c Client) (string, error) {
-//line stdlib/llm/responses/responses.kuki:601
+//line stdlib/llm/responses/responses.kuki:588
 	resp, err_3 := doExecuteRaw(c)
-//line stdlib/llm/responses/responses.kuki:601
+//line stdlib/llm/responses/responses.kuki:588
 	if err_3 != nil {
-//line stdlib/llm/responses/responses.kuki:601
+//line stdlib/llm/responses/responses.kuki:588
 		return "", err_3
 	}
-//line stdlib/llm/responses/responses.kuki:602
+//line stdlib/llm/responses/responses.kuki:589
 	return GetText(resp), nil
 }
 
-//line stdlib/llm/responses/responses.kuki:604
+//line stdlib/llm/responses/responses.kuki:591
 func doExecuteRaw(c Client) (Response, error) {
-//line stdlib/llm/responses/responses.kuki:605
-	if (c.streamHandler != nil) || (c.eventHandler != nil) {
-//line stdlib/llm/responses/responses.kuki:606
+//line stdlib/llm/responses/responses.kuki:592
+	if c.streamHandler != nil || c.eventHandler != nil {
+//line stdlib/llm/responses/responses.kuki:593
 		return doExecuteStreamRaw(c)
 	}
-//line stdlib/llm/responses/responses.kuki:608
+//line stdlib/llm/responses/responses.kuki:595
 	url := fmt.Sprintf("%v%v", resolveBaseURL(c), resolvePath(c))
-//line stdlib/llm/responses/responses.kuki:609
+//line stdlib/llm/responses/responses.kuki:596
 	apiKey := resolveAPIKey(c)
-//line stdlib/llm/responses/responses.kuki:611
-	req := fetch.Body(fetch.Header(fetch.Method(fetch.New(url), "POST"), "Content-Type", "application/json"), buildRequest(c))
-//line stdlib/llm/responses/responses.kuki:616
+//line stdlib/llm/responses/responses.kuki:598
+	req := fetch.Body(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), buildRequest(c))
+//line stdlib/llm/responses/responses.kuki:603
 	if c.ctx != nil {
-//line stdlib/llm/responses/responses.kuki:617
+//line stdlib/llm/responses/responses.kuki:604
 		req = fetch.WithContext(req, ctxpkg.FromContext(c.ctx))
 	}
-//line stdlib/llm/responses/responses.kuki:618
+//line stdlib/llm/responses/responses.kuki:605
 	if apiKey != "" {
-//line stdlib/llm/responses/responses.kuki:619
+//line stdlib/llm/responses/responses.kuki:606
 		req = fetch.Header(req, "Authorization", fmt.Sprintf("Bearer %v", apiKey))
 	}
-//line stdlib/llm/responses/responses.kuki:620
+//line stdlib/llm/responses/responses.kuki:607
 	if c.retryMaxAttempts > 1 {
-//line stdlib/llm/responses/responses.kuki:621
+//line stdlib/llm/responses/responses.kuki:608
 		req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 	}
-//line stdlib/llm/responses/responses.kuki:623
+//line stdlib/llm/responses/responses.kuki:610
 	resp, err_4 := fetch.Do(req)
-//line stdlib/llm/responses/responses.kuki:623
+//line stdlib/llm/responses/responses.kuki:610
 	if err_4 != nil {
 		var _zero0 Response
-//line stdlib/llm/responses/responses.kuki:623
+//line stdlib/llm/responses/responses.kuki:610
 		return _zero0, err_4
 	}
-//line stdlib/llm/responses/responses.kuki:625
+//line stdlib/llm/responses/responses.kuki:612
 	defer resp.Body.Close()
-//line stdlib/llm/responses/responses.kuki:627
+//line stdlib/llm/responses/responses.kuki:614
 	if resp.StatusCode >= 400 {
-//line stdlib/llm/responses/responses.kuki:628
+//line stdlib/llm/responses/responses.kuki:615
 		errBody, err_5 := fetch.Bytes(resp)
-//line stdlib/llm/responses/responses.kuki:628
+//line stdlib/llm/responses/responses.kuki:615
 		if err_5 != nil {
-//line stdlib/llm/responses/responses.kuki:628
+//line stdlib/llm/responses/responses.kuki:615
 			return Response{}, fmt.Errorf("API request failed with status %v", resp.StatusCode)
 		}
-//line stdlib/llm/responses/responses.kuki:629
+//line stdlib/llm/responses/responses.kuki:616
 		return Response{}, fmt.Errorf("API request failed (%v): %v", resp.StatusCode, string(errBody))
 	}
-//line stdlib/llm/responses/responses.kuki:631
+//line stdlib/llm/responses/responses.kuki:618
 	raw := rawResponse{}
-//line stdlib/llm/responses/responses.kuki:632
-//line stdlib/llm/responses/responses.kuki:632
+//line stdlib/llm/responses/responses.kuki:619
+//line stdlib/llm/responses/responses.kuki:619
 	err_6 := json.ReadInto(resp.Body, &raw)
-//line stdlib/llm/responses/responses.kuki:632
+//line stdlib/llm/responses/responses.kuki:619
 	if err_6 != nil {
 		var _zero0 Response
-//line stdlib/llm/responses/responses.kuki:632
+//line stdlib/llm/responses/responses.kuki:619
 		return _zero0, err_6
 	}
-//line stdlib/llm/responses/responses.kuki:633
+//line stdlib/llm/responses/responses.kuki:620
 	return decodeResponse(raw), nil
 }
 
-//line stdlib/llm/responses/responses.kuki:635
+//line stdlib/llm/responses/responses.kuki:622
 func emitStreamEvent(c Client, evt rawStreamEvent, seenCalls map[int]bool) {
-//line stdlib/llm/responses/responses.kuki:636
+//line stdlib/llm/responses/responses.kuki:623
 	if c.eventHandler == nil {
-//line stdlib/llm/responses/responses.kuki:637
+//line stdlib/llm/responses/responses.kuki:624
 		return
 	}
-//line stdlib/llm/responses/responses.kuki:638
+//line stdlib/llm/responses/responses.kuki:625
 	if evt.Type == "response.output_text.delta" {
-//line stdlib/llm/responses/responses.kuki:639
+//line stdlib/llm/responses/responses.kuki:626
 		c.eventHandler(llm.Delta{Body: evt.Delta})
-//line stdlib/llm/responses/responses.kuki:640
+//line stdlib/llm/responses/responses.kuki:627
 		return
 	}
-//line stdlib/llm/responses/responses.kuki:641
-	if (evt.Type == "response.function_call.delta") || (evt.Type == "response.function_call_arguments.delta") {
-//line stdlib/llm/responses/responses.kuki:642
-		if !seenCalls[evt.OutputIndex] && (evt.Name != "") {
-//line stdlib/llm/responses/responses.kuki:643
+//line stdlib/llm/responses/responses.kuki:628
+	if evt.Type == "response.function_call.delta" || evt.Type == "response.function_call_arguments.delta" {
+//line stdlib/llm/responses/responses.kuki:629
+		if !seenCalls[evt.OutputIndex] && evt.Name != "" {
+//line stdlib/llm/responses/responses.kuki:630
 			c.eventHandler(llm.ToolCallStart{Index: evt.OutputIndex, ID: evt.ItemID, Name: evt.Name})
-//line stdlib/llm/responses/responses.kuki:646
+//line stdlib/llm/responses/responses.kuki:633
 			seenCalls[evt.OutputIndex] = true
 		}
-//line stdlib/llm/responses/responses.kuki:647
+//line stdlib/llm/responses/responses.kuki:634
 		if evt.Arguments != "" {
-//line stdlib/llm/responses/responses.kuki:648
+//line stdlib/llm/responses/responses.kuki:635
 			c.eventHandler(llm.ToolCallArgs{Index: evt.OutputIndex, Body: evt.Arguments})
 		}
-//line stdlib/llm/responses/responses.kuki:649
+//line stdlib/llm/responses/responses.kuki:636
 		return
 	}
-//line stdlib/llm/responses/responses.kuki:650
+//line stdlib/llm/responses/responses.kuki:637
 	if evt.Type == "response.completed" {
-//line stdlib/llm/responses/responses.kuki:651
+//line stdlib/llm/responses/responses.kuki:638
 		c.eventHandler(llm.Completed{})
-//line stdlib/llm/responses/responses.kuki:652
+//line stdlib/llm/responses/responses.kuki:639
 		return
 	}
-//line stdlib/llm/responses/responses.kuki:653
+//line stdlib/llm/responses/responses.kuki:640
 	if evt.Type == "error" {
-//line stdlib/llm/responses/responses.kuki:654
+//line stdlib/llm/responses/responses.kuki:641
 		c.eventHandler(llm.Error{Message: evt.Message})
-//line stdlib/llm/responses/responses.kuki:655
+//line stdlib/llm/responses/responses.kuki:642
 		return
 	}
 }
 
-//line stdlib/llm/responses/responses.kuki:657
+//line stdlib/llm/responses/responses.kuki:644
 func doExecuteStreamRaw(c Client) (Response, error) {
-//line stdlib/llm/responses/responses.kuki:658
+//line stdlib/llm/responses/responses.kuki:645
 	url := fmt.Sprintf("%v%v", resolveBaseURL(c), resolvePath(c))
-//line stdlib/llm/responses/responses.kuki:659
+//line stdlib/llm/responses/responses.kuki:646
 	apiKey := resolveAPIKey(c)
-//line stdlib/llm/responses/responses.kuki:661
-	req := fetch.Body(fetch.Header(fetch.Header(fetch.Method(fetch.New(url), "POST"), "Content-Type", "application/json"), "Accept", "text/event-stream"), buildRequest(c))
-//line stdlib/llm/responses/responses.kuki:667
+//line stdlib/llm/responses/responses.kuki:648
+	req := fetch.Body(fetch.Header(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), "Accept", "text/event-stream"), buildRequest(c))
+//line stdlib/llm/responses/responses.kuki:654
 	if c.ctx != nil {
-//line stdlib/llm/responses/responses.kuki:668
+//line stdlib/llm/responses/responses.kuki:655
 		req = fetch.WithContext(req, ctxpkg.FromContext(c.ctx))
 	}
-//line stdlib/llm/responses/responses.kuki:669
+//line stdlib/llm/responses/responses.kuki:656
 	if apiKey != "" {
-//line stdlib/llm/responses/responses.kuki:670
+//line stdlib/llm/responses/responses.kuki:657
 		req = fetch.Header(req, "Authorization", fmt.Sprintf("Bearer %v", apiKey))
 	}
-//line stdlib/llm/responses/responses.kuki:671
+//line stdlib/llm/responses/responses.kuki:658
 	if c.retryMaxAttempts > 1 {
-//line stdlib/llm/responses/responses.kuki:672
+//line stdlib/llm/responses/responses.kuki:659
 		req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 	}
-//line stdlib/llm/responses/responses.kuki:674
+//line stdlib/llm/responses/responses.kuki:661
 	resp, err_7 := fetch.Do(req)
-//line stdlib/llm/responses/responses.kuki:674
+//line stdlib/llm/responses/responses.kuki:661
 	if err_7 != nil {
 		var _zero0 Response
-//line stdlib/llm/responses/responses.kuki:674
+//line stdlib/llm/responses/responses.kuki:661
 		return _zero0, err_7
 	}
-//line stdlib/llm/responses/responses.kuki:676
+//line stdlib/llm/responses/responses.kuki:663
 	defer resp.Body.Close()
-//line stdlib/llm/responses/responses.kuki:678
+//line stdlib/llm/responses/responses.kuki:665
 	if resp.StatusCode >= 400 {
-//line stdlib/llm/responses/responses.kuki:679
+//line stdlib/llm/responses/responses.kuki:666
 		errBody, err_8 := fetch.Bytes(resp)
-//line stdlib/llm/responses/responses.kuki:679
+//line stdlib/llm/responses/responses.kuki:666
 		if err_8 != nil {
-//line stdlib/llm/responses/responses.kuki:679
+//line stdlib/llm/responses/responses.kuki:666
 			return Response{}, fmt.Errorf("API request failed with status %v", resp.StatusCode)
 		}
-//line stdlib/llm/responses/responses.kuki:680
+//line stdlib/llm/responses/responses.kuki:667
 		return Response{}, fmt.Errorf("API request failed (%v): %v", resp.StatusCode, string(errBody))
 	}
-//line stdlib/llm/responses/responses.kuki:682
+//line stdlib/llm/responses/responses.kuki:669
 	fullContent := ""
-//line stdlib/llm/responses/responses.kuki:683
+//line stdlib/llm/responses/responses.kuki:670
 	callsMap := make(map[int]rawOutputItem)
-//line stdlib/llm/responses/responses.kuki:684
+//line stdlib/llm/responses/responses.kuki:671
 	seenCalls := make(map[int]bool)
-//line stdlib/llm/responses/responses.kuki:685
+//line stdlib/llm/responses/responses.kuki:672
 	maxIdx := -1
-//line stdlib/llm/responses/responses.kuki:686
+//line stdlib/llm/responses/responses.kuki:673
 	scanner := bufio.NewScanner(resp.Body)
-//line stdlib/llm/responses/responses.kuki:687
+//line stdlib/llm/responses/responses.kuki:674
 	for scanner.Scan() {
-//line stdlib/llm/responses/responses.kuki:688
+//line stdlib/llm/responses/responses.kuki:675
 		line := scanner.Text()
-//line stdlib/llm/responses/responses.kuki:689
-		if (line == "") || kukistring.HasPrefix(line, ":") {
-//line stdlib/llm/responses/responses.kuki:690
+//line stdlib/llm/responses/responses.kuki:676
+		if line == "" || kukistring.HasPrefix(line, ":") {
+//line stdlib/llm/responses/responses.kuki:677
 			continue
 		}
-//line stdlib/llm/responses/responses.kuki:691
+//line stdlib/llm/responses/responses.kuki:678
 		if line == "data: [DONE]" {
-//line stdlib/llm/responses/responses.kuki:692
+//line stdlib/llm/responses/responses.kuki:679
 			break
 		}
-//line stdlib/llm/responses/responses.kuki:693
+//line stdlib/llm/responses/responses.kuki:680
 		if kukistring.HasPrefix(line, "data: ") {
-//line stdlib/llm/responses/responses.kuki:694
+//line stdlib/llm/responses/responses.kuki:681
 			data := kukistring.TrimPrefix(line, "data: ")
-//line stdlib/llm/responses/responses.kuki:695
+//line stdlib/llm/responses/responses.kuki:682
 			evt := rawStreamEvent{}
-//line stdlib/llm/responses/responses.kuki:696
-//line stdlib/llm/responses/responses.kuki:696
+//line stdlib/llm/responses/responses.kuki:683
+//line stdlib/llm/responses/responses.kuki:683
 			err_9 := json.ParseInto([]byte(data), &evt)
-//line stdlib/llm/responses/responses.kuki:696
+//line stdlib/llm/responses/responses.kuki:683
 			if err_9 != nil {
-//line stdlib/llm/responses/responses.kuki:696
-				//line stdlib/llm/responses/responses.kuki:697
+//line stdlib/llm/responses/responses.kuki:683
+				//line stdlib/llm/responses/responses.kuki:684
 				continue
 			}
-//line stdlib/llm/responses/responses.kuki:699
+//line stdlib/llm/responses/responses.kuki:686
 			emitStreamEvent(c, evt, seenCalls)
-//line stdlib/llm/responses/responses.kuki:701
+//line stdlib/llm/responses/responses.kuki:688
 			if evt.Type == "response.output_text.delta" {
-//line stdlib/llm/responses/responses.kuki:702
+//line stdlib/llm/responses/responses.kuki:689
 				if evt.Delta != "" {
-//line stdlib/llm/responses/responses.kuki:703
-					fullContent = (fullContent + evt.Delta)
-//line stdlib/llm/responses/responses.kuki:704
+//line stdlib/llm/responses/responses.kuki:690
+					fullContent = fullContent + evt.Delta
+//line stdlib/llm/responses/responses.kuki:691
 					if c.streamHandler != nil {
-//line stdlib/llm/responses/responses.kuki:705
+//line stdlib/llm/responses/responses.kuki:692
 						c.streamHandler(evt.Delta)
 					}
 				}
 			}
-//line stdlib/llm/responses/responses.kuki:707
-			if (evt.Type == "response.function_call.delta") || (evt.Type == "response.function_call_arguments.delta") {
-//line stdlib/llm/responses/responses.kuki:708
+//line stdlib/llm/responses/responses.kuki:694
+			if evt.Type == "response.function_call.delta" || evt.Type == "response.function_call_arguments.delta" {
+//line stdlib/llm/responses/responses.kuki:695
 				idx := evt.OutputIndex
-//line stdlib/llm/responses/responses.kuki:709
+//line stdlib/llm/responses/responses.kuki:696
 				call := callsMap[idx]
-//line stdlib/llm/responses/responses.kuki:710
+//line stdlib/llm/responses/responses.kuki:697
 				call.Type = "function_call"
-//line stdlib/llm/responses/responses.kuki:711
+//line stdlib/llm/responses/responses.kuki:698
 				if evt.ItemID != "" {
-//line stdlib/llm/responses/responses.kuki:712
+//line stdlib/llm/responses/responses.kuki:699
 					call.ID = evt.ItemID
-//line stdlib/llm/responses/responses.kuki:713
+//line stdlib/llm/responses/responses.kuki:700
 					if call.CallID == "" {
-//line stdlib/llm/responses/responses.kuki:714
+//line stdlib/llm/responses/responses.kuki:701
 						call.CallID = evt.ItemID
 					}
 				}
-//line stdlib/llm/responses/responses.kuki:715
+//line stdlib/llm/responses/responses.kuki:702
 				if evt.Name != "" {
-//line stdlib/llm/responses/responses.kuki:716
-					call.Name = (call.Name + evt.Name)
+//line stdlib/llm/responses/responses.kuki:703
+					call.Name = call.Name + evt.Name
 				}
-//line stdlib/llm/responses/responses.kuki:717
+//line stdlib/llm/responses/responses.kuki:704
 				if evt.Arguments != "" {
-//line stdlib/llm/responses/responses.kuki:718
-					call.Arguments = (call.Arguments + evt.Arguments)
+//line stdlib/llm/responses/responses.kuki:705
+					call.Arguments = call.Arguments + evt.Arguments
 				}
-//line stdlib/llm/responses/responses.kuki:719
+//line stdlib/llm/responses/responses.kuki:706
 				callsMap[idx] = call
-//line stdlib/llm/responses/responses.kuki:720
+//line stdlib/llm/responses/responses.kuki:707
 				if idx > maxIdx {
-//line stdlib/llm/responses/responses.kuki:721
+//line stdlib/llm/responses/responses.kuki:708
 					maxIdx = idx
 				}
 			}
-//line stdlib/llm/responses/responses.kuki:723
+//line stdlib/llm/responses/responses.kuki:710
 			if evt.Type == "error" {
-//line stdlib/llm/responses/responses.kuki:724
+//line stdlib/llm/responses/responses.kuki:711
 				return Response{}, errors.New(evt.Message)
 			}
 		}
 	}
-//line stdlib/llm/responses/responses.kuki:726
-//line stdlib/llm/responses/responses.kuki:726
+//line stdlib/llm/responses/responses.kuki:713
+//line stdlib/llm/responses/responses.kuki:713
 	err_10 := scanner.Err()
-//line stdlib/llm/responses/responses.kuki:726
+//line stdlib/llm/responses/responses.kuki:713
 	if err_10 != nil {
-//line stdlib/llm/responses/responses.kuki:726
+//line stdlib/llm/responses/responses.kuki:713
 		return Response{}, fmt.Errorf("%v", err_10)
 	}
-//line stdlib/llm/responses/responses.kuki:728
-	output := []llm.Content{}
-//line stdlib/llm/responses/responses.kuki:729
+//line stdlib/llm/responses/responses.kuki:715
+	output := []content.Content{}
+//line stdlib/llm/responses/responses.kuki:716
 	for i := range maxIdx + 1 {
-//line stdlib/llm/responses/responses.kuki:730
+//line stdlib/llm/responses/responses.kuki:717
 		item, ok := callsMap[i]
-//line stdlib/llm/responses/responses.kuki:731
+//line stdlib/llm/responses/responses.kuki:718
 		if ok {
-//line stdlib/llm/responses/responses.kuki:732
-			output = append(output, llm.ToolUse{ID: item.CallID, Name: item.Name, Input: item.Arguments})
+//line stdlib/llm/responses/responses.kuki:719
+			output = append(output, content.ToolUse{ID: item.CallID, Name: item.Name, Input: item.Arguments})
 		}
 	}
-//line stdlib/llm/responses/responses.kuki:734
+//line stdlib/llm/responses/responses.kuki:721
 	if fullContent != "" {
-//line stdlib/llm/responses/responses.kuki:735
-		output = append(output, llm.Text{Body: fullContent})
+//line stdlib/llm/responses/responses.kuki:722
+		output = append(output, content.Text{Body: fullContent})
 	}
-//line stdlib/llm/responses/responses.kuki:737
+//line stdlib/llm/responses/responses.kuki:724
 	return Response{Output: output}, nil
 }

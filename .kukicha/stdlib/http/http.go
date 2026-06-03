@@ -227,317 +227,346 @@ func GetQueryParam(r *http.Request, key string) string {
 //line stdlib/http/http.kuki:186
 func GetQueryParamOr(r *http.Request, key string, defaultValue string) string {
 //line stdlib/http/http.kuki:187
-	value := r.URL.Query().Get(key)
-//line stdlib/http/http.kuki:188
-	if value == "" {
-//line stdlib/http/http.kuki:189
-		return defaultValue
-	}
-//line stdlib/http/http.kuki:190
-	return value
+	return kukistring.Or(r.URL.Query().Get(key), defaultValue)
 }
 
-//line stdlib/http/http.kuki:195
+//line stdlib/http/http.kuki:192
 func GetQueryInt(r *http.Request, key string) (int, error) {
-//line stdlib/http/http.kuki:196
+//line stdlib/http/http.kuki:193
 	value := r.URL.Query().Get(key)
-//line stdlib/http/http.kuki:197
+//line stdlib/http/http.kuki:194
 	if value == "" {
-//line stdlib/http/http.kuki:198
+//line stdlib/http/http.kuki:195
 		return 0, fmt.Errorf("query parameter '%v' is required", key)
 	}
-//line stdlib/http/http.kuki:199
+//line stdlib/http/http.kuki:196
 	val, err_1 := strconv.Atoi(value)
-//line stdlib/http/http.kuki:199
+//line stdlib/http/http.kuki:196
 	if err_1 != nil {
-//line stdlib/http/http.kuki:199
+//line stdlib/http/http.kuki:196
 		return 0, fmt.Errorf("query parameter '%v' must be an integer", key)
 	}
-//line stdlib/http/http.kuki:200
+//line stdlib/http/http.kuki:197
 	return val, nil
 }
 
-//line stdlib/http/http.kuki:205
+//line stdlib/http/http.kuki:202
 func GetQueryIntOr(r *http.Request, key string, defaultValue int) int {
-//line stdlib/http/http.kuki:206
+//line stdlib/http/http.kuki:203
 	value := r.URL.Query().Get(key)
-//line stdlib/http/http.kuki:207
+//line stdlib/http/http.kuki:204
 	if value == "" {
-//line stdlib/http/http.kuki:208
+//line stdlib/http/http.kuki:205
 		return defaultValue
 	}
-//line stdlib/http/http.kuki:209
+//line stdlib/http/http.kuki:206
 	val, err_2 := strconv.Atoi(value)
-//line stdlib/http/http.kuki:209
+//line stdlib/http/http.kuki:206
 	if err_2 != nil {
-//line stdlib/http/http.kuki:209
+//line stdlib/http/http.kuki:206
 		return defaultValue
 	}
-//line stdlib/http/http.kuki:210
+//line stdlib/http/http.kuki:207
 	return val
 }
 
-//line stdlib/http/http.kuki:216
+//line stdlib/http/http.kuki:213
 func GetQueryBool(r *http.Request, key string) (bool, error) {
-//line stdlib/http/http.kuki:217
+//line stdlib/http/http.kuki:214
 	value := r.URL.Query().Get(key)
-//line stdlib/http/http.kuki:218
+//line stdlib/http/http.kuki:215
 	if value == "" {
-//line stdlib/http/http.kuki:219
+//line stdlib/http/http.kuki:216
 		return false, fmt.Errorf("query parameter '%v' is required", key)
 	}
-//line stdlib/http/http.kuki:220
+//line stdlib/http/http.kuki:217
 	val, err_3 := validate.ParseBool(value)
-//line stdlib/http/http.kuki:220
+//line stdlib/http/http.kuki:217
 	if err_3 != nil {
-//line stdlib/http/http.kuki:220
+//line stdlib/http/http.kuki:217
 		return false, fmt.Errorf("query parameter '%v' must be a boolean", key)
 	}
-//line stdlib/http/http.kuki:221
+//line stdlib/http/http.kuki:218
 	return val, nil
 }
 
-//line stdlib/http/http.kuki:226
+//line stdlib/http/http.kuki:223
 func GetQueryBoolOr(r *http.Request, key string, defaultValue bool) bool {
-//line stdlib/http/http.kuki:227
+//line stdlib/http/http.kuki:224
 	value := r.URL.Query().Get(key)
-//line stdlib/http/http.kuki:228
+//line stdlib/http/http.kuki:225
 	if value == "" {
-//line stdlib/http/http.kuki:229
+//line stdlib/http/http.kuki:226
 		return defaultValue
 	}
-//line stdlib/http/http.kuki:230
+//line stdlib/http/http.kuki:227
 	val, err_4 := validate.ParseBool(value)
-//line stdlib/http/http.kuki:230
+//line stdlib/http/http.kuki:227
 	if err_4 != nil {
-//line stdlib/http/http.kuki:230
+//line stdlib/http/http.kuki:227
 		return defaultValue
 	}
-//line stdlib/http/http.kuki:231
+//line stdlib/http/http.kuki:228
 	return val
 }
 
-//line stdlib/http/http.kuki:235
+//line stdlib/http/http.kuki:232
 func GetHeader(r *http.Request, key string) string {
-//line stdlib/http/http.kuki:236
+//line stdlib/http/http.kuki:233
 	return r.Header.Get(key)
 }
 
-//line stdlib/http/http.kuki:240
+//line stdlib/http/http.kuki:237
 func GetHeaderOr(r *http.Request, key string, defaultValue string) string {
-//line stdlib/http/http.kuki:241
-	value := r.Header.Get(key)
-//line stdlib/http/http.kuki:242
-	if value == "" {
-//line stdlib/http/http.kuki:243
-		return defaultValue
-	}
-//line stdlib/http/http.kuki:244
-	return value
+//line stdlib/http/http.kuki:238
+	return kukistring.Or(r.Header.Get(key), defaultValue)
 }
 
-//line stdlib/http/http.kuki:250
+//line stdlib/http/http.kuki:244
 func NoContent(w http.ResponseWriter) {
-//line stdlib/http/http.kuki:251
+//line stdlib/http/http.kuki:245
 	w.WriteHeader(204)
 }
 
-//line stdlib/http/http.kuki:256
+//line stdlib/http/http.kuki:250
 func Redirect(w http.ResponseWriter, url string) {
-//line stdlib/http/http.kuki:257
+//line stdlib/http/http.kuki:251
 	w.Header().Set("Location", url)
-//line stdlib/http/http.kuki:258
+//line stdlib/http/http.kuki:252
 	w.WriteHeader(302)
 }
 
-//line stdlib/http/http.kuki:263
+//line stdlib/http/http.kuki:257
 func RedirectPermanent(w http.ResponseWriter, url string) {
-//line stdlib/http/http.kuki:264
+//line stdlib/http/http.kuki:258
 	w.Header().Set("Location", url)
-//line stdlib/http/http.kuki:265
+//line stdlib/http/http.kuki:259
 	w.WriteHeader(301)
 }
 
-//line stdlib/http/http.kuki:274
+//line stdlib/http/http.kuki:268
 func SafeRedirect(w http.ResponseWriter, redirectURL string, allowedHosts ...string) error {
-//line stdlib/http/http.kuki:275
+//line stdlib/http/http.kuki:269
 	if redirectURL == "" {
-//line stdlib/http/http.kuki:276
+//line stdlib/http/http.kuki:270
 		return errors.New("redirect URL is empty")
 	}
-//line stdlib/http/http.kuki:280
+//line stdlib/http/http.kuki:274
 	if kukistring.HasPrefix(redirectURL, "//") {
-//line stdlib/http/http.kuki:281
+//line stdlib/http/http.kuki:275
 		return fmt.Errorf("protocol-relative redirect '%v' is not allowed", redirectURL)
 	}
-//line stdlib/http/http.kuki:282
+//line stdlib/http/http.kuki:276
 	parsed, err_5 := url.Parse(redirectURL)
-//line stdlib/http/http.kuki:282
+//line stdlib/http/http.kuki:276
 	if err_5 != nil {
-//line stdlib/http/http.kuki:282
+//line stdlib/http/http.kuki:276
 		return fmt.Errorf("invalid redirect URL: %v", err_5)
 	}
-//line stdlib/http/http.kuki:283
-	if (parsed.Scheme == "") && (parsed.Host == "") {
-//line stdlib/http/http.kuki:286
+//line stdlib/http/http.kuki:277
+	if parsed.Scheme == "" && parsed.Host == "" {
+//line stdlib/http/http.kuki:280
 		if !kukistring.HasPrefix(redirectURL, "/") {
-//line stdlib/http/http.kuki:287
+//line stdlib/http/http.kuki:281
 			return errors.New("relative redirect must start with '/'")
 		}
-//line stdlib/http/http.kuki:288
+//line stdlib/http/http.kuki:282
 		w.Header().Set("Location", redirectURL)
-//line stdlib/http/http.kuki:289
+//line stdlib/http/http.kuki:283
 		w.WriteHeader(302)
+//line stdlib/http/http.kuki:284
+		return nil
+	}
+//line stdlib/http/http.kuki:286
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+//line stdlib/http/http.kuki:287
+		return fmt.Errorf("redirect scheme '%v' is not allowed", parsed.Scheme)
+	}
+//line stdlib/http/http.kuki:288
+	if slices.Contains(allowedHosts, parsed.Host) {
+//line stdlib/http/http.kuki:289
+		w.Header().Set("Location", redirectURL)
 //line stdlib/http/http.kuki:290
+		w.WriteHeader(302)
+//line stdlib/http/http.kuki:291
 		return nil
 	}
 //line stdlib/http/http.kuki:292
-	if (parsed.Scheme != "http") && (parsed.Scheme != "https") {
-//line stdlib/http/http.kuki:293
-		return fmt.Errorf("redirect scheme '%v' is not allowed", parsed.Scheme)
-	}
-//line stdlib/http/http.kuki:294
-	if slices.Contains(allowedHosts, parsed.Host) {
-//line stdlib/http/http.kuki:295
-		w.Header().Set("Location", redirectURL)
-//line stdlib/http/http.kuki:296
-		w.WriteHeader(302)
-//line stdlib/http/http.kuki:297
-		return nil
-	}
-//line stdlib/http/http.kuki:298
 	return fmt.Errorf("redirect to '%v' is not in the allowed hosts list", parsed.Host)
 }
 
-//line stdlib/http/http.kuki:304
+//line stdlib/http/http.kuki:298
 func SafeURL(tmpl string, pathParams map[string]string, queryParams map[string]string) (string, error) {
-//line stdlib/http/http.kuki:305
+//line stdlib/http/http.kuki:299
 	base, err_6 := fetch.URLTemplate(tmpl, pathParams)
-//line stdlib/http/http.kuki:305
+//line stdlib/http/http.kuki:299
 	if err_6 != nil {
-//line stdlib/http/http.kuki:305
+//line stdlib/http/http.kuki:299
 		return "", err_6
 	}
-//line stdlib/http/http.kuki:306
+//line stdlib/http/http.kuki:300
 	return fetch.URLWithQuery(base, queryParams)
 }
 
-//line stdlib/http/http.kuki:311
+//line stdlib/http/http.kuki:305
 func Text(w http.ResponseWriter, content string) error {
+//line stdlib/http/http.kuki:306
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+//line stdlib/http/http.kuki:307
+//line stdlib/http/http.kuki:307
+	_, err_7 := io.WriteString(w, content)
+//line stdlib/http/http.kuki:307
+	if err_7 != nil {
+//line stdlib/http/http.kuki:307
+		return err_7
+	}
+//line stdlib/http/http.kuki:308
+	return nil
+}
+
 //line stdlib/http/http.kuki:312
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-//line stdlib/http/http.kuki:313
-	_, err := io.WriteString(w, content)
-//line stdlib/http/http.kuki:314
-	return err
-}
-
-//line stdlib/http/http.kuki:318
 func TextStatus(w http.ResponseWriter, content string, status int) error {
-//line stdlib/http/http.kuki:319
+//line stdlib/http/http.kuki:313
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-//line stdlib/http/http.kuki:320
+//line stdlib/http/http.kuki:314
 	w.WriteHeader(status)
-//line stdlib/http/http.kuki:321
-	_, err := io.WriteString(w, content)
-//line stdlib/http/http.kuki:322
-	return err
+//line stdlib/http/http.kuki:315
+//line stdlib/http/http.kuki:315
+	_, err_8 := io.WriteString(w, content)
+//line stdlib/http/http.kuki:315
+	if err_8 != nil {
+//line stdlib/http/http.kuki:315
+		return err_8
+	}
+//line stdlib/http/http.kuki:316
+	return nil
 }
 
-//line stdlib/http/http.kuki:330
+//line stdlib/http/http.kuki:324
 func HTML(w http.ResponseWriter, content string) error {
-//line stdlib/http/http.kuki:331
+//line stdlib/http/http.kuki:325
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-//line stdlib/http/http.kuki:332
-	_, err := io.WriteString(w, content)
+//line stdlib/http/http.kuki:326
+//line stdlib/http/http.kuki:326
+	_, err_9 := io.WriteString(w, content)
+//line stdlib/http/http.kuki:326
+	if err_9 != nil {
+//line stdlib/http/http.kuki:326
+		return err_9
+	}
+//line stdlib/http/http.kuki:327
+	return nil
+}
+
 //line stdlib/http/http.kuki:333
-	return err
-}
-
-//line stdlib/http/http.kuki:339
 func SafeHTML(w http.ResponseWriter, content string) error {
-//line stdlib/http/http.kuki:340
+//line stdlib/http/http.kuki:334
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-//line stdlib/http/http.kuki:341
-	_, err := io.WriteString(w, html.EscapeString(content))
-//line stdlib/http/http.kuki:342
-	return err
+//line stdlib/http/http.kuki:335
+//line stdlib/http/http.kuki:335
+	_, err_10 := io.WriteString(w, html.EscapeString(content))
+//line stdlib/http/http.kuki:335
+	if err_10 != nil {
+//line stdlib/http/http.kuki:335
+		return err_10
+	}
+//line stdlib/http/http.kuki:336
+	return nil
 }
 
-//line stdlib/http/http.kuki:349
+//line stdlib/http/http.kuki:343
 func SetSecureHeaders(w http.ResponseWriter) {
-//line stdlib/http/http.kuki:350
+//line stdlib/http/http.kuki:344
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-//line stdlib/http/http.kuki:351
+//line stdlib/http/http.kuki:345
 	w.Header().Set("X-Frame-Options", "DENY")
-//line stdlib/http/http.kuki:352
+//line stdlib/http/http.kuki:346
 	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-//line stdlib/http/http.kuki:353
+//line stdlib/http/http.kuki:347
 	w.Header().Set("Content-Security-Policy", "default-src 'self'")
 }
 
-//line stdlib/http/http.kuki:359
+//line stdlib/http/http.kuki:353
 func IsGet(r *http.Request) bool {
-//line stdlib/http/http.kuki:360
-	return (r.Method == "GET")
+//line stdlib/http/http.kuki:354
+	return r.Method == "GET"
 }
 
-//line stdlib/http/http.kuki:364
+//line stdlib/http/http.kuki:358
 func IsPost(r *http.Request) bool {
-//line stdlib/http/http.kuki:365
-	return (r.Method == "POST")
+//line stdlib/http/http.kuki:359
+	return r.Method == "POST"
 }
 
-//line stdlib/http/http.kuki:369
+//line stdlib/http/http.kuki:363
 func IsPut(r *http.Request) bool {
-//line stdlib/http/http.kuki:370
-	return (r.Method == "PUT")
+//line stdlib/http/http.kuki:364
+	return r.Method == "PUT"
 }
 
-//line stdlib/http/http.kuki:374
+//line stdlib/http/http.kuki:368
 func IsDelete(r *http.Request) bool {
-//line stdlib/http/http.kuki:375
-	return (r.Method == "DELETE")
+//line stdlib/http/http.kuki:369
+	return r.Method == "DELETE"
+}
+
+//line stdlib/http/http.kuki:373
+func IsPatch(r *http.Request) bool {
+//line stdlib/http/http.kuki:374
+	return r.Method == "PATCH"
 }
 
 //line stdlib/http/http.kuki:379
-func IsPatch(r *http.Request) bool {
-//line stdlib/http/http.kuki:380
-	return (r.Method == "PATCH")
-}
-
-//line stdlib/http/http.kuki:385
 func MethodNotAllowed(w http.ResponseWriter, allowed ...string) {
-//line stdlib/http/http.kuki:386
+//line stdlib/http/http.kuki:380
 	w.Header().Set("Allow", kukistring.Join(allowed, ", "))
-//line stdlib/http/http.kuki:387
+//line stdlib/http/http.kuki:381
 	w.WriteHeader(405)
 }
 
-//line stdlib/http/http.kuki:404
+//line stdlib/http/http.kuki:398
 func TrustedHosts(next http.Handler, allowedHosts ...string) http.Handler {
-//line stdlib/http/http.kuki:405
+//line stdlib/http/http.kuki:399
 	allowed := make(map[string]bool)
-//line stdlib/http/http.kuki:406
+//line stdlib/http/http.kuki:400
 	for _, h := range allowedHosts {
-//line stdlib/http/http.kuki:407
+//line stdlib/http/http.kuki:401
 		allowed[strings.ToLower(stripPort(h))] = true
 	}
-//line stdlib/http/http.kuki:408
+//line stdlib/http/http.kuki:402
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//line stdlib/http/http.kuki:409
+//line stdlib/http/http.kuki:403
 		host := r.Host
+//line stdlib/http/http.kuki:404
+		if host == "" || !validHostHeader(host) {
+//line stdlib/http/http.kuki:405
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+//line stdlib/http/http.kuki:406
+			w.WriteHeader(400)
+//line stdlib/http/http.kuki:407
+//line stdlib/http/http.kuki:407
+			_, err_11 := io.WriteString(w, "invalid host")
+//line stdlib/http/http.kuki:407
+			if err_11 != nil {
+//line stdlib/http/http.kuki:407
+				return
+			}
+//line stdlib/http/http.kuki:408
+			return
+		}
+//line stdlib/http/http.kuki:409
+		key := strings.ToLower(stripPort(host))
 //line stdlib/http/http.kuki:410
-		if (host == "") || !validHostHeader(host) {
+		if !allowed[key] {
 //line stdlib/http/http.kuki:411
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 //line stdlib/http/http.kuki:412
 			w.WriteHeader(400)
 //line stdlib/http/http.kuki:413
 //line stdlib/http/http.kuki:413
-			_, err_1 := io.WriteString(w, "invalid host")
+			_, err_12 := io.WriteString(w, "host not allowed")
 //line stdlib/http/http.kuki:413
-			if err_1 != nil {
+			if err_12 != nil {
 //line stdlib/http/http.kuki:413
 				return
 			}
@@ -545,177 +574,158 @@ func TrustedHosts(next http.Handler, allowedHosts ...string) http.Handler {
 			return
 		}
 //line stdlib/http/http.kuki:415
-		key := strings.ToLower(stripPort(host))
-//line stdlib/http/http.kuki:416
-		if !allowed[key] {
-//line stdlib/http/http.kuki:417
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-//line stdlib/http/http.kuki:418
-			w.WriteHeader(400)
-//line stdlib/http/http.kuki:419
-//line stdlib/http/http.kuki:419
-			_, err_2 := io.WriteString(w, "host not allowed")
-//line stdlib/http/http.kuki:419
-			if err_2 != nil {
-//line stdlib/http/http.kuki:419
-				return
-			}
-//line stdlib/http/http.kuki:420
-			return
-		}
-//line stdlib/http/http.kuki:421
 		next.ServeHTTP(w, r)
 	})
 }
 
-//line stdlib/http/http.kuki:427
+//line stdlib/http/http.kuki:421
 func validHostHeader(h string) bool {
-//line stdlib/http/http.kuki:428
+//line stdlib/http/http.kuki:422
 	if len(h) > 255 {
-//line stdlib/http/http.kuki:429
+//line stdlib/http/http.kuki:423
 		return false
 	}
-//line stdlib/http/http.kuki:430
+//line stdlib/http/http.kuki:424
 	return !strings.ContainsAny(h, "\r\n\x00 \t")
 }
 
-//line stdlib/http/http.kuki:435
+//line stdlib/http/http.kuki:429
 func stripPort(h string) string {
-//line stdlib/http/http.kuki:436
-	host, _, err := net.SplitHostPort(h)
-//line stdlib/http/http.kuki:437
-	if err != nil {
-//line stdlib/http/http.kuki:438
+//line stdlib/http/http.kuki:430
+	host, _, err_13 := net.SplitHostPort(h)
+//line stdlib/http/http.kuki:430
+	if err_13 != nil {
+//line stdlib/http/http.kuki:430
 		return h
 	}
-//line stdlib/http/http.kuki:439
+//line stdlib/http/http.kuki:431
 	return host
 }
 
-//line stdlib/http/http.kuki:450
+//line stdlib/http/http.kuki:442
 func RealIP(r *http.Request, trustedProxies ...string) string {
-//line stdlib/http/http.kuki:451
+//line stdlib/http/http.kuki:443
 	nets := make([]*net.IPNet, 0)
-//line stdlib/http/http.kuki:452
+//line stdlib/http/http.kuki:444
 	for _, cidr := range trustedProxies {
-//line stdlib/http/http.kuki:454
+//line stdlib/http/http.kuki:446
 		if !strings.Contains(cidr, "/") {
-//line stdlib/http/http.kuki:455
+//line stdlib/http/http.kuki:447
 			ip := net.ParseIP(cidr)
-//line stdlib/http/http.kuki:456
+//line stdlib/http/http.kuki:448
 			if ip != nil {
-//line stdlib/http/http.kuki:457
+//line stdlib/http/http.kuki:449
 				if ip.To4() != nil {
-//line stdlib/http/http.kuki:458
-					cidr = (cidr + "/32")
+//line stdlib/http/http.kuki:450
+					cidr = cidr + "/32"
 				} else {
-//line stdlib/http/http.kuki:460
-					cidr = (cidr + "/128")
+//line stdlib/http/http.kuki:452
+					cidr = cidr + "/128"
 				}
 			}
 		}
-//line stdlib/http/http.kuki:461
+//line stdlib/http/http.kuki:453
 		_, n, err := net.ParseCIDR(cidr)
-//line stdlib/http/http.kuki:462
+//line stdlib/http/http.kuki:454
 		if err != nil {
-//line stdlib/http/http.kuki:463
+//line stdlib/http/http.kuki:455
 			continue
 		}
-//line stdlib/http/http.kuki:464
+//line stdlib/http/http.kuki:456
 		nets = append(nets, n)
 	}
-//line stdlib/http/http.kuki:465
+//line stdlib/http/http.kuki:457
 	peer := r.RemoteAddr
-//line stdlib/http/http.kuki:466
+//line stdlib/http/http.kuki:458
 	peerHost, _, err := net.SplitHostPort(peer)
-//line stdlib/http/http.kuki:467
+//line stdlib/http/http.kuki:459
 	if err != nil {
-//line stdlib/http/http.kuki:468
+//line stdlib/http/http.kuki:460
 		peerHost = peer
 	}
-//line stdlib/http/http.kuki:469
+//line stdlib/http/http.kuki:461
 	if !ipInAny(peerHost, nets) {
-//line stdlib/http/http.kuki:470
+//line stdlib/http/http.kuki:462
 		return peerHost
 	}
-//line stdlib/http/http.kuki:475
+//line stdlib/http/http.kuki:467
 	xff := r.Header.Get("X-Forwarded-For")
-//line stdlib/http/http.kuki:476
+//line stdlib/http/http.kuki:468
 	if xff == "" {
-//line stdlib/http/http.kuki:477
+//line stdlib/http/http.kuki:469
 		realIPTrimmed := strings.TrimSpace(r.Header.Get("X-Real-Ip"))
-//line stdlib/http/http.kuki:478
-		if (realIPTrimmed != "") && (net.ParseIP(realIPTrimmed) != nil) {
-//line stdlib/http/http.kuki:479
+//line stdlib/http/http.kuki:470
+		if realIPTrimmed != "" && net.ParseIP(realIPTrimmed) != nil {
+//line stdlib/http/http.kuki:471
 			return realIPTrimmed
 		}
-//line stdlib/http/http.kuki:480
+//line stdlib/http/http.kuki:472
 		return peerHost
 	}
-//line stdlib/http/http.kuki:481
+//line stdlib/http/http.kuki:473
 	parts := strings.Split(xff, ",")
-//line stdlib/http/http.kuki:482
+//line stdlib/http/http.kuki:474
 	for i := range len(parts) {
-//line stdlib/http/http.kuki:483
-		idx := ((len(parts) - 1) - i)
-//line stdlib/http/http.kuki:484
+//line stdlib/http/http.kuki:475
+		idx := len(parts) - 1 - i
+//line stdlib/http/http.kuki:476
 		candidate := strings.TrimSpace(parts[idx])
-//line stdlib/http/http.kuki:485
-		if (candidate == "") || (net.ParseIP(candidate) == nil) {
-//line stdlib/http/http.kuki:486
+//line stdlib/http/http.kuki:477
+		if candidate == "" || net.ParseIP(candidate) == nil {
+//line stdlib/http/http.kuki:478
 			continue
 		}
-//line stdlib/http/http.kuki:487
+//line stdlib/http/http.kuki:479
 		if !ipInAny(candidate, nets) {
-//line stdlib/http/http.kuki:488
+//line stdlib/http/http.kuki:480
 			return candidate
 		}
 	}
-//line stdlib/http/http.kuki:489
+//line stdlib/http/http.kuki:481
 	leftmost := strings.TrimSpace(parts[0])
-//line stdlib/http/http.kuki:490
+//line stdlib/http/http.kuki:482
 	if net.ParseIP(leftmost) != nil {
-//line stdlib/http/http.kuki:491
+//line stdlib/http/http.kuki:483
 		return leftmost
 	}
-//line stdlib/http/http.kuki:492
+//line stdlib/http/http.kuki:484
 	return peerHost
 }
 
-//line stdlib/http/http.kuki:495
+//line stdlib/http/http.kuki:487
 func ipInAny(ip string, nets []*net.IPNet) bool {
-//line stdlib/http/http.kuki:496
+//line stdlib/http/http.kuki:488
 	parsed := net.ParseIP(ip)
-//line stdlib/http/http.kuki:497
+//line stdlib/http/http.kuki:489
 	if parsed == nil {
-//line stdlib/http/http.kuki:498
+//line stdlib/http/http.kuki:490
 		return false
 	}
-//line stdlib/http/http.kuki:499
+//line stdlib/http/http.kuki:491
 	for _, n := range nets {
-//line stdlib/http/http.kuki:500
+//line stdlib/http/http.kuki:492
 		if n.Contains(parsed) {
-//line stdlib/http/http.kuki:501
+//line stdlib/http/http.kuki:493
 			return true
 		}
 	}
-//line stdlib/http/http.kuki:502
+//line stdlib/http/http.kuki:494
 	return false
 }
 
-//line stdlib/http/http.kuki:507
+//line stdlib/http/http.kuki:499
 func SecureHeaders(handler http.Handler) http.Handler {
-//line stdlib/http/http.kuki:508
+//line stdlib/http/http.kuki:500
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//line stdlib/http/http.kuki:509
+//line stdlib/http/http.kuki:501
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-//line stdlib/http/http.kuki:510
+//line stdlib/http/http.kuki:502
 		w.Header().Set("X-Frame-Options", "DENY")
-//line stdlib/http/http.kuki:511
+//line stdlib/http/http.kuki:503
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-//line stdlib/http/http.kuki:512
+//line stdlib/http/http.kuki:504
 		w.Header().Set("Content-Security-Policy", "default-src 'self'")
-//line stdlib/http/http.kuki:513
+//line stdlib/http/http.kuki:505
 		handler.ServeHTTP(w, r)
 	})
 }

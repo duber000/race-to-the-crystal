@@ -12,130 +12,133 @@ import (
 	"strconv"
 )
 
-//line stdlib/input/input.kuki:20
+//line stdlib/input/input.kuki:17
+var ErrCanceled = errors.New("input: selection canceled")
+
+//line stdlib/input/input.kuki:25
 func ReadLine(prompt string) (string, error) {
-//line stdlib/input/input.kuki:21
+//line stdlib/input/input.kuki:26
 	if prompt != "" {
-//line stdlib/input/input.kuki:22
+//line stdlib/input/input.kuki:27
 		fmt.Print(prompt)
 	}
-//line stdlib/input/input.kuki:24
+//line stdlib/input/input.kuki:29
 	reader := bufio.NewReader(os.Stdin)
-//line stdlib/input/input.kuki:25
+//line stdlib/input/input.kuki:30
 	text, err_1 := reader.ReadString('\n')
-//line stdlib/input/input.kuki:25
+//line stdlib/input/input.kuki:30
 	if err_1 != nil {
-//line stdlib/input/input.kuki:25
+//line stdlib/input/input.kuki:30
 		return "", err_1
 	}
-//line stdlib/input/input.kuki:26
+//line stdlib/input/input.kuki:31
 	return kukistring.TrimSpace(text), nil
 }
 
-//line stdlib/input/input.kuki:36
+//line stdlib/input/input.kuki:41
 func ReadPassword(prompt string) (string, error) {
-//line stdlib/input/input.kuki:37
+//line stdlib/input/input.kuki:42
 	if prompt != "" {
-//line stdlib/input/input.kuki:38
+//line stdlib/input/input.kuki:43
 		fmt.Print(prompt)
 	}
-//line stdlib/input/input.kuki:40
+//line stdlib/input/input.kuki:45
 	fd := int(os.Stdin.Fd())
-//line stdlib/input/input.kuki:41
+//line stdlib/input/input.kuki:46
 	if !term.IsTerminal(fd) {
-//line stdlib/input/input.kuki:44
+//line stdlib/input/input.kuki:49
 		reader := bufio.NewReader(os.Stdin)
-//line stdlib/input/input.kuki:45
+//line stdlib/input/input.kuki:50
 		text, err_2 := reader.ReadString('\n')
-//line stdlib/input/input.kuki:45
+//line stdlib/input/input.kuki:50
 		if err_2 != nil {
-//line stdlib/input/input.kuki:45
+//line stdlib/input/input.kuki:50
 			return "", err_2
 		}
-//line stdlib/input/input.kuki:46
+//line stdlib/input/input.kuki:51
 		return kukistring.TrimSpace(text), nil
 	}
-//line stdlib/input/input.kuki:48
+//line stdlib/input/input.kuki:53
 	bytes, err_3 := term.ReadPassword(fd)
-//line stdlib/input/input.kuki:48
+//line stdlib/input/input.kuki:53
 	if err_3 != nil {
-//line stdlib/input/input.kuki:48
+//line stdlib/input/input.kuki:53
 		return "", err_3
 	}
-//line stdlib/input/input.kuki:49
+//line stdlib/input/input.kuki:54
 	fmt.Println()
-//line stdlib/input/input.kuki:50
+//line stdlib/input/input.kuki:55
 	return string(bytes), nil
 }
 
-//line stdlib/input/input.kuki:55
+//line stdlib/input/input.kuki:60
 func Confirm(prompt string) (bool, error) {
-//line stdlib/input/input.kuki:56
+//line stdlib/input/input.kuki:61
 	answer, err_4 := ReadLine(fmt.Sprintf("%v [y/N]: ", prompt))
-//line stdlib/input/input.kuki:56
+//line stdlib/input/input.kuki:61
 	if err_4 != nil {
-//line stdlib/input/input.kuki:56
+//line stdlib/input/input.kuki:61
 		err_4 = fmt.Errorf("confirm prompt: %w", err_4)
-//line stdlib/input/input.kuki:56
+//line stdlib/input/input.kuki:61
 		return false, err_4
 	}
-//line stdlib/input/input.kuki:57
+//line stdlib/input/input.kuki:62
 	lower := kukistring.ToLower(kukistring.TrimSpace(answer))
-//line stdlib/input/input.kuki:58
-	return ((lower == "y") || (lower == "yes")), nil
+//line stdlib/input/input.kuki:63
+	return lower == "y" || lower == "yes", nil
 }
 
-//line stdlib/input/input.kuki:66
+//line stdlib/input/input.kuki:71
 func Choose(prompt string, options []string) (int, error) {
-//line stdlib/input/input.kuki:67
+//line stdlib/input/input.kuki:72
 	if len(options) == 0 {
-//line stdlib/input/input.kuki:68
+//line stdlib/input/input.kuki:73
 		return -1, errors.New("no options provided")
 	}
-//line stdlib/input/input.kuki:70
+//line stdlib/input/input.kuki:75
 	fmt.Println(prompt)
-//line stdlib/input/input.kuki:71
+//line stdlib/input/input.kuki:76
 	fmt.Println("")
-//line stdlib/input/input.kuki:72
+//line stdlib/input/input.kuki:77
 	for i, opt := range options {
-//line stdlib/input/input.kuki:73
-		fmt.Println(fmt.Sprintf("  %v) %v", (i + 1), opt))
+//line stdlib/input/input.kuki:78
+		fmt.Println(fmt.Sprintf("  %v) %v", i+1, opt))
 	}
-//line stdlib/input/input.kuki:74
+//line stdlib/input/input.kuki:79
 	fmt.Println("")
-//line stdlib/input/input.kuki:76
+//line stdlib/input/input.kuki:81
 	raw, err_5 := ReadLine("Enter number (or q to quit): ")
-//line stdlib/input/input.kuki:76
+//line stdlib/input/input.kuki:81
 	if err_5 != nil {
-//line stdlib/input/input.kuki:76
+//line stdlib/input/input.kuki:81
 		err_5 = fmt.Errorf("choose prompt: %w", err_5)
-//line stdlib/input/input.kuki:76
+//line stdlib/input/input.kuki:81
 		return 0, err_5
 	}
-//line stdlib/input/input.kuki:77
+//line stdlib/input/input.kuki:82
 	trimmed := kukistring.TrimSpace(raw)
-//line stdlib/input/input.kuki:79
-	if ((trimmed == "") || (trimmed == "q")) || (trimmed == "Q") {
-//line stdlib/input/input.kuki:80
-		return -1, errors.New("cancelled")
+//line stdlib/input/input.kuki:84
+	if trimmed == "" || trimmed == "q" || trimmed == "Q" {
+//line stdlib/input/input.kuki:85
+		return -1, ErrCanceled
 	}
-//line stdlib/input/input.kuki:82
+//line stdlib/input/input.kuki:87
 	val, err_6 := strconv.Atoi(trimmed)
-//line stdlib/input/input.kuki:82
+//line stdlib/input/input.kuki:87
 	if err_6 != nil {
-//line stdlib/input/input.kuki:82
+//line stdlib/input/input.kuki:87
 		return -1, fmt.Errorf("invalid selection: %v", trimmed)
 	}
-//line stdlib/input/input.kuki:83
-	if (val < 1) || (val > len(options)) {
-//line stdlib/input/input.kuki:84
+//line stdlib/input/input.kuki:88
+	if val < 1 || val > len(options) {
+//line stdlib/input/input.kuki:89
 		return -1, fmt.Errorf("selection out of range: %v", val)
 	}
-//line stdlib/input/input.kuki:86
-	return (val - 1), nil
+//line stdlib/input/input.kuki:91
+	return val - 1, nil
 }
 
-//line stdlib/input/input.kuki:109
+//line stdlib/input/input.kuki:114
 type FieldKind int
 
 const (
@@ -157,7 +160,7 @@ func (e FieldKind) String() string {
 	}
 }
 
-//line stdlib/input/input.kuki:117
+//line stdlib/input/input.kuki:122
 type FormField struct {
 	Key       string
 	Prompt    string
@@ -167,7 +170,7 @@ type FormField struct {
 	Validator func(string) error
 }
 
-//line stdlib/input/input.kuki:127
+//line stdlib/input/input.kuki:132
 type Form struct {
 	Fields []FormField
 	Values map[string]string
@@ -175,230 +178,227 @@ type Form struct {
 	R      *os.File
 }
 
-//line stdlib/input/input.kuki:134
+//line stdlib/input/input.kuki:139
 func NewForm() *Form {
-//line stdlib/input/input.kuki:135
+//line stdlib/input/input.kuki:140
 	return &Form{Fields: []FormField{}, Values: make(map[string]string), W: os.Stdout, R: os.Stdin}
 }
 
-//line stdlib/input/input.kuki:143
-func (f *Form) Text(key string, prompt string) *Form {
-//line stdlib/input/input.kuki:144
-	f.Fields = append(f.Fields, FormField{Key: key, Prompt: prompt, Kind: FieldKindText})
-//line stdlib/input/input.kuki:145
-	return f
-}
-
 //line stdlib/input/input.kuki:148
-func (f *Form) Confirm(key string, prompt string) *Form {
+func (f *Form) Text(key string, prompt string) *Form {
 //line stdlib/input/input.kuki:149
-	f.Fields = append(f.Fields, FormField{Key: key, Prompt: prompt, Kind: FieldKindConfirm})
+	f.Fields = append(f.Fields, FormField{Key: key, Prompt: prompt, Kind: FieldKindText})
 //line stdlib/input/input.kuki:150
 	return f
 }
 
+//line stdlib/input/input.kuki:153
+func (f *Form) Confirm(key string, prompt string) *Form {
 //line stdlib/input/input.kuki:154
-func (f *Form) Choose(key string, prompt string, options []string) *Form {
+	f.Fields = append(f.Fields, FormField{Key: key, Prompt: prompt, Kind: FieldKindConfirm})
 //line stdlib/input/input.kuki:155
+	return f
+}
+
+//line stdlib/input/input.kuki:159
+func (f *Form) Choose(key string, prompt string, options []string) *Form {
+//line stdlib/input/input.kuki:160
 	f.Fields = append(f.Fields, FormField{Key: key, Prompt: prompt, Kind: FieldKindChoose, Options: options})
-//line stdlib/input/input.kuki:156
-	return f
-}
-
 //line stdlib/input/input.kuki:161
-func (f *Form) Validate(key string, validator func(string) error) *Form {
-//line stdlib/input/input.kuki:162
-	i := 0
-//line stdlib/input/input.kuki:163
-	for i < len(f.Fields) {
-//line stdlib/input/input.kuki:164
-		if f.Fields[i].Key == key {
-//line stdlib/input/input.kuki:165
-			f.Fields[i].Validator = validator
+	return f
+}
+
 //line stdlib/input/input.kuki:166
-			return f
-		}
+func (f *Form) Validate(key string, validator func(string) error) *Form {
 //line stdlib/input/input.kuki:167
-		i = (i + 1)
-	}
-//line stdlib/input/input.kuki:168
-	return f
-}
-
-//line stdlib/input/input.kuki:175
-func (f *Form) Default(key string, value string) *Form {
-//line stdlib/input/input.kuki:176
 	i := 0
-//line stdlib/input/input.kuki:177
+//line stdlib/input/input.kuki:168
 	for i < len(f.Fields) {
-//line stdlib/input/input.kuki:178
+//line stdlib/input/input.kuki:169
 		if f.Fields[i].Key == key {
-//line stdlib/input/input.kuki:179
-			f.Fields[i].Default = value
-//line stdlib/input/input.kuki:180
+//line stdlib/input/input.kuki:170
+			f.Fields[i].Validator = validator
+//line stdlib/input/input.kuki:171
 			return f
 		}
-//line stdlib/input/input.kuki:181
-		i = (i + 1)
+//line stdlib/input/input.kuki:172
+		i = i + 1
 	}
-//line stdlib/input/input.kuki:182
+//line stdlib/input/input.kuki:173
 	return f
 }
 
+//line stdlib/input/input.kuki:180
+func (f *Form) Default(key string, value string) *Form {
+//line stdlib/input/input.kuki:181
+	i := 0
+//line stdlib/input/input.kuki:182
+	for i < len(f.Fields) {
+//line stdlib/input/input.kuki:183
+		if f.Fields[i].Key == key {
+//line stdlib/input/input.kuki:184
+			f.Fields[i].Default = value
+//line stdlib/input/input.kuki:185
+			return f
+		}
 //line stdlib/input/input.kuki:186
-func (f *Form) Run() error {
+		i = i + 1
+	}
 //line stdlib/input/input.kuki:187
-	reader := bufio.NewReader(f.R)
-//line stdlib/input/input.kuki:188
-	for _, field := range f.Fields {
-//line stdlib/input/input.kuki:189
-		for {
-//line stdlib/input/input.kuki:190
-			value, err := promptField(f.W, reader, field)
+	return f
+}
+
 //line stdlib/input/input.kuki:191
-			if err != nil {
+func (f *Form) Run() error {
 //line stdlib/input/input.kuki:192
+	reader := bufio.NewReader(f.R)
+//line stdlib/input/input.kuki:193
+	for _, field := range f.Fields {
+//line stdlib/input/input.kuki:194
+		for {
+//line stdlib/input/input.kuki:195
+			value, err := promptField(f.W, reader, field)
+//line stdlib/input/input.kuki:196
+			if err != nil {
+//line stdlib/input/input.kuki:197
 				return err
 			}
-//line stdlib/input/input.kuki:193
+//line stdlib/input/input.kuki:198
 			if field.Validator != nil {
-//line stdlib/input/input.kuki:194
+//line stdlib/input/input.kuki:199
 				vErr := field.Validator(value)
-//line stdlib/input/input.kuki:195
+//line stdlib/input/input.kuki:200
 				if vErr != nil {
-//line stdlib/input/input.kuki:196
+//line stdlib/input/input.kuki:201
 					fmt.Fprintln(f.W, fmt.Sprintf("  %v", vErr))
-//line stdlib/input/input.kuki:197
+//line stdlib/input/input.kuki:202
 					continue
 				}
 			}
-//line stdlib/input/input.kuki:198
+//line stdlib/input/input.kuki:203
 			f.Values[field.Key] = value
-//line stdlib/input/input.kuki:199
+//line stdlib/input/input.kuki:204
 			break
 		}
 	}
-//line stdlib/input/input.kuki:200
+//line stdlib/input/input.kuki:205
 	return nil
 }
 
-//line stdlib/input/input.kuki:203
+//line stdlib/input/input.kuki:208
 func (f *Form) String(key string) string {
-//line stdlib/input/input.kuki:204
+//line stdlib/input/input.kuki:209
 	return f.Values[key]
 }
 
-//line stdlib/input/input.kuki:208
+//line stdlib/input/input.kuki:213
 func (f *Form) Bool(key string) bool {
-//line stdlib/input/input.kuki:209
-	return (f.Values[key] == "true")
+//line stdlib/input/input.kuki:214
+	return f.Values[key] == "true"
 }
 
-//line stdlib/input/input.kuki:215
+//line stdlib/input/input.kuki:220
 func promptField(w *os.File, reader *bufio.Reader, field FormField) (string, error) {
-//line stdlib/input/input.kuki:216
-	if field.Kind == FieldKindText {
-//line stdlib/input/input.kuki:217
+//line stdlib/input/input.kuki:221
+	switch field.Kind {
+	case FieldKindText:
+//line stdlib/input/input.kuki:223
 		line, err_7 := readLineFrom(w, reader, field.Prompt)
-//line stdlib/input/input.kuki:217
+//line stdlib/input/input.kuki:223
 		if err_7 != nil {
-//line stdlib/input/input.kuki:217
+//line stdlib/input/input.kuki:223
 			return "", err_7
 		}
-//line stdlib/input/input.kuki:218
-		if (line == "") && (field.Default != "") {
-//line stdlib/input/input.kuki:219
+//line stdlib/input/input.kuki:224
+		if line == "" && field.Default != "" {
+//line stdlib/input/input.kuki:225
 			return field.Default, nil
 		}
-//line stdlib/input/input.kuki:220
+//line stdlib/input/input.kuki:226
 		return line, nil
-	}
-//line stdlib/input/input.kuki:221
-	if field.Kind == FieldKindConfirm {
-//line stdlib/input/input.kuki:222
+	case FieldKindConfirm:
+//line stdlib/input/input.kuki:228
 		line, err_8 := readLineFrom(w, reader, fmt.Sprintf("%v[y/N]: ", field.Prompt))
-//line stdlib/input/input.kuki:222
+//line stdlib/input/input.kuki:228
 		if err_8 != nil {
-//line stdlib/input/input.kuki:222
+//line stdlib/input/input.kuki:228
 			return "", err_8
 		}
-//line stdlib/input/input.kuki:223
+//line stdlib/input/input.kuki:229
 		lower := kukistring.ToLower(kukistring.TrimSpace(line))
-//line stdlib/input/input.kuki:224
-		if (lower == "y") || (lower == "yes") {
-//line stdlib/input/input.kuki:225
+//line stdlib/input/input.kuki:230
+		if lower == "y" || lower == "yes" {
+//line stdlib/input/input.kuki:231
 			return "true", nil
 		}
-//line stdlib/input/input.kuki:226
+//line stdlib/input/input.kuki:232
 		return "false", nil
-	}
-//line stdlib/input/input.kuki:227
-	if field.Kind == FieldKindChoose {
-//line stdlib/input/input.kuki:228
+	case FieldKindChoose:
+//line stdlib/input/input.kuki:234
 		return promptChoose(w, reader, field)
 	}
-//line stdlib/input/input.kuki:229
+//line stdlib/input/input.kuki:235
 	return "", fmt.Errorf("unknown field kind: %v", field.Kind)
 }
 
-//line stdlib/input/input.kuki:232
+//line stdlib/input/input.kuki:238
 func promptChoose(w *os.File, reader *bufio.Reader, field FormField) (string, error) {
-//line stdlib/input/input.kuki:233
+//line stdlib/input/input.kuki:239
 	if len(field.Options) == 0 {
-//line stdlib/input/input.kuki:234
+//line stdlib/input/input.kuki:240
 		return "", fmt.Errorf("no options for %v", field.Key)
 	}
-//line stdlib/input/input.kuki:235
+//line stdlib/input/input.kuki:241
 	fmt.Fprintln(w, field.Prompt)
-//line stdlib/input/input.kuki:236
+//line stdlib/input/input.kuki:242
 	for i, opt := range field.Options {
-//line stdlib/input/input.kuki:237
-		fmt.Fprintln(w, fmt.Sprintf("  %v) %v", (i+1), opt))
+//line stdlib/input/input.kuki:243
+		fmt.Fprintln(w, fmt.Sprintf("  %v) %v", i+1, opt))
 	}
-//line stdlib/input/input.kuki:238
+//line stdlib/input/input.kuki:244
 	raw, err_9 := readLineFrom(w, reader, "Enter number (or q to quit): ")
-//line stdlib/input/input.kuki:238
+//line stdlib/input/input.kuki:244
 	if err_9 != nil {
-//line stdlib/input/input.kuki:238
+//line stdlib/input/input.kuki:244
 		return "", err_9
 	}
-//line stdlib/input/input.kuki:239
+//line stdlib/input/input.kuki:245
 	trimmed := kukistring.TrimSpace(raw)
-//line stdlib/input/input.kuki:240
-	if ((trimmed == "") || (trimmed == "q")) || (trimmed == "Q") {
-//line stdlib/input/input.kuki:241
+//line stdlib/input/input.kuki:246
+	if trimmed == "" || trimmed == "q" || trimmed == "Q" {
+//line stdlib/input/input.kuki:247
 		return "", errors.New("cancelled")
 	}
-//line stdlib/input/input.kuki:242
+//line stdlib/input/input.kuki:248
 	val, err_10 := strconv.Atoi(trimmed)
-//line stdlib/input/input.kuki:242
+//line stdlib/input/input.kuki:248
 	if err_10 != nil {
-//line stdlib/input/input.kuki:242
+//line stdlib/input/input.kuki:248
 		return "", fmt.Errorf("invalid selection: %v", trimmed)
 	}
-//line stdlib/input/input.kuki:243
-	if (val < 1) || (val > len(field.Options)) {
-//line stdlib/input/input.kuki:244
+//line stdlib/input/input.kuki:249
+	if val < 1 || val > len(field.Options) {
+//line stdlib/input/input.kuki:250
 		return "", fmt.Errorf("selection out of range: %v", val)
 	}
-//line stdlib/input/input.kuki:245
-	return field.Options[(val - 1)], nil
+//line stdlib/input/input.kuki:251
+	return field.Options[val-1], nil
 }
 
-//line stdlib/input/input.kuki:249
+//line stdlib/input/input.kuki:255
 func readLineFrom(w *os.File, reader *bufio.Reader, prompt string) (string, error) {
-//line stdlib/input/input.kuki:250
+//line stdlib/input/input.kuki:256
 	if prompt != "" {
-//line stdlib/input/input.kuki:251
+//line stdlib/input/input.kuki:257
 		fmt.Fprint(w, prompt)
 	}
-//line stdlib/input/input.kuki:252
+//line stdlib/input/input.kuki:258
 	text, err_11 := reader.ReadString('\n')
-//line stdlib/input/input.kuki:252
+//line stdlib/input/input.kuki:258
 	if err_11 != nil {
-//line stdlib/input/input.kuki:252
+//line stdlib/input/input.kuki:258
 		return "", err_11
 	}
-//line stdlib/input/input.kuki:253
+//line stdlib/input/input.kuki:259
 	return kukistring.TrimSpace(text), nil
 }

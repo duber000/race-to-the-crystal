@@ -18,7 +18,7 @@ func TestNew(t *testing.T) {
 //line stdlib/set/set_test.kuki:14
 		test.AssertEqual(t, len(s), 0)
 //line stdlib/set/set_test.kuki:15
-		test.AssertTrue(t, (len(s) == 0))
+		test.AssertTrue(t, len(s) == 0)
 	})
 //line stdlib/set/set_test.kuki:18
 	t.Run("can add items after creation", func(t *testing.T) {
@@ -248,7 +248,7 @@ func TestIntersect(t *testing.T) {
 //line stdlib/set/set_test.kuki:169
 		y := set.From([]string{"y"})
 //line stdlib/set/set_test.kuki:170
-		test.AssertTrue(t, (len(set.Intersect(x, y)) == 0))
+		test.AssertTrue(t, len(set.Intersect(x, y)) == 0)
 	})
 }
 

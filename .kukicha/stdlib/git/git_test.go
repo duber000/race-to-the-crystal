@@ -127,7 +127,7 @@ func TestCurrentBranch(t *testing.T) {
 //line stdlib/git/git_test.kuki:138
 			test.AssertNoError(t, err)
 //line stdlib/git/git_test.kuki:139
-			test.AssertTrue(t, (len(branch) > 0))
+			test.AssertTrue(t, len(branch) > 0)
 		})
 	}
 }
@@ -155,7 +155,7 @@ func TestListTags(t *testing.T) {
 //line stdlib/git/git_test.kuki:155
 			test.AssertNoError(t, err)
 //line stdlib/git/git_test.kuki:156
-			test.AssertTrue(t, (len(tags) > 0))
+			test.AssertTrue(t, len(tags) > 0)
 		})
 	}
 }
@@ -211,7 +211,7 @@ func TestCurrentUser(t *testing.T) {
 //line stdlib/git/git_test.kuki:189
 			test.AssertNoError(t, err)
 //line stdlib/git/git_test.kuki:190
-			test.AssertTrue(t, (len(user) > 0))
+			test.AssertTrue(t, len(user) > 0)
 		})
 	}
 }

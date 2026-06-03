@@ -44,13 +44,13 @@ func Contains[T any, K comparable](m map[K]T, k K) bool {
 }
 
 //line stdlib/maps/maps.kuki:40
-func GetOr[T any, K comparable](m map[K]T, k K, alt T) T {
+func GetOr[T any, K comparable](m map[K]T, k K, defaultValue T) T {
 //line stdlib/maps/maps.kuki:41
 	v, ok := m[k]
 //line stdlib/maps/maps.kuki:42
 	if !ok {
 //line stdlib/maps/maps.kuki:43
-		return alt
+		return defaultValue
 	}
 //line stdlib/maps/maps.kuki:44
 	return v
@@ -59,7 +59,7 @@ func GetOr[T any, K comparable](m map[K]T, k K, alt T) T {
 //line stdlib/maps/maps.kuki:48
 func Merge[T any, K comparable](base map[K]T, overlay map[K]T) map[K]T {
 //line stdlib/maps/maps.kuki:49
-	result := make(map[K]T, (len(base) + len(overlay)))
+	result := make(map[K]T, len(base)+len(overlay))
 //line stdlib/maps/maps.kuki:50
 	gomaps.Copy(result, base)
 //line stdlib/maps/maps.kuki:51

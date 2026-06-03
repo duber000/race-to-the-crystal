@@ -31,188 +31,247 @@ func TestFilter(t *testing.T) {
 //line stdlib/iterator/iterator_test.kuki:22
 	t.Run("keep even", func(t *testing.T) {
 //line stdlib/iterator/iterator_test.kuki:23
-		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return ((n % 2) == 0) }))
-//line stdlib/iterator/iterator_test.kuki:24
+		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return n%2 == 0 }))
+//line stdlib/iterator/iterator_test.kuki:27
 		test.AssertEqual(t, len(result), 3)
 	})
-//line stdlib/iterator/iterator_test.kuki:27
+//line stdlib/iterator/iterator_test.kuki:30
 	t.Run("keep none", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:28
-		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return (n > 100) }))
-//line stdlib/iterator/iterator_test.kuki:29
+//line stdlib/iterator/iterator_test.kuki:31
+		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return n > 100 }))
+//line stdlib/iterator/iterator_test.kuki:32
 		test.AssertEqual(t, len(result), 0)
 	})
-//line stdlib/iterator/iterator_test.kuki:32
+//line stdlib/iterator/iterator_test.kuki:35
 	t.Run("keep all", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:33
-		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return (n > 0) }))
-//line stdlib/iterator/iterator_test.kuki:34
+//line stdlib/iterator/iterator_test.kuki:36
+		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return n > 0 }))
+//line stdlib/iterator/iterator_test.kuki:37
 		test.AssertEqual(t, len(result), 6)
 	})
 }
 
-//line stdlib/iterator/iterator_test.kuki:38
-func TestTake(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:39
-	items := []int{1, 2, 3, 4, 5}
-//line stdlib/iterator/iterator_test.kuki:40
-	t.Run("take 3", func(t *testing.T) {
 //line stdlib/iterator/iterator_test.kuki:41
-		result := iterator.Collect(iterator.Take(iterator.Values(items), 3))
+func TestTake(t *testing.T) {
 //line stdlib/iterator/iterator_test.kuki:42
-		test.AssertEqual(t, len(result), 3)
-	})
-//line stdlib/iterator/iterator_test.kuki:45
-	t.Run("take more than available", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:46
-		result := iterator.Collect(iterator.Take(iterator.Values(items), 10))
-//line stdlib/iterator/iterator_test.kuki:47
-		test.AssertEqual(t, len(result), 5)
-	})
-//line stdlib/iterator/iterator_test.kuki:50
-	t.Run("take 0", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:51
-		result := iterator.Collect(iterator.Take(iterator.Values(items), 0))
-//line stdlib/iterator/iterator_test.kuki:52
-		test.AssertEqual(t, len(result), 0)
-	})
-}
-
-//line stdlib/iterator/iterator_test.kuki:56
-func TestSkip(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:57
 	items := []int{1, 2, 3, 4, 5}
-//line stdlib/iterator/iterator_test.kuki:58
-	t.Run("skip 2", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:59
-		result := iterator.Collect(iterator.Skip(iterator.Values(items), 2))
-//line stdlib/iterator/iterator_test.kuki:60
+//line stdlib/iterator/iterator_test.kuki:43
+	t.Run("take 3", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:44
+		result := iterator.Collect(iterator.Take(iterator.Values(items), 3))
+//line stdlib/iterator/iterator_test.kuki:45
 		test.AssertEqual(t, len(result), 3)
 	})
-//line stdlib/iterator/iterator_test.kuki:63
-	t.Run("skip all", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:64
-		result := iterator.Collect(iterator.Skip(iterator.Values(items), 10))
-//line stdlib/iterator/iterator_test.kuki:65
-		test.AssertEqual(t, len(result), 0)
-	})
-//line stdlib/iterator/iterator_test.kuki:68
-	t.Run("skip 0", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:69
-		result := iterator.Collect(iterator.Skip(iterator.Values(items), 0))
-//line stdlib/iterator/iterator_test.kuki:70
+//line stdlib/iterator/iterator_test.kuki:48
+	t.Run("take more than available", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:49
+		result := iterator.Collect(iterator.Take(iterator.Values(items), 10))
+//line stdlib/iterator/iterator_test.kuki:50
 		test.AssertEqual(t, len(result), 5)
+	})
+//line stdlib/iterator/iterator_test.kuki:53
+	t.Run("take 0", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:54
+		result := iterator.Collect(iterator.Take(iterator.Values(items), 0))
+//line stdlib/iterator/iterator_test.kuki:55
+		test.AssertEqual(t, len(result), 0)
 	})
 }
 
-//line stdlib/iterator/iterator_test.kuki:74
-func addInts(acc int, n int) int {
-//line stdlib/iterator/iterator_test.kuki:75
-	return (acc + n)
+//line stdlib/iterator/iterator_test.kuki:59
+func TestSkip(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:60
+	items := []int{1, 2, 3, 4, 5}
+//line stdlib/iterator/iterator_test.kuki:61
+	t.Run("skip 2", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:62
+		result := iterator.Collect(iterator.Skip(iterator.Values(items), 2))
+//line stdlib/iterator/iterator_test.kuki:63
+		test.AssertEqual(t, len(result), 3)
+	})
+//line stdlib/iterator/iterator_test.kuki:66
+	t.Run("skip all", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:67
+		result := iterator.Collect(iterator.Skip(iterator.Values(items), 10))
+//line stdlib/iterator/iterator_test.kuki:68
+		test.AssertEqual(t, len(result), 0)
+	})
+//line stdlib/iterator/iterator_test.kuki:71
+	t.Run("skip 0", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:72
+		result := iterator.Collect(iterator.Skip(iterator.Values(items), 0))
+//line stdlib/iterator/iterator_test.kuki:73
+		test.AssertEqual(t, len(result), 5)
+	})
 }
 
 //line stdlib/iterator/iterator_test.kuki:77
-func TestReduce(t *testing.T) {
+func addInts(acc int, n int) int {
 //line stdlib/iterator/iterator_test.kuki:78
-	items := []int{1, 2, 3, 4}
-//line stdlib/iterator/iterator_test.kuki:79
-	t.Run("sum", func(t *testing.T) {
+	return acc + n
+}
+
 //line stdlib/iterator/iterator_test.kuki:80
-		result := iterator.Reduce(iterator.Values(items), 0, addInts)
+func TestReduce(t *testing.T) {
 //line stdlib/iterator/iterator_test.kuki:81
+	items := []int{1, 2, 3, 4}
+//line stdlib/iterator/iterator_test.kuki:82
+	t.Run("sum", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:83
+		result := iterator.Reduce(iterator.Values(items), 0, addInts)
+//line stdlib/iterator/iterator_test.kuki:84
 		test.AssertEqual(t, result, 10)
 	})
-//line stdlib/iterator/iterator_test.kuki:84
-	t.Run("empty with initial", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:85
-		emptyList := []int{}
-//line stdlib/iterator/iterator_test.kuki:86
-		result := iterator.Reduce(iterator.Values(emptyList), 42, addInts)
 //line stdlib/iterator/iterator_test.kuki:87
+	t.Run("empty with initial", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:88
+		emptyList := []int{}
+//line stdlib/iterator/iterator_test.kuki:89
+		result := iterator.Reduce(iterator.Values(emptyList), 42, addInts)
+//line stdlib/iterator/iterator_test.kuki:90
 		test.AssertEqual(t, result, 42)
 	})
 }
 
-//line stdlib/iterator/iterator_test.kuki:91
-func TestAny(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:92
-	items := []int{1, 2, 3, 4, 5}
-//line stdlib/iterator/iterator_test.kuki:93
-	t.Run("has match", func(t *testing.T) {
 //line stdlib/iterator/iterator_test.kuki:94
-		result := iterator.Any(iterator.Values(items), func(n int) bool { return (n == 3) })
+func TestAny(t *testing.T) {
 //line stdlib/iterator/iterator_test.kuki:95
-		test.AssertTrue(t, result)
-	})
+	items := []int{1, 2, 3, 4, 5}
+//line stdlib/iterator/iterator_test.kuki:96
+	t.Run("has match", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:97
+		result := iterator.Any(iterator.Values(items), func(n int) bool { return n == 3 })
 //line stdlib/iterator/iterator_test.kuki:98
-	t.Run("no match", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:99
-		result := iterator.Any(iterator.Values(items), func(n int) bool { return (n > 100) })
-//line stdlib/iterator/iterator_test.kuki:100
-		test.AssertFalse(t, result)
-	})
-}
-
-//line stdlib/iterator/iterator_test.kuki:104
-func TestAll(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:105
-	items := []int{2, 4, 6, 8}
-//line stdlib/iterator/iterator_test.kuki:106
-	t.Run("all match", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:107
-		result := iterator.All(iterator.Values(items), func(n int) bool { return ((n % 2) == 0) })
-//line stdlib/iterator/iterator_test.kuki:108
 		test.AssertTrue(t, result)
 	})
-//line stdlib/iterator/iterator_test.kuki:111
-	t.Run("not all match", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:112
-		mixed := []int{2, 3, 4}
-//line stdlib/iterator/iterator_test.kuki:113
-		result := iterator.All(iterator.Values(mixed), func(n int) bool { return ((n % 2) == 0) })
-//line stdlib/iterator/iterator_test.kuki:114
+//line stdlib/iterator/iterator_test.kuki:101
+	t.Run("no match", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:102
+		result := iterator.Any(iterator.Values(items), func(n int) bool { return n > 100 })
+//line stdlib/iterator/iterator_test.kuki:103
 		test.AssertFalse(t, result)
 	})
 }
 
-//line stdlib/iterator/iterator_test.kuki:118
-func TestFind(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:119
-	items := []int{10, 20, 30, 40}
-//line stdlib/iterator/iterator_test.kuki:120
-	t.Run("found", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:107
+func TestAll(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:108
+	items := []int{2, 4, 6, 8}
+//line stdlib/iterator/iterator_test.kuki:109
+	t.Run("all match", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:110
+		result := iterator.All(iterator.Values(items), func(n int) bool { return n%2 == 0 })
+//line stdlib/iterator/iterator_test.kuki:111
+		test.AssertTrue(t, result)
+	})
+//line stdlib/iterator/iterator_test.kuki:114
+	t.Run("not all match", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:115
+		mixed := []int{2, 3, 4}
+//line stdlib/iterator/iterator_test.kuki:116
+		result := iterator.All(iterator.Values(mixed), func(n int) bool { return n%2 == 0 })
+//line stdlib/iterator/iterator_test.kuki:117
+		test.AssertFalse(t, result)
+	})
+}
+
 //line stdlib/iterator/iterator_test.kuki:121
-		val, err := iterator.Find(iterator.Values(items), func(n int) bool { return (n > 15) })
+func TestFind(t *testing.T) {
 //line stdlib/iterator/iterator_test.kuki:122
-		test.AssertNoError(t, err)
+	items := []int{10, 20, 30, 40}
 //line stdlib/iterator/iterator_test.kuki:123
+	t.Run("found", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:124
+		val, err := iterator.Find(iterator.Values(items), func(n int) bool { return n > 15 })
+//line stdlib/iterator/iterator_test.kuki:125
+		test.AssertNoError(t, err)
+//line stdlib/iterator/iterator_test.kuki:126
 		test.AssertEqual(t, val, 20)
 	})
-//line stdlib/iterator/iterator_test.kuki:126
+//line stdlib/iterator/iterator_test.kuki:129
 	t.Run("not found", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:127
-		_, err := iterator.Find(iterator.Values(items), func(n int) bool { return (n > 100) })
-//line stdlib/iterator/iterator_test.kuki:128
+//line stdlib/iterator/iterator_test.kuki:130
+		_, err := iterator.Find(iterator.Values(items), func(n int) bool { return n > 100 })
+//line stdlib/iterator/iterator_test.kuki:131
 		test.AssertError(t, err)
 	})
 }
 
-//line stdlib/iterator/iterator_test.kuki:132
-func TestChain(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:133
-	items := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-//line stdlib/iterator/iterator_test.kuki:134
-	t.Run("filter then take", func(t *testing.T) {
 //line stdlib/iterator/iterator_test.kuki:135
-		result := iterator.Collect(iterator.Take(iterator.Filter(iterator.Values(items), func(n int) bool { return ((n % 2) == 0) }), 2))
-//line stdlib/iterator/iterator_test.kuki:140
+func TestChain(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:136
+	items := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+//line stdlib/iterator/iterator_test.kuki:137
+	t.Run("filter then take", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:138
+		result := iterator.Collect(iterator.Take(iterator.Filter(iterator.Values(items), func(n int) bool { return n%2 == 0 }), 2))
+//line stdlib/iterator/iterator_test.kuki:143
 		test.AssertEqual(t, len(result), 2)
 	})
-//line stdlib/iterator/iterator_test.kuki:143
+//line stdlib/iterator/iterator_test.kuki:146
 	t.Run("skip then filter", func(t *testing.T) {
-//line stdlib/iterator/iterator_test.kuki:144
-		result := iterator.Collect(iterator.Filter(iterator.Skip(iterator.Values(items), 5), func(n int) bool { return ((n % 2) == 0) }))
-//line stdlib/iterator/iterator_test.kuki:149
+//line stdlib/iterator/iterator_test.kuki:147
+		result := iterator.Collect(iterator.Filter(iterator.Skip(iterator.Values(items), 5), func(n int) bool { return n%2 == 0 }))
+//line stdlib/iterator/iterator_test.kuki:152
 		test.AssertEqual(t, len(result), 3)
+	})
+}
+
+//line stdlib/iterator/iterator_test.kuki:156
+func TestZip(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:157
+	left := []any{"a", "b", "c"}
+//line stdlib/iterator/iterator_test.kuki:158
+	right := []any{10, 20, 30}
+//line stdlib/iterator/iterator_test.kuki:159
+	seconds := make([]any, 0)
+//line stdlib/iterator/iterator_test.kuki:160
+	for _, r := range iterator.Zip(iterator.Values(left), iterator.Values(right)) {
+//line stdlib/iterator/iterator_test.kuki:161
+		seconds = append(seconds, r)
+	}
+//line stdlib/iterator/iterator_test.kuki:163
+	test.AssertEqual(t, len(seconds), 3)
+//line stdlib/iterator/iterator_test.kuki:164
+	test.AssertEqual(t, seconds[0], 10)
+//line stdlib/iterator/iterator_test.kuki:165
+	test.AssertEqual(t, seconds[1], 20)
+//line stdlib/iterator/iterator_test.kuki:166
+	test.AssertEqual(t, seconds[2], 30)
+//line stdlib/iterator/iterator_test.kuki:168
+	t.Run("stops at shorter iterator", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:169
+		a := []any{1, 2, 3, 4}
+//line stdlib/iterator/iterator_test.kuki:170
+		b := []any{"x", "y"}
+//line stdlib/iterator/iterator_test.kuki:171
+		got := make([]any, 0)
+//line stdlib/iterator/iterator_test.kuki:172
+		for first := range iterator.Zip(iterator.Values(a), iterator.Values(b)) {
+//line stdlib/iterator/iterator_test.kuki:173
+			got = append(got, first)
+		}
+//line stdlib/iterator/iterator_test.kuki:174
+		test.AssertEqual(t, len(got), 2)
+	})
+}
+
+//line stdlib/iterator/iterator_test.kuki:178
+func TestFindOr(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:179
+	items := []int{10, 20, 30}
+//line stdlib/iterator/iterator_test.kuki:180
+	t.Run("found returns match", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:181
+		val := iterator.FindOr(iterator.Values(items), func(n int) bool { return n > 15 }, -1)
+//line stdlib/iterator/iterator_test.kuki:182
+		test.AssertEqual(t, val, 20)
+	})
+//line stdlib/iterator/iterator_test.kuki:185
+	t.Run("absent returns default", func(t *testing.T) {
+//line stdlib/iterator/iterator_test.kuki:186
+		val := iterator.FindOr(iterator.Values(items), func(n int) bool { return n > 100 }, -1)
+//line stdlib/iterator/iterator_test.kuki:187
+		test.AssertEqual(t, val, -1)
 	})
 }

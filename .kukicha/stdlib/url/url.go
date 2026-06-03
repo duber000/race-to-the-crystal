@@ -5,12 +5,12 @@ package url
 import (
 	"errors"
 	"fmt"
+	"github.com/kukichalang/kukicha/stdlib/slice"
+	"github.com/kukichalang/kukicha/stdlib/sort"
+	kukistring "github.com/kukichalang/kukicha/stdlib/string"
 	"maps"
 	gourl "net/url"
 	"path"
-	"slices"
-	"sort"
-	"strings"
 )
 
 //line stdlib/url/url.kuki:32
@@ -52,7 +52,7 @@ func Parse(s string) (Parsed, error) {
 //line stdlib/url/url.kuki:59
 		if len(vs) > 0 {
 //line stdlib/url/url.kuki:60
-			flat[k] = vs[(len(vs) - 1)]
+			flat[k] = vs[len(vs)-1]
 		}
 	}
 //line stdlib/url/url.kuki:62
@@ -114,19 +114,19 @@ func String(b Builder) string {
 //line stdlib/url/url.kuki:122
 	for i, k := range b.keys {
 //line stdlib/url/url.kuki:123
-		parts = append(parts, ((gourl.QueryEscape(k) + "=") + gourl.QueryEscape(b.values[i])))
+		parts = append(parts, gourl.QueryEscape(k)+"="+gourl.QueryEscape(b.values[i]))
 	}
 //line stdlib/url/url.kuki:124
-	query := strings.Join(parts, "&")
+	query := kukistring.Join(parts, "&")
 //line stdlib/url/url.kuki:126
 	sep := "?"
 //line stdlib/url/url.kuki:127
-	if strings.Contains(b.base, "?") {
+	if kukistring.Contains(b.base, "?") {
 //line stdlib/url/url.kuki:128
 		sep = "&"
 	}
 //line stdlib/url/url.kuki:129
-	return ((b.base + sep) + query)
+	return b.base + sep + query
 }
 
 //line stdlib/url/url.kuki:133
@@ -149,33 +149,33 @@ func CleanPath(p string) (string, error) {
 		return "", errors.New("path is empty")
 	}
 //line stdlib/url/url.kuki:153
-	if strings.Contains(p, "\x00") {
+	if kukistring.Contains(p, "\x00") {
 //line stdlib/url/url.kuki:154
 		return "", errors.New("path contains NUL byte")
 	}
 //line stdlib/url/url.kuki:155
-	if strings.Contains(p, "\\") {
+	if kukistring.Contains(p, "\\") {
 //line stdlib/url/url.kuki:156
 		return "", errors.New("path contains backslash")
 	}
 //line stdlib/url/url.kuki:157
-	lower := strings.ToLower(p)
+	lower := kukistring.ToLower(p)
 //line stdlib/url/url.kuki:158
-	if (strings.Contains(lower, "%2e%2e") || strings.Contains(lower, "%2f")) || strings.Contains(lower, "%5c") {
+	if kukistring.Contains(lower, "%2e%2e") || kukistring.Contains(lower, "%2f") || kukistring.Contains(lower, "%5c") {
 //line stdlib/url/url.kuki:159
 		return "", errors.New("path contains percent-encoded traversal")
 	}
 //line stdlib/url/url.kuki:163
-	if slices.Contains(strings.Split(p, "/"), "..") {
+	if slice.Contains(kukistring.Split(p, "/"), "..") {
 //line stdlib/url/url.kuki:164
 		return "", errors.New("path contains '..' segment")
 	}
 //line stdlib/url/url.kuki:165
 	cleaned := path.Clean(p)
 //line stdlib/url/url.kuki:166
-	if !strings.HasPrefix(cleaned, "/") {
+	if !kukistring.HasPrefix(cleaned, "/") {
 //line stdlib/url/url.kuki:167
-		cleaned = ("/" + cleaned)
+		cleaned = "/" + cleaned
 	}
 //line stdlib/url/url.kuki:168
 	return cleaned, nil
@@ -198,7 +198,7 @@ func IsSubpath(base string, candidate string) bool {
 		return false
 	}
 //line stdlib/url/url.kuki:180
-	trimmedBase := strings.TrimRight(cleanBase, "/")
+	trimmedBase := kukistring.TrimRight(cleanBase, "/")
 //line stdlib/url/url.kuki:181
 	if trimmedBase == "" {
 //line stdlib/url/url.kuki:182
@@ -210,7 +210,7 @@ func IsSubpath(base string, candidate string) bool {
 		return true
 	}
 //line stdlib/url/url.kuki:185
-	return strings.HasPrefix(cleanCand, (trimmedBase + "/"))
+	return kukistring.HasPrefix(cleanCand, trimmedBase+"/")
 }
 
 //line stdlib/url/url.kuki:191
@@ -228,14 +228,14 @@ func EncodeForm(values map[string]string) string {
 		keys = append(keys, k)
 	}
 //line stdlib/url/url.kuki:198
-	sort.Strings(keys)
+	keys = sort.Strings(keys)
 //line stdlib/url/url.kuki:200
 	parts := make([]string, 0, len(keys))
 //line stdlib/url/url.kuki:201
 	for _, k := range keys {
 //line stdlib/url/url.kuki:202
-		parts = append(parts, ((gourl.QueryEscape(k) + "=") + gourl.QueryEscape(values[k])))
+		parts = append(parts, gourl.QueryEscape(k)+"="+gourl.QueryEscape(values[k]))
 	}
 //line stdlib/url/url.kuki:203
-	return strings.Join(parts, "&")
+	return kukistring.Join(parts, "&")
 }

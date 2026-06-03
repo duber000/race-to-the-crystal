@@ -47,7 +47,7 @@ func Form[T any](values url.Values) (T, []validate.FieldError) {
 //line stdlib/parse/parse.kuki:52
 	elemType := reflect.TypeOf(target)
 //line stdlib/parse/parse.kuki:53
-	if (elemType == nil) || (elemType.Kind() != reflect.Struct) {
+	if elemType == nil || elemType.Kind() != reflect.Struct {
 //line stdlib/parse/parse.kuki:54
 		return target, []validate.FieldError{validate.FieldError{Path: "$", Rule: "parse", Message: "parse.Form requires a struct type"}}
 	}
@@ -98,7 +98,7 @@ func Env[T any](prefix string) (T, []validate.FieldError) {
 //line stdlib/parse/parse.kuki:91
 	elemType := reflect.TypeOf(target)
 //line stdlib/parse/parse.kuki:92
-	if (elemType == nil) || (elemType.Kind() != reflect.Struct) {
+	if elemType == nil || elemType.Kind() != reflect.Struct {
 //line stdlib/parse/parse.kuki:93
 		return target, []validate.FieldError{validate.FieldError{Path: "$", Rule: "parse", Message: "parse.Env requires a struct type"}}
 	}
@@ -152,7 +152,7 @@ func envKey(prefix string, name string) string {
 		return upperName
 	}
 //line stdlib/parse/parse.kuki:127
-	return ((kukistring.ToUpper(prefix) + "_") + upperName)
+	return kukistring.ToUpper(prefix) + "_" + upperName
 }
 
 //line stdlib/parse/parse.kuki:131
@@ -181,7 +181,7 @@ func assignString(fv reflect.Value, raw string) error {
 		return nil
 	}
 //line stdlib/parse/parse.kuki:140
-	if ((((kind == reflect.Int) || (kind == reflect.Int8)) || (kind == reflect.Int16)) || (kind == reflect.Int32)) || (kind == reflect.Int64) {
+	if kind == reflect.Int || kind == reflect.Int8 || kind == reflect.Int16 || kind == reflect.Int32 || kind == reflect.Int64 {
 //line stdlib/parse/parse.kuki:141
 		n, err_2 := strconv.ParseInt(raw, 10, 64)
 //line stdlib/parse/parse.kuki:141
@@ -195,7 +195,7 @@ func assignString(fv reflect.Value, raw string) error {
 		return nil
 	}
 //line stdlib/parse/parse.kuki:144
-	if ((((kind == reflect.Uint) || (kind == reflect.Uint8)) || (kind == reflect.Uint16)) || (kind == reflect.Uint32)) || (kind == reflect.Uint64) {
+	if kind == reflect.Uint || kind == reflect.Uint8 || kind == reflect.Uint16 || kind == reflect.Uint32 || kind == reflect.Uint64 {
 //line stdlib/parse/parse.kuki:145
 		n, err_3 := strconv.ParseUint(raw, 10, 64)
 //line stdlib/parse/parse.kuki:145
@@ -209,7 +209,7 @@ func assignString(fv reflect.Value, raw string) error {
 		return nil
 	}
 //line stdlib/parse/parse.kuki:148
-	if (kind == reflect.Float32) || (kind == reflect.Float64) {
+	if kind == reflect.Float32 || kind == reflect.Float64 {
 //line stdlib/parse/parse.kuki:149
 		f, err_4 := strconv.ParseFloat(raw, 64)
 //line stdlib/parse/parse.kuki:149
@@ -226,235 +226,275 @@ func assignString(fv reflect.Value, raw string) error {
 	return fmt.Errorf("unsupported field kind: %v", kind)
 }
 
-//line stdlib/parse/parse.kuki:157
+//line stdlib/parse/parse.kuki:159
 func JSONLines(data string) []string {
-//line stdlib/parse/parse.kuki:158
+//line stdlib/parse/parse.kuki:160
 	return splitNonEmpty(data)
 }
 
-//line stdlib/parse/parse.kuki:165
-func YAML[T any](data string) (T, []validate.FieldError) {
-//line stdlib/parse/parse.kuki:166
-	target := *new(T)
 //line stdlib/parse/parse.kuki:167
-	err := yaml.Unmarshal([]byte(data), &target)
+func YAML[T any](data string) (T, []validate.FieldError) {
 //line stdlib/parse/parse.kuki:168
-	if err != nil {
+	target := *new(T)
 //line stdlib/parse/parse.kuki:169
+	err := yaml.Unmarshal([]byte(data), &target)
+//line stdlib/parse/parse.kuki:170
+	if err != nil {
+//line stdlib/parse/parse.kuki:171
 		return target, []validate.FieldError{validate.FieldError{Path: "$", Rule: "parse", Message: err.Error()}}
 	}
-//line stdlib/parse/parse.kuki:172
+//line stdlib/parse/parse.kuki:174
 	return target, validate.RunIfValidatable(target)
 }
 
-//line stdlib/parse/parse.kuki:174
+//line stdlib/parse/parse.kuki:176
 func readAllCSV(reader *csv.Reader) ([][]string, error) {
-//line stdlib/parse/parse.kuki:175
+//line stdlib/parse/parse.kuki:177
 	return reader.ReadAll()
 }
 
-//line stdlib/parse/parse.kuki:179
+//line stdlib/parse/parse.kuki:181
 func CSV(data string) ([][]string, error) {
-//line stdlib/parse/parse.kuki:180
+//line stdlib/parse/parse.kuki:182
 	// pipe step 1: readAllCSV(...)
-//line stdlib/parse/parse.kuki:183
+//line stdlib/parse/parse.kuki:185
 	records, err_6 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
-//line stdlib/parse/parse.kuki:183
+//line stdlib/parse/parse.kuki:185
 	if err_6 != nil {
-//line stdlib/parse/parse.kuki:183
+//line stdlib/parse/parse.kuki:185
 		return [][]string{}, err_6
 	}
-//line stdlib/parse/parse.kuki:185
+//line stdlib/parse/parse.kuki:187
 	return records, nil
 }
 
-//line stdlib/parse/parse.kuki:190
+//line stdlib/parse/parse.kuki:192
 func CSVRecords(data string) (CSVRows, error) {
-//line stdlib/parse/parse.kuki:191
+//line stdlib/parse/parse.kuki:193
 	// pipe step 1: readAllCSV(...)
-//line stdlib/parse/parse.kuki:194
+//line stdlib/parse/parse.kuki:196
 	records, err_8 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
-//line stdlib/parse/parse.kuki:194
+//line stdlib/parse/parse.kuki:196
 	if err_8 != nil {
 		var _zero0 CSVRows
-//line stdlib/parse/parse.kuki:194
+//line stdlib/parse/parse.kuki:196
 		return _zero0, err_8
 	}
-//line stdlib/parse/parse.kuki:196
+//line stdlib/parse/parse.kuki:198
 	if len(records) == 0 {
-//line stdlib/parse/parse.kuki:197
+//line stdlib/parse/parse.kuki:199
 		return nil, errors.New("no data in CSV")
 	}
-//line stdlib/parse/parse.kuki:199
+//line stdlib/parse/parse.kuki:201
 	headers := records[0]
-//line stdlib/parse/parse.kuki:200
-	result := make(CSVRows, 0, (len(records) - 1))
 //line stdlib/parse/parse.kuki:202
+	result := make(CSVRows, 0, len(records)-1)
+//line stdlib/parse/parse.kuki:204
 	numRecords := len(records)
-//line stdlib/parse/parse.kuki:203
+//line stdlib/parse/parse.kuki:205
 	{
-		_iStart, _iEnd, _iStep := 1, numRecords, 1
+		_iStart, _iEnd := 1, numRecords
+		_iStep := _iStart - _iStart + 1
 		if _iStart > _iEnd {
-			_iStep = -1
+			_iStep = -_iStep
 		}
 		for i := _iStart; i != _iEnd; i += _iStep {
-//line stdlib/parse/parse.kuki:204
+//line stdlib/parse/parse.kuki:206
 			row := records[i]
-//line stdlib/parse/parse.kuki:205
-			rowMap := make(map[string]string)
 //line stdlib/parse/parse.kuki:207
-			numHeaders := len(headers)
-//line stdlib/parse/parse.kuki:208
-			numCols := len(row)
+			rowMap := make(map[string]string)
 //line stdlib/parse/parse.kuki:209
-			maxCols := min(numCols, numHeaders)
+			numHeaders := len(headers)
+//line stdlib/parse/parse.kuki:210
+			numCols := len(row)
 //line stdlib/parse/parse.kuki:211
+			maxCols := min(numCols, numHeaders)
+//line stdlib/parse/parse.kuki:213
 			for j := range maxCols {
-//line stdlib/parse/parse.kuki:212
+//line stdlib/parse/parse.kuki:214
 				rowMap[headers[j]] = row[j]
 			}
-//line stdlib/parse/parse.kuki:214
+//line stdlib/parse/parse.kuki:216
 			result = append(result, rowMap)
 		}
 	}
-//line stdlib/parse/parse.kuki:216
+//line stdlib/parse/parse.kuki:218
 	return result, nil
 }
 
-//line stdlib/parse/parse.kuki:222
+//line stdlib/parse/parse.kuki:224
 func WriteCSV(path string, rows [][]string) error {
-//line stdlib/parse/parse.kuki:223
+//line stdlib/parse/parse.kuki:225
 	f, err_9 := os.Create(path)
-//line stdlib/parse/parse.kuki:223
+//line stdlib/parse/parse.kuki:225
 	if err_9 != nil {
-//line stdlib/parse/parse.kuki:223
+//line stdlib/parse/parse.kuki:225
 		return err_9
 	}
-//line stdlib/parse/parse.kuki:224
+//line stdlib/parse/parse.kuki:226
 	defer f.Close()
-//line stdlib/parse/parse.kuki:225
+//line stdlib/parse/parse.kuki:227
 	w := csv.NewWriter(f)
-//line stdlib/parse/parse.kuki:226
-//line stdlib/parse/parse.kuki:226
+//line stdlib/parse/parse.kuki:228
+//line stdlib/parse/parse.kuki:228
 	err_10 := w.WriteAll(rows)
-//line stdlib/parse/parse.kuki:226
+//line stdlib/parse/parse.kuki:228
 	if err_10 != nil {
-//line stdlib/parse/parse.kuki:226
+//line stdlib/parse/parse.kuki:228
 		return err_10
 	}
-//line stdlib/parse/parse.kuki:227
+//line stdlib/parse/parse.kuki:229
 	return w.Error()
 }
 
-//line stdlib/parse/parse.kuki:236
-func WriteCSVRecords(path string, records CSVRows) error {
-//line stdlib/parse/parse.kuki:237
-	if len(records) == 0 {
 //line stdlib/parse/parse.kuki:238
+func WriteCSVRecords(path string, records CSVRows) error {
+//line stdlib/parse/parse.kuki:239
+	if len(records) == 0 {
+//line stdlib/parse/parse.kuki:240
 		return os.WriteFile(path, []byte{}, 0644)
 	}
-//line stdlib/parse/parse.kuki:240
-	headers := []string{}
-//line stdlib/parse/parse.kuki:241
-	for k := range records[0] {
 //line stdlib/parse/parse.kuki:242
+	headers := []string{}
+//line stdlib/parse/parse.kuki:243
+	for k := range records[0] {
+//line stdlib/parse/parse.kuki:244
 		headers = append(headers, k)
 	}
-//line stdlib/parse/parse.kuki:243
-	sort.Strings(headers)
 //line stdlib/parse/parse.kuki:245
-	rows := [][]string{headers}
-//line stdlib/parse/parse.kuki:246
-	for _, rec := range records {
+	sort.Strings(headers)
 //line stdlib/parse/parse.kuki:247
-		row := make([]string, 0, len(headers))
+	rows := [][]string{headers}
 //line stdlib/parse/parse.kuki:248
-		for _, h := range headers {
+	for _, rec := range records {
 //line stdlib/parse/parse.kuki:249
+		row := make([]string, 0, len(headers))
+//line stdlib/parse/parse.kuki:250
+		for _, h := range headers {
+//line stdlib/parse/parse.kuki:251
 			row = append(row, rec[h])
 		}
-//line stdlib/parse/parse.kuki:250
+//line stdlib/parse/parse.kuki:252
 		rows = append(rows, row)
 	}
-//line stdlib/parse/parse.kuki:252
+//line stdlib/parse/parse.kuki:254
 	return WriteCSV(path, rows)
 }
 
-//line stdlib/parse/parse.kuki:257
+//line stdlib/parse/parse.kuki:259
 func Lines(data string) []string {
-//line stdlib/parse/parse.kuki:258
+//line stdlib/parse/parse.kuki:260
 	return splitNonEmpty(data)
 }
 
-//line stdlib/parse/parse.kuki:260
+//line stdlib/parse/parse.kuki:262
 func splitNonEmpty(data string) []string {
-//line stdlib/parse/parse.kuki:261
-	return slice.Filter(slice.Map(kukistring.Split(data, "\n"), kukistring.TrimSpace), func(line string) bool { return (len(line) > 0) })
+//line stdlib/parse/parse.kuki:263
+	return slice.Filter(slice.Map(kukistring.Split(data, "\n"), kukistring.TrimSpace), func(line string) bool { return len(line) > 0 })
 }
 
-//line stdlib/parse/parse.kuki:269
+//line stdlib/parse/parse.kuki:271
 func Int(s string) (int, error) {
-//line stdlib/parse/parse.kuki:270
+//line stdlib/parse/parse.kuki:272
 	n, err_11 := strconv.Atoi(s)
-//line stdlib/parse/parse.kuki:270
+//line stdlib/parse/parse.kuki:272
 	if err_11 != nil {
-//line stdlib/parse/parse.kuki:270
+//line stdlib/parse/parse.kuki:272
 		return 0, err_11
 	}
-//line stdlib/parse/parse.kuki:271
+//line stdlib/parse/parse.kuki:273
 	return n, nil
 }
 
-//line stdlib/parse/parse.kuki:275
-func Float64(s string) (float64, error) {
-//line stdlib/parse/parse.kuki:276
-	f, err_12 := strconv.ParseFloat(s, 64)
-//line stdlib/parse/parse.kuki:276
+//line stdlib/parse/parse.kuki:279
+func IntOr(s string, defaultValue int) int {
+//line stdlib/parse/parse.kuki:280
+	n, err_12 := Int(s)
+//line stdlib/parse/parse.kuki:280
 	if err_12 != nil {
-//line stdlib/parse/parse.kuki:276
-		return 0, err_12
+//line stdlib/parse/parse.kuki:280
+		return defaultValue
 	}
-//line stdlib/parse/parse.kuki:277
+//line stdlib/parse/parse.kuki:281
+	return n
+}
+
+//line stdlib/parse/parse.kuki:285
+func Float64(s string) (float64, error) {
+//line stdlib/parse/parse.kuki:286
+	f, err_13 := strconv.ParseFloat(s, 64)
+//line stdlib/parse/parse.kuki:286
+	if err_13 != nil {
+//line stdlib/parse/parse.kuki:286
+		return 0, err_13
+	}
+//line stdlib/parse/parse.kuki:287
 	return f, nil
 }
 
-//line stdlib/parse/parse.kuki:281
-func Duration(s string) (time.Duration, error) {
-//line stdlib/parse/parse.kuki:282
-	d, err_13 := time.ParseDuration(s)
-//line stdlib/parse/parse.kuki:282
-	if err_13 != nil {
-		var _zero0 time.Duration
-//line stdlib/parse/parse.kuki:282
-		return _zero0, err_13
+//line stdlib/parse/parse.kuki:291
+func Float64Or(s string, defaultValue float64) float64 {
+//line stdlib/parse/parse.kuki:292
+	f, err_14 := Float64(s)
+//line stdlib/parse/parse.kuki:292
+	if err_14 != nil {
+//line stdlib/parse/parse.kuki:292
+		return defaultValue
 	}
-//line stdlib/parse/parse.kuki:283
+//line stdlib/parse/parse.kuki:293
+	return f
+}
+
+//line stdlib/parse/parse.kuki:297
+func Duration(s string) (time.Duration, error) {
+//line stdlib/parse/parse.kuki:298
+	d, err_15 := time.ParseDuration(s)
+//line stdlib/parse/parse.kuki:298
+	if err_15 != nil {
+		var _zero0 time.Duration
+//line stdlib/parse/parse.kuki:298
+		return _zero0, err_15
+	}
+//line stdlib/parse/parse.kuki:299
 	return d, nil
 }
 
-//line stdlib/parse/parse.kuki:287
-func URL(s string) (*url.URL, error) {
-//line stdlib/parse/parse.kuki:288
-	u, err_14 := url.Parse(s)
-//line stdlib/parse/parse.kuki:288
-	if err_14 != nil {
-//line stdlib/parse/parse.kuki:288
-		return nil, err_14
+//line stdlib/parse/parse.kuki:303
+func DurationOr(s string, defaultValue time.Duration) time.Duration {
+//line stdlib/parse/parse.kuki:304
+	d, err_16 := Duration(s)
+//line stdlib/parse/parse.kuki:304
+	if err_16 != nil {
+//line stdlib/parse/parse.kuki:304
+		return defaultValue
 	}
-//line stdlib/parse/parse.kuki:289
+//line stdlib/parse/parse.kuki:305
+	return d
+}
+
+//line stdlib/parse/parse.kuki:309
+func URL(s string) (*url.URL, error) {
+//line stdlib/parse/parse.kuki:310
+	u, err_17 := url.Parse(s)
+//line stdlib/parse/parse.kuki:310
+	if err_17 != nil {
+//line stdlib/parse/parse.kuki:310
+		return nil, err_17
+	}
+//line stdlib/parse/parse.kuki:311
 	return u, nil
 }
 
-//line stdlib/parse/parse.kuki:293
+//line stdlib/parse/parse.kuki:315
 func Query(s string) (url.Values, error) {
-//line stdlib/parse/parse.kuki:294
-	v, err_15 := url.ParseQuery(s)
-//line stdlib/parse/parse.kuki:294
-	if err_15 != nil {
+//line stdlib/parse/parse.kuki:316
+	v, err_18 := url.ParseQuery(s)
+//line stdlib/parse/parse.kuki:316
+	if err_18 != nil {
 		var _zero0 url.Values
-//line stdlib/parse/parse.kuki:294
-		return _zero0, err_15
+//line stdlib/parse/parse.kuki:316
+		return _zero0, err_18
 	}
-//line stdlib/parse/parse.kuki:295
+//line stdlib/parse/parse.kuki:317
 	return v, nil
 }

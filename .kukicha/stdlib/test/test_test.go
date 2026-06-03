@@ -36,11 +36,11 @@ func TestAssertTrueFalsePass(t *testing.T) {
 //line stdlib/test/test_test.kuki:31
 	test.AssertTrue(t, true)
 //line stdlib/test/test_test.kuki:32
-	test.AssertTrue(t, (1 == 1))
+	test.AssertTrue(t, 1 == 1)
 //line stdlib/test/test_test.kuki:33
 	test.AssertFalse(t, false)
 //line stdlib/test/test_test.kuki:34
-	test.AssertFalse(t, (1 == 2))
+	test.AssertFalse(t, 1 == 2)
 }
 
 //line stdlib/test/test_test.kuki:36
@@ -126,7 +126,7 @@ func TestAssertNotEqualFail(t *testing.T) {
 //line stdlib/test/test_test.kuki:80
 	test.AssertNotEqual(f, 5, 5)
 //line stdlib/test/test_test.kuki:81
-	if (len(f.Errs) == 0) || !kukistring.Contains(f.Errs[0], "expected values to differ") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected values to differ") {
 //line stdlib/test/test_test.kuki:82
 		t.Errorf("bad message: %v", f.Errs)
 	}
@@ -139,7 +139,7 @@ func TestAssertTrueFail(t *testing.T) {
 //line stdlib/test/test_test.kuki:86
 	test.AssertTrue(f, false)
 //line stdlib/test/test_test.kuki:87
-	if (len(f.Errs) == 0) || !kukistring.Contains(f.Errs[0], "expected true") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected true") {
 //line stdlib/test/test_test.kuki:88
 		t.Errorf("bad message: %v", f.Errs)
 	}
@@ -152,7 +152,7 @@ func TestAssertFalseFail(t *testing.T) {
 //line stdlib/test/test_test.kuki:92
 	test.AssertFalse(f, true)
 //line stdlib/test/test_test.kuki:93
-	if (len(f.Errs) == 0) || !kukistring.Contains(f.Errs[0], "expected false") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected false") {
 //line stdlib/test/test_test.kuki:94
 		t.Errorf("bad message: %v", f.Errs)
 	}
@@ -165,7 +165,7 @@ func TestAssertNoErrorFail(t *testing.T) {
 //line stdlib/test/test_test.kuki:98
 	test.AssertNoError(f, errors.New("boom"))
 //line stdlib/test/test_test.kuki:99
-	if (len(f.Errs) == 0) || !kukistring.Contains(f.Errs[0], "unexpected error") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "unexpected error") {
 //line stdlib/test/test_test.kuki:100
 		t.Errorf("bad message: %v", f.Errs)
 	}
@@ -178,7 +178,7 @@ func TestAssertErrorFail(t *testing.T) {
 //line stdlib/test/test_test.kuki:104
 	test.AssertError(f, nil)
 //line stdlib/test/test_test.kuki:105
-	if (len(f.Errs) == 0) || !kukistring.Contains(f.Errs[0], "expected an error") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected an error") {
 //line stdlib/test/test_test.kuki:106
 		t.Errorf("bad message: %v", f.Errs)
 	}
@@ -191,7 +191,7 @@ func TestAssertNilFail(t *testing.T) {
 //line stdlib/test/test_test.kuki:110
 	test.AssertNil(f, "not nil")
 //line stdlib/test/test_test.kuki:111
-	if (len(f.Errs) == 0) || !kukistring.Contains(f.Errs[0], "expected nil") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected nil") {
 //line stdlib/test/test_test.kuki:112
 		t.Errorf("bad message: %v", f.Errs)
 	}
@@ -204,7 +204,7 @@ func TestAssertNotNilFail(t *testing.T) {
 //line stdlib/test/test_test.kuki:116
 	test.AssertNotNil(f, nil)
 //line stdlib/test/test_test.kuki:117
-	if (len(f.Errs) == 0) || !kukistring.Contains(f.Errs[0], "expected non-nil") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected non-nil") {
 //line stdlib/test/test_test.kuki:118
 		t.Errorf("bad message: %v", f.Errs)
 	}
@@ -225,7 +225,7 @@ func TestAssertNilTypedNilPointer(t *testing.T) {
 //line stdlib/test/test_test.kuki:131
 	test.AssertNotNil(f, makeTypedNilPointer())
 //line stdlib/test/test_test.kuki:132
-	if (len(f.Errs) == 0) || !kukistring.Contains(f.Errs[0], "expected non-nil") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected non-nil") {
 //line stdlib/test/test_test.kuki:133
 		t.Errorf("bad message: %v", f.Errs)
 	}
@@ -238,7 +238,7 @@ func TestAssertNotEmptyFailNil(t *testing.T) {
 //line stdlib/test/test_test.kuki:137
 	test.AssertNotEmpty(f, nil)
 //line stdlib/test/test_test.kuki:138
-	if (len(f.Errs) == 0) || !kukistring.Contains(f.Errs[0], "got nil") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "got nil") {
 //line stdlib/test/test_test.kuki:139
 		t.Errorf("bad message: %v", f.Errs)
 	}
@@ -251,7 +251,7 @@ func TestAssertNotEmptyFailZero(t *testing.T) {
 //line stdlib/test/test_test.kuki:143
 	test.AssertNotEmpty(f, "")
 //line stdlib/test/test_test.kuki:144
-	if (len(f.Errs) == 0) || !kukistring.Contains(f.Errs[0], "zero value") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "zero value") {
 //line stdlib/test/test_test.kuki:145
 		t.Errorf("bad message: %v", f.Errs)
 	}

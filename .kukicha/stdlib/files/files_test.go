@@ -266,10 +266,10 @@ func TestListEntries(t *testing.T) {
 //line stdlib/files/files_test.kuki:171
 				if entry.IsDir {
 //line stdlib/files/files_test.kuki:172
-					dirCount = (dirCount + 1)
+					dirCount = dirCount + 1
 				} else {
 //line stdlib/files/files_test.kuki:174
-					fileCount = (fileCount + 1)
+					fileCount = fileCount + 1
 //line stdlib/files/files_test.kuki:175
 					if entry.Size <= 0 {
 //line stdlib/files/files_test.kuki:176
@@ -670,7 +670,7 @@ func TestListByModTime(t *testing.T) {
 //line stdlib/files/files_test.kuki:428
 		_ = os.WriteFile(p, []byte("x"), 0644)
 //line stdlib/files/files_test.kuki:429
-		_ = os.Chtimes(p, now, now.Add((time.Duration(i) * time.Hour)))
+		_ = os.Chtimes(p, now, now.Add(time.Duration(i)*time.Hour))
 	}
 //line stdlib/files/files_test.kuki:431
 	entries, err := files.ListByModTime(dir)
@@ -715,7 +715,7 @@ func TestWatch(t *testing.T) {
 				ch <- path
 			})
 //line stdlib/files/files_test.kuki:458
-			time.Sleep((1 * time.Second))
+			time.Sleep(1 * time.Second)
 //line stdlib/files/files_test.kuki:459
 			files.WriteString("modified", testFile)
 //line stdlib/files/files_test.kuki:461

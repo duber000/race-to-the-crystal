@@ -68,49 +68,49 @@ func Yesterday() time.Time {
 //line stdlib/datetime/datetime.kuki:60
 func Nanoseconds(n int64) time.Duration {
 //line stdlib/datetime/datetime.kuki:61
-	return time.Duration((n * 1))
+	return time.Duration(n * 1)
 }
 
 //line stdlib/datetime/datetime.kuki:65
 func Microseconds(n int64) time.Duration {
 //line stdlib/datetime/datetime.kuki:66
-	return time.Duration((n * 1000))
+	return time.Duration(n * 1000)
 }
 
 //line stdlib/datetime/datetime.kuki:70
 func Milliseconds(n int64) time.Duration {
 //line stdlib/datetime/datetime.kuki:71
-	return time.Duration((n * 1000000))
+	return time.Duration(n * 1000000)
 }
 
 //line stdlib/datetime/datetime.kuki:75
 func Seconds(n int64) time.Duration {
 //line stdlib/datetime/datetime.kuki:76
-	return time.Duration((n * 1000000000))
+	return time.Duration(n * 1000000000)
 }
 
 //line stdlib/datetime/datetime.kuki:80
 func Minutes(n int64) time.Duration {
 //line stdlib/datetime/datetime.kuki:81
-	return time.Duration((n * 60000000000))
+	return time.Duration(n * 60000000000)
 }
 
 //line stdlib/datetime/datetime.kuki:85
 func Hours(n int64) time.Duration {
 //line stdlib/datetime/datetime.kuki:86
-	return time.Duration((n * 3600000000000))
+	return time.Duration(n * 3600000000000)
 }
 
 //line stdlib/datetime/datetime.kuki:90
 func Days(n int64) time.Duration {
 //line stdlib/datetime/datetime.kuki:91
-	return time.Duration((n * 86400000000000))
+	return time.Duration(n * 86400000000000)
 }
 
 //line stdlib/datetime/datetime.kuki:95
 func Weeks(n int64) time.Duration {
 //line stdlib/datetime/datetime.kuki:96
-	return time.Duration((n * 604800000000000))
+	return time.Duration(n * 604800000000000)
 }
 
 //line stdlib/datetime/datetime.kuki:104
@@ -121,7 +121,7 @@ func Intervals(elapsed time.Duration, interval time.Duration) int64 {
 		return 0
 	}
 //line stdlib/datetime/datetime.kuki:107
-	return int64((elapsed / interval))
+	return int64(elapsed / interval)
 }
 
 //line stdlib/datetime/datetime.kuki:113
@@ -133,7 +133,7 @@ func AddDays(t time.Time, days int) time.Time {
 //line stdlib/datetime/datetime.kuki:118
 func AddWeeks(t time.Time, weeks int) time.Time {
 //line stdlib/datetime/datetime.kuki:119
-	return t.AddDate(0, 0, (weeks * 7))
+	return t.AddDate(0, 0, weeks*7)
 }
 
 //line stdlib/datetime/datetime.kuki:123
@@ -157,7 +157,7 @@ func SubDays(t time.Time, days int) time.Time {
 //line stdlib/datetime/datetime.kuki:138
 func SubWeeks(t time.Time, weeks int) time.Time {
 //line stdlib/datetime/datetime.kuki:139
-	return t.AddDate(0, 0, (-weeks * 7))
+	return t.AddDate(0, 0, -weeks*7)
 }
 
 //line stdlib/datetime/datetime.kuki:143
@@ -183,7 +183,7 @@ func IsBetween(t time.Time, start time.Time, end time.Time) bool {
 //line stdlib/datetime/datetime.kuki:159
 	beforeEnd := t.Before(end)
 //line stdlib/datetime/datetime.kuki:160
-	return ((atOrAfterStart || afterStart) && (atOrBeforeEnd || beforeEnd))
+	return (atOrAfterStart || afterStart) && (atOrBeforeEnd || beforeEnd)
 }
 
 //line stdlib/datetime/datetime.kuki:164
@@ -201,7 +201,7 @@ func IsSameDay(t1 time.Time, t2 time.Time) bool {
 //line stdlib/datetime/datetime.kuki:170
 	d2 := t2.Day()
 //line stdlib/datetime/datetime.kuki:171
-	return (((y1 == y2) && (m1 == m2)) && (d1 == d2))
+	return y1 == y2 && m1 == m2 && d1 == d2
 }
 
 //line stdlib/datetime/datetime.kuki:175
@@ -273,13 +273,13 @@ func Sleep(d time.Duration) {
 //line stdlib/datetime/datetime.kuki:238
 func SleepSeconds(n int64) {
 //line stdlib/datetime/datetime.kuki:239
-	time.Sleep((time.Duration(n) * time.Second))
+	time.Sleep(time.Duration(n) * time.Second)
 }
 
 //line stdlib/datetime/datetime.kuki:243
 func SleepMilliseconds(n int64) {
 //line stdlib/datetime/datetime.kuki:244
-	time.Sleep((time.Duration(n) * time.Millisecond))
+	time.Sleep(time.Duration(n) * time.Millisecond)
 }
 
 //line stdlib/datetime/datetime.kuki:250
@@ -312,35 +312,35 @@ func TimeAgo(t time.Time) string {
 		return "just now"
 	}
 //line stdlib/datetime/datetime.kuki:272
-	mins := (secs / 60)
+	mins := secs / 60
 //line stdlib/datetime/datetime.kuki:273
 	if mins < 60 {
 //line stdlib/datetime/datetime.kuki:274
 		return fmt.Sprintf("%vm ago", mins)
 	}
 //line stdlib/datetime/datetime.kuki:275
-	hours := (mins / 60)
+	hours := mins / 60
 //line stdlib/datetime/datetime.kuki:276
 	if hours < 24 {
 //line stdlib/datetime/datetime.kuki:277
 		return fmt.Sprintf("%vh ago", hours)
 	}
 //line stdlib/datetime/datetime.kuki:278
-	days := (hours / 24)
+	days := hours / 24
 //line stdlib/datetime/datetime.kuki:279
 	if days < 30 {
 //line stdlib/datetime/datetime.kuki:280
 		return fmt.Sprintf("%vd ago", days)
 	}
 //line stdlib/datetime/datetime.kuki:281
-	months := (days / 30)
+	months := days / 30
 //line stdlib/datetime/datetime.kuki:282
 	if months < 12 {
 //line stdlib/datetime/datetime.kuki:283
 		return fmt.Sprintf("%vmo ago", months)
 	}
 //line stdlib/datetime/datetime.kuki:284
-	years := (days / 365)
+	years := days / 365
 //line stdlib/datetime/datetime.kuki:285
 	return fmt.Sprintf("%vy ago", years)
 }
@@ -348,17 +348,17 @@ func TimeAgo(t time.Time) string {
 //line stdlib/datetime/datetime.kuki:288
 func getLayout(format string) string {
 //line stdlib/datetime/datetime.kuki:289
-	if (format == "iso8601") || (format == "ISO8601") {
+	if format == "iso8601" || format == "ISO8601" {
 //line stdlib/datetime/datetime.kuki:290
 		return "2006-01-02T15:04:05Z07:00"
 	}
 //line stdlib/datetime/datetime.kuki:291
-	if (format == "rfc3339") || (format == "RFC3339") {
+	if format == "rfc3339" || format == "RFC3339" {
 //line stdlib/datetime/datetime.kuki:292
 		return time.RFC3339
 	}
 //line stdlib/datetime/datetime.kuki:293
-	if (format == "rfc3339nano") || (format == "RFC3339Nano") {
+	if format == "rfc3339nano" || format == "RFC3339Nano" {
 //line stdlib/datetime/datetime.kuki:294
 		return time.RFC3339Nano
 	}

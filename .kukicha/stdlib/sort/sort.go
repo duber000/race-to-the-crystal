@@ -53,7 +53,7 @@ func ByKey[T any, K cmp.Ordered](items []T, key func(T) K) []T {
 //line stdlib/sort/sort.kuki:51
 	result := slices.Clone(items)
 //line stdlib/sort/sort.kuki:52
-	sort.SliceStable(result, func(i int, j int) bool { return (key(result[i]) < key(result[j])) })
+	sort.SliceStable(result, func(i int, j int) bool { return key(result[i]) < key(result[j]) })
 //line stdlib/sort/sort.kuki:53
 	return result
 }

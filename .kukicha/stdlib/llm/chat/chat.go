@@ -17,62 +17,123 @@ import (
 	"strings"
 )
 
-//line stdlib/llm/chat/chat.kuki:39
-type Message struct {
-	Role       string     `json:"role"`
-	Content    any        `json:"content"`
-	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string     `json:"tool_call_id,omitempty"`
+//line stdlib/llm/chat/chat.kuki:40
+type MessageRole string
+
+const (
+	MessageRoleSystem    MessageRole = "system"
+	MessageRoleUser      MessageRole = "user"
+	MessageRoleAssistant MessageRole = "assistant"
+	MessageRoleTool      MessageRole = "tool"
+)
+
+func (e MessageRole) String() string {
+	return string(e)
 }
 
-//line stdlib/llm/chat/chat.kuki:46
+func ParseMessageRole(s string) (MessageRole, bool) {
+	switch s {
+	case "system":
+		return MessageRoleSystem, true
+	case "user":
+		return MessageRoleUser, true
+	case "assistant":
+		return MessageRoleAssistant, true
+	case "tool":
+		return MessageRoleTool, true
+	}
+	var zero MessageRole
+	return zero, false
+}
+
+//line stdlib/llm/chat/chat.kuki:47
+type FinishReason string
+
+const (
+	FinishReasonStop          FinishReason = "stop"
+	FinishReasonLength        FinishReason = "length"
+	FinishReasonToolCalls     FinishReason = "tool_calls"
+	FinishReasonContentFilter FinishReason = "content_filter"
+	FinishReasonFunctionCall  FinishReason = "function_call"
+)
+
+func (e FinishReason) String() string {
+	return string(e)
+}
+
+func ParseFinishReason(s string) (FinishReason, bool) {
+	switch s {
+	case "stop":
+		return FinishReasonStop, true
+	case "length":
+		return FinishReasonLength, true
+	case "tool_calls":
+		return FinishReasonToolCalls, true
+	case "content_filter":
+		return FinishReasonContentFilter, true
+	case "function_call":
+		return FinishReasonFunctionCall, true
+	}
+	var zero FinishReason
+	return zero, false
+}
+
+//line stdlib/llm/chat/chat.kuki:55
+type Message struct {
+	Role       MessageRole `json:"role"`
+	Content    any         `json:"content"`
+	ToolCalls  []ToolCall  `json:"tool_calls,omitempty"`
+	ToolCallID string      `json:"tool_call_id,omitempty"`
+}
+
+//line stdlib/llm/chat/chat.kuki:62
 type ToolFunction struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Parameters  any    `json:"parameters"`
 }
 
-//line stdlib/llm/chat/chat.kuki:52
+//line stdlib/llm/chat/chat.kuki:68
 type Tool struct {
 	Type     string       `json:"type"`
 	Function ToolFunction `json:"function"`
 }
 
-//line stdlib/llm/chat/chat.kuki:57
+//line stdlib/llm/chat/chat.kuki:73
 type ToolCall struct {
 	ID       string           `json:"id"`
 	Type     string           `json:"type"`
 	Function ToolCallFunction `json:"function"`
 }
 
-//line stdlib/llm/chat/chat.kuki:63
+//line stdlib/llm/chat/chat.kuki:79
 type ToolCallFunction struct {
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
 }
 
-//line stdlib/llm/chat/chat.kuki:68
+//line stdlib/llm/chat/chat.kuki:84
 type Choice struct {
 	Index        int             `json:"index"`
 	Message      ResponseMessage `json:"message"`
-	FinishReason string          `json:"finish_reason"`
+	FinishReason FinishReason    `json:"finish_reason"`
 }
 
-//line stdlib/llm/chat/chat.kuki:74
+//line stdlib/llm/chat/chat.kuki:90
 type ResponseMessage struct {
-	Role      string     `json:"role"`
-	Content   string     `json:"content"`
-	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
+	Role      MessageRole `json:"role"`
+	Content   string      `json:"content"`
+	ToolCalls []ToolCall  `json:"tool_calls,omitempty"`
 }
 
-//line stdlib/llm/chat/chat.kuki:80
+//line stdlib/llm/chat/chat.kuki:96
 type Usage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
 	TotalTokens      int `json:"total_tokens"`
 }
 
-//line stdlib/llm/chat/chat.kuki:86
+//line stdlib/llm/chat/chat.kuki:102
 type Completion struct {
 	ID      string   `json:"id"`
 	Object  string   `json:"object"`
@@ -82,13 +143,13 @@ type Completion struct {
 	Usage   Usage    `json:"usage"`
 }
 
-//line stdlib/llm/chat/chat.kuki:95
+//line stdlib/llm/chat/chat.kuki:111
 type ChunkToolCallFunction struct {
 	Name      string `json:"name,omitempty"`
 	Arguments string `json:"arguments,omitempty"`
 }
 
-//line stdlib/llm/chat/chat.kuki:100
+//line stdlib/llm/chat/chat.kuki:116
 type ChunkToolCall struct {
 	Index    int                   `json:"index"`
 	ID       string                `json:"id,omitempty"`
@@ -96,21 +157,21 @@ type ChunkToolCall struct {
 	Function ChunkToolCallFunction `json:"function"`
 }
 
-//line stdlib/llm/chat/chat.kuki:107
+//line stdlib/llm/chat/chat.kuki:123
 type ChunkDelta struct {
 	Role      string          `json:"role,omitempty"`
 	Content   string          `json:"content,omitempty"`
 	ToolCalls []ChunkToolCall `json:"tool_calls,omitempty"`
 }
 
-//line stdlib/llm/chat/chat.kuki:113
+//line stdlib/llm/chat/chat.kuki:129
 type ChunkChoice struct {
-	Index        int        `json:"index"`
-	Delta        ChunkDelta `json:"delta"`
-	FinishReason string     `json:"finish_reason,omitempty"`
+	Index        int          `json:"index"`
+	Delta        ChunkDelta   `json:"delta"`
+	FinishReason FinishReason `json:"finish_reason,omitempty"`
 }
 
-//line stdlib/llm/chat/chat.kuki:119
+//line stdlib/llm/chat/chat.kuki:135
 type Chunk struct {
 	ID      string        `json:"id"`
 	Object  string        `json:"object"`
@@ -119,7 +180,7 @@ type Chunk struct {
 	Choices []ChunkChoice `json:"choices"`
 }
 
-//line stdlib/llm/chat/chat.kuki:127
+//line stdlib/llm/chat/chat.kuki:143
 type CompletionRequest struct {
 	Model            string    `json:"model"`
 	Messages         []Message `json:"messages"`
@@ -138,7 +199,7 @@ type CompletionRequest struct {
 	ResponseFormat   any       `json:"response_format,omitempty"`
 }
 
-//line stdlib/llm/chat/chat.kuki:145
+//line stdlib/llm/chat/chat.kuki:161
 type Client struct {
 	model            string
 	provider         string
@@ -163,877 +224,966 @@ type Client struct {
 	retryMaxAttempts int
 	retryDelayMs     int
 	ctx              context.Context
+	toolHandlers     map[string]func(string) (string, error)
 }
 
-//line stdlib/llm/chat/chat.kuki:172
+//line stdlib/llm/chat/chat.kuki:189
 func New(model string) Client {
-//line stdlib/llm/chat/chat.kuki:173
+//line stdlib/llm/chat/chat.kuki:190
 	c := Client{}
-//line stdlib/llm/chat/chat.kuki:174
+//line stdlib/llm/chat/chat.kuki:191
 	if strings.Contains(model, ":") {
-//line stdlib/llm/chat/chat.kuki:175
+//line stdlib/llm/chat/chat.kuki:192
 		parts := kukistring.SplitN(model, ":", 2)
-//line stdlib/llm/chat/chat.kuki:176
+//line stdlib/llm/chat/chat.kuki:193
 		c.provider = parts[0]
-//line stdlib/llm/chat/chat.kuki:177
+//line stdlib/llm/chat/chat.kuki:194
 		c.model = parts[1]
 	} else {
-//line stdlib/llm/chat/chat.kuki:179
+//line stdlib/llm/chat/chat.kuki:196
 		c.model = model
 	}
-//line stdlib/llm/chat/chat.kuki:180
+//line stdlib/llm/chat/chat.kuki:197
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:183
-func Provider(c Client, provider string) Client {
-//line stdlib/llm/chat/chat.kuki:184
-	c.provider = provider
-//line stdlib/llm/chat/chat.kuki:185
-	return c
-}
-
-//line stdlib/llm/chat/chat.kuki:188
-func Gateway(c Client, url string) Client {
-//line stdlib/llm/chat/chat.kuki:189
-	c.baseURL = url
-//line stdlib/llm/chat/chat.kuki:190
-	return c
-}
-
-//line stdlib/llm/chat/chat.kuki:194
-func Model(c Client, model string) Client {
-//line stdlib/llm/chat/chat.kuki:195
-	c.model = model
-//line stdlib/llm/chat/chat.kuki:196
-	return c
-}
-
-//line stdlib/llm/chat/chat.kuki:199
-func BaseURL(c Client, url string) Client {
 //line stdlib/llm/chat/chat.kuki:200
-	c.baseURL = url
+func Provider(c Client, provider string) Client {
 //line stdlib/llm/chat/chat.kuki:201
+	c.provider = provider
+//line stdlib/llm/chat/chat.kuki:202
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:204
-func Path(c Client, path string) Client {
 //line stdlib/llm/chat/chat.kuki:205
-	c.path = path
+func Gateway(c Client, url string) Client {
 //line stdlib/llm/chat/chat.kuki:206
+	c.baseURL = url
+//line stdlib/llm/chat/chat.kuki:207
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:210
-func APIKey(c Client, key string) Client {
 //line stdlib/llm/chat/chat.kuki:211
-	c.apiKey = key
+func Model(c Client, model string) Client {
 //line stdlib/llm/chat/chat.kuki:212
+	c.model = model
+//line stdlib/llm/chat/chat.kuki:213
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:215
-func System(c Client, content string) Client {
 //line stdlib/llm/chat/chat.kuki:216
-	c.messages = append(c.messages, Message{Role: "system", Content: content})
+func BaseURL(c Client, url string) Client {
 //line stdlib/llm/chat/chat.kuki:217
+	c.baseURL = url
+//line stdlib/llm/chat/chat.kuki:218
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:220
-func User(c Client, content string) Client {
 //line stdlib/llm/chat/chat.kuki:221
-	c.messages = append(c.messages, Message{Role: "user", Content: content})
+func Path(c Client, path string) Client {
 //line stdlib/llm/chat/chat.kuki:222
+	c.path = path
+//line stdlib/llm/chat/chat.kuki:223
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:225
-func Assistant(c Client, content string) Client {
-//line stdlib/llm/chat/chat.kuki:226
-	c.messages = append(c.messages, Message{Role: "assistant", Content: content})
 //line stdlib/llm/chat/chat.kuki:227
+func APIKey(c Client, key string) Client {
+//line stdlib/llm/chat/chat.kuki:228
+	c.apiKey = key
+//line stdlib/llm/chat/chat.kuki:229
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:230
-func AddMessage(c Client, role string, content string) Client {
-//line stdlib/llm/chat/chat.kuki:231
-	c.messages = append(c.messages, Message{Role: role, Content: content})
 //line stdlib/llm/chat/chat.kuki:232
+func System(c Client, content string) Client {
+//line stdlib/llm/chat/chat.kuki:233
+	c.messages = append(c.messages, Message{Role: MessageRoleSystem, Content: content})
+//line stdlib/llm/chat/chat.kuki:234
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:235
-func Messages(c Client, msgs []Message) Client {
-//line stdlib/llm/chat/chat.kuki:236
-	c.messages = msgs
 //line stdlib/llm/chat/chat.kuki:237
+func User(c Client, content string) Client {
+//line stdlib/llm/chat/chat.kuki:238
+	c.messages = append(c.messages, Message{Role: MessageRoleUser, Content: content})
+//line stdlib/llm/chat/chat.kuki:239
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:240
-func Temperature(c Client, temp float64) Client {
-//line stdlib/llm/chat/chat.kuki:241
-	c.temperature = temp
 //line stdlib/llm/chat/chat.kuki:242
+func Assistant(c Client, content string) Client {
+//line stdlib/llm/chat/chat.kuki:243
+	c.messages = append(c.messages, Message{Role: MessageRoleAssistant, Content: content})
+//line stdlib/llm/chat/chat.kuki:244
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:245
-func MaxTokens(c Client, tokens int) Client {
-//line stdlib/llm/chat/chat.kuki:246
-	c.maxTokens = tokens
 //line stdlib/llm/chat/chat.kuki:247
+func AddMessage(c Client, role MessageRole, content string) Client {
+//line stdlib/llm/chat/chat.kuki:248
+	c.messages = append(c.messages, Message{Role: role, Content: content})
+//line stdlib/llm/chat/chat.kuki:249
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:250
-func TopP(c Client, p float64) Client {
-//line stdlib/llm/chat/chat.kuki:251
-	c.topP = p
 //line stdlib/llm/chat/chat.kuki:252
+func Messages(c Client, msgs []Message) Client {
+//line stdlib/llm/chat/chat.kuki:253
+	c.messages = msgs
+//line stdlib/llm/chat/chat.kuki:254
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:255
-func Stop(c Client, sequences []string) Client {
-//line stdlib/llm/chat/chat.kuki:256
-	c.stop = sequences
 //line stdlib/llm/chat/chat.kuki:257
+func Temperature(c Client, temp float64) Client {
+//line stdlib/llm/chat/chat.kuki:258
+	c.temperature = temp
+//line stdlib/llm/chat/chat.kuki:259
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:260
-func PresencePenalty(c Client, penalty float64) Client {
-//line stdlib/llm/chat/chat.kuki:261
-	c.presencePenalty = penalty
 //line stdlib/llm/chat/chat.kuki:262
+func MaxTokens(c Client, tokens int) Client {
+//line stdlib/llm/chat/chat.kuki:263
+	c.maxTokens = tokens
+//line stdlib/llm/chat/chat.kuki:264
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:265
-func FrequencyPenalty(c Client, penalty float64) Client {
-//line stdlib/llm/chat/chat.kuki:266
-	c.frequencyPenalty = penalty
 //line stdlib/llm/chat/chat.kuki:267
+func TopP(c Client, p float64) Client {
+//line stdlib/llm/chat/chat.kuki:268
+	c.topP = p
+//line stdlib/llm/chat/chat.kuki:269
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:270
-func Seed(c Client, seed int) Client {
-//line stdlib/llm/chat/chat.kuki:271
-	c.seed = seed
 //line stdlib/llm/chat/chat.kuki:272
+func Stop(c Client, sequences []string) Client {
+//line stdlib/llm/chat/chat.kuki:273
+	c.stop = sequences
+//line stdlib/llm/chat/chat.kuki:274
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:275
-func SetUser(c Client, user string) Client {
-//line stdlib/llm/chat/chat.kuki:276
-	c.user = user
 //line stdlib/llm/chat/chat.kuki:277
+func PresencePenalty(c Client, penalty float64) Client {
+//line stdlib/llm/chat/chat.kuki:278
+	c.presencePenalty = penalty
+//line stdlib/llm/chat/chat.kuki:279
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:280
-func AddTool(c Client, name string, description string, parameters any) Client {
-//line stdlib/llm/chat/chat.kuki:281
-	fn := ToolFunction{Name: name, Description: description, Parameters: parameters}
 //line stdlib/llm/chat/chat.kuki:282
-	c.tools = append(c.tools, Tool{Type: "function", Function: fn})
+func FrequencyPenalty(c Client, penalty float64) Client {
 //line stdlib/llm/chat/chat.kuki:283
+	c.frequencyPenalty = penalty
+//line stdlib/llm/chat/chat.kuki:284
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:286
-func ToolChoiceAuto(c Client) Client {
 //line stdlib/llm/chat/chat.kuki:287
-	c.toolChoice = "auto"
+func Seed(c Client, seed int) Client {
 //line stdlib/llm/chat/chat.kuki:288
+	c.seed = seed
+//line stdlib/llm/chat/chat.kuki:289
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:291
-func ToolChoiceRequired(c Client) Client {
 //line stdlib/llm/chat/chat.kuki:292
-	c.toolChoice = "required"
+func SetUser(c Client, user string) Client {
 //line stdlib/llm/chat/chat.kuki:293
+	c.user = user
+//line stdlib/llm/chat/chat.kuki:294
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:296
-func ToolChoiceNone(c Client) Client {
 //line stdlib/llm/chat/chat.kuki:297
-	c.toolChoice = "none"
+func AddTool(c Client, name string, description string, parameters any) Client {
 //line stdlib/llm/chat/chat.kuki:298
+	fn := ToolFunction{Name: name, Description: description, Parameters: parameters}
+//line stdlib/llm/chat/chat.kuki:299
+	c.tools = append(c.tools, Tool{Type: "function", Function: fn})
+//line stdlib/llm/chat/chat.kuki:300
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:301
-func JSONMode(c Client) Client {
-//line stdlib/llm/chat/chat.kuki:302
-	c.responseFormat = map[string]string{"type": "json_object"}
-//line stdlib/llm/chat/chat.kuki:303
-	return c
-}
-
-//line stdlib/llm/chat/chat.kuki:306
-func Stream(c Client, handler func(string)) Client {
-//line stdlib/llm/chat/chat.kuki:307
-	c.streamHandler = handler
-//line stdlib/llm/chat/chat.kuki:308
-	return c
-}
-
-//line stdlib/llm/chat/chat.kuki:315
-func StreamEvents(c Client, handler func(llm.StreamEvent)) Client {
-//line stdlib/llm/chat/chat.kuki:316
-	c.eventHandler = handler
-//line stdlib/llm/chat/chat.kuki:317
-	return c
-}
-
-//line stdlib/llm/chat/chat.kuki:321
-func Retry(c Client, maxAttempts int, delayMs int) Client {
 //line stdlib/llm/chat/chat.kuki:322
-	c.retryMaxAttempts = maxAttempts
+func WithTool[T any](c Client, name string, description string, schema any, handler func(T) (any, error)) Client {
 //line stdlib/llm/chat/chat.kuki:323
-	c.retryDelayMs = delayMs
+	c = AddTool(c, name, description, schema)
 //line stdlib/llm/chat/chat.kuki:324
-	return c
-}
-
+	if c.toolHandlers == nil {
+//line stdlib/llm/chat/chat.kuki:325
+		c.toolHandlers = make(map[string]func(string) (string, error))
+	}
+//line stdlib/llm/chat/chat.kuki:326
+	c.toolHandlers[name] = func(argsJSON string) (string, error) {
 //line stdlib/llm/chat/chat.kuki:327
-func WithContext(c Client, h ctxpkg.Handle) Client {
+		var args T
 //line stdlib/llm/chat/chat.kuki:328
-	c.ctx = h.Ctx
+		if argsJSON != "" {
 //line stdlib/llm/chat/chat.kuki:329
+			parseErr := json.ParseStringInto(argsJSON, &args)
+//line stdlib/llm/chat/chat.kuki:330
+			if parseErr != nil {
+//line stdlib/llm/chat/chat.kuki:331
+				return "", parseErr
+			}
+		}
+//line stdlib/llm/chat/chat.kuki:332
+		result, handlerErr := handler(args)
+//line stdlib/llm/chat/chat.kuki:333
+		if handlerErr != nil {
+//line stdlib/llm/chat/chat.kuki:334
+			return "", handlerErr
+		}
+//line stdlib/llm/chat/chat.kuki:335
+		encoded, encErr := json.Bytes(result)
+//line stdlib/llm/chat/chat.kuki:336
+		if encErr != nil {
+//line stdlib/llm/chat/chat.kuki:337
+			return "", encErr
+		}
+//line stdlib/llm/chat/chat.kuki:338
+		return string(encoded), nil
+	}
+//line stdlib/llm/chat/chat.kuki:339
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:333
+//line stdlib/llm/chat/chat.kuki:347
+func RunTools(c Client, comp Completion) (Client, error) {
+//line stdlib/llm/chat/chat.kuki:348
+	if len(comp.Choices) == 0 {
+//line stdlib/llm/chat/chat.kuki:349
+		return c, nil
+	}
+//line stdlib/llm/chat/chat.kuki:350
+	msg := comp.Choices[0].Message
+//line stdlib/llm/chat/chat.kuki:351
+	assistantMsg := Message{Role: MessageRoleAssistant, Content: msg.Content, ToolCalls: msg.ToolCalls}
+//line stdlib/llm/chat/chat.kuki:352
+	c.messages = append(c.messages, assistantMsg)
+//line stdlib/llm/chat/chat.kuki:353
+	for _, call := range msg.ToolCalls {
+//line stdlib/llm/chat/chat.kuki:354
+		handler, ok := c.toolHandlers[call.Function.Name]
+//line stdlib/llm/chat/chat.kuki:355
+		if !ok {
+//line stdlib/llm/chat/chat.kuki:356
+			return c, fmt.Errorf("no handler registered for tool: %v", call.Function.Name)
+		}
+//line stdlib/llm/chat/chat.kuki:357
+		result, callErr := handler(call.Function.Arguments)
+//line stdlib/llm/chat/chat.kuki:358
+		if callErr != nil {
+//line stdlib/llm/chat/chat.kuki:359
+			return c, callErr
+		}
+//line stdlib/llm/chat/chat.kuki:360
+		toolMsg := Message{Role: MessageRoleTool, Content: result, ToolCallID: call.ID}
+//line stdlib/llm/chat/chat.kuki:361
+		c.messages = append(c.messages, toolMsg)
+	}
+//line stdlib/llm/chat/chat.kuki:362
+	return c, nil
+}
+
+//line stdlib/llm/chat/chat.kuki:365
+func ToolChoiceAuto(c Client) Client {
+//line stdlib/llm/chat/chat.kuki:366
+	c.toolChoice = "auto"
+//line stdlib/llm/chat/chat.kuki:367
+	return c
+}
+
+//line stdlib/llm/chat/chat.kuki:370
+func ToolChoiceRequired(c Client) Client {
+//line stdlib/llm/chat/chat.kuki:371
+	c.toolChoice = "required"
+//line stdlib/llm/chat/chat.kuki:372
+	return c
+}
+
+//line stdlib/llm/chat/chat.kuki:375
+func ToolChoiceNone(c Client) Client {
+//line stdlib/llm/chat/chat.kuki:376
+	c.toolChoice = "none"
+//line stdlib/llm/chat/chat.kuki:377
+	return c
+}
+
+//line stdlib/llm/chat/chat.kuki:380
+func JSONMode(c Client) Client {
+//line stdlib/llm/chat/chat.kuki:381
+	c.responseFormat = map[string]string{"type": "json_object"}
+//line stdlib/llm/chat/chat.kuki:382
+	return c
+}
+
+//line stdlib/llm/chat/chat.kuki:385
+func Stream(c Client, handler func(string)) Client {
+//line stdlib/llm/chat/chat.kuki:386
+	c.streamHandler = handler
+//line stdlib/llm/chat/chat.kuki:387
+	return c
+}
+
+//line stdlib/llm/chat/chat.kuki:394
+func StreamEvents(c Client, handler func(llm.StreamEvent)) Client {
+//line stdlib/llm/chat/chat.kuki:395
+	c.eventHandler = handler
+//line stdlib/llm/chat/chat.kuki:396
+	return c
+}
+
+//line stdlib/llm/chat/chat.kuki:400
+func Retry(c Client, maxAttempts int, delayMs int) Client {
+//line stdlib/llm/chat/chat.kuki:401
+	c.retryMaxAttempts = maxAttempts
+//line stdlib/llm/chat/chat.kuki:402
+	c.retryDelayMs = delayMs
+//line stdlib/llm/chat/chat.kuki:403
+	return c
+}
+
+//line stdlib/llm/chat/chat.kuki:406
+func WithContext(c Client, h ctxpkg.Handle) Client {
+//line stdlib/llm/chat/chat.kuki:407
+	c.ctx = h.Ctx
+//line stdlib/llm/chat/chat.kuki:408
+	return c
+}
+
+//line stdlib/llm/chat/chat.kuki:412
 func Ask(c Client, prompt string) (string, error) {
-//line stdlib/llm/chat/chat.kuki:334
+//line stdlib/llm/chat/chat.kuki:413
 	c = User(c, prompt)
-//line stdlib/llm/chat/chat.kuki:335
+//line stdlib/llm/chat/chat.kuki:414
 	return execute(c)
 }
 
-//line stdlib/llm/chat/chat.kuki:337
+//line stdlib/llm/chat/chat.kuki:416
 type streamFinal struct {
 	Completion Completion
 	Err        error
 }
 
-//line stdlib/llm/chat/chat.kuki:368
+//line stdlib/llm/chat/chat.kuki:447
 func AskStream(c Client, prompt string) (chan llm.StreamEvent, func() (Completion, error)) {
-//line stdlib/llm/chat/chat.kuki:369
+//line stdlib/llm/chat/chat.kuki:448
 	return SendStream(User(c, prompt))
 }
 
-//line stdlib/llm/chat/chat.kuki:375
+//line stdlib/llm/chat/chat.kuki:454
 func SendStream(c Client) (chan llm.StreamEvent, func() (Completion, error)) {
-//line stdlib/llm/chat/chat.kuki:376
+//line stdlib/llm/chat/chat.kuki:455
 	out := make(chan llm.StreamEvent, 16)
-//line stdlib/llm/chat/chat.kuki:377
+//line stdlib/llm/chat/chat.kuki:456
 	done := make(chan streamFinal, 1)
-//line stdlib/llm/chat/chat.kuki:378
+//line stdlib/llm/chat/chat.kuki:457
 	sink := func(evt llm.StreamEvent) {
-//line stdlib/llm/chat/chat.kuki:379
+//line stdlib/llm/chat/chat.kuki:458
 		out <- evt
 	}
-//line stdlib/llm/chat/chat.kuki:380
+//line stdlib/llm/chat/chat.kuki:459
 	c = StreamEvents(c, sink)
-//line stdlib/llm/chat/chat.kuki:381
+//line stdlib/llm/chat/chat.kuki:460
 	go func() {
-//line stdlib/llm/chat/chat.kuki:382
+//line stdlib/llm/chat/chat.kuki:461
 		comp, sErr := executeStreamRaw(c)
-//line stdlib/llm/chat/chat.kuki:383
+//line stdlib/llm/chat/chat.kuki:462
 		if sErr != nil {
-//line stdlib/llm/chat/chat.kuki:384
+//line stdlib/llm/chat/chat.kuki:463
 			out <- llm.Error{Message: fmt.Sprintf("%v", sErr)}
 		}
-//line stdlib/llm/chat/chat.kuki:385
+//line stdlib/llm/chat/chat.kuki:464
 		close(out)
-//line stdlib/llm/chat/chat.kuki:386
+//line stdlib/llm/chat/chat.kuki:465
 		done <- streamFinal{Completion: comp, Err: sErr}
 	}()
-//line stdlib/llm/chat/chat.kuki:388
+//line stdlib/llm/chat/chat.kuki:467
 	collect := func() (Completion, error) {
-//line stdlib/llm/chat/chat.kuki:389
+//line stdlib/llm/chat/chat.kuki:468
 		res := <-done
-//line stdlib/llm/chat/chat.kuki:390
+//line stdlib/llm/chat/chat.kuki:469
 		return res.Completion, res.Err
 	}
-//line stdlib/llm/chat/chat.kuki:391
+//line stdlib/llm/chat/chat.kuki:470
 	return out, collect
 }
 
-//line stdlib/llm/chat/chat.kuki:405
+//line stdlib/llm/chat/chat.kuki:484
 func AskJSON[T any](c Client, prompt string) (T, error) {
-//line stdlib/llm/chat/chat.kuki:406
+//line stdlib/llm/chat/chat.kuki:485
 	zero := *new(T)
-//line stdlib/llm/chat/chat.kuki:407
+//line stdlib/llm/chat/chat.kuki:486
 	elemType := reflect.TypeOf(zero)
-//line stdlib/llm/chat/chat.kuki:408
+//line stdlib/llm/chat/chat.kuki:487
 	if elemType == nil {
-//line stdlib/llm/chat/chat.kuki:409
+//line stdlib/llm/chat/chat.kuki:488
 		return zero, errors.New("chat.AskJSON: cannot determine target type (T must not be an interface)")
 	}
-//line stdlib/llm/chat/chat.kuki:412
+//line stdlib/llm/chat/chat.kuki:491
 	if elemType.Kind() != reflect.String {
-//line stdlib/llm/chat/chat.kuki:413
+//line stdlib/llm/chat/chat.kuki:492
 		c = JSONMode(c)
 	}
-//line stdlib/llm/chat/chat.kuki:415
+//line stdlib/llm/chat/chat.kuki:494
 	reply, askErr := Ask(c, prompt)
-//line stdlib/llm/chat/chat.kuki:416
+//line stdlib/llm/chat/chat.kuki:495
 	if askErr != nil {
-//line stdlib/llm/chat/chat.kuki:417
+//line stdlib/llm/chat/chat.kuki:496
 		return zero, askErr
 	}
-//line stdlib/llm/chat/chat.kuki:419
+//line stdlib/llm/chat/chat.kuki:498
 	body := kukistring.TrimSpace(reply)
-//line stdlib/llm/chat/chat.kuki:423
+//line stdlib/llm/chat/chat.kuki:502
 	if elemType.Kind() == reflect.String {
-//line stdlib/llm/chat/chat.kuki:424
+//line stdlib/llm/chat/chat.kuki:503
 		encoded, encErr := json.Bytes(body)
-//line stdlib/llm/chat/chat.kuki:425
+//line stdlib/llm/chat/chat.kuki:504
 		if encErr != nil {
-//line stdlib/llm/chat/chat.kuki:426
+//line stdlib/llm/chat/chat.kuki:505
 			return zero, encErr
 		}
-//line stdlib/llm/chat/chat.kuki:427
+//line stdlib/llm/chat/chat.kuki:506
 		body = string(encoded)
 	}
-//line stdlib/llm/chat/chat.kuki:429
-//line stdlib/llm/chat/chat.kuki:429
+//line stdlib/llm/chat/chat.kuki:508
+//line stdlib/llm/chat/chat.kuki:508
 	err_1 := json.ParseStringInto(body, &zero)
-//line stdlib/llm/chat/chat.kuki:429
+//line stdlib/llm/chat/chat.kuki:508
 	if err_1 != nil {
-//line stdlib/llm/chat/chat.kuki:429
+//line stdlib/llm/chat/chat.kuki:508
 		err_1 = fmt.Errorf("chat.AskJSON: decode failed for reply : %w", err_1)
 		var _zero0 T
-//line stdlib/llm/chat/chat.kuki:429
+//line stdlib/llm/chat/chat.kuki:508
 		return _zero0, err_1
 	}
-//line stdlib/llm/chat/chat.kuki:430
+//line stdlib/llm/chat/chat.kuki:509
 	return zero, nil
 }
 
-//line stdlib/llm/chat/chat.kuki:433
+//line stdlib/llm/chat/chat.kuki:512
 func Send(c Client) (string, error) {
-//line stdlib/llm/chat/chat.kuki:434
+//line stdlib/llm/chat/chat.kuki:513
 	return execute(c)
 }
 
-//line stdlib/llm/chat/chat.kuki:438
+//line stdlib/llm/chat/chat.kuki:517
 func SendRaw(c Client) (Completion, error) {
-//line stdlib/llm/chat/chat.kuki:439
+//line stdlib/llm/chat/chat.kuki:518
 	return executeRaw(c)
 }
 
-//line stdlib/llm/chat/chat.kuki:443
+//line stdlib/llm/chat/chat.kuki:522
 func Complete(model string, prompt string) (string, error) {
-//line stdlib/llm/chat/chat.kuki:444
+//line stdlib/llm/chat/chat.kuki:523
 	return Ask(New(model), prompt)
 }
 
-//line stdlib/llm/chat/chat.kuki:447
+//line stdlib/llm/chat/chat.kuki:526
 func CompleteWithSystem(model string, systemPrompt string, prompt string) (string, error) {
-//line stdlib/llm/chat/chat.kuki:448
+//line stdlib/llm/chat/chat.kuki:527
 	c := New(model)
-//line stdlib/llm/chat/chat.kuki:449
+//line stdlib/llm/chat/chat.kuki:528
 	c = System(c, systemPrompt)
-//line stdlib/llm/chat/chat.kuki:450
+//line stdlib/llm/chat/chat.kuki:529
 	return Ask(c, prompt)
 }
 
-//line stdlib/llm/chat/chat.kuki:455
+//line stdlib/llm/chat/chat.kuki:534
 func FromCompletion(c Client, comp Completion) Client {
-//line stdlib/llm/chat/chat.kuki:456
+//line stdlib/llm/chat/chat.kuki:535
 	if len(comp.Choices) == 0 {
-//line stdlib/llm/chat/chat.kuki:457
+//line stdlib/llm/chat/chat.kuki:536
 		return c
 	}
-//line stdlib/llm/chat/chat.kuki:458
+//line stdlib/llm/chat/chat.kuki:537
 	msg := comp.Choices[0].Message
-//line stdlib/llm/chat/chat.kuki:459
-	assistantMsg := Message{Role: "assistant", Content: msg.Content}
-//line stdlib/llm/chat/chat.kuki:460
+//line stdlib/llm/chat/chat.kuki:538
+	assistantMsg := Message{Role: MessageRoleAssistant, Content: msg.Content}
+//line stdlib/llm/chat/chat.kuki:539
 	if len(msg.ToolCalls) > 0 {
-//line stdlib/llm/chat/chat.kuki:461
+//line stdlib/llm/chat/chat.kuki:540
 		assistantMsg.ToolCalls = msg.ToolCalls
 	}
-//line stdlib/llm/chat/chat.kuki:462
+//line stdlib/llm/chat/chat.kuki:541
 	c.messages = append(c.messages, assistantMsg)
-//line stdlib/llm/chat/chat.kuki:463
+//line stdlib/llm/chat/chat.kuki:542
 	return c
 }
 
-//line stdlib/llm/chat/chat.kuki:470
+//line stdlib/llm/chat/chat.kuki:549
 func ExecuteToolCalls(c Client, comp Completion, handlers map[string]func(string) string) (Client, error) {
-//line stdlib/llm/chat/chat.kuki:471
+//line stdlib/llm/chat/chat.kuki:550
 	if len(comp.Choices) == 0 {
-//line stdlib/llm/chat/chat.kuki:472
+//line stdlib/llm/chat/chat.kuki:551
 		return c, nil
 	}
-//line stdlib/llm/chat/chat.kuki:473
+//line stdlib/llm/chat/chat.kuki:552
 	msg := comp.Choices[0].Message
-//line stdlib/llm/chat/chat.kuki:474
-	assistantMsg := Message{Role: "assistant", Content: msg.Content, ToolCalls: msg.ToolCalls}
-//line stdlib/llm/chat/chat.kuki:475
+//line stdlib/llm/chat/chat.kuki:553
+	assistantMsg := Message{Role: MessageRoleAssistant, Content: msg.Content, ToolCalls: msg.ToolCalls}
+//line stdlib/llm/chat/chat.kuki:554
 	c.messages = append(c.messages, assistantMsg)
-//line stdlib/llm/chat/chat.kuki:476
+//line stdlib/llm/chat/chat.kuki:555
 	for _, call := range msg.ToolCalls {
-//line stdlib/llm/chat/chat.kuki:477
+//line stdlib/llm/chat/chat.kuki:556
 		handler, ok := handlers[call.Function.Name]
-//line stdlib/llm/chat/chat.kuki:478
+//line stdlib/llm/chat/chat.kuki:557
 		if !ok {
-//line stdlib/llm/chat/chat.kuki:479
+//line stdlib/llm/chat/chat.kuki:558
 			return c, fmt.Errorf("no handler registered for tool: %v", call.Function.Name)
 		}
-//line stdlib/llm/chat/chat.kuki:480
+//line stdlib/llm/chat/chat.kuki:559
 		result := handler(call.Function.Arguments)
-//line stdlib/llm/chat/chat.kuki:481
-		toolMsg := Message{Role: "tool", Content: result, ToolCallID: call.ID}
-//line stdlib/llm/chat/chat.kuki:482
+//line stdlib/llm/chat/chat.kuki:560
+		toolMsg := Message{Role: MessageRoleTool, Content: result, ToolCallID: call.ID}
+//line stdlib/llm/chat/chat.kuki:561
 		c.messages = append(c.messages, toolMsg)
 	}
-//line stdlib/llm/chat/chat.kuki:483
+//line stdlib/llm/chat/chat.kuki:562
 	return c, nil
 }
 
-//line stdlib/llm/chat/chat.kuki:486
+//line stdlib/llm/chat/chat.kuki:568
+func GetMessages(c Client) []Message {
+//line stdlib/llm/chat/chat.kuki:569
+	return c.messages
+}
+
+//line stdlib/llm/chat/chat.kuki:572
 func GetText(comp Completion) string {
-//line stdlib/llm/chat/chat.kuki:487
+//line stdlib/llm/chat/chat.kuki:573
 	if len(comp.Choices) == 0 {
-//line stdlib/llm/chat/chat.kuki:488
+//line stdlib/llm/chat/chat.kuki:574
 		return ""
 	}
-//line stdlib/llm/chat/chat.kuki:489
+//line stdlib/llm/chat/chat.kuki:575
 	return comp.Choices[0].Message.Content
 }
 
-//line stdlib/llm/chat/chat.kuki:492
+//line stdlib/llm/chat/chat.kuki:578
 func GetToolCalls(comp Completion) []ToolCall {
-//line stdlib/llm/chat/chat.kuki:493
+//line stdlib/llm/chat/chat.kuki:579
 	if len(comp.Choices) == 0 {
-//line stdlib/llm/chat/chat.kuki:494
+//line stdlib/llm/chat/chat.kuki:580
 		return []ToolCall{}
 	}
-//line stdlib/llm/chat/chat.kuki:495
+//line stdlib/llm/chat/chat.kuki:581
 	return comp.Choices[0].Message.ToolCalls
 }
 
-//line stdlib/llm/chat/chat.kuki:498
+//line stdlib/llm/chat/chat.kuki:584
 func HasToolCalls(comp Completion) bool {
-//line stdlib/llm/chat/chat.kuki:499
-	return (len(GetToolCalls(comp)) > 0)
+//line stdlib/llm/chat/chat.kuki:585
+	return len(GetToolCalls(comp)) > 0
 }
 
-//line stdlib/llm/chat/chat.kuki:501
+//line stdlib/llm/chat/chat.kuki:587
 func providerDefaults(provider string) (string, string) {
-//line stdlib/llm/chat/chat.kuki:502
+//line stdlib/llm/chat/chat.kuki:588
 	if provider == "openai" {
-//line stdlib/llm/chat/chat.kuki:503
+//line stdlib/llm/chat/chat.kuki:589
 		return "OPENAI_API_KEY", "https://api.openai.com"
 	}
-//line stdlib/llm/chat/chat.kuki:504
+//line stdlib/llm/chat/chat.kuki:590
 	if provider == "anthropic" {
-//line stdlib/llm/chat/chat.kuki:505
+//line stdlib/llm/chat/chat.kuki:591
 		return "ANTHROPIC_API_KEY", "https://api.anthropic.com"
 	}
-//line stdlib/llm/chat/chat.kuki:506
+//line stdlib/llm/chat/chat.kuki:592
 	if provider == "mistral" {
-//line stdlib/llm/chat/chat.kuki:507
+//line stdlib/llm/chat/chat.kuki:593
 		return "MISTRAL_API_KEY", "https://api.mistral.ai"
 	}
-//line stdlib/llm/chat/chat.kuki:508
+//line stdlib/llm/chat/chat.kuki:594
 	if provider == "groq" {
-//line stdlib/llm/chat/chat.kuki:509
+//line stdlib/llm/chat/chat.kuki:595
 		return "GROQ_API_KEY", "https://api.groq.com/openai"
 	}
-//line stdlib/llm/chat/chat.kuki:510
+//line stdlib/llm/chat/chat.kuki:596
 	if provider == "together" {
-//line stdlib/llm/chat/chat.kuki:511
+//line stdlib/llm/chat/chat.kuki:597
 		return "TOGETHER_API_KEY", "https://api.together.xyz"
 	}
-//line stdlib/llm/chat/chat.kuki:512
+//line stdlib/llm/chat/chat.kuki:598
 	if provider == "deepseek" {
-//line stdlib/llm/chat/chat.kuki:513
+//line stdlib/llm/chat/chat.kuki:599
 		return "DEEPSEEK_API_KEY", "https://api.deepseek.com"
 	}
-//line stdlib/llm/chat/chat.kuki:514
+//line stdlib/llm/chat/chat.kuki:600
 	if provider == "xai" {
-//line stdlib/llm/chat/chat.kuki:515
+//line stdlib/llm/chat/chat.kuki:601
 		return "XAI_API_KEY", "https://api.x.ai"
 	}
-//line stdlib/llm/chat/chat.kuki:516
+//line stdlib/llm/chat/chat.kuki:602
 	if provider == "ollama" {
-//line stdlib/llm/chat/chat.kuki:517
+//line stdlib/llm/chat/chat.kuki:603
 		return "", "http://localhost:11434"
 	}
-//line stdlib/llm/chat/chat.kuki:518
-	if (provider == "fastflowlm") || (provider == "flm") {
-//line stdlib/llm/chat/chat.kuki:519
+//line stdlib/llm/chat/chat.kuki:604
+	if provider == "fastflowlm" || provider == "flm" {
+//line stdlib/llm/chat/chat.kuki:605
 		return "", "http://localhost:52625"
 	}
-//line stdlib/llm/chat/chat.kuki:520
+//line stdlib/llm/chat/chat.kuki:606
 	return "", ""
 }
 
-//line stdlib/llm/chat/chat.kuki:522
+//line stdlib/llm/chat/chat.kuki:608
 func resolveAPIKey(c Client) string {
-//line stdlib/llm/chat/chat.kuki:523
+//line stdlib/llm/chat/chat.kuki:609
 	if c.apiKey != "" {
-//line stdlib/llm/chat/chat.kuki:524
+//line stdlib/llm/chat/chat.kuki:610
 		return c.apiKey
 	}
-//line stdlib/llm/chat/chat.kuki:525
+//line stdlib/llm/chat/chat.kuki:611
 	envKey, _ := providerDefaults(c.provider)
-//line stdlib/llm/chat/chat.kuki:526
+//line stdlib/llm/chat/chat.kuki:612
 	if envKey != "" {
-//line stdlib/llm/chat/chat.kuki:527
+//line stdlib/llm/chat/chat.kuki:613
 		return env.GetOr(envKey, "")
 	}
-//line stdlib/llm/chat/chat.kuki:528
+//line stdlib/llm/chat/chat.kuki:614
 	return env.GetOr("LLM_API_KEY", "")
 }
 
-//line stdlib/llm/chat/chat.kuki:530
+//line stdlib/llm/chat/chat.kuki:616
 func resolveBaseURL(c Client) string {
-//line stdlib/llm/chat/chat.kuki:531
+//line stdlib/llm/chat/chat.kuki:617
 	if c.baseURL != "" {
-//line stdlib/llm/chat/chat.kuki:532
+//line stdlib/llm/chat/chat.kuki:618
 		return c.baseURL
 	}
-//line stdlib/llm/chat/chat.kuki:533
+//line stdlib/llm/chat/chat.kuki:619
 	_, baseURL := providerDefaults(c.provider)
-//line stdlib/llm/chat/chat.kuki:534
+//line stdlib/llm/chat/chat.kuki:620
 	if baseURL != "" {
-//line stdlib/llm/chat/chat.kuki:535
+//line stdlib/llm/chat/chat.kuki:621
 		return baseURL
 	}
-//line stdlib/llm/chat/chat.kuki:536
+//line stdlib/llm/chat/chat.kuki:622
 	envURL := env.GetOr("LLM_BASE_URL", "")
-//line stdlib/llm/chat/chat.kuki:537
+//line stdlib/llm/chat/chat.kuki:623
 	if envURL != "" {
-//line stdlib/llm/chat/chat.kuki:538
+//line stdlib/llm/chat/chat.kuki:624
 		return envURL
 	}
-//line stdlib/llm/chat/chat.kuki:539
+//line stdlib/llm/chat/chat.kuki:625
 	return "http://localhost:8000"
 }
 
-//line stdlib/llm/chat/chat.kuki:541
+//line stdlib/llm/chat/chat.kuki:627
 func resolvePath(c Client) string {
-//line stdlib/llm/chat/chat.kuki:542
+//line stdlib/llm/chat/chat.kuki:628
 	if c.path != "" {
-//line stdlib/llm/chat/chat.kuki:543
+//line stdlib/llm/chat/chat.kuki:629
 		return c.path
 	}
-//line stdlib/llm/chat/chat.kuki:544
+//line stdlib/llm/chat/chat.kuki:630
 	return "/v1/chat/completions"
 }
 
-//line stdlib/llm/chat/chat.kuki:546
+//line stdlib/llm/chat/chat.kuki:632
 func buildRequest(c Client) CompletionRequest {
-//line stdlib/llm/chat/chat.kuki:547
+//line stdlib/llm/chat/chat.kuki:633
 	req := CompletionRequest{Model: c.model, Messages: c.messages}
-//line stdlib/llm/chat/chat.kuki:548
+//line stdlib/llm/chat/chat.kuki:634
 	if c.temperature != 0.0 {
-//line stdlib/llm/chat/chat.kuki:549
+//line stdlib/llm/chat/chat.kuki:635
 		req.Temperature = c.temperature
 	}
-//line stdlib/llm/chat/chat.kuki:550
+//line stdlib/llm/chat/chat.kuki:636
 	if c.maxTokens != 0 {
-//line stdlib/llm/chat/chat.kuki:551
+//line stdlib/llm/chat/chat.kuki:637
 		req.MaxTokens = c.maxTokens
 	}
-//line stdlib/llm/chat/chat.kuki:552
+//line stdlib/llm/chat/chat.kuki:638
 	if c.topP != 0.0 {
-//line stdlib/llm/chat/chat.kuki:553
+//line stdlib/llm/chat/chat.kuki:639
 		req.TopP = c.topP
 	}
-//line stdlib/llm/chat/chat.kuki:554
+//line stdlib/llm/chat/chat.kuki:640
 	if c.n != 0 {
-//line stdlib/llm/chat/chat.kuki:555
+//line stdlib/llm/chat/chat.kuki:641
 		req.N = c.n
 	}
-//line stdlib/llm/chat/chat.kuki:556
+//line stdlib/llm/chat/chat.kuki:642
 	if c.seed != 0 {
-//line stdlib/llm/chat/chat.kuki:557
+//line stdlib/llm/chat/chat.kuki:643
 		req.Seed = c.seed
 	}
-//line stdlib/llm/chat/chat.kuki:558
+//line stdlib/llm/chat/chat.kuki:644
 	if c.presencePenalty != 0.0 {
-//line stdlib/llm/chat/chat.kuki:559
+//line stdlib/llm/chat/chat.kuki:645
 		req.PresencePenalty = c.presencePenalty
 	}
-//line stdlib/llm/chat/chat.kuki:560
+//line stdlib/llm/chat/chat.kuki:646
 	if c.frequencyPenalty != 0.0 {
-//line stdlib/llm/chat/chat.kuki:561
+//line stdlib/llm/chat/chat.kuki:647
 		req.FrequencyPenalty = c.frequencyPenalty
 	}
-//line stdlib/llm/chat/chat.kuki:562
+//line stdlib/llm/chat/chat.kuki:648
 	if c.user != "" {
-//line stdlib/llm/chat/chat.kuki:563
+//line stdlib/llm/chat/chat.kuki:649
 		req.User = c.user
 	}
-//line stdlib/llm/chat/chat.kuki:564
+//line stdlib/llm/chat/chat.kuki:650
 	if len(c.stop) > 0 {
-//line stdlib/llm/chat/chat.kuki:565
+//line stdlib/llm/chat/chat.kuki:651
 		req.Stop = c.stop
 	}
-//line stdlib/llm/chat/chat.kuki:566
+//line stdlib/llm/chat/chat.kuki:652
 	if len(c.tools) > 0 {
-//line stdlib/llm/chat/chat.kuki:567
+//line stdlib/llm/chat/chat.kuki:653
 		req.Tools = c.tools
 	}
-//line stdlib/llm/chat/chat.kuki:568
+//line stdlib/llm/chat/chat.kuki:654
 	if c.toolChoice != nil {
-//line stdlib/llm/chat/chat.kuki:569
+//line stdlib/llm/chat/chat.kuki:655
 		req.ToolChoice = c.toolChoice
 	}
-//line stdlib/llm/chat/chat.kuki:570
+//line stdlib/llm/chat/chat.kuki:656
 	if c.responseFormat != nil {
-//line stdlib/llm/chat/chat.kuki:571
+//line stdlib/llm/chat/chat.kuki:657
 		req.ResponseFormat = c.responseFormat
 	}
-//line stdlib/llm/chat/chat.kuki:572
-	if (c.streamHandler != nil) || (c.eventHandler != nil) {
-//line stdlib/llm/chat/chat.kuki:573
+//line stdlib/llm/chat/chat.kuki:658
+	if c.streamHandler != nil || c.eventHandler != nil {
+//line stdlib/llm/chat/chat.kuki:659
 		req.Stream = true
 	}
-//line stdlib/llm/chat/chat.kuki:574
+//line stdlib/llm/chat/chat.kuki:660
 	return req
 }
 
-//line stdlib/llm/chat/chat.kuki:576
+//line stdlib/llm/chat/chat.kuki:662
 func execute(c Client) (string, error) {
-//line stdlib/llm/chat/chat.kuki:577
+//line stdlib/llm/chat/chat.kuki:663
 	comp, err_2 := executeRaw(c)
-//line stdlib/llm/chat/chat.kuki:577
+//line stdlib/llm/chat/chat.kuki:663
 	if err_2 != nil {
-//line stdlib/llm/chat/chat.kuki:577
+//line stdlib/llm/chat/chat.kuki:663
 		return "", err_2
 	}
-//line stdlib/llm/chat/chat.kuki:578
+//line stdlib/llm/chat/chat.kuki:664
 	return GetText(comp), nil
 }
 
-//line stdlib/llm/chat/chat.kuki:580
+//line stdlib/llm/chat/chat.kuki:666
 func executeRaw(c Client) (Completion, error) {
-//line stdlib/llm/chat/chat.kuki:581
-	if (c.streamHandler != nil) || (c.eventHandler != nil) {
-//line stdlib/llm/chat/chat.kuki:582
+//line stdlib/llm/chat/chat.kuki:667
+	if c.streamHandler != nil || c.eventHandler != nil {
+//line stdlib/llm/chat/chat.kuki:668
 		return executeStreamRaw(c)
 	}
-//line stdlib/llm/chat/chat.kuki:584
+//line stdlib/llm/chat/chat.kuki:670
 	url := fmt.Sprintf("%v%v", resolveBaseURL(c), resolvePath(c))
-//line stdlib/llm/chat/chat.kuki:585
+//line stdlib/llm/chat/chat.kuki:671
 	apiKey := resolveAPIKey(c)
-//line stdlib/llm/chat/chat.kuki:587
-	req := fetch.Body(fetch.Header(fetch.Method(fetch.New(url), "POST"), "Content-Type", "application/json"), buildRequest(c))
-//line stdlib/llm/chat/chat.kuki:592
+//line stdlib/llm/chat/chat.kuki:673
+	req := fetch.Body(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), buildRequest(c))
+//line stdlib/llm/chat/chat.kuki:678
 	if c.ctx != nil {
-//line stdlib/llm/chat/chat.kuki:593
+//line stdlib/llm/chat/chat.kuki:679
 		req = fetch.WithContext(req, ctxpkg.FromContext(c.ctx))
 	}
-//line stdlib/llm/chat/chat.kuki:594
+//line stdlib/llm/chat/chat.kuki:680
 	if apiKey != "" {
-//line stdlib/llm/chat/chat.kuki:595
+//line stdlib/llm/chat/chat.kuki:681
 		req = fetch.Header(req, "Authorization", fmt.Sprintf("Bearer %v", apiKey))
 	}
-//line stdlib/llm/chat/chat.kuki:596
+//line stdlib/llm/chat/chat.kuki:682
 	if c.retryMaxAttempts > 1 {
-//line stdlib/llm/chat/chat.kuki:597
+//line stdlib/llm/chat/chat.kuki:683
 		req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 	}
-//line stdlib/llm/chat/chat.kuki:599
+//line stdlib/llm/chat/chat.kuki:685
 	resp, err_3 := fetch.Do(req)
-//line stdlib/llm/chat/chat.kuki:599
+//line stdlib/llm/chat/chat.kuki:685
 	if err_3 != nil {
 		var _zero0 Completion
-//line stdlib/llm/chat/chat.kuki:599
+//line stdlib/llm/chat/chat.kuki:685
 		return _zero0, err_3
 	}
-//line stdlib/llm/chat/chat.kuki:601
+//line stdlib/llm/chat/chat.kuki:687
 	defer resp.Body.Close()
-//line stdlib/llm/chat/chat.kuki:603
+//line stdlib/llm/chat/chat.kuki:689
 	if resp.StatusCode >= 400 {
-//line stdlib/llm/chat/chat.kuki:604
+//line stdlib/llm/chat/chat.kuki:690
 		errBody, err_4 := fetch.Bytes(resp)
-//line stdlib/llm/chat/chat.kuki:604
+//line stdlib/llm/chat/chat.kuki:690
 		if err_4 != nil {
-//line stdlib/llm/chat/chat.kuki:604
+//line stdlib/llm/chat/chat.kuki:690
 			return Completion{}, fmt.Errorf("API request failed with status %v", resp.StatusCode)
 		}
-//line stdlib/llm/chat/chat.kuki:605
+//line stdlib/llm/chat/chat.kuki:691
 		return Completion{}, fmt.Errorf("API request failed (%v): %v", resp.StatusCode, string(errBody))
 	}
-//line stdlib/llm/chat/chat.kuki:607
+//line stdlib/llm/chat/chat.kuki:693
 	comp := Completion{}
-//line stdlib/llm/chat/chat.kuki:608
-//line stdlib/llm/chat/chat.kuki:608
+//line stdlib/llm/chat/chat.kuki:694
+//line stdlib/llm/chat/chat.kuki:694
 	err_5 := json.ReadInto(resp.Body, &comp)
-//line stdlib/llm/chat/chat.kuki:608
+//line stdlib/llm/chat/chat.kuki:694
 	if err_5 != nil {
 		var _zero0 Completion
-//line stdlib/llm/chat/chat.kuki:608
+//line stdlib/llm/chat/chat.kuki:694
 		return _zero0, err_5
 	}
-//line stdlib/llm/chat/chat.kuki:609
+//line stdlib/llm/chat/chat.kuki:695
 	return comp, nil
 }
 
-//line stdlib/llm/chat/chat.kuki:611
+//line stdlib/llm/chat/chat.kuki:697
 func executeStreamRaw(c Client) (Completion, error) {
-//line stdlib/llm/chat/chat.kuki:612
+//line stdlib/llm/chat/chat.kuki:698
 	url := fmt.Sprintf("%v%v", resolveBaseURL(c), resolvePath(c))
-//line stdlib/llm/chat/chat.kuki:613
+//line stdlib/llm/chat/chat.kuki:699
 	apiKey := resolveAPIKey(c)
-//line stdlib/llm/chat/chat.kuki:615
-	req := fetch.Body(fetch.Header(fetch.Header(fetch.Method(fetch.New(url), "POST"), "Content-Type", "application/json"), "Accept", "text/event-stream"), buildRequest(c))
-//line stdlib/llm/chat/chat.kuki:621
+//line stdlib/llm/chat/chat.kuki:701
+	req := fetch.Body(fetch.Header(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), "Accept", "text/event-stream"), buildRequest(c))
+//line stdlib/llm/chat/chat.kuki:707
 	if c.ctx != nil {
-//line stdlib/llm/chat/chat.kuki:622
+//line stdlib/llm/chat/chat.kuki:708
 		req = fetch.WithContext(req, ctxpkg.FromContext(c.ctx))
 	}
-//line stdlib/llm/chat/chat.kuki:623
+//line stdlib/llm/chat/chat.kuki:709
 	if apiKey != "" {
-//line stdlib/llm/chat/chat.kuki:624
+//line stdlib/llm/chat/chat.kuki:710
 		req = fetch.Header(req, "Authorization", fmt.Sprintf("Bearer %v", apiKey))
 	}
-//line stdlib/llm/chat/chat.kuki:625
+//line stdlib/llm/chat/chat.kuki:711
 	if c.retryMaxAttempts > 1 {
-//line stdlib/llm/chat/chat.kuki:626
+//line stdlib/llm/chat/chat.kuki:712
 		req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 	}
-//line stdlib/llm/chat/chat.kuki:628
+//line stdlib/llm/chat/chat.kuki:714
 	resp, err_6 := fetch.Do(req)
-//line stdlib/llm/chat/chat.kuki:628
+//line stdlib/llm/chat/chat.kuki:714
 	if err_6 != nil {
 		var _zero0 Completion
-//line stdlib/llm/chat/chat.kuki:628
+//line stdlib/llm/chat/chat.kuki:714
 		return _zero0, err_6
 	}
-//line stdlib/llm/chat/chat.kuki:630
+//line stdlib/llm/chat/chat.kuki:716
 	defer resp.Body.Close()
-//line stdlib/llm/chat/chat.kuki:632
+//line stdlib/llm/chat/chat.kuki:718
 	if resp.StatusCode >= 400 {
-//line stdlib/llm/chat/chat.kuki:633
+//line stdlib/llm/chat/chat.kuki:719
 		errBody, err_7 := fetch.Bytes(resp)
-//line stdlib/llm/chat/chat.kuki:633
+//line stdlib/llm/chat/chat.kuki:719
 		if err_7 != nil {
-//line stdlib/llm/chat/chat.kuki:633
+//line stdlib/llm/chat/chat.kuki:719
 			return Completion{}, fmt.Errorf("API request failed with status %v", resp.StatusCode)
 		}
-//line stdlib/llm/chat/chat.kuki:634
+//line stdlib/llm/chat/chat.kuki:720
 		return Completion{}, fmt.Errorf("API request failed (%v): %v", resp.StatusCode, string(errBody))
 	}
-//line stdlib/llm/chat/chat.kuki:636
+//line stdlib/llm/chat/chat.kuki:722
 	fullContent := ""
-//line stdlib/llm/chat/chat.kuki:637
+//line stdlib/llm/chat/chat.kuki:723
 	callsMap := make(map[int]ToolCall)
-//line stdlib/llm/chat/chat.kuki:638
+//line stdlib/llm/chat/chat.kuki:724
 	maxIdx := -1
-//line stdlib/llm/chat/chat.kuki:639
+//line stdlib/llm/chat/chat.kuki:725
 	scanner := bufio.NewScanner(resp.Body)
-//line stdlib/llm/chat/chat.kuki:640
+//line stdlib/llm/chat/chat.kuki:726
 	for scanner.Scan() {
-//line stdlib/llm/chat/chat.kuki:641
+//line stdlib/llm/chat/chat.kuki:727
 		line := scanner.Text()
-//line stdlib/llm/chat/chat.kuki:642
-		if (line == "") || kukistring.HasPrefix(line, ":") {
-//line stdlib/llm/chat/chat.kuki:643
+//line stdlib/llm/chat/chat.kuki:728
+		if line == "" || kukistring.HasPrefix(line, ":") {
+//line stdlib/llm/chat/chat.kuki:729
 			continue
 		}
-//line stdlib/llm/chat/chat.kuki:644
+//line stdlib/llm/chat/chat.kuki:730
 		if line == "data: [DONE]" {
-//line stdlib/llm/chat/chat.kuki:645
+//line stdlib/llm/chat/chat.kuki:731
 			break
 		}
-//line stdlib/llm/chat/chat.kuki:646
+//line stdlib/llm/chat/chat.kuki:732
 		if kukistring.HasPrefix(line, "data: ") {
-//line stdlib/llm/chat/chat.kuki:647
+//line stdlib/llm/chat/chat.kuki:733
 			data := kukistring.TrimPrefix(line, "data: ")
-//line stdlib/llm/chat/chat.kuki:648
+//line stdlib/llm/chat/chat.kuki:734
 			chunk := Chunk{}
-//line stdlib/llm/chat/chat.kuki:649
-//line stdlib/llm/chat/chat.kuki:649
+//line stdlib/llm/chat/chat.kuki:735
+//line stdlib/llm/chat/chat.kuki:735
 			err_8 := json.ParseInto([]byte(data), &chunk)
-//line stdlib/llm/chat/chat.kuki:649
+//line stdlib/llm/chat/chat.kuki:735
 			if err_8 != nil {
-//line stdlib/llm/chat/chat.kuki:649
-				//line stdlib/llm/chat/chat.kuki:650
+//line stdlib/llm/chat/chat.kuki:735
+				//line stdlib/llm/chat/chat.kuki:736
 				continue
 			}
-//line stdlib/llm/chat/chat.kuki:652
+//line stdlib/llm/chat/chat.kuki:738
 			if len(chunk.Choices) > 0 {
-//line stdlib/llm/chat/chat.kuki:653
+//line stdlib/llm/chat/chat.kuki:739
 				delta := chunk.Choices[0].Delta
-//line stdlib/llm/chat/chat.kuki:654
+//line stdlib/llm/chat/chat.kuki:740
 				if delta.Content != "" {
-//line stdlib/llm/chat/chat.kuki:655
-					fullContent = (fullContent + delta.Content)
-//line stdlib/llm/chat/chat.kuki:656
+//line stdlib/llm/chat/chat.kuki:741
+					fullContent = fullContent + delta.Content
+//line stdlib/llm/chat/chat.kuki:742
 					if c.streamHandler != nil {
-//line stdlib/llm/chat/chat.kuki:657
+//line stdlib/llm/chat/chat.kuki:743
 						c.streamHandler(delta.Content)
 					}
-//line stdlib/llm/chat/chat.kuki:658
+//line stdlib/llm/chat/chat.kuki:744
 					if c.eventHandler != nil {
-//line stdlib/llm/chat/chat.kuki:659
+//line stdlib/llm/chat/chat.kuki:745
 						c.eventHandler(llm.Delta{Body: delta.Content})
 					}
 				}
-//line stdlib/llm/chat/chat.kuki:660
+//line stdlib/llm/chat/chat.kuki:746
 				if len(delta.ToolCalls) > 0 {
-//line stdlib/llm/chat/chat.kuki:661
+//line stdlib/llm/chat/chat.kuki:747
 					for _, tcDelta := range delta.ToolCalls {
-//line stdlib/llm/chat/chat.kuki:662
+//line stdlib/llm/chat/chat.kuki:748
 						idx := tcDelta.Index
-//line stdlib/llm/chat/chat.kuki:663
+//line stdlib/llm/chat/chat.kuki:749
 						call := callsMap[idx]
-//line stdlib/llm/chat/chat.kuki:664
+//line stdlib/llm/chat/chat.kuki:750
 						if tcDelta.ID != "" {
-//line stdlib/llm/chat/chat.kuki:665
+//line stdlib/llm/chat/chat.kuki:751
 							call.ID = tcDelta.ID
 						}
-//line stdlib/llm/chat/chat.kuki:666
+//line stdlib/llm/chat/chat.kuki:752
 						if tcDelta.Type != "" {
-//line stdlib/llm/chat/chat.kuki:667
+//line stdlib/llm/chat/chat.kuki:753
 							call.Type = tcDelta.Type
 						}
-//line stdlib/llm/chat/chat.kuki:668
+//line stdlib/llm/chat/chat.kuki:754
 						if tcDelta.Function.Name != "" {
-//line stdlib/llm/chat/chat.kuki:669
-							call.Function.Name = (call.Function.Name + tcDelta.Function.Name)
-//line stdlib/llm/chat/chat.kuki:670
+//line stdlib/llm/chat/chat.kuki:755
+							call.Function.Name = call.Function.Name + tcDelta.Function.Name
+//line stdlib/llm/chat/chat.kuki:756
 							if c.eventHandler != nil {
-//line stdlib/llm/chat/chat.kuki:671
+//line stdlib/llm/chat/chat.kuki:757
 								c.eventHandler(llm.ToolCallStart{Index: idx, ID: call.ID, Name: tcDelta.Function.Name})
 							}
 						}
-//line stdlib/llm/chat/chat.kuki:676
+//line stdlib/llm/chat/chat.kuki:762
 						if tcDelta.Function.Arguments != "" {
-//line stdlib/llm/chat/chat.kuki:677
-							call.Function.Arguments = (call.Function.Arguments + tcDelta.Function.Arguments)
-//line stdlib/llm/chat/chat.kuki:678
+//line stdlib/llm/chat/chat.kuki:763
+							call.Function.Arguments = call.Function.Arguments + tcDelta.Function.Arguments
+//line stdlib/llm/chat/chat.kuki:764
 							if c.eventHandler != nil {
-//line stdlib/llm/chat/chat.kuki:679
+//line stdlib/llm/chat/chat.kuki:765
 								c.eventHandler(llm.ToolCallArgs{Index: idx, Body: tcDelta.Function.Arguments})
 							}
 						}
-//line stdlib/llm/chat/chat.kuki:683
+//line stdlib/llm/chat/chat.kuki:769
 						callsMap[idx] = call
-//line stdlib/llm/chat/chat.kuki:684
+//line stdlib/llm/chat/chat.kuki:770
 						if idx > maxIdx {
-//line stdlib/llm/chat/chat.kuki:685
+//line stdlib/llm/chat/chat.kuki:771
 							maxIdx = idx
 						}
 					}
@@ -1041,44 +1191,44 @@ func executeStreamRaw(c Client) (Completion, error) {
 			}
 		}
 	}
-//line stdlib/llm/chat/chat.kuki:687
-//line stdlib/llm/chat/chat.kuki:687
+//line stdlib/llm/chat/chat.kuki:773
+//line stdlib/llm/chat/chat.kuki:773
 	err_9 := scanner.Err()
-//line stdlib/llm/chat/chat.kuki:687
+//line stdlib/llm/chat/chat.kuki:773
 	if err_9 != nil {
-//line stdlib/llm/chat/chat.kuki:687
-		//line stdlib/llm/chat/chat.kuki:688
+//line stdlib/llm/chat/chat.kuki:773
+		//line stdlib/llm/chat/chat.kuki:774
 		if c.eventHandler != nil {
-			//line stdlib/llm/chat/chat.kuki:689
+			//line stdlib/llm/chat/chat.kuki:775
 			c.eventHandler(llm.Error{Message: fmt.Sprintf("%v", err_9)})
 		}
-		//line stdlib/llm/chat/chat.kuki:690
+		//line stdlib/llm/chat/chat.kuki:776
 		return Completion{}, fmt.Errorf("%v", err_9)
 	}
-//line stdlib/llm/chat/chat.kuki:692
+//line stdlib/llm/chat/chat.kuki:778
 	if c.eventHandler != nil {
-//line stdlib/llm/chat/chat.kuki:693
+//line stdlib/llm/chat/chat.kuki:779
 		c.eventHandler(llm.Completed{})
 	}
-//line stdlib/llm/chat/chat.kuki:695
+//line stdlib/llm/chat/chat.kuki:781
 	toolCalls := make([]ToolCall, 0)
-//line stdlib/llm/chat/chat.kuki:696
+//line stdlib/llm/chat/chat.kuki:782
 	for i := range maxIdx + 1 {
-//line stdlib/llm/chat/chat.kuki:697
+//line stdlib/llm/chat/chat.kuki:783
 		tc, ok := callsMap[i]
-//line stdlib/llm/chat/chat.kuki:698
+//line stdlib/llm/chat/chat.kuki:784
 		if ok {
-//line stdlib/llm/chat/chat.kuki:699
+//line stdlib/llm/chat/chat.kuki:785
 			if tc.Type == "" {
-//line stdlib/llm/chat/chat.kuki:700
+//line stdlib/llm/chat/chat.kuki:786
 				tc.Type = "function"
 			}
-//line stdlib/llm/chat/chat.kuki:701
+//line stdlib/llm/chat/chat.kuki:787
 			toolCalls = append(toolCalls, tc)
 		}
 	}
-//line stdlib/llm/chat/chat.kuki:703
-	comp := Completion{Choices: []Choice{Choice{Index: 0, Message: ResponseMessage{Role: "assistant", Content: fullContent, ToolCalls: toolCalls}}}}
-//line stdlib/llm/chat/chat.kuki:711
+//line stdlib/llm/chat/chat.kuki:789
+	comp := Completion{Choices: []Choice{Choice{Index: 0, Message: ResponseMessage{Role: MessageRoleAssistant, Content: fullContent, ToolCalls: toolCalls}}}}
+//line stdlib/llm/chat/chat.kuki:801
 	return comp, nil
 }

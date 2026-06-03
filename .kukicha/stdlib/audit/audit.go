@@ -177,7 +177,7 @@ type Entry struct {
 //line stdlib/audit/audit.kuki:151
 func Open(dbPath string) (Log, error) {
 //line stdlib/audit/audit.kuki:152
-	return OpenWithKey(dbPath, (dbPath + ".key"))
+	return OpenWithKey(dbPath, dbPath+".key")
 }
 
 //line stdlib/audit/audit.kuki:157
@@ -269,7 +269,7 @@ func Record(log Log, event Event) error {
 //line stdlib/audit/audit.kuki:194
 	defer log.state.mu.Unlock()
 //line stdlib/audit/audit.kuki:196
-	seq := (log.state.lastSeq + 1)
+	seq := log.state.lastSeq + 1
 //line stdlib/audit/audit.kuki:197
 	ts := time.Now().UnixNano()
 //line stdlib/audit/audit.kuki:199
@@ -298,11 +298,11 @@ func Record(log Log, event Event) error {
 	txErr := db.Transaction(log.state.pool, func(tx db.Tx) error {
 //line stdlib/audit/audit.kuki:220
 //line stdlib/audit/audit.kuki:220
-		_, err_1 := db.TxExec(tx, "INSERT INTO events (seq, ts, actor, action, target, reason, outcome, outcome_json, key_id, prev_hash, hash, sig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", seq, ts, event.Actor, event.Action, event.Target, event.Reason, outcomeTag, outcomeJSON, keyID, prevHash, hash, sig)
+		_, err_10 := db.TxExec(tx, "INSERT INTO events (seq, ts, actor, action, target, reason, outcome, outcome_json, key_id, prev_hash, hash, sig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", seq, ts, event.Actor, event.Action, event.Target, event.Reason, outcomeTag, outcomeJSON, keyID, prevHash, hash, sig)
 //line stdlib/audit/audit.kuki:235
-		if err_1 != nil {
+		if err_10 != nil {
 //line stdlib/audit/audit.kuki:235
-			return fmt.Errorf("audit: insert event: %v", err_1)
+			return fmt.Errorf("audit: insert event: %v", err_10)
 		}
 //line stdlib/audit/audit.kuki:237
 		keys := make([]string, 0, len(event.Extra))
@@ -317,24 +317,24 @@ func Record(log Log, event Event) error {
 		for _, k := range keys {
 //line stdlib/audit/audit.kuki:242
 //line stdlib/audit/audit.kuki:242
-			_, err_2 := db.TxExec(tx, "INSERT INTO event_extra (seq, key, value) VALUES (?, ?, ?)", seq, k, event.Extra[k])
+			_, err_11 := db.TxExec(tx, "INSERT INTO event_extra (seq, key, value) VALUES (?, ?, ?)", seq, k, event.Extra[k])
 //line stdlib/audit/audit.kuki:248
-			if err_2 != nil {
+			if err_11 != nil {
 //line stdlib/audit/audit.kuki:248
-				return fmt.Errorf("audit: insert extra: %v", err_2)
+				return fmt.Errorf("audit: insert extra: %v", err_11)
 			}
 		}
 //line stdlib/audit/audit.kuki:250
 		interval := log.state.checkpointInterval
 //line stdlib/audit/audit.kuki:251
-		if (interval > 0) && ((seq % interval) == 0) {
+		if interval > 0 && seq%interval == 0 {
 //line stdlib/audit/audit.kuki:252
 //line stdlib/audit/audit.kuki:252
-			_, err_3 := db.TxExec(tx, "INSERT OR REPLACE INTO audit_checkpoints (seq, hash, verified_at) VALUES (?, ?, ?)", seq, hash, time.Now().UnixNano())
+			_, err_12 := db.TxExec(tx, "INSERT OR REPLACE INTO audit_checkpoints (seq, hash, verified_at) VALUES (?, ?, ?)", seq, hash, time.Now().UnixNano())
 //line stdlib/audit/audit.kuki:258
-			if err_3 != nil {
+			if err_12 != nil {
 //line stdlib/audit/audit.kuki:258
-				return fmt.Errorf("audit: insert checkpoint: %v", err_3)
+				return fmt.Errorf("audit: insert checkpoint: %v", err_12)
 			}
 		}
 //line stdlib/audit/audit.kuki:259
@@ -353,980 +353,972 @@ func Record(log Log, event Event) error {
 	return nil
 }
 
-//line stdlib/audit/audit.kuki:271
-func Tail(log Log) (int64, []byte) {
-//line stdlib/audit/audit.kuki:272
-	log.state.mu.Lock()
-//line stdlib/audit/audit.kuki:273
-	defer log.state.mu.Unlock()
-//line stdlib/audit/audit.kuki:274
-	return log.state.lastSeq, log.state.lastHash
+//line stdlib/audit/audit.kuki:270
+type TailInfo struct {
+	Seq  int64
+	Hash []byte
 }
 
-//line stdlib/audit/audit.kuki:280
-func Query(log Log, filter Filter) ([]Entry, error) {
-//line stdlib/audit/audit.kuki:281
-	where := "WHERE seq > 0"
-//line stdlib/audit/audit.kuki:282
-	args := []any{}
-//line stdlib/audit/audit.kuki:283
-	if filter.Actor != "" {
-//line stdlib/audit/audit.kuki:284
-		where = (where + " AND actor = ?")
+//line stdlib/audit/audit.kuki:276
+func Tail(log Log) TailInfo {
+//line stdlib/audit/audit.kuki:277
+	log.state.mu.Lock()
+//line stdlib/audit/audit.kuki:278
+	defer log.state.mu.Unlock()
+//line stdlib/audit/audit.kuki:279
+	return TailInfo{Seq: log.state.lastSeq, Hash: log.state.lastHash}
+}
+
 //line stdlib/audit/audit.kuki:285
+func Query(log Log, filter Filter) ([]Entry, error) {
+//line stdlib/audit/audit.kuki:286
+	where := "WHERE seq > 0"
+//line stdlib/audit/audit.kuki:287
+	args := []any{}
+//line stdlib/audit/audit.kuki:288
+	if filter.Actor != "" {
+//line stdlib/audit/audit.kuki:289
+		where = where + " AND actor = ?"
+//line stdlib/audit/audit.kuki:290
 		args = append(args, filter.Actor)
 	}
-//line stdlib/audit/audit.kuki:286
+//line stdlib/audit/audit.kuki:291
 	if filter.Action != "" {
-//line stdlib/audit/audit.kuki:287
-		where = (where + " AND action = ?")
-//line stdlib/audit/audit.kuki:288
+//line stdlib/audit/audit.kuki:292
+		where = where + " AND action = ?"
+//line stdlib/audit/audit.kuki:293
 		args = append(args, filter.Action)
 	}
-//line stdlib/audit/audit.kuki:289
+//line stdlib/audit/audit.kuki:294
 	if filter.Target != "" {
-//line stdlib/audit/audit.kuki:290
-		where = (where + " AND target = ?")
-//line stdlib/audit/audit.kuki:291
+//line stdlib/audit/audit.kuki:295
+		where = where + " AND target = ?"
+//line stdlib/audit/audit.kuki:296
 		args = append(args, filter.Target)
 	}
-//line stdlib/audit/audit.kuki:292
+//line stdlib/audit/audit.kuki:297
 	if !filter.Since.IsZero() {
-//line stdlib/audit/audit.kuki:293
-		where = (where + " AND ts >= ?")
-//line stdlib/audit/audit.kuki:294
+//line stdlib/audit/audit.kuki:298
+		where = where + " AND ts >= ?"
+//line stdlib/audit/audit.kuki:299
 		args = append(args, filter.Since.UnixNano())
 	}
-//line stdlib/audit/audit.kuki:295
+//line stdlib/audit/audit.kuki:300
 	if !filter.Until.IsZero() {
-//line stdlib/audit/audit.kuki:296
-		where = (where + " AND ts <= ?")
-//line stdlib/audit/audit.kuki:297
+//line stdlib/audit/audit.kuki:301
+		where = where + " AND ts <= ?"
+//line stdlib/audit/audit.kuki:302
 		args = append(args, filter.Until.UnixNano())
 	}
-//line stdlib/audit/audit.kuki:298
+//line stdlib/audit/audit.kuki:303
 	limitClause := ""
-//line stdlib/audit/audit.kuki:299
+//line stdlib/audit/audit.kuki:304
 	if filter.Limit > 0 {
-//line stdlib/audit/audit.kuki:300
+//line stdlib/audit/audit.kuki:305
 		limitClause = " LIMIT ?"
-//line stdlib/audit/audit.kuki:301
+//line stdlib/audit/audit.kuki:306
 		args = append(args, filter.Limit)
 	}
-//line stdlib/audit/audit.kuki:303
-	query := ((("SELECT seq, ts, actor, action, target, reason, outcome, outcome_json, key_id FROM events " + where) + " ORDER BY seq ASC") + limitClause)
-//line stdlib/audit/audit.kuki:304
-	rows, err_10 := db.RawDB(log.state.pool).Query(query, args...)
-//line stdlib/audit/audit.kuki:304
-	if err_10 != nil {
-//line stdlib/audit/audit.kuki:304
-		return []Entry{}, fmt.Errorf("audit: query: %v", err_10)
-	}
-//line stdlib/audit/audit.kuki:305
-	defer rows.Close()
-//line stdlib/audit/audit.kuki:307
-	entries := []Entry{}
 //line stdlib/audit/audit.kuki:308
-	for rows.Next() {
+	query := "SELECT seq, ts, actor, action, target, reason, outcome, outcome_json, key_id FROM events " + where + " ORDER BY seq ASC" + limitClause
 //line stdlib/audit/audit.kuki:309
-		seq := int64(0)
+	rows, err_13 := db.RawDB(log.state.pool).Query(query, args...)
+//line stdlib/audit/audit.kuki:309
+	if err_13 != nil {
+//line stdlib/audit/audit.kuki:309
+		return []Entry{}, fmt.Errorf("audit: query: %v", err_13)
+	}
 //line stdlib/audit/audit.kuki:310
-		ts := int64(0)
-//line stdlib/audit/audit.kuki:311
-		actor := ""
+	defer rows.Close()
 //line stdlib/audit/audit.kuki:312
-		action := ""
+	entries := []Entry{}
 //line stdlib/audit/audit.kuki:313
-		target := ""
+	for rows.Next() {
 //line stdlib/audit/audit.kuki:314
-		reason := ""
+		seq := int64(0)
 //line stdlib/audit/audit.kuki:315
-		outcomeTag := ""
+		ts := int64(0)
 //line stdlib/audit/audit.kuki:316
-		outcomeJSON := ""
+		actor := ""
 //line stdlib/audit/audit.kuki:317
+		action := ""
+//line stdlib/audit/audit.kuki:318
+		target := ""
+//line stdlib/audit/audit.kuki:319
+		reason := ""
+//line stdlib/audit/audit.kuki:320
+		outcomeTag := ""
+//line stdlib/audit/audit.kuki:321
+		outcomeJSON := ""
+//line stdlib/audit/audit.kuki:322
 		keyID := ""
-//line stdlib/audit/audit.kuki:318
-		// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:318
-		err_11 := rows.Scan(&seq, &ts, &actor, &action, &target, &reason, &outcomeTag, &outcomeJSON, &keyID)
-//line stdlib/audit/audit.kuki:328
-		if err_11 != nil {
-//line stdlib/audit/audit.kuki:328
-			return []Entry{}, fmt.Errorf("audit: scan: %v", err_11)
+//line stdlib/audit/audit.kuki:323
+//line stdlib/audit/audit.kuki:323
+		err_14 := rows.Scan(&seq, &ts, &actor, &action, &target, &reason, &outcomeTag, &outcomeJSON, &keyID)
+//line stdlib/audit/audit.kuki:333
+		if err_14 != nil {
+//line stdlib/audit/audit.kuki:333
+			return []Entry{}, fmt.Errorf("audit: scan: %v", err_14)
 		}
-//line stdlib/audit/audit.kuki:329
-		outcome, err_12 := decodeOutcome(outcomeTag, outcomeJSON)
-//line stdlib/audit/audit.kuki:329
-		if err_12 != nil {
-//line stdlib/audit/audit.kuki:329
-			return []Entry{}, fmt.Errorf("%v", err_12)
+//line stdlib/audit/audit.kuki:334
+		outcome, err_15 := decodeOutcome(outcomeTag, outcomeJSON)
+//line stdlib/audit/audit.kuki:334
+		if err_15 != nil {
+//line stdlib/audit/audit.kuki:334
+			return []Entry{}, fmt.Errorf("%v", err_15)
 		}
-//line stdlib/audit/audit.kuki:330
-		extras, err_13 := loadExtras(log, seq)
-//line stdlib/audit/audit.kuki:330
-		if err_13 != nil {
-//line stdlib/audit/audit.kuki:330
-			return []Entry{}, fmt.Errorf("%v", err_13)
+//line stdlib/audit/audit.kuki:335
+		extras, err_16 := loadExtras(log, seq)
+//line stdlib/audit/audit.kuki:335
+		if err_16 != nil {
+//line stdlib/audit/audit.kuki:335
+			return []Entry{}, fmt.Errorf("%v", err_16)
 		}
-//line stdlib/audit/audit.kuki:331
+//line stdlib/audit/audit.kuki:336
 		entries = append(entries, Entry{Seq: seq, Timestamp: time.Unix(0, ts), KeyID: keyID, Event: Event{Actor: actor, Action: action, Target: target, Reason: reason, Outcome: outcome, Extra: extras}})
 	}
-//line stdlib/audit/audit.kuki:344
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:344
-	err_14 := rows.Err()
-//line stdlib/audit/audit.kuki:344
-	if err_14 != nil {
-//line stdlib/audit/audit.kuki:344
-		return []Entry{}, fmt.Errorf("audit: query: %v", err_14)
+//line stdlib/audit/audit.kuki:349
+//line stdlib/audit/audit.kuki:349
+	err_17 := rows.Err()
+//line stdlib/audit/audit.kuki:349
+	if err_17 != nil {
+//line stdlib/audit/audit.kuki:349
+		return []Entry{}, fmt.Errorf("audit: query: %v", err_17)
 	}
-//line stdlib/audit/audit.kuki:345
+//line stdlib/audit/audit.kuki:350
 	return entries, nil
 }
 
-//line stdlib/audit/audit.kuki:352
+//line stdlib/audit/audit.kuki:357
 func Verify(log Log) error {
-//line stdlib/audit/audit.kuki:353
-	cutoffs, err_15 := loadVacuumCutoffs(log)
-//line stdlib/audit/audit.kuki:353
-	if err_15 != nil {
-//line stdlib/audit/audit.kuki:353
-		return fmt.Errorf("%v", err_15)
-	}
-//line stdlib/audit/audit.kuki:355
-	rows, err_16 := db.RawDB(log.state.pool).Query("SELECT seq, ts, actor, action, target, reason, outcome, outcome_json, key_id, prev_hash, hash, sig FROM events ORDER BY seq ASC")
-//line stdlib/audit/audit.kuki:357
-	if err_16 != nil {
-//line stdlib/audit/audit.kuki:357
-		return fmt.Errorf("audit: verify: %v", err_16)
-	}
 //line stdlib/audit/audit.kuki:358
-	defer rows.Close()
-//line stdlib/audit/audit.kuki:360
-	expectedPrev := make([]byte, 32)
-//line stdlib/audit/audit.kuki:361
-	expectedSeq := int64(0)
-//line stdlib/audit/audit.kuki:362
-	saw := false
-//line stdlib/audit/audit.kuki:364
-	for rows.Next() {
-//line stdlib/audit/audit.kuki:365
-		saw = true
-//line stdlib/audit/audit.kuki:366
-		seq := int64(0)
-//line stdlib/audit/audit.kuki:367
-		ts := int64(0)
-//line stdlib/audit/audit.kuki:368
-		actor := ""
-//line stdlib/audit/audit.kuki:369
-		action := ""
-//line stdlib/audit/audit.kuki:370
-		target := ""
-//line stdlib/audit/audit.kuki:371
-		reason := ""
-//line stdlib/audit/audit.kuki:372
-		outcomeTag := ""
-//line stdlib/audit/audit.kuki:373
-		outcomeJSON := ""
-//line stdlib/audit/audit.kuki:374
-		keyID := ""
-//line stdlib/audit/audit.kuki:375
-		prevHash := []byte{}
-//line stdlib/audit/audit.kuki:376
-		storedHash := []byte{}
-//line stdlib/audit/audit.kuki:377
-		sig := []byte{}
-//line stdlib/audit/audit.kuki:378
-		// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:378
-		err_17 := rows.Scan(&seq, &ts, &actor, &action, &target, &reason, &outcomeTag, &outcomeJSON, &keyID, &prevHash, &storedHash, &sig)
-//line stdlib/audit/audit.kuki:391
-		if err_17 != nil {
-//line stdlib/audit/audit.kuki:391
-			return fmt.Errorf("audit: verify scan: %v", err_17)
-		}
-//line stdlib/audit/audit.kuki:393
-		if seq != expectedSeq {
-//line stdlib/audit/audit.kuki:394
-			key := hex.EncodeToString(prevHash)
-//line stdlib/audit/audit.kuki:395
-			if !cutoffs[key] {
-//line stdlib/audit/audit.kuki:396
-				return fmt.Errorf("audit: verify: seq gap at row %v, expected %v (no Vacuumed cutoff matches prev_hash)", seq, expectedSeq)
-			}
-//line stdlib/audit/audit.kuki:397
-			expectedPrev = prevHash
-		}
-//line stdlib/audit/audit.kuki:398
-		if !bytes.Equal(prevHash, expectedPrev) {
-//line stdlib/audit/audit.kuki:399
-			return fmt.Errorf("audit: verify: prev_hash mismatch at seq=%v", seq)
-		}
-//line stdlib/audit/audit.kuki:401
-		extraCanonical, err_18 := loadExtraCanonical(log, seq)
-//line stdlib/audit/audit.kuki:401
-		if err_18 != nil {
-//line stdlib/audit/audit.kuki:401
-			return fmt.Errorf("%v", err_18)
-		}
-//line stdlib/audit/audit.kuki:402
-		computed := hashCanonical(seq, ts, actor, action, target, reason, outcomeTag, outcomeJSON, keyID, extraCanonical, prevHash)
-//line stdlib/audit/audit.kuki:415
-		if !bytes.Equal(computed, storedHash) {
-//line stdlib/audit/audit.kuki:416
-			return fmt.Errorf("audit: verify: hash mismatch at seq=%v", seq)
-		}
-//line stdlib/audit/audit.kuki:417
-		if !log.state.signer.Verify(storedHash, sig) {
-//line stdlib/audit/audit.kuki:418
-			return fmt.Errorf("audit: verify: signature mismatch at seq=%v", seq)
-		}
-//line stdlib/audit/audit.kuki:420
-		expectedPrev = storedHash
-//line stdlib/audit/audit.kuki:421
-		expectedSeq = (seq + 1)
+	cutoffs, err_18 := loadVacuumCutoffs(log)
+//line stdlib/audit/audit.kuki:358
+	if err_18 != nil {
+//line stdlib/audit/audit.kuki:358
+		return fmt.Errorf("%v", err_18)
 	}
-//line stdlib/audit/audit.kuki:422
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:422
-	err_19 := rows.Err()
-//line stdlib/audit/audit.kuki:422
+//line stdlib/audit/audit.kuki:360
+	rows, err_19 := db.RawDB(log.state.pool).Query("SELECT seq, ts, actor, action, target, reason, outcome, outcome_json, key_id, prev_hash, hash, sig FROM events ORDER BY seq ASC")
+//line stdlib/audit/audit.kuki:362
 	if err_19 != nil {
-//line stdlib/audit/audit.kuki:422
+//line stdlib/audit/audit.kuki:362
 		return fmt.Errorf("audit: verify: %v", err_19)
 	}
+//line stdlib/audit/audit.kuki:363
+	defer rows.Close()
+//line stdlib/audit/audit.kuki:365
+	expectedPrev := make([]byte, 32)
+//line stdlib/audit/audit.kuki:366
+	expectedSeq := int64(0)
+//line stdlib/audit/audit.kuki:367
+	saw := false
+//line stdlib/audit/audit.kuki:369
+	for rows.Next() {
+//line stdlib/audit/audit.kuki:370
+		saw = true
+//line stdlib/audit/audit.kuki:371
+		seq := int64(0)
+//line stdlib/audit/audit.kuki:372
+		ts := int64(0)
+//line stdlib/audit/audit.kuki:373
+		actor := ""
+//line stdlib/audit/audit.kuki:374
+		action := ""
+//line stdlib/audit/audit.kuki:375
+		target := ""
+//line stdlib/audit/audit.kuki:376
+		reason := ""
+//line stdlib/audit/audit.kuki:377
+		outcomeTag := ""
+//line stdlib/audit/audit.kuki:378
+		outcomeJSON := ""
+//line stdlib/audit/audit.kuki:379
+		keyID := ""
+//line stdlib/audit/audit.kuki:380
+		prevHash := []byte{}
+//line stdlib/audit/audit.kuki:381
+		storedHash := []byte{}
+//line stdlib/audit/audit.kuki:382
+		sig := []byte{}
+//line stdlib/audit/audit.kuki:383
+//line stdlib/audit/audit.kuki:383
+		err_20 := rows.Scan(&seq, &ts, &actor, &action, &target, &reason, &outcomeTag, &outcomeJSON, &keyID, &prevHash, &storedHash, &sig)
+//line stdlib/audit/audit.kuki:396
+		if err_20 != nil {
+//line stdlib/audit/audit.kuki:396
+			return fmt.Errorf("audit: verify scan: %v", err_20)
+		}
+//line stdlib/audit/audit.kuki:398
+		if seq != expectedSeq {
+//line stdlib/audit/audit.kuki:399
+			key := hex.EncodeToString(prevHash)
+//line stdlib/audit/audit.kuki:400
+			if !cutoffs[key] {
+//line stdlib/audit/audit.kuki:401
+				return fmt.Errorf("audit: verify: seq gap at row %v, expected %v (no Vacuumed cutoff matches prev_hash)", seq, expectedSeq)
+			}
+//line stdlib/audit/audit.kuki:402
+			expectedPrev = prevHash
+		}
+//line stdlib/audit/audit.kuki:403
+		if !bytes.Equal(prevHash, expectedPrev) {
+//line stdlib/audit/audit.kuki:404
+			return fmt.Errorf("audit: verify: prev_hash mismatch at seq=%v", seq)
+		}
+//line stdlib/audit/audit.kuki:406
+		extraCanonical, err_21 := loadExtraCanonical(log, seq)
+//line stdlib/audit/audit.kuki:406
+		if err_21 != nil {
+//line stdlib/audit/audit.kuki:406
+			return fmt.Errorf("%v", err_21)
+		}
+//line stdlib/audit/audit.kuki:407
+		computed := hashCanonical(seq, ts, actor, action, target, reason, outcomeTag, outcomeJSON, keyID, extraCanonical, prevHash)
+//line stdlib/audit/audit.kuki:420
+		if !bytes.Equal(computed, storedHash) {
+//line stdlib/audit/audit.kuki:421
+			return fmt.Errorf("audit: verify: hash mismatch at seq=%v", seq)
+		}
+//line stdlib/audit/audit.kuki:422
+		if !log.state.signer.Verify(storedHash, sig) {
 //line stdlib/audit/audit.kuki:423
+			return fmt.Errorf("audit: verify: signature mismatch at seq=%v", seq)
+		}
+//line stdlib/audit/audit.kuki:425
+		expectedPrev = storedHash
+//line stdlib/audit/audit.kuki:426
+		expectedSeq = seq + 1
+	}
+//line stdlib/audit/audit.kuki:427
+//line stdlib/audit/audit.kuki:427
+	err_22 := rows.Err()
+//line stdlib/audit/audit.kuki:427
+	if err_22 != nil {
+//line stdlib/audit/audit.kuki:427
+		return fmt.Errorf("audit: verify: %v", err_22)
+	}
+//line stdlib/audit/audit.kuki:428
 	if !saw {
-//line stdlib/audit/audit.kuki:424
+//line stdlib/audit/audit.kuki:429
 		return errors.New("audit: verify: empty log (no genesis row)")
 	}
-//line stdlib/audit/audit.kuki:425
+//line stdlib/audit/audit.kuki:430
 	return nil
 }
 
-//line stdlib/audit/audit.kuki:438
-func Vacuum(log Log, before time.Time) error {
-//line stdlib/audit/audit.kuki:439
-	log.state.mu.Lock()
-//line stdlib/audit/audit.kuki:440
-	defer log.state.mu.Unlock()
-//line stdlib/audit/audit.kuki:442
-	beforeNs := before.UnixNano()
 //line stdlib/audit/audit.kuki:443
-	cutoffCount := 0
+func Vacuum(log Log, before time.Time) error {
 //line stdlib/audit/audit.kuki:444
-	hashAtCutoff := []byte{}
+	log.state.mu.Lock()
 //line stdlib/audit/audit.kuki:445
-	countRow := db.RawDB(log.state.pool).QueryRow("SELECT COUNT(*) FROM events WHERE ts < ? AND seq > 0", beforeNs)
+	defer log.state.mu.Unlock()
+//line stdlib/audit/audit.kuki:447
+	beforeNs := before.UnixNano()
+//line stdlib/audit/audit.kuki:448
+	cutoffCount := 0
 //line stdlib/audit/audit.kuki:449
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:449
-	err_20 := countRow.Scan(&cutoffCount)
-//line stdlib/audit/audit.kuki:449
-	if err_20 != nil {
-//line stdlib/audit/audit.kuki:449
-		return fmt.Errorf("audit: vacuum count: %v", err_20)
-	}
+	hashAtCutoff := []byte{}
 //line stdlib/audit/audit.kuki:450
+	countRow := db.RawDB(log.state.pool).QueryRow("SELECT COUNT(*) FROM events WHERE ts < ? AND seq > 0", beforeNs)
+//line stdlib/audit/audit.kuki:454
+//line stdlib/audit/audit.kuki:454
+	err_23 := countRow.Scan(&cutoffCount)
+//line stdlib/audit/audit.kuki:454
+	if err_23 != nil {
+//line stdlib/audit/audit.kuki:454
+		return fmt.Errorf("audit: vacuum count: %v", err_23)
+	}
+//line stdlib/audit/audit.kuki:455
 	if cutoffCount == 0 {
-//line stdlib/audit/audit.kuki:451
+//line stdlib/audit/audit.kuki:456
 		return nil
 	}
-//line stdlib/audit/audit.kuki:453
+//line stdlib/audit/audit.kuki:458
 	hashRow := db.RawDB(log.state.pool).QueryRow("SELECT hash FROM events WHERE ts < ? AND seq > 0 ORDER BY seq DESC LIMIT 1", beforeNs)
-//line stdlib/audit/audit.kuki:457
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:457
-	err_21 := hashRow.Scan(&hashAtCutoff)
-//line stdlib/audit/audit.kuki:457
-	if err_21 != nil {
-//line stdlib/audit/audit.kuki:457
-		return fmt.Errorf("audit: vacuum cutoff hash: %v", err_21)
-	}
-//line stdlib/audit/audit.kuki:459
-	seq := (log.state.lastSeq + 1)
-//line stdlib/audit/audit.kuki:460
-	ts := time.Now().UnixNano()
-//line stdlib/audit/audit.kuki:461
-	actor := "audit"
 //line stdlib/audit/audit.kuki:462
-	action := "vacuum"
-//line stdlib/audit/audit.kuki:463
-	target := ""
+//line stdlib/audit/audit.kuki:462
+	err_24 := hashRow.Scan(&hashAtCutoff)
+//line stdlib/audit/audit.kuki:462
+	if err_24 != nil {
+//line stdlib/audit/audit.kuki:462
+		return fmt.Errorf("audit: vacuum cutoff hash: %v", err_24)
+	}
 //line stdlib/audit/audit.kuki:464
-	reason := ""
+	seq := log.state.lastSeq + 1
 //line stdlib/audit/audit.kuki:465
-	outcomeTag, outcomeJSON, err_22 := encodeOutcome(Vacuumed{Before: before, Count: cutoffCount, HashAtCutoff: hashAtCutoff})
+	ts := time.Now().UnixNano()
+//line stdlib/audit/audit.kuki:466
+	actor := "audit"
+//line stdlib/audit/audit.kuki:467
+	action := "vacuum"
+//line stdlib/audit/audit.kuki:468
+	target := ""
 //line stdlib/audit/audit.kuki:469
-	if err_22 != nil {
-//line stdlib/audit/audit.kuki:469
-		return fmt.Errorf("audit: vacuum encode: %v", err_22)
-	}
+	reason := ""
 //line stdlib/audit/audit.kuki:470
-	extraCanonical := ""
-//line stdlib/audit/audit.kuki:471
-	keyID := log.state.signer.KeyID()
-//line stdlib/audit/audit.kuki:472
-	prevHash := log.state.lastHash
+	outcomeTag, outcomeJSON, err_25 := encodeOutcome(Vacuumed{Before: before, Count: cutoffCount, HashAtCutoff: hashAtCutoff})
 //line stdlib/audit/audit.kuki:474
-	hash := hashCanonical(seq, ts, actor, action, target, reason, outcomeTag, outcomeJSON, keyID, extraCanonical, prevHash)
-//line stdlib/audit/audit.kuki:487
-	sig, err_23 := log.state.signer.Sign(hash)
-//line stdlib/audit/audit.kuki:487
-	if err_23 != nil {
-//line stdlib/audit/audit.kuki:487
-		return fmt.Errorf("audit: vacuum sign: %v", err_23)
+	if err_25 != nil {
+//line stdlib/audit/audit.kuki:474
+		return fmt.Errorf("audit: vacuum encode: %v", err_25)
 	}
-//line stdlib/audit/audit.kuki:489
+//line stdlib/audit/audit.kuki:475
+	extraCanonical := ""
+//line stdlib/audit/audit.kuki:476
+	keyID := log.state.signer.KeyID()
+//line stdlib/audit/audit.kuki:477
+	prevHash := log.state.lastHash
+//line stdlib/audit/audit.kuki:479
+	hash := hashCanonical(seq, ts, actor, action, target, reason, outcomeTag, outcomeJSON, keyID, extraCanonical, prevHash)
+//line stdlib/audit/audit.kuki:492
+	sig, err_26 := log.state.signer.Sign(hash)
+//line stdlib/audit/audit.kuki:492
+	if err_26 != nil {
+//line stdlib/audit/audit.kuki:492
+		return fmt.Errorf("audit: vacuum sign: %v", err_26)
+	}
+//line stdlib/audit/audit.kuki:494
 	txErr := db.Transaction(log.state.pool, func(tx db.Tx) error {
-//line stdlib/audit/audit.kuki:490
-//line stdlib/audit/audit.kuki:490
-		_, err_1 := db.TxExec(tx, "INSERT INTO events (seq, ts, actor, action, target, reason, outcome, outcome_json, key_id, prev_hash, hash, sig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", seq, ts, actor, action, target, reason, outcomeTag, outcomeJSON, keyID, prevHash, hash, sig)
-//line stdlib/audit/audit.kuki:505
-		if err_1 != nil {
-//line stdlib/audit/audit.kuki:505
-			return fmt.Errorf("audit: vacuum insert: %v", err_1)
-		}
-//line stdlib/audit/audit.kuki:507
-//line stdlib/audit/audit.kuki:507
-		_, err_2 := db.TxExec(tx, "DELETE FROM events WHERE ts < ? AND seq > 0", beforeNs)
-//line stdlib/audit/audit.kuki:507
-		if err_2 != nil {
-//line stdlib/audit/audit.kuki:507
-			return fmt.Errorf("audit: vacuum delete: %v", err_2)
-		}
-//line stdlib/audit/audit.kuki:508
-//line stdlib/audit/audit.kuki:508
-		_, err_3 := db.TxExec(tx, "DELETE FROM audit_checkpoints WHERE seq < (SELECT COALESCE(MIN(seq), 0) FROM events WHERE seq > 0)")
-//line stdlib/audit/audit.kuki:511
-		if err_3 != nil {
-//line stdlib/audit/audit.kuki:511
-			return fmt.Errorf("audit: vacuum delete checkpoints: %v", err_3)
+//line stdlib/audit/audit.kuki:495
+//line stdlib/audit/audit.kuki:495
+		_, err_27 := db.TxExec(tx, "INSERT INTO events (seq, ts, actor, action, target, reason, outcome, outcome_json, key_id, prev_hash, hash, sig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", seq, ts, actor, action, target, reason, outcomeTag, outcomeJSON, keyID, prevHash, hash, sig)
+//line stdlib/audit/audit.kuki:510
+		if err_27 != nil {
+//line stdlib/audit/audit.kuki:510
+			return fmt.Errorf("audit: vacuum insert: %v", err_27)
 		}
 //line stdlib/audit/audit.kuki:512
+//line stdlib/audit/audit.kuki:512
+		_, err_28 := db.TxExec(tx, "DELETE FROM events WHERE ts < ? AND seq > 0", beforeNs)
+//line stdlib/audit/audit.kuki:512
+		if err_28 != nil {
+//line stdlib/audit/audit.kuki:512
+			return fmt.Errorf("audit: vacuum delete: %v", err_28)
+		}
+//line stdlib/audit/audit.kuki:513
+//line stdlib/audit/audit.kuki:513
+		_, err_29 := db.TxExec(tx, "DELETE FROM audit_checkpoints WHERE seq < (SELECT COALESCE(MIN(seq), 0) FROM events WHERE seq > 0)")
+//line stdlib/audit/audit.kuki:516
+		if err_29 != nil {
+//line stdlib/audit/audit.kuki:516
+			return fmt.Errorf("audit: vacuum delete checkpoints: %v", err_29)
+		}
+//line stdlib/audit/audit.kuki:517
 		return nil
 	})
-//line stdlib/audit/audit.kuki:515
+//line stdlib/audit/audit.kuki:520
 	if txErr != nil {
-//line stdlib/audit/audit.kuki:516
+//line stdlib/audit/audit.kuki:521
 		return txErr
 	}
-//line stdlib/audit/audit.kuki:518
+//line stdlib/audit/audit.kuki:523
 	log.state.lastSeq = seq
-//line stdlib/audit/audit.kuki:519
+//line stdlib/audit/audit.kuki:524
 	log.state.lastHash = hash
-//line stdlib/audit/audit.kuki:520
+//line stdlib/audit/audit.kuki:525
 	return nil
 }
 
-//line stdlib/audit/audit.kuki:526
+//line stdlib/audit/audit.kuki:531
 func SetCheckpointInterval(log Log, n int64) {
-//line stdlib/audit/audit.kuki:527
+//line stdlib/audit/audit.kuki:532
 	log.state.mu.Lock()
-//line stdlib/audit/audit.kuki:528
+//line stdlib/audit/audit.kuki:533
 	defer log.state.mu.Unlock()
-//line stdlib/audit/audit.kuki:529
+//line stdlib/audit/audit.kuki:534
 	log.state.checkpointInterval = n
 }
 
-//line stdlib/audit/audit.kuki:535
+//line stdlib/audit/audit.kuki:540
 func Checkpoint(log Log) error {
-//line stdlib/audit/audit.kuki:536
+//line stdlib/audit/audit.kuki:541
 	log.state.mu.Lock()
-//line stdlib/audit/audit.kuki:537
+//line stdlib/audit/audit.kuki:542
 	defer log.state.mu.Unlock()
-//line stdlib/audit/audit.kuki:538
+//line stdlib/audit/audit.kuki:543
 	if log.state.lastSeq < 0 {
-//line stdlib/audit/audit.kuki:539
+//line stdlib/audit/audit.kuki:544
 		return errors.New("audit: checkpoint: log not initialized")
 	}
-//line stdlib/audit/audit.kuki:540
-//line stdlib/audit/audit.kuki:540
-	_, err_24 := db.Exec(log.state.pool, "INSERT OR REPLACE INTO audit_checkpoints (seq, hash, verified_at) VALUES (?, ?, ?)", log.state.lastSeq, log.state.lastHash, time.Now().UnixNano())
-//line stdlib/audit/audit.kuki:546
-	if err_24 != nil {
-//line stdlib/audit/audit.kuki:546
-		return fmt.Errorf("audit: checkpoint: %v", err_24)
+//line stdlib/audit/audit.kuki:545
+//line stdlib/audit/audit.kuki:545
+	_, err_30 := db.Exec(log.state.pool, "INSERT OR REPLACE INTO audit_checkpoints (seq, hash, verified_at) VALUES (?, ?, ?)", log.state.lastSeq, log.state.lastHash, time.Now().UnixNano())
+//line stdlib/audit/audit.kuki:551
+	if err_30 != nil {
+//line stdlib/audit/audit.kuki:551
+		return fmt.Errorf("audit: checkpoint: %v", err_30)
 	}
-//line stdlib/audit/audit.kuki:547
+//line stdlib/audit/audit.kuki:552
 	return nil
 }
 
-//line stdlib/audit/audit.kuki:555
+//line stdlib/audit/audit.kuki:560
 func VerifyIncremental(log Log) error {
-//line stdlib/audit/audit.kuki:556
-	cutoffs, err_25 := loadVacuumCutoffs(log)
-//line stdlib/audit/audit.kuki:556
-	if err_25 != nil {
-//line stdlib/audit/audit.kuki:556
-		return fmt.Errorf("%v", err_25)
-	}
-//line stdlib/audit/audit.kuki:557
-	startSeq := -int64(1)
-//line stdlib/audit/audit.kuki:558
-	startHash := []byte{}
-//line stdlib/audit/audit.kuki:559
-	cpRows, err_26 := db.RawDB(log.state.pool).Query("SELECT seq, hash FROM audit_checkpoints ORDER BY seq DESC LIMIT 1")
 //line stdlib/audit/audit.kuki:561
-	if err_26 != nil {
+	cutoffs, err_31 := loadVacuumCutoffs(log)
 //line stdlib/audit/audit.kuki:561
-		return fmt.Errorf("audit: verify-incremental: read checkpoint: %v", err_26)
+	if err_31 != nil {
+//line stdlib/audit/audit.kuki:561
+		return fmt.Errorf("%v", err_31)
 	}
 //line stdlib/audit/audit.kuki:562
-	hasCheckpoint := false
+	startSeq := -int64(1)
 //line stdlib/audit/audit.kuki:563
-	if cpRows.Next() {
+	startHash := []byte{}
 //line stdlib/audit/audit.kuki:564
-		// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:564
-		err_27 := cpRows.Scan(&startSeq, &startHash)
-//line stdlib/audit/audit.kuki:564
-		if err_27 != nil {
-//line stdlib/audit/audit.kuki:564
-			//line stdlib/audit/audit.kuki:565
-			cpRows.Close()
-			//line stdlib/audit/audit.kuki:566
-			return fmt.Errorf("audit: verify-incremental: scan checkpoint: %v", err_27)
-		}
+	cpRows, err_32 := db.RawDB(log.state.pool).Query("SELECT seq, hash FROM audit_checkpoints ORDER BY seq DESC LIMIT 1")
+//line stdlib/audit/audit.kuki:566
+	if err_32 != nil {
+//line stdlib/audit/audit.kuki:566
+		return fmt.Errorf("audit: verify-incremental: read checkpoint: %v", err_32)
+	}
+//line stdlib/audit/audit.kuki:567
+	hasCheckpoint := false
 //line stdlib/audit/audit.kuki:568
+	if cpRows.Next() {
+//line stdlib/audit/audit.kuki:569
+//line stdlib/audit/audit.kuki:569
+		err_33 := cpRows.Scan(&startSeq, &startHash)
+//line stdlib/audit/audit.kuki:569
+		if err_33 != nil {
+//line stdlib/audit/audit.kuki:569
+			//line stdlib/audit/audit.kuki:570
+			cpRows.Close()
+			//line stdlib/audit/audit.kuki:571
+			return fmt.Errorf("audit: verify-incremental: scan checkpoint: %v", err_33)
+		}
+//line stdlib/audit/audit.kuki:573
 		hasCheckpoint = true
 	}
-//line stdlib/audit/audit.kuki:569
+//line stdlib/audit/audit.kuki:574
 	cpRows.Close()
-//line stdlib/audit/audit.kuki:570
+//line stdlib/audit/audit.kuki:575
 	if !hasCheckpoint {
-//line stdlib/audit/audit.kuki:571
+//line stdlib/audit/audit.kuki:576
 		return Verify(log)
 	}
-//line stdlib/audit/audit.kuki:573
-	rows, err_28 := db.RawDB(log.state.pool).Query("SELECT seq, ts, actor, action, target, reason, outcome, outcome_json, key_id, prev_hash, hash, sig FROM events WHERE seq > ? ORDER BY seq ASC", startSeq)
-//line stdlib/audit/audit.kuki:576
-	if err_28 != nil {
-//line stdlib/audit/audit.kuki:576
-		return fmt.Errorf("audit: verify-incremental: %v", err_28)
-	}
-//line stdlib/audit/audit.kuki:577
-	defer rows.Close()
-//line stdlib/audit/audit.kuki:579
-	expectedPrev := startHash
-//line stdlib/audit/audit.kuki:580
-	expectedSeq := (startSeq + 1)
+//line stdlib/audit/audit.kuki:578
+	rows, err_34 := db.RawDB(log.state.pool).Query("SELECT seq, ts, actor, action, target, reason, outcome, outcome_json, key_id, prev_hash, hash, sig FROM events WHERE seq > ? ORDER BY seq ASC", startSeq)
 //line stdlib/audit/audit.kuki:581
-	lastSeq := startSeq
+	if err_34 != nil {
+//line stdlib/audit/audit.kuki:581
+		return fmt.Errorf("audit: verify-incremental: %v", err_34)
+	}
 //line stdlib/audit/audit.kuki:582
-	lastHash := startHash
+	defer rows.Close()
 //line stdlib/audit/audit.kuki:584
-	for rows.Next() {
+	expectedPrev := startHash
 //line stdlib/audit/audit.kuki:585
-		seq := int64(0)
+	expectedSeq := startSeq + 1
 //line stdlib/audit/audit.kuki:586
-		ts := int64(0)
+	lastSeq := startSeq
 //line stdlib/audit/audit.kuki:587
-		actor := ""
-//line stdlib/audit/audit.kuki:588
-		action := ""
+	lastHash := startHash
 //line stdlib/audit/audit.kuki:589
-		target := ""
+	for rows.Next() {
 //line stdlib/audit/audit.kuki:590
-		reason := ""
+		seq := int64(0)
 //line stdlib/audit/audit.kuki:591
-		outcomeTag := ""
+		ts := int64(0)
 //line stdlib/audit/audit.kuki:592
-		outcomeJSON := ""
+		actor := ""
 //line stdlib/audit/audit.kuki:593
-		keyID := ""
+		action := ""
 //line stdlib/audit/audit.kuki:594
-		prevHash := []byte{}
+		target := ""
 //line stdlib/audit/audit.kuki:595
-		storedHash := []byte{}
+		reason := ""
 //line stdlib/audit/audit.kuki:596
+		outcomeTag := ""
+//line stdlib/audit/audit.kuki:597
+		outcomeJSON := ""
+//line stdlib/audit/audit.kuki:598
+		keyID := ""
+//line stdlib/audit/audit.kuki:599
+		prevHash := []byte{}
+//line stdlib/audit/audit.kuki:600
+		storedHash := []byte{}
+//line stdlib/audit/audit.kuki:601
 		sig := []byte{}
-//line stdlib/audit/audit.kuki:597
-		// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:597
-		err_29 := rows.Scan(&seq, &ts, &actor, &action, &target, &reason, &outcomeTag, &outcomeJSON, &keyID, &prevHash, &storedHash, &sig)
-//line stdlib/audit/audit.kuki:610
-		if err_29 != nil {
-//line stdlib/audit/audit.kuki:610
-			return fmt.Errorf("audit: verify-incremental scan: %v", err_29)
-		}
-//line stdlib/audit/audit.kuki:612
-		if seq != expectedSeq {
-//line stdlib/audit/audit.kuki:613
-			key := hex.EncodeToString(prevHash)
-//line stdlib/audit/audit.kuki:614
-			if !cutoffs[key] {
+//line stdlib/audit/audit.kuki:602
+//line stdlib/audit/audit.kuki:602
+		err_35 := rows.Scan(&seq, &ts, &actor, &action, &target, &reason, &outcomeTag, &outcomeJSON, &keyID, &prevHash, &storedHash, &sig)
 //line stdlib/audit/audit.kuki:615
-				return fmt.Errorf("audit: verify-incremental: seq gap at row %v, expected %v (no Vacuumed cutoff matches prev_hash)", seq, expectedSeq)
-			}
-//line stdlib/audit/audit.kuki:616
-			expectedPrev = prevHash
+		if err_35 != nil {
+//line stdlib/audit/audit.kuki:615
+			return fmt.Errorf("audit: verify-incremental scan: %v", err_35)
 		}
 //line stdlib/audit/audit.kuki:617
-		if !bytes.Equal(prevHash, expectedPrev) {
+		if seq != expectedSeq {
 //line stdlib/audit/audit.kuki:618
+			key := hex.EncodeToString(prevHash)
+//line stdlib/audit/audit.kuki:619
+			if !cutoffs[key] {
+//line stdlib/audit/audit.kuki:620
+				return fmt.Errorf("audit: verify-incremental: seq gap at row %v, expected %v (no Vacuumed cutoff matches prev_hash)", seq, expectedSeq)
+			}
+//line stdlib/audit/audit.kuki:621
+			expectedPrev = prevHash
+		}
+//line stdlib/audit/audit.kuki:622
+		if !bytes.Equal(prevHash, expectedPrev) {
+//line stdlib/audit/audit.kuki:623
 			return fmt.Errorf("audit: verify-incremental: prev_hash mismatch at seq=%v", seq)
 		}
-//line stdlib/audit/audit.kuki:620
-		extraCanonical, err_30 := loadExtraCanonical(log, seq)
-//line stdlib/audit/audit.kuki:620
-		if err_30 != nil {
-//line stdlib/audit/audit.kuki:620
-			return fmt.Errorf("%v", err_30)
+//line stdlib/audit/audit.kuki:625
+		extraCanonical, err_36 := loadExtraCanonical(log, seq)
+//line stdlib/audit/audit.kuki:625
+		if err_36 != nil {
+//line stdlib/audit/audit.kuki:625
+			return fmt.Errorf("%v", err_36)
 		}
-//line stdlib/audit/audit.kuki:621
+//line stdlib/audit/audit.kuki:626
 		computed := hashCanonical(seq, ts, actor, action, target, reason, outcomeTag, outcomeJSON, keyID, extraCanonical, prevHash)
-//line stdlib/audit/audit.kuki:634
+//line stdlib/audit/audit.kuki:639
 		if !bytes.Equal(computed, storedHash) {
-//line stdlib/audit/audit.kuki:635
+//line stdlib/audit/audit.kuki:640
 			return fmt.Errorf("audit: verify-incremental: hash mismatch at seq=%v", seq)
 		}
-//line stdlib/audit/audit.kuki:636
+//line stdlib/audit/audit.kuki:641
 		if !log.state.signer.Verify(storedHash, sig) {
-//line stdlib/audit/audit.kuki:637
+//line stdlib/audit/audit.kuki:642
 			return fmt.Errorf("audit: verify-incremental: signature mismatch at seq=%v", seq)
 		}
-//line stdlib/audit/audit.kuki:639
+//line stdlib/audit/audit.kuki:644
 		expectedPrev = storedHash
-//line stdlib/audit/audit.kuki:640
-		expectedSeq = (seq + 1)
-//line stdlib/audit/audit.kuki:641
+//line stdlib/audit/audit.kuki:645
+		expectedSeq = seq + 1
+//line stdlib/audit/audit.kuki:646
 		lastSeq = seq
-//line stdlib/audit/audit.kuki:642
+//line stdlib/audit/audit.kuki:647
 		lastHash = storedHash
 	}
-//line stdlib/audit/audit.kuki:643
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:643
-	err_31 := rows.Err()
-//line stdlib/audit/audit.kuki:643
-	if err_31 != nil {
-//line stdlib/audit/audit.kuki:643
-		return fmt.Errorf("audit: verify-incremental: %v", err_31)
+//line stdlib/audit/audit.kuki:648
+//line stdlib/audit/audit.kuki:648
+	err_37 := rows.Err()
+//line stdlib/audit/audit.kuki:648
+	if err_37 != nil {
+//line stdlib/audit/audit.kuki:648
+		return fmt.Errorf("audit: verify-incremental: %v", err_37)
 	}
-//line stdlib/audit/audit.kuki:645
+//line stdlib/audit/audit.kuki:650
 	if lastSeq > startSeq {
-//line stdlib/audit/audit.kuki:646
-//line stdlib/audit/audit.kuki:646
-		_, err_32 := db.Exec(log.state.pool, "INSERT OR REPLACE INTO audit_checkpoints (seq, hash, verified_at) VALUES (?, ?, ?)", lastSeq, lastHash, time.Now().UnixNano())
-//line stdlib/audit/audit.kuki:652
-		if err_32 != nil {
-//line stdlib/audit/audit.kuki:652
-			return fmt.Errorf("audit: verify-incremental: write checkpoint: %v", err_32)
+//line stdlib/audit/audit.kuki:651
+//line stdlib/audit/audit.kuki:651
+		_, err_38 := db.Exec(log.state.pool, "INSERT OR REPLACE INTO audit_checkpoints (seq, hash, verified_at) VALUES (?, ?, ?)", lastSeq, lastHash, time.Now().UnixNano())
+//line stdlib/audit/audit.kuki:657
+		if err_38 != nil {
+//line stdlib/audit/audit.kuki:657
+			return fmt.Errorf("audit: verify-incremental: write checkpoint: %v", err_38)
 		}
 	}
-//line stdlib/audit/audit.kuki:653
+//line stdlib/audit/audit.kuki:658
 	return nil
 }
 
-//line stdlib/audit/audit.kuki:659
-func loadVacuumCutoffs(log Log) (map[string]bool, error) {
-//line stdlib/audit/audit.kuki:660
-	out := map[string]bool{}
-//line stdlib/audit/audit.kuki:661
-	rows, err_33 := db.RawDB(log.state.pool).Query("SELECT outcome_json FROM events WHERE outcome = ?", "Vacuumed")
-//line stdlib/audit/audit.kuki:661
-	if err_33 != nil {
-//line stdlib/audit/audit.kuki:661
-		return out, fmt.Errorf("audit: load vacuum cutoffs: %v", err_33)
-	}
-//line stdlib/audit/audit.kuki:662
-	defer rows.Close()
-//line stdlib/audit/audit.kuki:663
-	for rows.Next() {
 //line stdlib/audit/audit.kuki:664
-		payload := ""
+func loadVacuumCutoffs(log Log) (map[string]bool, error) {
 //line stdlib/audit/audit.kuki:665
-		// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:665
-		err_34 := rows.Scan(&payload)
-//line stdlib/audit/audit.kuki:665
-		if err_34 != nil {
-//line stdlib/audit/audit.kuki:665
-			return out, fmt.Errorf("audit: load vacuum cutoffs scan: %v", err_34)
-		}
+	out := map[string]bool{}
 //line stdlib/audit/audit.kuki:666
-		obj := vacuumedJSON{}
+	rows, err_39 := db.RawDB(log.state.pool).Query("SELECT outcome_json FROM events WHERE outcome = ?", "Vacuumed")
+//line stdlib/audit/audit.kuki:666
+	if err_39 != nil {
+//line stdlib/audit/audit.kuki:666
+		return out, fmt.Errorf("audit: load vacuum cutoffs: %v", err_39)
+	}
 //line stdlib/audit/audit.kuki:667
-//line stdlib/audit/audit.kuki:667
-		err_35 := json.ParseInto([]byte(payload), &obj)
-//line stdlib/audit/audit.kuki:667
-		if err_35 != nil {
-//line stdlib/audit/audit.kuki:667
-			return out, fmt.Errorf("audit: load vacuum cutoffs decode: %v", err_35)
-		}
+	defer rows.Close()
 //line stdlib/audit/audit.kuki:668
+	for rows.Next() {
+//line stdlib/audit/audit.kuki:669
+		payload := ""
+//line stdlib/audit/audit.kuki:670
+//line stdlib/audit/audit.kuki:670
+		err_40 := rows.Scan(&payload)
+//line stdlib/audit/audit.kuki:670
+		if err_40 != nil {
+//line stdlib/audit/audit.kuki:670
+			return out, fmt.Errorf("audit: load vacuum cutoffs scan: %v", err_40)
+		}
+//line stdlib/audit/audit.kuki:671
+		obj := vacuumedJSON{}
+//line stdlib/audit/audit.kuki:672
+//line stdlib/audit/audit.kuki:672
+		err_41 := json.ParseInto([]byte(payload), &obj)
+//line stdlib/audit/audit.kuki:672
+		if err_41 != nil {
+//line stdlib/audit/audit.kuki:672
+			return out, fmt.Errorf("audit: load vacuum cutoffs decode: %v", err_41)
+		}
+//line stdlib/audit/audit.kuki:673
 		out[obj.HashAtCutoff] = true
 	}
-//line stdlib/audit/audit.kuki:669
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:669
-	err_36 := rows.Err()
-//line stdlib/audit/audit.kuki:669
-	if err_36 != nil {
-//line stdlib/audit/audit.kuki:669
-		return out, fmt.Errorf("audit: load vacuum cutoffs: %v", err_36)
+//line stdlib/audit/audit.kuki:674
+//line stdlib/audit/audit.kuki:674
+	err_42 := rows.Err()
+//line stdlib/audit/audit.kuki:674
+	if err_42 != nil {
+//line stdlib/audit/audit.kuki:674
+		return out, fmt.Errorf("audit: load vacuum cutoffs: %v", err_42)
 	}
-//line stdlib/audit/audit.kuki:670
+//line stdlib/audit/audit.kuki:675
 	return out, nil
 }
 
-//line stdlib/audit/audit.kuki:673
-func loadExtras(log Log, seq int64) (map[string]string, error) {
-//line stdlib/audit/audit.kuki:674
-	rows, err_37 := db.RawDB(log.state.pool).Query("SELECT key, value FROM event_extra WHERE seq = ? ORDER BY key ASC", seq)
-//line stdlib/audit/audit.kuki:677
-	if err_37 != nil {
-//line stdlib/audit/audit.kuki:677
-		return map[string]string{}, fmt.Errorf("audit: load extras: %v", err_37)
-	}
 //line stdlib/audit/audit.kuki:678
-	defer rows.Close()
+func loadExtras(log Log, seq int64) (map[string]string, error) {
 //line stdlib/audit/audit.kuki:679
-	out := make(map[string]string)
-//line stdlib/audit/audit.kuki:680
-	for rows.Next() {
-//line stdlib/audit/audit.kuki:681
-		k := ""
+	rows, err_43 := db.RawDB(log.state.pool).Query("SELECT key, value FROM event_extra WHERE seq = ? ORDER BY key ASC", seq)
 //line stdlib/audit/audit.kuki:682
-		v := ""
+	if err_43 != nil {
+//line stdlib/audit/audit.kuki:682
+		return map[string]string{}, fmt.Errorf("audit: load extras: %v", err_43)
+	}
 //line stdlib/audit/audit.kuki:683
-		// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:683
-		err_38 := rows.Scan(&k, &v)
-//line stdlib/audit/audit.kuki:683
-		if err_38 != nil {
-//line stdlib/audit/audit.kuki:683
-			return map[string]string{}, fmt.Errorf("audit: scan extra: %v", err_38)
-		}
+	defer rows.Close()
 //line stdlib/audit/audit.kuki:684
+	out := make(map[string]string)
+//line stdlib/audit/audit.kuki:685
+	for rows.Next() {
+//line stdlib/audit/audit.kuki:686
+		k := ""
+//line stdlib/audit/audit.kuki:687
+		v := ""
+//line stdlib/audit/audit.kuki:688
+//line stdlib/audit/audit.kuki:688
+		err_44 := rows.Scan(&k, &v)
+//line stdlib/audit/audit.kuki:688
+		if err_44 != nil {
+//line stdlib/audit/audit.kuki:688
+			return map[string]string{}, fmt.Errorf("audit: scan extra: %v", err_44)
+		}
+//line stdlib/audit/audit.kuki:689
 		out[k] = v
 	}
-//line stdlib/audit/audit.kuki:685
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:685
-	err_39 := rows.Err()
-//line stdlib/audit/audit.kuki:685
-	if err_39 != nil {
-//line stdlib/audit/audit.kuki:685
-		return map[string]string{}, fmt.Errorf("audit: load extras: %v", err_39)
+//line stdlib/audit/audit.kuki:690
+//line stdlib/audit/audit.kuki:690
+	err_45 := rows.Err()
+//line stdlib/audit/audit.kuki:690
+	if err_45 != nil {
+//line stdlib/audit/audit.kuki:690
+		return map[string]string{}, fmt.Errorf("audit: load extras: %v", err_45)
 	}
-//line stdlib/audit/audit.kuki:686
+//line stdlib/audit/audit.kuki:691
 	return out, nil
 }
 
-//line stdlib/audit/audit.kuki:692
+//line stdlib/audit/audit.kuki:697
 func loadExtraCanonical(log Log, seq int64) (string, error) {
-//line stdlib/audit/audit.kuki:693
-	extras, err_40 := loadExtras(log, seq)
-//line stdlib/audit/audit.kuki:693
-	if err_40 != nil {
-//line stdlib/audit/audit.kuki:693
-		return "", fmt.Errorf("%v", err_40)
+//line stdlib/audit/audit.kuki:698
+	extras, err_46 := loadExtras(log, seq)
+//line stdlib/audit/audit.kuki:698
+	if err_46 != nil {
+//line stdlib/audit/audit.kuki:698
+		return "", fmt.Errorf("%v", err_46)
 	}
-//line stdlib/audit/audit.kuki:694
+//line stdlib/audit/audit.kuki:699
 	return canonicalizeExtra(extras), nil
 }
 
-//line stdlib/audit/audit.kuki:698
+//line stdlib/audit/audit.kuki:703
 type doneJSON struct {
 	Detail string `json:"detail"`
 }
 
-//line stdlib/audit/audit.kuki:701
+//line stdlib/audit/audit.kuki:706
 type escalatedJSON struct {
 	ToUser string `json:"to_user"`
 	Reason string `json:"reason"`
 }
 
-//line stdlib/audit/audit.kuki:705
+//line stdlib/audit/audit.kuki:710
 type skippedJSON struct {
 	Reason string `json:"reason"`
 }
 
-//line stdlib/audit/audit.kuki:708
+//line stdlib/audit/audit.kuki:713
 type vacuumedJSON struct {
 	Before       int64  `json:"before"`
 	Count        int    `json:"count"`
 	HashAtCutoff string `json:"hash_at_cutoff"`
 }
 
-//line stdlib/audit/audit.kuki:716
+//line stdlib/audit/audit.kuki:721
 func decodeOutcome(tag string, payload string) (Outcome, error) {
-//line stdlib/audit/audit.kuki:717
+//line stdlib/audit/audit.kuki:722
 	data := []byte(payload)
-//line stdlib/audit/audit.kuki:718
+//line stdlib/audit/audit.kuki:723
 	switch tag {
 	case "Done":
-//line stdlib/audit/audit.kuki:720
+//line stdlib/audit/audit.kuki:725
 		obj := doneJSON{}
-//line stdlib/audit/audit.kuki:721
-//line stdlib/audit/audit.kuki:721
-		err_41 := json.ParseInto(data, &obj)
-//line stdlib/audit/audit.kuki:721
-		if err_41 != nil {
-//line stdlib/audit/audit.kuki:721
-			return Done{}, fmt.Errorf("audit: decode Done: %v", err_41)
+//line stdlib/audit/audit.kuki:726
+//line stdlib/audit/audit.kuki:726
+		err_47 := json.ParseInto(data, &obj)
+//line stdlib/audit/audit.kuki:726
+		if err_47 != nil {
+//line stdlib/audit/audit.kuki:726
+			return Done{}, fmt.Errorf("audit: decode Done: %v", err_47)
 		}
-//line stdlib/audit/audit.kuki:722
+//line stdlib/audit/audit.kuki:727
 		return Done{Detail: obj.Detail}, nil
 	case "Escalated":
-//line stdlib/audit/audit.kuki:724
+//line stdlib/audit/audit.kuki:729
 		obj := escalatedJSON{}
-//line stdlib/audit/audit.kuki:725
-//line stdlib/audit/audit.kuki:725
-		err_42 := json.ParseInto(data, &obj)
-//line stdlib/audit/audit.kuki:725
-		if err_42 != nil {
-//line stdlib/audit/audit.kuki:725
-			return Done{}, fmt.Errorf("audit: decode Escalated: %v", err_42)
+//line stdlib/audit/audit.kuki:730
+//line stdlib/audit/audit.kuki:730
+		err_48 := json.ParseInto(data, &obj)
+//line stdlib/audit/audit.kuki:730
+		if err_48 != nil {
+//line stdlib/audit/audit.kuki:730
+			return Done{}, fmt.Errorf("audit: decode Escalated: %v", err_48)
 		}
-//line stdlib/audit/audit.kuki:726
+//line stdlib/audit/audit.kuki:731
 		return Escalated{ToUser: obj.ToUser, Reason: obj.Reason}, nil
 	case "Skipped":
-//line stdlib/audit/audit.kuki:728
+//line stdlib/audit/audit.kuki:733
 		obj := skippedJSON{}
-//line stdlib/audit/audit.kuki:729
-//line stdlib/audit/audit.kuki:729
-		err_43 := json.ParseInto(data, &obj)
-//line stdlib/audit/audit.kuki:729
-		if err_43 != nil {
-//line stdlib/audit/audit.kuki:729
-			return Done{}, fmt.Errorf("audit: decode Skipped: %v", err_43)
-		}
-//line stdlib/audit/audit.kuki:730
-		return Skipped{Reason: obj.Reason}, nil
-	case "Vacuumed":
-//line stdlib/audit/audit.kuki:732
-		obj := vacuumedJSON{}
-//line stdlib/audit/audit.kuki:733
-//line stdlib/audit/audit.kuki:733
-		err_44 := json.ParseInto(data, &obj)
-//line stdlib/audit/audit.kuki:733
-		if err_44 != nil {
-//line stdlib/audit/audit.kuki:733
-			return Done{}, fmt.Errorf("audit: decode Vacuumed: %v", err_44)
-		}
 //line stdlib/audit/audit.kuki:734
-		raw, err_45 := hex.DecodeString(obj.HashAtCutoff)
 //line stdlib/audit/audit.kuki:734
-		if err_45 != nil {
+		err_49 := json.ParseInto(data, &obj)
 //line stdlib/audit/audit.kuki:734
-			return Done{}, fmt.Errorf("audit: decode Vacuumed hash: %v", err_45)
+		if err_49 != nil {
+//line stdlib/audit/audit.kuki:734
+			return Done{}, fmt.Errorf("audit: decode Skipped: %v", err_49)
 		}
 //line stdlib/audit/audit.kuki:735
+		return Skipped{Reason: obj.Reason}, nil
+	case "Vacuumed":
+//line stdlib/audit/audit.kuki:737
+		obj := vacuumedJSON{}
+//line stdlib/audit/audit.kuki:738
+//line stdlib/audit/audit.kuki:738
+		err_50 := json.ParseInto(data, &obj)
+//line stdlib/audit/audit.kuki:738
+		if err_50 != nil {
+//line stdlib/audit/audit.kuki:738
+			return Done{}, fmt.Errorf("audit: decode Vacuumed: %v", err_50)
+		}
+//line stdlib/audit/audit.kuki:739
+		raw, err_51 := hex.DecodeString(obj.HashAtCutoff)
+//line stdlib/audit/audit.kuki:739
+		if err_51 != nil {
+//line stdlib/audit/audit.kuki:739
+			return Done{}, fmt.Errorf("audit: decode Vacuumed hash: %v", err_51)
+		}
+//line stdlib/audit/audit.kuki:740
 		return Vacuumed{Before: time.Unix(0, obj.Before), Count: obj.Count, HashAtCutoff: raw}, nil
 	}
-//line stdlib/audit/audit.kuki:736
+//line stdlib/audit/audit.kuki:741
 	return Done{}, fmt.Errorf("audit: unknown outcome tag: %v", tag)
 }
 
-//line stdlib/audit/audit.kuki:741
+//line stdlib/audit/audit.kuki:746
 func schemaStatements() []string {
-//line stdlib/audit/audit.kuki:742
+//line stdlib/audit/audit.kuki:747
 	return []string{"CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY, ts INTEGER NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL, reason TEXT NOT NULL, outcome TEXT NOT NULL, outcome_json TEXT NOT NULL, key_id TEXT NOT NULL, prev_hash BLOB NOT NULL, hash BLOB NOT NULL, sig BLOB NOT NULL)", "CREATE TABLE IF NOT EXISTS event_extra (seq INTEGER NOT NULL REFERENCES events(seq) ON DELETE CASCADE, key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (seq, key))", "CREATE INDEX IF NOT EXISTS events_ts ON events(ts)", "CREATE INDEX IF NOT EXISTS events_actor_ts ON events(actor, ts)", "CREATE INDEX IF NOT EXISTS events_action_ts ON events(action, ts)", "CREATE TABLE IF NOT EXISTS audit_checkpoints (seq INTEGER PRIMARY KEY, hash BLOB NOT NULL, verified_at INTEGER NOT NULL)"}
 }
 
-//line stdlib/audit/audit.kuki:754
+//line stdlib/audit/audit.kuki:759
 func insertGenesis(log Log) error {
-//line stdlib/audit/audit.kuki:755
-	seq := int64(0)
-//line stdlib/audit/audit.kuki:756
-	ts := time.Now().UnixNano()
-//line stdlib/audit/audit.kuki:757
-	keyID := log.state.signer.KeyID()
-//line stdlib/audit/audit.kuki:758
-	payload := map[string]any{"schema_version": schemaVersion}
-//line stdlib/audit/audit.kuki:759
-	payloadBytes, err_46 := json.Bytes(payload)
-//line stdlib/audit/audit.kuki:759
-	if err_46 != nil {
-//line stdlib/audit/audit.kuki:759
-		return fmt.Errorf("audit: encode genesis: %v", err_46)
-	}
 //line stdlib/audit/audit.kuki:760
-	outcomeJSON := string(payloadBytes)
-//line stdlib/audit/audit.kuki:761
-	prevHash := make([]byte, 32)
-//line stdlib/audit/audit.kuki:762
-	hash := hashCanonical(seq, ts, "audit", "genesis", "", "", "Genesis", outcomeJSON, keyID, "", prevHash)
-//line stdlib/audit/audit.kuki:763
-	sig, err_47 := log.state.signer.Sign(hash)
-//line stdlib/audit/audit.kuki:763
-	if err_47 != nil {
-//line stdlib/audit/audit.kuki:763
-		return fmt.Errorf("audit: sign genesis: %v", err_47)
-	}
-//line stdlib/audit/audit.kuki:764
-//line stdlib/audit/audit.kuki:764
-	_, err_48 := db.Exec(log.state.pool, "INSERT INTO events (seq, ts, actor, action, target, reason, outcome, outcome_json, key_id, prev_hash, hash, sig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", seq, ts, "audit", "genesis", "", "", "Genesis", outcomeJSON, keyID, prevHash, hash, sig)
-//line stdlib/audit/audit.kuki:779
-	if err_48 != nil {
-//line stdlib/audit/audit.kuki:779
-		return fmt.Errorf("audit: insert genesis: %v", err_48)
-	}
-//line stdlib/audit/audit.kuki:780
-	log.state.lastSeq = 0
-//line stdlib/audit/audit.kuki:781
-	log.state.lastHash = hash
-//line stdlib/audit/audit.kuki:782
-	return nil
-}
-
-//line stdlib/audit/audit.kuki:786
-func loadTail(log Log) error {
-//line stdlib/audit/audit.kuki:787
-	row := db.RawDB(log.state.pool).QueryRow("SELECT seq, hash FROM events ORDER BY seq DESC LIMIT 1")
-//line stdlib/audit/audit.kuki:788
 	seq := int64(0)
-//line stdlib/audit/audit.kuki:789
-	hash := []byte{}
-//line stdlib/audit/audit.kuki:790
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/audit/audit.kuki:790
-	err_49 := row.Scan(&seq, &hash)
-//line stdlib/audit/audit.kuki:790
-	if err_49 != nil {
-//line stdlib/audit/audit.kuki:790
-		return fmt.Errorf("audit: load tail: %v", err_49)
+//line stdlib/audit/audit.kuki:761
+	ts := time.Now().UnixNano()
+//line stdlib/audit/audit.kuki:762
+	keyID := log.state.signer.KeyID()
+//line stdlib/audit/audit.kuki:763
+	payload := map[string]any{"schema_version": schemaVersion}
+//line stdlib/audit/audit.kuki:764
+	payloadBytes, err_52 := json.Bytes(payload)
+//line stdlib/audit/audit.kuki:764
+	if err_52 != nil {
+//line stdlib/audit/audit.kuki:764
+		return fmt.Errorf("audit: encode genesis: %v", err_52)
 	}
-//line stdlib/audit/audit.kuki:791
-	log.state.lastSeq = seq
-//line stdlib/audit/audit.kuki:792
+//line stdlib/audit/audit.kuki:765
+	outcomeJSON := string(payloadBytes)
+//line stdlib/audit/audit.kuki:766
+	prevHash := make([]byte, 32)
+//line stdlib/audit/audit.kuki:767
+	hash := hashCanonical(seq, ts, "audit", "genesis", "", "", "Genesis", outcomeJSON, keyID, "", prevHash)
+//line stdlib/audit/audit.kuki:768
+	sig, err_53 := log.state.signer.Sign(hash)
+//line stdlib/audit/audit.kuki:768
+	if err_53 != nil {
+//line stdlib/audit/audit.kuki:768
+		return fmt.Errorf("audit: sign genesis: %v", err_53)
+	}
+//line stdlib/audit/audit.kuki:769
+//line stdlib/audit/audit.kuki:769
+	_, err_54 := db.Exec(log.state.pool, "INSERT INTO events (seq, ts, actor, action, target, reason, outcome, outcome_json, key_id, prev_hash, hash, sig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", seq, ts, "audit", "genesis", "", "", "Genesis", outcomeJSON, keyID, prevHash, hash, sig)
+//line stdlib/audit/audit.kuki:784
+	if err_54 != nil {
+//line stdlib/audit/audit.kuki:784
+		return fmt.Errorf("audit: insert genesis: %v", err_54)
+	}
+//line stdlib/audit/audit.kuki:785
+	log.state.lastSeq = 0
+//line stdlib/audit/audit.kuki:786
 	log.state.lastHash = hash
-//line stdlib/audit/audit.kuki:793
+//line stdlib/audit/audit.kuki:787
 	return nil
 }
 
+//line stdlib/audit/audit.kuki:791
+func loadTail(log Log) error {
+//line stdlib/audit/audit.kuki:792
+	row := db.RawDB(log.state.pool).QueryRow("SELECT seq, hash FROM events ORDER BY seq DESC LIMIT 1")
+//line stdlib/audit/audit.kuki:793
+	seq := int64(0)
+//line stdlib/audit/audit.kuki:794
+	hash := []byte{}
+//line stdlib/audit/audit.kuki:795
+//line stdlib/audit/audit.kuki:795
+	err_55 := row.Scan(&seq, &hash)
+//line stdlib/audit/audit.kuki:795
+	if err_55 != nil {
+//line stdlib/audit/audit.kuki:795
+		return fmt.Errorf("audit: load tail: %v", err_55)
+	}
+//line stdlib/audit/audit.kuki:796
+	log.state.lastSeq = seq
+//line stdlib/audit/audit.kuki:797
+	log.state.lastHash = hash
 //line stdlib/audit/audit.kuki:798
+	return nil
+}
+
+//line stdlib/audit/audit.kuki:803
 func encodeOutcome(o Outcome) (string, string, error) {
-//line stdlib/audit/audit.kuki:799
+//line stdlib/audit/audit.kuki:804
 	switch v := o.(type) {
 	case Done:
-//line stdlib/audit/audit.kuki:801
+//line stdlib/audit/audit.kuki:806
 		payload := map[string]any{"detail": v.Detail}
-//line stdlib/audit/audit.kuki:802
-		data, err_50 := json.Bytes(payload)
-//line stdlib/audit/audit.kuki:802
-		if err_50 != nil {
-//line stdlib/audit/audit.kuki:802
-			return "", "", fmt.Errorf("%v", err_50)
+//line stdlib/audit/audit.kuki:807
+		data, err_56 := json.Bytes(payload)
+//line stdlib/audit/audit.kuki:807
+		if err_56 != nil {
+//line stdlib/audit/audit.kuki:807
+			return "", "", fmt.Errorf("%v", err_56)
 		}
-//line stdlib/audit/audit.kuki:803
+//line stdlib/audit/audit.kuki:808
 		return "Done", string(data), nil
 	case Escalated:
-//line stdlib/audit/audit.kuki:805
+//line stdlib/audit/audit.kuki:810
 		payload := map[string]any{"to_user": v.ToUser, "reason": v.Reason}
-//line stdlib/audit/audit.kuki:806
-		data, err_51 := json.Bytes(payload)
-//line stdlib/audit/audit.kuki:806
-		if err_51 != nil {
-//line stdlib/audit/audit.kuki:806
-			return "", "", fmt.Errorf("%v", err_51)
+//line stdlib/audit/audit.kuki:811
+		data, err_57 := json.Bytes(payload)
+//line stdlib/audit/audit.kuki:811
+		if err_57 != nil {
+//line stdlib/audit/audit.kuki:811
+			return "", "", fmt.Errorf("%v", err_57)
 		}
-//line stdlib/audit/audit.kuki:807
+//line stdlib/audit/audit.kuki:812
 		return "Escalated", string(data), nil
 	case Skipped:
-//line stdlib/audit/audit.kuki:809
+//line stdlib/audit/audit.kuki:814
 		payload := map[string]any{"reason": v.Reason}
-//line stdlib/audit/audit.kuki:810
-		data, err_52 := json.Bytes(payload)
-//line stdlib/audit/audit.kuki:810
-		if err_52 != nil {
-//line stdlib/audit/audit.kuki:810
-			return "", "", fmt.Errorf("%v", err_52)
+//line stdlib/audit/audit.kuki:815
+		data, err_58 := json.Bytes(payload)
+//line stdlib/audit/audit.kuki:815
+		if err_58 != nil {
+//line stdlib/audit/audit.kuki:815
+			return "", "", fmt.Errorf("%v", err_58)
 		}
-//line stdlib/audit/audit.kuki:811
+//line stdlib/audit/audit.kuki:816
 		return "Skipped", string(data), nil
 	case Vacuumed:
-//line stdlib/audit/audit.kuki:813
+//line stdlib/audit/audit.kuki:818
 		payload := map[string]any{"before": v.Before.UnixNano(), "count": v.Count, "hash_at_cutoff": hex.EncodeToString(v.HashAtCutoff)}
-//line stdlib/audit/audit.kuki:818
-		data, err_53 := json.Bytes(payload)
-//line stdlib/audit/audit.kuki:818
-		if err_53 != nil {
-//line stdlib/audit/audit.kuki:818
-			return "", "", fmt.Errorf("%v", err_53)
+//line stdlib/audit/audit.kuki:823
+		data, err_59 := json.Bytes(payload)
+//line stdlib/audit/audit.kuki:823
+		if err_59 != nil {
+//line stdlib/audit/audit.kuki:823
+			return "", "", fmt.Errorf("%v", err_59)
 		}
-//line stdlib/audit/audit.kuki:819
+//line stdlib/audit/audit.kuki:824
 		return "Vacuumed", string(data), nil
 	default:
 		panic("unreachable")
 	}
 }
 
-//line stdlib/audit/audit.kuki:825
+//line stdlib/audit/audit.kuki:830
 func canonicalizeExtra(extra map[string]string) string {
-//line stdlib/audit/audit.kuki:826
+//line stdlib/audit/audit.kuki:831
 	if len(extra) == 0 {
-//line stdlib/audit/audit.kuki:827
+//line stdlib/audit/audit.kuki:832
 		return ""
 	}
-//line stdlib/audit/audit.kuki:828
+//line stdlib/audit/audit.kuki:833
 	keys := make([]string, 0, len(extra))
-//line stdlib/audit/audit.kuki:829
+//line stdlib/audit/audit.kuki:834
 	for k := range extra {
-//line stdlib/audit/audit.kuki:830
+//line stdlib/audit/audit.kuki:835
 		keys = append(keys, k)
 	}
-//line stdlib/audit/audit.kuki:831
+//line stdlib/audit/audit.kuki:836
 	sort.Strings(keys)
-//line stdlib/audit/audit.kuki:832
+//line stdlib/audit/audit.kuki:837
 	out := ""
-//line stdlib/audit/audit.kuki:833
+//line stdlib/audit/audit.kuki:838
 	for _, k := range keys {
-//line stdlib/audit/audit.kuki:834
-		out = ((((out + k) + "=") + extra[k]) + "\n")
+//line stdlib/audit/audit.kuki:839
+		out = out + k + "=" + extra[k] + "\n"
 	}
-//line stdlib/audit/audit.kuki:835
+//line stdlib/audit/audit.kuki:840
 	return out
 }
 
-//line stdlib/audit/audit.kuki:840
-func hashCanonical(seq int64, ts int64, actor string, action string, target string, reason string, outcomeTag string, outcomeJSON string, keyID string, extraCanonical string, prevHash []byte) []byte {
-//line stdlib/audit/audit.kuki:841
-	buf := []byte{}
-//line stdlib/audit/audit.kuki:842
-	buf = appendUint64(buf, uint64(seq))
-//line stdlib/audit/audit.kuki:843
-	buf = appendUint64(buf, uint64(ts))
-//line stdlib/audit/audit.kuki:844
-	buf = appendField(buf, []byte(actor))
 //line stdlib/audit/audit.kuki:845
-	buf = appendField(buf, []byte(action))
+func hashCanonical(seq int64, ts int64, actor string, action string, target string, reason string, outcomeTag string, outcomeJSON string, keyID string, extraCanonical string, prevHash []byte) []byte {
 //line stdlib/audit/audit.kuki:846
-	buf = appendField(buf, []byte(target))
+	buf := []byte{}
 //line stdlib/audit/audit.kuki:847
-	buf = appendField(buf, []byte(reason))
+	buf = appendUint64(buf, uint64(seq))
 //line stdlib/audit/audit.kuki:848
-	buf = appendField(buf, []byte(outcomeTag))
+	buf = appendUint64(buf, uint64(ts))
 //line stdlib/audit/audit.kuki:849
-	buf = appendField(buf, []byte(outcomeJSON))
+	buf = appendField(buf, []byte(actor))
 //line stdlib/audit/audit.kuki:850
-	buf = appendField(buf, []byte(keyID))
+	buf = appendField(buf, []byte(action))
 //line stdlib/audit/audit.kuki:851
-	buf = appendField(buf, []byte(extraCanonical))
+	buf = appendField(buf, []byte(target))
 //line stdlib/audit/audit.kuki:852
-	buf = appendField(buf, prevHash)
+	buf = appendField(buf, []byte(reason))
 //line stdlib/audit/audit.kuki:853
+	buf = appendField(buf, []byte(outcomeTag))
+//line stdlib/audit/audit.kuki:854
+	buf = appendField(buf, []byte(outcomeJSON))
+//line stdlib/audit/audit.kuki:855
+	buf = appendField(buf, []byte(keyID))
+//line stdlib/audit/audit.kuki:856
+	buf = appendField(buf, []byte(extraCanonical))
+//line stdlib/audit/audit.kuki:857
+	buf = appendField(buf, prevHash)
+//line stdlib/audit/audit.kuki:858
 	return crypto.SHA256Bytes(buf)
 }
 
-//line stdlib/audit/audit.kuki:855
+//line stdlib/audit/audit.kuki:860
 func appendUint64(buf []byte, v uint64) []byte {
-//line stdlib/audit/audit.kuki:856
+//line stdlib/audit/audit.kuki:861
 	tmp := make([]byte, 8)
-//line stdlib/audit/audit.kuki:857
+//line stdlib/audit/audit.kuki:862
 	binary.BigEndian.PutUint64(tmp, v)
-//line stdlib/audit/audit.kuki:858
+//line stdlib/audit/audit.kuki:863
 	return append(buf, tmp...)
 }
 
-//line stdlib/audit/audit.kuki:860
+//line stdlib/audit/audit.kuki:865
 func appendField(buf []byte, data []byte) []byte {
-//line stdlib/audit/audit.kuki:861
+//line stdlib/audit/audit.kuki:866
 	buf = appendUint64(buf, uint64(len(data)))
-//line stdlib/audit/audit.kuki:862
+//line stdlib/audit/audit.kuki:867
 	return append(buf, data...)
 }
