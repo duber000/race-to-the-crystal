@@ -1,0 +1,83 @@
+petiole main
+
+import "net/http"
+import "net/http/httputil"
+import "net/url"
+import "stdlib/env"
+import "stdlib/http" as httphelper
+import "stdlib/log"
+import "stdlib/signal"
+
+type WebServerConfig
+    port int
+    static_dir string
+    index_path string
+    game_server_url string
+    mercure_hub_url string
+    mercure_topic_prefix string
+
+func WebServerConfigFromEnv() WebServerConfig
+    return WebServerConfig{
+        port: env.GetIntOrDefault("WEB_PORT", 8000),
+        static_dir: env.GetOr("STATIC_DIR", "web_server/static"),
+        index_path: env.GetOr("INDEX_PATH", "web_server/templates/index.html"),
+        game_server_url: env.GetOr("GAME_SERVER_URL", "http://localhost:8080"),
+        mercure_hub_url: env.GetOr("MERCURE_HUB_URL", "http://localhost:3000/.well-known/mercure"),
+        mercure_topic_prefix: env.GetOr("MERCURE_TOPIC_PREFIX", "https://api.game.com/game"),
+    }
+
+type WebServer
+    config WebServerConfig
+    proxy nullable reference httputil.ReverseProxy
+
+func NewWebServer(config: WebServerConfig) WebServer
+    target := url.Parse(config.game_server_url) onerr panic "invalid GAME_SERVER_URL"
+    proxy := httputil.NewSingleHostReverseProxy(target)
+    return WebServer{config: config, proxy: proxy}
+
+func Start on ws: reference WebServer
+    mux := http.NewServeMux()
+    mux.HandleFunc("GET /{$}", ws.handleRoot)
+    mux.HandleFunc("GET /api/config", ws.handleConfig)
+    mux.Handle(
+        "GET /static/",
+        http.StripPrefix("/static/", http.FileServer(http.Dir(ws.config.static_dir))),
+    )
+    mux.Handle("/api/", ws.proxy)
+    mux.Handle("/ws", ws.proxy)
+
+    addr := ":{ws.config.port}"
+    log.Info("Web server starting on {addr}")
+    log.Info("Serving static files from {ws.config.static_dir}")
+    log.Info("Proxying API to {ws.config.game_server_url}")
+
+    go
+        err := http.ListenAndServe(addr, mux)
+        if err != empty
+            log.Error("HTTP server error: {err}")
+
+    ch := make(channel of bool)
+    signal.OnInterrupt(() =>
+        log.Info("Shutting down web server...")
+        send true to ch
+    )
+
+    receive from ch
+
+func handleRoot on ws: reference WebServer(w: http.ResponseWriter, r: reference http.Request)
+    http.ServeFile(w, r, ws.config.index_path)
+
+func handleConfig on ws: reference WebServer(w: http.ResponseWriter, r: reference http.Request)
+    config_data := map of string to any{
+        "mercure_hub_url": ws.config.mercure_hub_url,
+        "mercure_topic_prefix": ws.config.mercure_topic_prefix,
+        "api_version": "1.0.0",
+        "features": list of string{"mercure"},
+    }
+    httphelper.JSON(w, config_data) onerr
+        log.Error("Failed to encode config JSON")
+
+func main()
+    config := WebServerConfigFromEnv()
+    server := NewWebServer(config)
+    server.Start()

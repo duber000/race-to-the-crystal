@@ -1,4 +1,4 @@
-.PHONY: help check build desktop desktop-run test test-verbose test-specific clean lint format
+.PHONY: help check build desktop desktop-run web-server web-server-run test test-verbose test-specific clean lint format
 
 PKG_CONFIG_LIBS = x11 xrandr xcursor xinerama xi xrender gl xxf86vm
 CGO_CFLAGS ?= $(shell pkg-config --cflags $(PKG_CONFIG_LIBS) 2>/dev/null)
@@ -21,6 +21,13 @@ desktop: ## Build the desktop client
 desktop-run: ## Build and run the desktop client
 	$(MAKE) desktop
 	./race-desktop
+
+web-server: ## Build the web server
+	kukicha build ./web_server
+
+web-server-run: ## Build and run the web server
+	$(MAKE) web-server
+	./web_server
 
 test: ## Run all tests
 	kukicha build ./...

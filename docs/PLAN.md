@@ -14,7 +14,7 @@ Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://
 | Phase 3 | `server/` (10 files) | **COMPLETE** | 1,919 LOC |
 | Phase 4 | `client/ai_client` (poll + SSE) | **COMPLETE** | ~500 LOC |
 | Phase 5 | `client/desktop` (ebitengine) | **COMPLETE** | ~500 LOC |
-| Phase 6 | `web_server/` | **NOT STARTED** | — |
+| Phase 6 | `web_server/` | **COMPLETE** | ~80 LOC |
 | Phase 7 | Tests (`*_test.kuki`) | **NOT STARTED** | — |
 
 **What works:** All 9 packages pass `kukicha check ./...`. `client/desktop/` builds to an ELF binary via `make desktop`. Server and AI client continue to work as before. Kukicha v0.48.1.
