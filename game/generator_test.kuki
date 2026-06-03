@@ -1,0 +1,80 @@
+petiole game
+
+import "testing"
+import "stdlib/test"
+
+import "race-to-the-crystal/shared/types" as types
+
+func TestNewGenerator(t: reference testing.T)
+    g := NewGenerator(0, types.Pos(5, 5))
+    test.AssertEqual(t, g.id, 0)
+    test.AssertEqual(t, g.position, types.Pos(5, 5))
+    test.AssertEqual(t, g.capturing_player_id, types.PlayerID(""))
+    test.AssertEqual(t, len(g.capture_token_ids), 0)
+    test.AssertEqual(t, g.turns_held, 0)
+    test.AssertFalse(t, g.is_disabled)
+
+func TestGeneratorCaptureNoTokens(t: reference testing.T)
+    g := NewGenerator(0, types.Pos(5, 5))
+    disabled := g.update_capture_status(list of TokenAtPos{})
+    test.AssertFalse(t, disabled)
+    test.AssertFalse(t, g.is_disabled)
+
+func TestGeneratorCaptureInsufficientTokens(t: reference testing.T)
+    g := NewGenerator(0, types.Pos(5, 5))
+    tokens := list of TokenAtPos{TokenAtPos{token_id: types.TokenID(1), player_id: types.PlayerID("p1")}}
+    disabled := g.update_capture_status(tokens)
+    test.AssertFalse(t, disabled)
+
+func TestGeneratorCaptureStart(t: reference testing.T)
+    g := NewGenerator(0, types.Pos(5, 5))
+    tokens := list of TokenAtPos{
+        TokenAtPos{token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
+        TokenAtPos{token_id: types.TokenID(2), player_id: types.PlayerID("p1")},
+    }
+    disabled := g.update_capture_status(tokens)
+    test.AssertFalse(t, disabled)
+    test.AssertEqual(t, g.capturing_player_id, types.PlayerID("p1"))
+    test.AssertEqual(t, g.turns_held, 1)
+
+func TestGeneratorCaptureComplete(t: reference testing.T)
+    g := NewGenerator(0, types.Pos(5, 5))
+    tokens := list of TokenAtPos{
+        TokenAtPos{token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
+        TokenAtPos{token_id: types.TokenID(2), player_id: types.PlayerID("p1")},
+    }
+    g.update_capture_status(tokens)
+    test.AssertFalse(t, g.is_disabled)
+    g.update_capture_status(tokens)
+    test.AssertTrue(t, g.is_disabled)
+    test.AssertEqual(t, g.turns_held, 2)
+
+func TestGeneratorReset(t: reference testing.T)
+    g := NewGenerator(0, types.Pos(5, 5))
+    tokens := list of TokenAtPos{
+        TokenAtPos{token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
+        TokenAtPos{token_id: types.TokenID(2), player_id: types.PlayerID("p1")},
+    }
+    g.update_capture_status(tokens)
+    test.AssertEqual(t, g.turns_held, 1)
+    g.reset_capture()
+    test.AssertEqual(t, g.turns_held, 0)
+    test.AssertEqual(t, g.capturing_player_id, types.PlayerID(""))
+
+func TestCountDisabledGenerators(t: reference testing.T)
+    g1 := NewGenerator(0, types.Pos(0, 0))
+    g2 := NewGenerator(1, types.Pos(1, 1))
+    g2.is_disabled = true
+    g3 := NewGenerator(2, types.Pos(2, 2))
+    g3.is_disabled = true
+    gens := list of Generator{g1, g2, g3}
+    test.AssertEqual(t, count_disabled_generators(gens), 2)
+
+func TestCreateGenerators(t: reference testing.T)
+    positions := list of types.Position{types.Pos(5, 5), types.Pos(10, 10)}
+    gens := create_generators(positions)
+    test.AssertEqual(t, len(gens), 2)
+    test.AssertEqual(t, gens[0].id, 0)
+    test.AssertEqual(t, gens[0].position, types.Pos(5, 5))
+    test.AssertEqual(t, gens[1].id, 1)
+    test.AssertEqual(t, gens[1].position, types.Pos(10, 10))

@@ -39,6 +39,8 @@ caddy
 # Kukicha generated files
 .kukicha/
 **/main.go
+**/*_test.go
+game/game
 web_server/web_server
 
 # Babylon.js library files (downloaded from CDN)

@@ -1,0 +1,68 @@
+petiole game
+
+import "testing"
+import "stdlib/test"
+
+import "race-to-the-crystal/shared/types" as types
+
+func TestNewToken(t: reference testing.T)
+    tok, err := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
+    test.AssertNoError(t, err)
+    test.AssertEqual(t, tok.id, types.TokenID(1))
+    test.AssertEqual(t, tok.player_id, types.PlayerID("p1"))
+    test.AssertEqual(t, tok.health, 10)
+    test.AssertEqual(t, tok.max_health, 10)
+    test.AssertEqual(t, tok.position, types.Pos(5, 5))
+    test.AssertTrue(t, tok.is_alive)
+    test.AssertFalse(t, tok.is_deployed)
+
+func TestTokenMovementRange(t: reference testing.T)
+    tok10, err1 := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(0, 0))
+    test.AssertNoError(t, err1)
+    test.AssertEqual(t, tok10.movement_range(), 1)
+    tok6, err2 := NewToken(types.TokenID(2), types.PlayerID("p1"), 6, 6, types.Pos(0, 0))
+    test.AssertNoError(t, err2)
+    test.AssertEqual(t, tok6.movement_range(), 2)
+    tok4, err3 := NewToken(types.TokenID(3), types.PlayerID("p1"), 4, 4, types.Pos(0, 0))
+    test.AssertNoError(t, err3)
+    test.AssertEqual(t, tok4.movement_range(), 2)
+
+func TestTokenAttackPower(t: reference testing.T)
+    tok10, err1 := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(0, 0))
+    test.AssertNoError(t, err1)
+    test.AssertEqual(t, tok10.attack_power(), 5)
+    tok8, err2 := NewToken(types.TokenID(2), types.PlayerID("p1"), 8, 8, types.Pos(0, 0))
+    test.AssertNoError(t, err2)
+    test.AssertEqual(t, tok8.attack_power(), 4)
+
+func TestTokenTakeDamage(t: reference testing.T)
+    tok, err := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(0, 0))
+    test.AssertNoError(t, err)
+    killed := tok.take_damage(2)
+    test.AssertFalse(t, killed)
+    test.AssertEqual(t, tok.health, 8)
+    test.AssertTrue(t, tok.is_alive)
+
+func TestTokenTakeDamageKill(t: reference testing.T)
+    tok, err := NewToken(types.TokenID(1), types.PlayerID("p1"), 4, 4, types.Pos(0, 0))
+    test.AssertNoError(t, err)
+    killed := tok.take_damage(4)
+    test.AssertTrue(t, killed)
+    test.AssertEqual(t, tok.health, 0)
+    test.AssertFalse(t, tok.is_alive)
+
+func TestTokenHeal(t: reference testing.T)
+    tok, err := NewToken(types.TokenID(1), types.PlayerID("p1"), 6, 10, types.Pos(0, 0))
+    test.AssertNoError(t, err)
+    tok.heal(2)
+    test.AssertEqual(t, tok.health, 8)
+
+func TestTokenDistanceTo(t: reference testing.T)
+    tok, err := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(3, 5))
+    test.AssertNoError(t, err)
+    dist := tok.distance_to(types.Pos(7, 2))
+    test.AssertEqual(t, dist, 7)
+
+func TestTokenInvalidHealth(t: reference testing.T)
+    _, err := NewToken(types.TokenID(1), types.PlayerID("p1"), 7, 7, types.Pos(0, 0))
+    test.AssertError(t, err)

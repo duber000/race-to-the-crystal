@@ -1,0 +1,87 @@
+petiole game
+
+import "testing"
+import "stdlib/test"
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+
+func TestNewGameState(t: reference testing.T)
+    gs := NewGameState()
+    test.AssertEqual(t, len(gs.players), 0)
+    test.AssertEqual(t, len(gs.tokens), 0)
+    test.AssertEqual(t, gs.current_turn_player_id, types.PlayerID(""))
+    test.AssertEqual(t, gs.turn_number, 0)
+    test.AssertEqual(t, gs.phase, enums.GamePhaseSETUP)
+    test.AssertEqual(t, gs.winner_id, types.PlayerID(""))
+    test.AssertEqual(t, gs.Phase(), enums.GamePhaseSETUP)
+    test.AssertEqual(t, gs.TurnNumber(), 0)
+
+func TestAddPlayer(t: reference testing.T)
+    gs := NewGameState()
+    p := gs.add_player(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)
+    test.AssertEqual(t, p.id, types.PlayerID("p1"))
+    test.AssertEqual(t, p.name, "Alice")
+    test.AssertEqual(t, p.color, enums.PlayerColorCYAN)
+    test.AssertEqual(t, len(gs.players), 1)
+    p2 := gs.GetPlayer(types.PlayerID("p1"))
+    test.AssertNotNil(t, p2)
+
+func TestAddMultiplePlayers(t: reference testing.T)
+    gs := NewGameState()
+    gs.add_player(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)
+    gs.add_player(types.PlayerID("p2"), "Bob", enums.PlayerColorMAGENTA)
+    gs.add_player(types.PlayerID("p3"), "Charlie", enums.PlayerColorYELLOW)
+    gs.add_player(types.PlayerID("p4"), "Diana", enums.PlayerColorGREEN)
+    test.AssertEqual(t, len(gs.players), 4)
+
+func TestRemovePlayer(t: reference testing.T)
+    gs := NewGameState()
+    gs.add_player(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)
+    gs.add_player(types.PlayerID("p2"), "Bob", enums.PlayerColorMAGENTA)
+    gs.remove_player(types.PlayerID("p1"))
+    test.AssertEqual(t, len(gs.players), 1)
+    test.AssertNil(t, gs.GetPlayer(types.PlayerID("p1")))
+
+func TestCreateTokensForPlayer(t: reference testing.T)
+    gs := NewGameState()
+    gs.add_player(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)
+    gs.create_tokens_for_player(types.PlayerID("p1"))
+    tokens := gs.GetReserveTokens(types.PlayerID("p1"))
+    test.AssertEqual(t, len(tokens), 20)
+    counts := gs.GetReserveTokenCounts(types.PlayerID("p1"))
+    test.AssertEqual(t, counts[10], 5)
+    test.AssertEqual(t, counts[8], 5)
+    test.AssertEqual(t, counts[6], 5)
+    test.AssertEqual(t, counts[4], 5)
+
+func TestDeployToken(t: reference testing.T)
+    gs := NewGameState()
+    gs.add_player(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)
+    gs.create_tokens_for_player(types.PlayerID("p1"))
+    tok := gs.DeployToken(types.PlayerID("p1"), 10, types.Pos(1, 1))
+    test.AssertNotNil(t, tok)
+    test.AssertTrue(t, dereference tok.is_deployed)
+    test.AssertEqual(t, dereference tok.position, types.Pos(1, 1))
+
+func TestStartGame(t: reference testing.T)
+    gs := CreateGame(2)
+    gs.StartGame()
+    test.AssertEqual(t, gs.Phase(), enums.GamePhasePLAYING)
+    test.AssertEqual(t, len(gs.players), 2)
+    test.AssertNotEqual(t, gs.current_turn_player_id, types.PlayerID(""))
+    test.AssertEqual(t, gs.turn_number, 1)
+
+func TestEndTurn(t: reference testing.T)
+    gs := CreateGame(2)
+    gs.StartGame()
+    first := gs.current_turn_player_id
+    gs.EndTurn()
+    test.AssertNotEqual(t, gs.current_turn_player_id, first)
+
+func TestGameStateToDict(t: reference testing.T)
+    gs := CreateGame(2)
+    gs.StartGame()
+    d := gs.ToDict()
+    test.AssertNotNil(t, d)
+    test.AssertEqual(t, d["turn_number"], 1)

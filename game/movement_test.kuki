@@ -1,0 +1,55 @@
+petiole game
+
+import "testing"
+import "stdlib/test"
+
+import "race-to-the-crystal/shared/types" as types
+
+func TestGetValidMovesFromCenter(t: reference testing.T)
+    b := NewBoard()
+    tok, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 6, 6, types.Pos(5, 5))
+    tokens_map := map of types.TokenID to reference Token{1: reference of tok}
+    moves := get_valid_moves(reference of tok, reference of b, 2, tokens_map)
+    test.AssertTrue(t, len(moves) > 0)
+    found_start := false
+    for m in moves
+        if m == types.Pos(5, 5)
+            found_start = true
+    test.AssertFalse(t, found_start, "should NOT include current position")
+    found_valid := false
+    for m in moves
+        if m == types.Pos(6, 5) or m == types.Pos(7, 5) or m == types.Pos(5, 6)
+            found_valid = true
+    test.AssertTrue(t, found_valid, "should include valid move positions")
+
+func TestGetValidMovesRespectsRange(t: reference testing.T)
+    b := NewBoard()
+    tok, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
+    tokens_map := map of types.TokenID to reference Token{1: reference of tok}
+    moves := get_valid_moves(reference of tok, reference of b, 1, tokens_map)
+    far := false
+    for m in moves
+        if m == types.Pos(8, 5) or m == types.Pos(5, 8)
+            far = true
+    test.AssertFalse(t, far, "positions beyond range should not be valid")
+
+func TestIsValidMove(t: reference testing.T)
+    b := NewBoard()
+    tok, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 6, 6, types.Pos(5, 5))
+    tokens_map := map of types.TokenID to reference Token{1: reference of tok}
+    test.AssertTrue(t, is_valid_move(reference of tok, types.Pos(7, 5), reference of b, tokens_map))
+    test.AssertFalse(t, is_valid_move(reference of tok, types.Pos(10, 10), reference of b, tokens_map))
+
+func TestGetDistance(t: reference testing.T)
+    test.AssertEqual(t, get_distance(types.Pos(0, 0), types.Pos(3, 4)), 7)
+    test.AssertEqual(t, get_distance(types.Pos(5, 5), types.Pos(5, 5)), 0)
+
+func TestIsAdjacent(t: reference testing.T)
+    test.AssertTrue(t, is_adjacent(types.Pos(5, 5), types.Pos(6, 5)))
+    test.AssertTrue(t, is_adjacent(types.Pos(5, 5), types.Pos(6, 6)))
+    test.AssertFalse(t, is_adjacent(types.Pos(5, 5), types.Pos(7, 5)))
+
+func TestGetAdjacentPositions(t: reference testing.T)
+    b := NewBoard()
+    adjacent := get_adjacent_positions(types.Pos(5, 5), reference of b)
+    test.AssertEqual(t, len(adjacent), 8)

@@ -1,0 +1,59 @@
+petiole game
+
+import "testing"
+import "stdlib/test"
+
+import "race-to-the-crystal/shared/types" as types
+
+func TestCanAttackValid(t: reference testing.T)
+    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
+    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 8, 8, types.Pos(6, 5))
+    test.AssertTrue(t, can_attack(reference of atk, reference of dfd))
+
+func TestCanAttackSamePlayer(t: reference testing.T)
+    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
+    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p1"), 8, 8, types.Pos(6, 5))
+    test.AssertFalse(t, can_attack(reference of atk, reference of dfd))
+
+func TestCanAttackNotAdjacent(t: reference testing.T)
+    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
+    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 8, 8, types.Pos(10, 10))
+    test.AssertFalse(t, can_attack(reference of atk, reference of dfd))
+
+func TestCanAttackAttackerDead(t: reference testing.T)
+    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 4, 4, types.Pos(5, 5))
+    atk.take_damage(4)
+    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 8, 8, types.Pos(6, 5))
+    test.AssertFalse(t, can_attack(reference of atk, reference of dfd))
+
+func TestCanAttackDefenderDead(t: reference testing.T)
+    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
+    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 4, 4, types.Pos(6, 5))
+    dfd.take_damage(4)
+    test.AssertFalse(t, can_attack(reference of atk, reference of dfd))
+
+func TestResolveCombatHIT(t: reference testing.T)
+    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
+    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 10, 10, types.Pos(6, 5))
+    outcome := resolve_combat(reference of atk, reference of dfd)
+    test.AssertEqual(t, outcome.attacker_id, types.TokenID(1))
+    test.AssertEqual(t, outcome.defender_id, types.TokenID(2))
+    test.AssertEqual(t, outcome.damage_dealt, 5)
+    test.AssertFalse(t, outcome.defender_killed)
+    test.AssertEqual(t, dfd.health, 4)
+    test.AssertTrue(t, dfd.is_alive)
+
+func TestResolveCombatKILLED(t: reference testing.T)
+    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
+    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 4, 4, types.Pos(6, 5))
+    outcome := resolve_combat(reference of atk, reference of dfd)
+    test.AssertEqual(t, outcome.damage_dealt, 5)
+    test.AssertTrue(t, outcome.defender_killed)
+    test.AssertFalse(t, dfd.is_alive)
+
+func TestWouldKill(t: reference testing.T)
+    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
+    dfd4, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 4, 4, types.Pos(6, 5))
+    dfd8, _ := NewToken(types.TokenID(3), types.PlayerID("p3"), 8, 8, types.Pos(7, 5))
+    test.AssertTrue(t, would_kill(reference of atk, reference of dfd4))
+    test.AssertFalse(t, would_kill(reference of atk, reference of dfd8))

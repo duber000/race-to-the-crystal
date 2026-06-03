@@ -1,0 +1,55 @@
+petiole game
+
+import "testing"
+import "stdlib/test"
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+
+func TestNewPlayer(t: reference testing.T)
+    p := NewPlayer(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)
+    test.AssertEqual(t, p.id, types.PlayerID("p1"))
+    test.AssertEqual(t, p.name, "Alice")
+    test.AssertEqual(t, p.color, enums.PlayerColorCYAN)
+    test.AssertTrue(t, p.is_active)
+    test.AssertEqual(t, p.token_count(), 0)
+
+func TestPlayerAddToken(t: reference testing.T)
+    p := NewPlayer(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)
+    p.add_token(types.TokenID(1))
+    p.add_token(types.TokenID(2))
+    test.AssertEqual(t, p.token_count(), 2)
+    test.AssertTrue(t, p.has_token(types.TokenID(1)))
+    test.AssertTrue(t, p.has_token(types.TokenID(2)))
+
+func TestPlayerRemoveToken(t: reference testing.T)
+    p := NewPlayer(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)
+    p.add_token(types.TokenID(1))
+    p.add_token(types.TokenID(2))
+    p.remove_token(types.TokenID(1))
+    test.AssertEqual(t, p.token_count(), 1)
+    test.AssertFalse(t, p.has_token(types.TokenID(1)))
+
+func TestPlayerSetReady(t: reference testing.T)
+    p := NewPlayer(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)
+    test.AssertFalse(t, p.is_ready)
+    p.set_ready(true)
+    test.AssertTrue(t, p.is_ready)
+    p.set_ready(false)
+    test.AssertFalse(t, p.is_ready)
+
+func TestPlayerEliminate(t: reference testing.T)
+    p := NewPlayer(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)
+    test.AssertTrue(t, p.is_active)
+    p.eliminate()
+    test.AssertFalse(t, p.is_active)
+
+func TestPlayerColorIndex(t: reference testing.T)
+    p0 := NewPlayer(types.PlayerID("p0"), "P0", enums.PlayerColorCYAN)
+    p1 := NewPlayer(types.PlayerID("p1"), "P1", enums.PlayerColorMAGENTA)
+    p2 := NewPlayer(types.PlayerID("p2"), "P2", enums.PlayerColorYELLOW)
+    p3 := NewPlayer(types.PlayerID("p3"), "P3", enums.PlayerColorGREEN)
+    test.AssertEqual(t, enums.PlayerIndex(p0.color), 0)
+    test.AssertEqual(t, enums.PlayerIndex(p1.color), 1)
+    test.AssertEqual(t, enums.PlayerIndex(p2.color), 2)
+    test.AssertEqual(t, enums.PlayerIndex(p3.color), 3)

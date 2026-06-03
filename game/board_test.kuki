@@ -1,0 +1,58 @@
+petiole game
+
+import "testing"
+import "stdlib/test"
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+
+func TestNewCell(t: reference testing.T)
+    c := NewCell(3, 4)
+    test.AssertEqual(t, c.position, types.Pos(3, 4))
+    test.AssertEqual(t, c.cell_type, enums.CellTypeNORMAL)
+    test.AssertEqual(t, len(c.occupants), 0)
+    test.AssertFalse(t, c.is_occupied())
+
+func TestCellOccupants(t: reference testing.T)
+    c := NewCell(5, 5)
+    test.AssertFalse(t, c.is_occupied())
+    c.add_occupant(types.TokenID(1))
+    test.AssertTrue(t, c.is_occupied())
+    test.AssertEqual(t, len(c.occupants), 1)
+    c.add_occupant(types.TokenID(2))
+    test.AssertEqual(t, len(c.occupants), 2)
+    c.remove_occupant(types.TokenID(1))
+    test.AssertEqual(t, len(c.occupants), 1)
+    c.clear_occupants()
+    test.AssertEqual(t, len(c.occupants), 0)
+
+func TestNewBoard(t: reference testing.T)
+    b := NewBoard()
+    test.AssertEqual(t, b.width, 24)
+    test.AssertEqual(t, b.height, 24)
+    test.AssertEqual(t, len(b.grid), 24)
+    test.AssertEqual(t, len(b.grid[0]), 24)
+
+func TestBoardCrystalPosition(t: reference testing.T)
+    b := NewBoard()
+    pos := b.get_crystal_position()
+    test.AssertEqual(t, pos, types.Pos(12, 12))
+
+func TestBoardGeneratorPositions(t: reference testing.T)
+    b := NewBoard()
+    positions := b.get_generator_positions()
+    test.AssertEqual(t, len(positions), 4)
+
+func TestBoardIsValidPosition(t: reference testing.T)
+    b := NewBoard()
+    test.AssertTrue(t, b.is_valid_position(0, 0))
+    test.AssertTrue(t, b.is_valid_position(23, 23))
+    test.AssertFalse(t, b.is_valid_position(-1, 0))
+    test.AssertFalse(t, b.is_valid_position(0, 24))
+    test.AssertFalse(t, b.is_valid_position(24, 0))
+
+func TestBoardGetCell(t: reference testing.T)
+    b := NewBoard()
+    cell := b.get_cell(5, 7)
+    test.AssertNotNil(t, cell)
+    test.AssertEqual(t, dereference cell.position, types.Pos(5, 7))

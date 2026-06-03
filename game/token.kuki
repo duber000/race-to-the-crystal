@@ -1,9 +1,9 @@
 petiole game
 
+import "fmt"
 import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
-import "stdlib/errors"
 
 type Token
     id types.TokenID
@@ -16,11 +16,18 @@ type Token
 
 func NewToken(id: types.TokenID, player_id: types.PlayerID, health: int, max_health: int, position: types.Position) (Token, error)
     if health < 0
-        return Token{}, errors.New("health must be >= 0")
+        return Token{}, fmt.Errorf("health must be >= 0")
     if max_health < 0
-        return Token{}, errors.New("max_health must be >= 0")
+        return Token{}, fmt.Errorf("max_health must be >= 0")
     if health > max_health
-        return Token{}, errors.New("health cannot exceed max_health")
+        return Token{}, fmt.Errorf("health cannot exceed max_health")
+    valid_health := false
+    for hv in constants.TOKEN_HEALTH_VALUES
+        if health == hv
+            valid_health = true
+            break
+    if not valid_health
+        return Token{}, fmt.Errorf("health must be one of {constants.TOKEN_HEALTH_VALUES}")
     return Token{
         id: id,
         player_id: player_id,
@@ -49,6 +56,7 @@ func take_damage on t: reference Token(damage: int) bool
     for hv in constants.TOKEN_HEALTH_VALUES
         if t.health >= hv
             valid_health = hv
+            break
     if valid_health == 0
         t.health = 0
         t.is_alive = false
