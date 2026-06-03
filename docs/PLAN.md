@@ -19,15 +19,14 @@ Convert the Python codebase (~35,630 LOC across 115 files) to [Kukicha](https://
 
 **What works:** All 9 packages pass `kukicha check ./...`. `client/desktop/` builds to an ELF binary via `make desktop`. Server and AI client continue to work as before. Kukicha v0.48.1.
 
-**Phase 5 completed (2026-06-02):** Desktop 2D client using ebitengine directly (not `github.com/kukichalang/game`, which is WASM-only with `//go:build js`). 
+**Phase 5 completed (2026-06-02):** Desktop 2D client using ebitengine directly (not `github.com/kukichalang/game`, which is WASM-only with `//go:build js`). All game logic is pure Kukicha — the `ebiten.Game` interface (`Update`/`Draw`/`Layout`) is implemented via Kukicha methods with `on`-style receiver syntax on `DesktopAdapter`.
 
 **Key architectural decisions during Phase 5:**
-1. **Direct ebitengine, not `github.com/kukichalang/game`** — The game package has `//go:build js` constraint making it WASM-only. Desktop build uses ebitengine directly via Go interop (adapter.go + desktop_main.go).
-2. **Go interop for ebitengine.Game interface** — Kukicha cannot implement the `ebiten.Game` interface (its method definition syntax `func Update on a: reference Foo() error` fails to parse empty `()` parameter lists — a Kukicha parser bug in v0.48.1). A Go adapter file (`adapter.go`) implements `Update()`, `Draw()`, `Layout()` and delegates to Kukicha functions `updateFrame()`, `drawFrame()`, `layoutScreen()`.
-3. **CGO build requirements** — ebitengine needs X11 development headers. On systems using Homebrew, set `CGO_CFLAGS` and `CGO_LDFLAGS` via `pkg-config`. The `make desktop` target handles this automatically.
+1. **Direct ebitengine, not `github.com/kukichalang/game`** — The game package has `//go:build js` constraint making it WASM-only.
+2. **CGO build requirements** — ebitengine needs X11 development headers. On systems using Homebrew, set `CGO_CFLAGS` and `CGO_LDFLAGS` via `pkg-config`. The `make desktop` target handles this automatically.
 
-**Kukicha compiler bug found during Phase 5:**
-1. **Empty `()` on `on`-style method definitions fails to parse** — `func Update on a: reference Adapter() error` produces `expected '(' after 'func'`. The parser expects an explicit parameter between the receiver and the return type. All existing project methods with `on` syntax have at least one parameter. Workaround: use regular Kukicha functions called from a Go adapter.
+**Kukicha compiler bug found and fixed during Phase 5:**
+1. ~~Empty `()` on `on`-style method definitions fails to parse~~ — **Fixed in v0.48.2** (#292). Was: `func Update on a: reference Adapter() error` produced parser error. Fixed; ebitengine `Game` interface now implemented entirely in Kukicha without Go adapter workaround.
 1. **`reference of s.game_state.EndTurn()` workaround** at `server/game_coordinator.kuki:66` was invalid Go (calling `new()` on a void function result). Removed the workaround — pointer-receiver method calls on value-typed fields work correctly in Go.
 2. **Stale `current_turn_player_id`** in `get_state_dict()` was caused by `NewGameSession` returning a `GameSession` **by value**. The api_map was populated with pointers to the local `session` inside `NewGameSession`, but the returned value was a **copy** — so mutations via `api.game_state.EndTurn()` modified the original (abandoned) struct, while reads from `session.game_state` saw a different copy. Fixed by changing `NewGameSession` to return `reference GameSession`.
 

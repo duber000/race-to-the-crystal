@@ -67,6 +67,8 @@ type DesktopApp
     message string
     frame_count int
 
+type DesktopAdapter
+
 var app DesktopApp
 
 func init()
@@ -95,8 +97,6 @@ var ColorOrange = RGBA(255, 165, 0, 255)
 var ColorPurple = RGBA(180, 0, 255, 255)
 var ColorRed = RGBA(255, 50, 50, 255)
 
-var PlayerColors = list of color.RGBA{ColorCyan, ColorMagenta, ColorYellow, ColorGreen}
-
 func PlayerColorByName(name: string) color.RGBA
     switch name
         when "cyan"
@@ -110,9 +110,15 @@ func PlayerColorByName(name: string) color.RGBA
         default
             return ColorWhite
 
+func main()
+    ebiten.SetWindowTitle("Race to the Crystal")
+    ebiten.SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT)
+    ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+    err := ebiten.RunGame(reference of DesktopAdapter{})
+    if err isnt empty
+        panic(err.Error())
 
-
-func updateFrame()
+func Update on a: reference DesktopAdapter() error
     app.frame_count = app.frame_count + 1
     switch app.current_screen
         when ScreenKind.MainMenu
@@ -123,8 +129,9 @@ func updateFrame()
             HandleGameInput()
         when ScreenKind.Victory
             HandleVictoryInput()
+    return empty
 
-func drawFrame(screen: reference ebiten.Image)
+func Draw on a: reference DesktopAdapter(screen: reference ebiten.Image)
     screen.Fill(ColorBlack)
     switch app.current_screen
         when ScreenKind.MainMenu
@@ -136,7 +143,7 @@ func drawFrame(screen: reference ebiten.Image)
         when ScreenKind.Victory
             DrawVictory(screen)
 
-func layoutScreen(outsideWidth: int, outsideHeight: int) (int, int)
+func Layout on a: reference DesktopAdapter(outsideWidth: int, outsideHeight: int) (int, int)
     return WINDOW_WIDTH, WINDOW_HEIGHT
 
 func SetScreen(s: ScreenKind)

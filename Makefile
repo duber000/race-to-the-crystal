@@ -35,8 +35,8 @@ test-specific: ## Run specific test (usage: make test-specific PKG=./game/...)
 	go test $(PKG)
 
 clean: ## Remove build artifacts
-	find . -type f -path '*/desktop/*.go' ! -name 'adapter.go' ! -name 'desktop_main.go' -delete
-	find . -type f -name '*.go' ! -path './.kukicha/*' ! -path '*/desktop/*' -delete
+	find client/desktop -name '*.go' -delete
+	find . -type f -name '*.go' ! -path './.kukicha/*' ! -path './client/desktop/*' -delete
 	rm -f race-desktop
 
 lint: ## Check formatting
