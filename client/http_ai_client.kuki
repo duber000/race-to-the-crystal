@@ -200,10 +200,7 @@ func FetchActions on s: reference Session map of string to any
 
 func SendAction on s: reference Session(action: gamepkg.ChosenAction) map of string to any
     url := "{s.base_url}/api/game/{s.game_id}/action"
-    body := map of string to any{
-        "type": action.ActionType,
-        "data": action.Params,
-    }
+    body := gamepkg.ChosenToActionMap(action)
 
     resp := fetch.New(url)
         |> fetch.Method("POST")
@@ -400,11 +397,12 @@ func IsGameActive(state: map of string to any) bool
     return phase_str equals "PLAYING"
 
 func PickAction(actions: list of map of string to any, strategy: gamepkg.AIStrategyName) gamepkg.ChosenAction
-    if len(actions) equals 0
-        return gamepkg.NewChosenAction("END_TURN", make(map of string to any))
-    chosen_ref := gamepkg.ChooseAction(strategy, actions, empty, "")
+    actions_typed := gamepkg.ActionsFromDicts(actions)
+    if len(actions_typed) equals 0
+        return gamepkg.ChosenEndTurn
+    chosen_ref := gamepkg.ChooseAction(strategy, actions_typed, empty, "")
     if chosen_ref equals empty
-        return gamepkg.NewChosenAction("END_TURN", make(map of string to any))
+        return gamepkg.ChosenEndTurn
     return dereference chosen_ref
 
 type SSEEvent

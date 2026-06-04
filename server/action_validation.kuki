@@ -1,5 +1,6 @@
 petiole main
 
+import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/constants" as constants
 import "stdlib/json" as jsonpkg
 import "stdlib/string" as strpkg
@@ -9,16 +10,15 @@ type ValidationResult
     error_code string
     message string
 
-func ValidateActionFields(action_type: string, data: map of string to any) nullable reference ValidationResult
-    normalized := strpkg.ToLower(action_type)
-    switch normalized
-        when "move"
+func ValidateActionFields(action_type: gamepkg.ActionType, data: map of string to any) nullable reference ValidationResult
+    switch action_type.String()
+        when "MOVE"
             return ValidateMove(data)
-        when "attack"
+        when "ATTACK"
             return ValidateAttack(data)
-        when "deploy"
+        when "DEPLOY"
             return ValidateDeploy(data)
-        when "end_turn"
+        when "END_TURN"
             return empty
         default
             return reference of ValidationResult{
@@ -46,7 +46,8 @@ func ValidateMove(data: map of string to any) nullable reference ValidationResul
             message: "MOVE requires destination",
         }
 
-    data["token_id"].(int) onerr
+    _, int_ok := data["token_id"].(int)
+    if not int_ok
         return reference of ValidationResult{
             field: "token_id",
             error_code: "INVALID_TYPE",
@@ -81,14 +82,16 @@ func ValidateAttack(data: map of string to any) nullable reference ValidationRes
             message: "ATTACK requires defender_id",
         }
 
-    data["attacker_id"].(int) onerr
+    _, atk_ok := data["attacker_id"].(int)
+    if not atk_ok
         return reference of ValidationResult{
             field: "attacker_id",
             error_code: "INVALID_TYPE",
             message: "attacker_id must be an integer",
         }
 
-    def_val.(int) onerr
+    _, def_ok := def_val.(int)
+    if not def_ok
         return reference of ValidationResult{
             field: "defender_id",
             error_code: "INVALID_TYPE",
@@ -114,7 +117,8 @@ func ValidateDeploy(data: map of string to any) nullable reference ValidationRes
             message: "DEPLOY requires position",
         }
 
-    hv_int := hv_val.(int) onerr
+    hv_int, hv_ok := hv_val.(int)
+    if not hv_ok
         return reference of ValidationResult{
             field: "health_value",
             error_code: "INVALID_TYPE",
@@ -152,7 +156,7 @@ func NormalizeActionData(data: map of string to any) map of string to any
     for key, val in data
         lower_key := strpkg.ToLower(key)
         if lower_key equals "type"
-            type_str := val.(string) onerr ""
+            type_str, _ := val.(string)
             result["type"] = strpkg.ToLower(type_str)
         else if lower_key equals "target_id"
             result["defender_id"] = val

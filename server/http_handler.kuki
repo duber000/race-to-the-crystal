@@ -1,14 +1,13 @@
 petiole main
 
 import "net"
+import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/types" as typespkg
-import "stdlib/env"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/random"
 import "stdlib/string" as strpkg
 import "strings"
-import "race-to-the-crystal/game" as gamepkg
 
 type HTTPHandler
     coordinator nullable reference GameCoordinator
@@ -35,15 +34,6 @@ func NewHTTPHandler(coord: reference GameCoordinator, lobby_mgr: reference Lobby
         static_dir: static_dir,
     }
 
-func GetConfig on h: reference HTTPHandler map of string to any
-    sse_primary := env.GetOr("SSE_PRIMARY_MODE", "false")
-    return map of string to any{
-        "mercure_enabled": h.mercure_cfg.publisher_jwt isnt "",
-        "mercure_hub_url": h.mercure_cfg.hub_url,
-        "mercure_topic_prefix": h.mercure_cfg.topic_prefix,
-        "sse_primary_mode": sse_primary equals "true",
-    }
-
 func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of string to any, client_ip: string) APIResponse
     allowed, _ := h.rate_limiter.CheckConnection(client_ip)
     if not allowed
@@ -60,7 +50,7 @@ func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of st
             message: "missing player_name",
             data: empty map of string to any,
         }
-    player_name := player_name_val.(string) onerr ""
+    player_name, _ := player_name_val.(string)
     if player_name equals ""
         return APIResponse{
             success: false,
@@ -145,11 +135,19 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
             message: "missing action type",
             data: empty map of string to any,
         }
-    action_type := action_type_val.(string) onerr ""
-    if action_type equals ""
+    type_str, _ := action_type_val.(string)
+    if type_str equals ""
         return APIResponse{
             success: false,
             message: "invalid action type",
+            data: empty map of string to any,
+        }
+
+    action_type, valid_type := gamepkg.ParseActionType(strpkg.ToUpper(type_str))
+    if not valid_type
+        return APIResponse{
+            success: false,
+            message: "unknown action type: {type_str}",
             data: empty map of string to any,
         }
 
@@ -201,7 +199,7 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
 
     result_any := empty map of string to any
     if result_data isnt empty
-        result_any = dereference result_data
+        result_any = actionResultDataToMap(dereference result_data)
 
     return APIResponse{
         success: success,
@@ -265,7 +263,7 @@ func HandleGetActions on h: reference HTTPHandler(game_id: string, auth_header: 
         message: "ok",
         data: map of string to any{
             "phase": phase_resp.Phase,
-            "actions": phase_resp.Actions,
+            "actions": gamepkg.ActionsToDicts(phase_resp.Actions),
         },
     }
 
@@ -296,21 +294,23 @@ func HandleCreateGame on h: reference HTTPHandler(auth_header: string, body: map
     player_name := "Player"
     pn_val, has_pn := body["player_name"]
     if has_pn
-        pn := pn_val.(string) onerr ""
-        if pn isnt ""
+        pn, pn_ok := pn_val.(string)
+        if pn_ok and pn isnt ""
             player_name = pn
 
     game_name := "Game"
     gn_val, has_gn := body["game_name"]
     if has_gn
-        gn := gn_val.(string) onerr ""
-        if gn isnt ""
+        gn, gn_ok := gn_val.(string)
+        if gn_ok and gn isnt ""
             game_name = gn
 
     max_players := 4
     mp_val, has_mp := body["max_players"]
     if has_mp
-        max_players = mp_val.(int) onerr 4
+        mp_parsed, mp_ok := mp_val.(int)
+        if mp_ok
+            max_players = mp_parsed
     if max_players < 2
         max_players = 2
     if max_players > 4
@@ -365,7 +365,9 @@ func HandleReady on h: reference HTTPHandler(game_id: string, auth_header: strin
     ready := true
     ready_val, has_rdy := body["ready"]
     if has_rdy
-        ready = ready_val.(bool) onerr true
+        ready_parsed, ready_ok := ready_val.(bool)
+        if ready_ok
+            ready = ready_parsed
 
     h.lobby_mgr.set_ready(game_id, player_id, ready)
 
@@ -451,27 +453,22 @@ func GetClientIP on h: reference HTTPHandler(remote_addr: string, xff: string, r
         return remote_addr
     return host
 
-func buildGameAction on h: reference HTTPHandler(player_id: string, action_type: string, data: map of string to any) gamepkg.AIAction
-    lower_type := strpkg.ToLower(action_type)
-
-    var result gamepkg.AIAction
-
-    if lower_type equals "move"
-        tid := h.getIntField(data, "token_id", 0)
-        dest := h.getPositionField(data, "destination")
-        result = gamepkg.NewMoveAction(typespkg.TokenID(tid), dest)
-    else if lower_type equals "attack"
-        attacker_id := typespkg.TokenID(h.getIntField(data, "attacker_id", 0))
-        defender_id := typespkg.TokenID(h.getIntField(data, "defender_id", 0))
-        result = gamepkg.NewAttackAction(attacker_id, defender_id)
-    else if lower_type equals "deploy"
-        hv := h.getIntField(data, "health_value", 1)
-        pos := h.getPositionField(data, "position")
-        result = gamepkg.NewDeployAction(hv, pos)
-    else
-        result = gamepkg.NewEndTurnAction()
-
-    return result
+func buildGameAction on h: reference HTTPHandler(player_id: string, action_type: gamepkg.ActionType, data: map of string to any) gamepkg.AIAction
+    switch action_type.String()
+        when "MOVE"
+            tid := h.getIntField(data, "token_id", 0)
+            dest := h.getPositionField(data, "destination")
+            return gamepkg.NewMoveAction(typespkg.TokenID(tid), dest)
+        when "ATTACK"
+            attacker_id := typespkg.TokenID(h.getIntField(data, "attacker_id", 0))
+            defender_id := typespkg.TokenID(h.getIntField(data, "defender_id", 0))
+            return gamepkg.NewAttackAction(attacker_id, defender_id)
+        when "DEPLOY"
+            hv := h.getIntField(data, "health_value", 1)
+            pos := h.getPositionField(data, "position")
+            return gamepkg.NewDeployAction(hv, pos)
+        default
+            return gamepkg.NewEndTurnAction()
 
 func getIntField on h: reference HTTPHandler(data: map of string to any, key: string, default_val: int) int
     val, has := data[key]
@@ -508,4 +505,41 @@ func any_to_int(v: any) (int, error)
             return val, empty
         when float64
             return int(val), empty
+
     return 0, error "cannot convert to int"
+
+func actionResultDataToMap(data: gamepkg.ActionResultData) map of string to any
+    switch data as v
+        when gamepkg.MoveData
+            m := map of string to any{
+                "token_id": v.TokenID,
+                "old_position": v.OldPosition,
+                "new_position": v.NewPosition,
+                "mystery_triggered": v.MysteryTriggered,
+            }
+            if v.MysteryTriggered
+                m["mystery_effect"] = v.MysteryEffect.String()
+            return m
+        when gamepkg.AttackData
+            return map of string to any{
+                "attacker_id": v.AttackerID,
+                "defender_id": v.DefenderID,
+                "damage_dealt": v.DamageDealt,
+                "defender_killed": v.DefenderKilled,
+            }
+        when gamepkg.DeployData
+            return map of string to any{
+                "new_token_id": v.NewTokenID,
+                "health_value": v.HealthValue,
+                "position": v.Position,
+                "tokens_remaining": v.TokensRemaining,
+            }
+        when gamepkg.TurnEndData
+            return map of string to any{
+                "turn_number": v.TurnNumber,
+                "next_player_id": v.NextPlayerID,
+                "generators_disabled": v.GeneratorsDisabled,
+                "crystal_captured": v.CrystalCaptured,
+            }
+        default
+            return empty map of string to any

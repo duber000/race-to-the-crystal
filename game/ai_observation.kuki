@@ -340,15 +340,15 @@ func render_legend(lines: list of string, gs: reference GameState, perspective: 
 
 func list_available_actions(gs: reference GameState, player_id: types.PlayerID) AvailableActionsResponse
     if gs.phase isnt enums.PLAYING
-        return AvailableActionsResponse{Phase: "NOT_PLAYING", Actions: empty list of map of string to any}
+        return AvailableActionsResponse{Phase: "NOT_PLAYING", Actions: empty list of ActionResponse}
 
     if gs.current_turn_player_id isnt player_id
         return AvailableActionsResponse{
             Phase: "NOT_YOUR_TURN",
-            Actions: empty list of map of string to any,
+            Actions: empty list of ActionResponse,
         }
 
-    actions := empty list of map of string to any
+    actions := empty list of ActionResponse
     phase_str := enums.TurnPhaseName(gs.turn_phase)
 
     p_ref := gs.GetPlayer(player_id)
@@ -374,7 +374,7 @@ func list_available_actions(gs: reference GameState, player_id: types.PlayerID) 
 
     return AvailableActionsResponse{Phase: phase_str, Actions: actions}
 
-func add_movement_actions(actions: list of map of string to any, deployed: list of Token, gs: reference GameState) list of map of string to any
+func add_movement_actions(actions: list of ActionResponse, deployed: list of Token, gs: reference GameState) list of ActionResponse
     for t in deployed
         t_ref := gs.GetToken(t.id)
         if t_ref equals empty
@@ -385,17 +385,16 @@ func add_movement_actions(actions: list of map of string to any, deployed: list 
             dests := empty list of list of int
             for m in valid_moves
                 dests = append(dests, list of int{m.X, m.Y})
-            action := make(map of string to any)
-            action["type"] = "MOVE"
-            action["token_id"] = t.id
-            action["token_position"] = list of int{t.position.X, t.position.Y}
-            action["token_health"] = "{t.health}/{t.max_health}"
-            action["valid_destinations"] = dests
-            action["description"] = "Move token #{t.id} ({t.max_health}hp) from ({t.position.X},{t.position.Y})"
-            actions = append(actions, action)
+            actions = append(actions, MoveAction{
+                TokenID: t.id,
+                TokenPosition: list of int{t.position.X, t.position.Y},
+                TokenHealth: "{t.health}/{t.max_health}",
+                ValidDestinations: dests,
+                Description: "Move token #{t.id} ({t.max_health}hp) from ({t.position.X},{t.position.Y})",
+            })
     return actions
 
-func add_deployment_actions(actions: list of map of string to any, gs: reference GameState, player_id: types.PlayerID, p: Player) list of map of string to any
+func add_deployment_actions(actions: list of ActionResponse, gs: reference GameState, player_id: types.PlayerID, p: Player) list of ActionResponse
     reserve_counts := gs.GetReserveTokenCounts(player_id)
     corner_positions := gs.board.get_deployable_positions(enums.PlayerIndex(p.color))
     for hv in constants.TOKEN_HEALTH_VALUES
@@ -406,16 +405,15 @@ func add_deployment_actions(actions: list of map of string to any, gs: reference
                 if cell isnt empty and not dereference cell.is_occupied()
                     available = append(available, list of int{pos.X, pos.Y})
             if len(available) > 0
-                action := make(map of string to any)
-                action["type"] = "DEPLOY"
-                action["health_value"] = hv
-                action["positions"] = available
-                action["remaining"] = reserve_counts[hv]
-                action["description"] = "Deploy {hv}hp token from reserve ({reserve_counts[hv]} remaining)"
-                actions = append(actions, action)
+                actions = append(actions, DeployAction{
+                    HealthValue: hv,
+                    Positions: available,
+                    Remaining: reserve_counts[hv],
+                    Description: "Deploy {hv}hp token from reserve ({reserve_counts[hv]} remaining)",
+                })
     return actions
 
-func add_attack_actions(actions: list of map of string to any, deployed: list of Token, gs: reference GameState) list of map of string to any
+func add_attack_actions(actions: list of ActionResponse, deployed: list of Token, gs: reference GameState) list of ActionResponse
     for t in deployed
         t_ref := gs.GetToken(t.id)
         if t_ref equals empty
@@ -433,24 +431,22 @@ func add_attack_actions(actions: list of map of string to any, deployed: list of
             if will_kill_target
                 kill_tag = " (KILL)"
 
-            action := make(map of string to any)
-            action["type"] = "ATTACK"
-            action["attacker_id"] = t.id
-            action["attacker_position"] = list of int{t.position.X, t.position.Y}
-            action["defender_id"] = target.id
-            action["defender_position"] = list of int{target.position.X, target.position.Y}
-            action["defender_owner"] = target_color
-            action["damage"] = damage
-            action["will_kill"] = will_kill_target
-            action["description"] = "Attack token #{target.id} ({target_color}) with token #{t.id} for {damage} damage{kill_tag}"
-            actions = append(actions, action)
+            actions = append(actions, AttackAction{
+                AttackerID: t.id,
+                AttackerPosition: list of int{t.position.X, t.position.Y},
+                DefenderID: target.id,
+                DefenderPosition: list of int{target.position.X, target.position.Y},
+                DefenderOwner: target_color,
+                Damage: damage,
+                WillKill: will_kill_target,
+                Description: "Attack token #{target.id} ({target_color}) with token #{t.id} for {damage} damage{kill_tag}",
+            })
     return actions
 
-func add_end_turn_action(actions: list of map of string to any) list of map of string to any
-    action := make(map of string to any)
-    action["type"] = "END_TURN"
-    action["description"] = "End your turn"
-    actions = append(actions, action)
+func add_end_turn_action(actions: list of ActionResponse) list of ActionResponse
+    actions = append(actions, EndTurnAction{
+        Description: "End your turn",
+    })
     return actions
 
 func get_attackable_targets(tok: reference Token, tokens_map: map of types.TokenID to reference Token) list of Token
@@ -542,10 +538,16 @@ func get_situation_report(gs: reference GameState, perspective: types.PlayerID) 
     sections = append(sections, "AVAILABLE ACTIONS:")
     if len(actions_data.Actions) > 0
         for i, action in actions_data.Actions
-            desc, has_desc := action["description"]
             desc_str := ""
-            if has_desc
-                desc_str = desc.(string)
+            switch action as v
+                when MoveAction
+                    desc_str = v.Description
+                when AttackAction
+                    desc_str = v.Description
+                when DeployAction
+                    desc_str = v.Description
+                when EndTurnAction
+                    desc_str = v.Description
             sections = append(sections, "  {i + 1}. {desc_str}")
     else
         if actions_data.Phase equals "NOT_YOUR_TURN"

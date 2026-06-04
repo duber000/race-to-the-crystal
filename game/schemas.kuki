@@ -1,58 +1,59 @@
 petiole game
 
+import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
+enum ActionType: string
+    MOVE = "MOVE"
+    ATTACK = "ATTACK"
+    DEPLOY = "DEPLOY"
+    END_TURN = "END_TURN"
+
 type MoveActionSchema
-    action_type string
+    action_type ActionType
     token_id types.TokenID
     destination types.Position
 
 type AttackActionSchema
-    action_type string
+    action_type ActionType
     attacker_id types.TokenID
     defender_id types.TokenID
 
 type DeployActionSchema
-    action_type string
+    action_type ActionType
     health_value int
     position types.Position
 
 type EndTurnActionSchema
-    action_type string
+    action_type ActionType
 
-type MoveActionResponse
-    type_ string
-    token_id types.TokenID
-    token_position list of int
-    token_health string
-    valid_destinations list of list of int
-    description string
-
-type AttackActionResponse
-    type_ string
-    attacker_id types.TokenID
-    attacker_position list of int
-    defender_id types.TokenID
-    defender_position list of int
-    defender_owner string
-    damage int
-    will_kill bool
-    description string
-
-type DeployActionResponse
-    type_ string
-    health_value int
-    positions list of list of int
-    remaining int
-    description string
-
-type EndTurnActionResponse
-    type_ string
-    description string
+enum ActionResponse
+    MoveAction
+        TokenID types.TokenID
+        TokenPosition list of int
+        TokenHealth string
+        ValidDestinations list of list of int
+        Description string
+    AttackAction
+        AttackerID types.TokenID
+        AttackerPosition list of int
+        DefenderID types.TokenID
+        DefenderPosition list of int
+        DefenderOwner string
+        Damage int
+        WillKill bool
+        Description string
+    DeployAction
+        HealthValue int
+        Positions list of list of int
+        Remaining int
+        Description string
+    EndTurnAction
+        Description string
 
 type AvailableActionsResponse
     Phase string
-    Actions list of map of string to any
+    Actions list of ActionResponse
 
 type MoveResultData
     token_id types.TokenID

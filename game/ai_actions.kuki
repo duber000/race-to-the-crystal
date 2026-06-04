@@ -20,10 +20,34 @@ type ValidationResult
     IsValid bool
     Message string
 
+enum ActionResultData
+    NoData
+    MoveData
+        TokenID types.TokenID
+        OldPosition list of int
+        NewPosition list of int
+        MysteryTriggered bool
+        MysteryEffect enums.MysteryEffect
+    AttackData
+        AttackerID types.TokenID
+        DefenderID types.TokenID
+        DamageDealt int
+        DefenderKilled bool
+    DeployData
+        NewTokenID types.TokenID
+        HealthValue int
+        Position list of int
+        TokensRemaining int
+    TurnEndData
+        TurnNumber int
+        NextPlayerID types.PlayerID
+        GeneratorsDisabled list of int
+        CrystalCaptured bool
+
 type ActionResult
     Success bool
     Message string
-    Data nullable reference map of string to any
+    Data ActionResultData
 
 func ValidResult(msg: string) ValidationResult
     return ValidationResult{IsValid: true, Message: msg}
@@ -31,11 +55,14 @@ func ValidResult(msg: string) ValidationResult
 func InvalidResult(msg: string) ValidationResult
     return ValidationResult{IsValid: false, Message: msg}
 
-func SuccessResult(msg: string, d: nullable reference map of string to any) ActionResult
+func SuccessResult(msg: string, d: ActionResultData) ActionResult
     return ActionResult{Success: true, Message: msg, Data: d}
 
 func FailureResult(msg: string) ActionResult
-    return ActionResult{Success: false, Message: msg, Data: empty}
+    return ActionResult{Success: false, Message: msg, Data: NoData{}}
+
+func NewEmptyResultData() ActionResultData
+    return NoData{}
 
 func ValidateGamePhase on gs: reference GameState nullable reference ValidationResult
     if gs.phase isnt enums.PLAYING
@@ -253,10 +280,8 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
         return FailureResult("Move failed unexpectedly")
 
     message := "Token #{TokenID} moved from ({old_pos.X},{old_pos.Y}) to ({dest.X},{dest.Y})"
-    result_data := make(map of string to any)
-    result_data["token_id"] = TokenID
-    result_data["old_position"] = list of int{old_pos.X, old_pos.Y}
-    result_data["new_position"] = list of int{dest.X, dest.Y}
+    mystery_triggered := false
+    var mystery_eff enums.MysteryEffect
 
     cell := gs.board.get_cell_at(dest)
     if cell isnt empty and dereference cell.cell_type equals enums.MYSTERY
@@ -273,8 +298,8 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
             }
 
             message = message + "\n  Token landed on a MYSTERY square!"
-            result_data["mystery_triggered"] = true
-            result_data["mystery_effect"] = enums.MysteryEffectName(mystery_result.effect)
+            mystery_triggered = true
+            mystery_eff = mystery_result.effect
 
             if mystery_result.effect equals enums.HEAL
                 message = message + "\n  HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
@@ -282,12 +307,23 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
                 gs.board.clear_occupant(dest, TokenID)
                 gs.board.set_occupant(mystery_result.new_position, TokenID)
                 message = message + "\n  TAILS! Token teleported back to deployment area ({mystery_result.new_position.X},{mystery_result.new_position.Y})!"
-                result_data["new_position"] = list of int{mystery_result.new_position.X, mystery_result.new_position.Y}
 
     gs.turn_phase = enums.ACTION
     message = message + "\n  Phase changed to ACTION (you can attack or end turn)"
 
-    return SuccessResult(message, reference of result_data)
+    if mystery_triggered
+        return SuccessResult(message, MoveData{
+            TokenID: TokenID,
+            OldPosition: list of int{old_pos.X, old_pos.Y},
+            NewPosition: list of int{dest.X, dest.Y},
+            MysteryTriggered: true,
+            MysteryEffect: mystery_eff,
+        })
+    return SuccessResult(message, MoveData{
+        TokenID: TokenID,
+        OldPosition: list of int{old_pos.X, old_pos.Y},
+        NewPosition: list of int{dest.X, dest.Y},
+    })
 
 func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: reference GameState, player_id: types.PlayerID) ActionResult
     def_ref := gs.GetToken(DefenderID)
@@ -305,11 +341,6 @@ func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: ref
     o := dereference outcome
 
     message := "Token #{AttackerID} attacked token #{DefenderID} ({def_owner})\n  Dealt {o.damage_dealt} damage"
-    result_data := make(map of string to any)
-    result_data["attacker_id"] = o.attacker_id
-    result_data["defender_id"] = o.defender_id
-    result_data["damage_dealt"] = o.damage_dealt
-    result_data["defender_killed"] = o.defender_killed
 
     if o.defender_killed
         message = message + "\n  Token #{DefenderID} was KILLED!"
@@ -319,7 +350,12 @@ func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: ref
             current_hp = dereference def_ref.health
         message = message + "\n  Token #{DefenderID} now has {current_hp}hp"
 
-    return SuccessResult(message, reference of result_data)
+    return SuccessResult(message, AttackData{
+        AttackerID: AttackerID,
+        DefenderID: DefenderID,
+        DamageDealt: o.damage_dealt,
+        DefenderKilled: o.defender_killed,
+    })
 
 func ExecuteDeploy(HealthValue: int, pos: types.Position, gs: reference GameState, player_id: types.PlayerID) ActionResult
     new_tok := gs.DeployToken(player_id, HealthValue, pos)
@@ -333,16 +369,15 @@ func ExecuteDeploy(HealthValue: int, pos: types.Position, gs: reference GameStat
     remaining := reserve_counts[HealthValue]
     message = message + "\n  {remaining} x {HealthValue}hp tokens remaining in reserve"
 
-    result_data := make(map of string to any)
-    result_data["new_token_id"] = t.id
-    result_data["health_value"] = HealthValue
-    result_data["position"] = list of int{pos.X, pos.Y}
-    result_data["tokens_remaining"] = remaining
-
     gs.turn_phase = enums.ACTION
     message = message + "\n  Phase changed to ACTION (you can attack or end turn)"
 
-    return SuccessResult(message, reference of result_data)
+    return SuccessResult(message, DeployData{
+        NewTokenID: t.id,
+        HealthValue: HealthValue,
+        Position: list of int{pos.X, pos.Y},
+        TokensRemaining: remaining,
+    })
 
 func ExecuteEndTurn(gs: reference GameState) ActionResult
     newly_disabled, crystal_captured, _ := gs.EndTurnWithObjectiveUpdate()
@@ -354,13 +389,12 @@ func ExecuteEndTurn(gs: reference GameState) ActionResult
 
     message := "Turn ended\n  Turn {gs.turn_number} begins\n  Current player: {new_player_name}"
 
-    result_data := make(map of string to any)
-    result_data["turn_number"] = gs.turn_number
-    result_data["next_player_id"] = gs.current_turn_player_id
-    result_data["generators_disabled"] = newly_disabled
-    result_data["crystal_captured"] = crystal_captured
-
-    return SuccessResult(message, reference of result_data)
+    return SuccessResult(message, TurnEndData{
+        TurnNumber: gs.turn_number,
+        NextPlayerID: gs.current_turn_player_id,
+        GeneratorsDisabled: newly_disabled,
+        CrystalCaptured: crystal_captured,
+    })
 
 func NewMoveAction(token_id: types.TokenID, dest: types.Position) AIAction
     return Move{TokenID: token_id, Destination: dest}

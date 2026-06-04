@@ -115,7 +115,7 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
         return
 
     chosen := PickAction(actions, strategy)
-    log.Info("Sending {chosen.ActionType}")
+    log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
     result := sess.SendAction(chosen)
     if len(result) equals 0
         return
@@ -223,7 +223,7 @@ func runSSE(args: cli.Args)
             return true
 
         chosen := PickAction(actions, strategy)
-        log.Info("Sending {chosen.ActionType}")
+        log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
         result := sess.SendAction(chosen)
         if len(result) > 0
             if msg, has := result["message"]; has

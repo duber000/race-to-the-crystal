@@ -15,15 +15,15 @@ func Observe on api: reference GameAPI string
         return ""
     return get_situation_report(api.game_state, api.player_id)
 
-func Actions on api: reference GameAPI list of map of string to any
+func Actions on api: reference GameAPI list of ActionResponse
     if api.game_state equals empty
-        return empty list of map of string to any
+        return empty list of ActionResponse
     result := list_available_actions(api.game_state, api.player_id)
     return result.Actions
 
 func ActionsWithPhase on api: reference GameAPI AvailableActionsResponse
     if api.game_state equals empty
-        return AvailableActionsResponse{Phase: "NOT_PLAYING", Actions: empty list of map of string to any}
+        return AvailableActionsResponse{Phase: "NOT_PLAYING", Actions: empty list of ActionResponse}
     return list_available_actions(api.game_state, api.player_id)
 
 func BoardMap on api: reference GameAPI string
