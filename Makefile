@@ -41,10 +41,11 @@ test-specific: ## Run specific test (usage: make test-specific PKG=./game/...)
 	kukicha build $(PKG)
 	go test $(PKG)
 
-clean: ## Remove build artifacts
+clean: ## Remove build artifacts and empty dirs
 	find client/desktop -name '*.go' -delete
 	find . -type f -name '*.go' ! -path './.kukicha/*' ! -path './client/desktop/*' -delete
-	rm -f race-desktop
+	rm -f race-desktop web_server/web_server
+	find . -type d -empty -delete 2>/dev/null; true
 
 lint: ## Check formatting
 	kukicha fmt -w --check .

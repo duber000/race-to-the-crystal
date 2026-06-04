@@ -3,6 +3,7 @@ petiole main
 import "image/color"
 
 import "github.com/hajimehoshi/ebiten/v2"
+import "stdlib/log"
 
 const WINDOW_WIDTH = 1280
 

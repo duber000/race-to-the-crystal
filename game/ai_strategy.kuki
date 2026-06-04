@@ -119,6 +119,8 @@ func filter_attacks(actions: list of ActionResponse) list of AttackAction
         switch a as v
             when AttackAction
                 result = append(result, v)
+            default
+                continue
     return result
 
 func filter_moves(actions: list of ActionResponse) list of MoveAction
@@ -127,6 +129,8 @@ func filter_moves(actions: list of ActionResponse) list of MoveAction
         switch a as v
             when MoveAction
                 result = append(result, v)
+            default
+                continue
     return result
 
 func filter_deploys(actions: list of ActionResponse) list of DeployAction
@@ -135,6 +139,8 @@ func filter_deploys(actions: list of ActionResponse) list of DeployAction
         switch a as v
             when DeployAction
                 result = append(result, v)
+            default
+                continue
     return result
 
 func best_attack(attacks: list of AttackAction) ChosenAction

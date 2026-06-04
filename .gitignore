@@ -1,21 +1,7 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
+# Build artifacts
 build/
 dist/
-wheels/
 *.egg-info
-
-# Virtual environments
-.venv
-venv/
-env/
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
 
 # IDE
 .vscode/
