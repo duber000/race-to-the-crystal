@@ -1,10 +1,13 @@
 petiole main
 
-import "github.com/hajimehoshi/ebiten/v2"
 import "image/color"
 
+import "github.com/hajimehoshi/ebiten/v2"
+
 const WINDOW_WIDTH = 1280
+
 const WINDOW_HEIGHT = 720
+
 const CELL_SIZE = 32
 
 enum ScreenKind
@@ -85,16 +88,27 @@ func RGBA(r: int, g: int, b: int, a: int) color.RGBA
     return color.RGBA{R: r as uint8, G: g as uint8, B: b as uint8, A: a as uint8}
 
 var ColorBlack = RGBA(0, 0, 0, 255)
+
 var ColorWhite = RGBA(255, 255, 255, 255)
+
 var ColorGray = RGBA(60, 60, 60, 255)
+
 var ColorLightGray = RGBA(100, 100, 100, 255)
+
 var ColorDarkGray = RGBA(30, 30, 30, 255)
+
 var ColorCyan = RGBA(0, 255, 255, 255)
+
 var ColorMagenta = RGBA(255, 0, 255, 255)
+
 var ColorYellow = RGBA(255, 255, 0, 255)
+
 var ColorGreen = RGBA(0, 200, 0, 255)
+
 var ColorOrange = RGBA(255, 165, 0, 255)
+
 var ColorPurple = RGBA(180, 0, 255, 255)
+
 var ColorRed = RGBA(255, 50, 50, 255)
 
 func PlayerColorByName(name: string) color.RGBA
@@ -116,9 +130,9 @@ func main()
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     err := ebiten.RunGame(reference of DesktopAdapter{})
     if err isnt empty
-        panic(err.Error())
+        panic err.Error()
 
-func Update on a: reference DesktopAdapter() error
+func Update on a: reference DesktopAdapter error
     app.frame_count = app.frame_count + 1
     switch app.current_screen
         when ScreenKind.MainMenu

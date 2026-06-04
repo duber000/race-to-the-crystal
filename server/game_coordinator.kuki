@@ -4,7 +4,6 @@ import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as typespkg
-
 import "stdlib/cast"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
@@ -51,7 +50,9 @@ func execute_game_action on s: reference GameSession(network_player_id: string, 
     api, api_has := s.api_map[network_player_id]
     if not api_has
         return false, "No API for player", empty
-    log.Info("Before action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}")
+    log.Info(
+        "Before action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}",
+    )
     var result gamepkg.ActionResult
     switch action as a
         when gamepkg.Move
@@ -64,12 +65,16 @@ func execute_game_action on s: reference GameSession(network_player_id: string, 
             log.Info("EndTurn via api: action type")
             log.Info("Calling s.game_state.EndTurn directly")
             s.game_state.EndTurn()
-            log.Info("After direct EndTurn: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}")
+            log.Info(
+                "After direct EndTurn: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}",
+            )
             result.Data = empty
             result.Success = true
             result.Message = "Turn ended"
 
-    log.Info("After action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}")
+    log.Info(
+        "After action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}",
+    )
     if result.Success
         return true, result.Message, result.Data
     return false, result.Message, empty

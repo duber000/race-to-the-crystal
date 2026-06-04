@@ -1,13 +1,12 @@
 petiole main
 
-import "time"
-
 import "stdlib/crypto"
 import "stdlib/encoding" as encpkg
 import "stdlib/env"
 import "stdlib/fetch"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
+import "time"
 
 type MercureConfig
     hub_url string

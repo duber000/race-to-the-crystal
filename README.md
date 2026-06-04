@@ -27,14 +27,14 @@ Race to the Crystal is a turn-based strategy game where players compete to captu
 ## Quick Start
 
 ```bash
-# Install dependencies
-uv sync
+# Build all Kukicha packages (requires the kukicha compiler + Go toolchain)
+make build
 
 # Play local single-player (desktop)
-uv run race-to-the-crystal
+make desktop-run
 
 # Play multiplayer (desktop + web clients)
-uv run race-unified-server
+make web-server-run        # TODO: confirm this is the unified-server entry point
 # Then open http://localhost:8080 in your browser
 # Or connect desktop clients via the game menu
 ```
@@ -43,7 +43,7 @@ uv run race-unified-server
 
 ### 1. Local Single-Player (Desktop)
 ```bash
-uv run race-to-the-crystal
+make desktop-run
 # Toggle between 2D/3D views with 'V' key
 ```
 
@@ -51,13 +51,13 @@ uv run race-to-the-crystal
 
 **Start the unified server:**
 ```bash
-uv run race-unified-server
+make web-server-run        # TODO: confirm unified-server entry point
 # Runs on ports 8888 (TCP) and 8080 (HTTP/WebSocket)
 ```
 
 **Option A: Desktop Client**
 ```bash
-uv run race-to-the-crystal
+make desktop-run
 # Click "Host Network Game" or "Join Network Game"
 ```
 
@@ -66,13 +66,16 @@ uv run race-to-the-crystal
 - Play with 3D Babylon.js renderer
 
 **Option C: AI Players**
-```bash
-# TCP AI Client (Creates/Joins via socket)
-uv run race-ai-client --create "My Game" --name "Bot"
-uv run race-ai-client --join <game-id> --strategy aggressive
 
-# HTTP AI Client (Joins via REST/SSE)
-uv run race-http-ai-client --join <game-id> --strategy defensive
+The AI clients are now Kukicha (`client/ai_client.kuki` for TCP, `client/http_ai_client.kuki`
+for HTTP/SSE), each with its own `func main`. No Makefile target wires them up yet.
+
+```bash
+# TODO: confirm invocation — likely one of:
+#   kukicha run client/ai_client.kuki -- --create "My Game" --name "Bot"
+#   kukicha run client/ai_client.kuki -- --join <game-id> --strategy aggressive
+#   kukicha run client/http_ai_client.kuki -- --join <game-id> --strategy defensive
+# (or build a binary first, then invoke it directly)
 ```
 
 All client types (desktop, web, AI) can play together in the same game!
@@ -129,9 +132,9 @@ race-to-the-crystal/
 ### Testing
 
 ```bash
-make test              # Run all tests
-make test-coverage     # Run with coverage report
-make lint              # Check code quality
+make test              # Build all Kukicha, then run `go test ./...`
+make test-verbose      # Same, with verbose output
+make lint              # Check Kukicha formatting (kukicha fmt --check)
 ```
 
 ### Deployment

@@ -7,6 +7,12 @@ description: Comprehensive game playtesting through automated AI gameplay to ver
 
 Automated playtesting for Race to the Crystal game using AI-driven gameplay.
 
+> **Port status:** This project is now Kukicha (`.kuki`) compiled to Go, not
+> Python. All game logic lives in `*.kuki` files; tests run via `go test` after
+> `kukicha build`. The methodology below is language-agnostic; the file paths and
+> commands have been updated for the Kukicha build. Where an exact invocation is
+> not yet wired into the Makefile it is marked **TODO: confirm**.
+
 ## When to Use
 - User asks to "playtest the game"
 - User wants to "test gameplay"
@@ -22,14 +28,19 @@ Automated playtesting for Race to the Crystal game using AI-driven gameplay.
 **Local Testing** (headless simulation)
 - Use for unit testing and mechanics verification
 - No server required
-- Direct `GameState` manipulation
+- Direct `GameState` manipulation in a `*_test.kuki` file (see `game/combat_test.kuki`,
+  `game/movement_test.kuki`, `tests/test_token.kuki` for the pattern)
+- Run with `make test` (builds all Kukicha then `go test ./...`) or
+  `make test-specific PKG=./game/...` for one package
 - Fast iteration
 
 **Network Testing** (join live game)
 - Join an existing multiplayer game as AI player
 - Test network integration and real gameplay
 - Play against humans or other AI
-- Uses HTTP AI client: `uv run race-http-ai-client --join <game_id>`
+- Uses the Kukicha HTTP AI client in `client/http_ai_client.kuki`
+  (**TODO: confirm** the built binary name / `kukicha run` invocation — no
+  Makefile target wires this yet)
 
 ### 2. Test Strategy Selection
 
@@ -58,21 +69,23 @@ Choose the appropriate testing approach based on user request:
 
 ### 2. Gameplay Execution
 
-Use the AI API to play the game:
+Drive the game through the `game` package API (`petiole game`):
 
-```python
-from game.game_state import GameState
-from game.ai_observation import AIObserver
-from game.ai_actions import AIActionExecutor, MoveAction, AttackAction, DeployAction, EndTurnAction
+```kukicha
+import "race-to-the-crystal/game" as gamepkg
+# GameState, the AIObserver helpers, and the AIActionExecutor
+# (MoveAction / AttackAction / DeployAction / EndTurnAction) all live in:
+#   game/game_state.kuki, game/ai_observation.kuki, game/ai_actions.kuki
 ```
 
 **Turn Structure:**
-1. Observe game state via `AIObserver.get_game_state()`
-2. List available actions via `AIObserver.list_available_actions()`
+1. Observe game state via the observer helper in `game/ai_observation.kuki`
+2. List available actions (also `game/ai_observation.kuki`)
 3. Choose strategic action (prioritize testing target mechanics)
-4. Execute via `AIActionExecutor.execute_action()`
-5. Check for errors and unexpected behavior
-6. Log interesting events
+4. Execute via the executor in `game/ai_actions.kuki`
+5. Check for errors and unexpected behavior — errors come back as Kukicha
+   `error` values via `onerr`, not Python exceptions
+6. Log interesting events (`stdlib/log`)
 
 **Strategic Priorities:**
 - **Movement Testing**: Move tokens to different board positions, test boundaries
@@ -85,7 +98,7 @@ from game.ai_actions import AIActionExecutor, MoveAction, AttackAction, DeployAc
 ### 3. What to Monitor
 
 **Critical Issues (CRITICAL):**
-- Game crashes or exceptions
+- Game crashes or panics
 - Win conditions not triggering
 - Game becomes stuck/unplayable
 - Core mechanics not working (movement, combat, capture)
@@ -112,46 +125,46 @@ from game.ai_actions import AIActionExecutor, MoveAction, AttackAction, DeployAc
 ### 4. Specific Mechanics to Test
 
 #### Generator Capture
-```python
-# Test: Deploy 2 tokens at generator, hold for 2 turns
-# Expected: Generator becomes disabled
-# Watch for: Capture progress, turn counting, multiple players contesting
+```text
+Test: Deploy 2 tokens at generator, hold for 2 turns
+Expected: Generator becomes disabled
+Watch for: Capture progress, turn counting, multiple players contesting
 ```
 
 #### Crystal Win Condition
-```python
-# Test: Hold crystal with required tokens for 3 turns
-# Expected: Player wins, game ends
-# Watch for: Token counting, turn counting, disabled generator effects
+```text
+Test: Hold crystal with required tokens for 3 turns
+Expected: Player wins, game ends
+Watch for: Token counting, turn counting, disabled generator effects
 ```
 
 #### Combat System
-```python
-# Test: Attack with various token health values
-# Expected: Damage = attacker.health // 2, defender takes damage, attacker takes none
-# Watch for: Damage calculation, token destruction, health < 0
+```text
+Test: Attack with various token health values
+Expected: Damage = attacker.health / 2, defender takes damage, attacker takes none
+Watch for: Damage calculation, token destruction, health < 0
 ```
 
 #### Movement System
-```python
-# Test: Move tokens with different health values
-# Expected: health <= 6 moves 2 spaces, health >= 7 moves 1 space
-#           (damaged tokens gain mobility as they take damage)
-# Watch for: Boundary checking, pathfinding, occupied cells
+```text
+Test: Move tokens with different health values
+Expected: health <= 6 moves 2 spaces, health >= 7 moves 1 space
+         (damaged tokens gain mobility as they take damage)
+Watch for: Boundary checking, pathfinding, occupied cells
 ```
 
 #### Token Deployment
-```python
-# Test: Deploy all token types, exceed reserve limits
-# Expected: Can deploy 5 of each type (10hp, 8hp, 6hp, 4hp)
-# Watch for: Reserve counting, position validation, corner restrictions
+```text
+Test: Deploy all token types, exceed reserve limits
+Expected: Can deploy 5 of each type (10hp, 8hp, 6hp, 4hp)
+Watch for: Reserve counting, position validation, corner restrictions
 ```
 
 #### Turn Management
-```python
-# Test: End turn in different phases, pass without action
-# Expected: Turn advances to next player, phase resets
-# Watch for: Player order, turn number, phase transitions
+```text
+Test: End turn in different phases, pass without action
+Expected: Turn advances to next player, phase resets
+Watch for: Player order, turn number, phase transitions
 ```
 
 ### 5. Reporting Format
@@ -195,18 +208,20 @@ After testing, provide a clear report:
 When a user creates a game and wants Claude to join:
 
 ```bash
-# User creates game via web or desktop client
-# User provides game_id (from lobby or logs)
+# Start the server first (see Makefile):
+make web-server-run        # builds ./web_server and runs it
 
-# Claude joins via HTTP AI client
-uv run race-http-ai-client --join <game_id> --name "Claude_AI" --strategy aggressive
+# Join via the Kukicha HTTP AI client (client/http_ai_client.kuki).
+# TODO: confirm — no Makefile target builds/runs the AI client yet. Likely one of:
+#   kukicha run client/http_ai_client.kuki -- --join <game_id> --strategy aggressive
+#   (or build a binary, then ./ai-client --join <game_id> ...)
 ```
 
 **Process:**
-1. User starts unified server: `uv run race-unified-server`
+1. User starts the server: `make web-server-run`
 2. User creates game via web/desktop client and gets `game_id`
 3. User shares `game_id` with Claude (or Claude checks server logs)
-4. Claude runs: `uv run race-http-ai-client --join <game_id>`
+4. Claude runs the AI client (see TODO above) with `--join <game_id>`
 5. Claude auto-marks ready and waits for game to start
 6. User starts game, Claude plays automatically
 
@@ -216,52 +231,53 @@ If user doesn't provide `game_id`, Claude can:
 2. Ask user to check lobby screen (shows game ID)
 3. Look for recent `CREATE_GAME` messages in logs
 
-**Strategy Options:**
+**Strategy Options** (`AIStrategyName` in `game/ai_strategy.kuki`):
 - `random`: Random valid actions (good for general testing)
 - `aggressive`: Prioritizes attacks and movement toward objectives
 - `defensive`: Prioritizes deploying and holding positions
 
 **Monitoring:**
 - Claude can see game state updates via SSE
-- Claude makes decisions based on `AIObserver` analysis
+- Claude makes decisions based on the observer analysis in `game/ai_observation.kuki`
 - All actions logged to console
 - Game ends when win condition met
 
 ### 7. Example Usage Patterns
 
 **Pattern 1: Full Game Playtest**
-```python
-# Create game, play 50 turns using random valid actions
-# Log all errors, track game state health
-# Report on: crashes, stuck states, win conditions
+```text
+Create game, play 50 turns using random valid actions
+Log all errors, track game state health
+Report on: crashes, stuck states, win conditions
 ```
 
 **Pattern 2: Feature-Specific Test**
-```python
-# Set up specific scenario (e.g., tokens at generator)
-# Execute targeted actions to test one mechanic
-# Verify expected behavior occurs
+```text
+Set up specific scenario (e.g., tokens at generator)
+Execute targeted actions to test one mechanic
+Verify expected behavior occurs
 ```
 
 **Pattern 3: Edge Case Hunting**
-```python
-# Try to break the game with unusual actions
-# Test boundary conditions (board edges, 0 health, etc.)
-# Attempt invalid operations
-# Verify error handling
+```text
+Try to break the game with unusual actions
+Test boundary conditions (board edges, 0 health, etc.)
+Attempt invalid operations
+Verify error handling
 ```
 
 **Pattern 4: Win Condition Verification**
-```python
-# Manually set up near-win scenario
-# Execute actions to trigger win
-# Verify game ends correctly
+```text
+Manually set up near-win scenario
+Execute actions to trigger win
+Verify game ends correctly
 ```
 
 ## Testing Best Practices
 
-1. **Always use try/except** to catch and report exceptions
-2. **Log turn-by-turn state** for debugging
+1. **Handle errors with `onerr`** — there are no exceptions; fallible calls return
+   `error` values. Assert on them in tests rather than catching.
+2. **Log turn-by-turn state** for debugging (`stdlib/log`)
 3. **Test both valid and invalid actions** to verify validation
 4. **Verify state consistency** after each action
 5. **Test multiplayer scenarios** with 2+ players
@@ -272,15 +288,18 @@ If user doesn't provide `game_id`, Claude can:
 ## Files to Use
 
 **Local Testing:**
-- **Game state**: `game/game_state.py`
-- **AI observer**: `game/ai_observation.py`
-- **AI executor**: `game/ai_actions.py`
-- **Game mechanics**: `game/generator.py`, `game/crystal.py`, `game/combat.py`, `game/movement.py`
+- **Game state**: `game/game_state.kuki`
+- **AI observer**: `game/ai_observation.kuki`
+- **AI executor**: `game/ai_actions.kuki`
+- **AI strategy**: `game/ai_strategy.kuki`
+- **Game mechanics**: `game/generator.kuki`, `game/crystal.kuki`, `game/combat.kuki`, `game/movement.kuki`
+- **Existing tests** (pattern reference): `game/combat_test.kuki`, `game/movement_test.kuki`, `tests/test_token.kuki`
 
 **Network Testing:**
-- **HTTP AI client**: `client/http_ai_client.py`
-- **CLI command**: `uv run race-http-ai-client`
-- **Required**: Unified server running (`uv run race-unified-server`)
+- **HTTP AI client**: `client/http_ai_client.kuki`
+- **TCP/local AI client**: `client/ai_client.kuki`
+- **CLI invocation**: **TODO: confirm** (no Makefile target yet — see §6)
+- **Required**: Server running (`make web-server-run`)
 - **Required**: Game ID from user-created game
 
 ## Common Testing Scenarios
@@ -330,7 +349,8 @@ Always conclude playtesting with:
 
 ## Notes
 
-- Use direct `game_state` manipulation for setting up test scenarios (bypass deployment validation)
+- Use direct `GameState` manipulation in `*_test.kuki` files for setting up test
+  scenarios (bypass deployment validation)
 - The AI API is designed for normal gameplay; tests may need to work around restrictions
 - Create focused test functions for specific mechanics rather than one large test
-- Keep test games deterministic where possible (use fixed seeds)
+- Keep test games deterministic where possible (use a fixed seed via `stdlib/random`)

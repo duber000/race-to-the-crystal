@@ -1,11 +1,10 @@
 petiole main
 
-import "time"
-
 import "stdlib/crypto"
 import "stdlib/encoding" as encpkg
 import "stdlib/json" as jsonpkg
 import "stdlib/string" as strpkg
+import "time"
 
 type TokenPayload
     player_id string

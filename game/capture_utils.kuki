@@ -1,7 +1,6 @@
 petiole game
 
 import "race-to-the-crystal/shared/types" as types
-
 import "stdlib/maps"
 
 type TokenAtPos

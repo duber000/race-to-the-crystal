@@ -3,12 +3,11 @@ petiole main
 import "net/http"
 import "os"
 import "path/filepath"
-import "strings"
-
 import "stdlib/env"
 import "stdlib/http" as httphelper
 import "stdlib/log"
 import "stdlib/signal"
+import "strings"
 
 type ServerConfig
     tcp_port int
@@ -75,6 +74,7 @@ func Start on gs: reference GameServer
         log.Info("Shutting down server...")
         send true to ch
     )
+
     receive from ch
 
 func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)

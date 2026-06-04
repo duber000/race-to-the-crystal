@@ -2,14 +2,13 @@ petiole main
 
 import "net"
 import "race-to-the-crystal/shared/types" as typespkg
-import "strings"
-
 import "stdlib/cast"
 import "stdlib/env"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/random"
 import "stdlib/string" as strpkg
+import "strings"
 
 type HTTPHandler
     coordinator nullable reference GameCoordinator

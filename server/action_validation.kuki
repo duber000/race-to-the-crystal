@@ -1,7 +1,6 @@
 petiole main
 
 import "race-to-the-crystal/shared/constants" as constants
-
 import "stdlib/cast"
 import "stdlib/json" as jsonpkg
 import "stdlib/string" as strpkg

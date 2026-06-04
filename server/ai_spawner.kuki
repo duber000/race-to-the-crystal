@@ -2,7 +2,6 @@ petiole main
 
 import "os"
 import "os/exec"
-
 import "stdlib/log"
 
 type SpawnedAI
