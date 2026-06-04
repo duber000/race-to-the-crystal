@@ -8,14 +8,14 @@ type DirOffset
     dy int
 
 var DIRECTIONS = list of DirOffset{
-    DirOffset{dx: -1, dy: -1},
-    DirOffset{dx: -1, dy: 0},
-    DirOffset{dx: -1, dy: 1},
-    DirOffset{dx: 0, dy: -1},
-    DirOffset{dx: 0, dy: 1},
-    DirOffset{dx: 1, dy: -1},
-    DirOffset{dx: 1, dy: 0},
-    DirOffset{dx: 1, dy: 1},
+    {dx: -1, dy: -1},
+    {dx: -1, dy: 0},
+    {dx: -1, dy: 1},
+    {dx: 0, dy: -1},
+    {dx: 0, dy: 1},
+    {dx: 1, dy: -1},
+    {dx: 1, dy: 0},
+    {dx: 1, dy: 1},
 }
 
 type BfsItem
@@ -70,12 +70,12 @@ func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int,
             if dc.is_occupied() and tokens_map isnt empty
                 if dc.has_enemy_tokens(player_id, tokens_map)
                     continue
-                if dc.cell_type != enums.GENERATOR and dc.cell_type != enums.CRYSTAL
+                if dc.cell_type isnt enums.GENERATOR and dc.cell_type isnt enums.CRYSTAL
                     continue
 
             visited[npos] = true
 
-            if npos != start
+            if npos isnt start
                 result = append(result, npos)
 
             queue = append(queue, BfsItem{pos: npos, dist: distance + 1})
@@ -87,12 +87,12 @@ func is_valid_move(tok: reference Token, dest: types.Position, brd: reference Bo
         return false
     moves := get_valid_moves(tok, brd, tok.movement_range(), tokens_map)
     for m in moves
-        if m == dest
+        if m equals dest
             return true
     return false
 
 func find_path(start: types.Position, end: types.Position, brd: reference Board, max_distance: int) (list of types.Position, bool)
-    if start == end
+    if start equals end
         return list of types.Position{start}, true
 
     visited := make(map of types.Position to bool)
@@ -122,7 +122,7 @@ func find_path(start: types.Position, end: types.Position, brd: reference Board,
             if not brd.is_valid_position(nx, ny)
                 continue
 
-            if npos == end
+            if npos equals end
                 new_path := append(item.path, npos)
                 return new_path, true
 

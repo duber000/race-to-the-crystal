@@ -27,7 +27,7 @@ type MercurePublisher
 func NewMercurePublisher(config: MercureConfig) MercurePublisher
     return MercurePublisher{
         config: config,
-        enabled: config.publisher_jwt != "",
+        enabled: config.publisher_jwt isnt "",
     }
 
 func Enabled on mp: MercurePublisher bool
@@ -89,8 +89,7 @@ func publishInternal on mp: reference MercurePublisher(game_id: string, data: ma
     req = fetch.Header(req, "Authorization", "Bearer {mp.config.publisher_jwt}")
     req = fetch.Header(req, "Content-Type", "application/x-www-form-urlencoded")
     req = fetch.Body(req, form_body)
-    _ = fetch.Do(req) onerr
-        log.Error("Failed to publish to Mercure: {error}")
+    fetch.Do(req) onerr discard
 
 func GeneratePublisherJWT on mp: reference MercurePublisher string
     now := time.Now().Unix()

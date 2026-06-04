@@ -41,7 +41,7 @@ func update_capture_status on g: reference Generator(tokens_at_pos: list of Toke
     dominant_player, dominant_count, found := find_dominant_player(counts)
 
     if found and dominant_count >= constants.GENERATOR_CAPTURE_TOKENS_REQUIRED
-        if dominant_player == g.capturing_player_id
+        if dominant_player equals g.capturing_player_id
             g.turns_held = g.turns_held + 1
             g.capture_token_ids = counts[dominant_player]
             if g.turns_held >= constants.GENERATOR_CAPTURE_TURNS_REQUIRED
@@ -81,7 +81,7 @@ func count_disabled_generators(generators: list of Generator) int
 
 func get_generator_at_position(generators: list of Generator, pos: types.Position) nullable reference Generator
     for i from 0 to len(generators)
-        if generators[i].position == pos
+        if generators[i].position equals pos
             return reference of generators[i]
     return empty
 

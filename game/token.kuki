@@ -23,7 +23,7 @@ func NewToken(id: types.TokenID, player_id: types.PlayerID, health: int, max_hea
         return Token{}, fmt.Errorf("health cannot exceed max_health")
     valid_health := false
     for hv in constants.TOKEN_HEALTH_VALUES
-        if health == hv
+        if health equals hv
             valid_health = true
             break
     if not valid_health
@@ -57,7 +57,7 @@ func take_damage on t: reference Token(damage: int) bool
         if t.health >= hv
             valid_health = hv
             break
-    if valid_health == 0
+    if valid_health equals 0
         t.health = 0
         t.is_alive = false
         return true

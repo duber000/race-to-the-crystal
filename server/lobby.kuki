@@ -52,7 +52,7 @@ func to_dict on p: PlayerInfo map of string to any
     }
 
 func ValidateGameName(game_name: string) error
-    if game_name == "" or strpkg.TrimSpace(game_name) == ""
+    if game_name equals "" or strpkg.TrimSpace(game_name) equals ""
         return error "Game name cannot be empty"
     if len(game_name) > MAX_GAME_NAME_LENGTH
         return error "Game name too long (max {MAX_GAME_NAME_LENGTH} characters)"
@@ -60,18 +60,18 @@ func ValidateGameName(game_name: string) error
         return error "Game name contains invalid characters"
     if strpkg.Contains(game_name, "..")
         return error "Game name cannot contain '..' sequence"
-    if strpkg.TrimSpace(game_name) != game_name
+    if strpkg.TrimSpace(game_name) isnt game_name
         return error "Game name cannot have leading or trailing whitespace"
     return empty
 
 func ValidatePlayerName(player_name: string) error
-    if player_name == "" or strpkg.TrimSpace(player_name) == ""
+    if player_name equals "" or strpkg.TrimSpace(player_name) equals ""
         return error "Player name cannot be empty"
     if len(player_name) > MAX_PLAYER_NAME_LENGTH
         return error "Player name too long (max {MAX_PLAYER_NAME_LENGTH} characters)"
     if not regex.MatchCompiled(NAME_REGEX, player_name)
         return error "Player name contains invalid characters"
-    if strpkg.TrimSpace(player_name) != player_name
+    if strpkg.TrimSpace(player_name) isnt player_name
         return error "Player name cannot have leading or trailing whitespace"
     return empty
 
@@ -118,7 +118,7 @@ func remove_player on l: reference GameLobby(player_id: string) bool
         return false
     delete l.players[player_id]
 
-    if player_id == l.host_player_id and len(l.players) > 0
+    if player_id equals l.host_player_id and len(l.players) > 0
         for pid, _ in l.players
             l.host_player_id = pid
             break
@@ -143,7 +143,7 @@ func all_players_ready on l: reference GameLobby bool
     return true
 
 func can_start on l: reference GameLobby bool
-    return l.status == GameStatus.WAITING and l.all_players_ready() and len(l.players) >= l.min_players
+    return l.status equals GameStatus.WAITING and l.all_players_ready() and len(l.players) >= l.min_players
 
 func get_ai_needed_count on l: reference GameLobby int
     if len(l.players) >= l.max_players
@@ -212,7 +212,7 @@ func join_lobby on lm: reference LobbyManager(game_id: string, player_id: string
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return empty
-    if dereference lobby.status != GameStatus.WAITING
+    if dereference lobby.status isnt GameStatus.WAITING
         return empty
     success := lobby.add_player(player_id, player_name, client_type)
     if not success
@@ -224,7 +224,7 @@ func leave_lobby on lm: reference LobbyManager(game_id: string, player_id: strin
     if lobby equals empty
         return false
     success := lobby.remove_player(player_id)
-    if len(dereference lobby.players) == 0
+    if len(dereference lobby.players) equals 0
         delete lm.lobbies[game_id]
     return success
 
@@ -260,7 +260,7 @@ func finish_game on lm: reference LobbyManager(game_id: string) bool
 func list_available_lobbies on lm: reference LobbyManager list of map of string to any
     result := empty list of map of string to any
     for _, lobby in lm.lobbies
-        if dereference lobby.status == GameStatus.WAITING and len(dereference lobby.players) < dereference lobby.max_players
+        if dereference lobby.status equals GameStatus.WAITING and len(dereference lobby.players) < dereference lobby.max_players
             result = append(result, dereference lobby.to_dict())
     return result
 

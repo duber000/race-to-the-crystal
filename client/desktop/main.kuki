@@ -130,7 +130,7 @@ func main()
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     err := ebiten.RunGame(reference of DesktopAdapter{})
     if err isnt empty
-        panic err.Error()
+        log.Fatal("{err}")
 
 func Update on a: reference DesktopAdapter error
     app.frame_count = app.frame_count + 1

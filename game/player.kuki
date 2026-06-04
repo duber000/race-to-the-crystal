@@ -32,7 +32,7 @@ func add_token on p: reference Player(token_id: types.TokenID)
 
 func remove_token on p: reference Player(token_id: types.TokenID)
     if slice.Contains(p.token_ids, token_id)
-        p.token_ids = slice.Filter(p.token_ids, (tid: types.TokenID) => tid != token_id)
+        p.token_ids = slice.Filter(p.token_ids, (tid: types.TokenID) => tid isnt token_id)
 
 func has_token on p: reference Player(token_id: types.TokenID) bool
     return slice.Contains(p.token_ids, token_id)

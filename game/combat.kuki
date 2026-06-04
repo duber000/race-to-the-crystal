@@ -13,7 +13,7 @@ type CombatOutcome
 func can_attack(attacker: reference Token, defender: reference Token) bool
     if not attacker.is_alive or not defender.is_alive
         return false
-    if attacker.player_id == defender.player_id
+    if attacker.player_id equals defender.player_id
         return false
     if not attacker.is_adjacent_to(defender.position)
         return false

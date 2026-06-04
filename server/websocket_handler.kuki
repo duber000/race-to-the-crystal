@@ -1,6 +1,5 @@
 petiole main
 
-import "stdlib/cast"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/string" as strpkg
@@ -28,7 +27,7 @@ func NewWSClient(client_id: string) WSClient
     }
 
 func IsInGame on c: WSClient bool
-    return c.game_id != ""
+    return c.game_id isnt ""
 
 type WSMessage
     game_id string
@@ -96,7 +95,7 @@ func ProcessMessage on wh: reference WebSocketHandler(client_id: string, raw_dat
     msg_type_val, has := data["type"]
     if not has
         return data
-    msg_type := cast.SmartString(msg_type_val) onerr return data
+    msg_type := msg_type_val.(string) onerr return data
     msg_type = strpkg.ToLower(msg_type)
     data["type"] = msg_type
     data["player_id"] = client_id
@@ -110,7 +109,7 @@ func GetClientCount on wh: reference WebSocketHandler int
 func GetClientsInGame on wh: reference WebSocketHandler(game_id: string) list of string
     result := empty list of string
     for _, client in wh.clients
-        if client.game_id == game_id and client.player_id != ""
+        if client.game_id equals game_id and client.player_id isnt ""
             result = append(result, client.player_id)
     return result
 

@@ -24,7 +24,7 @@ func NewAISpawner() AISpawner
 
 func SpawnAIForGame on sp: reference AISpawner(game_id: string, num_ai: int, host: string, port: int, strategies: list of string) list of SpawnedAI
     result := empty list of SpawnedAI
-    if len(strategies) == 0
+    if len(strategies) equals 0
         strategies = sp.strategies
 
     for i from 0 to num_ai
@@ -52,7 +52,7 @@ func SpawnAIForGame on sp: reference AISpawner(game_id: string, num_ai: int, hos
         cmd.Stdout = os.Stdout
         cmd.Stderr = os.Stderr
         err := cmd.Start()
-        if err != empty
+        if err isnt empty
             log.Error("Failed to spawn AI process {ai_name}: {err}")
             continue
 
@@ -72,7 +72,7 @@ func CleanupAIForGame on sp: reference AISpawner(game_id: string)
     to_remove := empty list of int
     for pid, cmd in sp.processes
         err := cmd.Process.Kill()
-        if err != empty
+        if err isnt empty
             log.Error("Failed to kill AI process {pid}: {err}")
         else
             log.Info("Killed AI process {pid} for game {game_id}")
@@ -84,7 +84,7 @@ func CleanupAIForGame on sp: reference AISpawner(game_id: string)
 func CleanupAll on sp: reference AISpawner
     for pid, cmd in sp.processes
         err := cmd.Process.Kill()
-        if err != empty
+        if err isnt empty
             log.Error("Failed to kill AI process {pid}: {err}")
         else
             log.Info("Killed AI process {pid}")

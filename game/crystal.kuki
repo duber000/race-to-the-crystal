@@ -42,7 +42,7 @@ func update_capture_status on c: reference Crystal(tokens_at_pos: list of TokenA
     required_tokens := c.get_tokens_required(disabled_generators)
 
     if found and dominant_count >= required_tokens
-        if dominant_player == c.holding_player_id
+        if dominant_player equals c.holding_player_id
             c.turns_held = c.turns_held + 1
             c.holding_token_ids = counts[dominant_player]
             if c.turns_held >= constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
@@ -66,4 +66,4 @@ func get_capture_progress on c: reference Crystal() (int, int)
     return c.turns_held, constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
 
 func is_contested on c: reference Crystal bool
-    return c.holding_player_id == "" and len(c.holding_token_ids) > 0
+    return c.holding_player_id equals "" and len(c.holding_token_ids) > 0

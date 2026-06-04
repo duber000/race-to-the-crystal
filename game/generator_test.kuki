@@ -22,15 +22,15 @@ func TestGeneratorCaptureNoTokens(t: reference testing.T)
 
 func TestGeneratorCaptureInsufficientTokens(t: reference testing.T)
     g := NewGenerator(0, types.Pos(5, 5))
-    tokens := list of TokenAtPos{TokenAtPos{token_id: types.TokenID(1), player_id: types.PlayerID("p1")}}
+    tokens := list of TokenAtPos{{token_id: types.TokenID(1), player_id: types.PlayerID("p1")}}
     disabled := g.update_capture_status(tokens)
     test.AssertFalse(t, disabled)
 
 func TestGeneratorCaptureStart(t: reference testing.T)
     g := NewGenerator(0, types.Pos(5, 5))
     tokens := list of TokenAtPos{
-        TokenAtPos{token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
-        TokenAtPos{token_id: types.TokenID(2), player_id: types.PlayerID("p1")},
+        {token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
+        {token_id: types.TokenID(2), player_id: types.PlayerID("p1")},
     }
     disabled := g.update_capture_status(tokens)
     test.AssertFalse(t, disabled)
@@ -40,8 +40,8 @@ func TestGeneratorCaptureStart(t: reference testing.T)
 func TestGeneratorCaptureComplete(t: reference testing.T)
     g := NewGenerator(0, types.Pos(5, 5))
     tokens := list of TokenAtPos{
-        TokenAtPos{token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
-        TokenAtPos{token_id: types.TokenID(2), player_id: types.PlayerID("p1")},
+        {token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
+        {token_id: types.TokenID(2), player_id: types.PlayerID("p1")},
     }
     g.update_capture_status(tokens)
     test.AssertFalse(t, g.is_disabled)
@@ -52,8 +52,8 @@ func TestGeneratorCaptureComplete(t: reference testing.T)
 func TestGeneratorReset(t: reference testing.T)
     g := NewGenerator(0, types.Pos(5, 5))
     tokens := list of TokenAtPos{
-        TokenAtPos{token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
-        TokenAtPos{token_id: types.TokenID(2), player_id: types.PlayerID("p1")},
+        {token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
+        {token_id: types.TokenID(2), player_id: types.PlayerID("p1")},
     }
     g.update_capture_status(tokens)
     test.AssertEqual(t, g.turns_held, 1)

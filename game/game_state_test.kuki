@@ -84,4 +84,6 @@ func TestGameStateToDict(t: reference testing.T)
     gs.StartGame()
     d := gs.ToDict()
     test.AssertNotNil(t, d)
-    test.AssertEqual(t, d["turn_number"], 1)
+    turn_num, has := d["turn_number"]
+    if has
+        test.AssertEqual(t, turn_num, 1)

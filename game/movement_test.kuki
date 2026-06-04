@@ -13,12 +13,12 @@ func TestGetValidMovesFromCenter(t: reference testing.T)
     test.AssertTrue(t, len(moves) > 0)
     found_start := false
     for m in moves
-        if m == types.Pos(5, 5)
+        if m equals types.Pos(5, 5)
             found_start = true
     test.AssertFalse(t, found_start, "should NOT include current position")
     found_valid := false
     for m in moves
-        if m == types.Pos(6, 5) or m == types.Pos(7, 5) or m == types.Pos(5, 6)
+        if m equals types.Pos(6, 5) or m equals types.Pos(7, 5) or m equals types.Pos(5, 6)
             found_valid = true
     test.AssertTrue(t, found_valid, "should include valid move positions")
 
@@ -29,7 +29,7 @@ func TestGetValidMovesRespectsRange(t: reference testing.T)
     moves := get_valid_moves(reference of tok, reference of b, 1, tokens_map)
     far := false
     for m in moves
-        if m == types.Pos(8, 5) or m == types.Pos(5, 8)
+        if m equals types.Pos(8, 5) or m equals types.Pos(5, 8)
             far = true
     test.AssertFalse(t, far, "positions beyond range should not be valid")
 

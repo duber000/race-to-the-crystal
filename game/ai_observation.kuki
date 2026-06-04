@@ -53,7 +53,7 @@ func token_symbol(c: enums.PlayerColor) string
 func generator_status(gen: reference Generator, gs: reference GameState) string
     if gen.is_disabled
         return "DISABLED"
-    if gen.capturing_player_id != ""
+    if gen.capturing_player_id isnt ""
         p_ref := gs.GetPlayer(gen.capturing_player_id)
         if p_ref isnt empty
             p := dereference p_ref
@@ -74,7 +74,7 @@ func crystal_holders(crys: reference Crystal, gs: reference GameState) map of ty
     return result
 
 func join_lines(lines: list of string) string
-    if len(lines) == 0
+    if len(lines) equals 0
         return ""
     result := lines[0]
     for i from 1 to len(lines)
@@ -85,17 +85,17 @@ func describe_game_state(gs: reference GameState, perspective: types.PlayerID) s
     lines := empty list of string
     lines = append(lines, separator_line())
 
-    if gs.phase == enums.ENDED
+    if gs.phase equals enums.ENDED
         winner_ref := gs.GetPlayer(gs.winner_id)
         winner_name := "Unknown"
         if winner_ref isnt empty
             winner_name = dereference winner_ref.name
         lines = append(lines, "GAME OVER - Winner: {winner_name}")
-    else if gs.phase == enums.SETUP
+    else if gs.phase equals enums.SETUP
         lines = append(lines, "GAME SETUP - Waiting for players")
     else
         current_ref := gs.GetCurrentPlayer()
-        is_your_turn := gs.current_turn_player_id == perspective
+        is_your_turn := gs.current_turn_player_id equals perspective
         turn_indicator := "YOUR TURN"
         if not is_your_turn
             turn_indicator = "WAITING"
@@ -112,11 +112,11 @@ func describe_game_state(gs: reference GameState, perspective: types.PlayerID) s
     lines = append(lines, separator_line())
     lines = append(lines, "")
 
-    if gs.phase == enums.PLAYING
+    if gs.phase equals enums.PLAYING
         lines = append(lines, "Phase: {gs.turn_phase}")
-        if gs.turn_phase == enums.MOVEMENT
+        if gs.turn_phase equals enums.MOVEMENT
             lines = append(lines, "  -> You can move a token or deploy a new token")
-        else if gs.turn_phase == enums.ACTION
+        else if gs.turn_phase equals enums.ACTION
             lines = append(lines, "  -> You can attack with a token or end your turn")
         lines = append(lines, "")
 
@@ -173,7 +173,7 @@ func append_player_tokens(lines: list of string, gs: reference GameState, player
 
 func append_enemy_tokens(lines: list of string, gs: reference GameState, perspective: types.PlayerID) list of string
     for pid, p_ref in gs.players
-        if pid == perspective
+        if pid equals perspective
             continue
         enemy_deployed := empty list of Token
         for tid in p_ref.token_ids
@@ -270,12 +270,12 @@ func mark_special_cells(grid: list of list of string, gs: reference GameState) l
 
     mystery_pos := gs.board.get_mystery_positions()
     for mp in mystery_pos
-        if grid[mp.Y][mp.X] == SYMBOL_EMPTY
+        if grid[mp.Y][mp.X] equals SYMBOL_EMPTY
             grid[mp.Y][mp.X] = SYMBOL_MYSTERY
 
     for i from 0 to 4
         sp := gs.board.get_starting_position(i)
-        if grid[sp.Y][sp.X] == SYMBOL_EMPTY
+        if grid[sp.Y][sp.X] equals SYMBOL_EMPTY
             grid[sp.Y][sp.X] = SYMBOL_CORNER
     return grid
 
@@ -286,7 +286,7 @@ func place_tokens_on_grid(grid: list of list of string, gs: reference GameState,
             if p_ref isnt empty
                 p := dereference p_ref
                 sym := token_symbol(p.color)
-                if t.player_id == perspective
+                if t.player_id equals perspective
                     sym = strpkg.ToUpper(sym)
                 grid[t.position.Y][t.position.X] = sym
     return grid
@@ -294,7 +294,7 @@ func place_tokens_on_grid(grid: list of list of string, gs: reference GameState,
 func render_board_header(lines: list of string, gs: reference GameState) list of string
     header := "     "
     for i from 0 to constants.BOARD_WIDTH
-        if i % 2 == 0
+        if i % 2 equals 0
             header = header + strpkg.PadLeft("{i}", 2, " ")
     lines = append(lines, header)
     border := "   +"
@@ -339,10 +339,10 @@ func render_legend(lines: list of string, gs: reference GameState, perspective: 
     return lines
 
 func list_available_actions(gs: reference GameState, player_id: types.PlayerID) AvailableActionsResponse
-    if gs.phase != enums.PLAYING
+    if gs.phase isnt enums.PLAYING
         return AvailableActionsResponse{Phase: "NOT_PLAYING", Actions: empty list of map of string to any}
 
-    if gs.current_turn_player_id != player_id
+    if gs.current_turn_player_id isnt player_id
         return AvailableActionsResponse{
             Phase: "NOT_YOUR_TURN",
             Actions: empty list of map of string to any,
@@ -365,10 +365,10 @@ func list_available_actions(gs: reference GameState, player_id: types.PlayerID) 
             if t.is_deployed and t.is_alive
                 deployed_tokens = append(deployed_tokens, t)
 
-    if gs.turn_phase == enums.MOVEMENT
+    if gs.turn_phase equals enums.MOVEMENT
         actions = add_movement_actions(actions, deployed_tokens, gs)
         actions = add_deployment_actions(actions, gs, player_id, p)
-    else if gs.turn_phase == enums.ACTION
+    else if gs.turn_phase equals enums.ACTION
         actions = add_attack_actions(actions, deployed_tokens, gs)
         actions = add_end_turn_action(actions)
 
@@ -457,7 +457,7 @@ func get_attackable_targets(tok: reference Token, tokens_map: map of types.Token
     result := empty list of Token
     for _, t in tokens_map
         d := dereference t
-        if d.is_alive and d.is_deployed and d.player_id != tok.player_id
+        if d.is_alive and d.is_deployed and d.player_id isnt tok.player_id
             if tok.is_adjacent_to(d.position)
                 result = append(result, d)
     return result
@@ -497,7 +497,7 @@ func explain_victory_conditions(gs: reference GameState) string
                     p := dereference p_ref
                     cn := color_name(p.color)
                     turns_held := 0
-                    if crys.holding_player_id == pid
+                    if crys.holding_player_id equals pid
                         turns_held = crys.turns_held
                     progress := "{count}/{tokens_required} tokens, held for {turns_held}/3 turns"
                     if count >= tokens_required and turns_held >= 3
@@ -548,7 +548,7 @@ func get_situation_report(gs: reference GameState, perspective: types.PlayerID) 
                 desc_str = desc.(string)
             sections = append(sections, "  {i + 1}. {desc_str}")
     else
-        if actions_data.Phase == "NOT_YOUR_TURN"
+        if actions_data.Phase equals "NOT_YOUR_TURN"
             sections = append(sections, "  (waiting for other player's turn)")
         else
             sections = append(sections, "  (no actions available)")

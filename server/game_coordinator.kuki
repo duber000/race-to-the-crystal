@@ -4,7 +4,6 @@ import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as typespkg
-import "stdlib/cast"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 
@@ -86,11 +85,11 @@ func get_state_for_player on s: reference GameSession(network_player_id: string)
     return s.game_state.ToDict()
 
 func is_game_over on s: reference GameSession bool
-    return s.game_state.Phase() == enums.ENDED
+    return s.game_state.Phase() equals enums.ENDED
 
 func get_winner_network_id on s: reference GameSession string
     wid := s.game_state.WinnerID()
-    if wid == ""
+    if wid equals ""
         return ""
     nid, has := s.game_to_network_id[string(wid)]
     if has
@@ -99,7 +98,7 @@ func get_winner_network_id on s: reference GameSession string
 
 func get_current_network_player_id on s: reference GameSession string
     cpid := s.game_state.CurrentTurnPlayerID()
-    if cpid == ""
+    if cpid equals ""
         return ""
     nid, has := s.game_to_network_id[string(cpid)]
     if has
@@ -124,8 +123,8 @@ func create_session on gc: reference GameCoordinator(lobby: reference GameLobby)
     for info in players
         pid_val, has_id := info["player_id"]
         if has_id
-            pid_str := cast.SmartString(pid_val) onerr ""
-            if pid_str != ""
+            pid_str := pid_val.(string) onerr ""
+            if pid_str isnt ""
                 gc.player_to_game[pid_str] = game_id
     return gc.active_games[game_id]
 
@@ -173,7 +172,7 @@ func list_active_games on gc: reference GameCoordinator list of map of string to
             "id": session.game_id,
             "name": session.game_name,
             "turn": session.game_state.TurnNumber(),
-            "is_finished": session.game_state.Phase() == enums.ENDED,
+            "is_finished": session.game_state.Phase() equals enums.ENDED,
         }
         result = append(result, entry)
     return result

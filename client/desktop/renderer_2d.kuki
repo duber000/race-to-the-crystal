@@ -15,7 +15,7 @@ func DrawMainMenu(screen: reference ebiten.Image)
     for i, text in items
         y := 280 + i * 60
         c := ColorLightGray
-        if app.menu_selection == i
+        if app.menu_selection equals i
             c = ColorCyan
         DrawTextCentered(screen, text, WINDOW_WIDTH / 2, y, c)
 
@@ -114,7 +114,7 @@ func DrawGame(screen: reference ebiten.Image)
                 ty := t.position.Y * CELL_SIZE + offset_y
                 tc := PlayerColorByName(t.player_id)
 
-                if t.id == app.selected_token_id
+                if t.id equals app.selected_token_id
                     vector.StrokeCircle(
                         screen,
                         (tx + CELL_SIZE / 2) as float32,

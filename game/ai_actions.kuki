@@ -38,13 +38,13 @@ func FailureResult(msg: string) ActionResult
     return ActionResult{Success: false, Message: msg, Data: empty}
 
 func ValidateGamePhase on gs: reference GameState nullable reference ValidationResult
-    if gs.phase != enums.PLAYING
+    if gs.phase isnt enums.PLAYING
         r := InvalidResult("ACTION_FAILED: wrong_game_phase | current={gs.phase} | required=PLAYING")
         return reference of r
     return empty
 
 func ValidatePlayerTurn on gs: reference GameState(player_id: types.PlayerID) nullable reference ValidationResult
-    if gs.current_turn_player_id != player_id
+    if gs.current_turn_player_id isnt player_id
         r := InvalidResult(
             "ACTION_FAILED: not_your_turn | current_player={gs.current_turn_player_id} | you={player_id}",
         )
@@ -52,7 +52,7 @@ func ValidatePlayerTurn on gs: reference GameState(player_id: types.PlayerID) nu
     return empty
 
 func ValidateTurnPhase on gs: reference GameState(required: enums.TurnPhase, action_name: string) nullable reference ValidationResult
-    if gs.turn_phase != required
+    if gs.turn_phase isnt required
         r := InvalidResult(
             "{action_name}_FAILED: wrong_phase | current={gs.turn_phase} | required={required}",
         )
@@ -67,7 +67,7 @@ func ValidateTokenExists on gs: reference GameState(TokenID: types.TokenID, acti
     return ValidResult(""), tok
 
 func ValidateTokenOwnership(tok: reference Token, player_id: types.PlayerID, action_name: string) ValidationResult
-    if tok.player_id != player_id
+    if tok.player_id isnt player_id
         return InvalidResult("{action_name}_FAILED: not_owner | token_id={tok.id} | owner={tok.player_id}")
     return ValidResult("")
 
@@ -127,7 +127,7 @@ func ValidateMove(TokenID: types.TokenID, dest: types.Position, gs: reference Ga
     valid_moves := get_valid_moves(tok_ref, reference of gs.board, effective_range, gs.tokens)
     found := false
     for m in valid_moves
-        if m == dest
+        if m equals dest
             found = true
             break
     if not found
@@ -161,7 +161,7 @@ func ValidateAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: re
     if def_ref equals empty
         return def_result
 
-    if def_ref.player_id == player_id
+    if def_ref.player_id equals player_id
         return InvalidResult(
             "ATTACK_FAILED: friendly_fire | defender_id={DefenderID} | hint=Cannot attack own tokens",
         )
@@ -187,7 +187,7 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
 
     valid_hv := false
     for hv in constants.TOKEN_HEALTH_VALUES
-        if hv == HealthValue
+        if hv equals HealthValue
             valid_hv = true
             break
     if not valid_hv
@@ -214,7 +214,7 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
     valid_positions := gs.board.get_deployable_positions(enums.PlayerIndex(p.color))
     in_zone := false
     for vp in valid_positions
-        if vp == pos
+        if vp equals pos
             in_zone = true
             break
     if not in_zone
@@ -222,7 +222,7 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
     return ValidResult("Deployment is valid")
 
 func ValidateEndTurn(gs: reference GameState) ValidationResult
-    if gs.turn_phase != enums.MOVEMENT and gs.turn_phase != enums.ACTION
+    if gs.turn_phase isnt enums.MOVEMENT and gs.turn_phase isnt enums.ACTION
         return InvalidResult("Cannot end turn: Invalid phase ({gs.turn_phase})")
     return ValidResult("Can end turn")
 
@@ -259,7 +259,7 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
     result_data["new_position"] = list of int{dest.X, dest.Y}
 
     cell := gs.board.get_cell_at(dest)
-    if cell isnt empty and dereference cell.cell_type == enums.MYSTERY
+    if cell isnt empty and dereference cell.cell_type equals enums.MYSTERY
         p_ref := gs.GetPlayer(player_id)
         if p_ref isnt empty
             p := dereference p_ref
@@ -276,7 +276,7 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
             result_data["mystery_triggered"] = true
             result_data["mystery_effect"] = enums.MysteryEffectName(mystery_result.effect)
 
-            if mystery_result.effect == enums.HEAL
+            if mystery_result.effect equals enums.HEAL
                 message = message + "\n  HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
             else
                 gs.board.clear_occupant(dest, TokenID)

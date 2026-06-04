@@ -139,7 +139,7 @@ func GetReserveTokenCounts on gs: reference GameState(player_id: types.PlayerID)
 func DeployToken on gs: reference GameState(player_id: types.PlayerID, health_value: int, position: types.Position) nullable reference Token
     reserve := gs.GetReserveTokens(player_id)
     for i from 0 to len(reserve)
-        if reserve[i].max_health == health_value
+        if reserve[i].max_health equals health_value
             t_ref := gs.GetToken(reserve[i].id)
             if t_ref equals empty
                 return empty
@@ -153,7 +153,7 @@ func GetTokensAtPosition on gs: reference GameState(pos: types.Position) list of
     result := empty list of Token
     for _, t in gs.tokens
         d := dereference t
-        if d.position == pos and d.is_alive
+        if d.position equals pos and d.is_alive
             result = append(result, d)
     return result
 
@@ -241,7 +241,7 @@ func _auto_deploy_starting_tokens on gs: reference GameState(player_id: types.Pl
         dc := dereference cell
         if dc.is_occupied()
             continue
-        if dc.cell_type != enums.NORMAL
+        if dc.cell_type isnt enums.NORMAL
             continue
 
         t := reference of reserve[deployed]
@@ -254,7 +254,7 @@ func sort_slice(tokens: list of Token)
     sort.By(tokens, (a: Token, b: Token) => a.max_health > b.max_health)
 
 func StartGame on gs: reference GameState
-    if gs.phase != enums.SETUP
+    if gs.phase isnt enums.SETUP
         return
 
     for pid, _ in gs.players
@@ -271,7 +271,7 @@ func StartGame on gs: reference GameState
     gs.turn_number = 1
 
 func EndTurn on gs: reference GameState
-    if gs.current_turn_player_id == ""
+    if gs.current_turn_player_id equals ""
         return
 
     gs.clear_turn_state()
@@ -285,15 +285,15 @@ func advance_to_next_player on gs: reference GameState
     gs.crystal_effects.end_turn_update()
     active := gs.get_active_players()
 
-    if len(active) == 0
+    if len(active) equals 0
         return
 
     next_idx := gs.calculate_next_player_index(active)
     gs.current_turn_player_id = active[next_idx]
 
-    if next_idx == 0
+    if next_idx equals 0
         gs.turn_number = gs.turn_number + 1
-        if gs.turn_number > 0 and gs.turn_number % constants.CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL == 0
+        if gs.turn_number > 0 and gs.turn_number % constants.CRYSTAL_RANDOM_EFFECT_ROUND_INTERVAL equals 0
             gs.trigger_random_crystal_effect()
 
 func get_active_players on gs: reference GameState list of types.PlayerID
@@ -306,13 +306,13 @@ func get_active_players on gs: reference GameState list of types.PlayerID
 func calculate_next_player_index on gs: reference GameState(active: list of types.PlayerID) int
     current_idx := -1
     for i, pid in active
-        if pid == gs.current_turn_player_id
+        if pid equals gs.current_turn_player_id
             current_idx = i
             break
     return (current_idx + 1) % len(active)
 
 func trigger_random_crystal_effect on gs: reference GameState() (types.PlayerID, enums.CrystalEffect, bool)
-    if len(gs.players) == 0
+    if len(gs.players) equals 0
         return types.PlayerID(""), "", false
 
     effects := list of enums.CrystalEffect{
@@ -365,7 +365,7 @@ func update_generators_and_crystal on gs: reference GameState() (list of int, bo
 func EndTurnWithObjectiveUpdate on gs: reference GameState() (list of int, bool, bool)
     newly_disabled, crystal_captured := gs.update_generators_and_crystal()
     gs.EndTurn()
-    return newly_disabled, crystal_captured, gs.phase == enums.ENDED
+    return newly_disabled, crystal_captured, gs.phase equals enums.ENDED
 
 func set_winner on gs: reference GameState(player_id: types.PlayerID)
     gs.winner_id = player_id
@@ -394,7 +394,7 @@ func ToDict on gs: reference GameState map of string to any
     result["phase"] = enums.GamePhaseName(gs.phase)
     result["turn_number"] = gs.turn_number
     result["current_turn_player_id"] = string(gs.current_turn_player_id)
-    if gs.winner_id != ""
+    if gs.winner_id isnt ""
         result["winner_id"] = string(gs.winner_id)
     result["turn_phase"] = enums.TurnPhaseName(gs.turn_phase)
     player_list := empty list of map of string to any

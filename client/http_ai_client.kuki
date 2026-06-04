@@ -2,7 +2,6 @@ petiole main
 
 import "bufio"
 import "race-to-the-crystal/game" as gamepkg
-import "stdlib/cast"
 import "stdlib/fetch"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
@@ -38,8 +37,8 @@ func CreateGame on s: reference Session(game_name: string, player_name: string) 
         if resp isnt empty
             dereference resp.Body.Close()
 
-    status := cast.SmartInt(resp.StatusCode) onerr 0
-    if status != 200
+    status := resp.StatusCode
+    if status isnt 200
         log.Error("CreateGame: status {resp.StatusCode}")
         return false
 
@@ -51,7 +50,7 @@ func CreateGame on s: reference Session(game_name: string, player_name: string) 
     success, has_ok := data["success"]
     if not has_ok or not success.(bool)
         msg, _ := data["message"]
-        msg_str := cast.SmartString(msg) onerr "unknown"
+        msg_str := msg.(string) onerr "unknown"
         log.Error("CreateGame failed: {msg_str}")
         return false
 
@@ -78,8 +77,8 @@ func JoinGame on s: reference Session(game_id: string, player_name: string) bool
         if resp isnt empty
             dereference resp.Body.Close()
 
-    status := cast.SmartInt(resp.StatusCode) onerr 0
-    if status != 200
+    status := resp.StatusCode
+    if status isnt 200
         log.Error("JoinGame: status {resp.StatusCode}")
         return false
 
@@ -91,7 +90,7 @@ func JoinGame on s: reference Session(game_id: string, player_name: string) bool
     success, has_ok := data["success"]
     if not has_ok or not success.(bool)
         msg, _ := data["message"]
-        msg_str := cast.SmartString(msg) onerr "unknown"
+        msg_str := msg.(string) onerr "unknown"
         log.Error("JoinGame failed: {msg_str}")
         return false
 
@@ -109,26 +108,26 @@ func fillFromResponse on s: reference Session(data: any)
 
     pid, has_pid := m["player_id"]
     if has_pid
-        s.player_id = cast.SmartString(pid) onerr ""
+        s.player_id = pid.(string) onerr ""
 
     name, has_n := m["player_name"]
     if has_n
-        s.player_name = cast.SmartString(name) onerr ""
+        s.player_name = name.(string) onerr ""
 
     tok, has_t := m["token"]
     if has_t
-        s.token = cast.SmartString(tok) onerr ""
+        s.token = tok.(string) onerr ""
 
     gid, has_g := m["game_id"]
     if has_g
-        s.game_id = cast.SmartString(gid) onerr ""
+        s.game_id = gid.(string) onerr ""
 
     sse, has_sse := m["sse_url"]
     if has_sse
-        s.sse_url = cast.SmartString(sse) onerr ""
+        s.sse_url = sse.(string) onerr ""
 
     log.Info("Authenticated as {s.player_name} (player_id={s.player_id}, game_id={s.game_id})")
-    if s.sse_url != ""
+    if s.sse_url isnt ""
         log.Info("SSE URL: {s.sse_url}")
 
 func FetchState on s: reference Session map of string to any
@@ -144,10 +143,10 @@ func FetchState on s: reference Session map of string to any
         if resp isnt empty
             dereference resp.Body.Close()
 
-    status := cast.SmartInt(resp.StatusCode) onerr 0
-    if status == 400 or status == 404
+    status := resp.StatusCode
+    if status equals 400 or status equals 404
         return empty map of string to any
-    if status != 200
+    if status isnt 200
         log.Error("FetchState: status {resp.StatusCode}")
         return empty map of string to any
 
@@ -178,10 +177,10 @@ func FetchActions on s: reference Session map of string to any
         if resp isnt empty
             dereference resp.Body.Close()
 
-    status := cast.SmartInt(resp.StatusCode) onerr 0
-    if status == 400 or status == 404
+    status := resp.StatusCode
+    if status equals 400 or status equals 404
         return empty map of string to any
-    if status != 200
+    if status isnt 200
         log.Error("FetchActions: status {resp.StatusCode}")
         return empty map of string to any
 
@@ -228,31 +227,31 @@ func SendAction on s: reference Session(action: gamepkg.ChosenAction) map of str
 
 func TryAutoStart on s: reference Session bool
     lobby := s.GetLobby()
-    if lobby == empty
+    if lobby equals empty
         return false
 
     host_id_any, has := lobby["host_player_id"]
     if not has
         return false
-    host_id := cast.SmartString(host_id_any) onerr ""
-    if host_id != s.player_id
+    host_id := host_id_any.(string) onerr ""
+    if host_id isnt s.player_id
         return false
 
     status_any, has_s := lobby["status"]
     if not has_s
         return false
-    status := cast.SmartString(status_any) onerr ""
-    if status != "WAITING"
+    status := status_any.(string) onerr ""
+    if status isnt "WAITING"
         return true
 
     cur_any, has_c := lobby["current_players"]
     if not has_c
         return false
-    cur := cast.SmartInt(cur_any) onerr 0
+    cur := cur_any.(int) onerr 0
     min_any, has_m := lobby["min_players"]
     if not has_m
         return false
-    min_p := cast.SmartInt(min_any) onerr 0
+    min_p := min_any.(int) onerr 0
     if cur < min_p
         return false
 
@@ -269,7 +268,7 @@ func TryAutoStart on s: reference Session bool
         ready_any, has_r := p_map["is_ready"]
         if not has_r
             return false
-        ready := cast.SmartBool(ready_any) onerr false
+        ready := ready_any.(bool) onerr false
         if not ready
             return false
 
@@ -293,8 +292,8 @@ func SetReady on s: reference Session(ready: bool) bool
         if resp isnt empty
             dereference resp.Body.Close()
 
-    status := cast.SmartInt(resp.StatusCode) onerr 0
-    if status != 200
+    status := resp.StatusCode
+    if status isnt 200
         log.Error("SetReady: status {resp.StatusCode}")
         return false
     return true
@@ -313,8 +312,8 @@ func StartGame on s: reference Session bool
         if resp isnt empty
             dereference resp.Body.Close()
 
-    status := cast.SmartInt(resp.StatusCode) onerr 0
-    if status != 200
+    status := resp.StatusCode
+    if status isnt 200
         log.Error("StartGame: status {resp.StatusCode}")
         return false
     return true
@@ -331,8 +330,8 @@ func ListLobbies on s: reference Session list of map of string to any
         if resp isnt empty
             dereference resp.Body.Close()
 
-    status := cast.SmartInt(resp.StatusCode) onerr 0
-    if status != 200
+    status := resp.StatusCode
+    if status isnt 200
         return empty list of map of string to any
 
     wrapper := make(map of string to any)
@@ -368,40 +367,40 @@ func GetLobby on s: reference Session map of string to any
         gid_any, has := lobby["game_id"]
         if not has
             continue
-        gid := cast.SmartString(gid_any) onerr ""
-        if gid == s.game_id
+        gid := gid_any.(string) onerr ""
+        if gid equals s.game_id
             return lobby
     return empty map of string to any
 
 func IsMyTurn(state: map of string to any, player_id: string) bool
-    if state == empty
+    if state equals empty
         return false
     cur, has := state["current_turn_player_id"]
     if not has
         return false
-    cur_str := cast.SmartString(cur) onerr ""
-    return cur_str == player_id
+    cur_str := cur.(string) onerr ""
+    return cur_str equals player_id
 
 func IsGameOver(state: map of string to any) bool
-    if state == empty
+    if state equals empty
         return false
     phase, has := state["phase"]
     if not has
         return false
-    phase_str := cast.SmartString(phase) onerr ""
-    return phase_str == "ENDED"
+    phase_str := phase.(string) onerr ""
+    return phase_str equals "ENDED"
 
 func IsGameActive(state: map of string to any) bool
-    if state == empty
+    if state equals empty
         return false
     phase, has := state["phase"]
     if not has
         return false
-    phase_str := cast.SmartString(phase) onerr ""
-    return phase_str == "PLAYING"
+    phase_str := phase.(string) onerr ""
+    return phase_str equals "PLAYING"
 
 func PickAction(actions: list of map of string to any, strategy: gamepkg.AIStrategyName) gamepkg.ChosenAction
-    if len(actions) == 0
+    if len(actions) equals 0
         return gamepkg.NewChosenAction("END_TURN", make(map of string to any))
     chosen_ref := gamepkg.ChooseAction(strategy, actions, empty, "")
     if chosen_ref equals empty
@@ -413,7 +412,7 @@ type SSEEvent
     data string
 
 func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
-    if s.sse_url == ""
+    if s.sse_url equals ""
         log.Warn("ConnectSSE: no SSE URL configured")
         return
 
@@ -439,7 +438,7 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
         line := scanner.Text()
 
         switch
-            when line == ""
+            when line equals ""
                 if data_buf.Len() > 0
                     ev := SSEEvent{event_type: current_event, data: data_buf.String()}
                     keep_going := handler(ev)

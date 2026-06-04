@@ -35,7 +35,7 @@ type GameServer
 
 func NewGameServer(config: ServerConfig) GameServer
     mercure_cfg := MercureConfigFromEnv()
-    if config.jwt_secret == ""
+    if config.jwt_secret equals ""
         config.jwt_secret = GenerateSecretKey()
 
     gs := GameServer{
@@ -64,7 +64,7 @@ func Start on gs: reference GameServer
 
     go
         err := http.ListenAndServe(addr, mux)
-        if err != empty
+        if err isnt empty
             log.Error("HTTP server error: {err}")
 
     log.Info("Server started. Press Ctrl+C to stop.")
@@ -92,12 +92,12 @@ func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
 
 func handleHTTP on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
     httphelper.SetSecureHeaders(w)
-    if gs.config.static_dir == ""
+    if gs.config.static_dir equals ""
         httphelper.JSONNotFound(w, "no static files configured")
         return
 
     path := r.URL.Path
-    if path == "/"
+    if path equals "/"
         path = "/index.html"
 
     file_path := filepath.Join(gs.config.static_dir, path)

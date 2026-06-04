@@ -30,10 +30,10 @@ type WebServer
     config WebServerConfig
     proxy nullable reference httputil.ReverseProxy
 
-func NewWebServer(config: WebServerConfig) WebServer
-    target := url.Parse(config.game_server_url) onerr panic "invalid GAME_SERVER_URL"
+func NewWebServer(config: WebServerConfig) (WebServer, error)
+    target := url.Parse(config.game_server_url) onerr return WebServer{}, error "invalid GAME_SERVER_URL"
     proxy := httputil.NewSingleHostReverseProxy(target)
-    return WebServer{config: config, proxy: proxy}
+    return WebServer{config: config, proxy: proxy}, empty
 
 func Start on ws: reference WebServer
     mux := http.NewServeMux()
@@ -53,7 +53,7 @@ func Start on ws: reference WebServer
 
     go
         err := http.ListenAndServe(addr, mux)
-        if err != empty
+        if err isnt empty
             log.Error("HTTP server error: {err}")
 
     ch := make(channel of bool)
@@ -79,5 +79,7 @@ func handleConfig on ws: reference WebServer(w: http.ResponseWriter, r: referenc
 
 func main()
     config := WebServerConfigFromEnv()
-    server := NewWebServer(config)
+    server, err := NewWebServer(config)
+    if err isnt empty
+        log.Fatal("{err}")
     server.Start()

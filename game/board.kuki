@@ -20,7 +20,7 @@ func is_occupied on c: Cell bool
 func has_enemy_tokens on c: Cell(player_id: types.PlayerID, tokens_map: map of types.TokenID to reference Token) bool
     for tid in c.occupants
         tok, ok := tokens_map[tid]
-        if ok and dereference tok.player_id != player_id
+        if ok and dereference tok.player_id isnt player_id
             return true
     return false
 
@@ -30,7 +30,7 @@ func add_occupant on c: reference Cell(token_id: types.TokenID)
 
 func remove_occupant on c: reference Cell(token_id: types.TokenID)
     if slice.Contains(c.occupants, token_id)
-        c.occupants = slice.Filter(c.occupants, (tid: types.TokenID) => tid != token_id)
+        c.occupants = slice.Filter(c.occupants, (tid: types.TokenID) => tid isnt token_id)
 
 func clear_occupants on c: reference Cell
     c.occupants = empty list of types.TokenID
@@ -100,10 +100,10 @@ func place_mystery_squares on b: reference Board
     m := 2
 
     quads := list of Quadrant{
-        Quadrant{x_min: m, x_max: mid_x - m, y_min: m, y_max: mid_y - m},
-        Quadrant{x_min: mid_x + m, x_max: b.width - m, y_min: m, y_max: mid_y - m},
-        Quadrant{x_min: m, x_max: mid_x - m, y_min: mid_y + m, y_max: b.height - m},
-        Quadrant{x_min: mid_x + m, x_max: b.width - m, y_min: mid_y + m, y_max: b.height - m},
+        {x_min: m, x_max: mid_x - m, y_min: m, y_max: mid_y - m},
+        {x_min: mid_x + m, x_max: b.width - m, y_min: m, y_max: mid_y - m},
+        {x_min: m, x_max: mid_x - m, y_min: mid_y + m, y_max: b.height - m},
+        {x_min: mid_x + m, x_max: b.width - m, y_min: mid_y + m, y_max: b.height - m},
     }
 
     for q in quads
@@ -117,7 +117,7 @@ func place_mystery_squares on b: reference Board
             x := random.Int(q.x_min, q.x_max + 1)
             y := random.Int(q.y_min, q.y_max + 1)
 
-            if b.grid[y][x].cell_type == enums.NORMAL
+            if b.grid[y][x].cell_type equals enums.NORMAL
                 b.grid[y][x].cell_type = enums.MYSTERY
                 b._mystery_positions = append(b._mystery_positions, types.Pos(x, y))
                 placed = placed + 1
@@ -149,17 +149,17 @@ func clear_all_occupants on b: reference Board(pos: types.Position)
         cell.clear_occupants()
 
 func get_starting_position on b: Board(player_index: int) types.Position
-    if player_index == 0
+    if player_index equals 0
         return types.Pos(0, 0)
-    else if player_index == 1
+    else if player_index equals 1
         return types.Pos(b.width - 1, 0)
-    else if player_index == 2
+    else if player_index equals 2
         return types.Pos(0, b.height - 1)
     else
         return types.Pos(b.width - 1, b.height - 1)
 
 func get_deployable_positions on b: Board(player_index: int) list of types.Position
-    if player_index == 0
+    if player_index equals 0
         return list of types.Position{
             types.Pos(0, 0),
             types.Pos(1, 0),
@@ -171,7 +171,7 @@ func get_deployable_positions on b: Board(player_index: int) list of types.Posit
             types.Pos(1, 2),
             types.Pos(2, 2),
         }
-    else if player_index == 1
+    else if player_index equals 1
         return list of types.Position{
             types.Pos(21, 0),
             types.Pos(22, 0),
@@ -183,7 +183,7 @@ func get_deployable_positions on b: Board(player_index: int) list of types.Posit
             types.Pos(22, 2),
             types.Pos(23, 2),
         }
-    else if player_index == 2
+    else if player_index equals 2
         return list of types.Position{
             types.Pos(0, 21),
             types.Pos(1, 21),

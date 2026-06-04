@@ -43,7 +43,7 @@ func TestCrystalCaptureNoTokens(t: reference testing.T)
 func TestCrystalCaptureInsufficientTokens(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
     tokens := list of TokenAtPos{
-        TokenAtPos{token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
+        {token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
     }
     outcome := c.update_capture_status(tokens, 0)
     test.AssertFalse(t, outcome.is_winner)

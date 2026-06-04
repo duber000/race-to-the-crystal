@@ -16,7 +16,7 @@ func trigger_mystery_event(tok: reference Token, brd: reference Board, player_in
     old_pos := tok.position
     old_hp := tok.health
 
-    is_heads := random.Int(0, 2) == 0
+    is_heads := random.Int(0, 2) equals 0
 
     if is_heads
         tok.heal_to_full()

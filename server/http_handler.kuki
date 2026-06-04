@@ -2,13 +2,13 @@ petiole main
 
 import "net"
 import "race-to-the-crystal/shared/types" as typespkg
-import "stdlib/cast"
 import "stdlib/env"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/random"
 import "stdlib/string" as strpkg
 import "strings"
+import "race-to-the-crystal/game" as gamepkg
 
 type HTTPHandler
     coordinator nullable reference GameCoordinator
@@ -38,10 +38,10 @@ func NewHTTPHandler(coord: reference GameCoordinator, lobby_mgr: reference Lobby
 func GetConfig on h: reference HTTPHandler map of string to any
     sse_primary := env.GetOr("SSE_PRIMARY_MODE", "false")
     return map of string to any{
-        "mercure_enabled": h.mercure_cfg.publisher_jwt != "",
+        "mercure_enabled": h.mercure_cfg.publisher_jwt isnt "",
         "mercure_hub_url": h.mercure_cfg.hub_url,
         "mercure_topic_prefix": h.mercure_cfg.topic_prefix,
-        "sse_primary_mode": sse_primary == "true",
+        "sse_primary_mode": sse_primary equals "true",
     }
 
 func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of string to any, client_ip: string) APIResponse
@@ -60,8 +60,8 @@ func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of st
             message: "missing player_name",
             data: empty map of string to any,
         }
-    player_name := cast.SmartString(player_name_val) onerr ""
-    if player_name == ""
+    player_name := player_name_val.(string) onerr ""
+    if player_name equals ""
         return APIResponse{
             success: false,
             message: "invalid player_name",
@@ -69,7 +69,7 @@ func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of st
         }
 
     err_result := ValidatePlayerName(player_name)
-    if err_result != empty
+    if err_result isnt empty
         return APIResponse{
             success: false,
             message: "invalid player_name: {err_result}",
@@ -77,9 +77,9 @@ func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of st
         }
 
     lobby := h.lobby_mgr.get_lobby(game_id)
-    if lobby == empty
+    if lobby equals empty
         return APIResponse{success: false, message: "game not found", data: empty map of string to any}
-    if lobby.status != GameStatus.WAITING
+    if lobby.status isnt GameStatus.WAITING
         return APIResponse{
             success: false,
             message: "game is not accepting new players",
@@ -88,7 +88,7 @@ func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of st
 
     player_id := random.String(16)
     join_result := h.lobby_mgr.join_lobby(game_id, player_id, player_name, ClientType.WEB_BROWSER)
-    if join_result == empty
+    if join_result equals empty
         return APIResponse{
             success: false,
             message: "failed to join game",
@@ -115,11 +115,11 @@ func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of st
 
 func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: string, body: map of string to any) APIResponse
     token_str := ExtractTokenFromHeader(auth_header)
-    if token_str == ""
+    if token_str equals ""
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(token_str, h.jwt_secret)
-    if payload == empty
+    if payload equals empty
         return APIResponse{success: false, message: "invalid token", data: empty map of string to any}
     if not ValidateTokenForGame(payload, game_id)
         return APIResponse{
@@ -145,8 +145,8 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
             message: "missing action type",
             data: empty map of string to any,
         }
-    action_type := cast.SmartString(action_type_val) onerr ""
-    if action_type == ""
+    action_type := action_type_val.(string) onerr ""
+    if action_type equals ""
         return APIResponse{
             success: false,
             message: "invalid action type",
@@ -173,7 +173,7 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
         }
 
     session := h.coordinator.get_session(game_id)
-    if session == empty
+    if session equals empty
         return APIResponse{
             success: false,
             message: "game session not found",
@@ -211,15 +211,15 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
 
 func HandleGetState on h: reference HTTPHandler(game_id: string, auth_header: string) APIResponse
     token_str := ExtractTokenFromHeader(auth_header)
-    if token_str == ""
+    if token_str equals ""
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(token_str, h.jwt_secret)
-    if payload == empty
+    if payload equals empty
         return APIResponse{success: false, message: "invalid token", data: empty map of string to any}
 
     session := h.coordinator.get_session(game_id)
-    if session == empty
+    if session equals empty
         return APIResponse{
             success: false,
             message: "game session not found",
@@ -236,15 +236,15 @@ func HandleGetState on h: reference HTTPHandler(game_id: string, auth_header: st
 
 func HandleGetActions on h: reference HTTPHandler(game_id: string, auth_header: string) APIResponse
     token_str := ExtractTokenFromHeader(auth_header)
-    if token_str == ""
+    if token_str equals ""
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(token_str, h.jwt_secret)
-    if payload == empty
+    if payload equals empty
         return APIResponse{success: false, message: "invalid token", data: empty map of string to any}
 
     session := h.coordinator.get_session(game_id)
-    if session == empty
+    if session equals empty
         return APIResponse{
             success: false,
             message: "game session not found",
@@ -285,39 +285,39 @@ func HandleCreateGame on h: reference HTTPHandler(auth_header: string, body: map
     token_str := ExtractTokenFromHeader(auth_header)
 
     player_id := ""
-    if token_str != ""
+    if token_str isnt ""
         payload := VerifyPlayerToken(token_str, h.jwt_secret)
-        if payload != empty
+        if payload isnt empty
             player_id = payload.player_id
 
-    if player_id == ""
+    if player_id equals ""
         player_id = random.String(16)
 
     player_name := "Player"
     pn_val, has_pn := body["player_name"]
     if has_pn
-        pn := cast.SmartString(pn_val) onerr ""
-        if pn != ""
+        pn := pn_val.(string) onerr ""
+        if pn isnt ""
             player_name = pn
 
     game_name := "Game"
     gn_val, has_gn := body["game_name"]
     if has_gn
-        gn := cast.SmartString(gn_val) onerr ""
-        if gn != ""
+        gn := gn_val.(string) onerr ""
+        if gn isnt ""
             game_name = gn
 
     max_players := 4
     mp_val, has_mp := body["max_players"]
     if has_mp
-        max_players = cast.SmartInt(mp_val) onerr 4
+        max_players = mp_val.(int) onerr 4
     if max_players < 2
         max_players = 2
     if max_players > 4
         max_players = 4
 
     lobby := h.lobby_mgr.create_lobby(player_id, player_name, game_name, ClientType.WEB_BROWSER, max_players)
-    if lobby == empty
+    if lobby equals empty
         return APIResponse{
             success: false,
             message: "failed to create game",
@@ -339,11 +339,11 @@ func HandleCreateGame on h: reference HTTPHandler(auth_header: string, body: map
 
 func HandleLeaveGame on h: reference HTTPHandler(game_id: string, auth_header: string) APIResponse
     token_str := ExtractTokenFromHeader(auth_header)
-    if token_str == ""
+    if token_str equals ""
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(token_str, h.jwt_secret)
-    if payload == empty
+    if payload equals empty
         return APIResponse{success: false, message: "invalid token", data: empty map of string to any}
 
     player_id := payload.player_id
@@ -353,11 +353,11 @@ func HandleLeaveGame on h: reference HTTPHandler(game_id: string, auth_header: s
 
 func HandleReady on h: reference HTTPHandler(game_id: string, auth_header: string, body: map of string to any) APIResponse
     token_str := ExtractTokenFromHeader(auth_header)
-    if token_str == ""
+    if token_str equals ""
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(token_str, h.jwt_secret)
-    if payload == empty
+    if payload equals empty
         return APIResponse{success: false, message: "invalid token", data: empty map of string to any}
 
     player_id := payload.player_id
@@ -365,12 +365,12 @@ func HandleReady on h: reference HTTPHandler(game_id: string, auth_header: strin
     ready := true
     ready_val, has_rdy := body["ready"]
     if has_rdy
-        ready = cast.SmartBool(ready_val) onerr true
+        ready = ready_val.(bool) onerr true
 
     h.lobby_mgr.set_ready(game_id, player_id, ready)
 
     lobby := h.lobby_mgr.get_lobby(game_id)
-    if lobby != empty
+    if lobby isnt empty
         h.ws_handler.BroadcastToGame(game_id, map of string to any{
             "type": "LOBBY_UPDATE",
             "game_id": game_id,
@@ -385,20 +385,20 @@ func HandleReady on h: reference HTTPHandler(game_id: string, auth_header: strin
 
 func HandleStartGame on h: reference HTTPHandler(game_id: string, auth_header: string) APIResponse
     token_str := ExtractTokenFromHeader(auth_header)
-    if token_str == ""
+    if token_str equals ""
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(token_str, h.jwt_secret)
-    if payload == empty
+    if payload equals empty
         return APIResponse{success: false, message: "invalid token", data: empty map of string to any}
 
     player_id := payload.player_id
 
     lobby := h.lobby_mgr.get_lobby(game_id)
-    if lobby == empty
+    if lobby equals empty
         return APIResponse{success: false, message: "game not found", data: empty map of string to any}
 
-    if lobby.host_player_id != player_id
+    if lobby.host_player_id isnt player_id
         return APIResponse{
             success: false,
             message: "only the host can start the game",
@@ -413,7 +413,7 @@ func HandleStartGame on h: reference HTTPHandler(game_id: string, auth_header: s
         }
 
     start_result := h.lobby_mgr.start_game(game_id)
-    if start_result == empty
+    if start_result equals empty
         return APIResponse{
             success: false,
             message: "failed to start game",
@@ -440,14 +440,14 @@ func HandleStartGame on h: reference HTTPHandler(game_id: string, auth_header: s
     }
 
 func GetClientIP on h: reference HTTPHandler(remote_addr: string, xff: string, real_ip: string) string
-    if xff != ""
+    if xff isnt ""
         parts := strings.Split(xff, ",")
         if len(parts) > 0
             return strings.TrimSpace(parts[0])
-    if real_ip != ""
+    if real_ip isnt ""
         return real_ip
     host, _, err := net.SplitHostPort(remote_addr)
-    if err != empty
+    if err isnt empty
         return remote_addr
     return host
 
@@ -456,15 +456,15 @@ func buildGameAction on h: reference HTTPHandler(player_id: string, action_type:
 
     var result gamepkg.AIAction
 
-    if lower_type == "move"
+    if lower_type equals "move"
         tid := h.getIntField(data, "token_id", 0)
         dest := h.getPositionField(data, "destination")
         result = gamepkg.NewMoveAction(typespkg.TokenID(tid), dest)
-    else if lower_type == "attack"
+    else if lower_type equals "attack"
         attacker_id := typespkg.TokenID(h.getIntField(data, "attacker_id", 0))
         defender_id := typespkg.TokenID(h.getIntField(data, "defender_id", 0))
         result = gamepkg.NewAttackAction(attacker_id, defender_id)
-    else if lower_type == "deploy"
+    else if lower_type equals "deploy"
         hv := h.getIntField(data, "health_value", 1)
         pos := h.getPositionField(data, "position")
         result = gamepkg.NewDeployAction(hv, pos)
@@ -477,7 +477,10 @@ func getIntField on h: reference HTTPHandler(data: map of string to any, key: st
     val, has := data[key]
     if not has
         return default_val
-    return cast.SmartInt(val) onerr default_val
+    result, err := any_to_int(val)
+    if err isnt empty
+        return default_val
+    return result
 
 func getPositionField on h: reference HTTPHandler(data: map of string to any, key: string) typespkg.Position
     val, has := data[key]
@@ -490,11 +493,19 @@ func getPositionField on h: reference HTTPHandler(data: map of string to any, ke
     pos := make(list of any, 0)
     pos_str := string(json_bytes)
     err := jsonpkg.ParseStringInto(pos_str, reference of pos)
-    if err != empty
+    if err isnt empty
         return typespkg.Position{X: 0, Y: 0}
 
     if len(pos) < 2
         return typespkg.Position{X: 0, Y: 0}
-    x := cast.SmartInt(pos[0]) onerr 0
-    y := cast.SmartInt(pos[1]) onerr 0
+    x := any_to_int(pos[0]) onerr 0
+    y := any_to_int(pos[1]) onerr 0
     return typespkg.Position{X: x, Y: y}
+
+func any_to_int(v: any) (int, error)
+    switch v as val
+        when int
+            return val, empty
+        when float64
+            return int(val), empty
+    return 0, error "cannot convert to int"

@@ -2,7 +2,6 @@ petiole game
 
 import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/types" as types
-import "stdlib/cast"
 import "stdlib/random"
 
 enum AIStrategyName: string
@@ -18,7 +17,7 @@ func NewChosenAction(action_type: string, params: map of string to any) ChosenAc
     return ChosenAction{ActionType: action_type, Params: params}
 
 func ChooseAction(strategy: AIStrategyName, actions: list of map of string to any, gs: reference GameState, player_id: types.PlayerID) nullable reference ChosenAction
-    if len(actions) == 0
+    if len(actions) equals 0
         return empty
 
     switch strategy
@@ -57,7 +56,7 @@ func choose_aggressive(actions: list of map of string to any, gs: reference Game
 
 func choose_defensive(actions: list of map of string to any, gs: reference GameState, player_id: types.PlayerID) ChosenAction
     deploys := filter_by_type(actions, "DEPLOY")
-    if len(deploys) > 0 and random.Int(0, 2) == 1
+    if len(deploys) > 0 and random.Int(0, 2) equals 1
         return best_deploy(deploys)
 
     moves := filter_by_type(actions, "MOVE")
@@ -74,13 +73,21 @@ func choose_defensive(actions: list of map of string to any, gs: reference GameS
 
     return choose_random(actions)
 
+func to_int(v: any) (int, error)
+    switch v as val
+        when int
+            return val, empty
+        when float64
+            return int(val), empty
+    return 0, error "cannot convert to int"
+
 func best_attack(attacks: list of map of string to any) ChosenAction
     killing := empty list of map of string to any
     for a in attacks
         wk, has := a["will_kill"]
         will_kill := false
         if has
-            will_kill = cast.SmartBool(wk) onerr false
+            will_kill = wk.(bool) onerr false
         if will_kill
             killing = append(killing, a)
 
@@ -90,7 +97,7 @@ func best_attack(attacks: list of map of string to any) ChosenAction
         for k in killing
             d, has := k["damage"]
             if has
-                dmg := cast.SmartInt(d) onerr 0
+                dmg := d.(int) onerr 0
                 if dmg > best_dmg
                     best_dmg = dmg
                     chosen = k
@@ -99,7 +106,7 @@ func best_attack(attacks: list of map of string to any) ChosenAction
         for a in attacks
             d, has := a["damage"]
             if has
-                dmg := cast.SmartInt(d) onerr 0
+                dmg := d.(int) onerr 0
                 if dmg > best_dmg
                     best_dmg = dmg
                     chosen = a
@@ -122,7 +129,7 @@ func best_move(moves: list of map of string to any, gs: reference GameState, pla
         tok_id_any, has := move["token_id"]
         if not has
             continue
-        tok_id_val := cast.SmartInt(tok_id_any) onerr 0
+        tok_id_val := to_int(tok_id_any) onerr 0
         tok_id := types.TokenID(tok_id_val)
         tok_ref := gs.GetToken(tok_id)
         dests_any, has2 := move["valid_destinations"]
@@ -135,8 +142,8 @@ func best_move(moves: list of map of string to any, gs: reference GameState, pla
             pair, pair_ok := dest_list.(list of any)
             if not pair_ok or len(pair) < 2
                 continue
-            x := cast.SmartInt(pair[0]) onerr 0
-            y := cast.SmartInt(pair[1]) onerr 0
+            x := to_int(pair[0]) onerr 0
+            y := to_int(pair[1]) onerr 0
             dest := types.Pos(x, y)
             score := score_destination(dest, objectives, tok_ref)
             if score < best_score
@@ -156,7 +163,7 @@ func best_deploy(deploys: list of map of string to any) ChosenAction
     for d in deploys
         hv_any, has := d["health_value"]
         if has
-            hv := cast.SmartInt(hv_any) onerr 0
+            hv := to_int(hv_any) onerr 0
             if hv > best_hv
                 best_hv = hv
                 chosen = d
@@ -165,14 +172,14 @@ func best_deploy(deploys: list of map of string to any) ChosenAction
     if not has
         return choose_random(deploys)
     positions_raw, raw_ok := positions_any.(list of any)
-    if not raw_ok or len(positions_raw) == 0
+    if not raw_ok or len(positions_raw) equals 0
         return choose_random(deploys)
 
     first, first_ok := positions_raw[0].(list of any)
     pos := empty list of int
     if first_ok and len(first) >= 2
-        x := cast.SmartInt(first[0]) onerr 0
-        y := cast.SmartInt(first[1]) onerr 0
+        x := to_int(first[0]) onerr 0
+        y := to_int(first[1]) onerr 0
         pos = list of int{x, y}
 
     hv, _ := chosen["health_value"]
@@ -183,9 +190,9 @@ func best_deploy(deploys: list of map of string to any) ChosenAction
 
 func resolve_action(action: map of string to any) ChosenAction
     action_type_any, _ := action["type"]
-    action_type := cast.SmartString(action_type_any) onerr ""
+    action_type := action_type_any.(string) onerr ""
 
-    if action_type == "MOVE"
+    if action_type equals "MOVE"
         token_id, _ := action["token_id"]
         dests_any, has := action["valid_destinations"]
         dest := empty list of int
@@ -196,15 +203,15 @@ func resolve_action(action: map of string to any) ChosenAction
                 if idx < len(dests_raw)
                     pair, pair_ok := dests_raw[idx].(list of any)
                     if pair_ok and len(pair) >= 2
-                        x := cast.SmartInt(pair[0]) onerr 0
-                        y := cast.SmartInt(pair[1]) onerr 0
+                        x := to_int(pair[0]) onerr 0
+                        y := to_int(pair[1]) onerr 0
                         dest = list of int{x, y}
         params := make(map of string to any)
         params["token_id"] = token_id
         params["destination"] = dest
         return NewChosenAction("MOVE", params)
 
-    if action_type == "ATTACK"
+    if action_type equals "ATTACK"
         att_id, _ := action["attacker_id"]
         def_id, _ := action["defender_id"]
         params := make(map of string to any)
@@ -212,7 +219,7 @@ func resolve_action(action: map of string to any) ChosenAction
         params["defender_id"] = def_id
         return NewChosenAction("ATTACK", params)
 
-    if action_type == "DEPLOY"
+    if action_type equals "DEPLOY"
         hv, _ := action["health_value"]
         positions_any, has := action["positions"]
         pos := empty list of int
@@ -223,8 +230,8 @@ func resolve_action(action: map of string to any) ChosenAction
                 if idx < len(positions_raw)
                     pair, pair_ok := positions_raw[idx].(list of any)
                     if pair_ok and len(pair) >= 2
-                        x := cast.SmartInt(pair[0]) onerr 0
-                        y := cast.SmartInt(pair[1]) onerr 0
+                        x := to_int(pair[0]) onerr 0
+                        y := to_int(pair[1]) onerr 0
                         pos = list of int{x, y}
         params := make(map of string to any)
         params["health_value"] = hv
@@ -238,8 +245,8 @@ func filter_by_type(actions: list of map of string to any, type_str: string) lis
     for a in actions
         t, has := a["type"]
         if has
-            type_val := cast.SmartString(t) onerr ""
-            if type_val == type_str
+            type_val := t.(string) onerr ""
+            if type_val equals type_str
                 result = append(result, a)
     return result
 
@@ -253,7 +260,7 @@ func get_objectives(gs: reference GameState, player_id: types.PlayerID, crystal_
     for gen in gs.generators
         if gen.is_disabled
             continue
-        if gen.capturing_player_id == player_id
+        if gen.capturing_player_id equals player_id
             objectives = append(list of types.Position{gen.position}, many objectives)
         else
             objectives = append(objectives, gen.position)

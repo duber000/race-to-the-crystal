@@ -32,18 +32,18 @@ type PlayerEffects
 
 func has_effect on e: reference PlayerEffects(et: enums.CrystalEffect) bool
     for eff in e.active_effects
-        if eff.effect_type == et and eff.is_active()
+        if eff.effect_type equals et and eff.is_active()
             return true
     return false
 
 func get_effect on e: reference PlayerEffects(et: enums.CrystalEffect) nullable reference ActiveEffect
     for i from 0 to len(e.active_effects)
-        if e.active_effects[i].effect_type == et and e.active_effects[i].is_active()
+        if e.active_effects[i].effect_type equals et and e.active_effects[i].is_active()
             return reference of e.active_effects[i]
     return empty
 
 func add_effect on e: reference PlayerEffects(et: enums.CrystalEffect, duration: int, turn_number: int) reference ActiveEffect
-    e.active_effects = slice.Filter(e.active_effects, (eff: ActiveEffect) => eff.effect_type != et)
+    e.active_effects = slice.Filter(e.active_effects, (eff: ActiveEffect) => eff.effect_type isnt et)
     eff := ActiveEffect{effect_type: et, turns_remaining: duration, applied_turn: turn_number}
     e.active_effects = append(e.active_effects, eff)
     return reference of e.active_effects[len(e.active_effects) - 1]
@@ -74,7 +74,7 @@ func get_player_effects on m: reference CrystalEffectsManager(player_id: types.P
     return m.player_effects[player_id]
 
 func apply_effect on m: reference CrystalEffectsManager(player_id: types.PlayerID, et: enums.CrystalEffect, turn_number: int, duration: int)
-    if duration == 0
+    if duration equals 0
         duration = constants.CRYSTAL_EFFECT_INITIAL_DURATION
     pe := m.get_player_effects(player_id)
     pe.add_effect(et, duration, turn_number)

@@ -70,13 +70,13 @@ func EndTurn on api: reference GameAPI ActionResult
 func IsMyTurn on api: reference GameAPI bool
     if api.game_state equals empty
         return false
-    return dereference api.game_state.current_turn_player_id == api.player_id
+    return dereference api.game_state.current_turn_player_id equals api.player_id
 
 func GetPhase on api: reference GameAPI string
     if api.game_state equals empty
         return "NOT_PLAYING"
     gs := dereference api.game_state
-    if gs.phase != enums.PLAYING
+    if gs.phase isnt enums.PLAYING
         return enums.GamePhaseName(gs.phase)
     return enums.TurnPhaseName(gs.turn_phase)
 

@@ -46,8 +46,8 @@ func HandleGameInput()
 
         if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
             for t in gs.tokens
-                if t.is_alive and t.is_deployed and t.position.X == cell_x and t.position.Y == cell_y
-                    if app.selected_token_id == t.id
+                if t.is_alive and t.is_deployed and t.position.X equals cell_x and t.position.Y equals cell_y
+                    if app.selected_token_id equals t.id
                         app.selected_token_id = -1
                         app.valid_moves = empty list of DesktopPos
                     else
@@ -56,7 +56,7 @@ func HandleGameInput()
                     return
             if app.selected_token_id >= 0
                 for mv in app.valid_moves
-                    if mv.X == cell_x and mv.Y == cell_y
+                    if mv.X equals cell_x and mv.Y equals cell_y
                         app.selected_token_id = -1
                         app.valid_moves = empty list of DesktopPos
                         app.message = "Moved!"
@@ -72,7 +72,7 @@ func generate_valid_moves(tok: DesktopToken) list of DesktopPos
     result := empty list of DesktopPos
     for dx from -2 to 3
         for dy from -2 to 3
-            if dx == 0 and dy == 0
+            if dx equals 0 and dy equals 0
                 continue
             dist := abs(dx) + abs(dy)
             if dist > 0 and dist <= 2
