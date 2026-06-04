@@ -15,6 +15,8 @@ type WebServerConfig
     game_server_url string
     mercure_hub_url string
     mercure_topic_prefix string
+    mercure_enabled bool
+    sse_primary_mode bool
 
 func WebServerConfigFromEnv() WebServerConfig
     return WebServerConfig{
@@ -24,6 +26,8 @@ func WebServerConfigFromEnv() WebServerConfig
         game_server_url: env.GetOr("GAME_SERVER_URL", "http://localhost:8080"),
         mercure_hub_url: env.GetOr("MERCURE_HUB_URL", "http://localhost:3000/.well-known/mercure"),
         mercure_topic_prefix: env.GetOr("MERCURE_TOPIC_PREFIX", "https://api.game.com/game"),
+        mercure_enabled: env.GetOr("MERCURE_ENABLED", "") equals "true" or env.GetOr("MERCURE_PUBLISHER_JWT", "") isnt "",
+        sse_primary_mode: env.GetOr("SSE_PRIMARY_MODE", "false") equals "true",
     }
 
 type WebServer
@@ -70,7 +74,9 @@ func handleRoot on ws: reference WebServer(w: http.ResponseWriter, r: reference 
 func handleConfig on ws: reference WebServer(w: http.ResponseWriter, r: reference http.Request)
     config_data := map of string to any{
         "mercure_hub_url": ws.config.mercure_hub_url,
-        "mercure_topic_prefix": ws.config.mercure_topic_prefix,
+        "mercure_topic": ws.config.mercure_topic_prefix,
+        "mercure_enabled": ws.config.mercure_enabled,
+        "sse_primary_mode": ws.config.sse_primary_mode,
         "api_version": "1.0.0",
         "features": list of string{"mercure"},
     }

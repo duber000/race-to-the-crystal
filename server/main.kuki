@@ -10,7 +10,6 @@ import "stdlib/signal"
 import "strings"
 
 type ServerConfig
-    tcp_port int
     http_port int
     static_dir string
     jwt_secret string
@@ -18,7 +17,6 @@ type ServerConfig
 
 func ServerConfigFromEnv() ServerConfig
     return ServerConfig{
-        tcp_port: env.GetIntOrDefault("TCP_PORT", 5555),
         http_port: env.GetIntOrDefault("HTTP_PORT", 8080),
         static_dir: env.GetOr("STATIC_DIR", ""),
         jwt_secret: env.GetOr("JWT_SECRET_KEY", ""),
@@ -79,7 +77,6 @@ func Start on gs: reference GameServer
 
 func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
     mux.HandleFunc("/", gs.handleHTTP)
-    mux.HandleFunc("/api/config", gs.handleAPIConfig)
     mux.HandleFunc("/api/game/create", gs.handleCreateGameRoute)
     mux.HandleFunc("/api/game/\{game_id\}/join", gs.handleJoinGameRoute)
     mux.HandleFunc("/api/game/\{game_id\}/action", gs.handleActionRoute)
@@ -109,12 +106,6 @@ func handleHTTP on gs: reference GameServer(w: http.ResponseWriter, r: reference
         return
 
     http.ServeFile(w, r, file_path)
-
-func handleAPIConfig on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
-    config_data := gs.http_handler.GetConfig()
-    httphelper.JSON(w, config_data) onerr
-        log.Error("Failed to encode config JSON")
 
 func handleCreateGameRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
     httphelper.SetSecureHeaders(w)

@@ -2,7 +2,7 @@
 
 # Race to the Crystal
 
-A networked multiplayer strategy game for 2-4 players with Tron/Battlezone-style vector graphics. Play on desktop (2D/3D) or in your browser (3D web client).
+A networked multiplayer strategy game for 2-4 players with Tron/Battlezone-style vector graphics. Play on desktop (2D) or in your browser (3D web client).
 
 > **AI Disclosure**: This project was created with AI assistance for both code and assets.
 
@@ -10,7 +10,7 @@ A networked multiplayer strategy game for 2-4 players with Tron/Battlezone-style
 
 Race to the Crystal is a turn-based strategy game where players compete to capture a central crystal by deploying tokens across a 24x24 grid. Features:
 
-- **Desktop Client**: 2D top-down and 3D first-person modes (Python + Arcade + OpenGL)
+- **Desktop Client**: 2D top-down view (Kukicha + Ebitengine)
 - **Web Client**: Browser-based 3D view (JavaScript + Babylon.js)
 - **Network Multiplayer**: Desktop and web clients play together on the same server
 - **AI Players**: Multiple strategy modes (random, aggressive, defensive)
@@ -19,10 +19,10 @@ Race to the Crystal is a turn-based strategy game where players compete to captu
 
 ## Tech Stack
 
-- **Backend**: Python with asyncio, TCP/WebSocket, and HTTP REST (JWT Authentication) servers
-- **Desktop Client**: Arcade with OpenGL shaders
-- **Web Client**: Babylon.js 8 with Mercure (SSE) state synchronization
-- **Testing**: 475+ unit tests with pytest
+- **Backend**: Kukicha (compiles to Go) — HTTP/WebSocket + REST API with JWT authentication, built on `stdlib/http`
+- **Desktop Client**: Kukicha + Ebitengine (2D top-down)
+- **Web Client**: Babylon.js 8 with Mercure (SSE) state synchronization, WebSocket fallback
+- **Testing**: 61 Kukicha unit tests covering core game logic (`game/*_test.kuki`)
 
 ## Quick Start
 
@@ -52,7 +52,7 @@ make desktop-run
 **Start the unified server:**
 ```bash
 make web-server-run        # TODO: confirm unified-server entry point
-# Runs on ports 8888 (TCP) and 8080 (HTTP/WebSocket)
+# Serves the HTTP/WebSocket API + web client (default port 8080)
 ```
 
 **Option A: Desktop Client**
@@ -67,8 +67,8 @@ make desktop-run
 
 **Option C: AI Players**
 
-The AI clients are now Kukicha (`client/ai_client.kuki` for TCP, `client/http_ai_client.kuki`
-for HTTP/SSE), each with its own `func main`. No Makefile target wires them up yet.
+The AI clients are now Kukicha (`client/ai_client.kuki` for HTTP poll/SSE, `client/http_ai_client.kuki`
+a simpler HTTP/SSE variant), each with its own `func main`. No Makefile target wires them up yet.
 
 ```bash
 # TODO: confirm invocation — likely one of:
@@ -114,10 +114,10 @@ All client types (desktop, web, AI) can play together in the same game!
 
 ```
 race-to-the-crystal/
-├── game/          # Core game logic (no rendering dependencies)
-├── client/        # Desktop client (Arcade + OpenGL)
-├── server/        # Unified server (TCP + HTTP/WebSocket)
-├── web_server/    # Web client (Babylon.js frontend)
+├── game/          # Core game logic + *_test.kuki unit tests (no rendering deps)
+├── client/        # Desktop client (Kukicha + Ebitengine) and AI clients
+├── server/        # Game server (HTTP/WebSocket + REST, JWT auth)
+├── web_server/    # Web client host (Babylon.js frontend + Mercure config)
 ├── network/       # Protocol and connection handling
 ├── shared/        # Constants and enums
 ├── deployment/    # Container deployment configs
@@ -125,7 +125,7 @@ race-to-the-crystal/
 │   ├── dockerfiles/ # Container images
 │   ├── development/ # Dev quadlets
 │   └── production/  # Production quadlets
-├── tests/         # 475+ unit tests
+├── tests/         # Legacy pytest suite (being ported to *_test.kuki)
 └── docs/          # Detailed documentation
 ```
 
