@@ -34,6 +34,10 @@ const (
 	LogLevelEmergency LogLevel = "emergency"
 )
 
+func AllLogLevel() []LogLevel {
+	return []LogLevel{LogLevelDebug, LogLevelInfo, LogLevelNotice, LogLevelWarning, LogLevelError, LogLevelCritical, LogLevelAlert, LogLevelEmergency}
+}
+
 func (e LogLevel) String() string {
 	return string(e)
 }
@@ -69,6 +73,10 @@ const (
 	ElicitActionDecline ElicitAction = "decline"
 	ElicitActionCancel  ElicitAction = "cancel"
 )
+
+func AllElicitAction() []ElicitAction {
+	return []ElicitAction{ElicitActionAccept, ElicitActionDecline, ElicitActionCancel}
+}
 
 func (e ElicitAction) String() string {
 	return string(e)

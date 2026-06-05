@@ -35,7 +35,7 @@ func NewHTTPHandler(coord: reference GameCoordinator, lobby_mgr: reference Lobby
     }
 
 func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of string to any, client_ip: string) APIResponse
-    allowed, _ := h.rate_limiter.CheckConnection(client_ip)
+    allowed := h.rate_limiter.CheckConnection(client_ip)
     if not allowed
         return APIResponse{
             success: false,
@@ -120,7 +120,7 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
 
     player_id := payload.player_id
 
-    action_allowed, _ := h.rate_limiter.CheckAction(player_id)
+    action_allowed := h.rate_limiter.CheckAction(player_id)
     if not action_allowed
         return APIResponse{
             success: false,
@@ -197,9 +197,7 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
             })
             h.lobby_mgr.finish_game(game_id)
 
-    result_any := empty map of string to any
-    if result_data isnt empty
-        result_any = actionResultDataToMap(dereference result_data)
+    result_any := actionResultDataToMap(result_data)
 
     return APIResponse{
         success: success,
@@ -272,7 +270,7 @@ func HandleListGames on h: reference HTTPHandler APIResponse
     return APIResponse{success: true, message: "ok", data: map of string to any{"games": lobbies}}
 
 func HandleCreateGame on h: reference HTTPHandler(auth_header: string, body: map of string to any, client_ip: string) APIResponse
-    creation_allowed, _ := h.rate_limiter.CheckGameCreation(client_ip)
+    creation_allowed := h.rate_limiter.CheckGameCreation(client_ip)
     if not creation_allowed
         return APIResponse{
             success: false,

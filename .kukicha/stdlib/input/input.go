@@ -147,6 +147,10 @@ const (
 	FieldKindChoose  FieldKind = 2
 )
 
+func AllFieldKind() []FieldKind {
+	return []FieldKind{FieldKindText, FieldKindConfirm, FieldKindChoose}
+}
+
 func (e FieldKind) String() string {
 	switch e {
 	case FieldKindText:

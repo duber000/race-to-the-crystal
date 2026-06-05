@@ -18,6 +18,10 @@ const (
 	StyleMarkdown Style = "markdown"
 )
 
+func AllStyle() []Style {
+	return []Style{StylePlain, StyleBox, StyleMarkdown}
+}
+
 func (e Style) String() string {
 	return string(e)
 }

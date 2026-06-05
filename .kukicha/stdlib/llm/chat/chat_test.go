@@ -229,6 +229,10 @@ const (
 	_AskJSONVerdictIgnore   _AskJSONVerdict = "ignore"
 )
 
+func All_AskJSONVerdict() []_AskJSONVerdict {
+	return []_AskJSONVerdict{_AskJSONVerdictRestart, _AskJSONVerdictRollback, _AskJSONVerdictIgnore}
+}
+
 func (e _AskJSONVerdict) String() string {
 	return string(e)
 }

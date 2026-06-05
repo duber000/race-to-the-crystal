@@ -23,6 +23,10 @@ const (
 	LevelFatal Level = 4
 )
 
+func AllLevel() []Level {
+	return []Level{LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal}
+}
+
 func (e Level) String() string {
 	switch e {
 	case LevelDebug:
@@ -47,6 +51,10 @@ const (
 	FormatText Format = "text"
 	FormatJSON Format = "json"
 )
+
+func AllFormat() []Format {
+	return []Format{FormatText, FormatJSON}
+}
 
 func (e Format) String() string {
 	return string(e)

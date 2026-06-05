@@ -441,6 +441,10 @@ const (
 	ThinkingEffortMax    ThinkingEffort = "max"
 )
 
+func AllThinkingEffort() []ThinkingEffort {
+	return []ThinkingEffort{ThinkingEffortLow, ThinkingEffortMedium, ThinkingEffortHigh, ThinkingEffortMax}
+}
+
 func (e ThinkingEffort) String() string {
 	return string(e)
 }
@@ -483,6 +487,10 @@ const (
 	InferenceRegionGlobal InferenceRegion = "global"
 	InferenceRegionUS     InferenceRegion = "us"
 )
+
+func AllInferenceRegion() []InferenceRegion {
+	return []InferenceRegion{InferenceRegionGlobal, InferenceRegionUS}
+}
 
 func (e InferenceRegion) String() string {
 	return string(e)

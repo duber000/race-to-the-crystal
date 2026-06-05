@@ -53,6 +53,10 @@ const (
 	HTTPMethodOPTIONS HTTPMethod = "OPTIONS"
 )
 
+func AllHTTPMethod() []HTTPMethod {
+	return []HTTPMethod{HTTPMethodGET, HTTPMethodPOST, HTTPMethodPUT, HTTPMethodPATCH, HTTPMethodDELETE, HTTPMethodHEAD, HTTPMethodOPTIONS}
+}
+
 func (e HTTPMethod) String() string {
 	return string(e)
 }

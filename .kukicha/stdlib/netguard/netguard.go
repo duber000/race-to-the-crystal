@@ -19,6 +19,10 @@ const (
 	GuardModeBlock GuardMode = 1
 )
 
+func AllGuardMode() []GuardMode {
+	return []GuardMode{GuardModeAllow, GuardModeBlock}
+}
+
 func (e GuardMode) String() string {
 	switch e {
 	case GuardModeAllow:

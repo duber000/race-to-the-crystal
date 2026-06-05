@@ -27,6 +27,10 @@ const (
 	MessageRoleTool      MessageRole = "tool"
 )
 
+func AllMessageRole() []MessageRole {
+	return []MessageRole{MessageRoleSystem, MessageRoleUser, MessageRoleAssistant, MessageRoleTool}
+}
+
 func (e MessageRole) String() string {
 	return string(e)
 }
@@ -56,6 +60,10 @@ const (
 	FinishReasonContentFilter FinishReason = "content_filter"
 	FinishReasonFunctionCall  FinishReason = "function_call"
 )
+
+func AllFinishReason() []FinishReason {
+	return []FinishReason{FinishReasonStop, FinishReasonLength, FinishReasonToolCalls, FinishReasonContentFilter, FinishReasonFunctionCall}
+}
 
 func (e FinishReason) String() string {
 	return string(e)

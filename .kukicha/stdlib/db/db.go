@@ -43,6 +43,10 @@ const (
 	IsolationLevelSerializable    IsolationLevel = "serializable"
 )
 
+func AllIsolationLevel() []IsolationLevel {
+	return []IsolationLevel{IsolationLevelDefault, IsolationLevelReadUncommitted, IsolationLevelReadCommitted, IsolationLevelRepeatableRead, IsolationLevelSerializable}
+}
+
 func (e IsolationLevel) String() string {
 	return string(e)
 }

@@ -15,6 +15,10 @@ const (
 	StrategyExponential Strategy = "exponential"
 )
 
+func AllStrategy() []Strategy {
+	return []Strategy{StrategyLinear, StrategyExponential}
+}
+
 func (e Strategy) String() string {
 	return string(e)
 }

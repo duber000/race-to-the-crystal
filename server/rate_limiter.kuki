@@ -116,17 +116,17 @@ func get_game_creation_counter on rl: reference RateLimiter(player_id: string) r
     rl.player_game_creation[player_id] = reference of new_counter
     return rl.player_game_creation[player_id]
 
-func CheckConnection on rl: reference RateLimiter(ip_address: string) (bool, string)
+func CheckConnection on rl: reference RateLimiter(ip_address: string) bool
     counter := rl.get_ip_counter(ip_address)
     if not counter.TryEvent()
-        return false, "Too many connections from this IP"
+        return false
     current := 0
     count, has := rl.active_connections[ip_address]
     if has
         current = count
     if current >= MAX_CONNECTIONS_PER_IP
-        return false, "Maximum connections exceeded for this IP"
-    return true, ""
+        return false
+    return true
 
 func ReleaseConnection on rl: reference RateLimiter(ip_address: string)
     count, has := rl.active_connections[ip_address]
@@ -140,17 +140,17 @@ func RecordConnection on rl: reference RateLimiter(ip_address: string)
     else
         rl.active_connections[ip_address] = 1
 
-func CheckAction on rl: reference RateLimiter(player_id: string) (bool, string)
+func CheckAction on rl: reference RateLimiter(player_id: string) bool
     bucket := rl.get_action_bucket(player_id)
     if not bucket.Consume(1)
-        return false, "Action rate limit exceeded"
-    return true, ""
+        return false
+    return true
 
-func CheckGameCreation on rl: reference RateLimiter(player_id: string) (bool, string)
+func CheckGameCreation on rl: reference RateLimiter(player_id: string) bool
     counter := rl.get_game_creation_counter(player_id)
     if not counter.TryEvent()
-        return false, "Game creation rate limit exceeded"
-    return true, ""
+        return false
+    return true
 
 func CleanupPlayer on rl: reference RateLimiter(player_id: string)
     delete rl.player_actions[player_id]

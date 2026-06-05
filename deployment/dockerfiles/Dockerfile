@@ -1,66 +1,56 @@
-# Race to the Crystal - Unified Server Dockerfile
-# Supports both desktop clients (TCP) and web clients (HTTP/WebSocket/Mercure)
+# Race to the Crystal - Game Server
+# Multi-stage build: transpile Kukicha → Go, compile static binary, copy to slim runtime
 
-FROM python:3.14-slim
+FROM golang:1.26.4-bookworm AS builder
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    UV_VERSION=0.4.0 \
-    # Default server ports
-    TCP_PORT=8888 \
-    HTTP_PORT=8080 \
-    # Mercure configuration (override these at runtime)
-    MERCURE_HUB_URL=http://localhost:3000/.well-known/mercure \
-    MERCURE_PUBLISHER_JWT="" \
-    MERCURE_TOPIC_PREFIX=https://api.game.com/game
+ARG KUKICHA_VERSION=v0.48.3
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+# Install kukicha compiler
+RUN go install github.com/kukichalang/kukicha/cmd/kukicha@${KUKICHA_VERSION}
 
-# Install uv package manager
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    mv /root/.local/bin/uv /usr/local/bin/uv && \
-    chmod +x /usr/local/bin/uv
+WORKDIR /src
 
-# Set working directory
-WORKDIR /app
+# Copy module files and vendored stdlib first for layer caching
+COPY go.mod go.sum ./
+COPY .kukicha/ .kukicha/
+RUN go mod download
 
-# Copy project files
-COPY pyproject.toml uv.lock ./
-COPY README.md ./
-
-# Copy source code
+# Copy only the packages the game server depends on
 COPY game/ game/
-COPY client/ client/
 COPY shared/ shared/
 COPY server/ server/
-COPY network/ network/
-COPY web_server/ web_server/
-COPY docs/ docs/
 
-# Install Python dependencies
-RUN uv sync --frozen
+# Remove stale transpiled Go files so kukicha regenerates from .kuki source
+RUN find game/ shared/ server/ -name 'main.go' -delete
 
-# Download Babylon.js (gitignored, not included in repo)
-# Strip sourceMappingURL comments to avoid 404s for .map files in browser devtools
-RUN curl -sL -o web_server/static/babylon.js https://cdn.babylonjs.com/babylon.js && \
-    curl -sL -o web_server/static/babylonjs.loaders.min.js https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js && \
-    curl -sL -o web_server/static/babylon.gui.min.js https://cdn.babylonjs.com/gui/babylon.gui.min.js && \
-    sed -i 's|//# sourceMappingURL=.*||g' web_server/static/babylon.js web_server/static/babylonjs.loaders.min.js web_server/static/babylon.gui.min.js
+# Transpile .kuki → .go per package; disable toolchain re-exec and pin-mismatch noise in CI
+RUN KUKICHA_TOOLCHAIN=local KUKICHA_DISABLE_STDLIB_PIN_CHECK=1 kukicha build ./shared/constants/ && \
+    KUKICHA_TOOLCHAIN=local KUKICHA_DISABLE_STDLIB_PIN_CHECK=1 kukicha build ./shared/enums/ && \
+    KUKICHA_TOOLCHAIN=local KUKICHA_DISABLE_STDLIB_PIN_CHECK=1 kukicha build ./shared/errs/ && \
+    KUKICHA_TOOLCHAIN=local KUKICHA_DISABLE_STDLIB_PIN_CHECK=1 kukicha build ./shared/types/ && \
+    KUKICHA_TOOLCHAIN=local KUKICHA_DISABLE_STDLIB_PIN_CHECK=1 kukicha build ./game/ && \
+    KUKICHA_TOOLCHAIN=local KUKICHA_DISABLE_STDLIB_PIN_CHECK=1 kukicha build ./server/
 
-# Expose ports
-# 8888: TCP port for desktop clients
-# 8080: HTTP/WebSocket port for web clients
-EXPOSE 8888 8080
+# Compile a static binary to a known path
+RUN CGO_ENABLED=0 GOOS=linux go build -o /game-server ./server/
 
-# Health check
+
+FROM debian:bookworm-slim
+
+RUN adduser --disabled-password --gecos "" appuser && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /game-server /usr/local/bin/game-server
+
+USER appuser
+
+ENV HTTP_PORT=8080
+
+EXPOSE 8080
+
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${HTTP_PORT}/ || exit 1
+    CMD curl -sf http://localhost:${HTTP_PORT}/api/games || exit 1
 
-# Default command: run unified server
-CMD ["uv", "run", "race-server", "--unified", "--host", "0.0.0.0", "--port", "8888", "--http-port", "8080"]
+CMD ["/usr/local/bin/game-server"]

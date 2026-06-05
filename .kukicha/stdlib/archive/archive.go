@@ -282,401 +282,401 @@ func extractZip(archivePath string, dest string, maxBytes int64) error {
 //line stdlib/archive/archive.kuki:172
 			return err_11
 		}
-//line stdlib/archive/archive.kuki:174
+//line stdlib/archive/archive.kuki:176
 		if f.FileInfo().IsDir() {
-//line stdlib/archive/archive.kuki:175
-//line stdlib/archive/archive.kuki:175
-			err_12 := os.MkdirAll(target, f.Mode())
-//line stdlib/archive/archive.kuki:175
+//line stdlib/archive/archive.kuki:177
+//line stdlib/archive/archive.kuki:177
+			err_12 := os.MkdirAll(target, f.Mode().Perm())
+//line stdlib/archive/archive.kuki:177
 			if err_12 != nil {
-//line stdlib/archive/archive.kuki:175
+//line stdlib/archive/archive.kuki:177
 				return err_12
 			}
-//line stdlib/archive/archive.kuki:176
+//line stdlib/archive/archive.kuki:178
 			continue
 		}
-//line stdlib/archive/archive.kuki:178
-//line stdlib/archive/archive.kuki:178
+//line stdlib/archive/archive.kuki:180
+//line stdlib/archive/archive.kuki:180
 		err_13 := os.MkdirAll(filepath.Dir(target), 0o755)
-//line stdlib/archive/archive.kuki:178
+//line stdlib/archive/archive.kuki:180
 		if err_13 != nil {
-//line stdlib/archive/archive.kuki:178
+//line stdlib/archive/archive.kuki:180
 			return err_13
 		}
-//line stdlib/archive/archive.kuki:180
+//line stdlib/archive/archive.kuki:182
 		rc, err_14 := f.Open()
-//line stdlib/archive/archive.kuki:180
+//line stdlib/archive/archive.kuki:182
 		if err_14 != nil {
-//line stdlib/archive/archive.kuki:180
+//line stdlib/archive/archive.kuki:182
 			return err_14
 		}
-//line stdlib/archive/archive.kuki:181
-		out, openErr := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-//line stdlib/archive/archive.kuki:182
-		if openErr != nil {
 //line stdlib/archive/archive.kuki:183
-			rc.Close()
+		out, openErr := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode().Perm())
 //line stdlib/archive/archive.kuki:184
+		if openErr != nil {
+//line stdlib/archive/archive.kuki:185
+			rc.Close()
+//line stdlib/archive/archive.kuki:186
 			return openErr
 		}
-//line stdlib/archive/archive.kuki:185
-		written, copyErr := copyCapped(out, rc, remaining)
-//line stdlib/archive/archive.kuki:186
-		rc.Close()
 //line stdlib/archive/archive.kuki:187
-		out.Close()
+		written, copyErr := copyCapped(out, rc, remaining)
 //line stdlib/archive/archive.kuki:188
-		if copyErr != nil {
+		rc.Close()
 //line stdlib/archive/archive.kuki:189
+		out.Close()
+//line stdlib/archive/archive.kuki:190
+		if copyErr != nil {
+//line stdlib/archive/archive.kuki:191
 			return copyErr
 		}
-//line stdlib/archive/archive.kuki:190
+//line stdlib/archive/archive.kuki:192
 		remaining = remaining - written
 	}
-//line stdlib/archive/archive.kuki:191
+//line stdlib/archive/archive.kuki:193
 	return nil
 }
 
-//line stdlib/archive/archive.kuki:193
+//line stdlib/archive/archive.kuki:195
 func extractTarGz(archivePath string, dest string, maxBytes int64) error {
-//line stdlib/archive/archive.kuki:194
-//line stdlib/archive/archive.kuki:194
+//line stdlib/archive/archive.kuki:196
+//line stdlib/archive/archive.kuki:196
 	err_15 := os.MkdirAll(dest, 0o755)
-//line stdlib/archive/archive.kuki:194
+//line stdlib/archive/archive.kuki:196
 	if err_15 != nil {
-//line stdlib/archive/archive.kuki:194
+//line stdlib/archive/archive.kuki:196
 		return err_15
 	}
-//line stdlib/archive/archive.kuki:196
+//line stdlib/archive/archive.kuki:198
 	f, err_16 := os.Open(archivePath)
-//line stdlib/archive/archive.kuki:196
+//line stdlib/archive/archive.kuki:198
 	if err_16 != nil {
-//line stdlib/archive/archive.kuki:196
+//line stdlib/archive/archive.kuki:198
 		return err_16
 	}
-//line stdlib/archive/archive.kuki:197
+//line stdlib/archive/archive.kuki:199
 	defer f.Close()
-//line stdlib/archive/archive.kuki:199
+//line stdlib/archive/archive.kuki:201
 	gz, err_17 := gzip.NewReader(f)
-//line stdlib/archive/archive.kuki:199
+//line stdlib/archive/archive.kuki:201
 	if err_17 != nil {
-//line stdlib/archive/archive.kuki:199
+//line stdlib/archive/archive.kuki:201
 		return err_17
 	}
-//line stdlib/archive/archive.kuki:200
-	defer gz.Close()
 //line stdlib/archive/archive.kuki:202
-	tr := tar.NewReader(gz)
-//line stdlib/archive/archive.kuki:203
-	remaining := maxBytes
+	defer gz.Close()
 //line stdlib/archive/archive.kuki:204
-	for {
+	tr := tar.NewReader(gz)
 //line stdlib/archive/archive.kuki:205
-		hdr, hdrErr := tr.Next()
+	remaining := maxBytes
 //line stdlib/archive/archive.kuki:206
-		if errors.Is(hdrErr, io.EOF) {
+	for {
 //line stdlib/archive/archive.kuki:207
+		hdr, hdrErr := tr.Next()
+//line stdlib/archive/archive.kuki:208
+		if errors.Is(hdrErr, io.EOF) {
+//line stdlib/archive/archive.kuki:209
 			break
 		}
-//line stdlib/archive/archive.kuki:208
+//line stdlib/archive/archive.kuki:210
 		if hdrErr != nil {
-//line stdlib/archive/archive.kuki:209
+//line stdlib/archive/archive.kuki:211
 			return hdrErr
 		}
-//line stdlib/archive/archive.kuki:211
+//line stdlib/archive/archive.kuki:213
 		target, err_18 := safeJoin(dest, hdr.Name)
-//line stdlib/archive/archive.kuki:211
+//line stdlib/archive/archive.kuki:213
 		if err_18 != nil {
-//line stdlib/archive/archive.kuki:211
+//line stdlib/archive/archive.kuki:213
 			return err_18
 		}
-//line stdlib/archive/archive.kuki:213
+//line stdlib/archive/archive.kuki:217
 		if hdr.Typeflag == tar.TypeDir {
-//line stdlib/archive/archive.kuki:214
-//line stdlib/archive/archive.kuki:214
-			err_19 := os.MkdirAll(target, hdr.FileInfo().Mode())
-//line stdlib/archive/archive.kuki:214
+//line stdlib/archive/archive.kuki:218
+//line stdlib/archive/archive.kuki:218
+			err_19 := os.MkdirAll(target, hdr.FileInfo().Mode().Perm())
+//line stdlib/archive/archive.kuki:218
 			if err_19 != nil {
-//line stdlib/archive/archive.kuki:214
+//line stdlib/archive/archive.kuki:218
 				return err_19
 			}
-//line stdlib/archive/archive.kuki:215
+//line stdlib/archive/archive.kuki:219
 			continue
 		}
-//line stdlib/archive/archive.kuki:217
+//line stdlib/archive/archive.kuki:221
 		if hdr.Typeflag != tar.TypeReg {
-//line stdlib/archive/archive.kuki:218
+//line stdlib/archive/archive.kuki:222
 			continue
 		}
-//line stdlib/archive/archive.kuki:220
-//line stdlib/archive/archive.kuki:220
+//line stdlib/archive/archive.kuki:224
+//line stdlib/archive/archive.kuki:224
 		err_20 := os.MkdirAll(filepath.Dir(target), 0o755)
-//line stdlib/archive/archive.kuki:220
+//line stdlib/archive/archive.kuki:224
 		if err_20 != nil {
-//line stdlib/archive/archive.kuki:220
+//line stdlib/archive/archive.kuki:224
 			return err_20
 		}
-//line stdlib/archive/archive.kuki:222
-		out, err_21 := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, hdr.FileInfo().Mode())
-//line stdlib/archive/archive.kuki:222
+//line stdlib/archive/archive.kuki:226
+		out, err_21 := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, hdr.FileInfo().Mode().Perm())
+//line stdlib/archive/archive.kuki:226
 		if err_21 != nil {
-//line stdlib/archive/archive.kuki:222
+//line stdlib/archive/archive.kuki:226
 			return err_21
 		}
-//line stdlib/archive/archive.kuki:223
+//line stdlib/archive/archive.kuki:227
 		written, copyErr := copyCapped(out, tr, remaining)
-//line stdlib/archive/archive.kuki:224
+//line stdlib/archive/archive.kuki:228
 		out.Close()
-//line stdlib/archive/archive.kuki:225
+//line stdlib/archive/archive.kuki:229
 		if copyErr != nil {
-//line stdlib/archive/archive.kuki:226
+//line stdlib/archive/archive.kuki:230
 			return copyErr
 		}
-//line stdlib/archive/archive.kuki:227
+//line stdlib/archive/archive.kuki:231
 		remaining = remaining - written
 	}
-//line stdlib/archive/archive.kuki:228
+//line stdlib/archive/archive.kuki:232
 	return nil
 }
 
-//line stdlib/archive/archive.kuki:230
+//line stdlib/archive/archive.kuki:234
 func listZip(archivePath string) ([]Entry, error) {
-//line stdlib/archive/archive.kuki:231
+//line stdlib/archive/archive.kuki:235
 	r, err_22 := zip.OpenReader(archivePath)
-//line stdlib/archive/archive.kuki:231
+//line stdlib/archive/archive.kuki:235
 	if err_22 != nil {
-//line stdlib/archive/archive.kuki:231
+//line stdlib/archive/archive.kuki:235
 		return []Entry{}, err_22
 	}
-//line stdlib/archive/archive.kuki:232
-	defer r.Close()
-//line stdlib/archive/archive.kuki:234
-	entries := []Entry{}
-//line stdlib/archive/archive.kuki:235
-	for _, f := range r.File {
 //line stdlib/archive/archive.kuki:236
+	defer r.Close()
+//line stdlib/archive/archive.kuki:238
+	entries := []Entry{}
+//line stdlib/archive/archive.kuki:239
+	for _, f := range r.File {
+//line stdlib/archive/archive.kuki:240
 		info := f.FileInfo()
-//line stdlib/archive/archive.kuki:237
+//line stdlib/archive/archive.kuki:241
 		entries = append(entries, Entry{Name: f.Name, Size: info.Size(), Mode: info.Mode(), ModTime: info.ModTime(), IsDir: info.IsDir()})
 	}
-//line stdlib/archive/archive.kuki:244
+//line stdlib/archive/archive.kuki:248
 	return entries, nil
 }
 
-//line stdlib/archive/archive.kuki:246
+//line stdlib/archive/archive.kuki:250
 func listTarGz(archivePath string) ([]Entry, error) {
-//line stdlib/archive/archive.kuki:247
+//line stdlib/archive/archive.kuki:251
 	f, err_23 := os.Open(archivePath)
-//line stdlib/archive/archive.kuki:247
+//line stdlib/archive/archive.kuki:251
 	if err_23 != nil {
-//line stdlib/archive/archive.kuki:247
+//line stdlib/archive/archive.kuki:251
 		return []Entry{}, err_23
 	}
-//line stdlib/archive/archive.kuki:248
+//line stdlib/archive/archive.kuki:252
 	defer f.Close()
-//line stdlib/archive/archive.kuki:250
+//line stdlib/archive/archive.kuki:254
 	gz, err_24 := gzip.NewReader(f)
-//line stdlib/archive/archive.kuki:250
+//line stdlib/archive/archive.kuki:254
 	if err_24 != nil {
-//line stdlib/archive/archive.kuki:250
+//line stdlib/archive/archive.kuki:254
 		return []Entry{}, err_24
 	}
-//line stdlib/archive/archive.kuki:251
-	defer gz.Close()
-//line stdlib/archive/archive.kuki:253
-	tr := tar.NewReader(gz)
-//line stdlib/archive/archive.kuki:254
-	entries := []Entry{}
 //line stdlib/archive/archive.kuki:255
-	for {
-//line stdlib/archive/archive.kuki:256
-		hdr, hdrErr := tr.Next()
+	defer gz.Close()
 //line stdlib/archive/archive.kuki:257
-		if errors.Is(hdrErr, io.EOF) {
+	tr := tar.NewReader(gz)
 //line stdlib/archive/archive.kuki:258
+	entries := []Entry{}
+//line stdlib/archive/archive.kuki:259
+	for {
+//line stdlib/archive/archive.kuki:260
+		hdr, hdrErr := tr.Next()
+//line stdlib/archive/archive.kuki:261
+		if errors.Is(hdrErr, io.EOF) {
+//line stdlib/archive/archive.kuki:262
 			break
 		}
-//line stdlib/archive/archive.kuki:259
+//line stdlib/archive/archive.kuki:263
 		if hdrErr != nil {
-//line stdlib/archive/archive.kuki:260
+//line stdlib/archive/archive.kuki:264
 			return nil, hdrErr
 		}
-//line stdlib/archive/archive.kuki:261
+//line stdlib/archive/archive.kuki:265
 		fi := hdr.FileInfo()
-//line stdlib/archive/archive.kuki:262
+//line stdlib/archive/archive.kuki:266
 		entries = append(entries, Entry{Name: hdr.Name, Size: hdr.Size, Mode: fi.Mode(), ModTime: hdr.ModTime, IsDir: fi.IsDir()})
 	}
-//line stdlib/archive/archive.kuki:269
+//line stdlib/archive/archive.kuki:273
 	return entries, nil
 }
 
-//line stdlib/archive/archive.kuki:271
+//line stdlib/archive/archive.kuki:275
 func readEntryZip(archivePath string, name string) ([]byte, error) {
-//line stdlib/archive/archive.kuki:272
+//line stdlib/archive/archive.kuki:276
 	r, err_25 := zip.OpenReader(archivePath)
-//line stdlib/archive/archive.kuki:272
+//line stdlib/archive/archive.kuki:276
 	if err_25 != nil {
-//line stdlib/archive/archive.kuki:272
+//line stdlib/archive/archive.kuki:276
 		return []byte{}, err_25
 	}
-//line stdlib/archive/archive.kuki:273
-	defer r.Close()
-//line stdlib/archive/archive.kuki:275
-	for _, f := range r.File {
-//line stdlib/archive/archive.kuki:276
-		if f.Name == name {
 //line stdlib/archive/archive.kuki:277
+	defer r.Close()
+//line stdlib/archive/archive.kuki:279
+	for _, f := range r.File {
+//line stdlib/archive/archive.kuki:280
+		if f.Name == name {
+//line stdlib/archive/archive.kuki:281
 			if f.FileInfo().IsDir() {
-//line stdlib/archive/archive.kuki:278
+//line stdlib/archive/archive.kuki:282
 				return nil, fmt.Errorf("archive: entry is a directory: %v", name)
 			}
-//line stdlib/archive/archive.kuki:279
+//line stdlib/archive/archive.kuki:283
 			rc, err_26 := f.Open()
-//line stdlib/archive/archive.kuki:279
+//line stdlib/archive/archive.kuki:283
 			if err_26 != nil {
-//line stdlib/archive/archive.kuki:279
+//line stdlib/archive/archive.kuki:283
 				return []byte{}, err_26
 			}
-//line stdlib/archive/archive.kuki:280
+//line stdlib/archive/archive.kuki:284
 			defer rc.Close()
-//line stdlib/archive/archive.kuki:281
+//line stdlib/archive/archive.kuki:285
 			return io.ReadAll(rc)
 		}
 	}
-//line stdlib/archive/archive.kuki:282
+//line stdlib/archive/archive.kuki:286
 	return nil, fmt.Errorf("archive: entry not found: %v", name)
 }
 
-//line stdlib/archive/archive.kuki:284
+//line stdlib/archive/archive.kuki:288
 func readEntryTarGz(archivePath string, name string) ([]byte, error) {
-//line stdlib/archive/archive.kuki:285
+//line stdlib/archive/archive.kuki:289
 	f, err_27 := os.Open(archivePath)
-//line stdlib/archive/archive.kuki:285
+//line stdlib/archive/archive.kuki:289
 	if err_27 != nil {
-//line stdlib/archive/archive.kuki:285
+//line stdlib/archive/archive.kuki:289
 		return []byte{}, err_27
 	}
-//line stdlib/archive/archive.kuki:286
+//line stdlib/archive/archive.kuki:290
 	defer f.Close()
-//line stdlib/archive/archive.kuki:288
+//line stdlib/archive/archive.kuki:292
 	gz, err_28 := gzip.NewReader(f)
-//line stdlib/archive/archive.kuki:288
+//line stdlib/archive/archive.kuki:292
 	if err_28 != nil {
-//line stdlib/archive/archive.kuki:288
+//line stdlib/archive/archive.kuki:292
 		return []byte{}, err_28
 	}
-//line stdlib/archive/archive.kuki:289
-	defer gz.Close()
-//line stdlib/archive/archive.kuki:291
-	tr := tar.NewReader(gz)
-//line stdlib/archive/archive.kuki:292
-	for {
 //line stdlib/archive/archive.kuki:293
-		hdr, hdrErr := tr.Next()
-//line stdlib/archive/archive.kuki:294
-		if errors.Is(hdrErr, io.EOF) {
+	defer gz.Close()
 //line stdlib/archive/archive.kuki:295
+	tr := tar.NewReader(gz)
+//line stdlib/archive/archive.kuki:296
+	for {
+//line stdlib/archive/archive.kuki:297
+		hdr, hdrErr := tr.Next()
+//line stdlib/archive/archive.kuki:298
+		if errors.Is(hdrErr, io.EOF) {
+//line stdlib/archive/archive.kuki:299
 			break
 		}
-//line stdlib/archive/archive.kuki:296
+//line stdlib/archive/archive.kuki:300
 		if hdrErr != nil {
-//line stdlib/archive/archive.kuki:297
+//line stdlib/archive/archive.kuki:301
 			return nil, hdrErr
 		}
-//line stdlib/archive/archive.kuki:298
+//line stdlib/archive/archive.kuki:302
 		if hdr.Name == name {
-//line stdlib/archive/archive.kuki:299
+//line stdlib/archive/archive.kuki:303
 			if hdr.FileInfo().IsDir() {
-//line stdlib/archive/archive.kuki:300
+//line stdlib/archive/archive.kuki:304
 				return nil, fmt.Errorf("archive: entry is a directory: %v", name)
 			}
-//line stdlib/archive/archive.kuki:301
+//line stdlib/archive/archive.kuki:305
 			return io.ReadAll(tr)
 		}
 	}
-//line stdlib/archive/archive.kuki:302
+//line stdlib/archive/archive.kuki:306
 	return nil, fmt.Errorf("archive: entry not found: %v", name)
 }
 
-//line stdlib/archive/archive.kuki:304
+//line stdlib/archive/archive.kuki:308
 func writeTarDir(tw *tar.Writer, root string, dir string) error {
-//line stdlib/archive/archive.kuki:305
+//line stdlib/archive/archive.kuki:309
 	entries, err_29 := os.ReadDir(dir)
-//line stdlib/archive/archive.kuki:305
+//line stdlib/archive/archive.kuki:309
 	if err_29 != nil {
-//line stdlib/archive/archive.kuki:305
+//line stdlib/archive/archive.kuki:309
 		return err_29
 	}
-//line stdlib/archive/archive.kuki:306
+//line stdlib/archive/archive.kuki:310
 	for _, e := range entries {
-//line stdlib/archive/archive.kuki:307
+//line stdlib/archive/archive.kuki:311
 		full := filepath.Join(dir, e.Name())
-//line stdlib/archive/archive.kuki:308
+//line stdlib/archive/archive.kuki:312
 		info, err_30 := e.Info()
-//line stdlib/archive/archive.kuki:308
+//line stdlib/archive/archive.kuki:312
 		if err_30 != nil {
-//line stdlib/archive/archive.kuki:308
+//line stdlib/archive/archive.kuki:312
 			return err_30
 		}
-//line stdlib/archive/archive.kuki:309
+//line stdlib/archive/archive.kuki:313
 		rel, err_31 := filepath.Rel(root, full)
-//line stdlib/archive/archive.kuki:309
+//line stdlib/archive/archive.kuki:313
 		if err_31 != nil {
-//line stdlib/archive/archive.kuki:309
+//line stdlib/archive/archive.kuki:313
 			return err_31
 		}
-//line stdlib/archive/archive.kuki:311
+//line stdlib/archive/archive.kuki:315
 		hdr, err_32 := tar.FileInfoHeader(info, "")
-//line stdlib/archive/archive.kuki:311
+//line stdlib/archive/archive.kuki:315
 		if err_32 != nil {
-//line stdlib/archive/archive.kuki:311
+//line stdlib/archive/archive.kuki:315
 			return err_32
 		}
-//line stdlib/archive/archive.kuki:312
+//line stdlib/archive/archive.kuki:316
 		hdr.Name = filepath.ToSlash(rel)
-//line stdlib/archive/archive.kuki:313
-//line stdlib/archive/archive.kuki:313
+//line stdlib/archive/archive.kuki:317
+//line stdlib/archive/archive.kuki:317
 		err_33 := tw.WriteHeader(hdr)
-//line stdlib/archive/archive.kuki:313
+//line stdlib/archive/archive.kuki:317
 		if err_33 != nil {
-//line stdlib/archive/archive.kuki:313
+//line stdlib/archive/archive.kuki:317
 			return err_33
 		}
-//line stdlib/archive/archive.kuki:315
+//line stdlib/archive/archive.kuki:319
 		if info.IsDir() {
-//line stdlib/archive/archive.kuki:316
-//line stdlib/archive/archive.kuki:316
+//line stdlib/archive/archive.kuki:320
+//line stdlib/archive/archive.kuki:320
 			err_34 := writeTarDir(tw, root, full)
-//line stdlib/archive/archive.kuki:316
+//line stdlib/archive/archive.kuki:320
 			if err_34 != nil {
-//line stdlib/archive/archive.kuki:316
+//line stdlib/archive/archive.kuki:320
 				return err_34
 			}
-//line stdlib/archive/archive.kuki:317
+//line stdlib/archive/archive.kuki:321
 			continue
-		}
-//line stdlib/archive/archive.kuki:319
-		if !info.Mode().IsRegular() {
-//line stdlib/archive/archive.kuki:320
-			continue
-		}
-//line stdlib/archive/archive.kuki:322
-		src, err_35 := os.Open(full)
-//line stdlib/archive/archive.kuki:322
-		if err_35 != nil {
-//line stdlib/archive/archive.kuki:322
-			return err_35
 		}
 //line stdlib/archive/archive.kuki:323
-		_, copyErr := io.Copy(tw, src)
+		if !info.Mode().IsRegular() {
 //line stdlib/archive/archive.kuki:324
-		src.Close()
-//line stdlib/archive/archive.kuki:325
-		if copyErr != nil {
+			continue
+		}
 //line stdlib/archive/archive.kuki:326
+		src, err_35 := os.Open(full)
+//line stdlib/archive/archive.kuki:326
+		if err_35 != nil {
+//line stdlib/archive/archive.kuki:326
+			return err_35
+		}
+//line stdlib/archive/archive.kuki:327
+		_, copyErr := io.Copy(tw, src)
+//line stdlib/archive/archive.kuki:328
+		src.Close()
+//line stdlib/archive/archive.kuki:329
+		if copyErr != nil {
+//line stdlib/archive/archive.kuki:330
 			return copyErr
 		}
 	}
-//line stdlib/archive/archive.kuki:327
+//line stdlib/archive/archive.kuki:331
 	return nil
 }
