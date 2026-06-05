@@ -22,6 +22,14 @@ desktop-run: ## Build and run the desktop client
 	$(MAKE) desktop
 	./race-desktop
 
+ai-client: ## Build the AI client
+	kukicha build ./client/ai/
+	go build -o race-ai-client ./client/ai/
+
+ai-client-run: ## Build and run the AI client
+	$(MAKE) ai-client
+	./race-ai-client
+
 web-server: ## Build the web server
 	kukicha build ./web_server
 
@@ -42,9 +50,9 @@ test-specific: ## Run specific test (usage: make test-specific PKG=./game/...)
 	go test $(PKG)
 
 clean: ## Remove build artifacts and empty dirs
-	find client/desktop -name '*.go' -delete
-	find . -type f -name '*.go' ! -path './.kukicha/*' ! -path './client/desktop/*' -delete
-	rm -f race-desktop web_server/web_server
+	find client/desktop client/ai -name '*.go' -delete
+	find . -type f -name '*.go' ! -path './.kukicha/*' ! -path './client/desktop/*' ! -path './client/ai/*' -delete
+	rm -f race-desktop race-ai-client web_server/web_server
 	find . -type d -empty -delete 2>/dev/null; true
 
 lint: ## Check formatting
