@@ -51,7 +51,7 @@ type JWTClaims
     Iat int64 as "iat"
     Exp int64 as "exp"
 
-func VerifyPlayerToken(token_str: string, secret_key: string) nullable reference TokenPayload
+func VerifyPlayerToken(token_str: string, secret_key: string) optional reference TokenPayload
     parts := strpkg.Split(token_str, ".")
     if len(parts) isnt 3
         return empty
@@ -91,7 +91,7 @@ func ExtractTokenFromHeader(authorization_header: string) string
         return strpkg.TrimPrefix(authorization_header, prefix)
     return ""
 
-func ValidateTokenForGame(payload: nullable reference TokenPayload, game_id: string) bool
+func ValidateTokenForGame(payload: optional reference TokenPayload, game_id: string) bool
     if payload equals empty
         return false
     return dereference payload.game_id equals game_id

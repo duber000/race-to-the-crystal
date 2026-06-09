@@ -4,7 +4,7 @@ import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
 type GameAPI
-    game_state nullable reference GameState
+    game_state optional reference GameState
     player_id types.PlayerID
 
 func NewGameAPI(gs: reference GameState, pid: types.PlayerID) GameAPI

@@ -13,7 +13,7 @@ type GameSession
     game_state gamepkg.GameState
     network_to_game_id map of string to string
     game_to_network_id map of string to string
-    last_state nullable reference map of string to any
+    last_state optional reference map of string to any
     api_map map of string to gamepkg.GameAPI
 
 func NewGameSession(game_id: string, lobby: reference GameLobby) reference GameSession
@@ -128,13 +128,13 @@ func create_session on gc: reference GameCoordinator(lobby: reference GameLobby)
                 gc.player_to_game[pid_str] = game_id
     return gc.active_games[game_id]
 
-func get_session on gc: reference GameCoordinator(game_id: string) nullable reference GameSession
+func get_session on gc: reference GameCoordinator(game_id: string) optional reference GameSession
     session, ok := gc.active_games[game_id]
     if ok
         return session
     return empty
 
-func get_player_session on gc: reference GameCoordinator(player_id: string) nullable reference GameSession
+func get_player_session on gc: reference GameCoordinator(player_id: string) optional reference GameSession
     game_id, has := gc.player_to_game[player_id]
     if not has
         return empty

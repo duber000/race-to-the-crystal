@@ -10,9 +10,9 @@ import "stdlib/string" as strpkg
 import "strings"
 
 type HTTPHandler
-    coordinator nullable reference GameCoordinator
-    lobby_mgr nullable reference LobbyManager
-    ws_handler nullable reference WebSocketHandler
+    coordinator optional reference GameCoordinator
+    lobby_mgr optional reference LobbyManager
+    ws_handler optional reference WebSocketHandler
     mercure_cfg MercureConfig
     jwt_secret string
     rate_limiter RateLimiter

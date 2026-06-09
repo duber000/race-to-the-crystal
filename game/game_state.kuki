@@ -20,7 +20,7 @@ type GameState
     players map of types.PlayerID to reference Player
     tokens map of types.TokenID to reference Token
     generators list of Generator
-    crystal_instance nullable reference Crystal
+    crystal_instance optional reference Crystal
     crystal_effects CrystalEffectsManager
     current_turn_player_id types.PlayerID
     turn_number int
@@ -28,8 +28,8 @@ type GameState
     turn_phase enums.TurnPhase
     winner_id types.PlayerID
     _next_token_id int
-    last_triggered_crystal_effect nullable reference CrystalEvent
-    last_triggered_mystery_event nullable reference MysteryEvent
+    last_triggered_crystal_effect optional reference CrystalEvent
+    last_triggered_mystery_event optional reference MysteryEvent
 
 func NewGameState() GameState
     return GameState{
@@ -69,16 +69,16 @@ func add_player on gs: reference GameState(player_id: types.PlayerID, name: stri
 func remove_player on gs: reference GameState(player_id: types.PlayerID)
     delete gs.players[player_id]
 
-func GetPlayer on gs: reference GameState(player_id: types.PlayerID) nullable reference Player
+func GetPlayer on gs: reference GameState(player_id: types.PlayerID) optional reference Player
     p, ok := gs.players[player_id]
     if ok
         return p
     return empty
 
-func GetCurrentPlayer on gs: reference GameState nullable reference Player
+func GetCurrentPlayer on gs: reference GameState optional reference Player
     return gs.GetPlayer(gs.current_turn_player_id)
 
-func GetToken on gs: reference GameState(token_id: types.TokenID) nullable reference Token
+func GetToken on gs: reference GameState(token_id: types.TokenID) optional reference Token
     t, ok := gs.tokens[token_id]
     if ok
         return t
@@ -136,7 +136,7 @@ func GetReserveTokenCounts on gs: reference GameState(player_id: types.PlayerID)
         counts[t.max_health] = counts[t.max_health] + 1
     return counts
 
-func DeployToken on gs: reference GameState(player_id: types.PlayerID, health_value: int, position: types.Position) nullable reference Token
+func DeployToken on gs: reference GameState(player_id: types.PlayerID, health_value: int, position: types.Position) optional reference Token
     reserve := gs.GetReserveTokens(player_id)
     for i from 0 to len(reserve)
         if reserve[i].max_health equals health_value
@@ -191,7 +191,7 @@ func remove_token on gs: reference GameState(token_id: types.TokenID)
 
     t.is_alive = false
 
-func AttackToken on gs: reference GameState(attacker_id: types.TokenID, defender_id: types.TokenID) nullable reference CombatOutcome
+func AttackToken on gs: reference GameState(attacker_id: types.TokenID, defender_id: types.TokenID) optional reference CombatOutcome
     a_ref := gs.GetToken(attacker_id)
     if a_ref equals empty
         return empty

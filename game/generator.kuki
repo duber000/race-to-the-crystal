@@ -79,7 +79,7 @@ func count_disabled_generators(generators: list of Generator) int
             count = count + 1
     return count
 
-func get_generator_at_position(generators: list of Generator, pos: types.Position) nullable reference Generator
+func get_generator_at_position(generators: list of Generator, pos: types.Position) optional reference Generator
     for i from 0 to len(generators)
         if generators[i].position equals pos
             return reference of generators[i]

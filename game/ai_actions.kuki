@@ -64,13 +64,13 @@ func FailureResult(msg: string) ActionResult
 func NewEmptyResultData() ActionResultData
     return NoData{}
 
-func ValidateGamePhase on gs: reference GameState nullable reference ValidationResult
+func ValidateGamePhase on gs: reference GameState optional reference ValidationResult
     if gs.phase isnt enums.PLAYING
         r := InvalidResult("ACTION_FAILED: wrong_game_phase | current={gs.phase} | required=PLAYING")
         return reference of r
     return empty
 
-func ValidatePlayerTurn on gs: reference GameState(player_id: types.PlayerID) nullable reference ValidationResult
+func ValidatePlayerTurn on gs: reference GameState(player_id: types.PlayerID) optional reference ValidationResult
     if gs.current_turn_player_id isnt player_id
         r := InvalidResult(
             "ACTION_FAILED: not_your_turn | current_player={gs.current_turn_player_id} | you={player_id}",
@@ -78,7 +78,7 @@ func ValidatePlayerTurn on gs: reference GameState(player_id: types.PlayerID) nu
         return reference of r
     return empty
 
-func ValidateTurnPhase on gs: reference GameState(required: enums.TurnPhase, action_name: string) nullable reference ValidationResult
+func ValidateTurnPhase on gs: reference GameState(required: enums.TurnPhase, action_name: string) optional reference ValidationResult
     if gs.turn_phase isnt required
         r := InvalidResult(
             "{action_name}_FAILED: wrong_phase | current={gs.turn_phase} | required={required}",
@@ -86,7 +86,7 @@ func ValidateTurnPhase on gs: reference GameState(required: enums.TurnPhase, act
         return reference of r
     return empty
 
-func ValidateTokenExists on gs: reference GameState(TokenID: types.TokenID, action_name: string) (ValidationResult, nullable reference Token)
+func ValidateTokenExists on gs: reference GameState(TokenID: types.TokenID, action_name: string) (ValidationResult, optional reference Token)
     tok := gs.GetToken(TokenID)
     if tok equals empty
         r := InvalidResult("{action_name}_FAILED: token_not_found | token_id={TokenID}")

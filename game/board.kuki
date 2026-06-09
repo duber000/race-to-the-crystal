@@ -122,12 +122,12 @@ func place_mystery_squares on b: reference Board
                 b._mystery_positions = append(b._mystery_positions, types.Pos(x, y))
                 placed = placed + 1
 
-func get_cell on b: reference Board(x: int, y: int) nullable reference Cell
+func get_cell on b: reference Board(x: int, y: int) optional reference Cell
     if not b.is_valid_position(x, y)
         return empty
     return reference of b.grid[y][x]
 
-func get_cell_at on b: reference Board(pos: types.Position) nullable reference Cell
+func get_cell_at on b: reference Board(pos: types.Position) optional reference Cell
     return b.get_cell(pos.X, pos.Y)
 
 func is_valid_position on b: Board(x: int, y: int) bool

@@ -10,7 +10,7 @@ type ValidationResult
     error_code string
     message string
 
-func ValidateActionFields(action_type: gamepkg.ActionType, data: map of string to any) nullable reference ValidationResult
+func ValidateActionFields(action_type: gamepkg.ActionType, data: map of string to any) optional reference ValidationResult
     switch action_type.String()
         when "MOVE"
             return ValidateMove(data)
@@ -27,7 +27,7 @@ func ValidateActionFields(action_type: gamepkg.ActionType, data: map of string t
                 message: "Unknown action type: {action_type}",
             }
 
-func ValidateMove(data: map of string to any) nullable reference ValidationResult
+func ValidateMove(data: map of string to any) optional reference ValidationResult
     _, has_tid := data["token_id"]
     if not has_tid
         return reference of ValidationResult{
@@ -63,7 +63,7 @@ func ValidateMove(data: map of string to any) nullable reference ValidationResul
 
     return empty
 
-func ValidateAttack(data: map of string to any) nullable reference ValidationResult
+func ValidateAttack(data: map of string to any) optional reference ValidationResult
     _, has_atk := data["attacker_id"]
     if not has_atk
         return reference of ValidationResult{
@@ -100,7 +100,7 @@ func ValidateAttack(data: map of string to any) nullable reference ValidationRes
 
     return empty
 
-func ValidateDeploy(data: map of string to any) nullable reference ValidationResult
+func ValidateDeploy(data: map of string to any) optional reference ValidationResult
     hv_val, has_hv := data["health_value"]
     if not has_hv
         return reference of ValidationResult{

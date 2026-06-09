@@ -94,7 +94,7 @@ result := decode(s) onerr return empty list of byte
 | `list of T` | `[]T` |
 | `map of K to V` | `map[K]V` |
 | `reference T` | `*T` (statically non-empty) |
-| `nullable reference T` | `*T` (may be nil; guard before dereference) |
+| `optional reference T` | `*T` (may be nil; guard before dereference) |
 | `reference of x` | `&x` |
 | `dereference x` | `*x` |
 | `name: Type` in params | `name Type` (accepted but deprecated) |
@@ -155,7 +155,7 @@ data := parse(raw) onerr as e
 env var). For lookups with a sensible default, use `*Or` functions instead:
 `maps.GetOr`, `slice.GetOr`, `slice.FirstOr`, `env.GetOr`.
 
-## nullable reference narrowing
+## optional reference narrowing
 
 ```kukicha
 # Always narrow before dereference
@@ -222,12 +222,12 @@ switch action.type
 You already do this right for `AIStrategyName: string` — extend the same
 instinct to action types, phases, and any other "magic string" set.
 
-### 3. Python `None` → `nullable reference T`, and prefer non-null by default
+### 3. Python `None` → `optional reference T`, and prefer non-null by default
 
 Python lets every value be `None`, so you guard defensively everywhere.
 Kukicha makes nullability part of the type. A plain `reference T` is
 *statically guaranteed* non-empty — no guard needed. Reach for
-`nullable reference T` only when absence is real, and narrow once
+`optional reference T` only when absence is real, and narrow once
 (`if x equals empty: return`) before `dereference`. Don't reflexively make
 everything nullable "to be safe" — that's the Python habit, and it forces
 guards the type system would otherwise spare you.

@@ -64,7 +64,7 @@ func ChosenToActionMap(action: ChosenAction) map of string to any
                 "data": make(map of string to any),
             }
 
-func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs: reference GameState, player_id: types.PlayerID) nullable reference ChosenAction
+func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs: reference GameState, player_id: types.PlayerID) optional reference ChosenAction
     if len(actions) equals 0
         return empty
 
@@ -228,7 +228,7 @@ func get_objectives(gs: reference GameState, player_id: types.PlayerID, crystal_
 
     return objectives
 
-func score_destination(dest: types.Position, objectives: list of types.Position, tok: nullable reference Token) float64
+func score_destination(dest: types.Position, objectives: list of types.Position, tok: optional reference Token) float64
     min_dist := 999999.0
     for obj in objectives
         dx := dest.X - obj.X

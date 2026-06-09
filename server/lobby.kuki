@@ -183,7 +183,7 @@ type LobbyManager
 func NewLobbyManager() LobbyManager
     return LobbyManager{lobbies: make(map of string to reference GameLobby)}
 
-func create_lobby on lm: reference LobbyManager(player_id: string, player_name: string, game_name: string, client_type: ClientType, max_players: int) nullable reference GameLobby
+func create_lobby on lm: reference LobbyManager(player_id: string, player_name: string, game_name: string, client_type: ClientType, max_players: int) optional reference GameLobby
     err := ValidateGameName(game_name)
     if err isnt empty
         return empty
@@ -202,13 +202,13 @@ func create_lobby on lm: reference LobbyManager(player_id: string, player_name: 
     lm.lobbies[game_id] = reference of lobby
     return lm.lobbies[game_id]
 
-func get_lobby on lm: reference LobbyManager(game_id: string) nullable reference GameLobby
+func get_lobby on lm: reference LobbyManager(game_id: string) optional reference GameLobby
     lobby, ok := lm.lobbies[game_id]
     if ok
         return lobby
     return empty
 
-func join_lobby on lm: reference LobbyManager(game_id: string, player_id: string, player_name: string, client_type: ClientType) nullable reference GameLobby
+func join_lobby on lm: reference LobbyManager(game_id: string, player_id: string, player_name: string, client_type: ClientType) optional reference GameLobby
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return empty
@@ -234,7 +234,7 @@ func set_ready on lm: reference LobbyManager(game_id: string, player_id: string,
         return false
     return lobby.set_player_ready(player_id, is_ready)
 
-func start_game on lm: reference LobbyManager(game_id: string) nullable reference GameLobby
+func start_game on lm: reference LobbyManager(game_id: string) optional reference GameLobby
     lobby := lm.get_lobby(game_id)
     if lobby equals empty
         return empty
@@ -264,7 +264,7 @@ func list_available_lobbies on lm: reference LobbyManager list of map of string 
             result = append(result, dereference lobby.to_dict())
     return result
 
-func get_player_lobby on lm: reference LobbyManager(player_id: string) nullable reference GameLobby
+func get_player_lobby on lm: reference LobbyManager(player_id: string) optional reference GameLobby
     for _, lobby in lm.lobbies
         lb := dereference lobby
         _, exists := lb.players[player_id]

@@ -39,9 +39,9 @@ func NewWSMessage(game_id: string, data: map of string to any) WSMessage
 type WebSocketHandler
     clients map of string to WSClient
     game_sessions map of string to string
-    on_connect nullable reference func(string, string, string)
-    on_disconnect nullable reference func(string)
-    on_message nullable reference func(string, string, map of string to any)
+    on_connect optional reference func(string, string, string)
+    on_disconnect optional reference func(string)
+    on_message optional reference func(string, string, map of string to any)
 
 func NewWebSocketHandler() WebSocketHandler
     return WebSocketHandler{

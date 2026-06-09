@@ -36,7 +36,7 @@ func has_effect on e: reference PlayerEffects(et: enums.CrystalEffect) bool
             return true
     return false
 
-func get_effect on e: reference PlayerEffects(et: enums.CrystalEffect) nullable reference ActiveEffect
+func get_effect on e: reference PlayerEffects(et: enums.CrystalEffect) optional reference ActiveEffect
     for i from 0 to len(e.active_effects)
         if e.active_effects[i].effect_type equals et and e.active_effects[i].is_active()
             return reference of e.active_effects[i]

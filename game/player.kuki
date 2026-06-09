@@ -11,7 +11,7 @@ type Player
     token_ids list of types.TokenID
     is_ready bool
     is_active bool
-    team nullable reference int
+    team optional reference int
 
 func NewPlayer(id: types.PlayerID, name: string, color: enums.PlayerColor) Player
     return Player{

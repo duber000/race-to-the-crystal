@@ -61,7 +61,7 @@ type DesktopGameState
 
 type DesktopApp
     current_screen ScreenKind
-    game_state nullable reference DesktopGameState
+    game_state optional reference DesktopGameState
     selected_token_id int
     valid_moves list of DesktopPos
     hover_cell DesktopPos
