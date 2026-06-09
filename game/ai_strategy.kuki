@@ -22,7 +22,7 @@ enum ChosenAction
     ChosenEndTurn
 
 func ChosenActionName(action: ChosenAction) string
-    switch action as v
+    switch action
         when ChosenMove
             return "MOVE"
         when ChosenAttack
@@ -33,29 +33,29 @@ func ChosenActionName(action: ChosenAction) string
             return "END_TURN"
 
 func ChosenToActionMap(action: ChosenAction) map of string to any
-    switch action as v
+    switch action
         when ChosenMove
             return map of string to any{
                 "type": "MOVE",
                 "data": map of string to any{
-                    "token_id": v.TokenID,
-                    "destination": v.Destination,
+                    "token_id": action.TokenID,
+                    "destination": action.Destination,
                 },
             }
         when ChosenAttack
             return map of string to any{
                 "type": "ATTACK",
                 "data": map of string to any{
-                    "attacker_id": v.AttackerID,
-                    "defender_id": v.DefenderID,
+                    "attacker_id": action.AttackerID,
+                    "defender_id": action.DefenderID,
                 },
             }
         when ChosenDeploy
             return map of string to any{
                 "type": "DEPLOY",
                 "data": map of string to any{
-                    "health_value": v.HealthValue,
-                    "position": v.Position,
+                    "health_value": action.HealthValue,
+                    "position": action.Position,
                 },
             }
         default
@@ -116,9 +116,9 @@ func choose_defensive(actions: list of ActionResponse, gs: reference GameState, 
 func filter_attacks(actions: list of ActionResponse) list of AttackAction
     result := empty list of AttackAction
     for a in actions
-        switch a as v
+        switch a
             when AttackAction
-                result = append(result, v)
+                result = append(result, a)
             default
                 continue
     return result
@@ -126,9 +126,9 @@ func filter_attacks(actions: list of ActionResponse) list of AttackAction
 func filter_moves(actions: list of ActionResponse) list of MoveAction
     result := empty list of MoveAction
     for a in actions
-        switch a as v
+        switch a
             when MoveAction
-                result = append(result, v)
+                result = append(result, a)
             default
                 continue
     return result
@@ -136,9 +136,9 @@ func filter_moves(actions: list of ActionResponse) list of MoveAction
 func filter_deploys(actions: list of ActionResponse) list of DeployAction
     result := empty list of DeployAction
     for a in actions
-        switch a as v
+        switch a
             when DeployAction
-                result = append(result, v)
+                result = append(result, a)
             default
                 continue
     return result
@@ -199,15 +199,15 @@ func best_deploy(deploys: list of DeployAction) ChosenAction
     return ChosenDeploy{HealthValue: chosen.HealthValue, Position: pos}
 
 func resolve_action(action: ActionResponse) ChosenAction
-    switch action as v
+    switch action
         when MoveAction
-            dest := v.ValidDestinations[0]
-            return ChosenMove{TokenID: v.TokenID, Destination: dest}
+            dest := action.ValidDestinations[0]
+            return ChosenMove{TokenID: action.TokenID, Destination: dest}
         when AttackAction
-            return ChosenAttack{AttackerID: v.AttackerID, DefenderID: v.DefenderID}
+            return ChosenAttack{AttackerID: action.AttackerID, DefenderID: action.DefenderID}
         when DeployAction
-            pos := v.Positions[random.Int(0, len(v.Positions))]
-            return ChosenDeploy{HealthValue: v.HealthValue, Position: pos}
+            pos := action.Positions[random.Int(0, len(action.Positions))]
+            return ChosenDeploy{HealthValue: action.HealthValue, Position: pos}
         default
             return ChosenEndTurn{}
 
@@ -248,40 +248,40 @@ func score_destination(dest: types.Position, objectives: list of types.Position,
     return min_dist
 
 func ActionResponseToDict(a: ActionResponse) map of string to any
-    switch a as v
+    switch a
         when MoveAction
             return map of string to any{
                 "type": "MOVE",
-                "token_id": v.TokenID,
-                "token_position": v.TokenPosition,
-                "token_health": v.TokenHealth,
-                "valid_destinations": v.ValidDestinations,
-                "description": v.Description,
+                "token_id": a.TokenID,
+                "token_position": a.TokenPosition,
+                "token_health": a.TokenHealth,
+                "valid_destinations": a.ValidDestinations,
+                "description": a.Description,
             }
         when AttackAction
             return map of string to any{
                 "type": "ATTACK",
-                "attacker_id": v.AttackerID,
-                "attacker_position": v.AttackerPosition,
-                "defender_id": v.DefenderID,
-                "defender_position": v.DefenderPosition,
-                "defender_owner": v.DefenderOwner,
-                "damage": v.Damage,
-                "will_kill": v.WillKill,
-                "description": v.Description,
+                "attacker_id": a.AttackerID,
+                "attacker_position": a.AttackerPosition,
+                "defender_id": a.DefenderID,
+                "defender_position": a.DefenderPosition,
+                "defender_owner": a.DefenderOwner,
+                "damage": a.Damage,
+                "will_kill": a.WillKill,
+                "description": a.Description,
             }
         when DeployAction
             return map of string to any{
                 "type": "DEPLOY",
-                "health_value": v.HealthValue,
-                "positions": v.Positions,
-                "remaining": v.Remaining,
-                "description": v.Description,
+                "health_value": a.HealthValue,
+                "positions": a.Positions,
+                "remaining": a.Remaining,
+                "description": a.Description,
             }
         when EndTurnAction
             return map of string to any{
                 "type": "END_TURN",
-                "description": v.Description,
+                "description": a.Description,
             }
 
 func ActionsToDicts(actions: list of ActionResponse) list of map of string to any

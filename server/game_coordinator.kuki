@@ -53,13 +53,13 @@ func execute_game_action on s: reference GameSession(network_player_id: string, 
         "Before action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}",
     )
     var result gamepkg.ActionResult
-    switch action as a
+    switch action
         when gamepkg.Move
-            result = api.Move(a.TokenID, a.Destination.X, a.Destination.Y)
+            result = api.Move(action.TokenID, action.Destination.X, action.Destination.Y)
         when gamepkg.Attack
-            result = api.Attack(a.AttackerID, a.DefenderID)
+            result = api.Attack(action.AttackerID, action.DefenderID)
         when gamepkg.Deploy
-            result = api.Deploy(a.HealthValue, a.Position.X, a.Position.Y)
+            result = api.Deploy(action.HealthValue, action.Position.X, action.Position.Y)
         when gamepkg.EndTurn
             log.Info("EndTurn via api: action type")
             log.Info("Calling s.game_state.EndTurn directly")

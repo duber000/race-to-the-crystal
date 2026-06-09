@@ -119,13 +119,13 @@ func ValidateAction(action: AIAction, gs: reference GameState, player_id: types.
     if turn_result isnt empty
         return dereference turn_result
 
-    switch action as v
+    switch action
         when Move
-            return ValidateMove(v.TokenID, v.Destination, gs, player_id)
+            return ValidateMove(action.TokenID, action.Destination, gs, player_id)
         when Attack
-            return ValidateAttack(v.AttackerID, v.DefenderID, gs, player_id)
+            return ValidateAttack(action.AttackerID, action.DefenderID, gs, player_id)
         when Deploy
-            return ValidateDeploy(v.HealthValue, v.Position, gs, player_id)
+            return ValidateDeploy(action.HealthValue, action.Position, gs, player_id)
         when EndTurn
             return ValidateEndTurn(gs)
 
@@ -258,13 +258,13 @@ func ExecuteAction(action: AIAction, gs: reference GameState, player_id: types.P
     if not validation.IsValid
         return FailureResult(validation.Message)
 
-    switch action as v
+    switch action
         when Move
-            return ExecuteMove(v.TokenID, v.Destination, gs, player_id)
+            return ExecuteMove(action.TokenID, action.Destination, gs, player_id)
         when Attack
-            return ExecuteAttack(v.AttackerID, v.DefenderID, gs, player_id)
+            return ExecuteAttack(action.AttackerID, action.DefenderID, gs, player_id)
         when Deploy
-            return ExecuteDeploy(v.HealthValue, v.Position, gs, player_id)
+            return ExecuteDeploy(action.HealthValue, action.Position, gs, player_id)
         when EndTurn
             return ExecuteEndTurn(gs)
 

@@ -507,37 +507,37 @@ func any_to_int(v: any) (int, error)
     return 0, error "cannot convert to int"
 
 func actionResultDataToMap(data: gamepkg.ActionResultData) map of string to any
-    switch data as v
+    switch data
         when gamepkg.MoveData
             m := map of string to any{
-                "token_id": v.TokenID,
-                "old_position": v.OldPosition,
-                "new_position": v.NewPosition,
-                "mystery_triggered": v.MysteryTriggered,
+                "token_id": data.TokenID,
+                "old_position": data.OldPosition,
+                "new_position": data.NewPosition,
+                "mystery_triggered": data.MysteryTriggered,
             }
-            if v.MysteryTriggered
-                m["mystery_effect"] = v.MysteryEffect.String()
+            if data.MysteryTriggered
+                m["mystery_effect"] = data.MysteryEffect.String()
             return m
         when gamepkg.AttackData
             return map of string to any{
-                "attacker_id": v.AttackerID,
-                "defender_id": v.DefenderID,
-                "damage_dealt": v.DamageDealt,
-                "defender_killed": v.DefenderKilled,
+                "attacker_id": data.AttackerID,
+                "defender_id": data.DefenderID,
+                "damage_dealt": data.DamageDealt,
+                "defender_killed": data.DefenderKilled,
             }
         when gamepkg.DeployData
             return map of string to any{
-                "new_token_id": v.NewTokenID,
-                "health_value": v.HealthValue,
-                "position": v.Position,
-                "tokens_remaining": v.TokensRemaining,
+                "new_token_id": data.NewTokenID,
+                "health_value": data.HealthValue,
+                "position": data.Position,
+                "tokens_remaining": data.TokensRemaining,
             }
         when gamepkg.TurnEndData
             return map of string to any{
-                "turn_number": v.TurnNumber,
-                "next_player_id": v.NextPlayerID,
-                "generators_disabled": v.GeneratorsDisabled,
-                "crystal_captured": v.CrystalCaptured,
+                "turn_number": data.TurnNumber,
+                "next_player_id": data.NextPlayerID,
+                "generators_disabled": data.GeneratorsDisabled,
+                "crystal_captured": data.CrystalCaptured,
             }
         default
             return empty map of string to any

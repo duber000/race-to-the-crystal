@@ -539,15 +539,15 @@ func get_situation_report(gs: reference GameState, perspective: types.PlayerID) 
     if len(actions_data.Actions) > 0
         for i, action in actions_data.Actions
             desc_str := ""
-            switch action as v
+            switch action
                 when MoveAction
-                    desc_str = v.Description
+                    desc_str = action.Description
                 when AttackAction
-                    desc_str = v.Description
+                    desc_str = action.Description
                 when DeployAction
-                    desc_str = v.Description
+                    desc_str = action.Description
                 when EndTurnAction
-                    desc_str = v.Description
+                    desc_str = action.Description
             sections = append(sections, "  {i + 1}. {desc_str}")
     else
         if actions_data.Phase equals "NOT_YOUR_TURN"
