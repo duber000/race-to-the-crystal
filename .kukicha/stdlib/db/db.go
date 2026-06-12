@@ -3,10 +3,10 @@
 package db
 
 import (
+	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
 	"database/sql"
 	"errors"
 	"fmt"
-	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
 	"reflect"
 	strpkg "strings"
 	"unicode"
@@ -47,25 +47,38 @@ func AllIsolationLevel() []IsolationLevel {
 	return []IsolationLevel{IsolationLevelDefault, IsolationLevelReadUncommitted, IsolationLevelReadCommitted, IsolationLevelRepeatableRead, IsolationLevelSerializable}
 }
 
-func (e IsolationLevel) String() string {
-	return string(e)
-}
-
-func ParseIsolationLevel(s string) (IsolationLevel, bool) {
+func ParseIsolationLevel(s string) (IsolationLevel, error) {
 	switch s {
 	case "":
-		return IsolationLevelDefault, true
+		return IsolationLevelDefault, nil
 	case "read_uncommitted":
-		return IsolationLevelReadUncommitted, true
+		return IsolationLevelReadUncommitted, nil
 	case "read_committed":
-		return IsolationLevelReadCommitted, true
+		return IsolationLevelReadCommitted, nil
 	case "repeatable_read":
-		return IsolationLevelRepeatableRead, true
+		return IsolationLevelRepeatableRead, nil
 	case "serializable":
-		return IsolationLevelSerializable, true
+		return IsolationLevelSerializable, nil
 	}
 	var zero IsolationLevel
-	return zero, false
+	return zero, fmt.Errorf("invalid IsolationLevel %q (valid: , read_uncommitted, read_committed, repeatable_read, serializable)", s)
+}
+
+func (e IsolationLevel) String() string {
+	switch e {
+	case IsolationLevelDefault:
+		return "Default"
+	case IsolationLevelReadUncommitted:
+		return "ReadUncommitted"
+	case IsolationLevelReadCommitted:
+		return "ReadCommitted"
+	case IsolationLevelRepeatableRead:
+		return "RepeatableRead"
+	case IsolationLevelSerializable:
+		return "Serializable"
+	default:
+		return string(e)
+	}
 }
 
 //line stdlib/db/db.kuki:51
@@ -381,7 +394,7 @@ func Transaction(pool Pool, fn func(Tx) error) error {
 		if //line stdlib/db/db.kuki:226
 		r := recover(); r != nil {
 //line stdlib/db/db.kuki:227
-			sqlTx.Rollback()
+			_ = sqlTx.Rollback()
 //line stdlib/db/db.kuki:228
 			panic(r)
 		}
@@ -391,7 +404,13 @@ func Transaction(pool Pool, fn func(Tx) error) error {
 //line stdlib/db/db.kuki:231
 	if err != nil {
 //line stdlib/db/db.kuki:232
-		sqlTx.Rollback()
+//line stdlib/db/db.kuki:232
+		err_20 := sqlTx.Rollback()
+//line stdlib/db/db.kuki:232
+		if err_20 != nil {
+//line stdlib/db/db.kuki:232
+			return err_20
+		}
 //line stdlib/db/db.kuki:233
 		return err
 	}
@@ -428,11 +447,11 @@ func TransactionWith(pool Pool, opts TxOptions, fn func(Tx) error) error {
 //line stdlib/db/db.kuki:255
 	txOpts := sql.TxOptions{ReadOnly: opts.ReadOnly, Isolation: toSQLLevel(opts.IsolationLevel)}
 //line stdlib/db/db.kuki:256
-	sqlTx, err_20 := pool.conn.BeginTx(ctxpkg.Background().Ctx, &txOpts)
+	sqlTx, err_21 := pool.conn.BeginTx(ctxpkg.Background().Ctx, &txOpts)
 //line stdlib/db/db.kuki:256
-	if err_20 != nil {
+	if err_21 != nil {
 //line stdlib/db/db.kuki:256
-		return err_20
+		return err_21
 	}
 //line stdlib/db/db.kuki:257
 	tx := Tx{tx: sqlTx}
@@ -442,7 +461,7 @@ func TransactionWith(pool Pool, opts TxOptions, fn func(Tx) error) error {
 		if //line stdlib/db/db.kuki:260
 		r := recover(); r != nil {
 //line stdlib/db/db.kuki:261
-			sqlTx.Rollback()
+			_ = sqlTx.Rollback()
 //line stdlib/db/db.kuki:262
 			panic(r)
 		}
@@ -452,7 +471,13 @@ func TransactionWith(pool Pool, opts TxOptions, fn func(Tx) error) error {
 //line stdlib/db/db.kuki:265
 	if err != nil {
 //line stdlib/db/db.kuki:266
-		sqlTx.Rollback()
+//line stdlib/db/db.kuki:266
+		err_22 := sqlTx.Rollback()
+//line stdlib/db/db.kuki:266
+		if err_22 != nil {
+//line stdlib/db/db.kuki:266
+			return err_22
+		}
 //line stdlib/db/db.kuki:267
 		return err
 	}
@@ -463,12 +488,12 @@ func TransactionWith(pool Pool, opts TxOptions, fn func(Tx) error) error {
 //line stdlib/db/db.kuki:274
 func TxQuery(tx Tx, query string, args ...any) (Rows, error) {
 //line stdlib/db/db.kuki:275
-	rows, err_21 := tx.tx.Query(query, args...)
+	rows, err_23 := tx.tx.Query(query, args...)
 //line stdlib/db/db.kuki:275
-	if err_21 != nil {
+	if err_23 != nil {
 		var _zero0 Rows
 //line stdlib/db/db.kuki:275
-		return _zero0, err_21
+		return _zero0, err_23
 	}
 //line stdlib/db/db.kuki:276
 	result := Rows{rows: rows}
@@ -487,18 +512,18 @@ func TxQueryRow(tx Tx, query string, args ...any) Row {
 //line stdlib/db/db.kuki:290
 func TxExec(tx Tx, query string, args ...any) (int64, error) {
 //line stdlib/db/db.kuki:291
-	result, err_22 := tx.tx.Exec(query, args...)
+	result, err_24 := tx.tx.Exec(query, args...)
 //line stdlib/db/db.kuki:291
-	if err_22 != nil {
+	if err_24 != nil {
 //line stdlib/db/db.kuki:291
-		return 0, err_22
+		return 0, err_24
 	}
 //line stdlib/db/db.kuki:292
-	affected, err_23 := result.RowsAffected()
+	affected, err_25 := result.RowsAffected()
 //line stdlib/db/db.kuki:292
-	if err_23 != nil {
+	if err_25 != nil {
 //line stdlib/db/db.kuki:292
-		return 0, err_23
+		return 0, err_25
 	}
 //line stdlib/db/db.kuki:293
 	return affected, nil
@@ -512,11 +537,11 @@ func Count(pool Pool, query string, args ...any) (int64, error) {
 	n := int64(0)
 //line stdlib/db/db.kuki:305
 //line stdlib/db/db.kuki:305
-	err_24 := row.Scan(&n)
+	err_26 := row.Scan(&n)
 //line stdlib/db/db.kuki:305
-	if err_24 != nil {
+	if err_26 != nil {
 //line stdlib/db/db.kuki:305
-		return 0, err_24
+		return 0, err_26
 	}
 //line stdlib/db/db.kuki:306
 	return n, nil
@@ -530,17 +555,17 @@ func Exists(pool Pool, query string, args ...any) (bool, error) {
 	dummy := 0
 //line stdlib/db/db.kuki:314
 //line stdlib/db/db.kuki:314
-	err_25 := row.Scan(&dummy)
+	err_27 := row.Scan(&dummy)
 //line stdlib/db/db.kuki:314
-	if err_25 != nil {
+	if err_27 != nil {
 //line stdlib/db/db.kuki:314
 		//line stdlib/db/db.kuki:315
-		if errors.Is(err_25, sql.ErrNoRows) {
+		if errors.Is(err_27, sql.ErrNoRows) {
 			//line stdlib/db/db.kuki:316
 			return false, nil
 		}
 		//line stdlib/db/db.kuki:317
-		return false, err_25
+		return false, err_27
 	}
 //line stdlib/db/db.kuki:319
 	return true, nil
@@ -573,16 +598,14 @@ func (s *nullSafeField) Scan(value any) error {
 //line stdlib/db/db.kuki:350
 	if s.target.Kind() == reflect.Bool {
 //line stdlib/db/db.kuki:351
-		if //line stdlib/db/db.kuki:351
-		v, ok := value.(int64); ok {
+		if v, _isOk := value.(int64); _isOk {
 //line stdlib/db/db.kuki:352
 			s.target.SetBool(v != 0)
 //line stdlib/db/db.kuki:353
 			return nil
 		}
 //line stdlib/db/db.kuki:354
-		if //line stdlib/db/db.kuki:354
-		v, ok := value.(int); ok {
+		if v, _isOk := value.(int); _isOk {
 //line stdlib/db/db.kuki:355
 			s.target.SetBool(v != 0)
 //line stdlib/db/db.kuki:356

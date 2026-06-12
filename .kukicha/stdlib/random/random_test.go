@@ -3,8 +3,8 @@
 package random_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/random"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/random"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

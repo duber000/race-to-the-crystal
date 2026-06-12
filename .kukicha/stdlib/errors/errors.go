@@ -2,47 +2,56 @@
 
 package errors
 
-import "fmt"
+import (
+	goerrors "errors"
+	"fmt"
+)
 
-//line stdlib/errors/errors.kuki:20
+//line stdlib/errors/errors.kuki:23
 func Wrap(err error, msg string) error {
-//line stdlib/errors/errors.kuki:21
+//line stdlib/errors/errors.kuki:24
 	return fmt.Errorf("%s: %w", msg, err)
 }
 
-//line stdlib/errors/errors.kuki:27
+//line stdlib/errors/errors.kuki:30
 func Opaque(err error, msg string) error {
-//line stdlib/errors/errors.kuki:28
+//line stdlib/errors/errors.kuki:31
 	return fmt.Errorf("%s: %s", msg, err)
 }
 
-//line stdlib/errors/errors.kuki:33
+//line stdlib/errors/errors.kuki:36
 type PublicError struct {
 	internal string
 	public   string
 }
 
-//line stdlib/errors/errors.kuki:38
+//line stdlib/errors/errors.kuki:41
 func (e PublicError) Error() string {
-//line stdlib/errors/errors.kuki:39
+//line stdlib/errors/errors.kuki:42
 	return e.internal
 }
 
-//line stdlib/errors/errors.kuki:44
+//line stdlib/errors/errors.kuki:47
 func NewPublic(internalMsg string, publicMsg string) error {
-//line stdlib/errors/errors.kuki:45
+//line stdlib/errors/errors.kuki:48
 	return PublicError{internal: internalMsg, public: publicMsg}
 }
 
-//line stdlib/errors/errors.kuki:50
-func Public(err error) string {
-//line stdlib/errors/errors.kuki:51
-	e, ok := err.(PublicError)
-//line stdlib/errors/errors.kuki:52
-	if ok {
 //line stdlib/errors/errors.kuki:53
+func Public(err error) string {
+//line stdlib/errors/errors.kuki:54
+	e, ok := err.(PublicError)
+//line stdlib/errors/errors.kuki:55
+	if ok {
+//line stdlib/errors/errors.kuki:56
 		return e.public
 	}
-//line stdlib/errors/errors.kuki:54
+//line stdlib/errors/errors.kuki:57
 	return "an error occurred"
+}
+
+//line stdlib/errors/errors.kuki:65
+func Join(errs ...error) error {
+//line stdlib/errors/errors.kuki:66
+	return goerrors.Join(errs...)
 }

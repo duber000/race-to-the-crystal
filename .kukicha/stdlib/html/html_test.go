@@ -3,9 +3,9 @@
 package html_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/html"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/html"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

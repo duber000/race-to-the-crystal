@@ -3,10 +3,10 @@
 package shellguard_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/shellguard"
+	"codeberg.org/kukichalang/kukicha/stdlib/slice"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"errors"
-	"github.com/kukichalang/kukicha/stdlib/shellguard"
-	"github.com/kukichalang/kukicha/stdlib/slice"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

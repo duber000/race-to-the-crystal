@@ -3,9 +3,9 @@
 package regex_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/regex"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/regex"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

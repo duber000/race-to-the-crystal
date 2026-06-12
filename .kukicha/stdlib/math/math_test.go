@@ -3,8 +3,8 @@
 package math_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/math"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/math"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

@@ -3,9 +3,9 @@
 package safe_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/llm/safe"
-	strpkg "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/llm/safe"
+	strpkg "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

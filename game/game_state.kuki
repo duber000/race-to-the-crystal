@@ -7,29 +7,29 @@ import "stdlib/random"
 import "stdlib/sort"
 
 type CrystalEvent
-    player_id types.PlayerID
-    effect_type enums.CrystalEffect
+    player_id: types.PlayerID
+    effect_type: enums.CrystalEffect
 
 type MysteryEvent
-    TokenID types.TokenID
-    Position types.Position
-    effect string
+    TokenID: types.TokenID
+    Position: types.Position
+    effect: string
 
 type GameState
-    board Board
-    players map of types.PlayerID to reference Player
-    tokens map of types.TokenID to reference Token
-    generators list of Generator
-    crystal_instance optional reference Crystal
-    crystal_effects CrystalEffectsManager
-    current_turn_player_id types.PlayerID
-    turn_number int
-    phase enums.GamePhase
-    turn_phase enums.TurnPhase
-    winner_id types.PlayerID
-    _next_token_id int
-    last_triggered_crystal_effect optional reference CrystalEvent
-    last_triggered_mystery_event optional reference MysteryEvent
+    board: Board
+    players: map of types.PlayerID to reference Player
+    tokens: map of types.TokenID to reference Token
+    generators: list of Generator
+    crystal_instance: optional reference Crystal
+    crystal_effects: CrystalEffectsManager
+    current_turn_player_id: types.PlayerID
+    turn_number: int
+    phase: enums.GamePhase
+    turn_phase: enums.TurnPhase
+    winner_id: types.PlayerID
+    _next_token_id: int
+    last_triggered_crystal_effect: optional reference CrystalEvent
+    last_triggered_mystery_event: optional reference MysteryEvent
 
 func NewGameState() GameState
     return GameState{
@@ -94,7 +94,9 @@ func create_tokens_for_player on gs: reference GameState(player_id: types.Player
     for hv in constants.TOKEN_HEALTH_VALUES
         for _ from 0 to constants.TOKENS_PER_HEALTH_VALUE
             tid := types.TokenID(gs._next_token_id)
-            t := NewToken(tid, player_id, hv, hv, corner_pos) onerr continue
+            t := NewToken(tid, player_id, hv, hv, corner_pos) onerr
+                continue
+
             gs.tokens[tid] = reference of t
             p_ref.add_token(tid)
             gs._next_token_id = gs._next_token_id + 1

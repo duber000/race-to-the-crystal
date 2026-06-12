@@ -26,11 +26,11 @@ enum GameStatus: string
     FINISHED = "FINISHED"
 
 type PlayerInfo
-    player_id string
-    player_name string
-    client_type ClientType
-    is_ready bool
-    color_index int
+    player_id: string
+    player_name: string
+    client_type: ClientType
+    is_ready: bool
+    color_index: int
 
 func NewPlayerInfo(player_id: string, player_name: string, client_type: ClientType, color_index: int) PlayerInfo
     return PlayerInfo{
@@ -76,13 +76,13 @@ func ValidatePlayerName(player_name: string) error
     return empty
 
 type GameLobby
-    game_id string
-    game_name string
-    host_player_id string
-    max_players int
-    min_players int
-    players map of string to PlayerInfo
-    status GameStatus
+    game_id: string
+    game_name: string
+    host_player_id: string
+    max_players: int
+    min_players: int
+    players: map of string to PlayerInfo
+    status: GameStatus
 
 func NewGameLobby(game_id: string, game_name: string, host_player_id: string, max_players: int) GameLobby
     return GameLobby{
@@ -178,7 +178,7 @@ func to_dict on l: GameLobby map of string to any
     }
 
 type LobbyManager
-    lobbies map of string to reference GameLobby
+    lobbies: map of string to reference GameLobby
 
 func NewLobbyManager() LobbyManager
     return LobbyManager{lobbies: make(map of string to reference GameLobby)}

@@ -5,12 +5,12 @@ import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
 type Generator
-    id int
-    position types.Position
-    capturing_player_id types.PlayerID
-    capture_token_ids list of types.TokenID
-    turns_held int
-    is_disabled bool
+    id: int
+    position: types.Position
+    capturing_player_id: types.PlayerID
+    capture_token_ids: list of types.TokenID
+    turns_held: int
+    is_disabled: bool
 
 func NewGenerator(id: int, position: types.Position) Generator
     return Generator{

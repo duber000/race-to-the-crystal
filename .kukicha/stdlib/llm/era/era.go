@@ -3,13 +3,13 @@
 package era
 
 import (
+	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
+	"codeberg.org/kukichalang/kukicha/stdlib/files"
+	"codeberg.org/kukichalang/kukicha/stdlib/llm/safe"
+	"codeberg.org/kukichalang/kukicha/stdlib/shell"
+	"codeberg.org/kukichalang/kukicha/stdlib/sort"
+	strpkg "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"fmt"
-	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
-	"github.com/kukichalang/kukicha/stdlib/files"
-	"github.com/kukichalang/kukicha/stdlib/llm/safe"
-	"github.com/kukichalang/kukicha/stdlib/shell"
-	"github.com/kukichalang/kukicha/stdlib/sort"
-	strpkg "github.com/kukichalang/kukicha/stdlib/string"
 	"math"
 	"math/rand"
 	"strconv"
@@ -254,220 +254,214 @@ func ProposeRecombination(ask func(string) (string, error), task Task, top []Can
 	return stripFences(raw), nil
 }
 
-//line stdlib/llm/era/era.kuki:227
+//line stdlib/llm/era/era.kuki:236
 func BuildScore(source string) (float64, error) {
-//line stdlib/llm/era/era.kuki:228
+//line stdlib/llm/era/era.kuki:237
 	dir, cleanup, dirErr := files.TempDirAuto("era-build-")
-//line stdlib/llm/era/era.kuki:229
+//line stdlib/llm/era/era.kuki:238
 	if dirErr != nil {
-//line stdlib/llm/era/era.kuki:230
+//line stdlib/llm/era/era.kuki:239
 		return 0.0, dirErr
 	}
-//line stdlib/llm/era/era.kuki:231
+//line stdlib/llm/era/era.kuki:240
 	defer cleanup()
-//line stdlib/llm/era/era.kuki:232
+//line stdlib/llm/era/era.kuki:241
 	path := files.Join(dir, "candidate.kuki")
-//line stdlib/llm/era/era.kuki:233
-//line stdlib/llm/era/era.kuki:233
+//line stdlib/llm/era/era.kuki:242
+//line stdlib/llm/era/era.kuki:242
 	err_3 := files.WriteString(path, source)
-//line stdlib/llm/era/era.kuki:233
+//line stdlib/llm/era/era.kuki:242
 	if err_3 != nil {
-//line stdlib/llm/era/era.kuki:233
-		return 0.0, err_3
+//line stdlib/llm/era/era.kuki:242
+		return 0, err_3
 	}
-//line stdlib/llm/era/era.kuki:234
-//line stdlib/llm/era/era.kuki:234
-	_, err_4 := shell.Output("kukicha", "build", "--json", "--skip-build", path)
-//line stdlib/llm/era/era.kuki:234
-	if err_4 != nil {
-//line stdlib/llm/era/era.kuki:234
-		return 0.0, err_4
-	}
-//line stdlib/llm/era/era.kuki:235
+//line stdlib/llm/era/era.kuki:243
+	shell.Output("kukicha", "build", "--json", "--skip-build", path)
+//line stdlib/llm/era/era.kuki:244
 	return 1.0, nil
 }
 
-//line stdlib/llm/era/era.kuki:240
+//line stdlib/llm/era/era.kuki:249
 func RunScore(source string, metric func(string) (float64, error)) (float64, error) {
-//line stdlib/llm/era/era.kuki:241
+//line stdlib/llm/era/era.kuki:250
 	dir, cleanup, dirErr := files.TempDirAuto("era-run-")
-//line stdlib/llm/era/era.kuki:242
+//line stdlib/llm/era/era.kuki:251
 	if dirErr != nil {
-//line stdlib/llm/era/era.kuki:243
+//line stdlib/llm/era/era.kuki:252
 		return 0.0, dirErr
 	}
-//line stdlib/llm/era/era.kuki:244
+//line stdlib/llm/era/era.kuki:253
 	defer cleanup()
-//line stdlib/llm/era/era.kuki:245
+//line stdlib/llm/era/era.kuki:254
 	path := files.Join(dir, "candidate.kuki")
-//line stdlib/llm/era/era.kuki:246
-//line stdlib/llm/era/era.kuki:246
-	err_5 := files.WriteString(path, source)
-//line stdlib/llm/era/era.kuki:246
+//line stdlib/llm/era/era.kuki:255
+//line stdlib/llm/era/era.kuki:255
+	err_4 := files.WriteString(path, source)
+//line stdlib/llm/era/era.kuki:255
+	if err_4 != nil {
+//line stdlib/llm/era/era.kuki:255
+		return 0, err_4
+	}
+//line stdlib/llm/era/era.kuki:256
+	out, err_5 := shell.Output("kukicha", "run", path)
+//line stdlib/llm/era/era.kuki:256
 	if err_5 != nil {
-//line stdlib/llm/era/era.kuki:246
-		return 0.0, err_5
+//line stdlib/llm/era/era.kuki:256
+		return 0, err_5
 	}
-//line stdlib/llm/era/era.kuki:247
-	out, err_6 := shell.Output("kukicha", "run", path)
-//line stdlib/llm/era/era.kuki:247
-	if err_6 != nil {
-//line stdlib/llm/era/era.kuki:247
-		return 0.0, err_6
-	}
-//line stdlib/llm/era/era.kuki:248
+//line stdlib/llm/era/era.kuki:257
 	return metric(out)
 }
 
-//line stdlib/llm/era/era.kuki:255
+//line stdlib/llm/era/era.kuki:264
 func BenchScore(source string, setup func(string) (string, error), benchName string) (float64, error) {
-//line stdlib/llm/era/era.kuki:256
-	workDir, err_7 := setup(source)
-//line stdlib/llm/era/era.kuki:256
-	if err_7 != nil {
-//line stdlib/llm/era/era.kuki:256
-		return 0.0, err_7
+//line stdlib/llm/era/era.kuki:265
+	workDir, err_6 := setup(source)
+//line stdlib/llm/era/era.kuki:265
+	if err_6 != nil {
+//line stdlib/llm/era/era.kuki:265
+		return 0, err_6
 	}
-//line stdlib/llm/era/era.kuki:257
+//line stdlib/llm/era/era.kuki:266
 	// pipe step 1: Output(...)
-//line stdlib/llm/era/era.kuki:259
-	out, err_9 := shell.New("go", "test", "-bench", benchName, "-benchmem", "-count=1", "-run=^$", "./...").Dir(workDir).Output()
-//line stdlib/llm/era/era.kuki:259
-	if err_9 != nil {
-//line stdlib/llm/era/era.kuki:259
-		return 0.0, err_9
+//line stdlib/llm/era/era.kuki:268
+	out, err_8 := shell.New("go", "test", "-bench", benchName, "-benchmem", "-count=1", "-run=^$", "./...").Dir(workDir).Output()
+//line stdlib/llm/era/era.kuki:266
+	if err_8 != nil {
+//line stdlib/llm/era/era.kuki:266
+		return 0, err_8
 	}
-//line stdlib/llm/era/era.kuki:260
+//line stdlib/llm/era/era.kuki:269
 	return parseBenchNsPerOp(out, benchName)
 }
 
-//line stdlib/llm/era/era.kuki:267
+//line stdlib/llm/era/era.kuki:276
 func StripFences(s string) string {
-//line stdlib/llm/era/era.kuki:268
+//line stdlib/llm/era/era.kuki:277
 	return stripFences(s)
 }
 
-//line stdlib/llm/era/era.kuki:270
-func stripFences(s string) string {
-//line stdlib/llm/era/era.kuki:271
-	s = strpkg.TrimSpace(s)
-//line stdlib/llm/era/era.kuki:272
-	if !strpkg.HasPrefix(s, "```") {
-//line stdlib/llm/era/era.kuki:273
-		return s
-	}
-//line stdlib/llm/era/era.kuki:274
-	lines := strpkg.Split(s, "\n")
-//line stdlib/llm/era/era.kuki:275
-	if len(lines) < 2 {
-//line stdlib/llm/era/era.kuki:276
-		return s
-	}
-//line stdlib/llm/era/era.kuki:277
-	lines = lines[1:]
-//line stdlib/llm/era/era.kuki:278
-	if len(lines) > 0 && strpkg.HasPrefix(lines[len(lines)-1], "```") {
 //line stdlib/llm/era/era.kuki:279
+func stripFences(s string) string {
+//line stdlib/llm/era/era.kuki:280
+	s = strpkg.TrimSpace(s)
+//line stdlib/llm/era/era.kuki:281
+	if !strpkg.HasPrefix(s, "```") {
+//line stdlib/llm/era/era.kuki:282
+		return s
+	}
+//line stdlib/llm/era/era.kuki:283
+	lines := strpkg.Split(s, "\n")
+//line stdlib/llm/era/era.kuki:284
+	if len(lines) < 2 {
+//line stdlib/llm/era/era.kuki:285
+		return s
+	}
+//line stdlib/llm/era/era.kuki:286
+	lines = lines[1:]
+//line stdlib/llm/era/era.kuki:287
+	if len(lines) > 0 && strpkg.HasPrefix(lines[len(lines)-1], "```") {
+//line stdlib/llm/era/era.kuki:288
 		lines = lines[:len(lines)-1]
 	}
-//line stdlib/llm/era/era.kuki:280
+//line stdlib/llm/era/era.kuki:289
 	return strpkg.TrimSpace(strpkg.Join(lines, "\n"))
 }
 
-//line stdlib/llm/era/era.kuki:282
+//line stdlib/llm/era/era.kuki:291
 func countValid(tree []Candidate) int {
-//line stdlib/llm/era/era.kuki:283
+//line stdlib/llm/era/era.kuki:292
 	n := 0
-//line stdlib/llm/era/era.kuki:284
+//line stdlib/llm/era/era.kuki:293
 	for _, c := range tree {
-//line stdlib/llm/era/era.kuki:285
+//line stdlib/llm/era/era.kuki:294
 		if c.Valid {
-//line stdlib/llm/era/era.kuki:286
+//line stdlib/llm/era/era.kuki:295
 			n = n + 1
 		}
 	}
-//line stdlib/llm/era/era.kuki:287
+//line stdlib/llm/era/era.kuki:296
 	return n
 }
 
-//line stdlib/llm/era/era.kuki:289
+//line stdlib/llm/era/era.kuki:298
 func minMaxValidScore(tree []Candidate) (float64, float64) {
-//line stdlib/llm/era/era.kuki:290
+//line stdlib/llm/era/era.kuki:299
 	lo := math.Inf(1)
-//line stdlib/llm/era/era.kuki:291
+//line stdlib/llm/era/era.kuki:300
 	hi := math.Inf(-1)
-//line stdlib/llm/era/era.kuki:292
+//line stdlib/llm/era/era.kuki:301
 	for _, c := range tree {
-//line stdlib/llm/era/era.kuki:293
+//line stdlib/llm/era/era.kuki:302
 		if !c.Valid {
-//line stdlib/llm/era/era.kuki:294
+//line stdlib/llm/era/era.kuki:303
 			continue
 		}
-//line stdlib/llm/era/era.kuki:295
+//line stdlib/llm/era/era.kuki:304
 		if c.Score < lo {
-//line stdlib/llm/era/era.kuki:296
+//line stdlib/llm/era/era.kuki:305
 			lo = c.Score
 		}
-//line stdlib/llm/era/era.kuki:297
+//line stdlib/llm/era/era.kuki:306
 		if c.Score > hi {
-//line stdlib/llm/era/era.kuki:298
+//line stdlib/llm/era/era.kuki:307
 			hi = c.Score
 		}
 	}
-//line stdlib/llm/era/era.kuki:299
+//line stdlib/llm/era/era.kuki:308
 	return lo, hi
 }
 
-//line stdlib/llm/era/era.kuki:301
-func best(tree []Candidate, higher bool) Candidate {
-//line stdlib/llm/era/era.kuki:302
-	var bestC Candidate
-//line stdlib/llm/era/era.kuki:303
-	found := false
-//line stdlib/llm/era/era.kuki:304
-	for _, c := range tree {
-//line stdlib/llm/era/era.kuki:305
-		if !c.Valid {
-//line stdlib/llm/era/era.kuki:306
-			continue
-		}
-//line stdlib/llm/era/era.kuki:307
-		if !found {
-//line stdlib/llm/era/era.kuki:308
-			bestC = c
-//line stdlib/llm/era/era.kuki:309
-			found = true
 //line stdlib/llm/era/era.kuki:310
+func best(tree []Candidate, higher bool) Candidate {
+//line stdlib/llm/era/era.kuki:311
+	var bestC Candidate
+//line stdlib/llm/era/era.kuki:312
+	found := false
+//line stdlib/llm/era/era.kuki:313
+	for _, c := range tree {
+//line stdlib/llm/era/era.kuki:314
+		if !c.Valid {
+//line stdlib/llm/era/era.kuki:315
 			continue
 		}
-//line stdlib/llm/era/era.kuki:311
+//line stdlib/llm/era/era.kuki:316
+		if !found {
+//line stdlib/llm/era/era.kuki:317
+			bestC = c
+//line stdlib/llm/era/era.kuki:318
+			found = true
+//line stdlib/llm/era/era.kuki:319
+			continue
+		}
+//line stdlib/llm/era/era.kuki:320
 		if higher && c.Score > bestC.Score {
-//line stdlib/llm/era/era.kuki:312
+//line stdlib/llm/era/era.kuki:321
 			bestC = c
 		}
-//line stdlib/llm/era/era.kuki:313
+//line stdlib/llm/era/era.kuki:322
 		if !higher && c.Score < bestC.Score {
-//line stdlib/llm/era/era.kuki:314
+//line stdlib/llm/era/era.kuki:323
 			bestC = c
 		}
 	}
-//line stdlib/llm/era/era.kuki:315
+//line stdlib/llm/era/era.kuki:324
 	return bestC
 }
 
-//line stdlib/llm/era/era.kuki:317
+//line stdlib/llm/era/era.kuki:326
 func topK(tree []Candidate, higher bool, k int) []Candidate {
-//line stdlib/llm/era/era.kuki:318
+//line stdlib/llm/era/era.kuki:327
 	valid := []Candidate{}
-//line stdlib/llm/era/era.kuki:319
+//line stdlib/llm/era/era.kuki:328
 	for _, c := range tree {
-//line stdlib/llm/era/era.kuki:320
+//line stdlib/llm/era/era.kuki:329
 		if c.Valid {
-//line stdlib/llm/era/era.kuki:321
+//line stdlib/llm/era/era.kuki:330
 			valid = append(valid, c)
 		}
 	}
-//line stdlib/llm/era/era.kuki:322
+//line stdlib/llm/era/era.kuki:331
 	valid = sort.By(valid, func(a Candidate, b Candidate) bool {
 		return func() bool {
 			if higher {
@@ -477,37 +471,37 @@ func topK(tree []Candidate, higher bool, k int) []Candidate {
 			}
 		}()
 	})
-//line stdlib/llm/era/era.kuki:326
+//line stdlib/llm/era/era.kuki:335
 	if len(valid) > k {
-//line stdlib/llm/era/era.kuki:327
+//line stdlib/llm/era/era.kuki:336
 		valid = valid[:k]
 	}
-//line stdlib/llm/era/era.kuki:328
+//line stdlib/llm/era/era.kuki:337
 	return valid
 }
 
-//line stdlib/llm/era/era.kuki:330
+//line stdlib/llm/era/era.kuki:339
 func parseBenchNsPerOp(out string, benchName string) (float64, error) {
-//line stdlib/llm/era/era.kuki:331
+//line stdlib/llm/era/era.kuki:340
 	prefix := fmt.Sprintf("Benchmark%v", benchName)
-//line stdlib/llm/era/era.kuki:332
+//line stdlib/llm/era/era.kuki:341
 	for _, line := range strpkg.Lines(out) {
-//line stdlib/llm/era/era.kuki:333
+//line stdlib/llm/era/era.kuki:342
 		if !strpkg.HasPrefix(line, prefix) {
-//line stdlib/llm/era/era.kuki:334
+//line stdlib/llm/era/era.kuki:343
 			continue
 		}
-//line stdlib/llm/era/era.kuki:335
+//line stdlib/llm/era/era.kuki:344
 		fields := strpkg.Fields(line)
-//line stdlib/llm/era/era.kuki:337
+//line stdlib/llm/era/era.kuki:346
 		for i := range len(fields) {
-//line stdlib/llm/era/era.kuki:338
+//line stdlib/llm/era/era.kuki:347
 			if fields[i] == "ns/op" && i > 0 {
-//line stdlib/llm/era/era.kuki:339
+//line stdlib/llm/era/era.kuki:348
 				return strconv.ParseFloat(fields[i-1], 64)
 			}
 		}
 	}
-//line stdlib/llm/era/era.kuki:340
+//line stdlib/llm/era/era.kuki:349
 	return 0.0, fmt.Errorf("no benchmark line matched %v", benchName)
 }

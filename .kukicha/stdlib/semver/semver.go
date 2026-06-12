@@ -3,11 +3,11 @@
 package semver
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/slice"
+	"codeberg.org/kukichalang/kukicha/stdlib/sort"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"errors"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/slice"
-	"github.com/kukichalang/kukicha/stdlib/sort"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
 	"strconv"
 )
 
@@ -173,15 +173,16 @@ func Highest(tags []string) (string, error) {
 //line stdlib/semver/semver.kuki:108
 		if err_5 != nil {
 //line stdlib/semver/semver.kuki:108
+			//line stdlib/semver/semver.kuki:109
 			continue
 		}
-//line stdlib/semver/semver.kuki:109
+//line stdlib/semver/semver.kuki:111
 		parsed = append(parsed, v)
 	}
-//line stdlib/semver/semver.kuki:111
-	sorted := sort.By(parsed, func(a Version, b Version) bool { return Compare(a, b) < 0 })
-//line stdlib/semver/semver.kuki:112
-	best := sorted[len(sorted)-1]
 //line stdlib/semver/semver.kuki:113
+	sorted := sort.By(parsed, func(a Version, b Version) bool { return Compare(a, b) < 0 })
+//line stdlib/semver/semver.kuki:114
+	best := sorted[len(sorted)-1]
+//line stdlib/semver/semver.kuki:115
 	return Format(best), nil
 }

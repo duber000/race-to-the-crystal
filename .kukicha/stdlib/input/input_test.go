@@ -3,11 +3,11 @@
 package input_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/input"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"errors"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/input"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"os"
 	"testing"
 )
@@ -22,9 +22,9 @@ func writeTempFile(t *testing.T, content string) (*os.File, string) {
 		panic("CreateTemp failed")
 	}
 //line stdlib/input/input_test.kuki:17
-	fmt.Fprint(f, content)
+	_, _ = fmt.Fprint(f, content)
 //line stdlib/input/input_test.kuki:18
-	f.Close()
+	_ = f.Close()
 //line stdlib/input/input_test.kuki:19
 	g, err_2 := os.Open(f.Name())
 //line stdlib/input/input_test.kuki:19

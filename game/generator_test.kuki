@@ -1,9 +1,8 @@
 petiole game
 
-import "testing"
-import "stdlib/test"
-
 import "race-to-the-crystal/shared/types" as types
+import "stdlib/test"
+import "testing"
 
 func TestNewGenerator(t: reference testing.T)
     g := NewGenerator(0, types.Pos(5, 5))
@@ -16,7 +15,7 @@ func TestNewGenerator(t: reference testing.T)
 
 func TestGeneratorCaptureNoTokens(t: reference testing.T)
     g := NewGenerator(0, types.Pos(5, 5))
-    disabled := g.update_capture_status(list of TokenAtPos{})
+    disabled := g.update_capture_status(empty list of TokenAtPos)
     test.AssertFalse(t, disabled)
     test.AssertFalse(t, g.is_disabled)
 

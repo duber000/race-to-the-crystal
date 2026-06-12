@@ -3,9 +3,9 @@
 package cast
 
 import (
+	jsonpkg "codeberg.org/kukichalang/kukicha/stdlib/json"
 	"errors"
 	"fmt"
-	jsonpkg "github.com/kukichalang/kukicha/stdlib/json"
 	"reflect"
 	"strconv"
 )

@@ -3,9 +3,9 @@
 package policy_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/policy"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"context"
-	"github.com/kukichalang/kukicha/stdlib/policy"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

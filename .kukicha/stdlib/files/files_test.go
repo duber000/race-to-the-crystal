@@ -3,9 +3,9 @@
 package files_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/files"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/files"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"os"
 	"path/filepath"
 	"testing"
@@ -193,11 +193,11 @@ func TestList(t *testing.T) {
 //line stdlib/files/files_test.kuki:128
 			defer os.RemoveAll(tmpDir)
 //line stdlib/files/files_test.kuki:130
-			files.WriteString("test1", filepath.Join(tmpDir, "file1.txt"))
+			_ = files.WriteString("test1", filepath.Join(tmpDir, "file1.txt"))
 //line stdlib/files/files_test.kuki:131
-			files.WriteString("test2", filepath.Join(tmpDir, "file2.txt"))
+			_ = files.WriteString("test2", filepath.Join(tmpDir, "file2.txt"))
 //line stdlib/files/files_test.kuki:132
-			os.Mkdir(filepath.Join(tmpDir, "subdir"), 0o755)
+			_ = os.Mkdir(filepath.Join(tmpDir, "subdir"), 0o755)
 //line stdlib/files/files_test.kuki:134
 			entries, listErr := files.List(tmpDir)
 //line stdlib/files/files_test.kuki:135
@@ -236,11 +236,11 @@ func TestListEntries(t *testing.T) {
 //line stdlib/files/files_test.kuki:154
 			defer os.RemoveAll(tmpDir)
 //line stdlib/files/files_test.kuki:156
-			files.WriteString("hello", filepath.Join(tmpDir, "a.txt"))
+			_ = files.WriteString("hello", filepath.Join(tmpDir, "a.txt"))
 //line stdlib/files/files_test.kuki:157
-			files.WriteString("hi", filepath.Join(tmpDir, "b.txt"))
+			_ = files.WriteString("hi", filepath.Join(tmpDir, "b.txt"))
 //line stdlib/files/files_test.kuki:158
-			os.Mkdir(filepath.Join(tmpDir, "sub"), 0o755)
+			_ = os.Mkdir(filepath.Join(tmpDir, "sub"), 0o755)
 //line stdlib/files/files_test.kuki:160
 			entries, entErr := files.ListEntries(tmpDir)
 //line stdlib/files/files_test.kuki:161
@@ -305,13 +305,13 @@ func TestListDirsAndFiles(t *testing.T) {
 //line stdlib/files/files_test.kuki:192
 			defer os.RemoveAll(tmpDir)
 //line stdlib/files/files_test.kuki:194
-			files.WriteString("x", filepath.Join(tmpDir, "one.txt"))
+			_ = files.WriteString("x", filepath.Join(tmpDir, "one.txt"))
 //line stdlib/files/files_test.kuki:195
-			files.WriteString("y", filepath.Join(tmpDir, "two.txt"))
+			_ = files.WriteString("y", filepath.Join(tmpDir, "two.txt"))
 //line stdlib/files/files_test.kuki:196
-			os.Mkdir(filepath.Join(tmpDir, "alpha"), 0o755)
+			_ = os.Mkdir(filepath.Join(tmpDir, "alpha"), 0o755)
 //line stdlib/files/files_test.kuki:197
-			os.Mkdir(filepath.Join(tmpDir, "beta"), 0o755)
+			_ = os.Mkdir(filepath.Join(tmpDir, "beta"), 0o755)
 //line stdlib/files/files_test.kuki:199
 			dirs, dErr := files.ListDirs(tmpDir)
 //line stdlib/files/files_test.kuki:200
@@ -350,11 +350,11 @@ func TestWalk(t *testing.T) {
 //line stdlib/files/files_test.kuki:221
 			sub := filepath.Join(tmpDir, "nested")
 //line stdlib/files/files_test.kuki:222
-			os.Mkdir(sub, 0o755)
+			_ = os.Mkdir(sub, 0o755)
 //line stdlib/files/files_test.kuki:223
-			files.WriteString("top", filepath.Join(tmpDir, "top.txt"))
+			_ = files.WriteString("top", filepath.Join(tmpDir, "top.txt"))
 //line stdlib/files/files_test.kuki:224
-			files.WriteString("deep", filepath.Join(sub, "deep.txt"))
+			_ = files.WriteString("deep", filepath.Join(sub, "deep.txt"))
 //line stdlib/files/files_test.kuki:226
 			entries, walkErr := files.Walk(tmpDir)
 //line stdlib/files/files_test.kuki:227
@@ -616,7 +616,7 @@ func TestUseWith(t *testing.T) {
 //line stdlib/files/files_test.kuki:393
 			testFile := filepath.Join(tmpDir, "temp.txt")
 //line stdlib/files/files_test.kuki:394
-			files.WriteString("content", testFile)
+			_ = files.WriteString("content", testFile)
 //line stdlib/files/files_test.kuki:396
 			existed := false
 //line stdlib/files/files_test.kuki:397
@@ -632,7 +632,7 @@ func TestUseWith(t *testing.T) {
 //line stdlib/files/files_test.kuki:403
 			test.AssertFalse(t, files.Exists(testFile))
 //line stdlib/files/files_test.kuki:405
-			os.RemoveAll(tmpDir)
+			_ = os.RemoveAll(tmpDir)
 		})
 	}
 }
@@ -706,7 +706,7 @@ func TestWatch(t *testing.T) {
 //line stdlib/files/files_test.kuki:450
 			testFile := filepath.Join(tmpDir, "watch.txt")
 //line stdlib/files/files_test.kuki:451
-			files.WriteString("initial", testFile)
+			_ = files.WriteString("initial", testFile)
 //line stdlib/files/files_test.kuki:453
 			ch := make(chan string)
 //line stdlib/files/files_test.kuki:454
@@ -717,7 +717,7 @@ func TestWatch(t *testing.T) {
 //line stdlib/files/files_test.kuki:458
 			time.Sleep(1 * time.Second)
 //line stdlib/files/files_test.kuki:459
-			files.WriteString("modified", testFile)
+			_ = files.WriteString("modified", testFile)
 //line stdlib/files/files_test.kuki:461
 			receivedPath := <-ch
 //line stdlib/files/files_test.kuki:462
@@ -746,15 +746,15 @@ func TestGlob(t *testing.T) {
 //line stdlib/files/files_test.kuki:476
 			defer os.RemoveAll(tmpDir)
 //line stdlib/files/files_test.kuki:478
-			files.WriteString("1", filepath.Join(tmpDir, "a.kuki"))
+			_ = files.WriteString("1", filepath.Join(tmpDir, "a.kuki"))
 //line stdlib/files/files_test.kuki:479
-			files.WriteString("2", filepath.Join(tmpDir, "b.txt"))
+			_ = files.WriteString("2", filepath.Join(tmpDir, "b.txt"))
 //line stdlib/files/files_test.kuki:480
-			os.MkdirAll(filepath.Join(tmpDir, "nested", "deep"), 0o755)
+			_ = os.MkdirAll(filepath.Join(tmpDir, "nested", "deep"), 0o755)
 //line stdlib/files/files_test.kuki:481
-			files.WriteString("3", filepath.Join(tmpDir, "nested", "c.kuki"))
+			_ = files.WriteString("3", filepath.Join(tmpDir, "nested", "c.kuki"))
 //line stdlib/files/files_test.kuki:482
-			files.WriteString("4", filepath.Join(tmpDir, "nested", "deep", "d.kuki"))
+			_ = files.WriteString("4", filepath.Join(tmpDir, "nested", "deep", "d.kuki"))
 //line stdlib/files/files_test.kuki:484
 			shallow, gErr := files.Glob(filepath.Join(tmpDir, "*.kuki"))
 //line stdlib/files/files_test.kuki:485

@@ -97,14 +97,7 @@ func (t Template) Render(data any) (string, error) {
 //line stdlib/template/template.kuki:70
 	buf := bytes.Buffer{}
 //line stdlib/template/template.kuki:71
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/template/template.kuki:71
-	err_7 := t.inner.Execute(&buf, data)
-//line stdlib/template/template.kuki:71
-	if err_7 != nil {
-//line stdlib/template/template.kuki:71
-		return "", err_7
-	}
+	t.inner.Execute(&buf, data)
 //line stdlib/template/template.kuki:72
 	return buf.String(), nil
 }
@@ -114,14 +107,7 @@ func (t HTMLTemplate) Render(data any) (string, error) {
 //line stdlib/template/template.kuki:78
 	buf := bytes.Buffer{}
 //line stdlib/template/template.kuki:79
-	// kukicha: could not infer return count; use explicit capture if incorrect
-//line stdlib/template/template.kuki:79
-	err_8 := t.inner.Execute(&buf, data)
-//line stdlib/template/template.kuki:79
-	if err_8 != nil {
-//line stdlib/template/template.kuki:79
-		return "", err_8
-	}
+	t.inner.Execute(&buf, data)
 //line stdlib/template/template.kuki:80
 	return buf.String(), nil
 }

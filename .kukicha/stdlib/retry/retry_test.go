@@ -3,10 +3,10 @@
 package retry_test
 
 import (
+	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
+	"codeberg.org/kukichalang/kukicha/stdlib/retry"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"errors"
-	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
-	"github.com/kukichalang/kukicha/stdlib/retry"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

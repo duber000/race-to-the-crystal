@@ -3,7 +3,7 @@
 package llm
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/content"
+	"codeberg.org/kukichalang/kukicha/stdlib/content"
 	"maps"
 )
 

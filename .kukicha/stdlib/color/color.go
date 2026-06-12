@@ -3,9 +3,9 @@
 package color
 
 import (
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/term"
 	"fmt"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/term"
 	"os"
 )
 

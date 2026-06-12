@@ -3,8 +3,8 @@
 package term_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/term"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/term"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"os"
 	"testing"
 )
@@ -12,11 +12,11 @@ import (
 //line stdlib/term/term_test.kuki:12
 func resetEnv() {
 //line stdlib/term/term_test.kuki:13
-	os.Unsetenv("FORCE_COLOR")
+	_ = os.Unsetenv("FORCE_COLOR")
 //line stdlib/term/term_test.kuki:14
-	os.Unsetenv("NO_COLOR")
+	_ = os.Unsetenv("NO_COLOR")
 //line stdlib/term/term_test.kuki:15
-	os.Unsetenv("COLUMNS")
+	_ = os.Unsetenv("COLUMNS")
 //line stdlib/term/term_test.kuki:16
 	term.ResetColorOverride()
 }
@@ -55,7 +55,7 @@ func TestColorEnabledForceColor(t *testing.T) {
 //line stdlib/term/term_test.kuki:33
 	defer resetEnv()
 //line stdlib/term/term_test.kuki:34
-	os.Setenv("FORCE_COLOR", "1")
+	_ = os.Setenv("FORCE_COLOR", "1")
 //line stdlib/term/term_test.kuki:35
 	test.AssertTrue(t, term.ColorEnabled())
 }
@@ -67,7 +67,7 @@ func TestColorEnabledNoColor(t *testing.T) {
 //line stdlib/term/term_test.kuki:40
 	defer resetEnv()
 //line stdlib/term/term_test.kuki:41
-	os.Setenv("NO_COLOR", "1")
+	_ = os.Setenv("NO_COLOR", "1")
 //line stdlib/term/term_test.kuki:42
 	test.AssertFalse(t, term.ColorEnabled())
 }
@@ -79,9 +79,9 @@ func TestColorEnabledForceBeatsNo(t *testing.T) {
 //line stdlib/term/term_test.kuki:47
 	defer resetEnv()
 //line stdlib/term/term_test.kuki:48
-	os.Setenv("NO_COLOR", "1")
+	_ = os.Setenv("NO_COLOR", "1")
 //line stdlib/term/term_test.kuki:49
-	os.Setenv("FORCE_COLOR", "1")
+	_ = os.Setenv("FORCE_COLOR", "1")
 //line stdlib/term/term_test.kuki:50
 	test.AssertTrue(t, term.ColorEnabled())
 }
@@ -93,7 +93,7 @@ func TestColorEnabledOverride(t *testing.T) {
 //line stdlib/term/term_test.kuki:55
 	defer resetEnv()
 //line stdlib/term/term_test.kuki:56
-	os.Setenv("FORCE_COLOR", "1")
+	_ = os.Setenv("FORCE_COLOR", "1")
 //line stdlib/term/term_test.kuki:57
 	term.SetColorEnabled(false)
 //line stdlib/term/term_test.kuki:58
@@ -101,7 +101,7 @@ func TestColorEnabledOverride(t *testing.T) {
 //line stdlib/term/term_test.kuki:60
 	term.SetColorEnabled(true)
 //line stdlib/term/term_test.kuki:61
-	os.Setenv("NO_COLOR", "1")
+	_ = os.Setenv("NO_COLOR", "1")
 //line stdlib/term/term_test.kuki:62
 	test.AssertTrue(t, term.ColorEnabled())
 }
@@ -117,7 +117,7 @@ func TestResetColorOverride(t *testing.T) {
 //line stdlib/term/term_test.kuki:68
 	term.ResetColorOverride()
 //line stdlib/term/term_test.kuki:69
-	os.Setenv("NO_COLOR", "1")
+	_ = os.Setenv("NO_COLOR", "1")
 //line stdlib/term/term_test.kuki:70
 	test.AssertFalse(t, term.ColorEnabled())
 }
@@ -139,7 +139,7 @@ func TestWidthFromEnv(t *testing.T) {
 //line stdlib/term/term_test.kuki:80
 	defer resetEnv()
 //line stdlib/term/term_test.kuki:81
-	os.Setenv("COLUMNS", "120")
+	_ = os.Setenv("COLUMNS", "120")
 //line stdlib/term/term_test.kuki:82
 	test.AssertEqual(t, term.Width(), 120)
 }
@@ -151,7 +151,7 @@ func TestWidthInvalid(t *testing.T) {
 //line stdlib/term/term_test.kuki:86
 	defer resetEnv()
 //line stdlib/term/term_test.kuki:87
-	os.Setenv("COLUMNS", "garbage")
+	_ = os.Setenv("COLUMNS", "garbage")
 //line stdlib/term/term_test.kuki:88
 	test.AssertEqual(t, term.Width(), 80)
 }
@@ -163,7 +163,7 @@ func TestWidthNegative(t *testing.T) {
 //line stdlib/term/term_test.kuki:92
 	defer resetEnv()
 //line stdlib/term/term_test.kuki:93
-	os.Setenv("COLUMNS", "-5")
+	_ = os.Setenv("COLUMNS", "-5")
 //line stdlib/term/term_test.kuki:94
 	test.AssertEqual(t, term.Width(), 80)
 }

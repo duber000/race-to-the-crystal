@@ -3,9 +3,9 @@
 package obs
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/json"
+	"codeberg.org/kukichalang/kukicha/stdlib/random"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/json"
-	"github.com/kukichalang/kukicha/stdlib/random"
 	"maps"
 	"os"
 	"time"

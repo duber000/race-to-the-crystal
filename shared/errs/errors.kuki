@@ -1,5 +1,37 @@
 petiole errs
 
+# ErrorCode is the closed set of error codes returned by the server.
+# Use ParseErrorCode to validate at boundaries; .String() returns the
+# wire value for JSON serialization.
+enum ErrorCode
+    TokenNotFound = "token_not_found"
+    TokenNotDeployed = "token_not_deployed"
+    TokenNotOwned = "token_not_owned"
+    TokenDestroyed = "token_destroyed"
+    NotAdjacent = "not_adjacent"
+    NotInRange = "not_in_range"
+    InvalidPosition = "invalid_position"
+    CellOccupied = "cell_occupied"
+    WrongPhase = "wrong_phase"
+    NotPlayerTurn = "not_player_turn"
+    GameNotPlaying = "game_not_playing"
+    GameNotFound = "game_not_found"
+    GameAlreadyStarted = "game_already_started"
+    GameFinished = "game_finished"
+    PlayerNotInGame = "player_not_in_game"
+    LobbyFull = "lobby_full"
+    NotYourTurn = "not_your_turn"
+    MissingField = "missing_field"
+    InvalidType = "invalid_type"
+    InvalidValue = "invalid_value"
+    TooShort = "too_short"
+    TooLong = "too_long"
+    Unauthorized = "unauthorized"
+    Forbidden = "forbidden"
+    TokenExpired = "token_expired"
+    TokenInvalid = "token_invalid"
+    InternalError = "internal_error"
+
 const TOKEN_NOT_FOUND = "token_not_found"
 
 const TOKEN_NOT_DEPLOYED = "token_not_deployed"
@@ -55,9 +87,9 @@ const TOKEN_INVALID = "token_invalid"
 const INTERNAL_ERROR = "internal_error"
 
 type GameError
-    action string
-    reason string
-    context map of string to string
+    action: string
+    reason: string
+    context: map of string to string
 
 func FormatGameError(e: GameError) string
     result := "CANNOT {e.action}: {e.reason}"
@@ -67,9 +99,9 @@ func FormatGameError(e: GameError) string
     return result
 
 type ValidationError
-    field string
-    reason string
-    context map of string to string
+    field: string
+    reason: string
+    context: map of string to string
 
 func FormatValidationError(e: ValidationError) string
     result := "Invalid {e.field}: {e.reason}"
@@ -79,9 +111,9 @@ func FormatValidationError(e: ValidationError) string
     return result
 
 type ActionError
-    action string
-    reason string
-    context map of string to string
+    action: string
+    reason: string
+    context: map of string to string
 
 func FormatActionError(e: ActionError) string
     result := "Action {e.action} failed: {e.reason}"
@@ -91,9 +123,9 @@ func FormatActionError(e: ActionError) string
     return result
 
 type ServerError
-    code string
-    message string
-    details map of string to string
+    code: string
+    message: string
+    details: map of string to string
 
 func FormatServerError(e: ServerError) string
     result := "Server error: {e.code} | {e.message}"

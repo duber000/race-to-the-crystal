@@ -4,8 +4,8 @@ import "race-to-the-crystal/shared/types" as types
 import "stdlib/maps"
 
 type TokenAtPos
-    token_id types.TokenID
-    player_id types.PlayerID
+    token_id: types.TokenID
+    player_id: types.PlayerID
 
 func count_tokens_by_player(tokens: list of TokenAtPos) map of types.PlayerID to list of types.TokenID
     result := make(map of types.PlayerID to list of types.TokenID)

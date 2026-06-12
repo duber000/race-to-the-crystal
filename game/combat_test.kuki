@@ -1,9 +1,8 @@
 petiole game
 
-import "testing"
-import "stdlib/test"
-
 import "race-to-the-crystal/shared/types" as types
+import "stdlib/test"
+import "testing"
 
 func TestCanAttackValid(t: reference testing.T)
     atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))

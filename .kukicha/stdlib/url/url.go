@@ -3,11 +3,11 @@
 package url
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/slice"
+	"codeberg.org/kukichalang/kukicha/stdlib/sort"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"errors"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/slice"
-	"github.com/kukichalang/kukicha/stdlib/sort"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
 	"maps"
 	gourl "net/url"
 	"path"

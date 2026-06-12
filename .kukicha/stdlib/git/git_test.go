@@ -3,10 +3,10 @@
 package git_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/git"
-	"github.com/kukichalang/kukicha/stdlib/shell"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/git"
+	"codeberg.org/kukichalang/kukicha/stdlib/shell"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"os/exec"
 	"testing"
 )

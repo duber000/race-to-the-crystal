@@ -1,10 +1,9 @@
 petiole game
 
-import "testing"
-import "stdlib/test"
-
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
+import "stdlib/test"
+import "testing"
 
 func TestNewPlayer(t: reference testing.T)
     p := NewPlayer(types.PlayerID("p1"), "Alice", enums.PlayerColorCYAN)

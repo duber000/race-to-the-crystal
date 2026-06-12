@@ -7,9 +7,9 @@ import "stdlib/random"
 import "stdlib/slice"
 
 type ActiveEffect
-    effect_type enums.CrystalEffect
-    turns_remaining int
-    applied_turn int
+    effect_type: enums.CrystalEffect
+    turns_remaining: int
+    applied_turn: int
 
 func reduce_duration on e: reference ActiveEffect(amount: int)
     e.turns_remaining = e.turns_remaining - amount
@@ -20,15 +20,15 @@ func is_active on e: ActiveEffect bool
     return e.turns_remaining > 0
 
 type PhantomToken
-    phantom_id int
-    apparent_player_id types.PlayerID
-    position types.Position
-    apparent_health int
+    phantom_id: int
+    apparent_player_id: types.PlayerID
+    position: types.Position
+    apparent_health: int
 
 type PlayerEffects
-    player_id types.PlayerID
-    active_effects list of ActiveEffect
-    phantom_tokens list of PhantomToken
+    player_id: types.PlayerID
+    active_effects: list of ActiveEffect
+    phantom_tokens: list of PhantomToken
 
 func has_effect on e: reference PlayerEffects(et: enums.CrystalEffect) bool
     for eff in e.active_effects
@@ -56,8 +56,8 @@ func reduce_all_durations on e: reference PlayerEffects(amount: int)
         e.phantom_tokens = empty list of PhantomToken
 
 type CrystalEffectsManager
-    player_effects map of types.PlayerID to reference PlayerEffects
-    _next_phantom_id int
+    player_effects: map of types.PlayerID to reference PlayerEffects
+    _next_phantom_id: int
 
 func NewCrystalEffectsManager() CrystalEffectsManager
     return CrystalEffectsManager{

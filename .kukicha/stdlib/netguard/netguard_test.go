@@ -3,8 +3,8 @@
 package netguard_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/netguard"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/netguard"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

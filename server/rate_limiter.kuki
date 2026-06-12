@@ -11,10 +11,10 @@ const MAX_GAMES_CREATED_PER_HOUR = 10
 const CONNECTION_WINDOW_SECONDS = 60
 
 type TokenBucket
-    capacity int
-    refill_rate float64
-    tokens float64
-    last_refill float64
+    capacity: int
+    refill_rate: float64
+    tokens: float64
+    last_refill: float64
 
 func NewTokenBucket(capacity: int, refill_rate: float64) TokenBucket
     now := float64(time.Now().UnixNano()) / 1e9
@@ -42,12 +42,12 @@ func refill on tb: reference TokenBucket
         tb.last_refill = now
 
 type TimedEvent
-    timestamp float64
+    timestamp: float64
 
 type SlidingWindowCounter
-    max_events int
-    window_seconds int
-    events list of TimedEvent
+    max_events: int
+    window_seconds: int
+    events: list of TimedEvent
 
 func NewSlidingWindowCounter(max_events: int, window_seconds: int) SlidingWindowCounter
     return SlidingWindowCounter{
@@ -79,10 +79,10 @@ func GetCount on sw: reference SlidingWindowCounter int
     return count
 
 type RateLimiter
-    ip_connections map of string to reference SlidingWindowCounter
-    player_actions map of string to reference TokenBucket
-    player_game_creation map of string to reference SlidingWindowCounter
-    active_connections map of string to int
+    ip_connections: map of string to reference SlidingWindowCounter
+    player_actions: map of string to reference TokenBucket
+    player_game_creation: map of string to reference SlidingWindowCounter
+    active_connections: map of string to int
 
 func NewRateLimiter() RateLimiter
     return RateLimiter{

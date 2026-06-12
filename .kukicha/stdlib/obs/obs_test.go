@@ -3,8 +3,8 @@
 package obs_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/obs"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/obs"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 	"time"
 )

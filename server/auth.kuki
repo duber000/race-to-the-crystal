@@ -7,10 +7,10 @@ import "stdlib/string" as strpkg
 import "time"
 
 type TokenPayload
-    player_id string
-    game_id string
-    issued_at int64
-    expires_at int64
+    player_id: string
+    game_id: string
+    issued_at: int64
+    expires_at: int64
 
 func GenerateSecretKey() string
     token := crypto.RandomToken(32) onerr return ""
@@ -46,10 +46,10 @@ func CreatePlayerToken(player_id: string, game_id: string, secret_key: string, e
     return "{header_b64}.{payload_b64}.{signature_b64}"
 
 type JWTClaims
-    PlayerID string as "player_id"
-    GameID string as "game_id"
-    Iat int64 as "iat"
-    Exp int64 as "exp"
+    PlayerID: string as "player_id"
+    GameID: string as "game_id"
+    Iat: int64 as "iat"
+    Exp: int64 as "exp"
 
 func VerifyPlayerToken(token_str: string, secret_key: string) optional reference TokenPayload
     parts := strpkg.Split(token_str, ".")

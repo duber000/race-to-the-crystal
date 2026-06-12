@@ -20,94 +20,82 @@ func Render(htmlStr string) Fragment {
 	return Fragment{Content: htmlStr}
 }
 
-//line stdlib/html/html.kuki:35
+//line stdlib/html/html.kuki:40
 func Escape(s string) string {
-//line stdlib/html/html.kuki:36
+//line stdlib/html/html.kuki:41
 	return html.EscapeString(s)
 }
 
-//line stdlib/html/html.kuki:42
+//line stdlib/html/html.kuki:47
 func Embed(f Fragment) string {
-//line stdlib/html/html.kuki:43
+//line stdlib/html/html.kuki:48
 	return f.Content
 }
 
-//line stdlib/html/html.kuki:47
+//line stdlib/html/html.kuki:52
 func WriteTo(w http.ResponseWriter, f Fragment) error {
-//line stdlib/html/html.kuki:48
+//line stdlib/html/html.kuki:53
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-//line stdlib/html/html.kuki:49
-//line stdlib/html/html.kuki:49
-	_, err_1 := io.WriteString(w, f.Content)
-//line stdlib/html/html.kuki:49
-	if err_1 != nil {
-//line stdlib/html/html.kuki:49
-		return err_1
-	}
-//line stdlib/html/html.kuki:50
-	return nil
-}
-
 //line stdlib/html/html.kuki:54
-func WriteStatusTo(w http.ResponseWriter, f Fragment, status int) error {
+	io.WriteString(w, f.Content)
 //line stdlib/html/html.kuki:55
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-//line stdlib/html/html.kuki:56
-	w.WriteHeader(status)
-//line stdlib/html/html.kuki:57
-//line stdlib/html/html.kuki:57
-	_, err_2 := io.WriteString(w, f.Content)
-//line stdlib/html/html.kuki:57
-	if err_2 != nil {
-//line stdlib/html/html.kuki:57
-		return err_2
-	}
-//line stdlib/html/html.kuki:58
 	return nil
 }
 
+//line stdlib/html/html.kuki:59
+func WriteStatusTo(w http.ResponseWriter, f Fragment, status int) error {
+//line stdlib/html/html.kuki:60
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+//line stdlib/html/html.kuki:61
+	w.WriteHeader(status)
 //line stdlib/html/html.kuki:62
-func Join(fragments ...Fragment) Fragment {
+	io.WriteString(w, f.Content)
 //line stdlib/html/html.kuki:63
+	return nil
+}
+
+//line stdlib/html/html.kuki:67
+func Join(fragments ...Fragment) Fragment {
+//line stdlib/html/html.kuki:68
 	buf := bytes.Buffer{}
-//line stdlib/html/html.kuki:64
+//line stdlib/html/html.kuki:69
 	for _, f := range fragments {
-//line stdlib/html/html.kuki:65
+//line stdlib/html/html.kuki:70
 		buf.WriteString(f.Content)
 	}
-//line stdlib/html/html.kuki:66
+//line stdlib/html/html.kuki:71
 	return Fragment{Content: buf.String()}
 }
 
-//line stdlib/html/html.kuki:74
+//line stdlib/html/html.kuki:79
 func Map(items []any, f func(any) Fragment) Fragment {
-//line stdlib/html/html.kuki:75
+//line stdlib/html/html.kuki:80
 	buf := bytes.Buffer{}
-//line stdlib/html/html.kuki:76
+//line stdlib/html/html.kuki:81
 	for _, item := range items {
-//line stdlib/html/html.kuki:77
+//line stdlib/html/html.kuki:82
 		result := f(item)
-//line stdlib/html/html.kuki:78
+//line stdlib/html/html.kuki:83
 		buf.WriteString(result.Content)
 	}
-//line stdlib/html/html.kuki:79
+//line stdlib/html/html.kuki:84
 	return Fragment{Content: buf.String()}
 }
 
-//line stdlib/html/html.kuki:83
+//line stdlib/html/html.kuki:88
 func When(condition bool, f Fragment) Fragment {
-//line stdlib/html/html.kuki:84
+//line stdlib/html/html.kuki:89
 	if condition {
-//line stdlib/html/html.kuki:85
+//line stdlib/html/html.kuki:90
 		return f
 	}
-//line stdlib/html/html.kuki:86
+//line stdlib/html/html.kuki:91
 	return Fragment{Content: ""}
 }
 
-//line stdlib/html/html.kuki:90
+//line stdlib/html/html.kuki:95
 func WhenElse(condition bool, ifTrue Fragment, ifFalse Fragment) Fragment {
-//line stdlib/html/html.kuki:91
+//line stdlib/html/html.kuki:96
 	return func() Fragment {
 		if condition {
 			return ifTrue

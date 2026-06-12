@@ -4,8 +4,8 @@ import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
 type GameAPI
-    game_state optional reference GameState
-    player_id types.PlayerID
+    game_state: reference GameState
+    player_id: types.PlayerID
 
 func NewGameAPI(gs: reference GameState, pid: types.PlayerID) GameAPI
     return GameAPI{game_state: gs, player_id: pid}
@@ -65,6 +65,11 @@ func EndTurn on api: reference GameAPI ActionResult
     if api.game_state equals empty
         return FailureResult("No game state")
     action := EndTurn{}
+    return ExecuteAction(action, api.game_state, api.player_id)
+
+func DoAction on api: reference GameAPI(action: AIAction) ActionResult
+    if api.game_state equals empty
+        return FailureResult("No game state")
     return ExecuteAction(action, api.game_state, api.player_id)
 
 func IsMyTurn on api: reference GameAPI bool

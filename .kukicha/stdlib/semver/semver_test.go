@@ -3,9 +3,9 @@
 package semver_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/semver"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/semver"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

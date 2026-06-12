@@ -3,9 +3,9 @@
 package errors_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/errors"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	goerrors "errors"
-	"github.com/kukichalang/kukicha/stdlib/errors"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

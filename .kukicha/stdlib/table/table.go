@@ -3,9 +3,9 @@
 package table
 
 import (
+	strpkg "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/term"
 	"fmt"
-	strpkg "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/term"
 	"strings"
 )
 
@@ -22,21 +22,30 @@ func AllStyle() []Style {
 	return []Style{StylePlain, StyleBox, StyleMarkdown}
 }
 
-func (e Style) String() string {
-	return string(e)
-}
-
-func ParseStyle(s string) (Style, bool) {
+func ParseStyle(s string) (Style, error) {
 	switch s {
 	case "plain":
-		return StylePlain, true
+		return StylePlain, nil
 	case "box":
-		return StyleBox, true
+		return StyleBox, nil
 	case "markdown":
-		return StyleMarkdown, true
+		return StyleMarkdown, nil
 	}
 	var zero Style
-	return zero, false
+	return zero, fmt.Errorf("invalid Style %q (valid: plain, box, markdown)", s)
+}
+
+func (e Style) String() string {
+	switch e {
+	case StylePlain:
+		return "Plain"
+	case StyleBox:
+		return "Box"
+	case StyleMarkdown:
+		return "Markdown"
+	default:
+		return string(e)
+	}
 }
 
 //line stdlib/table/table.kuki:29

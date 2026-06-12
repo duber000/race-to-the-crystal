@@ -4,8 +4,8 @@ package json_test
 
 import (
 	"bytes"
-	"github.com/kukichalang/kukicha/stdlib/json"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/json"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

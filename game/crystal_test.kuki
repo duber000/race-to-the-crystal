@@ -1,9 +1,8 @@
 petiole game
 
-import "testing"
-import "stdlib/test"
-
 import "race-to-the-crystal/shared/types" as types
+import "stdlib/test"
+import "testing"
 
 func TestNewCrystal(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
@@ -36,7 +35,7 @@ func TestCrystalTokensRequiredMinimum(t: reference testing.T)
 
 func TestCrystalCaptureNoTokens(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
-    outcome := c.update_capture_status(list of TokenAtPos{}, 0)
+    outcome := c.update_capture_status(empty list of TokenAtPos, 0)
     test.AssertFalse(t, outcome.is_winner)
     test.AssertEqual(t, outcome.winner_id, types.PlayerID(""))
 

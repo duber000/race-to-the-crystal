@@ -3,9 +3,9 @@
 package markdown_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/markdown"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/markdown"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

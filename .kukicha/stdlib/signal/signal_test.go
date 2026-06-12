@@ -3,9 +3,9 @@
 package signal_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/signal"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"context"
-	"github.com/kukichalang/kukicha/stdlib/signal"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"os"
 	"sync"
 	"syscall"

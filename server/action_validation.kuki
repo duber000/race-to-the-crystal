@@ -6,9 +6,9 @@ import "stdlib/json" as jsonpkg
 import "stdlib/string" as strpkg
 
 type ValidationResult
-    field string
-    error_code string
-    message string
+    field: string
+    error_code: string
+    message: string
 
 func ValidateActionFields(action_type: gamepkg.ActionType, data: map of string to any) optional reference ValidationResult
     switch action_type.String()

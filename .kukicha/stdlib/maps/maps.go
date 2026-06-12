@@ -3,8 +3,8 @@
 package maps
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/set"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/set"
 	gomaps "maps"
 	"sort"
 )

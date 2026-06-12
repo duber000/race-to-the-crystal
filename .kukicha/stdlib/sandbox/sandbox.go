@@ -3,8 +3,8 @@
 package sandbox
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/json"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/json"
 	"io/fs"
 	"os"
 )

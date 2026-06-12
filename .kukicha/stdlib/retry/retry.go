@@ -3,8 +3,9 @@
 package retry
 
 import (
-	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
-	"github.com/kukichalang/kukicha/stdlib/datetime"
+	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
+	"codeberg.org/kukichalang/kukicha/stdlib/datetime"
+	"fmt"
 )
 
 //line stdlib/retry/retry.kuki:26
@@ -19,19 +20,26 @@ func AllStrategy() []Strategy {
 	return []Strategy{StrategyLinear, StrategyExponential}
 }
 
-func (e Strategy) String() string {
-	return string(e)
-}
-
-func ParseStrategy(s string) (Strategy, bool) {
+func ParseStrategy(s string) (Strategy, error) {
 	switch s {
 	case "linear":
-		return StrategyLinear, true
+		return StrategyLinear, nil
 	case "exponential":
-		return StrategyExponential, true
+		return StrategyExponential, nil
 	}
 	var zero Strategy
-	return zero, false
+	return zero, fmt.Errorf("invalid Strategy %q (valid: linear, exponential)", s)
+}
+
+func (e Strategy) String() string {
+	switch e {
+	case StrategyLinear:
+		return "Linear"
+	case StrategyExponential:
+		return "Exponential"
+	default:
+		return string(e)
+	}
 }
 
 //line stdlib/retry/retry.kuki:31

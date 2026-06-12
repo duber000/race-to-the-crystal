@@ -4,10 +4,10 @@ package shell
 
 import (
 	"bytes"
+	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"errors"
 	"fmt"
-	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
 	"os"
 	"os/exec"
 	"time"
@@ -50,293 +50,293 @@ func Output(name string, args ...string) (string, error) {
 	return New(name, args...).Output()
 }
 
-//line stdlib/shell/shell.kuki:51
-func Capture(name string, args ...string) (string, string, error) {
 //line stdlib/shell/shell.kuki:52
+func Capture(name string, args ...string) (string, string, error) {
+//line stdlib/shell/shell.kuki:53
 	return New(name, args...).Capture()
 }
 
-//line stdlib/shell/shell.kuki:57
-func Check(name string, args ...string) error {
-//line stdlib/shell/shell.kuki:58
-	_, _, err := Capture(name, args...)
 //line stdlib/shell/shell.kuki:59
+func Check(name string, args ...string) error {
+//line stdlib/shell/shell.kuki:60
+	_, _, err := Capture(name, args...)
+//line stdlib/shell/shell.kuki:61
 	return err
 }
 
-//line stdlib/shell/shell.kuki:64
+//line stdlib/shell/shell.kuki:67
 func Lines(name string, args ...string) ([]string, error) {
-//line stdlib/shell/shell.kuki:65
+//line stdlib/shell/shell.kuki:68
 	out, err_1 := Output(name, args...)
-//line stdlib/shell/shell.kuki:65
+//line stdlib/shell/shell.kuki:68
 	if err_1 != nil {
-//line stdlib/shell/shell.kuki:65
+//line stdlib/shell/shell.kuki:68
 		return []string{}, err_1
 	}
-//line stdlib/shell/shell.kuki:66
+//line stdlib/shell/shell.kuki:69
 	lines := kukistring.Lines(out)
-//line stdlib/shell/shell.kuki:67
+//line stdlib/shell/shell.kuki:70
 	if len(lines) > 0 && lines[len(lines)-1] == "" {
-//line stdlib/shell/shell.kuki:68
+//line stdlib/shell/shell.kuki:71
 		lines = lines[:len(lines)-1]
 	}
-//line stdlib/shell/shell.kuki:69
+//line stdlib/shell/shell.kuki:72
 	return lines, nil
 }
 
-//line stdlib/shell/shell.kuki:79
+//line stdlib/shell/shell.kuki:82
 func New(name string, args ...string) Command {
-//line stdlib/shell/shell.kuki:80
+//line stdlib/shell/shell.kuki:83
 	return Command{name: name, args: args, dir: "", timeout: 0, env: make(map[string]string), stdin: []byte{}}
 }
 
-//line stdlib/shell/shell.kuki:92
+//line stdlib/shell/shell.kuki:95
 func Fatal(msg string) {
-//line stdlib/shell/shell.kuki:93
+//line stdlib/shell/shell.kuki:96
 	fmt.Fprintln(os.Stderr, msg)
-//line stdlib/shell/shell.kuki:94
+//line stdlib/shell/shell.kuki:97
 	os.Exit(1)
 }
 
-//line stdlib/shell/shell.kuki:98
+//line stdlib/shell/shell.kuki:101
 func RequireCommand(name string) error {
-//line stdlib/shell/shell.kuki:99
+//line stdlib/shell/shell.kuki:102
 	if !Which(name) {
-//line stdlib/shell/shell.kuki:100
+//line stdlib/shell/shell.kuki:103
 		return fmt.Errorf("missing command: %v (install it, then run again)", name)
 	}
-//line stdlib/shell/shell.kuki:101
+//line stdlib/shell/shell.kuki:104
 	return nil
 }
 
-//line stdlib/shell/shell.kuki:106
+//line stdlib/shell/shell.kuki:109
 func Args(cmd Command, args ...string) Command {
-//line stdlib/shell/shell.kuki:107
+//line stdlib/shell/shell.kuki:110
 	cmd.args = append(cmd.args, args...)
-//line stdlib/shell/shell.kuki:108
+//line stdlib/shell/shell.kuki:111
 	return cmd
 }
 
-//line stdlib/shell/shell.kuki:114
+//line stdlib/shell/shell.kuki:117
 func (cmd Command) Flag(name string, value string) Command {
-//line stdlib/shell/shell.kuki:115
+//line stdlib/shell/shell.kuki:118
 	cmd.args = append(cmd.args, name, value)
-//line stdlib/shell/shell.kuki:116
+//line stdlib/shell/shell.kuki:119
 	return cmd
 }
 
-//line stdlib/shell/shell.kuki:121
+//line stdlib/shell/shell.kuki:124
 func (cmd Command) FlagIf(condition bool, args ...string) Command {
-//line stdlib/shell/shell.kuki:122
+//line stdlib/shell/shell.kuki:125
 	if condition {
-//line stdlib/shell/shell.kuki:123
+//line stdlib/shell/shell.kuki:126
 		cmd.args = append(cmd.args, args...)
 	}
-//line stdlib/shell/shell.kuki:124
+//line stdlib/shell/shell.kuki:127
 	return cmd
 }
 
-//line stdlib/shell/shell.kuki:128
+//line stdlib/shell/shell.kuki:131
 func (cmd Command) Dir(path string) Command {
-//line stdlib/shell/shell.kuki:129
+//line stdlib/shell/shell.kuki:132
 	cmd.dir = path
-//line stdlib/shell/shell.kuki:130
+//line stdlib/shell/shell.kuki:133
 	return cmd
 }
 
-//line stdlib/shell/shell.kuki:134
+//line stdlib/shell/shell.kuki:137
 func (cmd Command) Env(key string, value string) Command {
-//line stdlib/shell/shell.kuki:135
+//line stdlib/shell/shell.kuki:138
 	cmd.env[key] = value
-//line stdlib/shell/shell.kuki:136
+//line stdlib/shell/shell.kuki:139
 	return cmd
 }
 
-//line stdlib/shell/shell.kuki:140
+//line stdlib/shell/shell.kuki:143
 func (cmd Command) Timeout(d time.Duration) Command {
-//line stdlib/shell/shell.kuki:141
+//line stdlib/shell/shell.kuki:144
 	cmd.timeout = d
-//line stdlib/shell/shell.kuki:142
+//line stdlib/shell/shell.kuki:145
 	return cmd
 }
 
-//line stdlib/shell/shell.kuki:148
+//line stdlib/shell/shell.kuki:151
 func (cmd Command) Stdin(data string) Command {
-//line stdlib/shell/shell.kuki:149
+//line stdlib/shell/shell.kuki:152
 	cmd.stdin = []byte(data)
-//line stdlib/shell/shell.kuki:150
+//line stdlib/shell/shell.kuki:153
 	return cmd
 }
 
-//line stdlib/shell/shell.kuki:155
+//line stdlib/shell/shell.kuki:158
 func (cmd Command) StdinBytes(data []byte) Command {
-//line stdlib/shell/shell.kuki:156
+//line stdlib/shell/shell.kuki:159
 	cmd.stdin = data
-//line stdlib/shell/shell.kuki:157
+//line stdlib/shell/shell.kuki:160
 	return cmd
 }
 
-//line stdlib/shell/shell.kuki:161
-func (cmd Command) Preview() string {
-//line stdlib/shell/shell.kuki:162
-	parts := []string{cmd.name}
-//line stdlib/shell/shell.kuki:163
-	parts = append(parts, cmd.args...)
 //line stdlib/shell/shell.kuki:164
+func (cmd Command) Preview() string {
+//line stdlib/shell/shell.kuki:165
+	parts := []string{cmd.name}
+//line stdlib/shell/shell.kuki:166
+	parts = append(parts, cmd.args...)
+//line stdlib/shell/shell.kuki:167
 	return kukistring.Join(parts, " ")
 }
 
-//line stdlib/shell/shell.kuki:170
-func (cmd Command) Execute() Result {
 //line stdlib/shell/shell.kuki:173
-	execCmd := exec.Command(cmd.name, cmd.args...)
-//line stdlib/shell/shell.kuki:174
-	if cmd.timeout > 0 {
-//line stdlib/shell/shell.kuki:175
-		h := ctxpkg.WithTimeout(ctxpkg.Background(), cmd.timeout)
+func (cmd Command) Execute() Result {
 //line stdlib/shell/shell.kuki:176
-		defer h.Cancel()
+	execCmd := exec.Command(cmd.name, cmd.args...)
 //line stdlib/shell/shell.kuki:177
+	if cmd.timeout > 0 {
+//line stdlib/shell/shell.kuki:178
+		h := ctxpkg.WithTimeout(ctxpkg.Background(), cmd.timeout)
+//line stdlib/shell/shell.kuki:179
+		defer h.Cancel()
+//line stdlib/shell/shell.kuki:180
 		execCmd = exec.CommandContext(h.Ctx, cmd.name, cmd.args...)
 	}
-//line stdlib/shell/shell.kuki:180
+//line stdlib/shell/shell.kuki:183
 	if cmd.dir != "" {
-//line stdlib/shell/shell.kuki:181
+//line stdlib/shell/shell.kuki:184
 		execCmd.Dir = cmd.dir
 	}
-//line stdlib/shell/shell.kuki:184
-	if len(cmd.env) > 0 {
-//line stdlib/shell/shell.kuki:185
-		env := os.Environ()
-//line stdlib/shell/shell.kuki:186
-		for key, value := range cmd.env {
 //line stdlib/shell/shell.kuki:187
+	if len(cmd.env) > 0 {
+//line stdlib/shell/shell.kuki:188
+		env := os.Environ()
+//line stdlib/shell/shell.kuki:189
+		for key, value := range cmd.env {
+//line stdlib/shell/shell.kuki:190
 			env = append(env, fmt.Sprintf("%v=%v", key, value))
 		}
-//line stdlib/shell/shell.kuki:188
+//line stdlib/shell/shell.kuki:191
 		execCmd.Env = env
 	}
-//line stdlib/shell/shell.kuki:191
+//line stdlib/shell/shell.kuki:194
 	if len(cmd.stdin) > 0 {
-//line stdlib/shell/shell.kuki:192
+//line stdlib/shell/shell.kuki:195
 		execCmd.Stdin = bytes.NewReader(cmd.stdin)
 	}
-//line stdlib/shell/shell.kuki:195
-	stdoutBuf := bytes.Buffer{}
-//line stdlib/shell/shell.kuki:196
-	stderrBuf := bytes.Buffer{}
-//line stdlib/shell/shell.kuki:197
-	execCmd.Stdout = &stdoutBuf
 //line stdlib/shell/shell.kuki:198
-	execCmd.Stderr = &stderrBuf
+	stdoutBuf := bytes.Buffer{}
+//line stdlib/shell/shell.kuki:199
+	stderrBuf := bytes.Buffer{}
+//line stdlib/shell/shell.kuki:200
+	execCmd.Stdout = &stdoutBuf
 //line stdlib/shell/shell.kuki:201
-	err := execCmd.Run()
+	execCmd.Stderr = &stderrBuf
 //line stdlib/shell/shell.kuki:204
+	err := execCmd.Run()
+//line stdlib/shell/shell.kuki:207
 	exitCode := getExitCode(err)
-//line stdlib/shell/shell.kuki:206
+//line stdlib/shell/shell.kuki:209
 	return Result{Stdout: stdoutBuf.Bytes(), Stderr: stderrBuf.Bytes(), ExitCode: exitCode, Err: err}
 }
 
-//line stdlib/shell/shell.kuki:212
+//line stdlib/shell/shell.kuki:215
 func (cmd Command) Output() (string, error) {
-//line stdlib/shell/shell.kuki:213
+//line stdlib/shell/shell.kuki:216
 	return cmd.Execute().Require()
 }
 
-//line stdlib/shell/shell.kuki:220
-func (cmd Command) Capture() (string, string, error) {
-//line stdlib/shell/shell.kuki:221
-	result := cmd.Execute()
-//line stdlib/shell/shell.kuki:222
-	stdout := string(result.Stdout)
 //line stdlib/shell/shell.kuki:223
-	stderr := string(result.Stderr)
+func (cmd Command) Capture() (string, string, error) {
 //line stdlib/shell/shell.kuki:224
-	if !result.Success() {
+	result := cmd.Execute()
 //line stdlib/shell/shell.kuki:225
+	stdout := string(result.Stdout)
+//line stdlib/shell/shell.kuki:226
+	stderr := string(result.Stderr)
+//line stdlib/shell/shell.kuki:227
+	if !result.Success() {
+//line stdlib/shell/shell.kuki:228
 		return stdout, stderr, fmt.Errorf("%v", stderr)
 	}
-//line stdlib/shell/shell.kuki:226
+//line stdlib/shell/shell.kuki:229
 	return stdout, stderr, nil
 }
 
-//line stdlib/shell/shell.kuki:233
+//line stdlib/shell/shell.kuki:236
 func (cmd Command) Check() error {
-//line stdlib/shell/shell.kuki:234
+//line stdlib/shell/shell.kuki:237
 	_, _, err := cmd.Capture()
-//line stdlib/shell/shell.kuki:235
+//line stdlib/shell/shell.kuki:238
 	return err
 }
 
-//line stdlib/shell/shell.kuki:238
+//line stdlib/shell/shell.kuki:241
 func getExitCode(err error) int {
-//line stdlib/shell/shell.kuki:239
+//line stdlib/shell/shell.kuki:242
 	if err == nil {
-//line stdlib/shell/shell.kuki:240
+//line stdlib/shell/shell.kuki:243
 		return 0
 	}
-//line stdlib/shell/shell.kuki:241
+//line stdlib/shell/shell.kuki:244
 	code := func() int {
 		switch exitErr := err.(type) {
 		case *exec.ExitError:
-//line stdlib/shell/shell.kuki:243
+//line stdlib/shell/shell.kuki:246
 			return exitErr.ExitCode()
 		default:
-//line stdlib/shell/shell.kuki:245
+//line stdlib/shell/shell.kuki:248
 			return 1
 		}
 	}()
-//line stdlib/shell/shell.kuki:247
+//line stdlib/shell/shell.kuki:250
 	return code
 }
 
-//line stdlib/shell/shell.kuki:253
+//line stdlib/shell/shell.kuki:256
 func (result Result) Success() bool {
-//line stdlib/shell/shell.kuki:254
+//line stdlib/shell/shell.kuki:257
 	return result.ExitCode == 0 && result.Err == nil
 }
 
-//line stdlib/shell/shell.kuki:259
-func (result Result) Require() (string, error) {
-//line stdlib/shell/shell.kuki:260
-	if !result.Success() {
-//line stdlib/shell/shell.kuki:261
-		stderr := string(result.Stderr)
 //line stdlib/shell/shell.kuki:262
+func (result Result) Require() (string, error) {
+//line stdlib/shell/shell.kuki:263
+	if !result.Success() {
+//line stdlib/shell/shell.kuki:264
+		stderr := string(result.Stderr)
+//line stdlib/shell/shell.kuki:265
 		return "", fmt.Errorf("%v", stderr)
 	}
-//line stdlib/shell/shell.kuki:263
+//line stdlib/shell/shell.kuki:266
 	return string(result.Stdout), nil
 }
 
-//line stdlib/shell/shell.kuki:270
+//line stdlib/shell/shell.kuki:273
 func Which(name string) bool {
-//line stdlib/shell/shell.kuki:271
+//line stdlib/shell/shell.kuki:274
 	_, err := exec.LookPath(name)
-//line stdlib/shell/shell.kuki:272
+//line stdlib/shell/shell.kuki:275
 	return err == nil
 }
 
-//line stdlib/shell/shell.kuki:276
+//line stdlib/shell/shell.kuki:279
 func Getenv(key string) string {
-//line stdlib/shell/shell.kuki:277
+//line stdlib/shell/shell.kuki:280
 	return os.Getenv(key)
 }
 
-//line stdlib/shell/shell.kuki:281
+//line stdlib/shell/shell.kuki:284
 func Setenv(key string, value string) error {
-//line stdlib/shell/shell.kuki:282
+//line stdlib/shell/shell.kuki:285
 	return os.Setenv(key, value)
 }
 
-//line stdlib/shell/shell.kuki:286
+//line stdlib/shell/shell.kuki:289
 func Unsetenv(key string) error {
-//line stdlib/shell/shell.kuki:287
+//line stdlib/shell/shell.kuki:290
 	return os.Unsetenv(key)
 }
 
-//line stdlib/shell/shell.kuki:292
+//line stdlib/shell/shell.kuki:295
 func Environ() []string {
-//line stdlib/shell/shell.kuki:293
+//line stdlib/shell/shell.kuki:296
 	return os.Environ()
 }

@@ -4,8 +4,8 @@ import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
 type DirOffset
-    dx int
-    dy int
+    dx: int
+    dy: int
 
 var DIRECTIONS = list of DirOffset{
     {dx: -1, dy: -1},
@@ -19,12 +19,12 @@ var DIRECTIONS = list of DirOffset{
 }
 
 type BfsItem
-    pos types.Position
-    dist int
+    pos: types.Position
+    dist: int
 
 type PathItem
-    pos types.Position
-    path list of types.Position
+    pos: types.Position
+    path: list of types.Position
 
 func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int, tokens_map: map of types.TokenID to reference Token) list of types.Position
     result := empty list of types.Position

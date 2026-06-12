@@ -3,9 +3,9 @@
 package datetime_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/datetime"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/datetime"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 	"time"
 )

@@ -3,8 +3,8 @@
 package cast_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/cast"
-	"github.com/kukichalang/kukicha/stdlib/json"
+	"codeberg.org/kukichalang/kukicha/stdlib/cast"
+	"codeberg.org/kukichalang/kukicha/stdlib/json"
 	"testing"
 )
 

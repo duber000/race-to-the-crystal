@@ -8,13 +8,13 @@ import "stdlib/log"
 import "strings"
 
 type Session
-    base_url string
-    player_id string
-    player_name string
-    token string
-    game_id string
-    sse_url string
-    active bool
+    base_url: string
+    player_id: string
+    player_name: string
+    token: string
+    game_id: string
+    sse_url: string
+    active: bool
 
 func NewSession(base_url: string) Session
     return Session{base_url: strings.TrimRight(base_url, "/"), active: true}
@@ -406,8 +406,8 @@ func PickAction(actions: list of map of string to any, strategy: gamepkg.AIStrat
     return dereference chosen_ref
 
 type SSEEvent
-    event_type string
-    data string
+    event_type: string
+    data: string
 
 func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
     if s.sse_url equals ""
@@ -435,24 +435,21 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
     for scanner.Scan()
         line := scanner.Text()
 
-        switch
-            when line equals ""
-                if data_buf.Len() > 0
-                    ev := SSEEvent{event_type: current_event, data: data_buf.String()}
-                    keep_going := handler(ev)
-                    data_buf.Reset()
-                    current_event = "message"
-                    if not keep_going
-                        return
-            when strings.HasPrefix(line, "event:")
-                current_event = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
-            when strings.HasPrefix(line, "data:")
-                chunk := strings.TrimPrefix(line, "data:")
-                if data_buf.Len() > 0
-                    data_buf.WriteString("\n")
-                data_buf.WriteString(strings.TrimLeft(chunk, " "))
-            default
-                continue
+        if line equals ""
+            if data_buf.Len() > 0
+                ev := SSEEvent{event_type: current_event, data: data_buf.String()}
+                keep_going := handler(ev)
+                data_buf.Reset()
+                current_event = "message"
+                if not keep_going
+                    return
+        else if strings.HasPrefix(line, "event:")
+            current_event = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
+        else if strings.HasPrefix(line, "data:")
+            chunk := strings.TrimPrefix(line, "data:")
+            if data_buf.Len() > 0
+                data_buf.WriteString("\n") onerr discard
+            data_buf.WriteString(strings.TrimLeft(chunk, " ")) onerr discard
 
     err := scanner.Err()
     if err isnt empty

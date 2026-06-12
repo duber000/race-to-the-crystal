@@ -3,8 +3,8 @@
 package must
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/env"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/env"
 	"strconv"
 )
 

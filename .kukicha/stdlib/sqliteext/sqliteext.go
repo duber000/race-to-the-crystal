@@ -3,9 +3,9 @@
 package sqliteext
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/db"
 	"context"
 	"errors"
-	"github.com/kukichalang/kukicha/stdlib/db"
 	sqlite3 "github.com/ncruces/go-sqlite3"
 	_ "github.com/ncruces/go-sqlite3/driver"
 )

@@ -14,17 +14,15 @@ const DEFAULT_POLL_MS = 1500
 const DEFAULT_THINK_MS = 500
 
 type Mode
-    Mode string
+    Mode: string
 
 const POLL = "poll"
 
 const SSE = "sse"
 
 func parseStrategy(s: string) gamepkg.AIStrategyName
-    name, ok := gamepkg.ParseAIStrategyName(s)
-    if ok
-        return name
-    return gamepkg.AIStrategyNameRANDOM
+    name := gamepkg.ParseAIStrategyName(s) onerr gamepkg.AIStrategyNameRANDOM
+    return name
 
 func defaultPlayerName() string
     return "AI_{random.Int(1000, 9999)}"
@@ -146,7 +144,7 @@ func runPoll(args: cli.Args)
         send true to ch
     )
 
-    for
+    for true
         select
             when receive from ch
                 return

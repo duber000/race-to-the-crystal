@@ -5,13 +5,13 @@ import "race-to-the-crystal/shared/types" as types
 import "stdlib/slice"
 
 type Player
-    id types.PlayerID
-    name string
-    color enums.PlayerColor
-    token_ids list of types.TokenID
-    is_ready bool
-    is_active bool
-    team optional reference int
+    id: types.PlayerID
+    name: string
+    color: enums.PlayerColor
+    token_ids: list of types.TokenID
+    is_ready: bool
+    is_active: bool
+    team: optional reference int
 
 func NewPlayer(id: types.PlayerID, name: string, color: enums.PlayerColor) Player
     return Player{

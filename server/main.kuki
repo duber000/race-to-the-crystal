@@ -10,10 +10,10 @@ import "stdlib/signal"
 import "strings"
 
 type ServerConfig
-    http_port int
-    static_dir string
-    jwt_secret string
-    debug bool
+    http_port: int
+    static_dir: string
+    jwt_secret: string
+    debug: bool
 
 func ServerConfigFromEnv() ServerConfig
     return ServerConfig{
@@ -24,12 +24,12 @@ func ServerConfigFromEnv() ServerConfig
     }
 
 type GameServer
-    config ServerConfig
-    coordinator GameCoordinator
-    lobby_mgr LobbyManager
-    ws_handler WebSocketHandler
-    mercure MercurePublisher
-    http_handler HTTPHandler
+    config: ServerConfig
+    coordinator: GameCoordinator
+    lobby_mgr: LobbyManager
+    ws_handler: WebSocketHandler
+    mercure: MercurePublisher
+    http_handler: HTTPHandler
 
 func NewGameServer(config: ServerConfig) GameServer
     mercure_cfg := MercureConfigFromEnv()
@@ -90,7 +90,7 @@ func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
 func handleHTTP on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
     httphelper.SetSecureHeaders(w)
     if gs.config.static_dir equals ""
-        httphelper.JSONNotFound(w, "no static files configured")
+        httphelper.JSONNotFound(w, "no static files configured") onerr discard
         return
 
     path := r.URL.Path
@@ -102,7 +102,7 @@ func handleHTTP on gs: reference GameServer(w: http.ResponseWriter, r: reference
 
     prefix := filepath.Clean(gs.config.static_dir)
     if not strings.HasPrefix(file_path, prefix)
-        httphelper.JSONNotFound(w, "not found")
+        httphelper.JSONNotFound(w, "not found") onerr discard
         return
 
     http.ServeFile(w, r, file_path)

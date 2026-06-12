@@ -3,9 +3,9 @@
 package set_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/set"
-	"github.com/kukichalang/kukicha/stdlib/slice"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/set"
+	"codeberg.org/kukichalang/kukicha/stdlib/slice"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

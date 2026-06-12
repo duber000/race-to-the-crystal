@@ -3,8 +3,8 @@
 package crypto_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/crypto"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/crypto"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

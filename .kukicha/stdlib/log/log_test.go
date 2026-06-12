@@ -3,11 +3,11 @@
 package log_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/log"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/term"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/log"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/term"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"os"
 	"testing"
 )
@@ -55,7 +55,7 @@ func TestTextFormatBasic(t *testing.T) {
 //line stdlib/log/log_test.kuki:35
 	l.Info("hello", "key", "value")
 //line stdlib/log/log_test.kuki:36
-	f.Close()
+	_ = f.Close()
 //line stdlib/log/log_test.kuki:38
 	got := readAll(t, path)
 //line stdlib/log/log_test.kuki:39
@@ -77,7 +77,7 @@ func TestTextFormatQuotesValueWithSpace(t *testing.T) {
 //line stdlib/log/log_test.kuki:48
 	l.Info("msg", "k", "two words")
 //line stdlib/log/log_test.kuki:49
-	f.Close()
+	_ = f.Close()
 //line stdlib/log/log_test.kuki:51
 	got := readAll(t, path)
 //line stdlib/log/log_test.kuki:52
@@ -95,7 +95,7 @@ func TestTextFormatMissingValue(t *testing.T) {
 //line stdlib/log/log_test.kuki:59
 	l.Info("msg", "dangling")
 //line stdlib/log/log_test.kuki:60
-	f.Close()
+	_ = f.Close()
 //line stdlib/log/log_test.kuki:62
 	got := readAll(t, path)
 //line stdlib/log/log_test.kuki:63
@@ -115,7 +115,7 @@ func TestJSONFormat(t *testing.T) {
 //line stdlib/log/log_test.kuki:73
 	l.Error("save failed", "err", "disk full")
 //line stdlib/log/log_test.kuki:74
-	f.Close()
+	_ = f.Close()
 //line stdlib/log/log_test.kuki:76
 	got := readAll(t, path)
 //line stdlib/log/log_test.kuki:77
@@ -145,7 +145,7 @@ func TestLevelFilter(t *testing.T) {
 //line stdlib/log/log_test.kuki:92
 	l.Error("error-msg")
 //line stdlib/log/log_test.kuki:93
-	f.Close()
+	_ = f.Close()
 //line stdlib/log/log_test.kuki:95
 	got := readAll(t, path)
 //line stdlib/log/log_test.kuki:96
@@ -185,7 +185,7 @@ func TestColorHonorsTermOverride(t *testing.T) {
 //line stdlib/log/log_test.kuki:122
 	l.Info("x")
 //line stdlib/log/log_test.kuki:123
-	f.Close()
+	_ = f.Close()
 //line stdlib/log/log_test.kuki:125
 	got := readAll(t, path)
 //line stdlib/log/log_test.kuki:127

@@ -3,9 +3,9 @@
 package retry_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/retry"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"errors"
-	"github.com/kukichalang/kukicha/stdlib/retry"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 	"time"
 )

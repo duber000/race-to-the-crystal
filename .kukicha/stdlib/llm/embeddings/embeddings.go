@@ -3,14 +3,14 @@
 package embeddings
 
 import (
+	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
+	"codeberg.org/kukichalang/kukicha/stdlib/env"
+	"codeberg.org/kukichalang/kukicha/stdlib/fetch"
+	jsonpkg "codeberg.org/kukichalang/kukicha/stdlib/json"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"context"
 	"errors"
 	"fmt"
-	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
-	"github.com/kukichalang/kukicha/stdlib/env"
-	"github.com/kukichalang/kukicha/stdlib/fetch"
-	jsonpkg "github.com/kukichalang/kukicha/stdlib/json"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
 	"strings"
 )
 
@@ -380,26 +380,19 @@ func executeRaw(c Client, input any) (Response, error) {
 //line stdlib/llm/embeddings/embeddings.kuki:241
 	if resp.StatusCode >= 400 {
 //line stdlib/llm/embeddings/embeddings.kuki:242
-		errBody, err_4 := fetch.Bytes(resp)
-//line stdlib/llm/embeddings/embeddings.kuki:242
-		if err_4 != nil {
-//line stdlib/llm/embeddings/embeddings.kuki:242
-			return Response{}, fmt.Errorf("embeddings: API request failed with status %v", resp.StatusCode)
-		}
-//line stdlib/llm/embeddings/embeddings.kuki:243
-		return Response{}, fmt.Errorf("embeddings: API request failed (%v): %v", resp.StatusCode, string(errBody))
+		return Response{}, fmt.Errorf("embeddings: API request failed (%v)", resp.StatusCode)
 	}
-//line stdlib/llm/embeddings/embeddings.kuki:245
+//line stdlib/llm/embeddings/embeddings.kuki:244
 	out := Response{}
-//line stdlib/llm/embeddings/embeddings.kuki:246
-//line stdlib/llm/embeddings/embeddings.kuki:246
-	err_5 := jsonpkg.ReadInto(resp.Body, &out)
-//line stdlib/llm/embeddings/embeddings.kuki:246
-	if err_5 != nil {
+//line stdlib/llm/embeddings/embeddings.kuki:245
+//line stdlib/llm/embeddings/embeddings.kuki:245
+	err_4 := jsonpkg.ReadInto(resp.Body, &out)
+//line stdlib/llm/embeddings/embeddings.kuki:245
+	if err_4 != nil {
 		var _zero0 Response
-//line stdlib/llm/embeddings/embeddings.kuki:246
-		return _zero0, err_5
+//line stdlib/llm/embeddings/embeddings.kuki:245
+		return _zero0, err_4
 	}
-//line stdlib/llm/embeddings/embeddings.kuki:247
+//line stdlib/llm/embeddings/embeddings.kuki:246
 	return out, nil
 }

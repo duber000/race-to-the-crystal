@@ -3,8 +3,8 @@
 package url_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/test"
-	"github.com/kukichalang/kukicha/stdlib/url"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/url"
 	"testing"
 )
 

@@ -3,9 +3,9 @@
 package test_test
 
 import (
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"errors"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

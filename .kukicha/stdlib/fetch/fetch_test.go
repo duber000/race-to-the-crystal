@@ -3,11 +3,11 @@
 package fetch_test
 
 import (
-	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
-	"github.com/kukichalang/kukicha/stdlib/datetime"
-	"github.com/kukichalang/kukicha/stdlib/fetch"
-	"github.com/kukichalang/kukicha/stdlib/json"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
+	"codeberg.org/kukichalang/kukicha/stdlib/datetime"
+	"codeberg.org/kukichalang/kukicha/stdlib/fetch"
+	"codeberg.org/kukichalang/kukicha/stdlib/json"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -38,7 +38,7 @@ func TestGet(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:29
 		w.WriteHeader(http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:30
-		w.Write([]byte("Hello, World!"))
+		_, _ = w.Write([]byte("Hello, World!"))
 	}))
 //line stdlib/fetch/fetch_test.kuki:33
 	defer server.Close()
@@ -55,7 +55,7 @@ func TestGet(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:41
 			test.AssertEqual(t, resp.StatusCode, http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:42
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		})
 	}
 }
@@ -78,7 +78,7 @@ func TestJSON(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:55
 		w.WriteHeader(http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:56
-		w.Write(jsonBytes)
+		_, _ = w.Write(jsonBytes)
 	}))
 //line stdlib/fetch/fetch_test.kuki:59
 	defer server.Close()
@@ -120,7 +120,7 @@ func TestJSONArray(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:81
 		w.WriteHeader(http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:82
-		w.Write(jsonBytes)
+		_, _ = w.Write(jsonBytes)
 	}))
 //line stdlib/fetch/fetch_test.kuki:85
 	defer server.Close()
@@ -159,7 +159,7 @@ func TestGetJSON(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:105
 		w.WriteHeader(http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:106
-		w.Write(jsonBytes)
+		_, _ = w.Write(jsonBytes)
 	}))
 //line stdlib/fetch/fetch_test.kuki:109
 	defer server.Close()
@@ -206,7 +206,7 @@ func TestDecode(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:137
 		w.WriteHeader(http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:138
-		w.Write(jsonBytes)
+		_, _ = w.Write(jsonBytes)
 	}))
 //line stdlib/fetch/fetch_test.kuki:141
 	defer server.Close()
@@ -315,7 +315,7 @@ func TestText(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:229
 		w.WriteHeader(http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:230
-		w.Write([]byte(expectedText))
+		_, _ = w.Write([]byte(expectedText))
 	}))
 //line stdlib/fetch/fetch_test.kuki:233
 	defer server.Close()
@@ -353,7 +353,7 @@ func TestPost(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:253
 		w.WriteHeader(http.StatusCreated)
 //line stdlib/fetch/fetch_test.kuki:254
-		w.Write([]byte("created"))
+		_, _ = w.Write([]byte("created"))
 	}))
 //line stdlib/fetch/fetch_test.kuki:257
 	defer server.Close()
@@ -372,7 +372,7 @@ func TestPost(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:266
 			test.AssertEqual(t, resp.StatusCode, http.StatusCreated)
 //line stdlib/fetch/fetch_test.kuki:267
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		})
 	}
 }
@@ -431,7 +431,7 @@ func TestCheckStatus(t *testing.T) {
 					t.Error("Expected non-nil response")
 				}
 //line stdlib/fetch/fetch_test.kuki:306
-				checkedResp.Body.Close()
+				_ = checkedResp.Body.Close()
 			}
 		})
 	}
@@ -451,7 +451,7 @@ func TestRequestBuilder(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:316
 		w.WriteHeader(http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:317
-		w.Write([]byte("authorized"))
+		_, _ = w.Write([]byte("authorized"))
 	}))
 //line stdlib/fetch/fetch_test.kuki:320
 	defer server.Close()
@@ -470,7 +470,7 @@ func TestRequestBuilder(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:329
 			test.AssertEqual(t, resp.StatusCode, http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:330
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		})
 	}
 }
@@ -504,7 +504,7 @@ func TestAuthHelpers(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:351
 			test.AssertNoError(t, errBearer)
 //line stdlib/fetch/fetch_test.kuki:352
-			respBearer.Body.Close()
+			_ = respBearer.Body.Close()
 //line stdlib/fetch/fetch_test.kuki:354
 			serverBasic := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 //line stdlib/fetch/fetch_test.kuki:355
@@ -521,7 +521,7 @@ func TestAuthHelpers(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:363
 			test.AssertNoError(t, errBasic)
 //line stdlib/fetch/fetch_test.kuki:364
-			respBasic.Body.Close()
+			_ = respBasic.Body.Close()
 		})
 	}
 }
@@ -538,7 +538,7 @@ func TestFormData(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:373
 		test.AssertEqual(t, r.Header.Get("Content-Type"), "application/x-www-form-urlencoded")
 //line stdlib/fetch/fetch_test.kuki:374
-		r.ParseForm()
+		_ = r.ParseForm()
 //line stdlib/fetch/fetch_test.kuki:375
 		test.AssertEqual(t, r.Form.Get("key"), "value")
 //line stdlib/fetch/fetch_test.kuki:376
@@ -561,7 +561,7 @@ func TestFormData(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:388
 			test.AssertNoError(t, err)
 //line stdlib/fetch/fetch_test.kuki:389
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		})
 	}
 }
@@ -584,14 +584,14 @@ func TestSession(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:401
 			w.WriteHeader(http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:402
-			w.Write([]byte("logged in"))
+			_, _ = w.Write([]byte("logged in"))
 		} else {
 //line stdlib/fetch/fetch_test.kuki:404
 			http.SetCookie(w, &http.Cookie{Name: "session_id", Value: "12345"})
 //line stdlib/fetch/fetch_test.kuki:405
 			w.WriteHeader(http.StatusOK)
 //line stdlib/fetch/fetch_test.kuki:406
-			w.Write([]byte("cookie set"))
+			_, _ = w.Write([]byte("cookie set"))
 		}
 	}))
 //line stdlib/fetch/fetch_test.kuki:409
@@ -609,7 +609,7 @@ func TestSession(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:417
 			test.AssertNoError(t, err1)
 //line stdlib/fetch/fetch_test.kuki:418
-			resp1.Body.Close()
+			_ = resp1.Body.Close()
 //line stdlib/fetch/fetch_test.kuki:420
 			resp2, err2 := fetch.SessionGet(session, server.URL)
 //line stdlib/fetch/fetch_test.kuki:421
@@ -640,7 +640,7 @@ func TestNewExternal(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:441
 	if resp != nil {
 //line stdlib/fetch/fetch_test.kuki:442
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 }
 
@@ -666,7 +666,7 @@ func TestWithContextCancel(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:459
 	if resp != nil {
 //line stdlib/fetch/fetch_test.kuki:460
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 }
 
@@ -696,7 +696,7 @@ func TestWithContextTimeout(t *testing.T) {
 //line stdlib/fetch/fetch_test.kuki:480
 	if resp != nil {
 //line stdlib/fetch/fetch_test.kuki:481
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 //line stdlib/fetch/fetch_test.kuki:483
 	test.AssertTrue(t, elapsed < datetime.Seconds(2))

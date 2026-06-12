@@ -6,13 +6,13 @@ import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
 type Token
-    id types.TokenID
-    player_id types.PlayerID
-    health int
-    max_health int
-    position types.Position
-    is_alive bool
-    is_deployed bool
+    id: types.TokenID
+    player_id: types.PlayerID
+    health: int
+    max_health: int
+    position: types.Position
+    is_alive: bool
+    is_deployed: bool
 
 func NewToken(id: types.TokenID, player_id: types.PlayerID, health: int, max_health: int, position: types.Position) (Token, error)
     if health < 0

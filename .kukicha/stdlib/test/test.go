@@ -21,164 +21,162 @@ func formatMessage(defaultMsg string, msgAndArgs []any) string {
 		return fmt.Sprintf("%v", msgAndArgs[0])
 	}
 //line stdlib/test/test.kuki:19
-	format, ok := msgAndArgs[0].(string)
+	if format, _isOk := msgAndArgs[0].(string); _isOk {
 //line stdlib/test/test.kuki:20
-	if ok {
-//line stdlib/test/test.kuki:21
 		return fmt.Sprintf(format, msgAndArgs[1:]...)
 	}
-//line stdlib/test/test.kuki:22
+//line stdlib/test/test.kuki:21
 	return fmt.Sprintf("%v", msgAndArgs[0])
 }
 
-//line stdlib/test/test.kuki:25
+//line stdlib/test/test.kuki:24
 func AssertEqual(t testing.TB, got any, want any, msgAndArgs ...any) {
-//line stdlib/test/test.kuki:26
+//line stdlib/test/test.kuki:25
 	t.Helper()
-//line stdlib/test/test.kuki:27
+//line stdlib/test/test.kuki:26
 	if !reflect.DeepEqual(got, want) {
-//line stdlib/test/test.kuki:28
+//line stdlib/test/test.kuki:27
 		msg := formatMessage("", msgAndArgs)
-//line stdlib/test/test.kuki:29
+//line stdlib/test/test.kuki:28
 		if msg != "" {
-//line stdlib/test/test.kuki:30
+//line stdlib/test/test.kuki:29
 			t.Errorf("%s: expected %v, got %v", msg, want, got)
 		} else {
-//line stdlib/test/test.kuki:32
+//line stdlib/test/test.kuki:31
 			t.Errorf("expected %v, got %v", want, got)
 		}
 	}
 }
 
-//line stdlib/test/test.kuki:35
+//line stdlib/test/test.kuki:34
 func AssertNotEqual(t testing.TB, got any, want any, msgAndArgs ...any) {
-//line stdlib/test/test.kuki:36
+//line stdlib/test/test.kuki:35
 	t.Helper()
-//line stdlib/test/test.kuki:37
+//line stdlib/test/test.kuki:36
 	if reflect.DeepEqual(got, want) {
-//line stdlib/test/test.kuki:38
+//line stdlib/test/test.kuki:37
 		msg := formatMessage("", msgAndArgs)
-//line stdlib/test/test.kuki:39
+//line stdlib/test/test.kuki:38
 		if msg != "" {
-//line stdlib/test/test.kuki:40
+//line stdlib/test/test.kuki:39
 			t.Errorf("%s: expected values to differ, but both are %v", msg, got)
 		} else {
-//line stdlib/test/test.kuki:42
+//line stdlib/test/test.kuki:41
 			t.Errorf("expected values to differ, but both are %v", got)
 		}
 	}
 }
 
-//line stdlib/test/test.kuki:45
+//line stdlib/test/test.kuki:44
 func AssertTrue(t testing.TB, condition bool, msgAndArgs ...any) {
-//line stdlib/test/test.kuki:46
+//line stdlib/test/test.kuki:45
 	t.Helper()
-//line stdlib/test/test.kuki:47
+//line stdlib/test/test.kuki:46
 	if !condition {
-//line stdlib/test/test.kuki:48
+//line stdlib/test/test.kuki:47
 		t.Errorf("%s", formatMessage("expected true", msgAndArgs))
 	}
 }
 
-//line stdlib/test/test.kuki:51
+//line stdlib/test/test.kuki:50
 func AssertFalse(t testing.TB, condition bool, msgAndArgs ...any) {
-//line stdlib/test/test.kuki:52
+//line stdlib/test/test.kuki:51
 	t.Helper()
-//line stdlib/test/test.kuki:53
+//line stdlib/test/test.kuki:52
 	if condition {
-//line stdlib/test/test.kuki:54
+//line stdlib/test/test.kuki:53
 		t.Errorf("%s", formatMessage("expected false", msgAndArgs))
 	}
 }
 
-//line stdlib/test/test.kuki:57
+//line stdlib/test/test.kuki:56
 func AssertNoError(t testing.TB, err error, msgAndArgs ...any) {
-//line stdlib/test/test.kuki:58
+//line stdlib/test/test.kuki:57
 	t.Helper()
-//line stdlib/test/test.kuki:59
+//line stdlib/test/test.kuki:58
 	if err != nil {
-//line stdlib/test/test.kuki:60
+//line stdlib/test/test.kuki:59
 		msg := formatMessage("", msgAndArgs)
-//line stdlib/test/test.kuki:61
+//line stdlib/test/test.kuki:60
 		if msg != "" {
-//line stdlib/test/test.kuki:62
+//line stdlib/test/test.kuki:61
 			t.Errorf("%s: unexpected error: %v", msg, err)
 		} else {
-//line stdlib/test/test.kuki:64
+//line stdlib/test/test.kuki:63
 			t.Errorf("unexpected error: %v", err)
 		}
 	}
 }
 
-//line stdlib/test/test.kuki:67
+//line stdlib/test/test.kuki:66
 func AssertError(t testing.TB, err error, msgAndArgs ...any) {
-//line stdlib/test/test.kuki:68
+//line stdlib/test/test.kuki:67
 	t.Helper()
-//line stdlib/test/test.kuki:69
+//line stdlib/test/test.kuki:68
 	if err == nil {
-//line stdlib/test/test.kuki:70
+//line stdlib/test/test.kuki:69
 		t.Errorf("%s", formatMessage("expected an error, got nil", msgAndArgs))
 	}
 }
 
-//line stdlib/test/test.kuki:77
+//line stdlib/test/test.kuki:76
 func AssertNotEmpty(t testing.TB, val any, msgAndArgs ...any) {
-//line stdlib/test/test.kuki:78
+//line stdlib/test/test.kuki:77
 	t.Helper()
-//line stdlib/test/test.kuki:79
+//line stdlib/test/test.kuki:78
 	if val == nil {
-//line stdlib/test/test.kuki:80
+//line stdlib/test/test.kuki:79
 		t.Errorf("%s", formatMessage("expected non-empty value, got nil", msgAndArgs))
-//line stdlib/test/test.kuki:81
+//line stdlib/test/test.kuki:80
 		return
 	}
-//line stdlib/test/test.kuki:82
+//line stdlib/test/test.kuki:81
 	v := reflect.ValueOf(val)
-//line stdlib/test/test.kuki:83
+//line stdlib/test/test.kuki:82
 	if v.IsZero() {
-//line stdlib/test/test.kuki:84
+//line stdlib/test/test.kuki:83
 		t.Errorf("%s", formatMessage("expected non-empty value, got zero value", msgAndArgs))
 	}
 }
 
-//line stdlib/test/test.kuki:90
+//line stdlib/test/test.kuki:89
 func isNil(val any) bool {
-//line stdlib/test/test.kuki:91
+//line stdlib/test/test.kuki:90
 	if val == nil {
-//line stdlib/test/test.kuki:92
+//line stdlib/test/test.kuki:91
 		return true
 	}
-//line stdlib/test/test.kuki:93
+//line stdlib/test/test.kuki:92
 	rv := reflect.ValueOf(val)
-//line stdlib/test/test.kuki:94
+//line stdlib/test/test.kuki:93
 	kind := rv.Kind()
-//line stdlib/test/test.kuki:95
+//line stdlib/test/test.kuki:94
 	if kind == reflect.Pointer || kind == reflect.Map || kind == reflect.Slice || kind == reflect.Chan || kind == reflect.Func || kind == reflect.Interface {
-//line stdlib/test/test.kuki:96
+//line stdlib/test/test.kuki:95
 		return rv.IsNil()
 	}
-//line stdlib/test/test.kuki:97
+//line stdlib/test/test.kuki:96
 	return false
 }
 
-//line stdlib/test/test.kuki:100
+//line stdlib/test/test.kuki:99
 func AssertNil(t testing.TB, val any, msgAndArgs ...any) {
-//line stdlib/test/test.kuki:101
+//line stdlib/test/test.kuki:100
 	t.Helper()
-//line stdlib/test/test.kuki:102
+//line stdlib/test/test.kuki:101
 	if !isNil(val) {
-//line stdlib/test/test.kuki:103
+//line stdlib/test/test.kuki:102
 		t.Errorf("%s: got %v", formatMessage("expected nil", msgAndArgs), val)
 	}
 }
 
-//line stdlib/test/test.kuki:106
+//line stdlib/test/test.kuki:105
 func AssertNotNil(t testing.TB, val any, msgAndArgs ...any) {
-//line stdlib/test/test.kuki:107
+//line stdlib/test/test.kuki:106
 	t.Helper()
-//line stdlib/test/test.kuki:108
+//line stdlib/test/test.kuki:107
 	if isNil(val) {
-//line stdlib/test/test.kuki:109
+//line stdlib/test/test.kuki:108
 		t.Errorf("%s", formatMessage("expected non-nil value", msgAndArgs))
 	}
 }

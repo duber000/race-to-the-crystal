@@ -3,8 +3,8 @@
 package ctx_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/ctx"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/ctx"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 	"time"
 )

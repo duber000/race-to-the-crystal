@@ -3,8 +3,8 @@
 package files
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/json"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -86,13 +86,7 @@ func Append(data any, path string) error {
 //line stdlib/files/files.kuki:58
 	jsonData = append(jsonData, '\n')
 //line stdlib/files/files.kuki:59
-//line stdlib/files/files.kuki:59
-	_, err_8 := file.Write(jsonData)
-//line stdlib/files/files.kuki:59
-	if err_8 != nil {
-//line stdlib/files/files.kuki:59
-		return err_8
-	}
+	file.Write(jsonData)
 //line stdlib/files/files.kuki:60
 	return nil
 }
@@ -100,22 +94,16 @@ func Append(data any, path string) error {
 //line stdlib/files/files.kuki:67
 func AppendString(data string, path string) error {
 //line stdlib/files/files.kuki:68
-	file, err_9 := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	file, err_8 := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 //line stdlib/files/files.kuki:68
-	if err_9 != nil {
+	if err_8 != nil {
 //line stdlib/files/files.kuki:68
-		return err_9
+		return err_8
 	}
 //line stdlib/files/files.kuki:69
 	defer file.Close()
 //line stdlib/files/files.kuki:71
-//line stdlib/files/files.kuki:71
-	_, err_10 := file.Write([]byte(data))
-//line stdlib/files/files.kuki:71
-	if err_10 != nil {
-//line stdlib/files/files.kuki:71
-		return err_10
-	}
+	file.Write([]byte(data))
 //line stdlib/files/files.kuki:72
 	return nil
 }
@@ -129,9 +117,9 @@ func AppendLine(data string, path string) error {
 //line stdlib/files/files.kuki:85
 func Exists(path string) bool {
 //line stdlib/files/files.kuki:86
-	_, err_11 := os.Stat(path)
+	_, err_9 := os.Stat(path)
 //line stdlib/files/files.kuki:86
-	if err_11 != nil {
+	if err_9 != nil {
 //line stdlib/files/files.kuki:86
 		return false
 	}
@@ -142,9 +130,9 @@ func Exists(path string) bool {
 //line stdlib/files/files.kuki:92
 func IsDir(path string) bool {
 //line stdlib/files/files.kuki:93
-	info, err_12 := os.Stat(path)
+	info, err_10 := os.Stat(path)
 //line stdlib/files/files.kuki:93
-	if err_12 != nil {
+	if err_10 != nil {
 //line stdlib/files/files.kuki:93
 		return false
 	}
@@ -155,9 +143,9 @@ func IsDir(path string) bool {
 //line stdlib/files/files.kuki:99
 func IsFile(path string) bool {
 //line stdlib/files/files.kuki:100
-	info, err_13 := os.Stat(path)
+	info, err_11 := os.Stat(path)
 //line stdlib/files/files.kuki:100
-	if err_13 != nil {
+	if err_11 != nil {
 //line stdlib/files/files.kuki:100
 		return false
 	}
@@ -168,11 +156,11 @@ func IsFile(path string) bool {
 //line stdlib/files/files.kuki:108
 func List(path string) ([]string, error) {
 //line stdlib/files/files.kuki:109
-	entries, err_14 := os.ReadDir(path)
+	entries, err_12 := os.ReadDir(path)
 //line stdlib/files/files.kuki:109
-	if err_14 != nil {
+	if err_12 != nil {
 //line stdlib/files/files.kuki:109
-		return []string{}, err_14
+		return []string{}, err_12
 	}
 //line stdlib/files/files.kuki:111
 	result := make([]string, 0, len(entries))
@@ -191,7 +179,7 @@ func ListRecursive(path string) ([]string, error) {
 	result := make([]string, 0)
 //line stdlib/files/files.kuki:123
 //line stdlib/files/files.kuki:123
-	err_15 := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+	err_13 := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 //line stdlib/files/files.kuki:124
 		if err != nil {
 //line stdlib/files/files.kuki:125
@@ -205,10 +193,10 @@ func ListRecursive(path string) ([]string, error) {
 //line stdlib/files/files.kuki:128
 		return nil
 	})
-//line stdlib/files/files.kuki:129
-	if err_15 != nil {
-//line stdlib/files/files.kuki:129
-		return []string{}, err_15
+//line stdlib/files/files.kuki:123
+	if err_13 != nil {
+//line stdlib/files/files.kuki:123
+		return []string{}, err_13
 	}
 //line stdlib/files/files.kuki:131
 	return result, nil
@@ -226,496 +214,492 @@ type Entry struct {
 //line stdlib/files/files.kuki:149
 func ListEntries(path string) ([]Entry, error) {
 //line stdlib/files/files.kuki:150
-	raw, err_16 := os.ReadDir(path)
+	raw, err_14 := os.ReadDir(path)
 //line stdlib/files/files.kuki:150
-	if err_16 != nil {
+	if err_14 != nil {
 //line stdlib/files/files.kuki:150
-		return []Entry{}, err_16
+		return []Entry{}, err_14
 	}
 //line stdlib/files/files.kuki:152
 	result := make([]Entry, 0, len(raw))
 //line stdlib/files/files.kuki:153
 	for _, entry := range raw {
 //line stdlib/files/files.kuki:154
-		info, err_17 := entry.Info()
+		info, err_15 := entry.Info()
 //line stdlib/files/files.kuki:154
-		if err_17 != nil {
+		if err_15 != nil {
 //line stdlib/files/files.kuki:154
+			//line stdlib/files/files.kuki:155
 			continue
 		}
-//line stdlib/files/files.kuki:155
+//line stdlib/files/files.kuki:157
 		result = append(result, Entry{Name: entry.Name(), Path: filepath.Join(path, entry.Name()), IsDir: entry.IsDir(), Size: info.Size(), ModTime: info.ModTime().Unix()})
 	}
-//line stdlib/files/files.kuki:163
+//line stdlib/files/files.kuki:165
 	return result, nil
 }
 
-//line stdlib/files/files.kuki:168
+//line stdlib/files/files.kuki:170
 func ListDirs(path string) ([]string, error) {
-//line stdlib/files/files.kuki:169
-	entries, err_18 := ListEntries(path)
-//line stdlib/files/files.kuki:169
-	if err_18 != nil {
-//line stdlib/files/files.kuki:169
-		return []string{}, err_18
-	}
 //line stdlib/files/files.kuki:171
-	result := make([]string, 0, len(entries))
-//line stdlib/files/files.kuki:172
-	for _, entry := range entries {
+	entries, err_16 := ListEntries(path)
+//line stdlib/files/files.kuki:171
+	if err_16 != nil {
+//line stdlib/files/files.kuki:171
+		return []string{}, err_16
+	}
 //line stdlib/files/files.kuki:173
-		if entry.IsDir {
-//line stdlib/files/files.kuki:174
-			result = append(result, entry.Name)
-		}
-	}
-//line stdlib/files/files.kuki:176
-	return result, nil
-}
-
-//line stdlib/files/files.kuki:182
-func ListFiles(path string) ([]string, error) {
-//line stdlib/files/files.kuki:183
-	entries, err_19 := ListEntries(path)
-//line stdlib/files/files.kuki:183
-	if err_19 != nil {
-//line stdlib/files/files.kuki:183
-		return []string{}, err_19
-	}
-//line stdlib/files/files.kuki:185
 	result := make([]string, 0, len(entries))
-//line stdlib/files/files.kuki:186
+//line stdlib/files/files.kuki:174
 	for _, entry := range entries {
-//line stdlib/files/files.kuki:187
-		if !entry.IsDir {
-//line stdlib/files/files.kuki:188
+//line stdlib/files/files.kuki:175
+		if entry.IsDir {
+//line stdlib/files/files.kuki:176
 			result = append(result, entry.Name)
 		}
 	}
-//line stdlib/files/files.kuki:190
+//line stdlib/files/files.kuki:178
 	return result, nil
 }
 
-//line stdlib/files/files.kuki:197
-func ListByModTime(path string) ([]Entry, error) {
-//line stdlib/files/files.kuki:198
-	entries, err_20 := ListEntries(path)
-//line stdlib/files/files.kuki:198
-	if err_20 != nil {
-//line stdlib/files/files.kuki:198
-		return []Entry{}, err_20
+//line stdlib/files/files.kuki:184
+func ListFiles(path string) ([]string, error) {
+//line stdlib/files/files.kuki:185
+	entries, err_17 := ListEntries(path)
+//line stdlib/files/files.kuki:185
+	if err_17 != nil {
+//line stdlib/files/files.kuki:185
+		return []string{}, err_17
 	}
+//line stdlib/files/files.kuki:187
+	result := make([]string, 0, len(entries))
+//line stdlib/files/files.kuki:188
+	for _, entry := range entries {
+//line stdlib/files/files.kuki:189
+		if !entry.IsDir {
+//line stdlib/files/files.kuki:190
+			result = append(result, entry.Name)
+		}
+	}
+//line stdlib/files/files.kuki:192
+	return result, nil
+}
+
 //line stdlib/files/files.kuki:199
-	sort.Slice(entries, func(i int, j int) bool {
+func ListByModTime(path string) ([]Entry, error) {
 //line stdlib/files/files.kuki:200
+	entries, err_18 := ListEntries(path)
+//line stdlib/files/files.kuki:200
+	if err_18 != nil {
+//line stdlib/files/files.kuki:200
+		return []Entry{}, err_18
+	}
+//line stdlib/files/files.kuki:201
+	sort.Slice(entries, func(i int, j int) bool {
+//line stdlib/files/files.kuki:202
 		return entries[i].ModTime > entries[j].ModTime
 	})
-//line stdlib/files/files.kuki:203
+//line stdlib/files/files.kuki:205
 	return entries, nil
 }
 
-//line stdlib/files/files.kuki:210
+//line stdlib/files/files.kuki:212
 func Walk(path string) ([]Entry, error) {
-//line stdlib/files/files.kuki:211
-	result := make([]Entry, 0)
-//line stdlib/files/files.kuki:212
-//line stdlib/files/files.kuki:212
-	err_21 := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 //line stdlib/files/files.kuki:213
-		if err != nil {
+	result := make([]Entry, 0)
 //line stdlib/files/files.kuki:214
+//line stdlib/files/files.kuki:214
+	err_19 := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+//line stdlib/files/files.kuki:215
+		if err != nil {
+//line stdlib/files/files.kuki:216
 			return err
 		}
-//line stdlib/files/files.kuki:215
+//line stdlib/files/files.kuki:217
 		result = append(result, Entry{Name: info.Name(), Path: filePath, IsDir: info.IsDir(), Size: info.Size(), ModTime: info.ModTime().Unix()})
-//line stdlib/files/files.kuki:222
+//line stdlib/files/files.kuki:224
 		return nil
 	})
-//line stdlib/files/files.kuki:223
-	if err_21 != nil {
-//line stdlib/files/files.kuki:223
-		return []Entry{}, err_21
+//line stdlib/files/files.kuki:214
+	if err_19 != nil {
+//line stdlib/files/files.kuki:214
+		return []Entry{}, err_19
 	}
-//line stdlib/files/files.kuki:225
+//line stdlib/files/files.kuki:227
 	return result, nil
 }
 
-//line stdlib/files/files.kuki:234
-func Glob(pattern string) ([]string, error) {
-//line stdlib/files/files.kuki:235
-	if !strings.Contains(pattern, "**") {
 //line stdlib/files/files.kuki:236
+func Glob(pattern string) ([]string, error) {
+//line stdlib/files/files.kuki:237
+	if !strings.Contains(pattern, "**") {
+//line stdlib/files/files.kuki:238
 		return filepath.Glob(pattern)
 	}
-//line stdlib/files/files.kuki:240
-	root := globWalkRoot(pattern)
-//line stdlib/files/files.kuki:241
-	if root == "" {
 //line stdlib/files/files.kuki:242
+	root := globWalkRoot(pattern)
+//line stdlib/files/files.kuki:243
+	if root == "" {
+//line stdlib/files/files.kuki:244
 		root = "."
 	}
-//line stdlib/files/files.kuki:244
-	matcher, err := compileGlob(pattern)
-//line stdlib/files/files.kuki:245
-	if err != nil {
 //line stdlib/files/files.kuki:246
+	matcher, err := compileGlob(pattern)
+//line stdlib/files/files.kuki:247
+	if err != nil {
+//line stdlib/files/files.kuki:248
 		return nil, err
 	}
-//line stdlib/files/files.kuki:248
-	matches := make([]string, 0)
-//line stdlib/files/files.kuki:249
-//line stdlib/files/files.kuki:249
-	err_22 := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 //line stdlib/files/files.kuki:250
-		if err != nil {
+	matches := make([]string, 0)
 //line stdlib/files/files.kuki:251
+//line stdlib/files/files.kuki:251
+	err_20 := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+//line stdlib/files/files.kuki:252
+		if err != nil {
+//line stdlib/files/files.kuki:253
 			return err
 		}
-//line stdlib/files/files.kuki:252
+//line stdlib/files/files.kuki:254
 		if matcher.MatchString(path) {
-//line stdlib/files/files.kuki:253
+//line stdlib/files/files.kuki:255
 			matches = append(matches, path)
 		}
-//line stdlib/files/files.kuki:254
+//line stdlib/files/files.kuki:256
 		return nil
 	})
-//line stdlib/files/files.kuki:255
-	if err_22 != nil {
-//line stdlib/files/files.kuki:255
-		return []string{}, err_22
+//line stdlib/files/files.kuki:251
+	if err_20 != nil {
+//line stdlib/files/files.kuki:251
+		return []string{}, err_20
 	}
-//line stdlib/files/files.kuki:257
+//line stdlib/files/files.kuki:259
 	return matches, nil
 }
 
-//line stdlib/files/files.kuki:261
-func globWalkRoot(pattern string) string {
-//line stdlib/files/files.kuki:262
-	parts := strings.Split(pattern, "/")
 //line stdlib/files/files.kuki:263
-	keep := make([]string, 0, len(parts))
+func globWalkRoot(pattern string) string {
 //line stdlib/files/files.kuki:264
-	for _, part := range parts {
+	parts := strings.Split(pattern, "/")
 //line stdlib/files/files.kuki:265
-		if strings.ContainsAny(part, "*?[") {
+	keep := make([]string, 0, len(parts))
 //line stdlib/files/files.kuki:266
+	for _, part := range parts {
+//line stdlib/files/files.kuki:267
+		if strings.ContainsAny(part, "*?[") {
+//line stdlib/files/files.kuki:268
 			break
 		}
-//line stdlib/files/files.kuki:267
+//line stdlib/files/files.kuki:269
 		keep = append(keep, part)
 	}
-//line stdlib/files/files.kuki:268
+//line stdlib/files/files.kuki:270
 	return strings.Join(keep, "/")
 }
 
-//line stdlib/files/files.kuki:273
-func compileGlob(pattern string) (*regexp.Regexp, error) {
-//line stdlib/files/files.kuki:274
-	builder := strings.Builder{}
 //line stdlib/files/files.kuki:275
-	builder.WriteString("^")
+func compileGlob(pattern string) (*regexp.Regexp, error) {
+//line stdlib/files/files.kuki:276
+	builder := strings.Builder{}
 //line stdlib/files/files.kuki:277
-	i := 0
-//line stdlib/files/files.kuki:278
-	runes := []byte(pattern)
+	builder.WriteString("^")
 //line stdlib/files/files.kuki:279
-	for i < len(runes) {
+	i := 0
 //line stdlib/files/files.kuki:280
-		c := string(runes[i])
+	runes := []byte(pattern)
 //line stdlib/files/files.kuki:281
-		if c == "*" {
+	for i < len(runes) {
 //line stdlib/files/files.kuki:282
+		c := string(runes[i])
+//line stdlib/files/files.kuki:283
+		if c == "*" {
+//line stdlib/files/files.kuki:284
 			if i+1 < len(runes) && string(runes[i+1]) == "*" {
-//line stdlib/files/files.kuki:285
-				if i+2 < len(runes) && string(runes[i+2]) == "/" {
-//line stdlib/files/files.kuki:286
-					builder.WriteString("(?:.*/)?")
 //line stdlib/files/files.kuki:287
+				if i+2 < len(runes) && string(runes[i+2]) == "/" {
+//line stdlib/files/files.kuki:288
+					builder.WriteString("(?:.*/)?")
+//line stdlib/files/files.kuki:289
 					i = i + 3
 				} else {
-//line stdlib/files/files.kuki:289
+//line stdlib/files/files.kuki:291
 					builder.WriteString(".*")
-//line stdlib/files/files.kuki:290
+//line stdlib/files/files.kuki:292
 					i = i + 2
 				}
 			} else {
-//line stdlib/files/files.kuki:292
+//line stdlib/files/files.kuki:294
 				builder.WriteString("[^/]*")
-//line stdlib/files/files.kuki:293
+//line stdlib/files/files.kuki:295
 				i = i + 1
 			}
 		} else if c == "?" {
-//line stdlib/files/files.kuki:295
+//line stdlib/files/files.kuki:297
 			builder.WriteString("[^/]")
-//line stdlib/files/files.kuki:296
+//line stdlib/files/files.kuki:298
 			i = i + 1
 		} else if c == "." {
-//line stdlib/files/files.kuki:298
+//line stdlib/files/files.kuki:300
 			builder.WriteString("\\.")
-//line stdlib/files/files.kuki:299
+//line stdlib/files/files.kuki:301
 			i = i + 1
 		} else if c == "+" || c == "(" || c == ")" || c == "$" || c == "^" || c == "|" || c == "{" || c == "}" || c == "\\" {
-//line stdlib/files/files.kuki:301
-			builder.WriteString("\\")
-//line stdlib/files/files.kuki:302
-			builder.WriteString(c)
 //line stdlib/files/files.kuki:303
+			builder.WriteString("\\")
+//line stdlib/files/files.kuki:304
+			builder.WriteString(c)
+//line stdlib/files/files.kuki:305
 			i = i + 1
 		} else {
-//line stdlib/files/files.kuki:305
+//line stdlib/files/files.kuki:307
 			builder.WriteString(c)
-//line stdlib/files/files.kuki:306
+//line stdlib/files/files.kuki:308
 			i = i + 1
 		}
 	}
-//line stdlib/files/files.kuki:308
+//line stdlib/files/files.kuki:310
 	builder.WriteString("$")
-//line stdlib/files/files.kuki:309
+//line stdlib/files/files.kuki:311
 	return regexp.Compile(builder.String())
 }
 
-//line stdlib/files/files.kuki:315
+//line stdlib/files/files.kuki:317
 func Delete(path string) error {
-//line stdlib/files/files.kuki:316
+//line stdlib/files/files.kuki:318
 	return os.Remove(path)
 }
 
-//line stdlib/files/files.kuki:323
+//line stdlib/files/files.kuki:325
 func DeleteAll(path string) error {
-//line stdlib/files/files.kuki:324
+//line stdlib/files/files.kuki:326
 	return os.RemoveAll(path)
 }
 
-//line stdlib/files/files.kuki:331
-func Copy(src string, dst string) error {
-//line stdlib/files/files.kuki:332
-	sourceFile, err_23 := os.Open(src)
-//line stdlib/files/files.kuki:332
-	if err_23 != nil {
-//line stdlib/files/files.kuki:332
-		return err_23
-	}
 //line stdlib/files/files.kuki:333
+func Copy(src string, dst string) error {
+//line stdlib/files/files.kuki:334
+	sourceFile, err_21 := os.Open(src)
+//line stdlib/files/files.kuki:334
+	if err_21 != nil {
+//line stdlib/files/files.kuki:334
+		return err_21
+	}
+//line stdlib/files/files.kuki:335
 	defer sourceFile.Close()
-//line stdlib/files/files.kuki:335
-	destFile, err_24 := os.Create(dst)
-//line stdlib/files/files.kuki:335
-	if err_24 != nil {
-//line stdlib/files/files.kuki:335
-		return err_24
+//line stdlib/files/files.kuki:337
+	destFile, err_22 := os.Create(dst)
+//line stdlib/files/files.kuki:337
+	if err_22 != nil {
+//line stdlib/files/files.kuki:337
+		return err_22
 	}
-//line stdlib/files/files.kuki:336
+//line stdlib/files/files.kuki:338
 	defer destFile.Close()
-//line stdlib/files/files.kuki:338
-//line stdlib/files/files.kuki:338
-	_, err_25 := io.Copy(destFile, sourceFile)
-//line stdlib/files/files.kuki:338
-	if err_25 != nil {
-//line stdlib/files/files.kuki:338
-		return err_25
-	}
-//line stdlib/files/files.kuki:339
+//line stdlib/files/files.kuki:340
+	io.Copy(destFile, sourceFile)
+//line stdlib/files/files.kuki:341
 	return nil
 }
 
-//line stdlib/files/files.kuki:345
+//line stdlib/files/files.kuki:347
 func Move(src string, dst string) error {
-//line stdlib/files/files.kuki:346
+//line stdlib/files/files.kuki:348
 	return os.Rename(src, dst)
 }
 
-//line stdlib/files/files.kuki:351
+//line stdlib/files/files.kuki:353
 func MkDir(path string) error {
-//line stdlib/files/files.kuki:352
+//line stdlib/files/files.kuki:354
 	return os.Mkdir(path, 0o755)
 }
 
-//line stdlib/files/files.kuki:357
+//line stdlib/files/files.kuki:359
 func MkDirAll(path string) error {
-//line stdlib/files/files.kuki:358
+//line stdlib/files/files.kuki:360
 	return os.MkdirAll(path, 0o755)
 }
 
-//line stdlib/files/files.kuki:364
-func TempFile(prefix string) (string, error) {
-//line stdlib/files/files.kuki:365
-	file, err_26 := os.CreateTemp("", prefix)
-//line stdlib/files/files.kuki:365
-	if err_26 != nil {
-//line stdlib/files/files.kuki:365
-		return "", err_26
-	}
 //line stdlib/files/files.kuki:366
-	path := file.Name()
+func TempFile(prefix string) (string, error) {
 //line stdlib/files/files.kuki:367
+	file, err_23 := os.CreateTemp("", prefix)
 //line stdlib/files/files.kuki:367
-	err_27 := file.Close()
+	if err_23 != nil {
 //line stdlib/files/files.kuki:367
-	if err_27 != nil {
-//line stdlib/files/files.kuki:367
-		return "", err_27
+		return "", err_23
 	}
 //line stdlib/files/files.kuki:368
+	path := file.Name()
+//line stdlib/files/files.kuki:369
+//line stdlib/files/files.kuki:369
+	err_24 := file.Close()
+//line stdlib/files/files.kuki:369
+	if err_24 != nil {
+//line stdlib/files/files.kuki:369
+		return "", err_24
+	}
+//line stdlib/files/files.kuki:370
 	return path, nil
 }
 
-//line stdlib/files/files.kuki:374
+//line stdlib/files/files.kuki:376
 func TempDir(prefix string) (string, error) {
-//line stdlib/files/files.kuki:375
+//line stdlib/files/files.kuki:377
 	return os.MkdirTemp("", prefix)
 }
 
-//line stdlib/files/files.kuki:384
-func TempDirAuto(prefix string) (string, func(), error) {
-//line stdlib/files/files.kuki:385
-	path, err_28 := os.MkdirTemp("", prefix)
-//line stdlib/files/files.kuki:385
-	if err_28 != nil {
-//line stdlib/files/files.kuki:385
-		return "", nil, err_28
-	}
 //line stdlib/files/files.kuki:386
-	cleanup := func() {
+func TempDirAuto(prefix string) (string, func(), error) {
 //line stdlib/files/files.kuki:387
+	path, err_25 := os.MkdirTemp("", prefix)
 //line stdlib/files/files.kuki:387
-		err_29 := os.RemoveAll(path)
+	if err_25 != nil {
 //line stdlib/files/files.kuki:387
-		if err_29 != nil {
-//line stdlib/files/files.kuki:387
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("files.TempDirAuto cleanup: %v", err_29))
-		}
+		return "", nil, err_25
 	}
 //line stdlib/files/files.kuki:388
+	cleanup := func() {
+//line stdlib/files/files.kuki:389
+//line stdlib/files/files.kuki:389
+		err_26 := os.RemoveAll(path)
+//line stdlib/files/files.kuki:389
+		if err_26 != nil {
+//line stdlib/files/files.kuki:389
+			//line stdlib/files/files.kuki:390
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("files.TempDirAuto cleanup: %v", err_26))
+		}
+	}
+//line stdlib/files/files.kuki:392
 	return path, cleanup, nil
 }
 
-//line stdlib/files/files.kuki:393
+//line stdlib/files/files.kuki:397
 func Size(path string) (int64, error) {
-//line stdlib/files/files.kuki:394
-	info, err_30 := os.Stat(path)
-//line stdlib/files/files.kuki:394
-	if err_30 != nil {
-//line stdlib/files/files.kuki:394
-		return 0, err_30
+//line stdlib/files/files.kuki:398
+	info, err_27 := os.Stat(path)
+//line stdlib/files/files.kuki:398
+	if err_27 != nil {
+//line stdlib/files/files.kuki:398
+		return 0, err_27
 	}
-//line stdlib/files/files.kuki:395
+//line stdlib/files/files.kuki:399
 	return info.Size(), nil
 }
 
-//line stdlib/files/files.kuki:400
+//line stdlib/files/files.kuki:404
 func ModTime(path string) (int64, error) {
-//line stdlib/files/files.kuki:401
-	info, err_31 := os.Stat(path)
-//line stdlib/files/files.kuki:401
-	if err_31 != nil {
-//line stdlib/files/files.kuki:401
-		return 0, err_31
+//line stdlib/files/files.kuki:405
+	info, err_28 := os.Stat(path)
+//line stdlib/files/files.kuki:405
+	if err_28 != nil {
+//line stdlib/files/files.kuki:405
+		return 0, err_28
 	}
-//line stdlib/files/files.kuki:402
+//line stdlib/files/files.kuki:406
 	return info.ModTime().Unix(), nil
 }
 
-//line stdlib/files/files.kuki:407
+//line stdlib/files/files.kuki:411
 func Basename(path string) string {
-//line stdlib/files/files.kuki:408
+//line stdlib/files/files.kuki:412
 	return filepath.Base(path)
 }
 
-//line stdlib/files/files.kuki:413
+//line stdlib/files/files.kuki:417
 func Dirname(path string) string {
-//line stdlib/files/files.kuki:414
+//line stdlib/files/files.kuki:418
 	return filepath.Dir(path)
 }
 
-//line stdlib/files/files.kuki:419
+//line stdlib/files/files.kuki:423
 func Extension(path string) string {
-//line stdlib/files/files.kuki:420
+//line stdlib/files/files.kuki:424
 	return filepath.Ext(path)
 }
 
-//line stdlib/files/files.kuki:426
+//line stdlib/files/files.kuki:430
 func Join(parts ...string) string {
-//line stdlib/files/files.kuki:427
+//line stdlib/files/files.kuki:431
 	return filepath.Join(parts...)
 }
 
-//line stdlib/files/files.kuki:433
+//line stdlib/files/files.kuki:437
 func Abs(path string) (string, error) {
-//line stdlib/files/files.kuki:434
+//line stdlib/files/files.kuki:438
 	return filepath.Abs(path)
 }
 
-//line stdlib/files/files.kuki:439
+//line stdlib/files/files.kuki:443
 func UseWith(path string, action func(string)) {
-//line stdlib/files/files.kuki:440
+//line stdlib/files/files.kuki:444
 	defer os.RemoveAll(path)
-//line stdlib/files/files.kuki:441
+//line stdlib/files/files.kuki:445
 	action(path)
 }
 
-//line stdlib/files/files.kuki:446
+//line stdlib/files/files.kuki:453
 func Watch(pattern string, callback func(string)) {
-//line stdlib/files/files.kuki:447
+//line stdlib/files/files.kuki:454
 	lastModified := make(map[string]int64)
-//line stdlib/files/files.kuki:450
-	matches, err_32 := filepath.Glob(pattern)
-//line stdlib/files/files.kuki:450
-	if err_32 != nil {
-//line stdlib/files/files.kuki:450
+//line stdlib/files/files.kuki:457
+	matches, err_29 := filepath.Glob(pattern)
+//line stdlib/files/files.kuki:457
+	if err_29 != nil {
+//line stdlib/files/files.kuki:457
 		return
 	}
-//line stdlib/files/files.kuki:451
+//line stdlib/files/files.kuki:458
 	if matches != nil {
-//line stdlib/files/files.kuki:452
+//line stdlib/files/files.kuki:459
 		for _, match := range matches {
-//line stdlib/files/files.kuki:453
-			info, err_33 := os.Stat(match)
-//line stdlib/files/files.kuki:453
-			if err_33 != nil {
-//line stdlib/files/files.kuki:453
-				//line stdlib/files/files.kuki:454
+//line stdlib/files/files.kuki:460
+			info, err_30 := os.Stat(match)
+//line stdlib/files/files.kuki:460
+			if err_30 != nil {
+//line stdlib/files/files.kuki:460
+				//line stdlib/files/files.kuki:461
 				continue
 			}
-//line stdlib/files/files.kuki:456
+//line stdlib/files/files.kuki:463
 			lastModified[match] = info.ModTime().UnixNano()
 		}
 	}
-//line stdlib/files/files.kuki:458
+//line stdlib/files/files.kuki:465
 	for {
-//line stdlib/files/files.kuki:459
+//line stdlib/files/files.kuki:466
 		time.Sleep(500 * time.Millisecond)
-//line stdlib/files/files.kuki:461
-		matches, err_34 := filepath.Glob(pattern)
-//line stdlib/files/files.kuki:461
-		if err_34 != nil {
-//line stdlib/files/files.kuki:461
-			//line stdlib/files/files.kuki:462
+//line stdlib/files/files.kuki:468
+		matches, err_31 := filepath.Glob(pattern)
+//line stdlib/files/files.kuki:468
+		if err_31 != nil {
+//line stdlib/files/files.kuki:468
+			//line stdlib/files/files.kuki:469
 			continue
 		}
-//line stdlib/files/files.kuki:464
+//line stdlib/files/files.kuki:471
 		for _, match := range matches {
-//line stdlib/files/files.kuki:465
-			info, err_35 := os.Stat(match)
-//line stdlib/files/files.kuki:465
-			if err_35 != nil {
-//line stdlib/files/files.kuki:465
-				//line stdlib/files/files.kuki:466
+//line stdlib/files/files.kuki:472
+			info, err_32 := os.Stat(match)
+//line stdlib/files/files.kuki:472
+			if err_32 != nil {
+//line stdlib/files/files.kuki:472
+				//line stdlib/files/files.kuki:473
 				continue
 			}
-//line stdlib/files/files.kuki:468
-			currentModTime := info.ModTime().UnixNano()
-//line stdlib/files/files.kuki:471
-			lastModTime := lastModified[match]
-//line stdlib/files/files.kuki:473
-			if lastModTime == 0 {
 //line stdlib/files/files.kuki:475
+			currentModTime := info.ModTime().UnixNano()
+//line stdlib/files/files.kuki:478
+			lastModTime := lastModified[match]
+//line stdlib/files/files.kuki:480
+			if lastModTime == 0 {
+//line stdlib/files/files.kuki:482
 				lastModified[match] = currentModTime
-//line stdlib/files/files.kuki:476
+//line stdlib/files/files.kuki:483
 				callback(match)
 			} else if currentModTime > lastModTime {
-//line stdlib/files/files.kuki:479
+//line stdlib/files/files.kuki:486
 				lastModified[match] = currentModTime
-//line stdlib/files/files.kuki:480
+//line stdlib/files/files.kuki:487
 				callback(match)
 			}
 		}

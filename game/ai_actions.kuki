@@ -6,48 +6,48 @@ import "race-to-the-crystal/shared/types" as types
 
 enum AIAction
     Move
-        TokenID types.TokenID
-        Destination types.Position
+        TokenID: types.TokenID
+        Destination: types.Position
     Attack
-        AttackerID types.TokenID
-        DefenderID types.TokenID
+        AttackerID: types.TokenID
+        DefenderID: types.TokenID
     Deploy
-        HealthValue int
-        Position types.Position
+        HealthValue: int
+        Position: types.Position
     EndTurn
 
 type ValidationResult
-    IsValid bool
-    Message string
+    IsValid: bool
+    Message: string
 
 enum ActionResultData
     NoData
     MoveData
-        TokenID types.TokenID
-        OldPosition list of int
-        NewPosition list of int
-        MysteryTriggered bool
-        MysteryEffect enums.MysteryEffect
+        TokenID: types.TokenID
+        OldPosition: list of int
+        NewPosition: list of int
+        MysteryTriggered: bool
+        MysteryEffect: enums.MysteryEffect
     AttackData
-        AttackerID types.TokenID
-        DefenderID types.TokenID
-        DamageDealt int
-        DefenderKilled bool
+        AttackerID: types.TokenID
+        DefenderID: types.TokenID
+        DamageDealt: int
+        DefenderKilled: bool
     DeployData
-        NewTokenID types.TokenID
-        HealthValue int
-        Position list of int
-        TokensRemaining int
+        NewTokenID: types.TokenID
+        HealthValue: int
+        Position: list of int
+        TokensRemaining: int
     TurnEndData
-        TurnNumber int
-        NextPlayerID types.PlayerID
-        GeneratorsDisabled list of int
-        CrystalCaptured bool
+        TurnNumber: int
+        NextPlayerID: types.PlayerID
+        GeneratorsDisabled: list of int
+        CrystalCaptured: bool
 
 type ActionResult
-    Success bool
-    Message string
-    Data ActionResultData
+    Success: bool
+    Message: string
+    Data: ActionResultData
 
 func ValidResult(msg: string) ValidationResult
     return ValidationResult{IsValid: true, Message: msg}
@@ -119,7 +119,7 @@ func ValidateAction(action: AIAction, gs: reference GameState, player_id: types.
     if turn_result isnt empty
         return dereference turn_result
 
-    switch action
+    switch action as action
         when Move
             return ValidateMove(action.TokenID, action.Destination, gs, player_id)
         when Attack
@@ -258,7 +258,7 @@ func ExecuteAction(action: AIAction, gs: reference GameState, player_id: types.P
     if not validation.IsValid
         return FailureResult(validation.Message)
 
-    switch action
+    switch action as action
         when Move
             return ExecuteMove(action.TokenID, action.Destination, gs, player_id)
         when Attack
@@ -407,3 +407,43 @@ func NewDeployAction(health_value: int, pos: types.Position) AIAction
 
 func NewEndTurnAction() AIAction
     return EndTurn{}
+
+func ActionDataToDict(d: ActionResultData) map of string to any
+    switch d as d
+        when NoData
+            return map of string to any{"type": "NoData"}
+        when MoveData
+            m := map of string to any{
+                "type": "MoveData",
+                "token_id": d.TokenID,
+                "old_position": d.OldPosition,
+                "new_position": d.NewPosition,
+                "mystery_triggered": d.MysteryTriggered,
+            }
+            if d.MysteryTriggered
+                m["mystery_effect"] = d.MysteryEffect.String()
+            return m
+        when AttackData
+            return map of string to any{
+                "type": "AttackData",
+                "attacker_id": d.AttackerID,
+                "defender_id": d.DefenderID,
+                "damage_dealt": d.DamageDealt,
+                "defender_killed": d.DefenderKilled,
+            }
+        when DeployData
+            return map of string to any{
+                "type": "DeployData",
+                "new_token_id": d.NewTokenID,
+                "health_value": d.HealthValue,
+                "position": d.Position,
+                "tokens_remaining": d.TokensRemaining,
+            }
+        when TurnEndData
+            return map of string to any{
+                "type": "TurnEndData",
+                "turn_number": d.TurnNumber,
+                "next_player_id": d.NextPlayerID,
+                "generators_disabled": d.GeneratorsDisabled,
+                "crystal_captured": d.CrystalCaptured,
+            }

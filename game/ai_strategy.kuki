@@ -11,18 +11,18 @@ enum AIStrategyName: string
 
 enum ChosenAction
     ChosenMove
-        TokenID types.TokenID
-        Destination list of int
+        TokenID: types.TokenID
+        Destination: list of int
     ChosenAttack
-        AttackerID types.TokenID
-        DefenderID types.TokenID
+        AttackerID: types.TokenID
+        DefenderID: types.TokenID
     ChosenDeploy
-        HealthValue int
-        Position list of int
+        HealthValue: int
+        Position: list of int
     ChosenEndTurn
 
 func ChosenActionName(action: ChosenAction) string
-    switch action
+    switch action as action
         when ChosenMove
             return "MOVE"
         when ChosenAttack
@@ -33,7 +33,7 @@ func ChosenActionName(action: ChosenAction) string
             return "END_TURN"
 
 func ChosenToActionMap(action: ChosenAction) map of string to any
-    switch action
+    switch action as action
         when ChosenMove
             return map of string to any{
                 "type": "MOVE",

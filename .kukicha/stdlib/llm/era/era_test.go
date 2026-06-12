@@ -3,9 +3,9 @@
 package era_test
 
 import (
-	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
-	"github.com/kukichalang/kukicha/stdlib/llm/era"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
+	"codeberg.org/kukichalang/kukicha/stdlib/llm/era"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

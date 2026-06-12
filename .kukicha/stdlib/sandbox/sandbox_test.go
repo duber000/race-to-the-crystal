@@ -3,9 +3,9 @@
 package sandbox_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/files"
-	"github.com/kukichalang/kukicha/stdlib/sandbox"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/files"
+	"codeberg.org/kukichalang/kukicha/stdlib/sandbox"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

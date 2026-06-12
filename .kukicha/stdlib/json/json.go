@@ -132,13 +132,7 @@ func WriteOutput(v any) error {
 		return err_1
 	}
 //line stdlib/json/json.kuki:115
-//line stdlib/json/json.kuki:115
-	_, err_2 := fmt.Fprintln(os.Stdout, string(data))
-//line stdlib/json/json.kuki:115
-	if err_2 != nil {
-//line stdlib/json/json.kuki:115
-		return err_2
-	}
+	fmt.Fprintln(os.Stdout, string(data))
 //line stdlib/json/json.kuki:116
 	return nil
 }
@@ -150,14 +144,14 @@ func Read[T any](reader io.Reader) (T, error) {
 //line stdlib/json/json.kuki:123
 	// pipe step 1: ReadInto(...)
 //line stdlib/json/json.kuki:123
-	err_3 := ReadInto(reader, &data)
+	err_2 := ReadInto(reader, &data)
 //line stdlib/json/json.kuki:123
-	if err_3 != nil {
+	if err_2 != nil {
 //line stdlib/json/json.kuki:123
-		err_3 = fmt.Errorf("failed to read json: %w", err_3)
+		err_2 = fmt.Errorf("failed to read json: %w", err_2)
 		var _zero0 T
 //line stdlib/json/json.kuki:123
-		return _zero0, err_3
+		return _zero0, err_2
 	}
 	_ = reader
 //line stdlib/json/json.kuki:124
@@ -170,14 +164,14 @@ func Parse[T any](data []byte) (T, error) {
 	out := *new(T)
 //line stdlib/json/json.kuki:131
 //line stdlib/json/json.kuki:131
-	err_4 := ParseInto(data, &out)
+	err_3 := ParseInto(data, &out)
 //line stdlib/json/json.kuki:131
-	if err_4 != nil {
+	if err_3 != nil {
 //line stdlib/json/json.kuki:131
-		err_4 = fmt.Errorf("failed to parse json: %w", err_4)
+		err_3 = fmt.Errorf("failed to parse json: %w", err_3)
 		var _zero0 T
 //line stdlib/json/json.kuki:131
-		return _zero0, err_4
+		return _zero0, err_3
 	}
 //line stdlib/json/json.kuki:132
 	return out, nil
@@ -189,14 +183,14 @@ func ParseString[T any](data string) (T, error) {
 	out := *new(T)
 //line stdlib/json/json.kuki:139
 //line stdlib/json/json.kuki:139
-	err_5 := ParseStringInto(data, &out)
+	err_4 := ParseStringInto(data, &out)
 //line stdlib/json/json.kuki:139
-	if err_5 != nil {
+	if err_4 != nil {
 //line stdlib/json/json.kuki:139
-		err_5 = fmt.Errorf("failed to parse json: %w", err_5)
+		err_4 = fmt.Errorf("failed to parse json: %w", err_4)
 		var _zero0 T
 //line stdlib/json/json.kuki:139
-		return _zero0, err_5
+		return _zero0, err_4
 	}
 //line stdlib/json/json.kuki:140
 	return out, nil
@@ -288,14 +282,14 @@ func ParseValue(data []byte) (JSONValue, error) {
 	raw := *new(any)
 //line stdlib/json/json.kuki:203
 //line stdlib/json/json.kuki:203
-	err_6 := ParseInto(data, &raw)
+	err_5 := ParseInto(data, &raw)
 //line stdlib/json/json.kuki:203
-	if err_6 != nil {
+	if err_5 != nil {
 //line stdlib/json/json.kuki:203
-		err_6 = fmt.Errorf("failed to parse json value: %w", err_6)
+		err_5 = fmt.Errorf("failed to parse json value: %w", err_5)
 		var _zero0 JSONValue
 //line stdlib/json/json.kuki:203
-		return _zero0, err_6
+		return _zero0, err_5
 	}
 //line stdlib/json/json.kuki:204
 	return decodeJSON(raw), nil
@@ -307,14 +301,14 @@ func ParseStringValue(data string) (JSONValue, error) {
 	raw := *new(any)
 //line stdlib/json/json.kuki:210
 //line stdlib/json/json.kuki:210
-	err_7 := ParseStringInto(data, &raw)
+	err_6 := ParseStringInto(data, &raw)
 //line stdlib/json/json.kuki:210
-	if err_7 != nil {
+	if err_6 != nil {
 //line stdlib/json/json.kuki:210
-		err_7 = fmt.Errorf("failed to parse json value: %w", err_7)
+		err_6 = fmt.Errorf("failed to parse json value: %w", err_6)
 		var _zero0 JSONValue
 //line stdlib/json/json.kuki:210
-		return _zero0, err_7
+		return _zero0, err_6
 	}
 //line stdlib/json/json.kuki:211
 	return decodeJSON(raw), nil
@@ -327,14 +321,14 @@ func ReadValue(reader io.Reader) (JSONValue, error) {
 //line stdlib/json/json.kuki:217
 	// pipe step 1: ReadInto(...)
 //line stdlib/json/json.kuki:217
-	err_8 := ReadInto(reader, &raw)
+	err_7 := ReadInto(reader, &raw)
 //line stdlib/json/json.kuki:217
-	if err_8 != nil {
+	if err_7 != nil {
 //line stdlib/json/json.kuki:217
-		err_8 = fmt.Errorf("failed to read json value: %w", err_8)
+		err_7 = fmt.Errorf("failed to read json value: %w", err_7)
 		var _zero0 JSONValue
 //line stdlib/json/json.kuki:217
-		return _zero0, err_8
+		return _zero0, err_7
 	}
 	_ = reader
 //line stdlib/json/json.kuki:218
@@ -352,14 +346,14 @@ func ParseFrozen(data []byte) (Frozen, error) {
 	raw := *new(any)
 //line stdlib/json/json.kuki:247
 //line stdlib/json/json.kuki:247
-	err_9 := ParseInto(data, &raw)
+	err_8 := ParseInto(data, &raw)
 //line stdlib/json/json.kuki:247
-	if err_9 != nil {
+	if err_8 != nil {
 //line stdlib/json/json.kuki:247
-		err_9 = fmt.Errorf("failed to parse json: %w", err_9)
+		err_8 = fmt.Errorf("failed to parse json: %w", err_8)
 		var _zero0 Frozen
 //line stdlib/json/json.kuki:247
-		return _zero0, err_9
+		return _zero0, err_8
 	}
 //line stdlib/json/json.kuki:248
 	out, err := json.Marshal(raw)
@@ -403,9 +397,9 @@ func Pretty(s string) string {
 	buf := bytes.Buffer{}
 //line stdlib/json/json.kuki:278
 //line stdlib/json/json.kuki:278
-	err_10 := json.Indent(&buf, []byte(s), "", "  ")
+	err_9 := json.Indent(&buf, []byte(s), "", "  ")
 //line stdlib/json/json.kuki:278
-	if err_10 != nil {
+	if err_9 != nil {
 //line stdlib/json/json.kuki:278
 		return s
 	}

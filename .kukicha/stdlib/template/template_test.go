@@ -3,8 +3,8 @@
 package template_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/template"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/template"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 
@@ -20,7 +20,7 @@ type renderCase struct {
 //line stdlib/template/template_test.kuki:16
 func TestRender(t *testing.T) {
 //line stdlib/template/template_test.kuki:17
-	cases := []renderCase{renderCase{name: "renders with data", src: "Hello {{.Name}}", data: any(map[string]any{"Name": "Ari"}), want: "Hello Ari"}, renderCase{name: "renders empty template", src: "", data: any(map[string]any{}), want: ""}, renderCase{name: "no escaping in text", src: "{{.X}}", data: any(map[string]any{"X": "<b>"}), want: "<b>"}, renderCase{name: "invalid template", src: "{{", data: any(map[string]any{}), wantErr: true}}
+	cases := []renderCase{renderCase{name: "renders with data", src: `Hello {{.Name}}`, data: any(map[string]any{"Name": "Ari"}), want: "Hello Ari"}, renderCase{name: "renders empty template", src: "", data: any(map[string]any{}), want: ""}, renderCase{name: "no escaping in text", src: `{{.X}}`, data: any(map[string]any{"X": "<b>"}), want: "<b>"}, renderCase{name: "invalid template", src: `{{`, data: any(map[string]any{}), wantErr: true}}
 //line stdlib/template/template_test.kuki:38
 	for _, tc := range cases {
 //line stdlib/template/template_test.kuki:39
@@ -46,7 +46,7 @@ func TestHTML(t *testing.T) {
 //line stdlib/template/template_test.kuki:49
 	t.Run("auto-escapes html", func(t *testing.T) {
 //line stdlib/template/template_test.kuki:50
-		got, err := template.HTML("<p>{{.X}}</p>", map[string]any{"X": "<script>"})
+		got, err := template.HTML(`<p>{{.X}}</p>`, map[string]any{"X": "<script>"})
 //line stdlib/template/template_test.kuki:51
 		test.AssertNoError(t, err)
 //line stdlib/template/template_test.kuki:52
@@ -55,7 +55,7 @@ func TestHTML(t *testing.T) {
 //line stdlib/template/template_test.kuki:55
 	t.Run("invalid template", func(t *testing.T) {
 //line stdlib/template/template_test.kuki:56
-		_, err := template.HTML("{{", map[string]any{})
+		_, err := template.HTML(`{{`, map[string]any{})
 //line stdlib/template/template_test.kuki:57
 		test.AssertError(t, err)
 	})
@@ -64,7 +64,7 @@ func TestHTML(t *testing.T) {
 //line stdlib/template/template_test.kuki:60
 func TestCompileRender(t *testing.T) {
 //line stdlib/template/template_test.kuki:61
-	tmpl, err_1 := template.Compile("greeting", "hi {{.Name}}")
+	tmpl, err_1 := template.Compile("greeting", `hi {{.Name}}`)
 //line stdlib/template/template_test.kuki:61
 	if err_1 != nil {
 //line stdlib/template/template_test.kuki:61
@@ -96,7 +96,7 @@ func TestCompileRender(t *testing.T) {
 //line stdlib/template/template_test.kuki:77
 func TestCompileHTMLRender(t *testing.T) {
 //line stdlib/template/template_test.kuki:78
-	page, err_2 := template.CompileHTML("page", "<b>{{.X}}</b>")
+	page, err_2 := template.CompileHTML("page", `<b>{{.X}}</b>`)
 //line stdlib/template/template_test.kuki:78
 	if err_2 != nil {
 //line stdlib/template/template_test.kuki:78
@@ -116,7 +116,7 @@ func TestCompileHTMLRender(t *testing.T) {
 //line stdlib/template/template_test.kuki:86
 func TestCompileParseError(t *testing.T) {
 //line stdlib/template/template_test.kuki:87
-	_, err := template.Compile("bad", "{{")
+	_, err := template.Compile("bad", `{{`)
 //line stdlib/template/template_test.kuki:88
 	test.AssertError(t, err)
 }

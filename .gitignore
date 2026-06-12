@@ -27,10 +27,11 @@ caddy
 **/main.go
 **/*_test.go
 game/game
+server/server
 web_server/web_server
-
-# Babylon.js library files (downloaded from CDN)
-babylon.js
-babylonjs.loaders.min.js
-babylon.gui.min.js
-
+race-desktop
+race-ai-client
+*.go
+web_server/static/babylon.js
+web_server/static/babylonjs.loaders.min.js
+web_server/static/babylon.gui.min.js

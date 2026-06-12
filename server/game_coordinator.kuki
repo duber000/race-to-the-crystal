@@ -8,13 +8,13 @@ import "stdlib/json" as jsonpkg
 import "stdlib/log"
 
 type GameSession
-    game_id string
-    game_name string
-    game_state gamepkg.GameState
-    network_to_game_id map of string to string
-    game_to_network_id map of string to string
-    last_state optional reference map of string to any
-    api_map map of string to gamepkg.GameAPI
+    game_id: string
+    game_name: string
+    game_state: gamepkg.GameState
+    network_to_game_id: map of string to string
+    game_to_network_id: map of string to string
+    last_state: reference map of string to any
+    api_map: map of string to gamepkg.GameAPI
 
 func NewGameSession(game_id: string, lobby: reference GameLobby) reference GameSession
     gs := gamepkg.CreateGame(len(dereference lobby.players))
@@ -52,24 +52,7 @@ func execute_game_action on s: reference GameSession(network_player_id: string, 
     log.Info(
         "Before action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}",
     )
-    var result gamepkg.ActionResult
-    switch action
-        when gamepkg.Move
-            result = api.Move(action.TokenID, action.Destination.X, action.Destination.Y)
-        when gamepkg.Attack
-            result = api.Attack(action.AttackerID, action.DefenderID)
-        when gamepkg.Deploy
-            result = api.Deploy(action.HealthValue, action.Position.X, action.Position.Y)
-        when gamepkg.EndTurn
-            log.Info("EndTurn via api: action type")
-            log.Info("Calling s.game_state.EndTurn directly")
-            s.game_state.EndTurn()
-            log.Info(
-                "After direct EndTurn: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}",
-            )
-            result.Data = gamepkg.NewEmptyResultData()
-            result.Success = true
-            result.Message = "Turn ended"
+    var result gamepkg.ActionResult = api.DoAction(action)
 
     log.Info(
         "After action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}",
@@ -106,8 +89,8 @@ func get_current_network_player_id on s: reference GameSession string
     return ""
 
 type GameCoordinator
-    active_games map of string to reference GameSession
-    player_to_game map of string to string
+    active_games: map of string to reference GameSession
+    player_to_game: map of string to string
 
 func NewGameCoordinator() GameCoordinator
     return GameCoordinator{

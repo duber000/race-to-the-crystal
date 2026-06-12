@@ -4,11 +4,11 @@ import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
 type CombatOutcome
-    result enums.CombatResult
-    damage_dealt int
-    attacker_id types.TokenID
-    defender_id types.TokenID
-    defender_killed bool
+    result: enums.CombatResult
+    damage_dealt: int
+    attacker_id: types.TokenID
+    defender_id: types.TokenID
+    defender_killed: bool
 
 func can_attack(attacker: reference Token, defender: reference Token) bool
     if not attacker.is_alive or not defender.is_alive

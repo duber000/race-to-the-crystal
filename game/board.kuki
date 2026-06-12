@@ -7,9 +7,9 @@ import "stdlib/random"
 import "stdlib/slice"
 
 type Cell
-    position types.Position
-    cell_type enums.CellType
-    occupants list of types.TokenID
+    position: types.Position
+    cell_type: enums.CellType
+    occupants: list of types.TokenID
 
 func NewCell(x: int, y: int) Cell
     return Cell{position: types.Pos(x, y), cell_type: enums.NORMAL, occupants: empty list of types.TokenID}
@@ -36,17 +36,17 @@ func clear_occupants on c: reference Cell
     c.occupants = empty list of types.TokenID
 
 type Quadrant
-    x_min int
-    x_max int
-    y_min int
-    y_max int
+    x_min: int
+    x_max: int
+    y_min: int
+    y_max: int
 
 type Board
-    width int
-    height int
-    grid list of list of Cell
-    _gen_positions list of types.Position
-    _mystery_positions list of types.Position
+    width: int
+    height: int
+    grid: list of list of Cell
+    _gen_positions: list of types.Position
+    _mystery_positions: list of types.Position
 
 func NewBoard() Board
     b := Board{

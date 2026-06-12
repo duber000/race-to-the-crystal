@@ -5,15 +5,15 @@ import "os/exec"
 import "stdlib/log"
 
 type SpawnedAI
-    process_id int
-    player_name string
-    strategy string
-    game_id string
+    process_id: int
+    player_name: string
+    strategy: string
+    game_id: string
 
 type AISpawner
-    processes map of int to reference exec.Cmd
-    ai_counter int
-    strategies list of string
+    processes: map of int to reference exec.Cmd
+    ai_counter: int
+    strategies: list of string
 
 func NewAISpawner() AISpawner
     return AISpawner{

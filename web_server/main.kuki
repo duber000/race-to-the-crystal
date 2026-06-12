@@ -9,14 +9,14 @@ import "stdlib/log"
 import "stdlib/signal"
 
 type WebServerConfig
-    port int
-    static_dir string
-    index_path string
-    game_server_url string
-    mercure_hub_url string
-    mercure_topic_prefix string
-    mercure_enabled bool
-    sse_primary_mode bool
+    port: int
+    static_dir: string
+    index_path: string
+    game_server_url: string
+    mercure_hub_url: string
+    mercure_topic_prefix: string
+    mercure_enabled: bool
+    sse_primary_mode: bool
 
 func WebServerConfigFromEnv() WebServerConfig
     return WebServerConfig{
@@ -31,8 +31,8 @@ func WebServerConfigFromEnv() WebServerConfig
     }
 
 type WebServer
-    config WebServerConfig
-    proxy optional reference httputil.ReverseProxy
+    config: WebServerConfig
+    proxy: optional reference httputil.ReverseProxy
 
 func NewWebServer(config: WebServerConfig) (WebServer, error)
     target := url.Parse(config.game_server_url) onerr return WebServer{}, error "invalid GAME_SERVER_URL"
@@ -41,7 +41,7 @@ func NewWebServer(config: WebServerConfig) (WebServer, error)
 
 func Start on ws: reference WebServer
     mux := http.NewServeMux()
-    mux.HandleFunc("GET /{$}", ws.handleRoot)
+    mux.HandleFunc(`GET /{$}`, ws.handleRoot)
     mux.HandleFunc("GET /api/config", ws.handleConfig)
     mux.Handle(
         "GET /static/",

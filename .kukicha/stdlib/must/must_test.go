@@ -3,9 +3,9 @@
 package must_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/must"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/must"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"os"
 	"testing"
 )
@@ -76,7 +76,7 @@ func TestEnvHelpers(t *testing.T) {
 //line stdlib/must/must_test.kuki:67
 			if len(tc.envValue) > 0 {
 //line stdlib/must/must_test.kuki:68
-				os.Setenv(tc.envKey, tc.envValue)
+				_ = os.Setenv(tc.envKey, tc.envValue)
 			}
 //line stdlib/must/must_test.kuki:70
 			if tc.want == "default" {
@@ -85,7 +85,7 @@ func TestEnvHelpers(t *testing.T) {
 //line stdlib/must/must_test.kuki:72
 				test.AssertEqual(t, got, "default")
 //line stdlib/must/must_test.kuki:73
-				os.Unsetenv(tc.envKey)
+				_ = os.Unsetenv(tc.envKey)
 //line stdlib/must/must_test.kuki:74
 				gotDefault := must.EnvOr(tc.envKey, "default")
 //line stdlib/must/must_test.kuki:75

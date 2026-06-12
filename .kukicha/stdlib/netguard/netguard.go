@@ -3,9 +3,9 @@
 package netguard
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/datetime"
 	"context"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/datetime"
 	"net"
 	"net/http"
 	"syscall"
@@ -118,78 +118,70 @@ func NewBlock(cidrs []string) (Guard, error) {
 //line stdlib/netguard/netguard.kuki:73
 func NewSSRFGuard() Guard {
 //line stdlib/netguard/netguard.kuki:74
-	ssrfCIDRs := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16", "::1/128", "fc00::/7", "fe80::/10", "0.0.0.0/8", "100.64.0.0/10", "192.0.0.0/24", "192.0.2.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "224.0.0.0/4", "240.0.0.0/4"}
-//line stdlib/netguard/netguard.kuki:94
+	ssrfCIDRs := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16", "::1/128", "fc00::/7", "fe80::/10", "0.0.0.0/8", "100.64.0.0/10", "192.0.0.0/24", "192.0.2.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "224.0.0.0/4", "240.0.0.0/4", "64:ff9b::/96", "64:ff9b:1::/48", "2002::/16", "2001::/32"}
+//line stdlib/netguard/netguard.kuki:98
 	nets, err_3 := parseCIDRs(ssrfCIDRs)
-//line stdlib/netguard/netguard.kuki:94
+//line stdlib/netguard/netguard.kuki:98
 	if err_3 != nil {
-//line stdlib/netguard/netguard.kuki:94
+//line stdlib/netguard/netguard.kuki:98
 		panic(fmt.Sprintf("netguard: BUG in hardcoded SSRF CIDRs: %v", err_3))
 	}
-//line stdlib/netguard/netguard.kuki:95
+//line stdlib/netguard/netguard.kuki:99
 	return Guard{networks: nets, mode: GuardModeBlock}
 }
 
-//line stdlib/netguard/netguard.kuki:99
+//line stdlib/netguard/netguard.kuki:103
 func Check(g Guard, ipStr string) bool {
-//line stdlib/netguard/netguard.kuki:100
+//line stdlib/netguard/netguard.kuki:104
 	ip := net.ParseIP(ipStr)
-//line stdlib/netguard/netguard.kuki:101
+//line stdlib/netguard/netguard.kuki:105
 	if ip == nil {
-//line stdlib/netguard/netguard.kuki:102
+//line stdlib/netguard/netguard.kuki:106
 		return false
 	}
-//line stdlib/netguard/netguard.kuki:103
+//line stdlib/netguard/netguard.kuki:107
 	return checkIP(g, ip)
 }
 
-//line stdlib/netguard/netguard.kuki:109
+//line stdlib/netguard/netguard.kuki:113
 func DialContext(g Guard, ctx context.Context, network string, addr string) (net.Conn, error) {
-//line stdlib/netguard/netguard.kuki:110
+//line stdlib/netguard/netguard.kuki:114
 	host, port, err_4 := net.SplitHostPort(addr)
-//line stdlib/netguard/netguard.kuki:110
+//line stdlib/netguard/netguard.kuki:114
 	if err_4 != nil {
-//line stdlib/netguard/netguard.kuki:110
+//line stdlib/netguard/netguard.kuki:114
 		return nil, fmt.Errorf("netguard: invalid address %v: %v", addr, err_4)
 	}
-//line stdlib/netguard/netguard.kuki:112
+//line stdlib/netguard/netguard.kuki:116
 	ips, err_5 := net.DefaultResolver.LookupIPAddr(ctx, host)
-//line stdlib/netguard/netguard.kuki:112
+//line stdlib/netguard/netguard.kuki:116
 	if err_5 != nil {
-//line stdlib/netguard/netguard.kuki:112
+//line stdlib/netguard/netguard.kuki:116
 		return nil, fmt.Errorf("netguard: dns lookup %v: %v", host, err_5)
 	}
-//line stdlib/netguard/netguard.kuki:115
-	dialIP := net.IPAddr{}
-//line stdlib/netguard/netguard.kuki:116
-	found := false
-//line stdlib/netguard/netguard.kuki:117
-	for _, ip := range ips {
-//line stdlib/netguard/netguard.kuki:118
-		if checkIP(g, ip.IP) {
 //line stdlib/netguard/netguard.kuki:119
-			dialIP = ip
+	for _, ip := range ips {
 //line stdlib/netguard/netguard.kuki:120
-			found = true
+		if !checkIP(g, ip.IP) {
 //line stdlib/netguard/netguard.kuki:121
-			break
+			return nil, fmt.Errorf("netguard: host '%v' resolves to blocked IP %v", host, ip.IP)
 		}
 	}
-//line stdlib/netguard/netguard.kuki:122
-	if !found {
-//line stdlib/netguard/netguard.kuki:123
-		return nil, fmt.Errorf("netguard: all resolved IPs for '%v' are blocked", host)
-	}
-//line stdlib/netguard/netguard.kuki:126
+//line stdlib/netguard/netguard.kuki:124
 	dialer := net.Dialer{Timeout: datetime.Seconds(30)}
-//line stdlib/netguard/netguard.kuki:127
+//line stdlib/netguard/netguard.kuki:125
 	dialer.Control = func(controlNetwork string, controlAddress string, c syscall.RawConn) error {
-//line stdlib/netguard/netguard.kuki:128
+//line stdlib/netguard/netguard.kuki:126
 		connHost, _, _ := net.SplitHostPort(controlAddress)
-//line stdlib/netguard/netguard.kuki:129
+//line stdlib/netguard/netguard.kuki:127
 		connIP := net.ParseIP(connHost)
+//line stdlib/netguard/netguard.kuki:128
+		if connIP == nil {
+//line stdlib/netguard/netguard.kuki:129
+			return fmt.Errorf("netguard: cannot parse connection address %v", connHost)
+		}
 //line stdlib/netguard/netguard.kuki:130
-		if connIP != nil && !checkIP(g, connIP) {
+		if !checkIP(g, connIP) {
 //line stdlib/netguard/netguard.kuki:131
 			return fmt.Errorf("netguard: connection to %v blocked by policy", connHost)
 		}
@@ -197,7 +189,7 @@ func DialContext(g Guard, ctx context.Context, network string, addr string) (net
 		return nil
 	}
 //line stdlib/netguard/netguard.kuki:134
-	dialAddr := net.JoinHostPort(dialIP.IP.String(), port)
+	dialAddr := net.JoinHostPort(ips[0].IP.String(), port)
 //line stdlib/netguard/netguard.kuki:135
 	return dialer.DialContext(ctx, network, dialAddr)
 }

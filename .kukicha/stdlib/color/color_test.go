@@ -3,10 +3,10 @@
 package color_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/color"
+	"codeberg.org/kukichalang/kukicha/stdlib/term"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/color"
-	"github.com/kukichalang/kukicha/stdlib/term"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"os"
 	"testing"
 )
@@ -218,9 +218,9 @@ func TestStylerNonTTY(t *testing.T) {
 //line stdlib/color/color_test.kuki:197
 	defer term.ResetColorOverride()
 //line stdlib/color/color_test.kuki:198
-	os.Unsetenv("FORCE_COLOR")
+	_ = os.Unsetenv("FORCE_COLOR")
 //line stdlib/color/color_test.kuki:199
-	os.Unsetenv("NO_COLOR")
+	_ = os.Unsetenv("NO_COLOR")
 //line stdlib/color/color_test.kuki:201
 	f, err_1 := os.Open("color.kuki")
 //line stdlib/color/color_test.kuki:201

@@ -10,18 +10,18 @@ import "stdlib/string" as strpkg
 import "strings"
 
 type HTTPHandler
-    coordinator optional reference GameCoordinator
-    lobby_mgr optional reference LobbyManager
-    ws_handler optional reference WebSocketHandler
-    mercure_cfg MercureConfig
-    jwt_secret string
-    rate_limiter RateLimiter
-    static_dir string
+    coordinator: reference GameCoordinator
+    lobby_mgr: reference LobbyManager
+    ws_handler: reference WebSocketHandler
+    mercure_cfg: MercureConfig
+    jwt_secret: string
+    rate_limiter: RateLimiter
+    static_dir: string
 
 type APIResponse
-    success bool
-    message string
-    data map of string to any
+    success: bool
+    message: string
+    data: map of string to any
 
 func NewHTTPHandler(coord: reference GameCoordinator, lobby_mgr: reference LobbyManager, ws_handler: reference WebSocketHandler, mercure_cfg: MercureConfig, jwt_secret: string, static_dir: string) HTTPHandler
     return HTTPHandler{
@@ -143,8 +143,12 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
             data: empty map of string to any,
         }
 
-    action_type, valid_type := gamepkg.ParseActionType(strpkg.ToUpper(type_str))
-    if not valid_type
+    action_type := gamepkg.ParseActionType(strpkg.ToUpper(type_str)) onerr
+        return APIResponse{
+            success: false,
+            message: "unknown action type: {type_str}",
+            data: empty map of string to any,
+        }
         return APIResponse{
             success: false,
             message: "unknown action type: {type_str}",
@@ -507,37 +511,4 @@ func any_to_int(v: any) (int, error)
     return 0, error "cannot convert to int"
 
 func actionResultDataToMap(data: gamepkg.ActionResultData) map of string to any
-    switch data
-        when gamepkg.MoveData
-            m := map of string to any{
-                "token_id": data.TokenID,
-                "old_position": data.OldPosition,
-                "new_position": data.NewPosition,
-                "mystery_triggered": data.MysteryTriggered,
-            }
-            if data.MysteryTriggered
-                m["mystery_effect"] = data.MysteryEffect.String()
-            return m
-        when gamepkg.AttackData
-            return map of string to any{
-                "attacker_id": data.AttackerID,
-                "defender_id": data.DefenderID,
-                "damage_dealt": data.DamageDealt,
-                "defender_killed": data.DefenderKilled,
-            }
-        when gamepkg.DeployData
-            return map of string to any{
-                "new_token_id": data.NewTokenID,
-                "health_value": data.HealthValue,
-                "position": data.Position,
-                "tokens_remaining": data.TokensRemaining,
-            }
-        when gamepkg.TurnEndData
-            return map of string to any{
-                "turn_number": data.TurnNumber,
-                "next_player_id": data.NextPlayerID,
-                "generators_disabled": data.GeneratorsDisabled,
-                "crystal_captured": data.CrystalCaptured,
-            }
-        default
-            return empty map of string to any
+    return gamepkg.ActionDataToDict(data)

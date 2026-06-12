@@ -1,9 +1,8 @@
 petiole game
 
-import "testing"
-import "stdlib/test"
-
 import "race-to-the-crystal/shared/types" as types
+import "stdlib/test"
+import "testing"
 
 func TestGetValidMovesFromCenter(t: reference testing.T)
     b := NewBoard()
@@ -38,7 +37,10 @@ func TestIsValidMove(t: reference testing.T)
     tok, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 6, 6, types.Pos(5, 5))
     tokens_map := map of types.TokenID to reference Token{1: reference of tok}
     test.AssertTrue(t, is_valid_move(reference of tok, types.Pos(7, 5), reference of b, tokens_map))
-    test.AssertFalse(t, is_valid_move(reference of tok, types.Pos(10, 10), reference of b, tokens_map))
+    test.AssertFalse(
+        t,
+        is_valid_move(reference of tok, types.Pos(10, 10), reference of b, tokens_map),
+    )
 
 func TestGetDistance(t: reference testing.T)
     test.AssertEqual(t, get_distance(types.Pos(0, 0), types.Pos(3, 4)), 7)

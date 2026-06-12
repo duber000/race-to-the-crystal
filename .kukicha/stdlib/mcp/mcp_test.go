@@ -3,10 +3,10 @@
 package mcp_test
 
 import (
+	mcppkg "codeberg.org/kukichalang/kukicha/stdlib/mcp"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"context"
 	"fmt"
-	mcppkg "github.com/kukichalang/kukicha/stdlib/mcp"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	gomcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	"testing"
 )

@@ -3,10 +3,10 @@
 package log
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/color"
+	"codeberg.org/kukichalang/kukicha/stdlib/json"
+	"codeberg.org/kukichalang/kukicha/stdlib/term"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/color"
-	"github.com/kukichalang/kukicha/stdlib/json"
-	"github.com/kukichalang/kukicha/stdlib/term"
 	"os"
 	"strings"
 	"time"
@@ -56,19 +56,26 @@ func AllFormat() []Format {
 	return []Format{FormatText, FormatJSON}
 }
 
-func (e Format) String() string {
-	return string(e)
-}
-
-func ParseFormat(s string) (Format, bool) {
+func ParseFormat(s string) (Format, error) {
 	switch s {
 	case "text":
-		return FormatText, true
+		return FormatText, nil
 	case "json":
-		return FormatJSON, true
+		return FormatJSON, nil
 	}
 	var zero Format
-	return zero, false
+	return zero, fmt.Errorf("invalid Format %q (valid: text, json)", s)
+}
+
+func (e Format) String() string {
+	switch e {
+	case FormatText:
+		return "Text"
+	case FormatJSON:
+		return "JSON"
+	default:
+		return string(e)
+	}
 }
 
 //line stdlib/log/log.kuki:45

@@ -3,10 +3,10 @@
 package sqlite_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/db"
+	"codeberg.org/kukichalang/kukicha/stdlib/sqlite"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/db"
-	"github.com/kukichalang/kukicha/stdlib/sqlite"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"os"
 	"path/filepath"
 	strpkg "strings"

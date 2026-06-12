@@ -3,10 +3,10 @@
 package git
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/shell"
+	"codeberg.org/kukichalang/kukicha/stdlib/slice"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/shell"
-	"github.com/kukichalang/kukicha/stdlib/slice"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
 	"strings"
 )
 
@@ -38,75 +38,77 @@ func ListTags(repo string) ([]string, error) {
 	return tags, nil
 }
 
-//line stdlib/git/git.kuki:39
-func TagExists(repo string, tag string) (bool, error) {
-//line stdlib/git/git.kuki:40
-	result := shell.New("gh", "api", fmt.Sprintf("repos/%v/git/ref/tags/%v", repo, tag)).Execute()
-//line stdlib/git/git.kuki:41
-	if result.Success() {
 //line stdlib/git/git.kuki:42
+func TagExists(repo string, tag string) (bool, error) {
+//line stdlib/git/git.kuki:43
+	result := shell.New("gh", "api", fmt.Sprintf("repos/%v/git/ref/tags/%v", repo, tag)).Execute()
+//line stdlib/git/git.kuki:44
+	if result.Success() {
+//line stdlib/git/git.kuki:45
 		return true, nil
 	}
-//line stdlib/git/git.kuki:43
+//line stdlib/git/git.kuki:46
 	stderr := string(result.Stderr)
-//line stdlib/git/git.kuki:44
+//line stdlib/git/git.kuki:47
 	if strings.Contains(stderr, "Not Found") || strings.Contains(stderr, "404") {
-//line stdlib/git/git.kuki:45
+//line stdlib/git/git.kuki:48
 		return false, nil
 	}
-//line stdlib/git/git.kuki:46
+//line stdlib/git/git.kuki:49
 	return false, fmt.Errorf("failed to check tag: %v", stderr)
 }
 
-//line stdlib/git/git.kuki:52
+//line stdlib/git/git.kuki:55
 func DefaultBranch(repo string) (string, error) {
-//line stdlib/git/git.kuki:53
+//line stdlib/git/git.kuki:56
 	branch, err_2 := shell.Output("gh", "repo", "view", repo, "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name")
-//line stdlib/git/git.kuki:62
+//line stdlib/git/git.kuki:65
 	if err_2 != nil {
-//line stdlib/git/git.kuki:62
+//line stdlib/git/git.kuki:65
 		return "", fmt.Errorf("failed to get default branch for %v: %v", repo, err_2)
 	}
-//line stdlib/git/git.kuki:63
+//line stdlib/git/git.kuki:66
 	return kukistring.TrimSpace(branch), nil
 }
 
-//line stdlib/git/git.kuki:67
+//line stdlib/git/git.kuki:70
 func CurrentBranch() (string, error) {
-//line stdlib/git/git.kuki:68
+//line stdlib/git/git.kuki:71
 	branch, err_3 := shell.Output("git", "rev-parse", "--abbrev-ref", "HEAD")
-//line stdlib/git/git.kuki:68
+//line stdlib/git/git.kuki:71
 	if err_3 != nil {
-//line stdlib/git/git.kuki:68
-		return "", fmt.Errorf("failed to get current branch: %v", err_3)
+//line stdlib/git/git.kuki:71
+		err_3 = fmt.Errorf("failed to get current branch: %w", err_3)
+//line stdlib/git/git.kuki:71
+		return "", err_3
 	}
-//line stdlib/git/git.kuki:69
+//line stdlib/git/git.kuki:72
 	return kukistring.TrimSpace(branch), nil
 }
 
-//line stdlib/git/git.kuki:75
-func ReleaseExists(repo string, tag string) (bool, error) {
-//line stdlib/git/git.kuki:76
-	result := shell.New("gh", "release", "view", tag, "--repo", repo).Execute()
-//line stdlib/git/git.kuki:77
-	if result.Success() {
 //line stdlib/git/git.kuki:78
+func ReleaseExists(repo string, tag string) (bool, error) {
+//line stdlib/git/git.kuki:79
+	result := shell.New("gh", "release", "view", tag, "--repo", repo).Execute()
+//line stdlib/git/git.kuki:80
+	if result.Success() {
+//line stdlib/git/git.kuki:81
 		return true, nil
 	}
-//line stdlib/git/git.kuki:79
+//line stdlib/git/git.kuki:82
 	stderr := string(result.Stderr)
-//line stdlib/git/git.kuki:80
+//line stdlib/git/git.kuki:83
 	if strings.Contains(stderr, "release not found") || strings.Contains(stderr, "Not Found") {
-//line stdlib/git/git.kuki:81
+//line stdlib/git/git.kuki:84
 		return false, nil
 	}
-//line stdlib/git/git.kuki:82
+//line stdlib/git/git.kuki:85
 	return false, fmt.Errorf("failed to check release: %v", stderr)
 }
 
-//line stdlib/git/git.kuki:84
+//line stdlib/git/git.kuki:87
 func buildReleaseCmd(repo string, tag string, opts ReleaseOptions) shell.Command {
-//line stdlib/git/git.kuki:85
+//line stdlib/git/git.kuki:88
 	title := func() string {
 		if opts.Title != "" {
 			return opts.Title
@@ -114,94 +116,100 @@ func buildReleaseCmd(repo string, tag string, opts ReleaseOptions) shell.Command
 			return tag
 		}
 	}()
-//line stdlib/git/git.kuki:87
+//line stdlib/git/git.kuki:90
 	return shell.New("gh", "release", "create", tag, "--repo", repo, "--title", title).FlagIf(opts.Target != "", "--target", opts.Target).FlagIf(opts.GenerateNotes, "--generate-notes").FlagIf(opts.Draft, "--draft")
 }
 
-//line stdlib/git/git.kuki:95
-func CreateRelease(repo string, tag string, opts ReleaseOptions) error {
-//line stdlib/git/git.kuki:96
-	cmd := buildReleaseCmd(repo, tag, opts)
-//line stdlib/git/git.kuki:97
-	result := cmd.Execute()
 //line stdlib/git/git.kuki:98
-	succeeded := result.Success()
+func CreateRelease(repo string, tag string, opts ReleaseOptions) error {
 //line stdlib/git/git.kuki:99
-	if !succeeded {
+	cmd := buildReleaseCmd(repo, tag, opts)
 //line stdlib/git/git.kuki:100
-		errStr := string(result.Stderr)
+	result := cmd.Execute()
 //line stdlib/git/git.kuki:101
+	succeeded := result.Success()
+//line stdlib/git/git.kuki:102
+	if !succeeded {
+//line stdlib/git/git.kuki:103
+		errStr := string(result.Stderr)
+//line stdlib/git/git.kuki:104
 		return fmt.Errorf("release creation failed: %v", errStr)
 	}
-//line stdlib/git/git.kuki:102
+//line stdlib/git/git.kuki:105
 	return nil
 }
 
-//line stdlib/git/git.kuki:107
+//line stdlib/git/git.kuki:110
 func PreviewRelease(repo string, tag string, opts ReleaseOptions) string {
-//line stdlib/git/git.kuki:108
+//line stdlib/git/git.kuki:111
 	cmd := buildReleaseCmd(repo, tag, opts)
-//line stdlib/git/git.kuki:109
+//line stdlib/git/git.kuki:112
 	return cmd.Preview()
 }
 
-//line stdlib/git/git.kuki:115
+//line stdlib/git/git.kuki:121
 func RepoExists(repo string) (bool, error) {
-//line stdlib/git/git.kuki:116
+//line stdlib/git/git.kuki:122
 	result := shell.New("gh", "repo", "view", repo).Execute()
-//line stdlib/git/git.kuki:117
+//line stdlib/git/git.kuki:123
 	if result.Success() {
-//line stdlib/git/git.kuki:118
+//line stdlib/git/git.kuki:124
 		return true, nil
 	}
-//line stdlib/git/git.kuki:119
+//line stdlib/git/git.kuki:125
 	stderr := string(result.Stderr)
-//line stdlib/git/git.kuki:120
+//line stdlib/git/git.kuki:126
 	if strings.Contains(stderr, "Could not resolve to a Repository") || strings.Contains(stderr, "Not Found") || strings.Contains(stderr, "not found") {
-//line stdlib/git/git.kuki:121
+//line stdlib/git/git.kuki:127
 		return false, nil
 	}
-//line stdlib/git/git.kuki:122
+//line stdlib/git/git.kuki:128
 	return false, fmt.Errorf("failed to check repo: %v", stderr)
 }
 
-//line stdlib/git/git.kuki:126
+//line stdlib/git/git.kuki:132
 func CurrentUser() (string, error) {
-//line stdlib/git/git.kuki:127
+//line stdlib/git/git.kuki:133
 	login, err_4 := shell.Output("gh", "api", "user", "--jq", ".login")
-//line stdlib/git/git.kuki:127
+//line stdlib/git/git.kuki:133
 	if err_4 != nil {
-//line stdlib/git/git.kuki:127
-		return "", fmt.Errorf("failed to get current user: %v", err_4)
+//line stdlib/git/git.kuki:133
+		err_4 = fmt.Errorf("failed to get current user: %w", err_4)
+//line stdlib/git/git.kuki:133
+		return "", err_4
 	}
-//line stdlib/git/git.kuki:128
+//line stdlib/git/git.kuki:134
 	return kukistring.TrimSpace(login), nil
 }
 
-//line stdlib/git/git.kuki:134
+//line stdlib/git/git.kuki:145
 func Clone(url string, path string) error {
-//line stdlib/git/git.kuki:135
-//line stdlib/git/git.kuki:135
+//line stdlib/git/git.kuki:146
+//line stdlib/git/git.kuki:146
 	_, err_5 := shell.Output("git", "clone", url, path)
-//line stdlib/git/git.kuki:135
+//line stdlib/git/git.kuki:146
 	if err_5 != nil {
-//line stdlib/git/git.kuki:135
-		return fmt.Errorf("clone failed: %v", err_5)
+//line stdlib/git/git.kuki:146
+		err_5 = fmt.Errorf("clone failed: %w", err_5)
+//line stdlib/git/git.kuki:146
+		return err_5
 	}
-//line stdlib/git/git.kuki:136
+//line stdlib/git/git.kuki:147
 	return nil
 }
 
-//line stdlib/git/git.kuki:140
+//line stdlib/git/git.kuki:153
 func CloneShallow(url string, path string, depth int) error {
-//line stdlib/git/git.kuki:141
-//line stdlib/git/git.kuki:141
+//line stdlib/git/git.kuki:154
+//line stdlib/git/git.kuki:154
 	_, err_6 := shell.Output("git", "clone", "--depth", fmt.Sprintf("%v", depth), url, path)
-//line stdlib/git/git.kuki:141
+//line stdlib/git/git.kuki:154
 	if err_6 != nil {
-//line stdlib/git/git.kuki:141
-		return fmt.Errorf("shallow clone failed: %v", err_6)
+//line stdlib/git/git.kuki:154
+		err_6 = fmt.Errorf("shallow clone failed: %w", err_6)
+//line stdlib/git/git.kuki:154
+		return err_6
 	}
-//line stdlib/git/git.kuki:142
+//line stdlib/git/git.kuki:155
 	return nil
 }

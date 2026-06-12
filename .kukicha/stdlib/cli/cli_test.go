@@ -3,9 +3,9 @@
 package cli_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/cli"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/cli"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

@@ -3,10 +3,11 @@
 package validate
 
 import (
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"errors"
 	"fmt"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -14,469 +15,478 @@ import (
 	"unicode"
 )
 
-//line stdlib/validate/validate.kuki:18
-func NotEmpty(s string) (string, error) {
 //line stdlib/validate/validate.kuki:19
-	if kukistring.TrimSpace(s) == "" {
+func NotEmpty(s string) (string, error) {
 //line stdlib/validate/validate.kuki:20
+	if kukistring.TrimSpace(s) == "" {
+//line stdlib/validate/validate.kuki:21
 		return "", errors.New("value cannot be empty")
 	}
-//line stdlib/validate/validate.kuki:21
+//line stdlib/validate/validate.kuki:22
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:25
-func MinLength(s string, n int) (string, error) {
 //line stdlib/validate/validate.kuki:26
-	if len(s) < n {
+func MinLength(s string, n int) (string, error) {
 //line stdlib/validate/validate.kuki:27
+	if len(s) < n {
+//line stdlib/validate/validate.kuki:28
 		return s, fmt.Errorf("value must be at least %v characters", n)
 	}
-//line stdlib/validate/validate.kuki:28
+//line stdlib/validate/validate.kuki:29
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:32
-func MaxLength(s string, n int) (string, error) {
 //line stdlib/validate/validate.kuki:33
-	if len(s) > n {
+func MaxLength(s string, n int) (string, error) {
 //line stdlib/validate/validate.kuki:34
+	if len(s) > n {
+//line stdlib/validate/validate.kuki:35
 		return s, fmt.Errorf("value must be at most %v characters", n)
 	}
-//line stdlib/validate/validate.kuki:35
+//line stdlib/validate/validate.kuki:36
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:39
-func Length(s string, n int) (string, error) {
 //line stdlib/validate/validate.kuki:40
-	if len(s) != n {
+func Length(s string, n int) (string, error) {
 //line stdlib/validate/validate.kuki:41
+	if len(s) != n {
+//line stdlib/validate/validate.kuki:42
 		return s, fmt.Errorf("value must be exactly %v characters", n)
 	}
-//line stdlib/validate/validate.kuki:42
+//line stdlib/validate/validate.kuki:43
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:46
-func LengthBetween(s string, min int, max int) (string, error) {
 //line stdlib/validate/validate.kuki:47
-	length := len(s)
+func LengthBetween(s string, min int, max int) (string, error) {
 //line stdlib/validate/validate.kuki:48
-	if length < min || length > max {
+	length := len(s)
 //line stdlib/validate/validate.kuki:49
+	if length < min || length > max {
+//line stdlib/validate/validate.kuki:50
 		return s, fmt.Errorf("value must be between %v and %v characters", min, max)
 	}
-//line stdlib/validate/validate.kuki:50
+//line stdlib/validate/validate.kuki:51
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:54
+//line stdlib/validate/validate.kuki:59
 func Matches(s string, pattern string) (string, error) {
-//line stdlib/validate/validate.kuki:55
+//line stdlib/validate/validate.kuki:60
 	matched, err_1 := regexp.MatchString(pattern, s)
-//line stdlib/validate/validate.kuki:55
+//line stdlib/validate/validate.kuki:60
 	if err_1 != nil {
-//line stdlib/validate/validate.kuki:55
-		return s, fmt.Errorf("invalid pattern: %v", err_1)
+//line stdlib/validate/validate.kuki:60
+		err_1 = fmt.Errorf("invalid pattern: %w", err_1)
+//line stdlib/validate/validate.kuki:60
+		return "", err_1
 	}
-//line stdlib/validate/validate.kuki:56
+//line stdlib/validate/validate.kuki:61
 	if !matched {
-//line stdlib/validate/validate.kuki:57
+//line stdlib/validate/validate.kuki:62
 		return s, errors.New("value does not match required pattern")
 	}
-//line stdlib/validate/validate.kuki:58
+//line stdlib/validate/validate.kuki:63
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:64
+//line stdlib/validate/validate.kuki:69
 func Email(s string) (string, error) {
-//line stdlib/validate/validate.kuki:66
+//line stdlib/validate/validate.kuki:71
 	pattern := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
-//line stdlib/validate/validate.kuki:67
+//line stdlib/validate/validate.kuki:72
 	matched, err_2 := regexp.MatchString(pattern, s)
-//line stdlib/validate/validate.kuki:67
+//line stdlib/validate/validate.kuki:72
 	if err_2 != nil {
-//line stdlib/validate/validate.kuki:67
+//line stdlib/validate/validate.kuki:72
 		panic(fmt.Sprintf("validate: invalid email pattern: %v", err_2))
 	}
-//line stdlib/validate/validate.kuki:68
+//line stdlib/validate/validate.kuki:73
 	if !matched {
-//line stdlib/validate/validate.kuki:69
+//line stdlib/validate/validate.kuki:74
 		return s, errors.New("invalid email address")
 	}
-//line stdlib/validate/validate.kuki:70
+//line stdlib/validate/validate.kuki:75
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:74
+//line stdlib/validate/validate.kuki:79
 func URL(s string) (string, error) {
-//line stdlib/validate/validate.kuki:75
+//line stdlib/validate/validate.kuki:80
 	parsed, err_3 := url.Parse(s)
-//line stdlib/validate/validate.kuki:75
+//line stdlib/validate/validate.kuki:80
 	if err_3 != nil {
-//line stdlib/validate/validate.kuki:75
-		return s, fmt.Errorf("invalid URL: %v", err_3)
+//line stdlib/validate/validate.kuki:80
+		err_3 = fmt.Errorf("invalid URL: %w", err_3)
+//line stdlib/validate/validate.kuki:80
+		return "", err_3
 	}
-//line stdlib/validate/validate.kuki:76
+//line stdlib/validate/validate.kuki:81
 	if parsed.Scheme == "" || parsed.Host == "" {
-//line stdlib/validate/validate.kuki:77
+//line stdlib/validate/validate.kuki:82
 		return s, errors.New("URL must have scheme and host")
 	}
-//line stdlib/validate/validate.kuki:78
+//line stdlib/validate/validate.kuki:83
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:82
+//line stdlib/validate/validate.kuki:87
 func Alpha(s string) (string, error) {
-//line stdlib/validate/validate.kuki:83
+//line stdlib/validate/validate.kuki:88
 	for _, r := range s {
-//line stdlib/validate/validate.kuki:84
+//line stdlib/validate/validate.kuki:89
 		if !unicode.IsLetter(r) {
-//line stdlib/validate/validate.kuki:85
+//line stdlib/validate/validate.kuki:90
 			return s, errors.New("value must contain only letters")
 		}
 	}
-//line stdlib/validate/validate.kuki:86
+//line stdlib/validate/validate.kuki:91
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:90
+//line stdlib/validate/validate.kuki:95
 func Alphanumeric(s string) (string, error) {
-//line stdlib/validate/validate.kuki:91
+//line stdlib/validate/validate.kuki:96
 	for _, r := range s {
-//line stdlib/validate/validate.kuki:92
+//line stdlib/validate/validate.kuki:97
 		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
-//line stdlib/validate/validate.kuki:93
+//line stdlib/validate/validate.kuki:98
 			return s, errors.New("value must contain only letters and numbers")
 		}
 	}
-//line stdlib/validate/validate.kuki:94
+//line stdlib/validate/validate.kuki:99
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:98
+//line stdlib/validate/validate.kuki:103
 func Numeric(s string) (string, error) {
-//line stdlib/validate/validate.kuki:99
+//line stdlib/validate/validate.kuki:104
 	for _, r := range s {
-//line stdlib/validate/validate.kuki:100
+//line stdlib/validate/validate.kuki:105
 		if !unicode.IsDigit(r) {
-//line stdlib/validate/validate.kuki:101
+//line stdlib/validate/validate.kuki:106
 			return s, errors.New("value must contain only digits")
 		}
 	}
-//line stdlib/validate/validate.kuki:102
+//line stdlib/validate/validate.kuki:107
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:106
+//line stdlib/validate/validate.kuki:111
 func NoWhitespace(s string) (string, error) {
-//line stdlib/validate/validate.kuki:107
+//line stdlib/validate/validate.kuki:112
 	for _, r := range s {
-//line stdlib/validate/validate.kuki:108
+//line stdlib/validate/validate.kuki:113
 		if unicode.IsSpace(r) {
-//line stdlib/validate/validate.kuki:109
+//line stdlib/validate/validate.kuki:114
 			return s, errors.New("value cannot contain whitespace")
 		}
 	}
-//line stdlib/validate/validate.kuki:110
+//line stdlib/validate/validate.kuki:115
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:114
+//line stdlib/validate/validate.kuki:119
 func StartsWith(s string, prefix string) (string, error) {
-//line stdlib/validate/validate.kuki:115
+//line stdlib/validate/validate.kuki:120
 	if !kukistring.HasPrefix(s, prefix) {
-//line stdlib/validate/validate.kuki:116
+//line stdlib/validate/validate.kuki:121
 		return s, fmt.Errorf("value must start with '%v'", prefix)
 	}
-//line stdlib/validate/validate.kuki:117
+//line stdlib/validate/validate.kuki:122
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:121
+//line stdlib/validate/validate.kuki:126
 func EndsWith(s string, suffix string) (string, error) {
-//line stdlib/validate/validate.kuki:122
+//line stdlib/validate/validate.kuki:127
 	if !kukistring.HasSuffix(s, suffix) {
-//line stdlib/validate/validate.kuki:123
+//line stdlib/validate/validate.kuki:128
 		return s, fmt.Errorf("value must end with '%v'", suffix)
 	}
-//line stdlib/validate/validate.kuki:124
+//line stdlib/validate/validate.kuki:129
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:128
+//line stdlib/validate/validate.kuki:133
 func Contains(s string, substr string) (string, error) {
-//line stdlib/validate/validate.kuki:129
+//line stdlib/validate/validate.kuki:134
 	if !strings.Contains(s, substr) {
-//line stdlib/validate/validate.kuki:130
+//line stdlib/validate/validate.kuki:135
 		return s, fmt.Errorf("value must contain '%v'", substr)
 	}
-//line stdlib/validate/validate.kuki:131
+//line stdlib/validate/validate.kuki:136
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:135
+//line stdlib/validate/validate.kuki:140
 func OneOf(s string, allowed ...string) (string, error) {
-//line stdlib/validate/validate.kuki:136
+//line stdlib/validate/validate.kuki:141
 	if slices.Contains(allowed, s) {
-//line stdlib/validate/validate.kuki:137
+//line stdlib/validate/validate.kuki:142
 		return s, nil
 	}
-//line stdlib/validate/validate.kuki:138
+//line stdlib/validate/validate.kuki:143
 	return s, errors.New("value must be one of the allowed options")
 }
 
-//line stdlib/validate/validate.kuki:144
+//line stdlib/validate/validate.kuki:149
 func Positive(n int) (int, error) {
-//line stdlib/validate/validate.kuki:145
+//line stdlib/validate/validate.kuki:150
 	if n <= 0 {
-//line stdlib/validate/validate.kuki:146
+//line stdlib/validate/validate.kuki:151
 		return n, errors.New("value must be positive")
 	}
-//line stdlib/validate/validate.kuki:147
+//line stdlib/validate/validate.kuki:152
 	return n, nil
 }
 
-//line stdlib/validate/validate.kuki:151
+//line stdlib/validate/validate.kuki:156
 func Negative(n int) (int, error) {
-//line stdlib/validate/validate.kuki:152
+//line stdlib/validate/validate.kuki:157
 	if n >= 0 {
-//line stdlib/validate/validate.kuki:153
+//line stdlib/validate/validate.kuki:158
 		return n, errors.New("value must be negative")
 	}
-//line stdlib/validate/validate.kuki:154
+//line stdlib/validate/validate.kuki:159
 	return n, nil
 }
 
-//line stdlib/validate/validate.kuki:158
+//line stdlib/validate/validate.kuki:163
 func NonNegative(n int) (int, error) {
-//line stdlib/validate/validate.kuki:159
+//line stdlib/validate/validate.kuki:164
 	if n < 0 {
-//line stdlib/validate/validate.kuki:160
+//line stdlib/validate/validate.kuki:165
 		return n, errors.New("value cannot be negative")
 	}
-//line stdlib/validate/validate.kuki:161
+//line stdlib/validate/validate.kuki:166
 	return n, nil
 }
 
-//line stdlib/validate/validate.kuki:165
+//line stdlib/validate/validate.kuki:170
 func NonZero(n int) (int, error) {
-//line stdlib/validate/validate.kuki:166
+//line stdlib/validate/validate.kuki:171
 	if n == 0 {
-//line stdlib/validate/validate.kuki:167
+//line stdlib/validate/validate.kuki:172
 		return n, errors.New("value cannot be zero")
 	}
-//line stdlib/validate/validate.kuki:168
+//line stdlib/validate/validate.kuki:173
 	return n, nil
 }
 
-//line stdlib/validate/validate.kuki:172
+//line stdlib/validate/validate.kuki:177
 func InRange(n int, min int, max int) (int, error) {
-//line stdlib/validate/validate.kuki:173
+//line stdlib/validate/validate.kuki:178
 	if n < min || n > max {
-//line stdlib/validate/validate.kuki:174
+//line stdlib/validate/validate.kuki:179
 		return n, fmt.Errorf("value must be between %v and %v", min, max)
 	}
-//line stdlib/validate/validate.kuki:175
+//line stdlib/validate/validate.kuki:180
 	return n, nil
 }
 
-//line stdlib/validate/validate.kuki:179
+//line stdlib/validate/validate.kuki:184
 func Min(n int, min int) (int, error) {
-//line stdlib/validate/validate.kuki:180
+//line stdlib/validate/validate.kuki:185
 	if n < min {
-//line stdlib/validate/validate.kuki:181
+//line stdlib/validate/validate.kuki:186
 		return n, fmt.Errorf("value must be at least %v", min)
 	}
-//line stdlib/validate/validate.kuki:182
+//line stdlib/validate/validate.kuki:187
 	return n, nil
 }
 
-//line stdlib/validate/validate.kuki:186
+//line stdlib/validate/validate.kuki:191
 func Max(n int, max int) (int, error) {
-//line stdlib/validate/validate.kuki:187
+//line stdlib/validate/validate.kuki:192
 	if n > max {
-//line stdlib/validate/validate.kuki:188
+//line stdlib/validate/validate.kuki:193
 		return n, fmt.Errorf("value must be at most %v", max)
 	}
-//line stdlib/validate/validate.kuki:189
+//line stdlib/validate/validate.kuki:194
 	return n, nil
 }
 
-//line stdlib/validate/validate.kuki:195
+//line stdlib/validate/validate.kuki:200
 func PositiveFloat(n float64) (float64, error) {
-//line stdlib/validate/validate.kuki:196
+//line stdlib/validate/validate.kuki:201
 	if n <= 0.0 {
-//line stdlib/validate/validate.kuki:197
+//line stdlib/validate/validate.kuki:202
 		return n, errors.New("value must be positive")
 	}
-//line stdlib/validate/validate.kuki:198
+//line stdlib/validate/validate.kuki:203
 	return n, nil
 }
 
-//line stdlib/validate/validate.kuki:202
+//line stdlib/validate/validate.kuki:207
 func InRangeFloat(n float64, min float64, max float64) (float64, error) {
-//line stdlib/validate/validate.kuki:203
+//line stdlib/validate/validate.kuki:208
 	if n < min || n > max {
-//line stdlib/validate/validate.kuki:204
+//line stdlib/validate/validate.kuki:209
 		return n, fmt.Errorf("value must be between %v and %v", min, max)
 	}
-//line stdlib/validate/validate.kuki:205
+//line stdlib/validate/validate.kuki:210
 	return n, nil
 }
 
-//line stdlib/validate/validate.kuki:211
+//line stdlib/validate/validate.kuki:216
 func ParseInt(s string) (int, error) {
-//line stdlib/validate/validate.kuki:212
+//line stdlib/validate/validate.kuki:217
 	val, err_4 := strconv.Atoi(s)
-//line stdlib/validate/validate.kuki:212
+//line stdlib/validate/validate.kuki:217
 	if err_4 != nil {
-//line stdlib/validate/validate.kuki:212
+//line stdlib/validate/validate.kuki:217
 		return 0, fmt.Errorf("invalid integer: %v", s)
 	}
-//line stdlib/validate/validate.kuki:213
+//line stdlib/validate/validate.kuki:218
 	return val, nil
 }
 
-//line stdlib/validate/validate.kuki:217
+//line stdlib/validate/validate.kuki:222
 func ParsePositiveInt(s string) (int, error) {
-//line stdlib/validate/validate.kuki:218
+//line stdlib/validate/validate.kuki:223
 	val, err_5 := strconv.Atoi(s)
-//line stdlib/validate/validate.kuki:218
+//line stdlib/validate/validate.kuki:223
 	if err_5 != nil {
-//line stdlib/validate/validate.kuki:218
+//line stdlib/validate/validate.kuki:223
 		return 0, fmt.Errorf("invalid integer: %v", s)
 	}
-//line stdlib/validate/validate.kuki:219
+//line stdlib/validate/validate.kuki:224
 	if val <= 0 {
-//line stdlib/validate/validate.kuki:220
+//line stdlib/validate/validate.kuki:225
 		return val, errors.New("value must be positive")
 	}
-//line stdlib/validate/validate.kuki:221
+//line stdlib/validate/validate.kuki:226
 	return val, nil
 }
 
-//line stdlib/validate/validate.kuki:225
+//line stdlib/validate/validate.kuki:230
 func ParseFloat(s string) (float64, error) {
-//line stdlib/validate/validate.kuki:226
+//line stdlib/validate/validate.kuki:231
 	val, err_6 := strconv.ParseFloat(s, 64)
-//line stdlib/validate/validate.kuki:226
+//line stdlib/validate/validate.kuki:231
 	if err_6 != nil {
-//line stdlib/validate/validate.kuki:226
+//line stdlib/validate/validate.kuki:231
 		return 0.0, fmt.Errorf("invalid number: %v", s)
 	}
-//line stdlib/validate/validate.kuki:227
+//line stdlib/validate/validate.kuki:232
 	return val, nil
 }
 
-//line stdlib/validate/validate.kuki:232
+//line stdlib/validate/validate.kuki:237
 func ParseBool(s string) (bool, error) {
-//line stdlib/validate/validate.kuki:233
+//line stdlib/validate/validate.kuki:238
 	lower := kukistring.ToLower(kukistring.TrimSpace(s))
-//line stdlib/validate/validate.kuki:234
+//line stdlib/validate/validate.kuki:239
 	if lower == "true" || lower == "1" || lower == "yes" || lower == "on" {
-//line stdlib/validate/validate.kuki:235
+//line stdlib/validate/validate.kuki:240
 		return true, nil
 	}
-//line stdlib/validate/validate.kuki:236
+//line stdlib/validate/validate.kuki:241
 	if lower == "false" || lower == "0" || lower == "no" || lower == "off" {
-//line stdlib/validate/validate.kuki:237
+//line stdlib/validate/validate.kuki:242
 		return false, nil
 	}
-//line stdlib/validate/validate.kuki:238
+//line stdlib/validate/validate.kuki:243
 	return false, fmt.Errorf("invalid boolean: %v", s)
 }
 
-//line stdlib/validate/validate.kuki:244
+//line stdlib/validate/validate.kuki:249
 func NotEmptyList(items []any) ([]any, error) {
-//line stdlib/validate/validate.kuki:245
+//line stdlib/validate/validate.kuki:250
 	if len(items) == 0 {
-//line stdlib/validate/validate.kuki:246
+//line stdlib/validate/validate.kuki:251
 		return items, errors.New("list cannot be empty")
 	}
-//line stdlib/validate/validate.kuki:247
+//line stdlib/validate/validate.kuki:252
 	return items, nil
 }
 
-//line stdlib/validate/validate.kuki:251
+//line stdlib/validate/validate.kuki:256
 func ListMinLength(items []any, n int) ([]any, error) {
-//line stdlib/validate/validate.kuki:252
+//line stdlib/validate/validate.kuki:257
 	if len(items) < n {
-//line stdlib/validate/validate.kuki:253
+//line stdlib/validate/validate.kuki:258
 		return items, fmt.Errorf("list must have at least %v elements", n)
 	}
-//line stdlib/validate/validate.kuki:254
+//line stdlib/validate/validate.kuki:259
 	return items, nil
 }
 
-//line stdlib/validate/validate.kuki:258
+//line stdlib/validate/validate.kuki:263
 func ListMaxLength(items []any, n int) ([]any, error) {
-//line stdlib/validate/validate.kuki:259
+//line stdlib/validate/validate.kuki:264
 	if len(items) > n {
-//line stdlib/validate/validate.kuki:260
+//line stdlib/validate/validate.kuki:265
 		return items, fmt.Errorf("list must have at most %v elements", n)
 	}
-//line stdlib/validate/validate.kuki:261
+//line stdlib/validate/validate.kuki:266
 	return items, nil
 }
 
-//line stdlib/validate/validate.kuki:268
+//line stdlib/validate/validate.kuki:273
 func WithMessage(value string, err error, message string) (string, error) {
-//line stdlib/validate/validate.kuki:269
+//line stdlib/validate/validate.kuki:274
 	if err != nil {
-//line stdlib/validate/validate.kuki:270
+//line stdlib/validate/validate.kuki:275
 		return value, fmt.Errorf("%v", message)
 	}
-//line stdlib/validate/validate.kuki:271
+//line stdlib/validate/validate.kuki:276
 	return value, nil
 }
 
-//line stdlib/validate/validate.kuki:275
+//line stdlib/validate/validate.kuki:280
 func Require(s string, fieldName string) (string, error) {
-//line stdlib/validate/validate.kuki:276
+//line stdlib/validate/validate.kuki:281
 	if kukistring.TrimSpace(s) == "" {
-//line stdlib/validate/validate.kuki:277
+//line stdlib/validate/validate.kuki:282
 		return "", fmt.Errorf("%v is required", fieldName)
 	}
-//line stdlib/validate/validate.kuki:278
+//line stdlib/validate/validate.kuki:283
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:285
+//line stdlib/validate/validate.kuki:290
 func NoHTML(s string) (string, error) {
-//line stdlib/validate/validate.kuki:286
+//line stdlib/validate/validate.kuki:291
 	if strings.Contains(s, "<") || strings.Contains(s, ">") {
-//line stdlib/validate/validate.kuki:287
+//line stdlib/validate/validate.kuki:292
 		return s, errors.New("value must not contain HTML")
 	}
-//line stdlib/validate/validate.kuki:288
+//line stdlib/validate/validate.kuki:293
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:293
+//line stdlib/validate/validate.kuki:300
 func SafeFilename(s string) (string, error) {
-//line stdlib/validate/validate.kuki:294
+//line stdlib/validate/validate.kuki:301
 	if s == "" || s == "." || s == ".." {
-//line stdlib/validate/validate.kuki:295
+//line stdlib/validate/validate.kuki:302
 		return s, errors.New("unsafe filename")
 	}
-//line stdlib/validate/validate.kuki:296
-	if strings.Contains(s, "/") || strings.Contains(s, "\\") || strings.Contains(s, "..") || strings.Contains(s, "\x00") {
-//line stdlib/validate/validate.kuki:297
+//line stdlib/validate/validate.kuki:303
+	if !filepath.IsLocal(s) {
+//line stdlib/validate/validate.kuki:304
 		return s, errors.New("filename contains unsafe characters")
 	}
-//line stdlib/validate/validate.kuki:298
+//line stdlib/validate/validate.kuki:305
+	if strings.Contains(s, "\x00") {
+//line stdlib/validate/validate.kuki:306
+		return s, errors.New("filename contains unsafe characters")
+	}
+//line stdlib/validate/validate.kuki:307
 	return s, nil
 }
 
-//line stdlib/validate/validate.kuki:303
+//line stdlib/validate/validate.kuki:312
 func NoNullBytes(s string) (string, error) {
-//line stdlib/validate/validate.kuki:304
+//line stdlib/validate/validate.kuki:313
 	if strings.Contains(s, "\x00") {
-//line stdlib/validate/validate.kuki:305
+//line stdlib/validate/validate.kuki:314
 		return s, errors.New("value must not contain null bytes")
 	}
-//line stdlib/validate/validate.kuki:306
+//line stdlib/validate/validate.kuki:315
 	return s, nil
 }

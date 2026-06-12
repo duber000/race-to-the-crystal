@@ -3,11 +3,11 @@
 package sqliteext_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/db"
+	"codeberg.org/kukichalang/kukicha/stdlib/sqlite"
+	"codeberg.org/kukichalang/kukicha/stdlib/sqliteext"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/db"
-	"github.com/kukichalang/kukicha/stdlib/sqlite"
-	"github.com/kukichalang/kukicha/stdlib/sqliteext"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	regexpext "github.com/ncruces/go-sqlite3/ext/regexp"
 	"sync"
 	"testing"

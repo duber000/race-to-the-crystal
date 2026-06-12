@@ -5,12 +5,12 @@ import "race-to-the-crystal/shared/types" as types
 import "stdlib/random"
 
 type MysteryEventResult
-    effect enums.MysteryEffect
-    token_id types.TokenID
-    old_position types.Position
-    new_position types.Position
-    old_health int
-    new_health int
+    effect: enums.MysteryEffect
+    token_id: types.TokenID
+    old_position: types.Position
+    new_position: types.Position
+    old_health: int
+    new_health: int
 
 func trigger_mystery_event(tok: reference Token, brd: reference Board, player_index: int) MysteryEventResult
     old_pos := tok.position

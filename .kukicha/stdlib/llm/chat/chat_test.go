@@ -3,9 +3,10 @@
 package chat_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/llm"
-	"github.com/kukichalang/kukicha/stdlib/llm/chat"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/llm"
+	"codeberg.org/kukichalang/kukicha/stdlib/llm/chat"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -23,10 +24,10 @@ func fakeStreamServer(frames []string) *httptest.Server {
 //line stdlib/llm/chat/chat_test.kuki:19
 		for _, frame := range frames {
 //line stdlib/llm/chat/chat_test.kuki:20
-			w.Write([]byte("data: " + frame + "\n\n"))
+			_, _ = w.Write([]byte("data: " + frame + "\n\n"))
 		}
 //line stdlib/llm/chat/chat_test.kuki:21
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 	}))
 }
 
@@ -88,7 +89,7 @@ func TestAskStreamHTTPErrorEmitsErrorEvent(t *testing.T) {
 //line stdlib/llm/chat/chat_test.kuki:61
 		w.WriteHeader(http.StatusInternalServerError)
 //line stdlib/llm/chat/chat_test.kuki:62
-		w.Write([]byte("boom"))
+		_, _ = w.Write([]byte("boom"))
 	}))
 //line stdlib/llm/chat/chat_test.kuki:65
 	defer server.Close()
@@ -186,7 +187,7 @@ func fakeChatServer(quotedContent string) *httptest.Server {
 //line stdlib/llm/chat/chat_test.kuki:123
 		w.WriteHeader(http.StatusOK)
 //line stdlib/llm/chat/chat_test.kuki:124
-		w.Write([]byte(body))
+		_, _ = w.Write([]byte(body))
 	}))
 }
 
@@ -233,21 +234,30 @@ func All_AskJSONVerdict() []_AskJSONVerdict {
 	return []_AskJSONVerdict{_AskJSONVerdictRestart, _AskJSONVerdictRollback, _AskJSONVerdictIgnore}
 }
 
-func (e _AskJSONVerdict) String() string {
-	return string(e)
-}
-
-func Parse_AskJSONVerdict(s string) (_AskJSONVerdict, bool) {
+func Parse_AskJSONVerdict(s string) (_AskJSONVerdict, error) {
 	switch s {
 	case "restart":
-		return _AskJSONVerdictRestart, true
+		return _AskJSONVerdictRestart, nil
 	case "rollback":
-		return _AskJSONVerdictRollback, true
+		return _AskJSONVerdictRollback, nil
 	case "ignore":
-		return _AskJSONVerdictIgnore, true
+		return _AskJSONVerdictIgnore, nil
 	}
 	var zero _AskJSONVerdict
-	return zero, false
+	return zero, fmt.Errorf("invalid _AskJSONVerdict %q (valid: restart, rollback, ignore)", s)
+}
+
+func (e _AskJSONVerdict) String() string {
+	switch e {
+	case _AskJSONVerdictRestart:
+		return "Restart"
+	case _AskJSONVerdictRollback:
+		return "Rollback"
+	case _AskJSONVerdictIgnore:
+		return "Ignore"
+	default:
+		return string(e)
+	}
 }
 
 //line stdlib/llm/chat/chat_test.kuki:147
@@ -307,7 +317,7 @@ func _withToolEchoServer() *httptest.Server {
 //line stdlib/llm/chat/chat_test.kuki:181
 		body := `{"id":"1","object":"chat.completion","model":"test","choices":[{"index":0,"message":{"role":"assistant","content":"","tool_calls":[{"id":"call_1","type":"function","function":{"name":"echo","arguments":"{\"message\":\"hi\"}"}}]},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}`
 //line stdlib/llm/chat/chat_test.kuki:182
-		w.Write([]byte(body))
+		_, _ = w.Write([]byte(body))
 	}))
 }
 

@@ -3,8 +3,8 @@
 package encoding_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/encoding"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/encoding"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

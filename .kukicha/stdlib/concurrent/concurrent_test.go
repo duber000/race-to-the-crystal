@@ -3,10 +3,10 @@
 package concurrent_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/concurrent"
+	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"errors"
-	"github.com/kukichalang/kukicha/stdlib/concurrent"
-	ctxpkg "github.com/kukichalang/kukicha/stdlib/ctx"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 

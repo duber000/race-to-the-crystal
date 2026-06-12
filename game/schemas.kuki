@@ -10,69 +10,69 @@ enum ActionType: string
     END_TURN = "END_TURN"
 
 type MoveActionSchema
-    action_type ActionType
-    token_id types.TokenID
-    destination types.Position
+    action_type: ActionType
+    token_id: types.TokenID
+    destination: types.Position
 
 type AttackActionSchema
-    action_type ActionType
-    attacker_id types.TokenID
-    defender_id types.TokenID
+    action_type: ActionType
+    attacker_id: types.TokenID
+    defender_id: types.TokenID
 
 type DeployActionSchema
-    action_type ActionType
-    health_value int
-    position types.Position
+    action_type: ActionType
+    health_value: int
+    position: types.Position
 
 type EndTurnActionSchema
-    action_type ActionType
+    action_type: ActionType
 
 enum ActionResponse
     MoveAction
-        TokenID types.TokenID
-        TokenPosition list of int
-        TokenHealth string
-        ValidDestinations list of list of int
-        Description string
+        TokenID: types.TokenID
+        TokenPosition: list of int
+        TokenHealth: string
+        ValidDestinations: list of list of int
+        Description: string
     AttackAction
-        AttackerID types.TokenID
-        AttackerPosition list of int
-        DefenderID types.TokenID
-        DefenderPosition list of int
-        DefenderOwner string
-        Damage int
-        WillKill bool
-        Description string
+        AttackerID: types.TokenID
+        AttackerPosition: list of int
+        DefenderID: types.TokenID
+        DefenderPosition: list of int
+        DefenderOwner: string
+        Damage: int
+        WillKill: bool
+        Description: string
     DeployAction
-        HealthValue int
-        Positions list of list of int
-        Remaining int
-        Description string
+        HealthValue: int
+        Positions: list of list of int
+        Remaining: int
+        Description: string
     EndTurnAction
-        Description string
+        Description: string
 
 type AvailableActionsResponse
-    Phase string
-    Actions list of ActionResponse
+    Phase: string
+    Actions: list of ActionResponse
 
 type MoveResultData
-    token_id types.TokenID
-    old_position list of int
-    new_position list of int
+    token_id: types.TokenID
+    old_position: list of int
+    new_position: list of int
 
 type MoveResultDataWithMystery
-    move_data MoveResultData
-    mystery_triggered bool
-    mystery_effect string
+    move_data: MoveResultData
+    mystery_triggered: bool
+    mystery_effect: string
 
 type AttackResultData
-    attacker_id types.TokenID
-    defender_id types.TokenID
-    damage_dealt int
-    defender_killed bool
+    attacker_id: types.TokenID
+    defender_id: types.TokenID
+    damage_dealt: int
+    defender_killed: bool
 
 type DeployResultData
-    new_token_id types.TokenID
-    health_value int
-    position list of int
-    tokens_remaining int
+    new_token_id: types.TokenID
+    health_value: int
+    position: list of int
+    tokens_remaining: int

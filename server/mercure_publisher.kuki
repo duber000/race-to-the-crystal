@@ -9,9 +9,9 @@ import "stdlib/log"
 import "time"
 
 type MercureConfig
-    hub_url string
-    publisher_jwt string
-    topic_prefix string
+    hub_url: string
+    publisher_jwt: string
+    topic_prefix: string
 
 func MercureConfigFromEnv() MercureConfig
     return MercureConfig{
@@ -21,8 +21,8 @@ func MercureConfigFromEnv() MercureConfig
     }
 
 type MercurePublisher
-    config MercureConfig
-    enabled bool
+    config: MercureConfig
+    enabled: bool
 
 func NewMercurePublisher(config: MercureConfig) MercurePublisher
     return MercurePublisher{

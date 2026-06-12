@@ -3,11 +3,11 @@
 package shell_test
 
 import (
+	"codeberg.org/kukichalang/kukicha/stdlib/shell"
+	"codeberg.org/kukichalang/kukicha/stdlib/slice"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/shell"
-	"github.com/kukichalang/kukicha/stdlib/slice"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 
@@ -424,7 +424,7 @@ func TestEnv(t *testing.T) {
 //line stdlib/shell/shell_test.kuki:367
 			test.AssertTrue(t, slice.Contains(envs, fmt.Sprintf("%v=%v", key, val)))
 //line stdlib/shell/shell_test.kuki:369
-			shell.Unsetenv(key)
+			_ = shell.Unsetenv(key)
 //line stdlib/shell/shell_test.kuki:370
 			test.AssertEqual(t, shell.Getenv(key), "")
 		})

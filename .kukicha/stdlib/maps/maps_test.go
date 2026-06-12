@@ -3,8 +3,8 @@
 package maps_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/maps"
-	"github.com/kukichalang/kukicha/stdlib/slice"
+	"codeberg.org/kukichalang/kukicha/stdlib/maps"
+	"codeberg.org/kukichalang/kukicha/stdlib/slice"
 	"testing"
 )
 

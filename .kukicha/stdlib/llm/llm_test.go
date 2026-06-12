@@ -3,12 +3,12 @@
 package llm_test
 
 import (
-	"github.com/kukichalang/kukicha/stdlib/content"
-	"github.com/kukichalang/kukicha/stdlib/llm"
-	"github.com/kukichalang/kukicha/stdlib/llm/anthropic"
-	"github.com/kukichalang/kukicha/stdlib/llm/chat"
-	"github.com/kukichalang/kukicha/stdlib/llm/responses"
-	"github.com/kukichalang/kukicha/stdlib/test"
+	"codeberg.org/kukichalang/kukicha/stdlib/content"
+	"codeberg.org/kukichalang/kukicha/stdlib/llm"
+	"codeberg.org/kukichalang/kukicha/stdlib/llm/anthropic"
+	"codeberg.org/kukichalang/kukicha/stdlib/llm/chat"
+	"codeberg.org/kukichalang/kukicha/stdlib/llm/responses"
+	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"testing"
 )
 
@@ -244,7 +244,7 @@ func TestResponsesExecuteFunctionCalls(t *testing.T) {
 //line stdlib/llm/llm_test.kuki:180
 	t.Run("calls handler for matching function", func(t *testing.T) {
 //line stdlib/llm/llm_test.kuki:181
-		resp := responses.Response{ID: "resp_xyz", Output: []content.Content{content.ToolUse{ID: "call-1", Name: "get_weather", Input: "{\"city\":\"Paris\"}"}}}
+		resp := responses.Response{ID: "resp_xyz", Output: []content.Content{content.ToolUse{ID: "call-1", Name: "get_weather", Input: `{"city":"Paris"}`}}}
 //line stdlib/llm/llm_test.kuki:188
 		handlers := make(map[string]func(string) string)
 //line stdlib/llm/llm_test.kuki:189
@@ -504,7 +504,7 @@ func TestAnthropicExecuteToolUses(t *testing.T) {
 //line stdlib/llm/llm_test.kuki:381
 	t.Run("calls handler for matching tool use", func(t *testing.T) {
 //line stdlib/llm/llm_test.kuki:382
-		resp := anthropic.Response{StopReason: "tool_use", Content: []content.Content{content.ToolUse{ID: "toolu_1", Name: "get_weather", Input: "{\"city\":\"Paris\"}"}}}
+		resp := anthropic.Response{StopReason: "tool_use", Content: []content.Content{content.ToolUse{ID: "toolu_1", Name: "get_weather", Input: `{"city":"Paris"}`}}}
 //line stdlib/llm/llm_test.kuki:389
 		handlers := make(map[string]func(string) string)
 //line stdlib/llm/llm_test.kuki:390

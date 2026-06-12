@@ -3,8 +3,8 @@
 package safe
 
 import (
+	strpkg "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"fmt"
-	strpkg "github.com/kukichalang/kukicha/stdlib/string"
 )
 
 //line stdlib/llm/safe/safe.kuki:50

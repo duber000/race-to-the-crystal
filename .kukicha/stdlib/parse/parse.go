@@ -4,13 +4,13 @@ package parse
 
 import (
 	"bytes"
+	"codeberg.org/kukichalang/kukicha/stdlib/json"
+	"codeberg.org/kukichalang/kukicha/stdlib/slice"
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
+	"codeberg.org/kukichalang/kukicha/stdlib/validate"
 	"encoding/csv"
 	"errors"
 	"fmt"
-	"github.com/kukichalang/kukicha/stdlib/json"
-	"github.com/kukichalang/kukicha/stdlib/slice"
-	kukistring "github.com/kukichalang/kukicha/stdlib/string"
-	"github.com/kukichalang/kukicha/stdlib/validate"
 	"gopkg.in/yaml.v3"
 	"net/url"
 	"os"
@@ -259,9 +259,9 @@ func CSV(data string) ([][]string, error) {
 	// pipe step 1: readAllCSV(...)
 //line stdlib/parse/parse.kuki:185
 	records, err_6 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
-//line stdlib/parse/parse.kuki:185
+//line stdlib/parse/parse.kuki:182
 	if err_6 != nil {
-//line stdlib/parse/parse.kuki:185
+//line stdlib/parse/parse.kuki:182
 		return [][]string{}, err_6
 	}
 //line stdlib/parse/parse.kuki:187
@@ -274,10 +274,10 @@ func CSVRecords(data string) (CSVRows, error) {
 	// pipe step 1: readAllCSV(...)
 //line stdlib/parse/parse.kuki:196
 	records, err_8 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
-//line stdlib/parse/parse.kuki:196
+//line stdlib/parse/parse.kuki:193
 	if err_8 != nil {
 		var _zero0 CSVRows
-//line stdlib/parse/parse.kuki:196
+//line stdlib/parse/parse.kuki:193
 		return _zero0, err_8
 	}
 //line stdlib/parse/parse.kuki:198
