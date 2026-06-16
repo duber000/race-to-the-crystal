@@ -43,7 +43,7 @@ func get_effect on e: reference PlayerEffects(et: enums.CrystalEffect) optional 
     return empty
 
 func add_effect on e: reference PlayerEffects(et: enums.CrystalEffect, duration: int, turn_number: int) reference ActiveEffect
-    e.active_effects = slice.Filter(e.active_effects, (eff: ActiveEffect) => eff.effect_type isnt et)
+    e.active_effects = slice.Filter(e.active_effects, eff => eff.effect_type isnt et)
     eff := ActiveEffect{effect_type: et, turns_remaining: duration, applied_turn: turn_number}
     e.active_effects = append(e.active_effects, eff)
     return reference of e.active_effects[len(e.active_effects) - 1]
@@ -51,7 +51,7 @@ func add_effect on e: reference PlayerEffects(et: enums.CrystalEffect, duration:
 func reduce_all_durations on e: reference PlayerEffects(amount: int)
     for i from 0 to len(e.active_effects)
         e.active_effects[i].reduce_duration(amount)
-    e.active_effects = slice.Filter(e.active_effects, (eff: ActiveEffect) => eff.is_active())
+    e.active_effects = slice.Filter(e.active_effects, eff => eff.is_active())
     if not e.has_effect(enums.PHANTOM_ENEMIES)
         e.phantom_tokens = empty list of PhantomToken
 
