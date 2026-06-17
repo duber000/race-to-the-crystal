@@ -22,7 +22,7 @@ enum ChosenAction
     ChosenEndTurn
 
 func ChosenActionName(action: ChosenAction) string
-    switch action as action
+    switch action
         when ChosenMove
             return "MOVE"
         when ChosenAttack
@@ -33,7 +33,7 @@ func ChosenActionName(action: ChosenAction) string
             return "END_TURN"
 
 func ChosenToActionMap(action: ChosenAction) map of string to any
-    switch action as action
+    switch action
         when ChosenMove
             return map of string to any{
                 "type": "MOVE",
