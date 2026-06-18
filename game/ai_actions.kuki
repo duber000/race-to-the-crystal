@@ -4,6 +4,8 @@ import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 
+type JSONMap = map of string to any
+
 enum AIAction
     Move
         TokenID: types.TokenID

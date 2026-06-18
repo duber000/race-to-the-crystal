@@ -9,6 +9,8 @@ import "stdlib/random"
 import "stdlib/string" as strpkg
 import "strings"
 
+type JSONMap = map of string to any
+
 type HTTPHandler
     coordinator: reference GameCoordinator
     lobby_mgr: reference LobbyManager

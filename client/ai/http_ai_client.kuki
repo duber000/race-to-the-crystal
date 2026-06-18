@@ -19,11 +19,46 @@ type Session
 func NewSession(base_url: string) Session
     return Session{base_url: strings.TrimRight(base_url, "/"), active: true}
 
+type createRequest
+    game_name: string
+    player_name: string
+
+type joinRequest
+    player_name: string
+
+type playerSessionData
+    player_id: string
+    player_name: string
+    token: string
+    game_id: string
+    sse_url: string
+
+type createJoinAPIResponse
+    success: bool
+    message: string
+    data: playerSessionData
+
+func fillSessionFromData on s: reference Session(d: playerSessionData)
+    if d.player_id isnt ""
+        s.player_id = d.player_id
+    if d.player_name isnt ""
+        s.player_name = d.player_name
+    if d.token isnt ""
+        s.token = d.token
+    if d.game_id isnt ""
+        s.game_id = d.game_id
+    if d.sse_url isnt ""
+        s.sse_url = d.sse_url
+
+    log.Info("Authenticated as {s.player_name} (player_id={s.player_id}, game_id={s.game_id})")
+    if s.sse_url isnt ""
+        log.Info("SSE URL: {s.sse_url}")
+
 func CreateGame on s: reference Session(game_name: string, player_name: string) bool
     url := "{s.base_url}/api/game/create"
-    body := map of string to any{
-        "game_name": game_name,
-        "player_name": player_name,
+    body := createRequest{
+        game_name: game_name,
+        player_name: player_name,
     }
     resp := fetch.New(url)
         |> fetch.Method("POST")
@@ -42,28 +77,21 @@ func CreateGame on s: reference Session(game_name: string, player_name: string) 
         log.Error("CreateGame: status {resp.StatusCode}")
         return false
 
-    data := make(map of string to any)
+    data := createJoinAPIResponse{}
     fetch.Decode(resp, reference of data) onerr
         log.Error("CreateGame: decode failed: {error}")
         return false
 
-    success, has_ok := data["success"]
-    if not has_ok or not success.(bool)
-        msg, _ := data["message"]
-        msg_str := msg.(string) onerr "unknown"
-        log.Error("CreateGame failed: {msg_str}")
+    if not data.success
+        log.Error("CreateGame failed: {data.message}")
         return false
 
-    resp_data, has_d := data["data"]
-    if not has_d
-        return false
-
-    s.fillFromResponse(resp_data)
+    s.fillSessionFromData(data.data)
     return true
 
 func JoinGame on s: reference Session(game_id: string, player_name: string) bool
     url := "{s.base_url}/api/game/{game_id}/join"
-    body := map of string to any{"player_name": player_name}
+    body := joinRequest{player_name: player_name}
 
     resp := fetch.New(url)
         |> fetch.Method("POST")
@@ -82,53 +110,17 @@ func JoinGame on s: reference Session(game_id: string, player_name: string) bool
         log.Error("JoinGame: status {resp.StatusCode}")
         return false
 
-    data := make(map of string to any)
+    data := createJoinAPIResponse{}
     fetch.Decode(resp, reference of data) onerr
         log.Error("JoinGame: decode failed: {error}")
         return false
 
-    success, has_ok := data["success"]
-    if not has_ok or not success.(bool)
-        msg, _ := data["message"]
-        msg_str := msg.(string) onerr "unknown"
-        log.Error("JoinGame failed: {msg_str}")
+    if not data.success
+        log.Error("JoinGame failed: {data.message}")
         return false
 
-    resp_data, has_d := data["data"]
-    if not has_d
-        return false
-
-    s.fillFromResponse(resp_data)
+    s.fillSessionFromData(data.data)
     return true
-
-func fillFromResponse on s: reference Session(data: any)
-    m, ok := data.(map of string to any)
-    if not ok
-        return
-
-    pid, has_pid := m["player_id"]
-    if has_pid
-        s.player_id = pid.(string) onerr ""
-
-    name, has_n := m["player_name"]
-    if has_n
-        s.player_name = name.(string) onerr ""
-
-    tok, has_t := m["token"]
-    if has_t
-        s.token = tok.(string) onerr ""
-
-    gid, has_g := m["game_id"]
-    if has_g
-        s.game_id = gid.(string) onerr ""
-
-    sse, has_sse := m["sse_url"]
-    if has_sse
-        s.sse_url = sse.(string) onerr ""
-
-    log.Info("Authenticated as {s.player_name} (player_id={s.player_id}, game_id={s.game_id})")
-    if s.sse_url isnt ""
-        log.Info("SSE URL: {s.sse_url}")
 
 func FetchState on s: reference Session map of string to any
     url := "{s.base_url}/api/game/{s.game_id}/state"
@@ -150,19 +142,29 @@ func FetchState on s: reference Session map of string to any
         log.Error("FetchState: status {resp.StatusCode}")
         return empty map of string to any
 
-    wrapper := make(map of string to any)
+    wrapper := mapResponse{}
     fetch.Decode(resp, reference of wrapper) onerr
         log.Error("FetchState: decode failed: {error}")
         return empty map of string to any
 
-    data, has_d := wrapper["data"]
-    if not has_d
-        return empty map of string to any
-
-    state, ok := data.(map of string to any)
+    state, ok := wrapper.data.(map of string to any)
     if not ok
         return empty map of string to any
     return state
+
+type mapResponse
+    success: bool
+    message: string
+    data: any
+
+type actionsData
+    phase: string
+    actions: list of any
+
+type actionsAPIResponse
+    success: bool
+    message: string
+    data: actionsData
 
 func FetchActions on s: reference Session map of string to any
     url := "{s.base_url}/api/game/{s.game_id}/actions"
@@ -184,19 +186,15 @@ func FetchActions on s: reference Session map of string to any
         log.Error("FetchActions: status {resp.StatusCode}")
         return empty map of string to any
 
-    wrapper := make(map of string to any)
+    wrapper := actionsAPIResponse{}
     fetch.Decode(resp, reference of wrapper) onerr
         log.Error("FetchActions: decode failed: {error}")
         return empty map of string to any
 
-    data, has_d := wrapper["data"]
-    if not has_d
-        return empty map of string to any
-
-    payload, ok := data.(map of string to any)
-    if not ok
-        return empty map of string to any
-    return payload
+    result := make(map of string to any)
+    result["phase"] = wrapper.data.phase
+    result["actions"] = wrapper.data.actions
+    return result
 
 func SendAction on s: reference Session(action: gamepkg.ChosenAction) map of string to any
     url := "{s.base_url}/api/game/{s.game_id}/action"
@@ -272,9 +270,12 @@ func TryAutoStart on s: reference Session bool
     log.Info("Auto-starting game as host")
     return s.StartGame()
 
+type readyRequest
+    ready: bool
+
 func SetReady on s: reference Session(ready: bool) bool
     url := "{s.base_url}/api/game/{s.game_id}/ready"
-    body := map of string to any{"ready": ready}
+    body := readyRequest{ready: ready}
 
     resp := fetch.New(url)
         |> fetch.Method("POST")
@@ -315,6 +316,14 @@ func StartGame on s: reference Session bool
         return false
     return true
 
+type lobbiesData
+    games: list of any
+
+type lobbiesAPIResponse
+    success: bool
+    message: string
+    data: lobbiesData
+
 func ListLobbies on s: reference Session list of map of string to any
     url := "{s.base_url}/api/games"
     resp := fetch.New(url)
@@ -331,28 +340,12 @@ func ListLobbies on s: reference Session list of map of string to any
     if status isnt 200
         return empty list of map of string to any
 
-    wrapper := make(map of string to any)
+    wrapper := lobbiesAPIResponse{}
     fetch.Decode(resp, reference of wrapper) onerr
         return empty list of map of string to any
 
-    data_any, has := wrapper["data"]
-    if not has
-        return empty list of map of string to any
-
-    data, data_ok := data_any.(map of string to any)
-    if not data_ok
-        return empty list of map of string to any
-
-    games_any, games_ok := data["games"]
-    if not games_ok
-        return empty list of map of string to any
-
-    games_raw, raw_ok := games_any.(list of any)
-    if not raw_ok
-        return empty list of map of string to any
-
     result := empty list of map of string to any
-    for item in games_raw
+    for item in wrapper.data.games
         m, m_ok := item.(map of string to any)
         if m_ok
             result = append(result, m)

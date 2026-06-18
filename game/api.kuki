@@ -85,39 +85,6 @@ func GetPhase on api: reference GameAPI string
         return enums.GamePhaseName(gs.phase)
     return enums.TurnPhaseName(gs.turn_phase)
 
-func GetMyTokens on api: reference GameAPI list of map of string to any
-    if api.game_state equals empty
-        return empty list of map of string to any
-    gs := dereference api.game_state
-    p_ref := gs.GetPlayer(api.player_id)
-    if p_ref equals empty
-        return empty list of map of string to any
-    p := dereference p_ref
-    result := empty list of map of string to any
-    for tid in p.token_ids
-        t_ref := gs.GetToken(tid)
-        if t_ref isnt empty
-            t := dereference t_ref
-            m := make(map of string to any)
-            m["id"] = t.id
-            m["player_id"] = t.player_id
-            m["health"] = t.health
-            m["max_health"] = t.max_health
-            m["position"] = list of int{t.position.X, t.position.Y}
-            m["is_alive"] = t.is_alive
-            m["is_deployed"] = t.is_deployed
-            result = append(result, m)
-    return result
-
-func GetDeployedTokens on api: reference GameAPI list of map of string to any
-    all := api.GetMyTokens()
-    result := empty list of map of string to any
-    for t in all
-        deployed, has := t["is_deployed"]
-        if has and deployed.(bool)
-            result = append(result, t)
-    return result
-
 func GetReserveCounts on api: reference GameAPI map of int to int
     if api.game_state equals empty
         return make(map of int to int)
