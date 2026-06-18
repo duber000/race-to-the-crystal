@@ -165,7 +165,7 @@ func get_player_list on l: reference GameLobby list of map of string to any
     return result
 
 func to_dict on l: GameLobby map of string to any
-    status_str := l.status as string
+    status_str := l.status.String()
     return map of string to any{
         "game_id": l.game_id,
         "game_name": l.game_name,

@@ -11,14 +11,14 @@ type ValidationResult
     message: string
 
 func ValidateActionFields(action_type: gamepkg.ActionType, data: map of string to any) optional reference ValidationResult
-    switch action_type.String()
-        when "MOVE"
+    switch action_type
+        when gamepkg.MOVE
             return ValidateMove(data)
-        when "ATTACK"
+        when gamepkg.ATTACK
             return ValidateAttack(data)
-        when "DEPLOY"
+        when gamepkg.DEPLOY
             return ValidateDeploy(data)
-        when "END_TURN"
+        when gamepkg.END_TURN
             return empty
         default
             return reference of ValidationResult{

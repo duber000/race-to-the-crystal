@@ -31,10 +31,13 @@ type GameServer
     mercure: MercurePublisher
     http_handler: HTTPHandler
 
-func NewGameServer(config: ServerConfig) GameServer
+func NewGameServer(config: ServerConfig) (GameServer, error)
     mercure_cfg := MercureConfigFromEnv()
     if config.jwt_secret equals ""
-        config.jwt_secret = GenerateSecretKey()
+        sk, err := GenerateSecretKey()
+        if err isnt empty
+            return GameServer{}, error "failed to generate secret key: {err}"
+        config.jwt_secret = sk
 
     gs := GameServer{
         config: config,
@@ -51,7 +54,7 @@ func NewGameServer(config: ServerConfig) GameServer
         config.jwt_secret,
         config.static_dir,
     )
-    return gs
+    return gs, empty
 
 func Start on gs: reference GameServer
     mux := http.NewServeMux()
@@ -258,5 +261,8 @@ func writeAPIResponse on gs: reference GameServer(w: http.ResponseWriter, result
 
 func main()
     config := ServerConfigFromEnv()
-    server := NewGameServer(config)
+    server, err := NewGameServer(config)
+    if err isnt empty
+        log.Fatal("Failed to create game server: {err}")
+        return
     server.Start()

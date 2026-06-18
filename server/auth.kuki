@@ -12,9 +12,8 @@ type TokenPayload
     issued_at: int64
     expires_at: int64
 
-func GenerateSecretKey() string
-    token := crypto.RandomToken(32) onerr return ""
-    return token
+func GenerateSecretKey() (string, error)
+    return crypto.RandomToken(32)
 
 func base64url_encode(data: list of byte) string
     return encpkg.Base64URLEncode(data)

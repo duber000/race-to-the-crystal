@@ -149,11 +149,6 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
             message: "unknown action type: {type_str}",
             data: empty map of string to any,
         }
-        return APIResponse{
-            success: false,
-            message: "unknown action type: {type_str}",
-            data: empty map of string to any,
-        }
 
     action_data_raw, has_ad := body["data"]
     action_map := empty map of string to any
@@ -456,16 +451,16 @@ func GetClientIP on h: reference HTTPHandler(remote_addr: string, xff: string, r
     return host
 
 func buildGameAction on h: reference HTTPHandler(player_id: string, action_type: gamepkg.ActionType, data: map of string to any) gamepkg.AIAction
-    switch action_type.String()
-        when "MOVE"
+    switch action_type
+        when gamepkg.MOVE
             tid := h.getIntField(data, "token_id", 0)
             dest := h.getPositionField(data, "destination")
             return gamepkg.NewMoveAction(typespkg.TokenID(tid), dest)
-        when "ATTACK"
+        when gamepkg.ATTACK
             attacker_id := typespkg.TokenID(h.getIntField(data, "attacker_id", 0))
             defender_id := typespkg.TokenID(h.getIntField(data, "defender_id", 0))
             return gamepkg.NewAttackAction(attacker_id, defender_id)
-        when "DEPLOY"
+        when gamepkg.DEPLOY
             hv := h.getIntField(data, "health_value", 1)
             pos := h.getPositionField(data, "position")
             return gamepkg.NewDeployAction(hv, pos)
