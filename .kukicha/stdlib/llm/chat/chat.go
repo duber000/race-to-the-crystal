@@ -685,14 +685,14 @@ func AskJSON[T any](c Client, prompt string) (T, error) {
 		body = string(encoded)
 	}
 //line stdlib/llm/chat/chat.kuki:508
-//line stdlib/llm/chat/chat.kuki:508
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:508
 	err_1 := json.ParseStringInto(body, &zero)
-//line stdlib/llm/chat/chat.kuki:508
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:508
 	if err_1 != nil {
-//line stdlib/llm/chat/chat.kuki:508
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:508
 		err_1 = fmt.Errorf("chat.AskJSON: decode failed for reply : %w", err_1)
 		var _zero0 T
-//line stdlib/llm/chat/chat.kuki:508
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:508
 		return _zero0, err_1
 	}
 //line stdlib/llm/chat/chat.kuki:509
@@ -998,9 +998,9 @@ func buildRequest(c Client) CompletionRequest {
 func execute(c Client) (string, error) {
 //line stdlib/llm/chat/chat.kuki:667
 	comp, err_2 := executeRaw(c)
-//line stdlib/llm/chat/chat.kuki:667
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:667
 	if err_2 != nil {
-//line stdlib/llm/chat/chat.kuki:667
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:667
 		return "", err_2
 	}
 //line stdlib/llm/chat/chat.kuki:668
@@ -1037,10 +1037,10 @@ func executeRaw(c Client) (Completion, error) {
 	}
 //line stdlib/llm/chat/chat.kuki:689
 	resp, err_3 := fetch.Do(req)
-//line stdlib/llm/chat/chat.kuki:689
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:689
 	if err_3 != nil {
 		var _zero0 Completion
-//line stdlib/llm/chat/chat.kuki:689
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:689
 		return _zero0, err_3
 	}
 //line stdlib/llm/chat/chat.kuki:691
@@ -1053,12 +1053,12 @@ func executeRaw(c Client) (Completion, error) {
 //line stdlib/llm/chat/chat.kuki:696
 	comp := Completion{}
 //line stdlib/llm/chat/chat.kuki:697
-//line stdlib/llm/chat/chat.kuki:697
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:697
 	err_4 := json.ReadInto(resp.Body, &comp)
-//line stdlib/llm/chat/chat.kuki:697
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:697
 	if err_4 != nil {
 		var _zero0 Completion
-//line stdlib/llm/chat/chat.kuki:697
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:697
 		return _zero0, err_4
 	}
 //line stdlib/llm/chat/chat.kuki:698
@@ -1090,10 +1090,10 @@ func executeStreamRaw(c Client) (Completion, error) {
 	}
 //line stdlib/llm/chat/chat.kuki:717
 	resp, err_5 := fetch.Do(req)
-//line stdlib/llm/chat/chat.kuki:717
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:717
 	if err_5 != nil {
 		var _zero0 Completion
-//line stdlib/llm/chat/chat.kuki:717
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:717
 		return _zero0, err_5
 	}
 //line stdlib/llm/chat/chat.kuki:719
@@ -1134,11 +1134,11 @@ func executeStreamRaw(c Client) (Completion, error) {
 //line stdlib/llm/chat/chat.kuki:737
 			chunk := Chunk{}
 //line stdlib/llm/chat/chat.kuki:738
-//line stdlib/llm/chat/chat.kuki:738
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:738
 			err_6 := json.ParseInto([]byte(data), &chunk)
-//line stdlib/llm/chat/chat.kuki:738
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:738
 			if err_6 != nil {
-//line stdlib/llm/chat/chat.kuki:738
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:738
 				//line stdlib/llm/chat/chat.kuki:739
 				continue
 			}
@@ -1212,11 +1212,11 @@ func executeStreamRaw(c Client) (Completion, error) {
 		}
 	}
 //line stdlib/llm/chat/chat.kuki:776
-//line stdlib/llm/chat/chat.kuki:776
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:776
 	err_7 := scanner.Err()
-//line stdlib/llm/chat/chat.kuki:776
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:776
 	if err_7 != nil {
-//line stdlib/llm/chat/chat.kuki:776
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:776
 		//line stdlib/llm/chat/chat.kuki:777
 		if c.eventHandler != nil {
 			//line stdlib/llm/chat/chat.kuki:778

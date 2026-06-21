@@ -66,65 +66,65 @@ func TestFrameIncludesPreambleAndBlocks(t *testing.T) {
 
 //line stdlib/llm/safe/safe_test.kuki:39
 type TruncateCase struct {
-	name string
-	in   string
-	n    int
-	want string
+	name  string
+	inVal string
+	n     int
+	want  string
 }
 
 //line stdlib/llm/safe/safe_test.kuki:45
 func TestTruncate(t *testing.T) {
 //line stdlib/llm/safe/safe_test.kuki:46
-	cases := []TruncateCase{TruncateCase{name: "short unchanged", in: "abc", n: 10, want: "abc"}, TruncateCase{name: "exact length", in: "abc", n: 3, want: "abc"}, TruncateCase{name: "over length", in: "abcdef", n: 3, want: "abc"}, TruncateCase{name: "zero", in: "abc", n: 0, want: ""}, TruncateCase{name: "negative", in: "abc", n: -1, want: ""}}
+	cases := []TruncateCase{TruncateCase{name: "short unchanged", inVal: "abc", n: 10, want: "abc"}, TruncateCase{name: "exact length", inVal: "abc", n: 3, want: "abc"}, TruncateCase{name: "over length", inVal: "abcdef", n: 3, want: "abc"}, TruncateCase{name: "zero", inVal: "abc", n: 0, want: ""}, TruncateCase{name: "negative", inVal: "abc", n: -1, want: ""}}
 //line stdlib/llm/safe/safe_test.kuki:53
 	for _, tc := range cases {
 //line stdlib/llm/safe/safe_test.kuki:54
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/llm/safe/safe_test.kuki:55
-			test.AssertEqual(t, safe.Truncate(tc.in, tc.n), tc.want)
+			test.AssertEqual(t, safe.Truncate(tc.inVal, tc.n), tc.want)
 		})
 	}
 }
 
 //line stdlib/llm/safe/safe_test.kuki:58
 type SanitizeLineCase struct {
-	name string
-	in   string
-	n    int
-	want string
+	name  string
+	inVal string
+	n     int
+	want  string
 }
 
 //line stdlib/llm/safe/safe_test.kuki:64
 func TestSanitizeLine(t *testing.T) {
 //line stdlib/llm/safe/safe_test.kuki:65
-	cases := []SanitizeLineCase{SanitizeLineCase{name: "newlines to spaces", in: "a\nb", n: 100, want: "a b"}, SanitizeLineCase{name: "cr stripped", in: "a\rb", n: 100, want: "a b"}, SanitizeLineCase{name: "trims", in: "  hi  ", n: 100, want: "hi"}, SanitizeLineCase{name: "caps length", in: "abcdefghij", n: 4, want: "abcd"}, SanitizeLineCase{name: "trim then cap", in: "  abcdefgh  ", n: 4, want: "abcd"}}
+	cases := []SanitizeLineCase{SanitizeLineCase{name: "newlines to spaces", inVal: "a\nb", n: 100, want: "a b"}, SanitizeLineCase{name: "cr stripped", inVal: "a\rb", n: 100, want: "a b"}, SanitizeLineCase{name: "trims", inVal: "  hi  ", n: 100, want: "hi"}, SanitizeLineCase{name: "caps length", inVal: "abcdefghij", n: 4, want: "abcd"}, SanitizeLineCase{name: "trim then cap", inVal: "  abcdefgh  ", n: 4, want: "abcd"}}
 //line stdlib/llm/safe/safe_test.kuki:72
 	for _, tc := range cases {
 //line stdlib/llm/safe/safe_test.kuki:73
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/llm/safe/safe_test.kuki:74
-			test.AssertEqual(t, safe.SanitizeLine(tc.in, tc.n), tc.want)
+			test.AssertEqual(t, safe.SanitizeLine(tc.inVal, tc.n), tc.want)
 		})
 	}
 }
 
 //line stdlib/llm/safe/safe_test.kuki:77
 type IsStructuralCase struct {
-	name string
-	in   string
-	want bool
+	name  string
+	inVal string
+	want  bool
 }
 
 //line stdlib/llm/safe/safe_test.kuki:82
 func TestIsStructural(t *testing.T) {
 //line stdlib/llm/safe/safe_test.kuki:83
-	cases := []IsStructuralCase{IsStructuralCase{name: "empty", in: "", want: false}, IsStructuralCase{name: "plain text", in: "hello world", want: false}, IsStructuralCase{name: "heading", in: "## Heading", want: true}, IsStructuralCase{name: "bullet dash", in: "- item", want: true}, IsStructuralCase{name: "bullet star", in: "* item", want: true}, IsStructuralCase{name: "blockquote", in: "> quote", want: true}, IsStructuralCase{name: "plus list", in: "+ item", want: true}, IsStructuralCase{name: "code fence", in: "```", want: true}}
+	cases := []IsStructuralCase{IsStructuralCase{name: "empty", inVal: "", want: false}, IsStructuralCase{name: "plain text", inVal: "hello world", want: false}, IsStructuralCase{name: "heading", inVal: "## Heading", want: true}, IsStructuralCase{name: "bullet dash", inVal: "- item", want: true}, IsStructuralCase{name: "bullet star", inVal: "* item", want: true}, IsStructuralCase{name: "blockquote", inVal: "> quote", want: true}, IsStructuralCase{name: "plus list", inVal: "+ item", want: true}, IsStructuralCase{name: "code fence", inVal: "```", want: true}}
 //line stdlib/llm/safe/safe_test.kuki:93
 	for _, tc := range cases {
 //line stdlib/llm/safe/safe_test.kuki:94
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/llm/safe/safe_test.kuki:95
-			test.AssertEqual(t, safe.IsStructural(tc.in), tc.want)
+			test.AssertEqual(t, safe.IsStructural(tc.inVal), tc.want)
 		})
 	}
 }

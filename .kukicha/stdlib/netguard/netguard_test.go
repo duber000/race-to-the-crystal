@@ -41,21 +41,29 @@ func TestAllowBlockGuards(t *testing.T) {
 
 //line stdlib/netguard/netguard_test.kuki:29
 type SSRFCase struct {
-	name string
+	name    string
+	ip      string
+	allowed bool
 }
 
-//line stdlib/netguard/netguard_test.kuki:32
+//line stdlib/netguard/netguard_test.kuki:34
 func TestSSRFGuard(t *testing.T) {
-//line stdlib/netguard/netguard_test.kuki:33
-	cases := []SSRFCase{SSRFCase{name: "ssrf blocks private"}}
 //line stdlib/netguard/netguard_test.kuki:35
+	cases := []SSRFCase{SSRFCase{name: "private IPv4", ip: "10.0.0.5", allowed: false}, SSRFCase{name: "public IPv4", ip: "8.8.8.8", allowed: true}, SSRFCase{name: "loopback IPv6", ip: "::1", allowed: false}, SSRFCase{name: "IPv4-mapped private", ip: "::ffff:10.0.0.1", allowed: false}, SSRFCase{name: "IPv4-mapped public", ip: "::ffff:8.8.8.8", allowed: true}, SSRFCase{name: "6to4 private", ip: "2002:0a00:0001::", allowed: false}, SSRFCase{name: "6to4 public", ip: "2002:0808:0808::", allowed: true}, SSRFCase{name: "Teredo private", ip: "2001:0000:4136:e378:8000:63bf:f5ff:fff0", allowed: false}, SSRFCase{name: "Teredo public", ip: "2001:0000:4136:e378:8000:63bf:f7f7:f7f7", allowed: true}, SSRFCase{name: "NAT64 private", ip: "64:ff9b::10.0.0.1", allowed: false}, SSRFCase{name: "NAT64 public", ip: "64:ff9b::8.8.8.8", allowed: true}, SSRFCase{name: "ISATAP private", ip: "2001:db8::200:5efe:10.0.0.1", allowed: false}, SSRFCase{name: "ISATAP public", ip: "2001:db8::200:5efe:8.8.8.8", allowed: true}, SSRFCase{name: "ISATAP link-local", ip: "fe80::200:5efe:8.8.8.8", allowed: false}}
+//line stdlib/netguard/netguard_test.kuki:56
 	for _, tc := range cases {
-//line stdlib/netguard/netguard_test.kuki:36
+//line stdlib/netguard/netguard_test.kuki:57
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/netguard/netguard_test.kuki:37
+//line stdlib/netguard/netguard_test.kuki:58
 			guard := netguard.NewSSRFGuard()
-//line stdlib/netguard/netguard_test.kuki:38
-			test.AssertFalse(t, netguard.Check(guard, "10.0.0.5"))
+//line stdlib/netguard/netguard_test.kuki:59
+			if tc.allowed {
+//line stdlib/netguard/netguard_test.kuki:60
+				test.AssertTrue(t, netguard.Check(guard, tc.ip))
+			} else {
+//line stdlib/netguard/netguard_test.kuki:62
+				test.AssertFalse(t, netguard.Check(guard, tc.ip))
+			}
 		})
 	}
 }

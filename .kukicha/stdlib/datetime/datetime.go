@@ -29,10 +29,10 @@ func ParseInLocation(value string, format string, location string) (time.Time, e
 	layout := getLayout(format)
 //line stdlib/datetime/datetime.kuki:31
 	loc, err_1 := time.LoadLocation(location)
-//line stdlib/datetime/datetime.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:31
 	if err_1 != nil {
 		var _zero0 time.Time
-//line stdlib/datetime/datetime.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:31
 		return _zero0, err_1
 	}
 //line stdlib/datetime/datetime.kuki:32
@@ -286,10 +286,10 @@ func SleepMilliseconds(n int64) {
 func InLocation(t time.Time, location string) (time.Time, error) {
 //line stdlib/datetime/datetime.kuki:251
 	loc, err_2 := time.LoadLocation(location)
-//line stdlib/datetime/datetime.kuki:251
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:251
 	if err_2 != nil {
 		var _zero0 time.Time
-//line stdlib/datetime/datetime.kuki:251
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:251
 		return _zero0, err_2
 	}
 //line stdlib/datetime/datetime.kuki:252

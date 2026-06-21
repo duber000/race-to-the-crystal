@@ -31,344 +31,350 @@ func TestSchemaHelpers(t *testing.T) {
 //line stdlib/mcp/mcp_test.kuki:26
 		test.AssertEqual(t, s["type"], "object")
 //line stdlib/mcp/mcp_test.kuki:28
-		props, ok := s["properties"].(map[string]any)
+		if props, _isOk := s["properties"].(map[string]any); _isOk {
 //line stdlib/mcp/mcp_test.kuki:29
-		test.AssertTrue(t, ok)
+			if pathProp, _isOk := props["path"].(map[string]any); _isOk {
 //line stdlib/mcp/mcp_test.kuki:30
-		pathProp, ok2 := props["path"].(map[string]any)
+				test.AssertEqual(t, pathProp["type"], "string")
 //line stdlib/mcp/mcp_test.kuki:31
-		test.AssertTrue(t, ok2)
-//line stdlib/mcp/mcp_test.kuki:32
-		test.AssertEqual(t, pathProp["type"], "string")
+				test.AssertEqual(t, pathProp["description"], "File path")
+			} else {
 //line stdlib/mcp/mcp_test.kuki:33
-		test.AssertEqual(t, pathProp["description"], "File path")
+				t.Fatal("path is not map of string to any")
+			}
+		} else {
+//line stdlib/mcp/mcp_test.kuki:35
+			t.Fatal("properties is not map of string to any")
+		}
 	})
-//line stdlib/mcp/mcp_test.kuki:36
+//line stdlib/mcp/mcp_test.kuki:38
 	t.Run("Required adds a required list", func(t *testing.T) {
-//line stdlib/mcp/mcp_test.kuki:37
+//line stdlib/mcp/mcp_test.kuki:39
 		s := mcppkg.Required(mcppkg.Schema([]mcppkg.SchemaProperty{mcppkg.Prop("path", "string", "File path")}), []string{"path"})
-//line stdlib/mcp/mcp_test.kuki:42
-		required, ok := s["required"].([]string)
-//line stdlib/mcp/mcp_test.kuki:43
-		test.AssertTrue(t, ok)
 //line stdlib/mcp/mcp_test.kuki:44
-		test.AssertEqual(t, len(required), 1)
+		if required, _isOk := s["required"].([]string); _isOk {
 //line stdlib/mcp/mcp_test.kuki:45
-		test.AssertEqual(t, required[0], "path")
+			test.AssertEqual(t, len(required), 1)
+//line stdlib/mcp/mcp_test.kuki:46
+			test.AssertEqual(t, required[0], "path")
+		} else {
+//line stdlib/mcp/mcp_test.kuki:48
+			t.Fatal("required is not list of string")
+		}
 	})
 }
 
-//line stdlib/mcp/mcp_test.kuki:49
+//line stdlib/mcp/mcp_test.kuki:52
 func TestResultHelpers(t *testing.T) {
-//line stdlib/mcp/mcp_test.kuki:50
-	text := mcppkg.TextResult("hello")
-//line stdlib/mcp/mcp_test.kuki:51
-	test.AssertNotNil(t, text)
 //line stdlib/mcp/mcp_test.kuki:53
-	errRes := mcppkg.ErrorResult("boom")
+	text := mcppkg.TextResult("hello")
 //line stdlib/mcp/mcp_test.kuki:54
+	test.AssertNotNil(t, text)
+//line stdlib/mcp/mcp_test.kuki:56
+	errRes := mcppkg.ErrorResult("boom")
+//line stdlib/mcp/mcp_test.kuki:57
 	test.AssertNotNil(t, errRes)
 }
 
-//line stdlib/mcp/mcp_test.kuki:58
-func TestContentTypeAliases(t *testing.T) {
-//line stdlib/mcp/mcp_test.kuki:59
-	items := make([]any, 4)
-//line stdlib/mcp/mcp_test.kuki:60
-	items[0] = &gomcp.AudioContent{MIMEType: "audio/mp3"}
 //line stdlib/mcp/mcp_test.kuki:61
-	items[1] = &gomcp.ResourceLink{URI: "file:///foo.txt"}
+func TestContentTypeAliases(t *testing.T) {
 //line stdlib/mcp/mcp_test.kuki:62
-	items[2] = &gomcp.EmbeddedResource{Resource: &gomcp.ResourceContents{Text: "hello"}}
+	items := make([]any, 4)
 //line stdlib/mcp/mcp_test.kuki:63
-	items[3] = &gomcp.ResourceContents{URI: "file:///bar.txt", Text: "bar"}
+	items[0] = &gomcp.AudioContent{MIMEType: "audio/mp3"}
+//line stdlib/mcp/mcp_test.kuki:64
+	items[1] = &gomcp.ResourceLink{URI: "file:///foo.txt"}
+//line stdlib/mcp/mcp_test.kuki:65
+	items[2] = &gomcp.EmbeddedResource{Resource: &gomcp.ResourceContents{Text: "hello"}}
 //line stdlib/mcp/mcp_test.kuki:66
+	items[3] = &gomcp.ResourceContents{URI: "file:///bar.txt", Text: "bar"}
+//line stdlib/mcp/mcp_test.kuki:69
 	_, ok1 := items[0].(*mcppkg.AudioContent)
-//line stdlib/mcp/mcp_test.kuki:67
-	test.AssertTrue(t, ok1)
 //line stdlib/mcp/mcp_test.kuki:70
+	test.AssertTrue(t, ok1)
+//line stdlib/mcp/mcp_test.kuki:73
 	_, ok2 := items[1].(*mcppkg.ResourceLink)
-//line stdlib/mcp/mcp_test.kuki:71
-	test.AssertTrue(t, ok2)
 //line stdlib/mcp/mcp_test.kuki:74
+	test.AssertTrue(t, ok2)
+//line stdlib/mcp/mcp_test.kuki:77
 	_, ok3 := items[2].(*mcppkg.EmbeddedResource)
-//line stdlib/mcp/mcp_test.kuki:75
-	test.AssertTrue(t, ok3)
 //line stdlib/mcp/mcp_test.kuki:78
+	test.AssertTrue(t, ok3)
+//line stdlib/mcp/mcp_test.kuki:81
 	_, ok4 := items[3].(*mcppkg.ResourceContents)
-//line stdlib/mcp/mcp_test.kuki:79
+//line stdlib/mcp/mcp_test.kuki:82
 	test.AssertTrue(t, ok4)
 }
 
-//line stdlib/mcp/mcp_test.kuki:85
+//line stdlib/mcp/mcp_test.kuki:88
 func TestCallToolRichContent(t *testing.T) {
-//line stdlib/mcp/mcp_test.kuki:86
-	ctx := context.Background()
-//line stdlib/mcp/mcp_test.kuki:87
-	cTransport, sTransport := gomcp.NewInMemoryTransports()
 //line stdlib/mcp/mcp_test.kuki:89
+	ctx := context.Background()
+//line stdlib/mcp/mcp_test.kuki:90
+	cTransport, sTransport := gomcp.NewInMemoryTransports()
+//line stdlib/mcp/mcp_test.kuki:92
 	richContent := []gomcp.Content{&gomcp.TextContent{Text: "hello"}, &gomcp.ImageContent{MIMEType: "image/png"}, &gomcp.AudioContent{MIMEType: "audio/wav"}, &gomcp.ResourceLink{URI: "file:///doc.txt"}, &gomcp.EmbeddedResource{Resource: &gomcp.ResourceContents{Text: "embedded text"}}}
-//line stdlib/mcp/mcp_test.kuki:96
-	richResult := &gomcp.CallToolResult{Content: richContent}
-//line stdlib/mcp/mcp_test.kuki:97
-	emptySchema := map[string]any{"type": "object", "properties": map[string]any{}}
 //line stdlib/mcp/mcp_test.kuki:99
-	server := gomcp.NewServer(&gomcp.Implementation{Name: "test", Version: "1.0"}, nil)
+	richResult := &gomcp.CallToolResult{Content: richContent}
 //line stdlib/mcp/mcp_test.kuki:100
+	emptySchema := map[string]any{"type": "object", "properties": map[string]any{}}
+//line stdlib/mcp/mcp_test.kuki:102
+	server := gomcp.NewServer(&gomcp.Implementation{Name: "test", Version: "1.0"}, nil)
+//line stdlib/mcp/mcp_test.kuki:103
 	server.AddTool(&gomcp.Tool{Name: "rich", InputSchema: emptySchema}, func(ctx context.Context, req *gomcp.CallToolRequest) (*gomcp.CallToolResult, error) {
-//line stdlib/mcp/mcp_test.kuki:101
+//line stdlib/mcp/mcp_test.kuki:104
 		return richResult, nil
 	})
-//line stdlib/mcp/mcp_test.kuki:104
+//line stdlib/mcp/mcp_test.kuki:107
 	ss, err_1 := server.Connect(ctx, sTransport, nil)
-//line stdlib/mcp/mcp_test.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:107
 	if err_1 != nil {
-//line stdlib/mcp/mcp_test.kuki:104
-		//line stdlib/mcp/mcp_test.kuki:105
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:107
+		//line stdlib/mcp/mcp_test.kuki:108
 		t.Fatalf("server connect failed: %v", err_1)
-		//line stdlib/mcp/mcp_test.kuki:106
+		//line stdlib/mcp/mcp_test.kuki:109
 		return
 	}
-//line stdlib/mcp/mcp_test.kuki:108
+//line stdlib/mcp/mcp_test.kuki:111
 	defer ss.Close()
-//line stdlib/mcp/mcp_test.kuki:110
+//line stdlib/mcp/mcp_test.kuki:113
 	client := gomcp.NewClient(&gomcp.Implementation{Name: "test-client", Version: "1.0"}, nil)
-//line stdlib/mcp/mcp_test.kuki:111
+//line stdlib/mcp/mcp_test.kuki:114
 	rawSession, err_2 := client.Connect(ctx, cTransport, nil)
-//line stdlib/mcp/mcp_test.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:114
 	if err_2 != nil {
-//line stdlib/mcp/mcp_test.kuki:111
-		//line stdlib/mcp/mcp_test.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:114
+		//line stdlib/mcp/mcp_test.kuki:115
 		t.Fatalf("client connect failed: %v", err_2)
-		//line stdlib/mcp/mcp_test.kuki:113
+		//line stdlib/mcp/mcp_test.kuki:116
 		return
 	}
-//line stdlib/mcp/mcp_test.kuki:115
+//line stdlib/mcp/mcp_test.kuki:118
 	defer rawSession.Close()
-//line stdlib/mcp/mcp_test.kuki:117
+//line stdlib/mcp/mcp_test.kuki:120
 	session := mcppkg.ConnectFromSession(rawSession)
-//line stdlib/mcp/mcp_test.kuki:118
+//line stdlib/mcp/mcp_test.kuki:121
 	result, err_3 := mcppkg.CallTool(ctx, session, "rich", map[string]any{})
-//line stdlib/mcp/mcp_test.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:121
 	if err_3 != nil {
-//line stdlib/mcp/mcp_test.kuki:118
-		//line stdlib/mcp/mcp_test.kuki:119
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:121
+		//line stdlib/mcp/mcp_test.kuki:122
 		t.Fatalf("CallTool failed: %v", err_3)
-		//line stdlib/mcp/mcp_test.kuki:120
+		//line stdlib/mcp/mcp_test.kuki:123
 		return
 	}
-//line stdlib/mcp/mcp_test.kuki:122
+//line stdlib/mcp/mcp_test.kuki:125
 	test.AssertEqual(t, result.Text, "hello\n[image: image/png]\n[audio: audio/wav]\n[resource: file:///doc.txt]\nembedded text")
-//line stdlib/mcp/mcp_test.kuki:127
+//line stdlib/mcp/mcp_test.kuki:130
 	test.AssertEqual(t, len(result.Content), 5)
-//line stdlib/mcp/mcp_test.kuki:128
+//line stdlib/mcp/mcp_test.kuki:131
 	test.AssertFalse(t, result.IsError)
 }
 
-//line stdlib/mcp/mcp_test.kuki:131
-func TestPromptArgStruct(t *testing.T) {
-//line stdlib/mcp/mcp_test.kuki:132
-	a := mcppkg.PromptArg{Name: "text", Description: "Input text", Required: true}
-//line stdlib/mcp/mcp_test.kuki:133
-	test.AssertEqual(t, a.Name, "text")
 //line stdlib/mcp/mcp_test.kuki:134
-	test.AssertEqual(t, a.Description, "Input text")
+func TestPromptArgStruct(t *testing.T) {
 //line stdlib/mcp/mcp_test.kuki:135
+	a := mcppkg.PromptArg{Name: "text", Description: "Input text", Required: true}
+//line stdlib/mcp/mcp_test.kuki:136
+	test.AssertEqual(t, a.Name, "text")
+//line stdlib/mcp/mcp_test.kuki:137
+	test.AssertEqual(t, a.Description, "Input text")
+//line stdlib/mcp/mcp_test.kuki:138
 	test.AssertTrue(t, a.Required)
 }
 
-//line stdlib/mcp/mcp_test.kuki:138
-func TestToolOptsZeroValue(t *testing.T) {
-//line stdlib/mcp/mcp_test.kuki:139
-	opts := mcppkg.ToolOpts{}
-//line stdlib/mcp/mcp_test.kuki:140
-	test.AssertFalse(t, opts.ReadOnly)
 //line stdlib/mcp/mcp_test.kuki:141
-	test.AssertFalse(t, opts.Destructive)
+func TestToolOptsZeroValue(t *testing.T) {
 //line stdlib/mcp/mcp_test.kuki:142
-	test.AssertFalse(t, opts.Idempotent)
+	opts := mcppkg.ToolOpts{}
 //line stdlib/mcp/mcp_test.kuki:143
+	test.AssertFalse(t, opts.ReadOnly)
+//line stdlib/mcp/mcp_test.kuki:144
+	test.AssertFalse(t, opts.Destructive)
+//line stdlib/mcp/mcp_test.kuki:145
+	test.AssertFalse(t, opts.Idempotent)
+//line stdlib/mcp/mcp_test.kuki:146
 	test.AssertNil(t, opts.OutputSchema)
 }
 
-//line stdlib/mcp/mcp_test.kuki:146
+//line stdlib/mcp/mcp_test.kuki:149
 func TestClientResourceStruct(t *testing.T) {
-//line stdlib/mcp/mcp_test.kuki:147
+//line stdlib/mcp/mcp_test.kuki:150
 	r := mcppkg.ClientResource{URI: "config://app", Name: "App", Description: "Config", MIMEType: "text/plain"}
-//line stdlib/mcp/mcp_test.kuki:153
+//line stdlib/mcp/mcp_test.kuki:156
 	test.AssertEqual(t, r.URI, "config://app")
-//line stdlib/mcp/mcp_test.kuki:154
+//line stdlib/mcp/mcp_test.kuki:157
 	test.AssertEqual(t, r.Name, "App")
-//line stdlib/mcp/mcp_test.kuki:155
+//line stdlib/mcp/mcp_test.kuki:158
 	test.AssertEqual(t, r.MIMEType, "text/plain")
 }
 
-//line stdlib/mcp/mcp_test.kuki:160
+//line stdlib/mcp/mcp_test.kuki:163
 func TestServerRegistration(t *testing.T) {
-//line stdlib/mcp/mcp_test.kuki:161
+//line stdlib/mcp/mcp_test.kuki:164
 	server := mcppkg.New("test", "1.0")
-//line stdlib/mcp/mcp_test.kuki:162
+//line stdlib/mcp/mcp_test.kuki:165
 	schema := mcppkg.Required(mcppkg.Schema([]mcppkg.SchemaProperty{mcppkg.Prop("text", "string", "Text input")}), []string{"text"})
-//line stdlib/mcp/mcp_test.kuki:167
+//line stdlib/mcp/mcp_test.kuki:170
 	textFn := func(uri string) (string, error) {
-//line stdlib/mcp/mcp_test.kuki:168
+//line stdlib/mcp/mcp_test.kuki:171
 		return "version=1.0", nil
 	}
-//line stdlib/mcp/mcp_test.kuki:170
-	mcppkg.TextResource(server, "config://app", "App config", "Configuration", textFn)
-//line stdlib/mcp/mcp_test.kuki:172
-	uriTemplate := "users://" + "{" + "id}/profile"
 //line stdlib/mcp/mcp_test.kuki:173
-	mcppkg.TextResourceTemplate(server, uriTemplate, "User profile", "Per-user profile", textFn)
+	mcppkg.TextResource(server, "config://app", "App config", "Configuration", textFn)
 //line stdlib/mcp/mcp_test.kuki:175
-	promptFn := func(args map[string]string) (string, error) {
+	uriTemplate := "users://" + "{" + "id}/profile"
 //line stdlib/mcp/mcp_test.kuki:176
+	mcppkg.TextResourceTemplate(server, uriTemplate, "User profile", "Per-user profile", textFn)
+//line stdlib/mcp/mcp_test.kuki:178
+	promptFn := func(args map[string]string) (string, error) {
+//line stdlib/mcp/mcp_test.kuki:179
 		txt := args["text"]
-//line stdlib/mcp/mcp_test.kuki:177
+//line stdlib/mcp/mcp_test.kuki:180
 		return fmt.Sprintf("Summarize: %v", txt), nil
 	}
-//line stdlib/mcp/mcp_test.kuki:179
+//line stdlib/mcp/mcp_test.kuki:182
 	mcppkg.UserPrompt(server, "summarize", "Summarize text", []mcppkg.PromptArg{mcppkg.PromptArg{Name: "text", Required: true}}, promptFn)
-//line stdlib/mcp/mcp_test.kuki:187
-	toolFn := func(args map[string]any) (any, error) {
-//line stdlib/mcp/mcp_test.kuki:188
-		return "ok", nil
-	}
 //line stdlib/mcp/mcp_test.kuki:190
-	mcppkg.ToolWithOpts[mcppkg.JSONObject](server, "read", "Read-only tool", schema, mcppkg.ToolOpts{ReadOnly: true}, toolFn)
-//line stdlib/mcp/mcp_test.kuki:199
-	richFn := func(ctx context.Context, tc *mcppkg.ToolContext, args map[string]any) (any, error) {
-//line stdlib/mcp/mcp_test.kuki:200
+	toolFn := func(args map[string]any) (any, error) {
+//line stdlib/mcp/mcp_test.kuki:191
 		return "ok", nil
 	}
+//line stdlib/mcp/mcp_test.kuki:193
+	mcppkg.ToolWithOpts[mcppkg.JSONObject](server, "read", "Read-only tool", schema, mcppkg.ToolOpts{ReadOnly: true}, toolFn)
 //line stdlib/mcp/mcp_test.kuki:202
+	richFn := func(ctx context.Context, tc *mcppkg.ToolContext, args map[string]any) (any, error) {
+//line stdlib/mcp/mcp_test.kuki:203
+		return "ok", nil
+	}
+//line stdlib/mcp/mcp_test.kuki:205
 	mcppkg.ToolRich[mcppkg.JSONObject](server, "rich", "Tool with context", schema, richFn)
-//line stdlib/mcp/mcp_test.kuki:204
+//line stdlib/mcp/mcp_test.kuki:207
 	test.AssertNotNil(t, server)
 }
 
-//line stdlib/mcp/mcp_test.kuki:209
+//line stdlib/mcp/mcp_test.kuki:212
 type _WriteArgs struct {
 	Path    string
 	Content string
 }
 
-//line stdlib/mcp/mcp_test.kuki:213
+//line stdlib/mcp/mcp_test.kuki:216
 func okHandler(args _WriteArgs) (any, error) {
-//line stdlib/mcp/mcp_test.kuki:214
+//line stdlib/mcp/mcp_test.kuki:217
 	return "ok", nil
 }
 
-//line stdlib/mcp/mcp_test.kuki:216
+//line stdlib/mcp/mcp_test.kuki:219
 func registerUnknownProperty() {
-//line stdlib/mcp/mcp_test.kuki:217
+//line stdlib/mcp/mcp_test.kuki:220
 	server := mcppkg.New("test", "1.0")
-//line stdlib/mcp/mcp_test.kuki:218
+//line stdlib/mcp/mcp_test.kuki:221
 	schema := mcppkg.Schema([]mcppkg.SchemaProperty{mcppkg.Prop("path", "string", "Path"), mcppkg.Prop("unknown_field", "string", "Not on struct")})
-//line stdlib/mcp/mcp_test.kuki:222
+//line stdlib/mcp/mcp_test.kuki:225
 	mcppkg.Tool[_WriteArgs](server, "write", "Write a file", schema, okHandler)
 }
 
-//line stdlib/mcp/mcp_test.kuki:224
+//line stdlib/mcp/mcp_test.kuki:227
 func registerMissingRequired() {
-//line stdlib/mcp/mcp_test.kuki:225
+//line stdlib/mcp/mcp_test.kuki:228
 	server := mcppkg.New("test", "1.0")
-//line stdlib/mcp/mcp_test.kuki:226
+//line stdlib/mcp/mcp_test.kuki:229
 	schema := mcppkg.Required(mcppkg.Schema([]mcppkg.SchemaProperty{mcppkg.Prop("path", "string", "Path")}), []string{"path", "absent"})
-//line stdlib/mcp/mcp_test.kuki:230
-	mcppkg.Tool[_WriteArgs](server, "write", "Write", schema, okHandler)
-}
-
-//line stdlib/mcp/mcp_test.kuki:232
-func registerWrongType() {
 //line stdlib/mcp/mcp_test.kuki:233
-	server := mcppkg.New("test", "1.0")
-//line stdlib/mcp/mcp_test.kuki:234
-	schema := mcppkg.Schema([]mcppkg.SchemaProperty{mcppkg.Prop("path", "integer", "Path declared as integer"), mcppkg.Prop("content", "string", "Content")})
-//line stdlib/mcp/mcp_test.kuki:238
 	mcppkg.Tool[_WriteArgs](server, "write", "Write", schema, okHandler)
 }
 
-//line stdlib/mcp/mcp_test.kuki:240
-func assertPanics(t *testing.T, label string, fn func()) {
+//line stdlib/mcp/mcp_test.kuki:235
+func registerWrongType() {
+//line stdlib/mcp/mcp_test.kuki:236
+	server := mcppkg.New("test", "1.0")
+//line stdlib/mcp/mcp_test.kuki:237
+	schema := mcppkg.Schema([]mcppkg.SchemaProperty{mcppkg.Prop("path", "integer", "Path declared as integer"), mcppkg.Prop("content", "string", "Content")})
 //line stdlib/mcp/mcp_test.kuki:241
+	mcppkg.Tool[_WriteArgs](server, "write", "Write", schema, okHandler)
+}
+
+//line stdlib/mcp/mcp_test.kuki:243
+func assertPanics(t *testing.T, label string, fn func()) {
+//line stdlib/mcp/mcp_test.kuki:244
 	defer recoverPanic(t, label)
-//line stdlib/mcp/mcp_test.kuki:242
+//line stdlib/mcp/mcp_test.kuki:245
 	fn()
 }
 
-//line stdlib/mcp/mcp_test.kuki:244
+//line stdlib/mcp/mcp_test.kuki:247
 func recoverPanic(t *testing.T, label string) {
-//line stdlib/mcp/mcp_test.kuki:245
+//line stdlib/mcp/mcp_test.kuki:248
 	if recover() == nil {
-//line stdlib/mcp/mcp_test.kuki:246
+//line stdlib/mcp/mcp_test.kuki:249
 		t.Errorf("expected panic for %v, got none", label)
 	}
 }
 
-//line stdlib/mcp/mcp_test.kuki:248
+//line stdlib/mcp/mcp_test.kuki:251
 func TestTypedToolRegistration(t *testing.T) {
-//line stdlib/mcp/mcp_test.kuki:249
+//line stdlib/mcp/mcp_test.kuki:252
 	server := mcppkg.New("test", "1.0")
-//line stdlib/mcp/mcp_test.kuki:250
+//line stdlib/mcp/mcp_test.kuki:253
 	schema := mcppkg.Required(mcppkg.Schema([]mcppkg.SchemaProperty{mcppkg.Prop("path", "string", "Path"), mcppkg.Prop("content", "string", "Content")}), []string{"path"})
-//line stdlib/mcp/mcp_test.kuki:255
-	mcppkg.Tool[_WriteArgs](server, "write", "Write a file", schema, okHandler)
-//line stdlib/mcp/mcp_test.kuki:256
-	test.AssertNotNil(t, server)
 //line stdlib/mcp/mcp_test.kuki:258
-	assertPanics(t, "schema property missing from struct", registerUnknownProperty)
+	mcppkg.Tool[_WriteArgs](server, "write", "Write a file", schema, okHandler)
 //line stdlib/mcp/mcp_test.kuki:259
+	test.AssertNotNil(t, server)
+//line stdlib/mcp/mcp_test.kuki:261
+	assertPanics(t, "schema property missing from struct", registerUnknownProperty)
+//line stdlib/mcp/mcp_test.kuki:262
 	assertPanics(t, "required field missing from struct", registerMissingRequired)
-//line stdlib/mcp/mcp_test.kuki:260
+//line stdlib/mcp/mcp_test.kuki:263
 	assertPanics(t, "schema property type incompatible with struct field", registerWrongType)
 }
 
-//line stdlib/mcp/mcp_test.kuki:264
+//line stdlib/mcp/mcp_test.kuki:267
 func TestCompletionRouter(t *testing.T) {
-//line stdlib/mcp/mcp_test.kuki:265
-	ctx := context.Background()
-//line stdlib/mcp/mcp_test.kuki:266
-	router := mcppkg.NewRouter()
 //line stdlib/mcp/mcp_test.kuki:268
-	router.AddPrompt("summarize", func(argName string, partial string, prevArgs map[string]string) []string {
+	ctx := context.Background()
 //line stdlib/mcp/mcp_test.kuki:269
+	router := mcppkg.NewRouter()
+//line stdlib/mcp/mcp_test.kuki:271
+	router.AddPrompt("summarize", func(argName string, partial string, prevArgs map[string]string) []string {
+//line stdlib/mcp/mcp_test.kuki:272
 		if argName == "text" {
-//line stdlib/mcp/mcp_test.kuki:270
+//line stdlib/mcp/mcp_test.kuki:273
 			return []string{"hello world", "hello there"}
 		}
-//line stdlib/mcp/mcp_test.kuki:271
+//line stdlib/mcp/mcp_test.kuki:274
 		return []string{}
 	})
-//line stdlib/mcp/mcp_test.kuki:274
+//line stdlib/mcp/mcp_test.kuki:277
 	router.AddResource("config://app", func(argName string, partial string, prevArgs map[string]string) []string {
-//line stdlib/mcp/mcp_test.kuki:275
+//line stdlib/mcp/mcp_test.kuki:278
 		return []string{"version=1.0", "version=2.0"}
 	})
-//line stdlib/mcp/mcp_test.kuki:278
-	handler := router.Handler()
 //line stdlib/mcp/mcp_test.kuki:281
+	handler := router.Handler()
+//line stdlib/mcp/mcp_test.kuki:284
 	promptReq := &gomcp.CompleteRequest{Params: &gomcp.CompleteParams{Ref: &gomcp.CompleteReference{Type: "ref/prompt", Name: "summarize"}, Argument: gomcp.CompleteParamsArgument{Name: "text", Value: "he"}}}
-//line stdlib/mcp/mcp_test.kuki:288
-	res, err := handler(ctx, promptReq)
-//line stdlib/mcp/mcp_test.kuki:289
-	test.AssertNil(t, err)
-//line stdlib/mcp/mcp_test.kuki:290
-	test.AssertEqual(t, len(res.Completion.Values), 2)
 //line stdlib/mcp/mcp_test.kuki:291
-	test.AssertEqual(t, res.Completion.Values[0], "hello world")
+	res, err := handler(ctx, promptReq)
+//line stdlib/mcp/mcp_test.kuki:292
+	test.AssertNil(t, err)
+//line stdlib/mcp/mcp_test.kuki:293
+	test.AssertEqual(t, len(res.Completion.Values), 2)
 //line stdlib/mcp/mcp_test.kuki:294
+	test.AssertEqual(t, res.Completion.Values[0], "hello world")
+//line stdlib/mcp/mcp_test.kuki:297
 	resReq := &gomcp.CompleteRequest{Params: &gomcp.CompleteParams{Ref: &gomcp.CompleteReference{Type: "ref/resource", URI: "config://app"}, Argument: gomcp.CompleteParamsArgument{Name: "key", Value: ""}}}
-//line stdlib/mcp/mcp_test.kuki:301
+//line stdlib/mcp/mcp_test.kuki:304
 	res2, err2 := handler(ctx, resReq)
-//line stdlib/mcp/mcp_test.kuki:302
+//line stdlib/mcp/mcp_test.kuki:305
 	test.AssertNil(t, err2)
-//line stdlib/mcp/mcp_test.kuki:303
-	test.AssertEqual(t, len(res2.Completion.Values), 2)
 //line stdlib/mcp/mcp_test.kuki:306
+	test.AssertEqual(t, len(res2.Completion.Values), 2)
+//line stdlib/mcp/mcp_test.kuki:309
 	unknownReq := &gomcp.CompleteRequest{Params: &gomcp.CompleteParams{Ref: &gomcp.CompleteReference{Type: "ref/prompt", Name: "unknown"}, Argument: gomcp.CompleteParamsArgument{Name: "x", Value: ""}}}
-//line stdlib/mcp/mcp_test.kuki:313
+//line stdlib/mcp/mcp_test.kuki:316
 	res3, _ := handler(ctx, unknownReq)
-//line stdlib/mcp/mcp_test.kuki:314
+//line stdlib/mcp/mcp_test.kuki:317
 	test.AssertEqual(t, len(res3.Completion.Values), 0)
 }

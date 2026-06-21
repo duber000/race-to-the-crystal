@@ -244,9 +244,9 @@ func GetQueryInt(r *http.Request, key string) (int, error) {
 	}
 //line stdlib/http/http.kuki:205
 	val, err_1 := strconv.Atoi(value)
-//line stdlib/http/http.kuki:205
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:205
 	if err_1 != nil {
-//line stdlib/http/http.kuki:205
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:205
 		return 0, fmt.Errorf("query parameter '%v' must be an integer", key)
 	}
 //line stdlib/http/http.kuki:206
@@ -264,9 +264,9 @@ func GetQueryIntOr(r *http.Request, key string, defaultValue int) int {
 	}
 //line stdlib/http/http.kuki:215
 	val, err_2 := strconv.Atoi(value)
-//line stdlib/http/http.kuki:215
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:215
 	if err_2 != nil {
-//line stdlib/http/http.kuki:215
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:215
 		return defaultValue
 	}
 //line stdlib/http/http.kuki:216
@@ -284,9 +284,9 @@ func GetQueryBool(r *http.Request, key string) (bool, error) {
 	}
 //line stdlib/http/http.kuki:226
 	val, err_3 := validate.ParseBool(value)
-//line stdlib/http/http.kuki:226
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:226
 	if err_3 != nil {
-//line stdlib/http/http.kuki:226
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:226
 		return false, fmt.Errorf("query parameter '%v' must be a boolean", key)
 	}
 //line stdlib/http/http.kuki:227
@@ -304,9 +304,9 @@ func GetQueryBoolOr(r *http.Request, key string, defaultValue bool) bool {
 	}
 //line stdlib/http/http.kuki:236
 	val, err_4 := validate.ParseBool(value)
-//line stdlib/http/http.kuki:236
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:236
 	if err_4 != nil {
-//line stdlib/http/http.kuki:236
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:236
 		return defaultValue
 	}
 //line stdlib/http/http.kuki:237
@@ -361,11 +361,11 @@ func SafeRedirect(w http.ResponseWriter, redirectURL string, allowedHosts ...str
 	}
 //line stdlib/http/http.kuki:285
 	parsed, err_5 := url.Parse(redirectURL)
-//line stdlib/http/http.kuki:285
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:285
 	if err_5 != nil {
-//line stdlib/http/http.kuki:285
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:285
 		err_5 = fmt.Errorf("invalid redirect URL: %w", err_5)
-//line stdlib/http/http.kuki:285
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:285
 		return err_5
 	}
 //line stdlib/http/http.kuki:286
@@ -404,9 +404,9 @@ func SafeRedirect(w http.ResponseWriter, redirectURL string, allowedHosts ...str
 func SafeURL(tmpl string, pathParams map[string]string, queryParams map[string]string) (string, error) {
 //line stdlib/http/http.kuki:308
 	base, err_6 := fetch.URLTemplate(tmpl, pathParams)
-//line stdlib/http/http.kuki:308
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:308
 	if err_6 != nil {
-//line stdlib/http/http.kuki:308
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:308
 		return "", err_6
 	}
 //line stdlib/http/http.kuki:309
@@ -562,9 +562,9 @@ func validHostHeader(h string) bool {
 func stripPort(h string) string {
 //line stdlib/http/http.kuki:439
 	host, _, err_7 := net.SplitHostPort(h)
-//line stdlib/http/http.kuki:439
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:439
 	if err_7 != nil {
-//line stdlib/http/http.kuki:439
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http.kuki:439
 		return h
 	}
 //line stdlib/http/http.kuki:440

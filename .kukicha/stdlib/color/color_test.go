@@ -223,9 +223,9 @@ func TestStylerNonTTY(t *testing.T) {
 	_ = os.Unsetenv("NO_COLOR")
 //line stdlib/color/color_test.kuki:201
 	f, err_1 := os.Open("color.kuki")
-//line stdlib/color/color_test.kuki:201
+//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:201
 	if err_1 != nil {
-//line stdlib/color/color_test.kuki:201
+//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:201
 		panic("open failed")
 	}
 //line stdlib/color/color_test.kuki:202

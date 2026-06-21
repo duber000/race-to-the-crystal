@@ -63,264 +63,270 @@ func CutSuffix(s string, suffix string) (string, bool) {
 	return strings.CutSuffix(s, suffix)
 }
 
-//line stdlib/string/string.kuki:73
+//line stdlib/string/string.kuki:76
+func Cut(s string, sep string) (string, string, bool) {
+//line stdlib/string/string.kuki:77
+	return strings.Cut(s, sep)
+}
+
+//line stdlib/string/string.kuki:80
 func TrimLeft(s string, cutset string) string {
-//line stdlib/string/string.kuki:74
+//line stdlib/string/string.kuki:81
 	return strings.TrimLeft(s, cutset)
 }
 
-//line stdlib/string/string.kuki:77
+//line stdlib/string/string.kuki:84
 func TrimRight(s string, cutset string) string {
-//line stdlib/string/string.kuki:78
+//line stdlib/string/string.kuki:85
 	return strings.TrimRight(s, cutset)
 }
 
-//line stdlib/string/string.kuki:83
+//line stdlib/string/string.kuki:90
 func Split(s string, sep string) []string {
-//line stdlib/string/string.kuki:84
+//line stdlib/string/string.kuki:91
 	return strings.Split(s, sep)
 }
 
-//line stdlib/string/string.kuki:90
+//line stdlib/string/string.kuki:97
 func SplitN(s string, sep string, n int) []string {
-//line stdlib/string/string.kuki:91
+//line stdlib/string/string.kuki:98
 	return strings.SplitN(s, sep, n)
 }
 
-//line stdlib/string/string.kuki:94
+//line stdlib/string/string.kuki:101
 func Join(parts []string, sep string) string {
-//line stdlib/string/string.kuki:95
+//line stdlib/string/string.kuki:102
 	return strings.Join(parts, sep)
 }
 
-//line stdlib/string/string.kuki:98
+//line stdlib/string/string.kuki:105
 func Fields(s string) []string {
-//line stdlib/string/string.kuki:99
+//line stdlib/string/string.kuki:106
 	return strings.Fields(s)
 }
 
-//line stdlib/string/string.kuki:104
+//line stdlib/string/string.kuki:111
 func Contains(s string, substr string) bool {
-//line stdlib/string/string.kuki:105
+//line stdlib/string/string.kuki:112
 	return strings.Contains(s, substr)
 }
 
-//line stdlib/string/string.kuki:108
+//line stdlib/string/string.kuki:115
 func HasPrefix(s string, prefix string) bool {
-//line stdlib/string/string.kuki:109
+//line stdlib/string/string.kuki:116
 	return strings.HasPrefix(s, prefix)
 }
 
-//line stdlib/string/string.kuki:112
+//line stdlib/string/string.kuki:119
 func HasSuffix(s string, suffix string) bool {
-//line stdlib/string/string.kuki:113
+//line stdlib/string/string.kuki:120
 	return strings.HasSuffix(s, suffix)
 }
 
-//line stdlib/string/string.kuki:117
+//line stdlib/string/string.kuki:124
 func Index(s string, substr string) int {
-//line stdlib/string/string.kuki:118
+//line stdlib/string/string.kuki:125
 	return strings.Index(s, substr)
 }
 
-//line stdlib/string/string.kuki:122
+//line stdlib/string/string.kuki:129
 func LastIndex(s string, substr string) int {
-//line stdlib/string/string.kuki:123
+//line stdlib/string/string.kuki:130
 	return strings.LastIndex(s, substr)
 }
 
-//line stdlib/string/string.kuki:126
+//line stdlib/string/string.kuki:133
 func Count(s string, substr string) int {
-//line stdlib/string/string.kuki:127
+//line stdlib/string/string.kuki:134
 	return strings.Count(s, substr)
 }
 
-//line stdlib/string/string.kuki:133
+//line stdlib/string/string.kuki:140
 func Replace(s string, old string, new string, n int) string {
-//line stdlib/string/string.kuki:134
+//line stdlib/string/string.kuki:141
 	return strings.Replace(s, old, new, n)
 }
 
-//line stdlib/string/string.kuki:137
+//line stdlib/string/string.kuki:144
 func ReplaceAll(s string, old string, new string) string {
-//line stdlib/string/string.kuki:138
+//line stdlib/string/string.kuki:145
 	return strings.ReplaceAll(s, old, new)
 }
 
-//line stdlib/string/string.kuki:143
+//line stdlib/string/string.kuki:150
 func Repeat(s string, count int) string {
-//line stdlib/string/string.kuki:144
+//line stdlib/string/string.kuki:151
 	return strings.Repeat(s, count)
 }
 
-//line stdlib/string/string.kuki:148
+//line stdlib/string/string.kuki:155
 func PadRight(s string, width int, padChar string) string {
-//line stdlib/string/string.kuki:149
+//line stdlib/string/string.kuki:156
 	length := len(s)
-//line stdlib/string/string.kuki:150
+//line stdlib/string/string.kuki:157
 	if length >= width {
-//line stdlib/string/string.kuki:151
+//line stdlib/string/string.kuki:158
 		return s
 	}
-//line stdlib/string/string.kuki:152
+//line stdlib/string/string.kuki:159
 	return s + strings.Repeat(padChar, width-length)
 }
 
-//line stdlib/string/string.kuki:156
+//line stdlib/string/string.kuki:163
 func PadLeft(s string, width int, padChar string) string {
-//line stdlib/string/string.kuki:157
+//line stdlib/string/string.kuki:164
 	length := len(s)
-//line stdlib/string/string.kuki:158
+//line stdlib/string/string.kuki:165
 	if length >= width {
-//line stdlib/string/string.kuki:159
+//line stdlib/string/string.kuki:166
 		return s
 	}
-//line stdlib/string/string.kuki:160
+//line stdlib/string/string.kuki:167
 	return strings.Repeat(padChar, width-length) + s
 }
 
-//line stdlib/string/string.kuki:166
+//line stdlib/string/string.kuki:173
 func Center(s string, width int, padChar string) string {
-//line stdlib/string/string.kuki:167
+//line stdlib/string/string.kuki:174
 	length := len(s)
-//line stdlib/string/string.kuki:168
+//line stdlib/string/string.kuki:175
 	if length >= width {
-//line stdlib/string/string.kuki:169
+//line stdlib/string/string.kuki:176
 		return s
 	}
-//line stdlib/string/string.kuki:170
+//line stdlib/string/string.kuki:177
 	total := width - length
-//line stdlib/string/string.kuki:171
+//line stdlib/string/string.kuki:178
 	left := total / 2
-//line stdlib/string/string.kuki:172
+//line stdlib/string/string.kuki:179
 	right := total - left
-//line stdlib/string/string.kuki:173
+//line stdlib/string/string.kuki:180
 	return strings.Repeat(padChar, left) + s + strings.Repeat(padChar, right)
 }
 
-//line stdlib/string/string.kuki:182
+//line stdlib/string/string.kuki:189
 func Truncate(s string, maxLen int) string {
-//line stdlib/string/string.kuki:183
+//line stdlib/string/string.kuki:190
 	if maxLen <= 0 {
-//line stdlib/string/string.kuki:184
+//line stdlib/string/string.kuki:191
 		return ""
 	}
-//line stdlib/string/string.kuki:185
+//line stdlib/string/string.kuki:192
 	s = strings.ReplaceAll(s, "\n", " ")
-//line stdlib/string/string.kuki:186
+//line stdlib/string/string.kuki:193
 	runes := []rune(s)
-//line stdlib/string/string.kuki:187
+//line stdlib/string/string.kuki:194
 	if len(runes) <= maxLen {
-//line stdlib/string/string.kuki:188
+//line stdlib/string/string.kuki:195
 		return s
 	}
-//line stdlib/string/string.kuki:189
+//line stdlib/string/string.kuki:196
 	if maxLen <= 3 {
-//line stdlib/string/string.kuki:190
+//line stdlib/string/string.kuki:197
 		return string(runes[:maxLen])
 	}
-//line stdlib/string/string.kuki:191
+//line stdlib/string/string.kuki:198
 	return string(runes[:maxLen-3]) + "..."
 }
 
-//line stdlib/string/string.kuki:197
+//line stdlib/string/string.kuki:204
 func Round(x float64, digits int) string {
-//line stdlib/string/string.kuki:198
+//line stdlib/string/string.kuki:205
 	if digits < 0 {
-//line stdlib/string/string.kuki:199
+//line stdlib/string/string.kuki:206
 		digits = 0
 	}
-//line stdlib/string/string.kuki:200
+//line stdlib/string/string.kuki:207
 	return fmt.Sprintf("%.*f", digits, x)
 }
 
-//line stdlib/string/string.kuki:206
+//line stdlib/string/string.kuki:213
 func WithCommas(n int) string {
-//line stdlib/string/string.kuki:207
+//line stdlib/string/string.kuki:214
 	s := fmt.Sprintf("%d", n)
-//line stdlib/string/string.kuki:208
+//line stdlib/string/string.kuki:215
 	negative := false
-//line stdlib/string/string.kuki:209
+//line stdlib/string/string.kuki:216
 	if strings.HasPrefix(s, "-") {
-//line stdlib/string/string.kuki:210
+//line stdlib/string/string.kuki:217
 		negative = true
-//line stdlib/string/string.kuki:211
+//line stdlib/string/string.kuki:218
 		s = s[1:]
 	}
-//line stdlib/string/string.kuki:213
+//line stdlib/string/string.kuki:220
 	digits := len(s)
-//line stdlib/string/string.kuki:214
+//line stdlib/string/string.kuki:221
 	if digits <= 3 {
-//line stdlib/string/string.kuki:215
+//line stdlib/string/string.kuki:222
 		if negative {
-//line stdlib/string/string.kuki:216
+//line stdlib/string/string.kuki:223
 			return "-" + s
 		}
-//line stdlib/string/string.kuki:217
+//line stdlib/string/string.kuki:224
 		return s
 	}
-//line stdlib/string/string.kuki:220
+//line stdlib/string/string.kuki:227
 	parts := make([]string, 0)
-//line stdlib/string/string.kuki:221
+//line stdlib/string/string.kuki:228
 	for digits > 3 {
-//line stdlib/string/string.kuki:222
+//line stdlib/string/string.kuki:229
 		parts = append(parts, s[digits-3:])
-//line stdlib/string/string.kuki:223
+//line stdlib/string/string.kuki:230
 		s = s[:digits-3]
-//line stdlib/string/string.kuki:224
+//line stdlib/string/string.kuki:231
 		digits = len(s)
 	}
-//line stdlib/string/string.kuki:225
+//line stdlib/string/string.kuki:232
 	parts = append(parts, s)
-//line stdlib/string/string.kuki:228
+//line stdlib/string/string.kuki:235
 	flipped := make([]string, 0, len(parts))
-//line stdlib/string/string.kuki:229
+//line stdlib/string/string.kuki:236
 	for i := range len(parts) {
-//line stdlib/string/string.kuki:230
+//line stdlib/string/string.kuki:237
 		flipped = append(flipped, parts[len(parts)-1-i])
 	}
-//line stdlib/string/string.kuki:231
+//line stdlib/string/string.kuki:238
 	out := strings.Join(flipped, ",")
-//line stdlib/string/string.kuki:233
+//line stdlib/string/string.kuki:240
 	if negative {
-//line stdlib/string/string.kuki:234
+//line stdlib/string/string.kuki:241
 		return "-" + out
 	}
-//line stdlib/string/string.kuki:235
+//line stdlib/string/string.kuki:242
 	return out
 }
 
-//line stdlib/string/string.kuki:241
+//line stdlib/string/string.kuki:248
 func EqualFold(s string, t string) bool {
-//line stdlib/string/string.kuki:242
+//line stdlib/string/string.kuki:249
 	return strings.EqualFold(s, t)
 }
 
-//line stdlib/string/string.kuki:247
+//line stdlib/string/string.kuki:254
 func Compare(a string, b string) int {
-//line stdlib/string/string.kuki:248
+//line stdlib/string/string.kuki:255
 	return strings.Compare(a, b)
 }
 
-//line stdlib/string/string.kuki:253
+//line stdlib/string/string.kuki:260
 func IsBlank(s string) bool {
-//line stdlib/string/string.kuki:254
+//line stdlib/string/string.kuki:261
 	return len(strings.TrimSpace(s)) == 0
 }
 
-//line stdlib/string/string.kuki:260
+//line stdlib/string/string.kuki:267
 func Or(s string, defaultValue string) string {
-//line stdlib/string/string.kuki:261
+//line stdlib/string/string.kuki:268
 	if s == "" {
-//line stdlib/string/string.kuki:262
+//line stdlib/string/string.kuki:269
 		return defaultValue
 	}
-//line stdlib/string/string.kuki:263
+//line stdlib/string/string.kuki:270
 	return s
 }
 
-//line stdlib/string/string.kuki:266
+//line stdlib/string/string.kuki:273
 func Lines(s string) []string {
-//line stdlib/string/string.kuki:267
+//line stdlib/string/string.kuki:274
 	return strings.Split(s, "\n")
 }

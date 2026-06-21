@@ -37,10 +37,10 @@ type ParsedMulti struct {
 func Parse(s string) (Parsed, error) {
 //line stdlib/url/url.kuki:54
 	u, err_1 := gourl.Parse(s)
-//line stdlib/url/url.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:54
 	if err_1 != nil {
 		var _zero0 Parsed
-//line stdlib/url/url.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:54
 		return _zero0, err_1
 	}
 //line stdlib/url/url.kuki:56
@@ -63,10 +63,10 @@ func Parse(s string) (Parsed, error) {
 func ParseMulti(s string) (ParsedMulti, error) {
 //line stdlib/url/url.kuki:74
 	u, err_2 := gourl.Parse(s)
-//line stdlib/url/url.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:74
 	if err_2 != nil {
 		var _zero0 ParsedMulti
-//line stdlib/url/url.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:74
 		return _zero0, err_2
 	}
 //line stdlib/url/url.kuki:76
@@ -185,16 +185,16 @@ func CleanPath(p string) (string, error) {
 func IsSubpath(base string, candidate string) bool {
 //line stdlib/url/url.kuki:178
 	cleanBase, err_3 := CleanPath(base)
-//line stdlib/url/url.kuki:178
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:178
 	if err_3 != nil {
-//line stdlib/url/url.kuki:178
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:178
 		return false
 	}
 //line stdlib/url/url.kuki:179
 	cleanCand, err_4 := CleanPath(candidate)
-//line stdlib/url/url.kuki:179
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:179
 	if err_4 != nil {
-//line stdlib/url/url.kuki:179
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:179
 		return false
 	}
 //line stdlib/url/url.kuki:180
@@ -238,4 +238,30 @@ func EncodeForm(values map[string]string) string {
 	}
 //line stdlib/url/url.kuki:203
 	return kukistring.Join(parts, "&")
+}
+
+//line stdlib/url/url.kuki:208
+func MustParse(s string) Parsed {
+//line stdlib/url/url.kuki:209
+	u, err := Parse(s)
+//line stdlib/url/url.kuki:210
+	if err != nil {
+//line stdlib/url/url.kuki:211
+		panic(fmt.Sprintf("url: invalid URL %v: %v", s, err))
+	}
+//line stdlib/url/url.kuki:212
+	return u
+}
+
+//line stdlib/url/url.kuki:216
+func MustParseMulti(s string) ParsedMulti {
+//line stdlib/url/url.kuki:217
+	u, err := ParseMulti(s)
+//line stdlib/url/url.kuki:218
+	if err != nil {
+//line stdlib/url/url.kuki:219
+		panic(fmt.Sprintf("url: invalid URL %v: %v", s, err))
+	}
+//line stdlib/url/url.kuki:220
+	return u
 }

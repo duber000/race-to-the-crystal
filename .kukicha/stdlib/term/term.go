@@ -23,9 +23,9 @@ func IsTTY(f *os.File) bool {
 	}
 //line stdlib/term/term.kuki:34
 	info, err_1 := f.Stat()
-//line stdlib/term/term.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:34
 	if err_1 != nil {
-//line stdlib/term/term.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:34
 		return false
 	}
 //line stdlib/term/term.kuki:35
@@ -158,9 +158,9 @@ func Width() int {
 	}
 //line stdlib/term/term.kuki:123
 	n, err_2 := strconv.Atoi(cols)
-//line stdlib/term/term.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:123
 	if err_2 != nil {
-//line stdlib/term/term.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:123
 		return 80
 	}
 //line stdlib/term/term.kuki:124

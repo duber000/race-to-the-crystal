@@ -366,174 +366,180 @@ func TestSchemaHelpers(t *testing.T) {
 //line stdlib/llm/llm_test.kuki:288
 		test.AssertEqual(t, s["type"], "object")
 //line stdlib/llm/llm_test.kuki:290
-		props, ok := s["properties"].(map[string]any)
+		if props, _isOk := s["properties"].(map[string]any); _isOk {
 //line stdlib/llm/llm_test.kuki:291
-		test.AssertTrue(t, ok)
+			if pathProp, _isOk := props["path"].(map[string]any); _isOk {
 //line stdlib/llm/llm_test.kuki:292
-		pathProp, ok2 := props["path"].(map[string]any)
+				test.AssertEqual(t, pathProp["type"], "string")
 //line stdlib/llm/llm_test.kuki:293
-		test.AssertTrue(t, ok2)
-//line stdlib/llm/llm_test.kuki:294
-		test.AssertEqual(t, pathProp["type"], "string")
+				test.AssertEqual(t, pathProp["description"], "File path")
+			} else {
 //line stdlib/llm/llm_test.kuki:295
-		test.AssertEqual(t, pathProp["description"], "File path")
+				t.Fatal("path is not map of string to any")
+			}
+		} else {
+//line stdlib/llm/llm_test.kuki:297
+			t.Fatal("properties is not map of string to any")
+		}
 	})
-//line stdlib/llm/llm_test.kuki:298
+//line stdlib/llm/llm_test.kuki:300
 	t.Run("Required adds a required list", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:299
+//line stdlib/llm/llm_test.kuki:301
 		s := llm.Required(llm.Schema([]llm.SchemaProperty{llm.Prop("path", "string", "File path")}), []string{"path"})
-//line stdlib/llm/llm_test.kuki:304
-		required, ok := s["required"].([]string)
-//line stdlib/llm/llm_test.kuki:305
-		test.AssertTrue(t, ok)
 //line stdlib/llm/llm_test.kuki:306
-		test.AssertEqual(t, len(required), 1)
+		if required, _isOk := s["required"].([]string); _isOk {
 //line stdlib/llm/llm_test.kuki:307
-		test.AssertEqual(t, required[0], "path")
+			test.AssertEqual(t, len(required), 1)
+//line stdlib/llm/llm_test.kuki:308
+			test.AssertEqual(t, required[0], "path")
+		} else {
+//line stdlib/llm/llm_test.kuki:310
+			t.Fatal("required is not list of string")
+		}
 	})
 }
 
-//line stdlib/llm/llm_test.kuki:311
-func TestChatFromCompletion(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:312
-	t.Run("no choices returns unchanged client", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:313
-		c := chat.FromCompletion(chat.New("openai:gpt-4o-mini"), chat.Completion{})
 //line stdlib/llm/llm_test.kuki:314
-		_ = c
-	})
+func TestChatFromCompletion(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:315
+	t.Run("no choices returns unchanged client", func(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:316
+		c := chat.FromCompletion(chat.New("openai:gpt-4o-mini"), chat.Completion{})
 //line stdlib/llm/llm_test.kuki:317
-	t.Run("appends assistant message from completion", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:318
-		msg := chat.ResponseMessage{Role: "assistant", Content: "Paris"}
-//line stdlib/llm/llm_test.kuki:319
-		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
+		_ = c
+	})
 //line stdlib/llm/llm_test.kuki:320
-		c := chat.FromCompletion(chat.User(chat.New("openai:gpt-4o-mini"), "Capital of France?"), comp)
+	t.Run("appends assistant message from completion", func(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:321
+		msg := chat.ResponseMessage{Role: "assistant", Content: "Paris"}
+//line stdlib/llm/llm_test.kuki:322
+		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
 //line stdlib/llm/llm_test.kuki:323
-		_ = c
-	})
+		c := chat.FromCompletion(chat.User(chat.New("openai:gpt-4o-mini"), "Capital of France?"), comp)
 //line stdlib/llm/llm_test.kuki:326
-	t.Run("preserves tool calls in assistant message", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:327
-		toolCall := chat.ToolCall{ID: "call-1", Type: "function"}
-//line stdlib/llm/llm_test.kuki:328
-		toolCall.Function = chat.ToolCallFunction{Name: "get_capital", Arguments: "{}"}
+		_ = c
+	})
 //line stdlib/llm/llm_test.kuki:329
-		msg := chat.ResponseMessage{Role: "assistant", ToolCalls: []chat.ToolCall{toolCall}}
+	t.Run("preserves tool calls in assistant message", func(t *testing.T) {
 //line stdlib/llm/llm_test.kuki:330
-		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
+		toolCall := chat.ToolCall{ID: "call-1", Type: "function"}
 //line stdlib/llm/llm_test.kuki:331
-		c := chat.FromCompletion(chat.New("openai:gpt-4o-mini"), comp)
+		toolCall.Function = chat.ToolCallFunction{Name: "get_capital", Arguments: "{}"}
 //line stdlib/llm/llm_test.kuki:332
+		msg := chat.ResponseMessage{Role: "assistant", ToolCalls: []chat.ToolCall{toolCall}}
+//line stdlib/llm/llm_test.kuki:333
+		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
+//line stdlib/llm/llm_test.kuki:334
+		c := chat.FromCompletion(chat.New("openai:gpt-4o-mini"), comp)
+//line stdlib/llm/llm_test.kuki:335
 		_ = c
 	})
 }
 
-//line stdlib/llm/llm_test.kuki:336
-func TestChatExecuteToolCalls(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:337
-	t.Run("calls handler for matching tool", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:338
-		toolCall := chat.ToolCall{ID: "call-1", Type: "function"}
 //line stdlib/llm/llm_test.kuki:339
-		toolCall.Function = chat.ToolCallFunction{Name: "get_weather", Arguments: "{}"}
+func TestChatExecuteToolCalls(t *testing.T) {
 //line stdlib/llm/llm_test.kuki:340
-		msg := chat.ResponseMessage{Role: "assistant", ToolCalls: []chat.ToolCall{toolCall}}
+	t.Run("calls handler for matching tool", func(t *testing.T) {
 //line stdlib/llm/llm_test.kuki:341
-		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
-//line stdlib/llm/llm_test.kuki:343
-		handlers := make(map[string]func(string) string)
-//line stdlib/llm/llm_test.kuki:344
-		handlers["get_weather"] = func(args string) string { return "sunny" }
-//line stdlib/llm/llm_test.kuki:345
-		_, err := chat.ExecuteToolCalls(chat.New("openai:gpt-4o-mini"), comp, handlers)
-//line stdlib/llm/llm_test.kuki:346
-		test.AssertEqual(t, err, nil)
-	})
-//line stdlib/llm/llm_test.kuki:349
-	t.Run("returns error for unknown tool", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:350
 		toolCall := chat.ToolCall{ID: "call-1", Type: "function"}
-//line stdlib/llm/llm_test.kuki:351
-		toolCall.Function = chat.ToolCallFunction{Name: "unknown_tool", Arguments: "{}"}
-//line stdlib/llm/llm_test.kuki:352
+//line stdlib/llm/llm_test.kuki:342
+		toolCall.Function = chat.ToolCallFunction{Name: "get_weather", Arguments: "{}"}
+//line stdlib/llm/llm_test.kuki:343
 		msg := chat.ResponseMessage{Role: "assistant", ToolCalls: []chat.ToolCall{toolCall}}
-//line stdlib/llm/llm_test.kuki:353
+//line stdlib/llm/llm_test.kuki:344
 		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
-//line stdlib/llm/llm_test.kuki:355
+//line stdlib/llm/llm_test.kuki:346
 		handlers := make(map[string]func(string) string)
-//line stdlib/llm/llm_test.kuki:356
-		_, err := chat.ExecuteToolCalls(chat.New("openai:gpt-4o-mini"), comp, handlers)
-//line stdlib/llm/llm_test.kuki:357
-		test.AssertTrue(t, err != nil)
-	})
-//line stdlib/llm/llm_test.kuki:360
-	t.Run("no-op when completion has no choices", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:361
-		handlers := make(map[string]func(string) string)
-//line stdlib/llm/llm_test.kuki:362
-		_, err := chat.ExecuteToolCalls(chat.New("openai:gpt-4o-mini"), chat.Completion{}, handlers)
-//line stdlib/llm/llm_test.kuki:363
-		test.AssertEqual(t, err, nil)
-	})
-}
-
-//line stdlib/llm/llm_test.kuki:367
-func TestAnthropicFromResponse(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:368
-	t.Run("appends assistant message from response", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:369
-		resp := anthropic.Response{Content: []content.Content{content.Text{Body: "Hello"}}}
-//line stdlib/llm/llm_test.kuki:370
-		c := anthropic.FromResponse(anthropic.New("claude-opus-4-6"), resp)
-//line stdlib/llm/llm_test.kuki:371
-		_ = c
-	})
-//line stdlib/llm/llm_test.kuki:374
-	t.Run("empty response still appends an assistant message", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:375
-		c := anthropic.FromResponse(anthropic.New("claude-opus-4-6"), anthropic.Response{})
-//line stdlib/llm/llm_test.kuki:376
-		_ = c
-	})
-}
-
-//line stdlib/llm/llm_test.kuki:380
-func TestAnthropicExecuteToolUses(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:381
-	t.Run("calls handler for matching tool use", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:382
-		resp := anthropic.Response{StopReason: "tool_use", Content: []content.Content{content.ToolUse{ID: "toolu_1", Name: "get_weather", Input: `{"city":"Paris"}`}}}
-//line stdlib/llm/llm_test.kuki:389
-		handlers := make(map[string]func(string) string)
-//line stdlib/llm/llm_test.kuki:390
+//line stdlib/llm/llm_test.kuki:347
 		handlers["get_weather"] = func(args string) string { return "sunny" }
-//line stdlib/llm/llm_test.kuki:391
-		_, err := anthropic.ExecuteToolUses(anthropic.New("claude-opus-4-6"), resp, handlers)
-//line stdlib/llm/llm_test.kuki:392
+//line stdlib/llm/llm_test.kuki:348
+		_, err := chat.ExecuteToolCalls(chat.New("openai:gpt-4o-mini"), comp, handlers)
+//line stdlib/llm/llm_test.kuki:349
 		test.AssertEqual(t, err, nil)
 	})
-//line stdlib/llm/llm_test.kuki:395
+//line stdlib/llm/llm_test.kuki:352
 	t.Run("returns error for unknown tool", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:396
-		resp := anthropic.Response{StopReason: "tool_use", Content: []content.Content{content.ToolUse{ID: "toolu_1", Name: "unknown_tool", Input: "{}"}}}
-//line stdlib/llm/llm_test.kuki:403
+//line stdlib/llm/llm_test.kuki:353
+		toolCall := chat.ToolCall{ID: "call-1", Type: "function"}
+//line stdlib/llm/llm_test.kuki:354
+		toolCall.Function = chat.ToolCallFunction{Name: "unknown_tool", Arguments: "{}"}
+//line stdlib/llm/llm_test.kuki:355
+		msg := chat.ResponseMessage{Role: "assistant", ToolCalls: []chat.ToolCall{toolCall}}
+//line stdlib/llm/llm_test.kuki:356
+		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
+//line stdlib/llm/llm_test.kuki:358
 		handlers := make(map[string]func(string) string)
-//line stdlib/llm/llm_test.kuki:404
-		_, err := anthropic.ExecuteToolUses(anthropic.New("claude-opus-4-6"), resp, handlers)
-//line stdlib/llm/llm_test.kuki:405
+//line stdlib/llm/llm_test.kuki:359
+		_, err := chat.ExecuteToolCalls(chat.New("openai:gpt-4o-mini"), comp, handlers)
+//line stdlib/llm/llm_test.kuki:360
 		test.AssertTrue(t, err != nil)
 	})
-//line stdlib/llm/llm_test.kuki:408
-	t.Run("no-op when response has no tool uses", func(t *testing.T) {
-//line stdlib/llm/llm_test.kuki:409
-		resp := anthropic.Response{Content: []content.Content{content.Text{Body: "no tools here"}}}
-//line stdlib/llm/llm_test.kuki:412
+//line stdlib/llm/llm_test.kuki:363
+	t.Run("no-op when completion has no choices", func(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:364
 		handlers := make(map[string]func(string) string)
-//line stdlib/llm/llm_test.kuki:413
+//line stdlib/llm/llm_test.kuki:365
+		_, err := chat.ExecuteToolCalls(chat.New("openai:gpt-4o-mini"), chat.Completion{}, handlers)
+//line stdlib/llm/llm_test.kuki:366
+		test.AssertEqual(t, err, nil)
+	})
+}
+
+//line stdlib/llm/llm_test.kuki:370
+func TestAnthropicFromResponse(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:371
+	t.Run("appends assistant message from response", func(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:372
+		resp := anthropic.Response{Content: []content.Content{content.Text{Body: "Hello"}}}
+//line stdlib/llm/llm_test.kuki:373
+		c := anthropic.FromResponse(anthropic.New("claude-opus-4-6"), resp)
+//line stdlib/llm/llm_test.kuki:374
+		_ = c
+	})
+//line stdlib/llm/llm_test.kuki:377
+	t.Run("empty response still appends an assistant message", func(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:378
+		c := anthropic.FromResponse(anthropic.New("claude-opus-4-6"), anthropic.Response{})
+//line stdlib/llm/llm_test.kuki:379
+		_ = c
+	})
+}
+
+//line stdlib/llm/llm_test.kuki:383
+func TestAnthropicExecuteToolUses(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:384
+	t.Run("calls handler for matching tool use", func(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:385
+		resp := anthropic.Response{StopReason: "tool_use", Content: []content.Content{content.ToolUse{ID: "toolu_1", Name: "get_weather", Input: `{"city":"Paris"}`}}}
+//line stdlib/llm/llm_test.kuki:392
+		handlers := make(map[string]func(string) string)
+//line stdlib/llm/llm_test.kuki:393
+		handlers["get_weather"] = func(args string) string { return "sunny" }
+//line stdlib/llm/llm_test.kuki:394
 		_, err := anthropic.ExecuteToolUses(anthropic.New("claude-opus-4-6"), resp, handlers)
-//line stdlib/llm/llm_test.kuki:414
+//line stdlib/llm/llm_test.kuki:395
+		test.AssertEqual(t, err, nil)
+	})
+//line stdlib/llm/llm_test.kuki:398
+	t.Run("returns error for unknown tool", func(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:399
+		resp := anthropic.Response{StopReason: "tool_use", Content: []content.Content{content.ToolUse{ID: "toolu_1", Name: "unknown_tool", Input: "{}"}}}
+//line stdlib/llm/llm_test.kuki:406
+		handlers := make(map[string]func(string) string)
+//line stdlib/llm/llm_test.kuki:407
+		_, err := anthropic.ExecuteToolUses(anthropic.New("claude-opus-4-6"), resp, handlers)
+//line stdlib/llm/llm_test.kuki:408
+		test.AssertTrue(t, err != nil)
+	})
+//line stdlib/llm/llm_test.kuki:411
+	t.Run("no-op when response has no tool uses", func(t *testing.T) {
+//line stdlib/llm/llm_test.kuki:412
+		resp := anthropic.Response{Content: []content.Content{content.Text{Body: "no tools here"}}}
+//line stdlib/llm/llm_test.kuki:415
+		handlers := make(map[string]func(string) string)
+//line stdlib/llm/llm_test.kuki:416
+		_, err := anthropic.ExecuteToolUses(anthropic.New("claude-opus-4-6"), resp, handlers)
+//line stdlib/llm/llm_test.kuki:417
 		test.AssertEqual(t, err, nil)
 	})
 }

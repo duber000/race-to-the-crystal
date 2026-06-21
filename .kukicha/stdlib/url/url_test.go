@@ -3,198 +3,199 @@
 package url_test
 
 import (
+	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"codeberg.org/kukichalang/kukicha/stdlib/url"
 	"testing"
 )
 
-//line stdlib/url/url_test.kuki:10
+//line stdlib/url/url_test.kuki:11
 type ParseCase struct {
 	name string
 }
 
-//line stdlib/url/url_test.kuki:13
-func TestParse(t *testing.T) {
 //line stdlib/url/url_test.kuki:14
+func TestParse(t *testing.T) {
+//line stdlib/url/url_test.kuki:15
 	cases := []ParseCase{ParseCase{name: "basic"}}
-//line stdlib/url/url_test.kuki:16
-	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:17
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:18
-			u, err := url.Parse("https://example.com/p?q=hi&page=2")
+		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/url/url_test.kuki:19
-			test.AssertNoError(t, err)
+			u, err := url.Parse("https://example.com/p?q=hi&page=2")
 //line stdlib/url/url_test.kuki:20
-			test.AssertEqual(t, u.Scheme, "https")
+			test.AssertNoError(t, err)
 //line stdlib/url/url_test.kuki:21
-			test.AssertEqual(t, u.Host, "example.com")
+			test.AssertEqual(t, u.Scheme, "https")
 //line stdlib/url/url_test.kuki:22
-			test.AssertEqual(t, u.Path, "/p")
+			test.AssertEqual(t, u.Host, "example.com")
 //line stdlib/url/url_test.kuki:23
-			test.AssertEqual(t, u.Params["q"], "hi")
+			test.AssertEqual(t, u.Path, "/p")
 //line stdlib/url/url_test.kuki:24
+			test.AssertEqual(t, u.Params["q"], "hi")
+//line stdlib/url/url_test.kuki:25
 			test.AssertEqual(t, u.Params["page"], "2")
 		})
 	}
 }
 
-//line stdlib/url/url_test.kuki:28
+//line stdlib/url/url_test.kuki:29
 type ParseRepeatedCase struct {
 	name string
 }
 
-//line stdlib/url/url_test.kuki:31
-func TestParseRepeatedKey(t *testing.T) {
 //line stdlib/url/url_test.kuki:32
+func TestParseRepeatedKey(t *testing.T) {
+//line stdlib/url/url_test.kuki:33
 	cases := []ParseRepeatedCase{ParseRepeatedCase{name: "last wins for flat, both for multi"}}
-//line stdlib/url/url_test.kuki:34
-	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:35
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:36
-			flat, err := url.Parse("https://x.com?tag=a&tag=b")
+		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/url/url_test.kuki:37
-			test.AssertNoError(t, err)
+			flat, err := url.Parse("https://x.com?tag=a&tag=b")
 //line stdlib/url/url_test.kuki:38
+			test.AssertNoError(t, err)
+//line stdlib/url/url_test.kuki:39
 			test.AssertEqual(t, flat.Params["tag"], "b")
-//line stdlib/url/url_test.kuki:40
-			multi, mErr := url.ParseMulti("https://x.com?tag=a&tag=b")
 //line stdlib/url/url_test.kuki:41
-			test.AssertNoError(t, mErr)
+			multi, mErr := url.ParseMulti("https://x.com?tag=a&tag=b")
 //line stdlib/url/url_test.kuki:42
-			test.AssertEqual(t, len(multi.Params["tag"]), 2)
+			test.AssertNoError(t, mErr)
 //line stdlib/url/url_test.kuki:43
-			test.AssertEqual(t, multi.Params["tag"][0], "a")
+			test.AssertEqual(t, len(multi.Params["tag"]), 2)
 //line stdlib/url/url_test.kuki:44
+			test.AssertEqual(t, multi.Params["tag"][0], "a")
+//line stdlib/url/url_test.kuki:45
 			test.AssertEqual(t, multi.Params["tag"][1], "b")
 		})
 	}
 }
 
-//line stdlib/url/url_test.kuki:48
+//line stdlib/url/url_test.kuki:49
 type BuilderCase struct {
 	name string
 }
 
-//line stdlib/url/url_test.kuki:51
-func TestBuilder(t *testing.T) {
 //line stdlib/url/url_test.kuki:52
+func TestBuilder(t *testing.T) {
+//line stdlib/url/url_test.kuki:53
 	cases := []BuilderCase{BuilderCase{name: "fluent build"}}
-//line stdlib/url/url_test.kuki:54
-	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:55
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:56
+		t.Run(tc.name, func(t *testing.T) {
+//line stdlib/url/url_test.kuki:57
 			out := url.String(url.Param(url.Param(url.Param(url.New("https://api.example.com/users"), "page", 2), "active", true), "q", "hello world"))
-//line stdlib/url/url_test.kuki:62
-			expected := "https://api.example.com/users?page=2&active=true&q=hello+world"
 //line stdlib/url/url_test.kuki:63
+			expected := "https://api.example.com/users?page=2&active=true&q=hello+world"
+//line stdlib/url/url_test.kuki:64
 			test.AssertEqual(t, out, expected)
 		})
 	}
 }
 
-//line stdlib/url/url_test.kuki:69
+//line stdlib/url/url_test.kuki:70
 type BuilderQueryCase struct {
 	name string
 }
 
-//line stdlib/url/url_test.kuki:72
-func TestBuilderWithExistingQuery(t *testing.T) {
 //line stdlib/url/url_test.kuki:73
+func TestBuilderWithExistingQuery(t *testing.T) {
+//line stdlib/url/url_test.kuki:74
 	cases := []BuilderQueryCase{BuilderQueryCase{name: "appends with & when base already has ?"}}
-//line stdlib/url/url_test.kuki:75
-	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:76
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:77
-			out := url.String(url.Param(url.New("https://x.com/path?a=1"), "b", 2))
+		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/url/url_test.kuki:78
+			out := url.String(url.Param(url.New("https://x.com/path?a=1"), "b", 2))
+//line stdlib/url/url_test.kuki:79
 			test.AssertEqual(t, out, "https://x.com/path?a=1&b=2")
-//line stdlib/url/url_test.kuki:80
-			bare := url.String(url.New("https://x.com"))
 //line stdlib/url/url_test.kuki:81
+			bare := url.String(url.New("https://x.com"))
+//line stdlib/url/url_test.kuki:82
 			test.AssertEqual(t, bare, "https://x.com")
 		})
 	}
 }
 
-//line stdlib/url/url_test.kuki:85
+//line stdlib/url/url_test.kuki:86
 type EscapeCase struct {
 	name string
 }
 
-//line stdlib/url/url_test.kuki:88
-func TestEscape(t *testing.T) {
 //line stdlib/url/url_test.kuki:89
+func TestEscape(t *testing.T) {
+//line stdlib/url/url_test.kuki:90
 	cases := []EscapeCase{EscapeCase{name: "round trip"}}
-//line stdlib/url/url_test.kuki:91
-	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:92
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:93
-			escaped := url.Escape("hello world & friends")
+		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/url/url_test.kuki:94
-			roundtrip, err := url.Unescape(escaped)
+			escaped := url.Escape("hello world & friends")
 //line stdlib/url/url_test.kuki:95
-			test.AssertNoError(t, err)
+			roundtrip, err := url.Unescape(escaped)
 //line stdlib/url/url_test.kuki:96
+			test.AssertNoError(t, err)
+//line stdlib/url/url_test.kuki:97
 			test.AssertEqual(t, roundtrip, "hello world & friends")
 		})
 	}
 }
 
-//line stdlib/url/url_test.kuki:100
+//line stdlib/url/url_test.kuki:101
 type FormCase struct {
 	name string
 }
 
-//line stdlib/url/url_test.kuki:103
-func TestEncodeForm(t *testing.T) {
 //line stdlib/url/url_test.kuki:104
+func TestEncodeForm(t *testing.T) {
+//line stdlib/url/url_test.kuki:105
 	cases := []FormCase{FormCase{name: "deterministic ordering"}}
-//line stdlib/url/url_test.kuki:106
-	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:107
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:108
+		t.Run(tc.name, func(t *testing.T) {
+//line stdlib/url/url_test.kuki:109
 			body := url.EncodeForm(map[string]string{"email": "a@b.com", "name": "Al"})
-//line stdlib/url/url_test.kuki:113
+//line stdlib/url/url_test.kuki:114
 			test.AssertEqual(t, body, "email=a%40b.com&name=Al")
-//line stdlib/url/url_test.kuki:115
-			blank := url.EncodeForm(map[string]string{})
 //line stdlib/url/url_test.kuki:116
+			blank := url.EncodeForm(map[string]string{})
+//line stdlib/url/url_test.kuki:117
 			test.AssertEqual(t, blank, "")
 		})
 	}
 }
 
-//line stdlib/url/url_test.kuki:122
+//line stdlib/url/url_test.kuki:123
 type ParseErrorCase struct {
 	name string
 }
 
-//line stdlib/url/url_test.kuki:125
-func TestParseError(t *testing.T) {
 //line stdlib/url/url_test.kuki:126
+func TestParseError(t *testing.T) {
+//line stdlib/url/url_test.kuki:127
 	cases := []ParseErrorCase{ParseErrorCase{name: "malformed url errors"}}
-//line stdlib/url/url_test.kuki:128
-	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:129
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:130
-			_, err := url.Parse("://not a url")
+		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/url/url_test.kuki:131
-			if err == nil {
+			_, err := url.Parse("://not a url")
 //line stdlib/url/url_test.kuki:132
+			if err == nil {
+//line stdlib/url/url_test.kuki:133
 				t.Error("Expected error for malformed url")
 			}
 		})
 	}
 }
 
-//line stdlib/url/url_test.kuki:136
+//line stdlib/url/url_test.kuki:137
 type CleanPathCase struct {
 	name    string
 	input   string
@@ -202,31 +203,31 @@ type CleanPathCase struct {
 	wantErr bool
 }
 
-//line stdlib/url/url_test.kuki:142
-func TestCleanPath(t *testing.T) {
 //line stdlib/url/url_test.kuki:143
+func TestCleanPath(t *testing.T) {
+//line stdlib/url/url_test.kuki:144
 	cases := []CleanPathCase{CleanPathCase{name: "simple", input: "/a/b", want: "/a/b", wantErr: false}, CleanPathCase{name: "leading slash added", input: "a/b", want: "/a/b", wantErr: false}, CleanPathCase{name: "double slash collapsed", input: "/a//b", want: "/a/b", wantErr: false}, CleanPathCase{name: "dot resolved", input: "/a/./b", want: "/a/b", wantErr: false}, CleanPathCase{name: "dotdot rejected", input: "/a/../b", want: "", wantErr: true}, CleanPathCase{name: "leading dotdot rejected", input: "../etc", want: "", wantErr: true}, CleanPathCase{name: "percent-encoded traversal rejected", input: "/a/%2e%2e/b", want: "", wantErr: true}, CleanPathCase{name: "percent-encoded slash rejected", input: "/a%2fb", want: "", wantErr: true}, CleanPathCase{name: "backslash rejected", input: "/a\\b", want: "", wantErr: true}, CleanPathCase{name: "empty rejected", input: "", want: "", wantErr: true}}
-//line stdlib/url/url_test.kuki:155
-	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:156
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:157
-			got, err := url.CleanPath(tc.input)
+		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/url/url_test.kuki:158
-			if tc.wantErr {
+			got, err := url.CleanPath(tc.input)
 //line stdlib/url/url_test.kuki:159
+			if tc.wantErr {
+//line stdlib/url/url_test.kuki:160
 				test.AssertError(t, err)
 			} else {
-//line stdlib/url/url_test.kuki:161
-				test.AssertNoError(t, err)
 //line stdlib/url/url_test.kuki:162
+				test.AssertNoError(t, err)
+//line stdlib/url/url_test.kuki:163
 				test.AssertEqual(t, got, tc.want)
 			}
 		})
 	}
 }
 
-//line stdlib/url/url_test.kuki:166
+//line stdlib/url/url_test.kuki:167
 type IsSubpathCase struct {
 	name      string
 	base      string
@@ -234,18 +235,96 @@ type IsSubpathCase struct {
 	want      bool
 }
 
-//line stdlib/url/url_test.kuki:172
-func TestIsSubpath(t *testing.T) {
 //line stdlib/url/url_test.kuki:173
+func TestIsSubpath(t *testing.T) {
+//line stdlib/url/url_test.kuki:174
 	cases := []IsSubpathCase{IsSubpathCase{name: "same path", base: "/static", candidate: "/static", want: true}, IsSubpathCase{name: "child path", base: "/static", candidate: "/static/css/app.css", want: true}, IsSubpathCase{name: "sibling rejected", base: "/static", candidate: "/staticx/app.css", want: false}, IsSubpathCase{name: "parent rejected", base: "/static/sub", candidate: "/static", want: false}, IsSubpathCase{name: "root base accepts anything valid", base: "/", candidate: "/anything/here", want: true}, IsSubpathCase{name: "traversal candidate rejected", base: "/static", candidate: "/static/../etc/passwd", want: false}, IsSubpathCase{name: "trailing slash base", base: "/static/", candidate: "/static/x", want: true}}
-//line stdlib/url/url_test.kuki:192
-	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:193
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line stdlib/url/url_test.kuki:194
-			got := url.IsSubpath(tc.base, tc.candidate)
+		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/url/url_test.kuki:195
+			got := url.IsSubpath(tc.base, tc.candidate)
+//line stdlib/url/url_test.kuki:196
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
+}
+
+//line stdlib/url/url_test.kuki:200
+func TestMustParse(t *testing.T) {
+//line stdlib/url/url_test.kuki:201
+	t.Run("MustParse success", func(t *testing.T) {
+//line stdlib/url/url_test.kuki:202
+		u := url.MustParse("https://example.com/p?q=hi")
+//line stdlib/url/url_test.kuki:203
+		test.AssertEqual(t, u.Scheme, "https")
+//line stdlib/url/url_test.kuki:204
+		test.AssertEqual(t, u.Host, "example.com")
+//line stdlib/url/url_test.kuki:205
+		test.AssertEqual(t, u.Path, "/p")
+//line stdlib/url/url_test.kuki:206
+		test.AssertEqual(t, u.Params["q"], "hi")
+	})
+//line stdlib/url/url_test.kuki:209
+	t.Run("MustParse panic", func(t *testing.T) {
+//line stdlib/url/url_test.kuki:210
+		defer func() {
+//line stdlib/url/url_test.kuki:211
+			r := recover()
+//line stdlib/url/url_test.kuki:212
+			if r == nil {
+//line stdlib/url/url_test.kuki:213
+				t.Error("expected panic")
+			} else if s, _isOk := r.(string); _isOk {
+//line stdlib/url/url_test.kuki:215
+				if !kukistring.HasPrefix(s, "url: invalid URL") {
+//line stdlib/url/url_test.kuki:216
+					t.Errorf("unexpected panic message: %s", s)
+				}
+			} else {
+//line stdlib/url/url_test.kuki:218
+				t.Errorf("expected panic value to be string, got: %T", r)
+			}
+		}()
+//line stdlib/url/url_test.kuki:220
+		url.MustParse("://not a url")
+	})
+//line stdlib/url/url_test.kuki:223
+	t.Run("MustParseMulti success", func(t *testing.T) {
+//line stdlib/url/url_test.kuki:224
+		u := url.MustParseMulti("https://example.com/p?tag=a&tag=b")
+//line stdlib/url/url_test.kuki:225
+		test.AssertEqual(t, u.Scheme, "https")
+//line stdlib/url/url_test.kuki:226
+		test.AssertEqual(t, u.Host, "example.com")
+//line stdlib/url/url_test.kuki:227
+		test.AssertEqual(t, u.Path, "/p")
+//line stdlib/url/url_test.kuki:228
+		test.AssertEqual(t, len(u.Params["tag"]), 2)
+	})
+//line stdlib/url/url_test.kuki:231
+	t.Run("MustParseMulti panic", func(t *testing.T) {
+//line stdlib/url/url_test.kuki:232
+		defer func() {
+//line stdlib/url/url_test.kuki:233
+			r := recover()
+//line stdlib/url/url_test.kuki:234
+			if r == nil {
+//line stdlib/url/url_test.kuki:235
+				t.Error("expected panic")
+			} else if s, _isOk := r.(string); _isOk {
+//line stdlib/url/url_test.kuki:237
+				if !kukistring.HasPrefix(s, "url: invalid URL") {
+//line stdlib/url/url_test.kuki:238
+					t.Errorf("unexpected panic message: %s", s)
+				}
+			} else {
+//line stdlib/url/url_test.kuki:240
+				t.Errorf("expected panic value to be string, got: %T", r)
+			}
+		}()
+//line stdlib/url/url_test.kuki:242
+		url.MustParseMulti("://not a url")
+	})
 }

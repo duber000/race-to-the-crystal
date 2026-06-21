@@ -175,9 +175,9 @@ func WithContext(c Client, h ctxpkg.Handle) Client {
 func EmbedOne(c Client, text string) ([]float32, error) {
 //line stdlib/llm/embeddings/embeddings.kuki:148
 	resp, err_1 := executeRaw(c, text)
-//line stdlib/llm/embeddings/embeddings.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:148
 	if err_1 != nil {
-//line stdlib/llm/embeddings/embeddings.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:148
 		return []float32{}, err_1
 	}
 //line stdlib/llm/embeddings/embeddings.kuki:149
@@ -193,9 +193,9 @@ func EmbedOne(c Client, text string) ([]float32, error) {
 func EmbedBatch(c Client, texts []string) ([][]float32, error) {
 //line stdlib/llm/embeddings/embeddings.kuki:155
 	resp, err_2 := executeRaw(c, texts)
-//line stdlib/llm/embeddings/embeddings.kuki:155
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:155
 	if err_2 != nil {
-//line stdlib/llm/embeddings/embeddings.kuki:155
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:155
 		return [][]float32{}, err_2
 	}
 //line stdlib/llm/embeddings/embeddings.kuki:156
@@ -369,10 +369,10 @@ func executeRaw(c Client, input any) (Response, error) {
 	}
 //line stdlib/llm/embeddings/embeddings.kuki:238
 	resp, err_3 := fetch.Do(req)
-//line stdlib/llm/embeddings/embeddings.kuki:238
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:238
 	if err_3 != nil {
 		var _zero0 Response
-//line stdlib/llm/embeddings/embeddings.kuki:238
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:238
 		return _zero0, err_3
 	}
 //line stdlib/llm/embeddings/embeddings.kuki:239
@@ -385,12 +385,12 @@ func executeRaw(c Client, input any) (Response, error) {
 //line stdlib/llm/embeddings/embeddings.kuki:244
 	out := Response{}
 //line stdlib/llm/embeddings/embeddings.kuki:245
-//line stdlib/llm/embeddings/embeddings.kuki:245
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:245
 	err_4 := jsonpkg.ReadInto(resp.Body, &out)
-//line stdlib/llm/embeddings/embeddings.kuki:245
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:245
 	if err_4 != nil {
 		var _zero0 Response
-//line stdlib/llm/embeddings/embeddings.kuki:245
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:245
 		return _zero0, err_4
 	}
 //line stdlib/llm/embeddings/embeddings.kuki:246

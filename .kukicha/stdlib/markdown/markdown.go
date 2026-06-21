@@ -37,11 +37,11 @@ func ToHTMLWith(md string, opts Options) string {
 //line stdlib/markdown/markdown.kuki:50
 	buf := bytes.Buffer{}
 //line stdlib/markdown/markdown.kuki:53
-//line stdlib/markdown/markdown.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
 	err_1 := md_engine.Convert([]byte(md), &buf)
-//line stdlib/markdown/markdown.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
 	if err_1 != nil {
-//line stdlib/markdown/markdown.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
 		return ""
 	}
 //line stdlib/markdown/markdown.kuki:54

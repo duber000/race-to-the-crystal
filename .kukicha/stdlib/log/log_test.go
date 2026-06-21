@@ -16,9 +16,9 @@ import (
 func captureToFile(t *testing.T) (*os.File, string) {
 //line stdlib/log/log_test.kuki:16
 	f, err_1 := os.CreateTemp("", "kuki-log-test-*.log")
-//line stdlib/log/log_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:16
 	if err_1 != nil {
-//line stdlib/log/log_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:16
 		panic("CreateTemp failed")
 	}
 //line stdlib/log/log_test.kuki:17
@@ -29,9 +29,9 @@ func captureToFile(t *testing.T) (*os.File, string) {
 func readAll(t *testing.T, path string) string {
 //line stdlib/log/log_test.kuki:21
 	bytes, err_2 := os.ReadFile(path)
-//line stdlib/log/log_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:21
 	if err_2 != nil {
-//line stdlib/log/log_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:21
 		panic("ReadFile failed")
 	}
 //line stdlib/log/log_test.kuki:22

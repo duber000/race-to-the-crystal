@@ -41,23 +41,23 @@ func Parse(tag string) (Version, error) {
 	}
 //line stdlib/semver/semver.kuki:39
 	major, err_1 := strconv.Atoi(parts[0])
-//line stdlib/semver/semver.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:39
 	if err_1 != nil {
-//line stdlib/semver/semver.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:39
 		return Version{}, fmt.Errorf("invalid semver: %v", tag)
 	}
 //line stdlib/semver/semver.kuki:40
 	minor, err_2 := strconv.Atoi(parts[1])
-//line stdlib/semver/semver.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:40
 	if err_2 != nil {
-//line stdlib/semver/semver.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:40
 		return Version{}, fmt.Errorf("invalid semver: %v", tag)
 	}
 //line stdlib/semver/semver.kuki:41
 	patch, err_3 := strconv.Atoi(parts[2])
-//line stdlib/semver/semver.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:41
 	if err_3 != nil {
-//line stdlib/semver/semver.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:41
 		return Version{}, fmt.Errorf("invalid semver: %v", tag)
 	}
 //line stdlib/semver/semver.kuki:43
@@ -102,11 +102,11 @@ func Format(v Version) string {
 //line stdlib/semver/semver.kuki:72
 func Valid(tag string) bool {
 //line stdlib/semver/semver.kuki:73
-//line stdlib/semver/semver.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:73
 	_, err_4 := Parse(tag)
-//line stdlib/semver/semver.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:73
 	if err_4 != nil {
-//line stdlib/semver/semver.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:73
 		return false
 	}
 //line stdlib/semver/semver.kuki:74
@@ -170,9 +170,9 @@ func Highest(tags []string) (string, error) {
 	for _, tag := range valid {
 //line stdlib/semver/semver.kuki:108
 		v, err_5 := Parse(tag)
-//line stdlib/semver/semver.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:108
 		if err_5 != nil {
-//line stdlib/semver/semver.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver.kuki:108
 			//line stdlib/semver/semver.kuki:109
 			continue
 		}

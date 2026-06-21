@@ -889,11 +889,11 @@ func (args Args) Respond(data any) {
 //line stdlib/cli/cli.kuki:677
 	if IsJSON(args) {
 //line stdlib/cli/cli.kuki:678
-//line stdlib/cli/cli.kuki:678
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:678
 		err_1 := json.WriteOutput(data)
-//line stdlib/cli/cli.kuki:678
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:678
 		if err_1 != nil {
-//line stdlib/cli/cli.kuki:678
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:678
 			//line stdlib/cli/cli.kuki:679
 			Fatal(fmt.Sprintf("failed to encode json: %v", err_1))
 			//line stdlib/cli/cli.kuki:680
@@ -995,9 +995,9 @@ func GetIntOr(args Args, name string, defaultVal int) int {
 	}
 //line stdlib/cli/cli.kuki:737
 	n, err_2 := strconv.Atoi(strVal)
-//line stdlib/cli/cli.kuki:737
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:737
 	if err_2 != nil {
-//line stdlib/cli/cli.kuki:737
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:737
 		n = defaultVal
 	}
 //line stdlib/cli/cli.kuki:738

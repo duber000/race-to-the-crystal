@@ -23,41 +23,41 @@ type User struct {
 func setupTestDB(t *testing.T) db.Pool {
 //line stdlib/db/db_test.kuki:19
 	pool, err_1 := db.Open("sqlite3", ":memory:")
-//line stdlib/db/db_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:19
 	if err_1 != nil {
-//line stdlib/db/db_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:19
 		panic(fmt.Sprintf("open failed: %v", err_1))
 	}
 //line stdlib/db/db_test.kuki:20
-//line stdlib/db/db_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:20
 	_, err_2 := db.Exec(pool, "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)")
-//line stdlib/db/db_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:20
 	if err_2 != nil {
-//line stdlib/db/db_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:20
 		panic(fmt.Sprintf("create failed: %v", err_2))
 	}
 //line stdlib/db/db_test.kuki:21
-//line stdlib/db/db_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:21
 	_, err_3 := db.Exec(pool, "INSERT INTO users (id, name, email) VALUES (?, ?, ?)", 1, "Alice", "alice@example.com")
-//line stdlib/db/db_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:27
 	if err_3 != nil {
-//line stdlib/db/db_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:27
 		panic(fmt.Sprintf("insert failed: %v", err_3))
 	}
 //line stdlib/db/db_test.kuki:28
-//line stdlib/db/db_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:28
 	_, err_4 := db.Exec(pool, "INSERT INTO users (id, name, email) VALUES (?, ?, ?)", 2, "Bob", "bob@example.com")
-//line stdlib/db/db_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:34
 	if err_4 != nil {
-//line stdlib/db/db_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:34
 		panic(fmt.Sprintf("insert failed: %v", err_4))
 	}
 //line stdlib/db/db_test.kuki:35
-//line stdlib/db/db_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:35
 	_, err_5 := db.Exec(pool, "INSERT INTO users (id, name, email) VALUES (?, ?, ?)", 3, "Charlie", "charlie@example.com")
-//line stdlib/db/db_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:41
 	if err_5 != nil {
-//line stdlib/db/db_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:41
 		panic(fmt.Sprintf("insert failed: %v", err_5))
 	}
 //line stdlib/db/db_test.kuki:42
@@ -79,9 +79,9 @@ func TestOpenAndClose(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/db/db_test.kuki:53
 			pool, err_6 := db.Open("sqlite3", ":memory:")
-//line stdlib/db/db_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:53
 			if err_6 != nil {
-//line stdlib/db/db_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:53
 				panic(fmt.Sprintf("open: %v", err_6))
 			}
 //line stdlib/db/db_test.kuki:54
@@ -140,9 +140,9 @@ func TestExec(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/db/db_test.kuki:97
 			affected, err_7 := db.Exec(pool, tc.query)
-//line stdlib/db/db_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:97
 			if err_7 != nil {
-//line stdlib/db/db_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:97
 				panic(fmt.Sprintf("exec: %v", err_7))
 			}
 //line stdlib/db/db_test.kuki:98
@@ -172,19 +172,19 @@ func TestScanAll(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/db/db_test.kuki:130
 			// pipe step 1: db.Query(...)
-//line stdlib/db/db_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:130
 			pipe_8, err_9 := db.Query(pool, tc.query)
-//line stdlib/db/db_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:130
 			if err_9 != nil {
-//line stdlib/db/db_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:130
 				panic(fmt.Sprintf("scan: %v", err_9))
 			}
 			// pipe step 2: db.ScanAll(...)
-//line stdlib/db/db_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:130
 			users, err_11 := db.ScanAll[User](pipe_8)
-//line stdlib/db/db_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:130
 			if err_11 != nil {
-//line stdlib/db/db_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:130
 				panic(fmt.Sprintf("scan: %v", err_11))
 			}
 //line stdlib/db/db_test.kuki:131
@@ -212,19 +212,19 @@ func TestScanAllValues(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/db/db_test.kuki:145
 			// pipe step 1: db.Query(...)
-//line stdlib/db/db_test.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:145
 			pipe_12, err_13 := db.Query(pool, "SELECT id, name, email FROM users WHERE id = 1")
-//line stdlib/db/db_test.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:146
 			if err_13 != nil {
-//line stdlib/db/db_test.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:146
 				panic(fmt.Sprintf("scan: %v", err_13))
 			}
 			// pipe step 2: db.ScanAll(...)
-//line stdlib/db/db_test.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:146
 			users, err_15 := db.ScanAll[User](pipe_12)
-//line stdlib/db/db_test.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:146
 			if err_15 != nil {
-//line stdlib/db/db_test.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:146
 				panic(fmt.Sprintf("scan: %v", err_15))
 			}
 //line stdlib/db/db_test.kuki:148
@@ -297,9 +297,9 @@ func TestScanRow(t *testing.T) {
 			row := db.QueryRow(pool, "SELECT id, name, email FROM users WHERE id = 1")
 //line stdlib/db/db_test.kuki:199
 			user, err_16 := db.ScanRow[User](row)
-//line stdlib/db/db_test.kuki:199
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:199
 			if err_16 != nil {
-//line stdlib/db/db_test.kuki:199
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:199
 				panic(fmt.Sprintf("scan: %v", err_16))
 			}
 //line stdlib/db/db_test.kuki:200
@@ -336,9 +336,9 @@ func TestTransaction(t *testing.T) {
 			test.AssertNoError(t, err)
 //line stdlib/db/db_test.kuki:227
 			found, err_17 := db.Exists(pool, "SELECT 1 FROM users WHERE id = 4")
-//line stdlib/db/db_test.kuki:227
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:227
 			if err_17 != nil {
-//line stdlib/db/db_test.kuki:227
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:227
 				panic(fmt.Sprintf("exists: %v", err_17))
 			}
 //line stdlib/db/db_test.kuki:228
@@ -375,9 +375,9 @@ func TestTransactionRollback(t *testing.T) {
 			test.AssertError(t, err)
 //line stdlib/db/db_test.kuki:255
 			found, err_18 := db.Exists(pool, "SELECT 1 FROM users WHERE id = 5")
-//line stdlib/db/db_test.kuki:255
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:255
 			if err_18 != nil {
-//line stdlib/db/db_test.kuki:255
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:255
 				panic(fmt.Sprintf("exists: %v", err_18))
 			}
 //line stdlib/db/db_test.kuki:256
@@ -407,9 +407,9 @@ func TestCount(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/db/db_test.kuki:275
 			n, err_19 := db.Count(pool, tc.query)
-//line stdlib/db/db_test.kuki:275
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:275
 			if err_19 != nil {
-//line stdlib/db/db_test.kuki:275
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:275
 				panic(fmt.Sprintf("count: %v", err_19))
 			}
 //line stdlib/db/db_test.kuki:276
@@ -439,9 +439,9 @@ func TestExists(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/db/db_test.kuki:299
 			found, err_20 := db.Exists(pool, tc.query)
-//line stdlib/db/db_test.kuki:299
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:299
 			if err_20 != nil {
-//line stdlib/db/db_test.kuki:299
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:299
 				panic(fmt.Sprintf("exists: %v", err_20))
 			}
 //line stdlib/db/db_test.kuki:300
@@ -466,27 +466,27 @@ type NullCase struct {
 func TestNullHandling(t *testing.T) {
 //line stdlib/db/db_test.kuki:313
 	pool, err_21 := db.Open("sqlite3", ":memory:")
-//line stdlib/db/db_test.kuki:313
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:313
 	if err_21 != nil {
-//line stdlib/db/db_test.kuki:313
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:313
 		panic(fmt.Sprintf("open: %v", err_21))
 	}
 //line stdlib/db/db_test.kuki:314
 	defer db.Close(pool)
 //line stdlib/db/db_test.kuki:315
-//line stdlib/db/db_test.kuki:315
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:315
 	_, err_22 := db.Exec(pool, "CREATE TABLE null_test (id INTEGER PRIMARY KEY, name TEXT, bio TEXT)")
-//line stdlib/db/db_test.kuki:315
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:315
 	if err_22 != nil {
-//line stdlib/db/db_test.kuki:315
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:315
 		panic(fmt.Sprintf("create: %v", err_22))
 	}
 //line stdlib/db/db_test.kuki:316
-//line stdlib/db/db_test.kuki:316
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:316
 	_, err_23 := db.Exec(pool, "INSERT INTO null_test (id, name) VALUES (?, ?)", 1, "Alice")
-//line stdlib/db/db_test.kuki:316
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:316
 	if err_23 != nil {
-//line stdlib/db/db_test.kuki:316
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:316
 		panic(fmt.Sprintf("insert: %v", err_23))
 	}
 //line stdlib/db/db_test.kuki:318
@@ -499,9 +499,9 @@ func TestNullHandling(t *testing.T) {
 			row := db.QueryRow(pool, "SELECT id, name, bio FROM null_test WHERE id = 1")
 //line stdlib/db/db_test.kuki:323
 			user, err_24 := db.ScanRow[NullUser](row)
-//line stdlib/db/db_test.kuki:323
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:323
 			if err_24 != nil {
-//line stdlib/db/db_test.kuki:323
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:323
 				panic(fmt.Sprintf("scan: %v", err_24))
 			}
 //line stdlib/db/db_test.kuki:324
@@ -524,19 +524,19 @@ func TestQueryCtx(t *testing.T) {
 	defer h.Cancel()
 //line stdlib/db/db_test.kuki:335
 	// pipe step 1: db.QueryCtx(...)
-//line stdlib/db/db_test.kuki:335
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:335
 	pipe_25, err_26 := db.QueryCtx(h, pool, "SELECT id, name, email FROM users WHERE id = 1")
-//line stdlib/db/db_test.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:336
 	if err_26 != nil {
-//line stdlib/db/db_test.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:336
 		panic(fmt.Sprintf("scan: %v", err_26))
 	}
 	// pipe step 2: db.ScanAll(...)
-//line stdlib/db/db_test.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:336
 	users, err_28 := db.ScanAll[User](pipe_25)
-//line stdlib/db/db_test.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:336
 	if err_28 != nil {
-//line stdlib/db/db_test.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:336
 		panic(fmt.Sprintf("scan: %v", err_28))
 	}
 //line stdlib/db/db_test.kuki:337
@@ -555,9 +555,9 @@ func TestExecCtx(t *testing.T) {
 	defer h.Cancel()
 //line stdlib/db/db_test.kuki:346
 	affected, err_29 := db.ExecCtx(h, pool, "UPDATE users SET name = 'Alice3' WHERE id = 1")
-//line stdlib/db/db_test.kuki:346
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:346
 	if err_29 != nil {
-//line stdlib/db/db_test.kuki:346
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:346
 		panic(fmt.Sprintf("exec: %v", err_29))
 	}
 //line stdlib/db/db_test.kuki:347
@@ -572,9 +572,9 @@ func TestLastInsertId(t *testing.T) {
 	defer db.Close(pool)
 //line stdlib/db/db_test.kuki:354
 	id, err_30 := db.LastInsertId(pool, "INSERT INTO users (name, email) VALUES (?, ?)", "Dave", "dave@example.com")
-//line stdlib/db/db_test.kuki:359
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:359
 	if err_30 != nil {
-//line stdlib/db/db_test.kuki:359
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:359
 		panic(fmt.Sprintf("exec: %v", err_30))
 	}
 //line stdlib/db/db_test.kuki:360
@@ -591,52 +591,52 @@ type BoolRow struct {
 func TestBoolScan(t *testing.T) {
 //line stdlib/db/db_test.kuki:369
 	pool, err_31 := db.Open("sqlite3", ":memory:")
-//line stdlib/db/db_test.kuki:369
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:369
 	if err_31 != nil {
-//line stdlib/db/db_test.kuki:369
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:369
 		panic(fmt.Sprintf("open: %v", err_31))
 	}
 //line stdlib/db/db_test.kuki:370
 	defer db.Close(pool)
 //line stdlib/db/db_test.kuki:371
-//line stdlib/db/db_test.kuki:371
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:371
 	_, err_32 := db.Exec(pool, "CREATE TABLE flags (id INTEGER PRIMARY KEY, active INTEGER NOT NULL)")
-//line stdlib/db/db_test.kuki:371
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:371
 	if err_32 != nil {
-//line stdlib/db/db_test.kuki:371
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:371
 		panic(fmt.Sprintf("create: %v", err_32))
 	}
 //line stdlib/db/db_test.kuki:372
-//line stdlib/db/db_test.kuki:372
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:372
 	_, err_33 := db.Exec(pool, "INSERT INTO flags (id, active) VALUES (1, 1)")
-//line stdlib/db/db_test.kuki:372
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:372
 	if err_33 != nil {
-//line stdlib/db/db_test.kuki:372
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:372
 		panic(fmt.Sprintf("insert true: %v", err_33))
 	}
 //line stdlib/db/db_test.kuki:373
-//line stdlib/db/db_test.kuki:373
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:373
 	_, err_34 := db.Exec(pool, "INSERT INTO flags (id, active) VALUES (2, 0)")
-//line stdlib/db/db_test.kuki:373
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:373
 	if err_34 != nil {
-//line stdlib/db/db_test.kuki:373
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:373
 		panic(fmt.Sprintf("insert false: %v", err_34))
 	}
 //line stdlib/db/db_test.kuki:375
 	// pipe step 1: db.Query(...)
-//line stdlib/db/db_test.kuki:375
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:375
 	pipe_35, err_36 := db.Query(pool, "SELECT id, active FROM flags ORDER BY id")
-//line stdlib/db/db_test.kuki:375
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:375
 	if err_36 != nil {
-//line stdlib/db/db_test.kuki:375
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:375
 		panic(fmt.Sprintf("scan: %v", err_36))
 	}
 	// pipe step 2: db.ScanAll(...)
-//line stdlib/db/db_test.kuki:375
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:375
 	rows, err_38 := db.ScanAll[BoolRow](pipe_35)
-//line stdlib/db/db_test.kuki:375
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:375
 	if err_38 != nil {
-//line stdlib/db/db_test.kuki:375
+//line /Users/tluker/repos/go/kukicha/stdlib/db/db_test.kuki:375
 		panic(fmt.Sprintf("scan: %v", err_38))
 	}
 //line stdlib/db/db_test.kuki:376

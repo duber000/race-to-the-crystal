@@ -68,9 +68,9 @@ func Check(name string, args ...string) error {
 func Lines(name string, args ...string) ([]string, error) {
 //line stdlib/shell/shell.kuki:68
 	out, err_1 := Output(name, args...)
-//line stdlib/shell/shell.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:68
 	if err_1 != nil {
-//line stdlib/shell/shell.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:68
 		return []string{}, err_1
 	}
 //line stdlib/shell/shell.kuki:69

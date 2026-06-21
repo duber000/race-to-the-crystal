@@ -113,9 +113,9 @@ func Log(logger Logger, level string, message string, fields Fields) {
 	}
 //line stdlib/obs/obs.kuki:86
 	line, err_1 := json.Bytes(payload)
-//line stdlib/obs/obs.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:86
 	if err_1 != nil {
-//line stdlib/obs/obs.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:86
 		//line stdlib/obs/obs.kuki:87
 		fmt.Fprintf(os.Stderr, "[obs:%s] %s\n", level, message)
 		//line stdlib/obs/obs.kuki:88

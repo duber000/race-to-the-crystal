@@ -16,9 +16,9 @@ import (
 func writeTempFile(t *testing.T, content string) (*os.File, string) {
 //line stdlib/input/input_test.kuki:16
 	f, err_1 := os.CreateTemp("", "kuki-input-test-*.txt")
-//line stdlib/input/input_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:16
 	if err_1 != nil {
-//line stdlib/input/input_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:16
 		panic("CreateTemp failed")
 	}
 //line stdlib/input/input_test.kuki:17
@@ -27,9 +27,9 @@ func writeTempFile(t *testing.T, content string) (*os.File, string) {
 	_ = f.Close()
 //line stdlib/input/input_test.kuki:19
 	g, err_2 := os.Open(f.Name())
-//line stdlib/input/input_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:19
 	if err_2 != nil {
-//line stdlib/input/input_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:19
 		panic("Open failed")
 	}
 //line stdlib/input/input_test.kuki:20
@@ -40,9 +40,9 @@ func writeTempFile(t *testing.T, content string) (*os.File, string) {
 func discardWriter(t *testing.T) *os.File {
 //line stdlib/input/input_test.kuki:26
 	f, err_3 := os.OpenFile("/dev/null", os.O_WRONLY, 0)
-//line stdlib/input/input_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:26
 	if err_3 != nil {
-//line stdlib/input/input_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:26
 		//line stdlib/input/input_test.kuki:27
 		return os.Stdout
 	}
@@ -73,11 +73,11 @@ func TestFormHappyPath(t *testing.T) {
 //line stdlib/input/input_test.kuki:44
 	f.Choose("repo", "repo?", []string{"api", "web", "infra"})
 //line stdlib/input/input_test.kuki:46
-//line stdlib/input/input_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:46
 	err_4 := f.Run()
-//line stdlib/input/input_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:46
 	if err_4 != nil {
-//line stdlib/input/input_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:46
 		panic("Run failed")
 	}
 //line stdlib/input/input_test.kuki:48
@@ -117,11 +117,11 @@ func TestFormValidatorRetries(t *testing.T) {
 		}()
 	})
 //line stdlib/input/input_test.kuki:67
-//line stdlib/input/input_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:67
 	err_5 := f.Run()
-//line stdlib/input/input_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:67
 	if err_5 != nil {
-//line stdlib/input/input_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:67
 		panic("Run failed")
 	}
 //line stdlib/input/input_test.kuki:68
@@ -147,11 +147,11 @@ func TestFormConfirmFalse(t *testing.T) {
 //line stdlib/input/input_test.kuki:81
 	f.Confirm("agree", "ok? ")
 //line stdlib/input/input_test.kuki:82
-//line stdlib/input/input_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:82
 	err_6 := f.Run()
-//line stdlib/input/input_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:82
 	if err_6 != nil {
-//line stdlib/input/input_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:82
 		panic("Run failed")
 	}
 //line stdlib/input/input_test.kuki:83
@@ -183,11 +183,11 @@ func TestFormDefault(t *testing.T) {
 //line stdlib/input/input_test.kuki:100
 	f.Default("port", "8080")
 //line stdlib/input/input_test.kuki:102
-//line stdlib/input/input_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:102
 	err_7 := f.Run()
-//line stdlib/input/input_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:102
 	if err_7 != nil {
-//line stdlib/input/input_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:102
 		panic("Run failed")
 	}
 //line stdlib/input/input_test.kuki:103

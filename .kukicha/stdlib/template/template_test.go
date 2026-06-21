@@ -65,9 +65,9 @@ func TestHTML(t *testing.T) {
 func TestCompileRender(t *testing.T) {
 //line stdlib/template/template_test.kuki:61
 	tmpl, err_1 := template.Compile("greeting", `hi {{.Name}}`)
-//line stdlib/template/template_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:61
 	if err_1 != nil {
-//line stdlib/template/template_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:61
 		//line stdlib/template/template_test.kuki:62
 		t.Fatalf("New failed: %v", err_1)
 		//line stdlib/template/template_test.kuki:63
@@ -97,9 +97,9 @@ func TestCompileRender(t *testing.T) {
 func TestCompileHTMLRender(t *testing.T) {
 //line stdlib/template/template_test.kuki:78
 	page, err_2 := template.CompileHTML("page", `<b>{{.X}}</b>`)
-//line stdlib/template/template_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:78
 	if err_2 != nil {
-//line stdlib/template/template_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:78
 		//line stdlib/template/template_test.kuki:79
 		t.Fatalf("NewHTML failed: %v", err_2)
 		//line stdlib/template/template_test.kuki:80

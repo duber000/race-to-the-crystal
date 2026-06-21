@@ -82,9 +82,9 @@ func TestParse(t *testing.T) {
 	t.Run("date format", func(t *testing.T) {
 //line stdlib/datetime/datetime_test.kuki:63
 		t1, err_1 := datetime.Parse("2024-01-15", "date")
-//line stdlib/datetime/datetime_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:63
 		if err_1 != nil {
-//line stdlib/datetime/datetime_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:63
 			panic(fmt.Sprintf("parse failed: %v", err_1))
 		}
 //line stdlib/datetime/datetime_test.kuki:64
@@ -98,9 +98,9 @@ func TestParse(t *testing.T) {
 	t.Run("time format", func(t *testing.T) {
 //line stdlib/datetime/datetime_test.kuki:70
 		t2, err_2 := datetime.Parse("14:30:45", "time")
-//line stdlib/datetime/datetime_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:70
 		if err_2 != nil {
-//line stdlib/datetime/datetime_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:70
 			panic(fmt.Sprintf("parse failed: %v", err_2))
 		}
 //line stdlib/datetime/datetime_test.kuki:71
@@ -114,9 +114,9 @@ func TestParse(t *testing.T) {
 	t.Run("custom format", func(t *testing.T) {
 //line stdlib/datetime/datetime_test.kuki:77
 		t3, err_3 := datetime.Parse("2024/01/15", "2006/01/02")
-//line stdlib/datetime/datetime_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:77
 		if err_3 != nil {
-//line stdlib/datetime/datetime_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:77
 			panic(fmt.Sprintf("parse failed: %v", err_3))
 		}
 //line stdlib/datetime/datetime_test.kuki:78
@@ -134,9 +134,9 @@ func TestParseInLocation(t *testing.T) {
 	t.Run("New York timezone", func(t *testing.T) {
 //line stdlib/datetime/datetime_test.kuki:86
 		tt, err_4 := datetime.ParseInLocation("2024-01-15 14:30:00", "datetime", "America/New_York")
-//line stdlib/datetime/datetime_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:86
 		if err_4 != nil {
-//line stdlib/datetime/datetime_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:86
 			panic(fmt.Sprintf("parse failed: %v", err_4))
 		}
 //line stdlib/datetime/datetime_test.kuki:87
@@ -373,9 +373,9 @@ func TestTimezoneHelpers(t *testing.T) {
 	t.Run("InLocation New York", func(t *testing.T) {
 //line stdlib/datetime/datetime_test.kuki:270
 		ny, err_5 := datetime.InLocation(tt, "America/New_York")
-//line stdlib/datetime/datetime_test.kuki:270
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:270
 		if err_5 != nil {
-//line stdlib/datetime/datetime_test.kuki:270
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:270
 			panic(fmt.Sprintf("location failed: %v", err_5))
 		}
 //line stdlib/datetime/datetime_test.kuki:271
@@ -434,9 +434,9 @@ func TestNowISO(t *testing.T) {
 		s := datetime.NowISO()
 //line stdlib/datetime/datetime_test.kuki:309
 		parsed, err_6 := time.Parse(time.RFC3339, s)
-//line stdlib/datetime/datetime_test.kuki:309
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:309
 		if err_6 != nil {
-//line stdlib/datetime/datetime_test.kuki:309
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:309
 			panic(fmt.Sprintf("parse: %v", err_6))
 		}
 //line stdlib/datetime/datetime_test.kuki:310

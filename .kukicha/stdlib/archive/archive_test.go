@@ -18,22 +18,22 @@ func writeFixture(t *testing.T, dir string, name string, body string) {
 //line stdlib/archive/archive_test.kuki:14
 	full := filepath.Join(dir, name)
 //line stdlib/archive/archive_test.kuki:15
-//line stdlib/archive/archive_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:15
 	err_1 := files.MkDirAll(filepath.Dir(full))
-//line stdlib/archive/archive_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:15
 	if err_1 != nil {
-//line stdlib/archive/archive_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:15
 		//line stdlib/archive/archive_test.kuki:16
 		t.Fatal(fmt.Sprintf("mkdir %v: %v", filepath.Dir(full), err_1))
 		//line stdlib/archive/archive_test.kuki:17
 		return
 	}
 //line stdlib/archive/archive_test.kuki:19
-//line stdlib/archive/archive_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:19
 	err_2 := os.WriteFile(full, []byte(body), 0o644)
-//line stdlib/archive/archive_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:19
 	if err_2 != nil {
-//line stdlib/archive/archive_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:19
 		//line stdlib/archive/archive_test.kuki:20
 		t.Fatal(fmt.Sprintf("write %v: %v", full, err_2))
 		//line stdlib/archive/archive_test.kuki:21
@@ -48,11 +48,11 @@ func TestZipRoundTrip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:25
 	src := filepath.Join(tmp, "src")
 //line stdlib/archive/archive_test.kuki:26
-//line stdlib/archive/archive_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:26
 	err_3 := files.MkDirAll(src)
-//line stdlib/archive/archive_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:26
 	if err_3 != nil {
-//line stdlib/archive/archive_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:26
 		//line stdlib/archive/archive_test.kuki:27
 		t.Fatal(fmt.Sprintf("mkdir src: %v", err_3))
 		//line stdlib/archive/archive_test.kuki:28
@@ -64,20 +64,20 @@ func TestZipRoundTrip(t *testing.T) {
 	writeFixture(t, src, "data.json", `{"ok":true}`)
 //line stdlib/archive/archive_test.kuki:34
 	cwd, err_4 := os.Getwd()
-//line stdlib/archive/archive_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:34
 	if err_4 != nil {
-//line stdlib/archive/archive_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:34
 		//line stdlib/archive/archive_test.kuki:35
 		t.Fatal(fmt.Sprintf("getwd: %v", err_4))
 		//line stdlib/archive/archive_test.kuki:36
 		return
 	}
 //line stdlib/archive/archive_test.kuki:38
-//line stdlib/archive/archive_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:38
 	err_5 := os.Chdir(tmp)
-//line stdlib/archive/archive_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:38
 	if err_5 != nil {
-//line stdlib/archive/archive_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:38
 		//line stdlib/archive/archive_test.kuki:39
 		t.Fatal(fmt.Sprintf("chdir: %v", err_5))
 		//line stdlib/archive/archive_test.kuki:40
@@ -88,11 +88,11 @@ func TestZipRoundTrip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:44
 	rel := []string{filepath.Join("src", "hello.txt"), filepath.Join("src", "data.json")}
 //line stdlib/archive/archive_test.kuki:48
-//line stdlib/archive/archive_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:48
 	err_6 := archive.WriteZip("out.zip", rel)
-//line stdlib/archive/archive_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:48
 	if err_6 != nil {
-//line stdlib/archive/archive_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:48
 		//line stdlib/archive/archive_test.kuki:49
 		t.Fatal(fmt.Sprintf("WriteZip: %v", err_6))
 		//line stdlib/archive/archive_test.kuki:50
@@ -100,9 +100,9 @@ func TestZipRoundTrip(t *testing.T) {
 	}
 //line stdlib/archive/archive_test.kuki:52
 	entries, err_7 := archive.List("out.zip")
-//line stdlib/archive/archive_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:52
 	if err_7 != nil {
-//line stdlib/archive/archive_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:52
 		//line stdlib/archive/archive_test.kuki:53
 		t.Fatal(fmt.Sprintf("List: %v", err_7))
 		//line stdlib/archive/archive_test.kuki:54
@@ -112,9 +112,9 @@ func TestZipRoundTrip(t *testing.T) {
 	test.AssertEqual(t, len(entries), 2)
 //line stdlib/archive/archive_test.kuki:58
 	body, err_8 := archive.ReadEntry("out.zip", "src/hello.txt")
-//line stdlib/archive/archive_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:58
 	if err_8 != nil {
-//line stdlib/archive/archive_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:58
 		//line stdlib/archive/archive_test.kuki:59
 		t.Fatal(fmt.Sprintf("ReadEntry: %v", err_8))
 		//line stdlib/archive/archive_test.kuki:60
@@ -123,11 +123,11 @@ func TestZipRoundTrip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:62
 	test.AssertEqual(t, string(body), "hello world")
 //line stdlib/archive/archive_test.kuki:64
-//line stdlib/archive/archive_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:64
 	err_9 := archive.Extract("out.zip", "extracted")
-//line stdlib/archive/archive_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:64
 	if err_9 != nil {
-//line stdlib/archive/archive_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:64
 		//line stdlib/archive/archive_test.kuki:65
 		t.Fatal(fmt.Sprintf("Extract: %v", err_9))
 		//line stdlib/archive/archive_test.kuki:66
@@ -135,9 +135,9 @@ func TestZipRoundTrip(t *testing.T) {
 	}
 //line stdlib/archive/archive_test.kuki:68
 	extracted, err_10 := files.ReadString(filepath.Join("extracted", "src", "hello.txt"))
-//line stdlib/archive/archive_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:68
 	if err_10 != nil {
-//line stdlib/archive/archive_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:68
 		//line stdlib/archive/archive_test.kuki:69
 		t.Fatal(fmt.Sprintf("read extracted: %v", err_10))
 		//line stdlib/archive/archive_test.kuki:70
@@ -154,11 +154,11 @@ func TestTarGzRoundTrip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:76
 	src := filepath.Join(tmp, "src")
 //line stdlib/archive/archive_test.kuki:77
-//line stdlib/archive/archive_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:77
 	err_11 := files.MkDirAll(filepath.Join(src, "sub"))
-//line stdlib/archive/archive_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:77
 	if err_11 != nil {
-//line stdlib/archive/archive_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:77
 		//line stdlib/archive/archive_test.kuki:78
 		t.Fatal(fmt.Sprintf("mkdir src: %v", err_11))
 		//line stdlib/archive/archive_test.kuki:79
@@ -171,11 +171,11 @@ func TestTarGzRoundTrip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:84
 	archivePath := filepath.Join(tmp, "out.tar.gz")
 //line stdlib/archive/archive_test.kuki:85
-//line stdlib/archive/archive_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:85
 	err_12 := archive.WriteTarGz(archivePath, src)
-//line stdlib/archive/archive_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:85
 	if err_12 != nil {
-//line stdlib/archive/archive_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:85
 		//line stdlib/archive/archive_test.kuki:86
 		t.Fatal(fmt.Sprintf("WriteTarGz: %v", err_12))
 		//line stdlib/archive/archive_test.kuki:87
@@ -183,9 +183,9 @@ func TestTarGzRoundTrip(t *testing.T) {
 	}
 //line stdlib/archive/archive_test.kuki:89
 	entries, err_13 := archive.List(archivePath)
-//line stdlib/archive/archive_test.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:89
 	if err_13 != nil {
-//line stdlib/archive/archive_test.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:89
 		//line stdlib/archive/archive_test.kuki:90
 		t.Fatal(fmt.Sprintf("List: %v", err_13))
 		//line stdlib/archive/archive_test.kuki:91
@@ -195,9 +195,9 @@ func TestTarGzRoundTrip(t *testing.T) {
 	test.AssertTrue(t, len(entries) >= 3)
 //line stdlib/archive/archive_test.kuki:95
 	body, err_14 := archive.ReadEntry(archivePath, "sub/nested.txt")
-//line stdlib/archive/archive_test.kuki:95
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:95
 	if err_14 != nil {
-//line stdlib/archive/archive_test.kuki:95
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:95
 		//line stdlib/archive/archive_test.kuki:96
 		t.Fatal(fmt.Sprintf("ReadEntry: %v", err_14))
 		//line stdlib/archive/archive_test.kuki:97
@@ -208,11 +208,11 @@ func TestTarGzRoundTrip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:101
 	dest := filepath.Join(tmp, "extracted")
 //line stdlib/archive/archive_test.kuki:102
-//line stdlib/archive/archive_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:102
 	err_15 := archive.Extract(archivePath, dest)
-//line stdlib/archive/archive_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:102
 	if err_15 != nil {
-//line stdlib/archive/archive_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:102
 		//line stdlib/archive/archive_test.kuki:103
 		t.Fatal(fmt.Sprintf("Extract: %v", err_15))
 		//line stdlib/archive/archive_test.kuki:104
@@ -220,9 +220,9 @@ func TestTarGzRoundTrip(t *testing.T) {
 	}
 //line stdlib/archive/archive_test.kuki:106
 	top, err_16 := files.ReadString(filepath.Join(dest, "top.txt"))
-//line stdlib/archive/archive_test.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:106
 	if err_16 != nil {
-//line stdlib/archive/archive_test.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:106
 		//line stdlib/archive/archive_test.kuki:107
 		t.Fatal(fmt.Sprintf("read top: %v", err_16))
 		//line stdlib/archive/archive_test.kuki:108
@@ -232,9 +232,9 @@ func TestTarGzRoundTrip(t *testing.T) {
 	test.AssertEqual(t, top, "top-level")
 //line stdlib/archive/archive_test.kuki:111
 	nested, err_17 := files.ReadString(filepath.Join(dest, "sub", "nested.txt"))
-//line stdlib/archive/archive_test.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:111
 	if err_17 != nil {
-//line stdlib/archive/archive_test.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:111
 		//line stdlib/archive/archive_test.kuki:112
 		t.Fatal(fmt.Sprintf("read nested: %v", err_17))
 		//line stdlib/archive/archive_test.kuki:113
@@ -268,20 +268,20 @@ func TestExtractLimitRejectsOversizedZip(t *testing.T) {
 	tmp := t.TempDir()
 //line stdlib/archive/archive_test.kuki:128
 	cwd, err_18 := os.Getwd()
-//line stdlib/archive/archive_test.kuki:128
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:128
 	if err_18 != nil {
-//line stdlib/archive/archive_test.kuki:128
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:128
 		//line stdlib/archive/archive_test.kuki:129
 		t.Fatal(fmt.Sprintf("getwd: %v", err_18))
 		//line stdlib/archive/archive_test.kuki:130
 		return
 	}
 //line stdlib/archive/archive_test.kuki:132
-//line stdlib/archive/archive_test.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:132
 	err_19 := os.Chdir(tmp)
-//line stdlib/archive/archive_test.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:132
 	if err_19 != nil {
-//line stdlib/archive/archive_test.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:132
 		//line stdlib/archive/archive_test.kuki:133
 		t.Fatal(fmt.Sprintf("chdir: %v", err_19))
 		//line stdlib/archive/archive_test.kuki:134
@@ -292,11 +292,11 @@ func TestExtractLimitRejectsOversizedZip(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:138
 	writeFixture(t, "src", "big.txt", strpkg.Repeat("x", 500))
 //line stdlib/archive/archive_test.kuki:139
-//line stdlib/archive/archive_test.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:139
 	err_20 := archive.WriteZip("out.zip", []string{filepath.Join("src", "big.txt")})
-//line stdlib/archive/archive_test.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:139
 	if err_20 != nil {
-//line stdlib/archive/archive_test.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:139
 		//line stdlib/archive/archive_test.kuki:140
 		t.Fatal(fmt.Sprintf("WriteZip: %v", err_20))
 		//line stdlib/archive/archive_test.kuki:141
@@ -315,11 +315,11 @@ func TestExtractLimitRejectsOversizedTarGz(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:149
 	src := filepath.Join(tmp, "src")
 //line stdlib/archive/archive_test.kuki:150
-//line stdlib/archive/archive_test.kuki:150
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:150
 	err_21 := files.MkDirAll(src)
-//line stdlib/archive/archive_test.kuki:150
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:150
 	if err_21 != nil {
-//line stdlib/archive/archive_test.kuki:150
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:150
 		//line stdlib/archive/archive_test.kuki:151
 		t.Fatal(fmt.Sprintf("mkdir src: %v", err_21))
 		//line stdlib/archive/archive_test.kuki:152
@@ -330,11 +330,11 @@ func TestExtractLimitRejectsOversizedTarGz(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:156
 	archivePath := filepath.Join(tmp, "out.tar.gz")
 //line stdlib/archive/archive_test.kuki:157
-//line stdlib/archive/archive_test.kuki:157
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:157
 	err_22 := archive.WriteTarGz(archivePath, src)
-//line stdlib/archive/archive_test.kuki:157
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:157
 	if err_22 != nil {
-//line stdlib/archive/archive_test.kuki:157
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:157
 		//line stdlib/archive/archive_test.kuki:158
 		t.Fatal(fmt.Sprintf("WriteTarGz: %v", err_22))
 		//line stdlib/archive/archive_test.kuki:159
@@ -355,11 +355,11 @@ func TestExtractLimitAllowsWithinBudget(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:167
 	src := filepath.Join(tmp, "src")
 //line stdlib/archive/archive_test.kuki:168
-//line stdlib/archive/archive_test.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:168
 	err_23 := files.MkDirAll(src)
-//line stdlib/archive/archive_test.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:168
 	if err_23 != nil {
-//line stdlib/archive/archive_test.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:168
 		//line stdlib/archive/archive_test.kuki:169
 		t.Fatal(fmt.Sprintf("mkdir src: %v", err_23))
 		//line stdlib/archive/archive_test.kuki:170
@@ -370,11 +370,11 @@ func TestExtractLimitAllowsWithinBudget(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:174
 	archivePath := filepath.Join(tmp, "out.tar.gz")
 //line stdlib/archive/archive_test.kuki:175
-//line stdlib/archive/archive_test.kuki:175
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:175
 	err_24 := archive.WriteTarGz(archivePath, src)
-//line stdlib/archive/archive_test.kuki:175
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:175
 	if err_24 != nil {
-//line stdlib/archive/archive_test.kuki:175
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:175
 		//line stdlib/archive/archive_test.kuki:176
 		t.Fatal(fmt.Sprintf("WriteTarGz: %v", err_24))
 		//line stdlib/archive/archive_test.kuki:177
@@ -383,11 +383,11 @@ func TestExtractLimitAllowsWithinBudget(t *testing.T) {
 //line stdlib/archive/archive_test.kuki:179
 	dest := filepath.Join(tmp, "extracted")
 //line stdlib/archive/archive_test.kuki:180
-//line stdlib/archive/archive_test.kuki:180
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:180
 	err_25 := archive.ExtractLimit(archivePath, dest, 1048576)
-//line stdlib/archive/archive_test.kuki:180
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:180
 	if err_25 != nil {
-//line stdlib/archive/archive_test.kuki:180
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:180
 		//line stdlib/archive/archive_test.kuki:181
 		t.Fatal(fmt.Sprintf("ExtractLimit: %v", err_25))
 		//line stdlib/archive/archive_test.kuki:182
@@ -395,9 +395,9 @@ func TestExtractLimitAllowsWithinBudget(t *testing.T) {
 	}
 //line stdlib/archive/archive_test.kuki:184
 	body, err_26 := files.ReadString(filepath.Join(dest, "ok.txt"))
-//line stdlib/archive/archive_test.kuki:184
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:184
 	if err_26 != nil {
-//line stdlib/archive/archive_test.kuki:184
+//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:184
 		//line stdlib/archive/archive_test.kuki:185
 		t.Fatal(fmt.Sprintf("read extracted: %v", err_26))
 		//line stdlib/archive/archive_test.kuki:186

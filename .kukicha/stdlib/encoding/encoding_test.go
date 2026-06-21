@@ -20,9 +20,9 @@ func TestBase64Encoding(t *testing.T) {
 	test.AssertEqual(t, encoded, "SGVsbG8sIFdvcmxkIQ==")
 //line stdlib/encoding/encoding_test.kuki:17
 	decoded, err_1 := encoding.Base64Decode(encoded)
-//line stdlib/encoding/encoding_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:17
 	if err_1 != nil {
-//line stdlib/encoding/encoding_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:17
 		panic("base64 decode failed")
 	}
 //line stdlib/encoding/encoding_test.kuki:18
@@ -41,9 +41,9 @@ func TestBase64URLEncoding(t *testing.T) {
 	test.AssertEqual(t, encoded, "SGVsbG8sIFdvcmxkIQ==")
 //line stdlib/encoding/encoding_test.kuki:28
 	decoded, err_2 := encoding.Base64URLDecode(encoded)
-//line stdlib/encoding/encoding_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:28
 	if err_2 != nil {
-//line stdlib/encoding/encoding_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:28
 		panic("base64url decode failed")
 	}
 //line stdlib/encoding/encoding_test.kuki:29
@@ -62,9 +62,9 @@ func TestHexEncoding(t *testing.T) {
 	test.AssertEqual(t, encoded, "48656c6c6f")
 //line stdlib/encoding/encoding_test.kuki:39
 	decoded, err_3 := encoding.HexDecode(encoded)
-//line stdlib/encoding/encoding_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:39
 	if err_3 != nil {
-//line stdlib/encoding/encoding_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:39
 		panic("hex decode failed")
 	}
 //line stdlib/encoding/encoding_test.kuki:40
@@ -81,9 +81,9 @@ func TestEmptyInput(t *testing.T) {
 	test.AssertEqual(t, encoded, "")
 //line stdlib/encoding/encoding_test.kuki:49
 	decoded, err_4 := encoding.Base64Decode("")
-//line stdlib/encoding/encoding_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:49
 	if err_4 != nil {
-//line stdlib/encoding/encoding_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:49
 		panic("empty base64 decode failed")
 	}
 //line stdlib/encoding/encoding_test.kuki:50
@@ -94,9 +94,9 @@ func TestEmptyInput(t *testing.T) {
 	test.AssertEqual(t, hexEncoded, "")
 //line stdlib/encoding/encoding_test.kuki:55
 	hexDecoded, err_5 := encoding.HexDecode("")
-//line stdlib/encoding/encoding_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:55
 	if err_5 != nil {
-//line stdlib/encoding/encoding_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:55
 		panic("empty hex decode failed")
 	}
 //line stdlib/encoding/encoding_test.kuki:56
@@ -127,9 +127,9 @@ func TestRoundTrip(t *testing.T) {
 	b64Encoded := encoding.Base64Encode(testData)
 //line stdlib/encoding/encoding_test.kuki:74
 	b64Decoded, err_6 := encoding.Base64Decode(b64Encoded)
-//line stdlib/encoding/encoding_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:74
 	if err_6 != nil {
-//line stdlib/encoding/encoding_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:74
 		panic("base64 round-trip failed")
 	}
 //line stdlib/encoding/encoding_test.kuki:75
@@ -138,9 +138,9 @@ func TestRoundTrip(t *testing.T) {
 	b64urlEncoded := encoding.Base64URLEncode(testData)
 //line stdlib/encoding/encoding_test.kuki:78
 	b64urlDecoded, err_7 := encoding.Base64URLDecode(b64urlEncoded)
-//line stdlib/encoding/encoding_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:78
 	if err_7 != nil {
-//line stdlib/encoding/encoding_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:78
 		panic("base64url round-trip failed")
 	}
 //line stdlib/encoding/encoding_test.kuki:79
@@ -149,9 +149,9 @@ func TestRoundTrip(t *testing.T) {
 	hexEncoded := encoding.HexEncode(testData)
 //line stdlib/encoding/encoding_test.kuki:82
 	hexDecoded, err_8 := encoding.HexDecode(hexEncoded)
-//line stdlib/encoding/encoding_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:82
 	if err_8 != nil {
-//line stdlib/encoding/encoding_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:82
 		panic("hex round-trip failed")
 	}
 //line stdlib/encoding/encoding_test.kuki:83
@@ -166,9 +166,9 @@ func TestSpecialCharacters(t *testing.T) {
 	b64Encoded := encoding.Base64Encode(special)
 //line stdlib/encoding/encoding_test.kuki:90
 	b64Decoded, err_9 := encoding.Base64Decode(b64Encoded)
-//line stdlib/encoding/encoding_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:90
 	if err_9 != nil {
-//line stdlib/encoding/encoding_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:90
 		panic("special chars base64 failed")
 	}
 //line stdlib/encoding/encoding_test.kuki:91
@@ -177,9 +177,9 @@ func TestSpecialCharacters(t *testing.T) {
 	hexEncoded := encoding.HexEncode(special)
 //line stdlib/encoding/encoding_test.kuki:94
 	hexDecoded, err_10 := encoding.HexDecode(hexEncoded)
-//line stdlib/encoding/encoding_test.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:94
 	if err_10 != nil {
-//line stdlib/encoding/encoding_test.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/encoding/encoding_test.kuki:94
 		panic("special chars hex failed")
 	}
 //line stdlib/encoding/encoding_test.kuki:95

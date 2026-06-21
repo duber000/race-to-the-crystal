@@ -189,9 +189,9 @@ func formatValue(v any) string {
 func encodeJSONValue(v any) string {
 //line stdlib/log/log.kuki:118
 	bytes, err_1 := json.Bytes(v)
-//line stdlib/log/log.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:118
 	if err_1 != nil {
-//line stdlib/log/log.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:118
 		//line stdlib/log/log.kuki:119
 		return fmt.Sprintf("%q", fmt.Sprintf("%v", v))
 	}
@@ -331,42 +331,42 @@ func (l Logger) Error(msg string, kv ...any) {
 	l.emit(LevelError, msg, kv)
 }
 
-//line stdlib/log/log.kuki:195
-func (l Logger) Fatal(msg string, kv ...any) {
-//line stdlib/log/log.kuki:196
-	l.emit(LevelFatal, msg, kv)
 //line stdlib/log/log.kuki:197
+func (l Logger) Fatal(msg any, kv ...any) {
+//line stdlib/log/log.kuki:198
+	l.emit(LevelFatal, fmt.Sprint(msg), kv)
+//line stdlib/log/log.kuki:199
 	os.Exit(1)
 }
 
-//line stdlib/log/log.kuki:201
+//line stdlib/log/log.kuki:203
 func Debug(msg string, kv ...any) {
-//line stdlib/log/log.kuki:202
+//line stdlib/log/log.kuki:204
 	defaultLogger.emit(LevelDebug, msg, kv)
 }
 
-//line stdlib/log/log.kuki:204
+//line stdlib/log/log.kuki:206
 func Info(msg string, kv ...any) {
-//line stdlib/log/log.kuki:205
+//line stdlib/log/log.kuki:207
 	defaultLogger.emit(LevelInfo, msg, kv)
 }
 
-//line stdlib/log/log.kuki:207
+//line stdlib/log/log.kuki:209
 func Warn(msg string, kv ...any) {
-//line stdlib/log/log.kuki:208
+//line stdlib/log/log.kuki:210
 	defaultLogger.emit(LevelWarn, msg, kv)
 }
 
-//line stdlib/log/log.kuki:210
+//line stdlib/log/log.kuki:212
 func Error(msg string, kv ...any) {
-//line stdlib/log/log.kuki:211
+//line stdlib/log/log.kuki:213
 	defaultLogger.emit(LevelError, msg, kv)
 }
 
-//line stdlib/log/log.kuki:213
-func Fatal(msg string, kv ...any) {
-//line stdlib/log/log.kuki:214
-	defaultLogger.emit(LevelFatal, msg, kv)
 //line stdlib/log/log.kuki:215
+func Fatal(msg any, kv ...any) {
+//line stdlib/log/log.kuki:216
+	defaultLogger.emit(LevelFatal, fmt.Sprint(msg), kv)
+//line stdlib/log/log.kuki:217
 	os.Exit(1)
 }

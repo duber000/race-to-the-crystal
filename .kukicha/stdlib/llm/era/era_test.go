@@ -11,21 +11,21 @@ import (
 
 //line stdlib/llm/era/era_test.kuki:10
 type StripFencesCase struct {
-	name string
-	in   string
-	want string
+	name  string
+	inVal string
+	want  string
 }
 
 //line stdlib/llm/era/era_test.kuki:15
 func TestStripFences(t *testing.T) {
 //line stdlib/llm/era/era_test.kuki:16
-	cases := []StripFencesCase{StripFencesCase{name: "no fence", in: "plain text", want: "plain text"}, StripFencesCase{name: "tagged fence", in: "```kukicha\nfunc main()\n    print(\"hi\")\n```", want: "func main()\n    print(\"hi\")"}, StripFencesCase{name: "bare fence", in: "```\nbody\n```", want: "body"}, StripFencesCase{name: "leading whitespace", in: "  \n```\nbody\n```\n  ", want: "body"}, StripFencesCase{name: "fence-like prefix only", in: "```", want: "```"}}
+	cases := []StripFencesCase{StripFencesCase{name: "no fence", inVal: "plain text", want: "plain text"}, StripFencesCase{name: "tagged fence", inVal: "```kukicha\nfunc main()\n    print(\"hi\")\n```", want: "func main()\n    print(\"hi\")"}, StripFencesCase{name: "bare fence", inVal: "```\nbody\n```", want: "body"}, StripFencesCase{name: "leading whitespace", inVal: "  \n```\nbody\n```\n  ", want: "body"}, StripFencesCase{name: "fence-like prefix only", inVal: "```", want: "```"}}
 //line stdlib/llm/era/era_test.kuki:27
 	for _, tc := range cases {
 //line stdlib/llm/era/era_test.kuki:28
 		t.Run(tc.name, func(t *testing.T) {
 //line stdlib/llm/era/era_test.kuki:29
-			got := era.StripFences(tc.in)
+			got := era.StripFences(tc.inVal)
 //line stdlib/llm/era/era_test.kuki:30
 			test.AssertEqual(t, got, tc.want)
 		})

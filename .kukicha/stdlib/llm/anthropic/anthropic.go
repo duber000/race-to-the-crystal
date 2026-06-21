@@ -680,12 +680,12 @@ func ExecuteToolUses(c Client, resp Response, handlers map[string]func(string) s
 			case map[string]any:
 //line stdlib/llm/anthropic/anthropic.kuki:476
 				inputBytes, err_1 := json.Bytes(inputVal)
-//line stdlib/llm/anthropic/anthropic.kuki:476
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:476
 				if err_1 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:476
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:476
 					err_1 = fmt.Errorf("encode tool input: %w", err_1)
 					var _zero0 Client
-//line stdlib/llm/anthropic/anthropic.kuki:476
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:476
 					return _zero0, err_1
 				}
 //line stdlib/llm/anthropic/anthropic.kuki:477
@@ -877,9 +877,9 @@ func doExecute(c Client) (string, error) {
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:566
 	resp, err_2 := doExecuteRaw(c)
-//line stdlib/llm/anthropic/anthropic.kuki:566
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:566
 	if err_2 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:566
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:566
 		return "", err_2
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:567
@@ -915,10 +915,10 @@ func doExecuteRaw(c Client) (Response, error) {
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:589
 	resp, err_3 := fetch.Do(req)
-//line stdlib/llm/anthropic/anthropic.kuki:589
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:589
 	if err_3 != nil {
 		var _zero0 Response
-//line stdlib/llm/anthropic/anthropic.kuki:589
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:589
 		return _zero0, err_3
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:591
@@ -931,12 +931,12 @@ func doExecuteRaw(c Client) (Response, error) {
 //line stdlib/llm/anthropic/anthropic.kuki:596
 	raw := rawResponse{}
 //line stdlib/llm/anthropic/anthropic.kuki:597
-//line stdlib/llm/anthropic/anthropic.kuki:597
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:597
 	err_4 := json.ReadInto(resp.Body, &raw)
-//line stdlib/llm/anthropic/anthropic.kuki:597
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:597
 	if err_4 != nil {
 		var _zero0 Response
-//line stdlib/llm/anthropic/anthropic.kuki:597
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:597
 		return _zero0, err_4
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:598
@@ -947,9 +947,9 @@ func doExecuteRaw(c Client) (Response, error) {
 func doExecuteStream(c Client) (string, error) {
 //line stdlib/llm/anthropic/anthropic.kuki:601
 	resp, err_5 := doExecuteStreamRaw(c)
-//line stdlib/llm/anthropic/anthropic.kuki:601
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:601
 	if err_5 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:601
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:601
 		return "", err_5
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:602
@@ -1044,10 +1044,10 @@ func doExecuteStreamRaw(c Client) (Response, error) {
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:654
 	resp, err_6 := fetch.Do(req)
-//line stdlib/llm/anthropic/anthropic.kuki:654
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:654
 	if err_6 != nil {
 		var _zero0 Response
-//line stdlib/llm/anthropic/anthropic.kuki:654
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:654
 		return _zero0, err_6
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:656
@@ -1083,11 +1083,11 @@ func doExecuteStreamRaw(c Client) (Response, error) {
 //line stdlib/llm/anthropic/anthropic.kuki:672
 			evt := rawStreamEvent{}
 //line stdlib/llm/anthropic/anthropic.kuki:673
-//line stdlib/llm/anthropic/anthropic.kuki:673
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:673
 			err_7 := json.ParseInto([]byte(data), &evt)
-//line stdlib/llm/anthropic/anthropic.kuki:673
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:673
 			if err_7 != nil {
-//line stdlib/llm/anthropic/anthropic.kuki:673
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:673
 				//line stdlib/llm/anthropic/anthropic.kuki:674
 				continue
 			}
@@ -1148,12 +1148,12 @@ func doExecuteStreamRaw(c Client) (Response, error) {
 		}
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:703
-//line stdlib/llm/anthropic/anthropic.kuki:703
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:703
 	err_8 := scanner.Err()
-//line stdlib/llm/anthropic/anthropic.kuki:703
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:703
 	if err_8 != nil {
 		var _zero0 Response
-//line stdlib/llm/anthropic/anthropic.kuki:703
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:703
 		return _zero0, err_8
 	}
 //line stdlib/llm/anthropic/anthropic.kuki:705

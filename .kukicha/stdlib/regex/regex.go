@@ -160,12 +160,12 @@ func IsValid(pattern string) bool {
 func Compile(pattern string) (Pattern, error) {
 //line stdlib/regex/regex.kuki:166
 	re, err_1 := regexp.Compile(pattern)
-//line stdlib/regex/regex.kuki:166
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:166
 	if err_1 != nil {
-//line stdlib/regex/regex.kuki:166
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:166
 		err_1 = fmt.Errorf("invalid pattern: %w", err_1)
 		var _zero0 Pattern
-//line stdlib/regex/regex.kuki:166
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:166
 		return _zero0, err_1
 	}
 //line stdlib/regex/regex.kuki:167

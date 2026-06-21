@@ -610,3 +610,33 @@ func TestWithCommas(t *testing.T) {
 		test.AssertEqual(t, kukistring.WithCommas(-500), "-500")
 	})
 }
+
+//line stdlib/string/string_test.kuki:491
+type CutCase struct {
+	name       string
+	s          string
+	sep        string
+	wantBefore string
+	wantAfter  string
+	wantFound  bool
+}
+
+//line stdlib/string/string_test.kuki:499
+func TestCut(t *testing.T) {
+//line stdlib/string/string_test.kuki:500
+	cases := []CutCase{CutCase{name: "basic", s: "a,b,c", sep: ",", wantBefore: "a", wantAfter: "b,c", wantFound: true}, CutCase{name: "not found", s: "abc", sep: ",", wantBefore: "abc", wantAfter: "", wantFound: false}, CutCase{name: "empty sep", s: "abc", sep: "", wantBefore: "", wantAfter: "abc", wantFound: true}, CutCase{name: "starts with sep", s: ",abc", sep: ",", wantBefore: "", wantAfter: "abc", wantFound: true}, CutCase{name: "ends with sep", s: "abc,", sep: ",", wantBefore: "abc", wantAfter: "", wantFound: true}}
+//line stdlib/string/string_test.kuki:543
+	for _, tc := range cases {
+//line stdlib/string/string_test.kuki:544
+		t.Run(tc.name, func(t *testing.T) {
+//line stdlib/string/string_test.kuki:545
+			before, after, found := kukistring.Cut(tc.s, tc.sep)
+//line stdlib/string/string_test.kuki:546
+			test.AssertEqual(t, before, tc.wantBefore)
+//line stdlib/string/string_test.kuki:547
+			test.AssertEqual(t, after, tc.wantAfter)
+//line stdlib/string/string_test.kuki:548
+			test.AssertEqual(t, found, tc.wantFound)
+		})
+	}
+}

@@ -19,12 +19,12 @@ type Root struct {
 func New(path string) (Root, error) {
 //line stdlib/sandbox/sandbox.kuki:29
 	r, err_1 := os.OpenRoot(path)
-//line stdlib/sandbox/sandbox.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
 	if err_1 != nil {
-//line stdlib/sandbox/sandbox.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
 		err_1 = fmt.Errorf("sandbox open: %w", err_1)
 		var _zero0 Root
-//line stdlib/sandbox/sandbox.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
 		return _zero0, err_1
 	}
 //line stdlib/sandbox/sandbox.kuki:30
@@ -41,11 +41,11 @@ func Close(r Root) error {
 func Read(r Root, path string) ([]byte, error) {
 //line stdlib/sandbox/sandbox.kuki:38
 	data, err_2 := r.root.ReadFile(path)
-//line stdlib/sandbox/sandbox.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
 	if err_2 != nil {
-//line stdlib/sandbox/sandbox.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
 		err_2 = fmt.Errorf("sandbox read: %w", err_2)
-//line stdlib/sandbox/sandbox.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
 		return []byte{}, err_2
 	}
 //line stdlib/sandbox/sandbox.kuki:39
@@ -56,9 +56,9 @@ func Read(r Root, path string) ([]byte, error) {
 func ReadString(r Root, path string) (string, error) {
 //line stdlib/sandbox/sandbox.kuki:43
 	data, err_3 := Read(r, path)
-//line stdlib/sandbox/sandbox.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:43
 	if err_3 != nil {
-//line stdlib/sandbox/sandbox.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:43
 		return "", err_3
 	}
 //line stdlib/sandbox/sandbox.kuki:44
@@ -69,9 +69,9 @@ func ReadString(r Root, path string) (string, error) {
 func ReadStringOr(r Root, path string, defaultValue string) string {
 //line stdlib/sandbox/sandbox.kuki:50
 	data, err_4 := Read(r, path)
-//line stdlib/sandbox/sandbox.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:50
 	if err_4 != nil {
-//line stdlib/sandbox/sandbox.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:50
 		return defaultValue
 	}
 //line stdlib/sandbox/sandbox.kuki:51
@@ -81,13 +81,13 @@ func ReadStringOr(r Root, path string, defaultValue string) string {
 //line stdlib/sandbox/sandbox.kuki:54
 func WriteString(r Root, data string, path string) error {
 //line stdlib/sandbox/sandbox.kuki:55
-//line stdlib/sandbox/sandbox.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
 	err_5 := r.root.WriteFile(path, []byte(data), 0o644)
-//line stdlib/sandbox/sandbox.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
 	if err_5 != nil {
-//line stdlib/sandbox/sandbox.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
 		err_5 = fmt.Errorf("sandbox write: %w", err_5)
-//line stdlib/sandbox/sandbox.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
 		return err_5
 	}
 //line stdlib/sandbox/sandbox.kuki:56
@@ -98,21 +98,21 @@ func WriteString(r Root, data string, path string) error {
 func Write(r Root, data any, path string) error {
 //line stdlib/sandbox/sandbox.kuki:60
 	jsonData, err_6 := json.PrettyBytes(data)
-//line stdlib/sandbox/sandbox.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
 	if err_6 != nil {
-//line stdlib/sandbox/sandbox.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
 		err_6 = fmt.Errorf("sandbox write json: %w", err_6)
-//line stdlib/sandbox/sandbox.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
 		return err_6
 	}
 //line stdlib/sandbox/sandbox.kuki:61
-//line stdlib/sandbox/sandbox.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
 	err_7 := r.root.WriteFile(path, jsonData, 0o644)
-//line stdlib/sandbox/sandbox.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
 	if err_7 != nil {
-//line stdlib/sandbox/sandbox.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
 		err_7 = fmt.Errorf("sandbox write: %w", err_7)
-//line stdlib/sandbox/sandbox.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
 		return err_7
 	}
 //line stdlib/sandbox/sandbox.kuki:62
@@ -123,23 +123,23 @@ func Write(r Root, data any, path string) error {
 func AppendString(r Root, data string, path string) error {
 //line stdlib/sandbox/sandbox.kuki:66
 	f, err_8 := r.root.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-//line stdlib/sandbox/sandbox.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
 	if err_8 != nil {
-//line stdlib/sandbox/sandbox.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
 		err_8 = fmt.Errorf("sandbox append: %w", err_8)
-//line stdlib/sandbox/sandbox.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
 		return err_8
 	}
 //line stdlib/sandbox/sandbox.kuki:67
 	defer f.Close()
 //line stdlib/sandbox/sandbox.kuki:68
-//line stdlib/sandbox/sandbox.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
 	_, err_9 := f.Write([]byte(data))
-//line stdlib/sandbox/sandbox.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
 	if err_9 != nil {
-//line stdlib/sandbox/sandbox.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
 		err_9 = fmt.Errorf("sandbox append: %w", err_9)
-//line stdlib/sandbox/sandbox.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
 		return err_9
 	}
 //line stdlib/sandbox/sandbox.kuki:69
@@ -150,34 +150,34 @@ func AppendString(r Root, data string, path string) error {
 func Append(r Root, data any, path string) error {
 //line stdlib/sandbox/sandbox.kuki:73
 	jsonData, err_10 := json.Bytes(data)
-//line stdlib/sandbox/sandbox.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
 	if err_10 != nil {
-//line stdlib/sandbox/sandbox.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
 		err_10 = fmt.Errorf("sandbox append json: %w", err_10)
-//line stdlib/sandbox/sandbox.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
 		return err_10
 	}
 //line stdlib/sandbox/sandbox.kuki:74
 	jsonData = append(jsonData, '\n')
 //line stdlib/sandbox/sandbox.kuki:75
 	f, err_11 := r.root.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-//line stdlib/sandbox/sandbox.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
 	if err_11 != nil {
-//line stdlib/sandbox/sandbox.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
 		err_11 = fmt.Errorf("sandbox append: %w", err_11)
-//line stdlib/sandbox/sandbox.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
 		return err_11
 	}
 //line stdlib/sandbox/sandbox.kuki:76
 	defer f.Close()
 //line stdlib/sandbox/sandbox.kuki:77
-//line stdlib/sandbox/sandbox.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
 	_, err_12 := f.Write(jsonData)
-//line stdlib/sandbox/sandbox.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
 	if err_12 != nil {
-//line stdlib/sandbox/sandbox.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
 		err_12 = fmt.Errorf("sandbox append: %w", err_12)
-//line stdlib/sandbox/sandbox.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
 		return err_12
 	}
 //line stdlib/sandbox/sandbox.kuki:78
@@ -187,13 +187,13 @@ func Append(r Root, data any, path string) error {
 //line stdlib/sandbox/sandbox.kuki:81
 func MkDir(r Root, path string) error {
 //line stdlib/sandbox/sandbox.kuki:82
-//line stdlib/sandbox/sandbox.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
 	err_13 := r.root.Mkdir(path, 0o755)
-//line stdlib/sandbox/sandbox.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
 	if err_13 != nil {
-//line stdlib/sandbox/sandbox.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
 		err_13 = fmt.Errorf("sandbox mkdir: %w", err_13)
-//line stdlib/sandbox/sandbox.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
 		return err_13
 	}
 //line stdlib/sandbox/sandbox.kuki:83
@@ -203,13 +203,13 @@ func MkDir(r Root, path string) error {
 //line stdlib/sandbox/sandbox.kuki:86
 func MkDirAll(r Root, path string) error {
 //line stdlib/sandbox/sandbox.kuki:87
-//line stdlib/sandbox/sandbox.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
 	err_14 := r.root.MkdirAll(path, 0o755)
-//line stdlib/sandbox/sandbox.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
 	if err_14 != nil {
-//line stdlib/sandbox/sandbox.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
 		err_14 = fmt.Errorf("sandbox mkdirall: %w", err_14)
-//line stdlib/sandbox/sandbox.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
 		return err_14
 	}
 //line stdlib/sandbox/sandbox.kuki:88
@@ -220,22 +220,22 @@ func MkDirAll(r Root, path string) error {
 func List(r Root, path string) ([]string, error) {
 //line stdlib/sandbox/sandbox.kuki:92
 	f, err_15 := r.root.Open(path)
-//line stdlib/sandbox/sandbox.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
 	if err_15 != nil {
-//line stdlib/sandbox/sandbox.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
 		err_15 = fmt.Errorf("sandbox list: %w", err_15)
-//line stdlib/sandbox/sandbox.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
 		return []string{}, err_15
 	}
 //line stdlib/sandbox/sandbox.kuki:93
 	defer f.Close()
 //line stdlib/sandbox/sandbox.kuki:94
 	entries, err_16 := f.ReadDir(-1)
-//line stdlib/sandbox/sandbox.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
 	if err_16 != nil {
-//line stdlib/sandbox/sandbox.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
 		err_16 = fmt.Errorf("sandbox list: %w", err_16)
-//line stdlib/sandbox/sandbox.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
 		return []string{}, err_16
 	}
 //line stdlib/sandbox/sandbox.kuki:95
@@ -261,9 +261,9 @@ func Exists(r Root, path string) bool {
 func IsDir(r Root, path string) bool {
 //line stdlib/sandbox/sandbox.kuki:107
 	info, err_17 := r.root.Stat(path)
-//line stdlib/sandbox/sandbox.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:107
 	if err_17 != nil {
-//line stdlib/sandbox/sandbox.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:107
 		return false
 	}
 //line stdlib/sandbox/sandbox.kuki:108
@@ -274,9 +274,9 @@ func IsDir(r Root, path string) bool {
 func IsFile(r Root, path string) bool {
 //line stdlib/sandbox/sandbox.kuki:112
 	info, err_18 := r.root.Stat(path)
-//line stdlib/sandbox/sandbox.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:112
 	if err_18 != nil {
-//line stdlib/sandbox/sandbox.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:112
 		return false
 	}
 //line stdlib/sandbox/sandbox.kuki:113
@@ -287,11 +287,11 @@ func IsFile(r Root, path string) bool {
 func Stat(r Root, path string) (os.FileInfo, error) {
 //line stdlib/sandbox/sandbox.kuki:117
 	info, err_19 := r.root.Stat(path)
-//line stdlib/sandbox/sandbox.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:117
 	if err_19 != nil {
-//line stdlib/sandbox/sandbox.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:117
 		err_19 = fmt.Errorf("sandbox stat: %w", err_19)
-//line stdlib/sandbox/sandbox.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:117
 		return nil, err_19
 	}
 //line stdlib/sandbox/sandbox.kuki:118
@@ -301,13 +301,13 @@ func Stat(r Root, path string) (os.FileInfo, error) {
 //line stdlib/sandbox/sandbox.kuki:121
 func Delete(r Root, path string) error {
 //line stdlib/sandbox/sandbox.kuki:122
-//line stdlib/sandbox/sandbox.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:122
 	err_20 := r.root.Remove(path)
-//line stdlib/sandbox/sandbox.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:122
 	if err_20 != nil {
-//line stdlib/sandbox/sandbox.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:122
 		err_20 = fmt.Errorf("sandbox delete: %w", err_20)
-//line stdlib/sandbox/sandbox.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:122
 		return err_20
 	}
 //line stdlib/sandbox/sandbox.kuki:123
@@ -317,13 +317,13 @@ func Delete(r Root, path string) error {
 //line stdlib/sandbox/sandbox.kuki:126
 func DeleteAll(r Root, path string) error {
 //line stdlib/sandbox/sandbox.kuki:127
-//line stdlib/sandbox/sandbox.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:127
 	err_21 := r.root.RemoveAll(path)
-//line stdlib/sandbox/sandbox.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:127
 	if err_21 != nil {
-//line stdlib/sandbox/sandbox.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:127
 		err_21 = fmt.Errorf("sandbox deleteall: %w", err_21)
-//line stdlib/sandbox/sandbox.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:127
 		return err_21
 	}
 //line stdlib/sandbox/sandbox.kuki:128
@@ -333,13 +333,13 @@ func DeleteAll(r Root, path string) error {
 //line stdlib/sandbox/sandbox.kuki:131
 func Move(r Root, src string, dst string) error {
 //line stdlib/sandbox/sandbox.kuki:132
-//line stdlib/sandbox/sandbox.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:132
 	err_22 := r.root.Rename(src, dst)
-//line stdlib/sandbox/sandbox.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:132
 	if err_22 != nil {
-//line stdlib/sandbox/sandbox.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:132
 		err_22 = fmt.Errorf("sandbox move: %w", err_22)
-//line stdlib/sandbox/sandbox.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:132
 		return err_22
 	}
 //line stdlib/sandbox/sandbox.kuki:133

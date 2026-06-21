@@ -126,9 +126,9 @@ func ReadInto(reader io.Reader, target any) error {
 func WriteOutput(v any) error {
 //line stdlib/json/json.kuki:114
 	data, err_1 := Bytes(v)
-//line stdlib/json/json.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:114
 	if err_1 != nil {
-//line stdlib/json/json.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:114
 		return err_1
 	}
 //line stdlib/json/json.kuki:115
@@ -143,14 +143,14 @@ func Read[T any](reader io.Reader) (T, error) {
 	data := *new(T)
 //line stdlib/json/json.kuki:123
 	// pipe step 1: ReadInto(...)
-//line stdlib/json/json.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:123
 	err_2 := ReadInto(reader, &data)
-//line stdlib/json/json.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:123
 	if err_2 != nil {
-//line stdlib/json/json.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:123
 		err_2 = fmt.Errorf("failed to read json: %w", err_2)
 		var _zero0 T
-//line stdlib/json/json.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:123
 		return _zero0, err_2
 	}
 	_ = reader
@@ -163,14 +163,14 @@ func Parse[T any](data []byte) (T, error) {
 //line stdlib/json/json.kuki:130
 	out := *new(T)
 //line stdlib/json/json.kuki:131
-//line stdlib/json/json.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:131
 	err_3 := ParseInto(data, &out)
-//line stdlib/json/json.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:131
 	if err_3 != nil {
-//line stdlib/json/json.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:131
 		err_3 = fmt.Errorf("failed to parse json: %w", err_3)
 		var _zero0 T
-//line stdlib/json/json.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:131
 		return _zero0, err_3
 	}
 //line stdlib/json/json.kuki:132
@@ -182,14 +182,14 @@ func ParseString[T any](data string) (T, error) {
 //line stdlib/json/json.kuki:138
 	out := *new(T)
 //line stdlib/json/json.kuki:139
-//line stdlib/json/json.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:139
 	err_4 := ParseStringInto(data, &out)
-//line stdlib/json/json.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:139
 	if err_4 != nil {
-//line stdlib/json/json.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:139
 		err_4 = fmt.Errorf("failed to parse json: %w", err_4)
 		var _zero0 T
-//line stdlib/json/json.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:139
 		return _zero0, err_4
 	}
 //line stdlib/json/json.kuki:140
@@ -281,14 +281,14 @@ func ParseValue(data []byte) (JSONValue, error) {
 //line stdlib/json/json.kuki:202
 	raw := *new(any)
 //line stdlib/json/json.kuki:203
-//line stdlib/json/json.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:203
 	err_5 := ParseInto(data, &raw)
-//line stdlib/json/json.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:203
 	if err_5 != nil {
-//line stdlib/json/json.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:203
 		err_5 = fmt.Errorf("failed to parse json value: %w", err_5)
 		var _zero0 JSONValue
-//line stdlib/json/json.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:203
 		return _zero0, err_5
 	}
 //line stdlib/json/json.kuki:204
@@ -300,14 +300,14 @@ func ParseStringValue(data string) (JSONValue, error) {
 //line stdlib/json/json.kuki:209
 	raw := *new(any)
 //line stdlib/json/json.kuki:210
-//line stdlib/json/json.kuki:210
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:210
 	err_6 := ParseStringInto(data, &raw)
-//line stdlib/json/json.kuki:210
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:210
 	if err_6 != nil {
-//line stdlib/json/json.kuki:210
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:210
 		err_6 = fmt.Errorf("failed to parse json value: %w", err_6)
 		var _zero0 JSONValue
-//line stdlib/json/json.kuki:210
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:210
 		return _zero0, err_6
 	}
 //line stdlib/json/json.kuki:211
@@ -320,14 +320,14 @@ func ReadValue(reader io.Reader) (JSONValue, error) {
 	raw := *new(any)
 //line stdlib/json/json.kuki:217
 	// pipe step 1: ReadInto(...)
-//line stdlib/json/json.kuki:217
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:217
 	err_7 := ReadInto(reader, &raw)
-//line stdlib/json/json.kuki:217
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:217
 	if err_7 != nil {
-//line stdlib/json/json.kuki:217
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:217
 		err_7 = fmt.Errorf("failed to read json value: %w", err_7)
 		var _zero0 JSONValue
-//line stdlib/json/json.kuki:217
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:217
 		return _zero0, err_7
 	}
 	_ = reader
@@ -345,14 +345,14 @@ func ParseFrozen(data []byte) (Frozen, error) {
 //line stdlib/json/json.kuki:246
 	raw := *new(any)
 //line stdlib/json/json.kuki:247
-//line stdlib/json/json.kuki:247
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:247
 	err_8 := ParseInto(data, &raw)
-//line stdlib/json/json.kuki:247
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:247
 	if err_8 != nil {
-//line stdlib/json/json.kuki:247
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:247
 		err_8 = fmt.Errorf("failed to parse json: %w", err_8)
 		var _zero0 Frozen
-//line stdlib/json/json.kuki:247
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:247
 		return _zero0, err_8
 	}
 //line stdlib/json/json.kuki:248
@@ -396,11 +396,11 @@ func Pretty(s string) string {
 //line stdlib/json/json.kuki:277
 	buf := bytes.Buffer{}
 //line stdlib/json/json.kuki:278
-//line stdlib/json/json.kuki:278
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:278
 	err_9 := json.Indent(&buf, []byte(s), "", "  ")
-//line stdlib/json/json.kuki:278
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:278
 	if err_9 != nil {
-//line stdlib/json/json.kuki:278
+//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:278
 		return s
 	}
 //line stdlib/json/json.kuki:279

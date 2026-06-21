@@ -230,18 +230,18 @@ func buildHTTPRequest(req Request) (*http.Request, error) {
 //line stdlib/fetch/fetch.kuki:163
 			var err_1 error
 			bodyData, err_1 = json.Bytes(req.body)
-//line stdlib/fetch/fetch.kuki:163
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:163
 			if err_1 != nil {
-//line stdlib/fetch/fetch.kuki:163
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:163
 				return nil, err_1
 			}
 		}
 	}
 //line stdlib/fetch/fetch.kuki:165
 	httpReq, err_2 := createHTTPRequest(req.ctx, req.method, req.url, bodyData)
-//line stdlib/fetch/fetch.kuki:165
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:165
 	if err_2 != nil {
-//line stdlib/fetch/fetch.kuki:165
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:165
 		return nil, err_2
 	}
 //line stdlib/fetch/fetch.kuki:167
@@ -276,16 +276,16 @@ func doOnce(req Request) (*http.Response, error) {
 	client.Timeout = time.Duration(req.timeoutNs)
 //line stdlib/fetch/fetch.kuki:184
 	httpReq, err_3 := buildHTTPRequest(req)
-//line stdlib/fetch/fetch.kuki:184
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:184
 	if err_3 != nil {
-//line stdlib/fetch/fetch.kuki:184
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:184
 		return nil, err_3
 	}
 //line stdlib/fetch/fetch.kuki:186
 	resp, err_4 := client.Do(httpReq)
-//line stdlib/fetch/fetch.kuki:186
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:186
 	if err_4 != nil {
-//line stdlib/fetch/fetch.kuki:186
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:186
 		return nil, err_4
 	}
 //line stdlib/fetch/fetch.kuki:187
@@ -327,11 +327,11 @@ func Do(req Request) (*http.Response, error) {
 //line stdlib/fetch/fetch.kuki:208
 		if resp.StatusCode == 429 || resp.StatusCode == 503 {
 //line stdlib/fetch/fetch.kuki:209
-//line stdlib/fetch/fetch.kuki:209
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:209
 			err_5 := resp.Body.Close()
-//line stdlib/fetch/fetch.kuki:209
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:209
 			if err_5 != nil {
-//line stdlib/fetch/fetch.kuki:209
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:209
 				return err_5
 			}
 //line stdlib/fetch/fetch.kuki:210
@@ -384,11 +384,11 @@ func createHTTPRequest(reqCtx context.Context, method string, url string, bodyDa
 func Get(url string) (*http.Response, error) {
 //line stdlib/fetch/fetch.kuki:239
 	// pipe step 1: Do(...)
-//line stdlib/fetch/fetch.kuki:239
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:239
 	resp, err_7 := Do(New(url))
-//line stdlib/fetch/fetch.kuki:239
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:239
 	if err_7 != nil {
-//line stdlib/fetch/fetch.kuki:239
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:239
 		return nil, err_7
 	}
 //line stdlib/fetch/fetch.kuki:241
@@ -399,11 +399,11 @@ func Get(url string) (*http.Response, error) {
 func GetCtx(h ctxpkg.Handle, url string) (*http.Response, error) {
 //line stdlib/fetch/fetch.kuki:247
 	// pipe step 1: Do(...)
-//line stdlib/fetch/fetch.kuki:247
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:247
 	resp, err_9 := Do(WithContext(New(url), h))
-//line stdlib/fetch/fetch.kuki:247
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:247
 	if err_9 != nil {
-//line stdlib/fetch/fetch.kuki:247
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:247
 		return nil, err_9
 	}
 //line stdlib/fetch/fetch.kuki:248
@@ -422,11 +422,11 @@ func NewExternal(url string) Request {
 func SafeGet(url string) (*http.Response, error) {
 //line stdlib/fetch/fetch.kuki:271
 	// pipe step 1: Do(...)
-//line stdlib/fetch/fetch.kuki:271
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:271
 	resp, err_11 := Do(NewExternal(url))
-//line stdlib/fetch/fetch.kuki:271
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:271
 	if err_11 != nil {
-//line stdlib/fetch/fetch.kuki:271
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:271
 		return nil, err_11
 	}
 //line stdlib/fetch/fetch.kuki:273
@@ -437,11 +437,11 @@ func SafeGet(url string) (*http.Response, error) {
 func SafeGetCtx(h ctxpkg.Handle, url string) (*http.Response, error) {
 //line stdlib/fetch/fetch.kuki:279
 	// pipe step 1: Do(...)
-//line stdlib/fetch/fetch.kuki:279
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:279
 	resp, err_13 := Do(WithContext(NewExternal(url), h))
-//line stdlib/fetch/fetch.kuki:279
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:279
 	if err_13 != nil {
-//line stdlib/fetch/fetch.kuki:279
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:279
 		return nil, err_13
 	}
 //line stdlib/fetch/fetch.kuki:280
@@ -452,11 +452,11 @@ func SafeGetCtx(h ctxpkg.Handle, url string) (*http.Response, error) {
 func Post(url string, data any) (*http.Response, error) {
 //line stdlib/fetch/fetch.kuki:288
 	// pipe step 1: Do(...)
-//line stdlib/fetch/fetch.kuki:288
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:288
 	resp, err_15 := Do(Body(Method(New(url), HTTPMethodPOST), data))
-//line stdlib/fetch/fetch.kuki:288
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:288
 	if err_15 != nil {
-//line stdlib/fetch/fetch.kuki:288
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:288
 		return nil, err_15
 	}
 //line stdlib/fetch/fetch.kuki:290
@@ -467,11 +467,11 @@ func Post(url string, data any) (*http.Response, error) {
 func PostCtx(h ctxpkg.Handle, url string, data any) (*http.Response, error) {
 //line stdlib/fetch/fetch.kuki:296
 	// pipe step 1: Do(...)
-//line stdlib/fetch/fetch.kuki:296
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:296
 	resp, err_17 := Do(Body(Method(WithContext(New(url), h), HTTPMethodPOST), data))
-//line stdlib/fetch/fetch.kuki:296
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:296
 	if err_17 != nil {
-//line stdlib/fetch/fetch.kuki:296
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:296
 		return nil, err_17
 	}
 //line stdlib/fetch/fetch.kuki:297
@@ -495,9 +495,9 @@ func Text(resp *http.Response) (string, error) {
 	defer resp.Body.Close()
 //line stdlib/fetch/fetch.kuki:314
 	bodyBytes, err_18 := io.ReadAll(resp.Body)
-//line stdlib/fetch/fetch.kuki:314
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:314
 	if err_18 != nil {
-//line stdlib/fetch/fetch.kuki:314
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:314
 		return "", err_18
 	}
 //line stdlib/fetch/fetch.kuki:315
@@ -510,9 +510,9 @@ func Bytes(resp *http.Response) ([]byte, error) {
 	defer resp.Body.Close()
 //line stdlib/fetch/fetch.kuki:322
 	bodyBytes, err_19 := io.ReadAll(resp.Body)
-//line stdlib/fetch/fetch.kuki:322
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:322
 	if err_19 != nil {
-//line stdlib/fetch/fetch.kuki:322
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:322
 		return []byte{}, err_19
 	}
 //line stdlib/fetch/fetch.kuki:323
@@ -526,14 +526,14 @@ func JSON[T any](resp *http.Response) (T, error) {
 //line stdlib/fetch/fetch.kuki:329
 	data := *new(T)
 //line stdlib/fetch/fetch.kuki:330
-//line stdlib/fetch/fetch.kuki:330
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:330
 	err_20 := json.ReadInto(resp.Body, &data)
-//line stdlib/fetch/fetch.kuki:330
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:330
 	if err_20 != nil {
-//line stdlib/fetch/fetch.kuki:330
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:330
 		err_20 = fmt.Errorf("failed to decode response json: %w", err_20)
 		var _zero0 T
-//line stdlib/fetch/fetch.kuki:330
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:330
 		return _zero0, err_20
 	}
 //line stdlib/fetch/fetch.kuki:331
@@ -544,25 +544,25 @@ func JSON[T any](resp *http.Response) (T, error) {
 func GetJSON[T any](url string) (T, error) {
 //line stdlib/fetch/fetch.kuki:336
 	// pipe step 1: Get(...)
-//line stdlib/fetch/fetch.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:336
 	pipe_21, err_22 := Get(url)
-//line stdlib/fetch/fetch.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:336
 	if err_22 != nil {
-//line stdlib/fetch/fetch.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:336
 		err_22 = fmt.Errorf("GET request failed: %w", err_22)
 		var _zero0 T
-//line stdlib/fetch/fetch.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:336
 		return _zero0, err_22
 	}
 	// pipe step 2: CheckStatus(...)
-//line stdlib/fetch/fetch.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:336
 	resp, err_24 := CheckStatus(pipe_21)
-//line stdlib/fetch/fetch.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:336
 	if err_24 != nil {
-//line stdlib/fetch/fetch.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:336
 		err_24 = fmt.Errorf("GET request failed: %w", err_24)
 		var _zero0 T
-//line stdlib/fetch/fetch.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:336
 		return _zero0, err_24
 	}
 //line stdlib/fetch/fetch.kuki:337
@@ -570,14 +570,14 @@ func GetJSON[T any](url string) (T, error) {
 //line stdlib/fetch/fetch.kuki:338
 	data := *new(T)
 //line stdlib/fetch/fetch.kuki:339
-//line stdlib/fetch/fetch.kuki:339
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:339
 	err_25 := json.ReadInto(resp.Body, &data)
-//line stdlib/fetch/fetch.kuki:339
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:339
 	if err_25 != nil {
-//line stdlib/fetch/fetch.kuki:339
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:339
 		err_25 = fmt.Errorf("failed to decode json response: %w", err_25)
 		var _zero0 T
-//line stdlib/fetch/fetch.kuki:339
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:339
 		return _zero0, err_25
 	}
 //line stdlib/fetch/fetch.kuki:340
@@ -628,9 +628,9 @@ func URLTemplate(tmpl string, params map[string]string) (string, error) {
 func URLWithQuery(baseURL string, params map[string]string) (string, error) {
 //line stdlib/fetch/fetch.kuki:379
 	parsed, err_26 := url.Parse(baseURL)
-//line stdlib/fetch/fetch.kuki:379
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:379
 	if err_26 != nil {
-//line stdlib/fetch/fetch.kuki:379
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:379
 		return "", err_26
 	}
 //line stdlib/fetch/fetch.kuki:380
@@ -741,16 +741,16 @@ func SessionDo(s Session, req Request) (*http.Response, error) {
 	s.client.Timeout = time.Duration(req.timeoutNs)
 //line stdlib/fetch/fetch.kuki:468
 	httpReq, err_27 := buildHTTPRequest(req)
-//line stdlib/fetch/fetch.kuki:468
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:468
 	if err_27 != nil {
-//line stdlib/fetch/fetch.kuki:468
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:468
 		return nil, err_27
 	}
 //line stdlib/fetch/fetch.kuki:470
 	resp, err_28 := s.client.Do(httpReq)
-//line stdlib/fetch/fetch.kuki:470
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:470
 	if err_28 != nil {
-//line stdlib/fetch/fetch.kuki:470
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:470
 		return nil, err_28
 	}
 //line stdlib/fetch/fetch.kuki:471
@@ -796,9 +796,9 @@ func DownloadTo(resp *http.Response, box sandbox.Root, path string) error {
 	defer resp.Body.Close()
 //line stdlib/fetch/fetch.kuki:504
 	bodyBytes, err_29 := io.ReadAll(resp.Body)
-//line stdlib/fetch/fetch.kuki:504
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:504
 	if err_29 != nil {
-//line stdlib/fetch/fetch.kuki:504
+//line /Users/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:504
 		return err_29
 	}
 //line stdlib/fetch/fetch.kuki:505

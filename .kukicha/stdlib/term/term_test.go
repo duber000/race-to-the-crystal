@@ -25,9 +25,9 @@ func resetEnv() {
 func TestIsTTYPipe(t *testing.T) {
 //line stdlib/term/term_test.kuki:20
 	r, w, err_1 := os.Pipe()
-//line stdlib/term/term_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:20
 	if err_1 != nil {
-//line stdlib/term/term_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:20
 		panic("pipe failed")
 	}
 //line stdlib/term/term_test.kuki:21

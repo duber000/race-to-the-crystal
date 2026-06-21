@@ -609,12 +609,12 @@ func ExecuteFunctionCalls(c Client, resp Response, handlers map[string]func(stri
 		case map[string]any:
 //line stdlib/llm/responses/responses.kuki:486
 			inputBytes, err_1 := json.Bytes(inputVal)
-//line stdlib/llm/responses/responses.kuki:486
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:486
 			if err_1 != nil {
-//line stdlib/llm/responses/responses.kuki:486
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:486
 				err_1 = fmt.Errorf("encode tool input: %w", err_1)
 				var _zero0 Client
-//line stdlib/llm/responses/responses.kuki:486
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:486
 				return _zero0, err_1
 			}
 //line stdlib/llm/responses/responses.kuki:487
@@ -849,9 +849,9 @@ func buildRequest(c Client) ResponseRequest {
 func doExecute(c Client) (string, error) {
 //line stdlib/llm/responses/responses.kuki:589
 	resp, err_2 := doExecuteRaw(c)
-//line stdlib/llm/responses/responses.kuki:589
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:589
 	if err_2 != nil {
-//line stdlib/llm/responses/responses.kuki:589
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:589
 		return "", err_2
 	}
 //line stdlib/llm/responses/responses.kuki:590
@@ -888,10 +888,10 @@ func doExecuteRaw(c Client) (Response, error) {
 	}
 //line stdlib/llm/responses/responses.kuki:611
 	resp, err_3 := fetch.Do(req)
-//line stdlib/llm/responses/responses.kuki:611
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:611
 	if err_3 != nil {
 		var _zero0 Response
-//line stdlib/llm/responses/responses.kuki:611
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:611
 		return _zero0, err_3
 	}
 //line stdlib/llm/responses/responses.kuki:613
@@ -904,12 +904,12 @@ func doExecuteRaw(c Client) (Response, error) {
 //line stdlib/llm/responses/responses.kuki:618
 	raw := rawResponse{}
 //line stdlib/llm/responses/responses.kuki:619
-//line stdlib/llm/responses/responses.kuki:619
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:619
 	err_4 := json.ReadInto(resp.Body, &raw)
-//line stdlib/llm/responses/responses.kuki:619
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:619
 	if err_4 != nil {
 		var _zero0 Response
-//line stdlib/llm/responses/responses.kuki:619
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:619
 		return _zero0, err_4
 	}
 //line stdlib/llm/responses/responses.kuki:620
@@ -988,10 +988,10 @@ func doExecuteStreamRaw(c Client) (Response, error) {
 	}
 //line stdlib/llm/responses/responses.kuki:661
 	resp, err_5 := fetch.Do(req)
-//line stdlib/llm/responses/responses.kuki:661
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:661
 	if err_5 != nil {
 		var _zero0 Response
-//line stdlib/llm/responses/responses.kuki:661
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:661
 		return _zero0, err_5
 	}
 //line stdlib/llm/responses/responses.kuki:663
@@ -1034,11 +1034,11 @@ func doExecuteStreamRaw(c Client) (Response, error) {
 //line stdlib/llm/responses/responses.kuki:682
 			evt := rawStreamEvent{}
 //line stdlib/llm/responses/responses.kuki:683
-//line stdlib/llm/responses/responses.kuki:683
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:683
 			err_6 := json.ParseInto([]byte(data), &evt)
-//line stdlib/llm/responses/responses.kuki:683
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:683
 			if err_6 != nil {
-//line stdlib/llm/responses/responses.kuki:683
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:683
 				//line stdlib/llm/responses/responses.kuki:684
 				continue
 			}
@@ -1101,12 +1101,12 @@ func doExecuteStreamRaw(c Client) (Response, error) {
 		}
 	}
 //line stdlib/llm/responses/responses.kuki:713
-//line stdlib/llm/responses/responses.kuki:713
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:713
 	err_7 := scanner.Err()
-//line stdlib/llm/responses/responses.kuki:713
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:713
 	if err_7 != nil {
 		var _zero0 Response
-//line stdlib/llm/responses/responses.kuki:713
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:713
 		return _zero0, err_7
 	}
 //line stdlib/llm/responses/responses.kuki:715

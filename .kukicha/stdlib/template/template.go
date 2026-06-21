@@ -22,19 +22,19 @@ type HTMLTemplate struct {
 func Render(tmpl string, data any) (string, error) {
 //line stdlib/template/template.kuki:38
 	parsed, err_1 := texttmpl.New("template").Parse(tmpl)
-//line stdlib/template/template.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:38
 	if err_1 != nil {
-//line stdlib/template/template.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:38
 		return "", err_1
 	}
 //line stdlib/template/template.kuki:39
 	buf := bytes.Buffer{}
 //line stdlib/template/template.kuki:40
-//line stdlib/template/template.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:40
 	err_2 := parsed.Execute(&buf, data)
-//line stdlib/template/template.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:40
 	if err_2 != nil {
-//line stdlib/template/template.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:40
 		return "", err_2
 	}
 //line stdlib/template/template.kuki:41
@@ -45,19 +45,19 @@ func Render(tmpl string, data any) (string, error) {
 func HTML(tmpl string, data any) (string, error) {
 //line stdlib/template/template.kuki:47
 	parsed, err_3 := htmltmpl.New("template").Parse(tmpl)
-//line stdlib/template/template.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:47
 	if err_3 != nil {
-//line stdlib/template/template.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:47
 		return "", err_3
 	}
 //line stdlib/template/template.kuki:48
 	buf := bytes.Buffer{}
 //line stdlib/template/template.kuki:49
-//line stdlib/template/template.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:49
 	err_4 := parsed.Execute(&buf, data)
-//line stdlib/template/template.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:49
 	if err_4 != nil {
-//line stdlib/template/template.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:49
 		return "", err_4
 	}
 //line stdlib/template/template.kuki:50
@@ -68,10 +68,10 @@ func HTML(tmpl string, data any) (string, error) {
 func Compile(name string, src string) (Template, error) {
 //line stdlib/template/template.kuki:57
 	parsed, err_5 := texttmpl.New(name).Parse(src)
-//line stdlib/template/template.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:57
 	if err_5 != nil {
 		var _zero0 Template
-//line stdlib/template/template.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:57
 		return _zero0, err_5
 	}
 //line stdlib/template/template.kuki:58
@@ -82,10 +82,10 @@ func Compile(name string, src string) (Template, error) {
 func CompileHTML(name string, src string) (HTMLTemplate, error) {
 //line stdlib/template/template.kuki:64
 	parsed, err_6 := htmltmpl.New(name).Parse(src)
-//line stdlib/template/template.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:64
 	if err_6 != nil {
 		var _zero0 HTMLTemplate
-//line stdlib/template/template.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template.kuki:64
 		return _zero0, err_6
 	}
 //line stdlib/template/template.kuki:65

@@ -202,9 +202,9 @@ func ProposeRewrite(ask func(string) (string, error), task Task, parent Candidat
 	prompt := safe.Frame(instructions, blocks)
 //line stdlib/llm/era/era.kuki:198
 	raw, err_1 := ask(prompt)
-//line stdlib/llm/era/era.kuki:198
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:198
 	if err_1 != nil {
-//line stdlib/llm/era/era.kuki:198
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:198
 		return "", err_1
 	}
 //line stdlib/llm/era/era.kuki:199
@@ -245,9 +245,9 @@ func ProposeRecombination(ask func(string) (string, error), task Task, top []Can
 	prompt := safe.Frame(instructions, blocks)
 //line stdlib/llm/era/era.kuki:215
 	raw, err_2 := ask(prompt)
-//line stdlib/llm/era/era.kuki:215
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:215
 	if err_2 != nil {
-//line stdlib/llm/era/era.kuki:215
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:215
 		return "", err_2
 	}
 //line stdlib/llm/era/era.kuki:216
@@ -268,11 +268,11 @@ func BuildScore(source string) (float64, error) {
 //line stdlib/llm/era/era.kuki:241
 	path := files.Join(dir, "candidate.kuki")
 //line stdlib/llm/era/era.kuki:242
-//line stdlib/llm/era/era.kuki:242
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:242
 	err_3 := files.WriteString(path, source)
-//line stdlib/llm/era/era.kuki:242
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:242
 	if err_3 != nil {
-//line stdlib/llm/era/era.kuki:242
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:242
 		return 0, err_3
 	}
 //line stdlib/llm/era/era.kuki:243
@@ -295,18 +295,18 @@ func RunScore(source string, metric func(string) (float64, error)) (float64, err
 //line stdlib/llm/era/era.kuki:254
 	path := files.Join(dir, "candidate.kuki")
 //line stdlib/llm/era/era.kuki:255
-//line stdlib/llm/era/era.kuki:255
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:255
 	err_4 := files.WriteString(path, source)
-//line stdlib/llm/era/era.kuki:255
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:255
 	if err_4 != nil {
-//line stdlib/llm/era/era.kuki:255
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:255
 		return 0, err_4
 	}
 //line stdlib/llm/era/era.kuki:256
 	out, err_5 := shell.Output("kukicha", "run", path)
-//line stdlib/llm/era/era.kuki:256
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:256
 	if err_5 != nil {
-//line stdlib/llm/era/era.kuki:256
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:256
 		return 0, err_5
 	}
 //line stdlib/llm/era/era.kuki:257
@@ -317,18 +317,18 @@ func RunScore(source string, metric func(string) (float64, error)) (float64, err
 func BenchScore(source string, setup func(string) (string, error), benchName string) (float64, error) {
 //line stdlib/llm/era/era.kuki:265
 	workDir, err_6 := setup(source)
-//line stdlib/llm/era/era.kuki:265
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:265
 	if err_6 != nil {
-//line stdlib/llm/era/era.kuki:265
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:265
 		return 0, err_6
 	}
 //line stdlib/llm/era/era.kuki:266
 	// pipe step 1: Output(...)
-//line stdlib/llm/era/era.kuki:268
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:268
 	out, err_8 := shell.New("go", "test", "-bench", benchName, "-benchmem", "-count=1", "-run=^$", "./...").Dir(workDir).Output()
-//line stdlib/llm/era/era.kuki:266
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:266
 	if err_8 != nil {
-//line stdlib/llm/era/era.kuki:266
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:266
 		return 0, err_8
 	}
 //line stdlib/llm/era/era.kuki:269
@@ -471,37 +471,37 @@ func topK(tree []Candidate, higher bool, k int) []Candidate {
 			}
 		}()
 	})
-//line stdlib/llm/era/era.kuki:335
+//line stdlib/llm/era/era.kuki:332
 	if len(valid) > k {
-//line stdlib/llm/era/era.kuki:336
+//line stdlib/llm/era/era.kuki:333
 		valid = valid[:k]
 	}
-//line stdlib/llm/era/era.kuki:337
+//line stdlib/llm/era/era.kuki:334
 	return valid
 }
 
-//line stdlib/llm/era/era.kuki:339
+//line stdlib/llm/era/era.kuki:336
 func parseBenchNsPerOp(out string, benchName string) (float64, error) {
-//line stdlib/llm/era/era.kuki:340
+//line stdlib/llm/era/era.kuki:337
 	prefix := fmt.Sprintf("Benchmark%v", benchName)
-//line stdlib/llm/era/era.kuki:341
+//line stdlib/llm/era/era.kuki:338
 	for _, line := range strpkg.Lines(out) {
-//line stdlib/llm/era/era.kuki:342
+//line stdlib/llm/era/era.kuki:339
 		if !strpkg.HasPrefix(line, prefix) {
-//line stdlib/llm/era/era.kuki:343
+//line stdlib/llm/era/era.kuki:340
 			continue
 		}
-//line stdlib/llm/era/era.kuki:344
+//line stdlib/llm/era/era.kuki:341
 		fields := strpkg.Fields(line)
-//line stdlib/llm/era/era.kuki:346
+//line stdlib/llm/era/era.kuki:343
 		for i := range len(fields) {
-//line stdlib/llm/era/era.kuki:347
+//line stdlib/llm/era/era.kuki:344
 			if fields[i] == "ns/op" && i > 0 {
-//line stdlib/llm/era/era.kuki:348
+//line stdlib/llm/era/era.kuki:345
 				return strconv.ParseFloat(fields[i-1], 64)
 			}
 		}
 	}
-//line stdlib/llm/era/era.kuki:349
+//line stdlib/llm/era/era.kuki:346
 	return 0.0, fmt.Errorf("no benchmark line matched %v", benchName)
 }

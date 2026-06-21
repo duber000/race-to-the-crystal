@@ -529,11 +529,11 @@ func validateToolSchema(toolName string, schema any, handler any) error {
 //line stdlib/mcp/mcp.kuki:350
 func Tool[T any](server *mcp.Server, name string, description string, schema any, handler func(T) (any, error)) {
 //line stdlib/mcp/mcp.kuki:351
-//line stdlib/mcp/mcp.kuki:351
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:351
 	err_1 := validateToolSchema(name, schema, handler)
-//line stdlib/mcp/mcp.kuki:351
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:351
 	if err_1 != nil {
-//line stdlib/mcp/mcp.kuki:351
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:351
 		panic(fmt.Sprintf("%v", err_1))
 	}
 //line stdlib/mcp/mcp.kuki:352
@@ -585,11 +585,11 @@ func (ss *ServerSession) CreateMessageWithTools(ctx context.Context, params *mcp
 //line stdlib/mcp/mcp.kuki:404
 func ToolWithSampling[T any](server *mcp.Server, name string, description string, schema any, handler func(context.Context, *ServerSession, T) (any, error)) {
 //line stdlib/mcp/mcp.kuki:405
-//line stdlib/mcp/mcp.kuki:405
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:405
 	err_2 := validateToolSchema(name, schema, handler)
-//line stdlib/mcp/mcp.kuki:405
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:405
 	if err_2 != nil {
-//line stdlib/mcp/mcp.kuki:405
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:405
 		panic(fmt.Sprintf("%v", err_2))
 	}
 //line stdlib/mcp/mcp.kuki:406
@@ -673,9 +673,9 @@ func (c *Client) ConnectWith(ctx context.Context, endpoint string, httpClient *h
 	transport := &mcp.StreamableClientTransport{Endpoint: endpoint, HTTPClient: httpClient}
 //line stdlib/mcp/mcp.kuki:470
 	session, err_3 := c.inner.Connect(ctx, transport, nil)
-//line stdlib/mcp/mcp.kuki:470
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:470
 	if err_3 != nil {
-//line stdlib/mcp/mcp.kuki:470
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:470
 		return nil, fmt.Errorf("MCP connect to %v failed: %v", endpoint, err_3)
 	}
 //line stdlib/mcp/mcp.kuki:471
@@ -739,9 +739,9 @@ func ConnectWithClient(ctx context.Context, endpoint string, httpClient *http.Cl
 	transport := &mcp.StreamableClientTransport{Endpoint: endpoint, HTTPClient: httpClient}
 //line stdlib/mcp/mcp.kuki:527
 	session, err_4 := client.Connect(ctx, transport, nil)
-//line stdlib/mcp/mcp.kuki:527
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:527
 	if err_4 != nil {
-//line stdlib/mcp/mcp.kuki:527
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:527
 		return nil, fmt.Errorf("MCP connect to %v failed: %v", endpoint, err_4)
 	}
 //line stdlib/mcp/mcp.kuki:528
@@ -764,11 +764,11 @@ func Close(session *ClientSession) error {
 func ListTools(ctx context.Context, session *ClientSession) ([]ClientTool, error) {
 //line stdlib/mcp/mcp.kuki:542
 	result, err_5 := session.inner.ListTools(ctx, nil)
-//line stdlib/mcp/mcp.kuki:542
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:542
 	if err_5 != nil {
-//line stdlib/mcp/mcp.kuki:542
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:542
 		err_5 = fmt.Errorf("MCP ListTools failed: %w", err_5)
-//line stdlib/mcp/mcp.kuki:542
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:542
 		return []ClientTool{}, err_5
 	}
 //line stdlib/mcp/mcp.kuki:543
@@ -796,9 +796,9 @@ func CallTool(ctx context.Context, session *ClientSession, name string, args JSO
 	params := &mcp.CallToolParams{Name: name, Arguments: args}
 //line stdlib/mcp/mcp.kuki:557
 	result, err_6 := session.inner.CallTool(ctx, params)
-//line stdlib/mcp/mcp.kuki:557
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:557
 	if err_6 != nil {
-//line stdlib/mcp/mcp.kuki:557
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:557
 		return CallToolResult{}, fmt.Errorf("MCP CallTool \"%v\" failed: %v", name, err_6)
 	}
 //line stdlib/mcp/mcp.kuki:558
@@ -961,11 +961,11 @@ type ToolOpts struct {
 //line stdlib/mcp/mcp.kuki:727
 func ToolWithOpts[T any](server *mcp.Server, name string, description string, schema any, opts ToolOpts, handler func(T) (any, error)) {
 //line stdlib/mcp/mcp.kuki:728
-//line stdlib/mcp/mcp.kuki:728
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:728
 	err_7 := validateToolSchema(name, schema, handler)
-//line stdlib/mcp/mcp.kuki:728
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:728
 	if err_7 != nil {
-//line stdlib/mcp/mcp.kuki:728
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:728
 		panic(fmt.Sprintf("%v", err_7))
 	}
 //line stdlib/mcp/mcp.kuki:729
@@ -1093,11 +1093,11 @@ type ToolRichHandler func(context.Context, *ToolContext, JSONObject) (any, error
 //line stdlib/mcp/mcp.kuki:830
 func ToolRich[T any](server *mcp.Server, name string, description string, schema any, handler func(context.Context, *ToolContext, T) (any, error)) {
 //line stdlib/mcp/mcp.kuki:831
-//line stdlib/mcp/mcp.kuki:831
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:831
 	err_8 := validateToolSchema(name, schema, handler)
-//line stdlib/mcp/mcp.kuki:831
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:831
 	if err_8 != nil {
-//line stdlib/mcp/mcp.kuki:831
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:831
 		panic(fmt.Sprintf("%v", err_8))
 	}
 //line stdlib/mcp/mcp.kuki:832
@@ -1163,11 +1163,11 @@ type ClientPrompt struct {
 func ListResources(ctx context.Context, session *ClientSession) ([]ClientResource, error) {
 //line stdlib/mcp/mcp.kuki:882
 	result, err_9 := session.inner.ListResources(ctx, nil)
-//line stdlib/mcp/mcp.kuki:882
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:882
 	if err_9 != nil {
-//line stdlib/mcp/mcp.kuki:882
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:882
 		err_9 = fmt.Errorf("MCP ListResources failed: %w", err_9)
-//line stdlib/mcp/mcp.kuki:882
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:882
 		return []ClientResource{}, err_9
 	}
 //line stdlib/mcp/mcp.kuki:883
@@ -1185,11 +1185,11 @@ func ListResources(ctx context.Context, session *ClientSession) ([]ClientResourc
 func ListResourceTemplates(ctx context.Context, session *ClientSession) ([]ClientResourceTemplate, error) {
 //line stdlib/mcp/mcp.kuki:890
 	result, err_10 := session.inner.ListResourceTemplates(ctx, nil)
-//line stdlib/mcp/mcp.kuki:890
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:890
 	if err_10 != nil {
-//line stdlib/mcp/mcp.kuki:890
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:890
 		err_10 = fmt.Errorf("MCP ListResourceTemplates failed: %w", err_10)
-//line stdlib/mcp/mcp.kuki:890
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:890
 		return []ClientResourceTemplate{}, err_10
 	}
 //line stdlib/mcp/mcp.kuki:891
@@ -1207,9 +1207,9 @@ func ListResourceTemplates(ctx context.Context, session *ClientSession) ([]Clien
 func ReadResource(ctx context.Context, session *ClientSession, uri string) ([]*mcp.ResourceContents, error) {
 //line stdlib/mcp/mcp.kuki:905
 	result, err_11 := session.inner.ReadResource(ctx, &mcp.ReadResourceParams{URI: uri})
-//line stdlib/mcp/mcp.kuki:905
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:905
 	if err_11 != nil {
-//line stdlib/mcp/mcp.kuki:905
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:905
 		return []*mcp.ResourceContents{}, fmt.Errorf("MCP ReadResource \"%v\" failed: %v", uri, err_11)
 	}
 //line stdlib/mcp/mcp.kuki:906
@@ -1220,11 +1220,11 @@ func ReadResource(ctx context.Context, session *ClientSession, uri string) ([]*m
 func ListPrompts(ctx context.Context, session *ClientSession) ([]ClientPrompt, error) {
 //line stdlib/mcp/mcp.kuki:910
 	result, err_12 := session.inner.ListPrompts(ctx, nil)
-//line stdlib/mcp/mcp.kuki:910
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:910
 	if err_12 != nil {
-//line stdlib/mcp/mcp.kuki:910
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:910
 		err_12 = fmt.Errorf("MCP ListPrompts failed: %w", err_12)
-//line stdlib/mcp/mcp.kuki:910
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:910
 		return []ClientPrompt{}, err_12
 	}
 //line stdlib/mcp/mcp.kuki:911

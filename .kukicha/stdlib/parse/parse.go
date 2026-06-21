@@ -170,9 +170,9 @@ func assignString(fv reflect.Value, raw string) error {
 	if kind == reflect.Bool {
 //line stdlib/parse/parse.kuki:137
 		b, err_1 := strconv.ParseBool(raw)
-//line stdlib/parse/parse.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:137
 		if err_1 != nil {
-//line stdlib/parse/parse.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:137
 			return err_1
 		}
 //line stdlib/parse/parse.kuki:138
@@ -184,9 +184,9 @@ func assignString(fv reflect.Value, raw string) error {
 	if kind == reflect.Int || kind == reflect.Int8 || kind == reflect.Int16 || kind == reflect.Int32 || kind == reflect.Int64 {
 //line stdlib/parse/parse.kuki:141
 		n, err_2 := strconv.ParseInt(raw, 10, 64)
-//line stdlib/parse/parse.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:141
 		if err_2 != nil {
-//line stdlib/parse/parse.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:141
 			return err_2
 		}
 //line stdlib/parse/parse.kuki:142
@@ -198,9 +198,9 @@ func assignString(fv reflect.Value, raw string) error {
 	if kind == reflect.Uint || kind == reflect.Uint8 || kind == reflect.Uint16 || kind == reflect.Uint32 || kind == reflect.Uint64 {
 //line stdlib/parse/parse.kuki:145
 		n, err_3 := strconv.ParseUint(raw, 10, 64)
-//line stdlib/parse/parse.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:145
 		if err_3 != nil {
-//line stdlib/parse/parse.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:145
 			return err_3
 		}
 //line stdlib/parse/parse.kuki:146
@@ -212,9 +212,9 @@ func assignString(fv reflect.Value, raw string) error {
 	if kind == reflect.Float32 || kind == reflect.Float64 {
 //line stdlib/parse/parse.kuki:149
 		f, err_4 := strconv.ParseFloat(raw, 64)
-//line stdlib/parse/parse.kuki:149
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:149
 		if err_4 != nil {
-//line stdlib/parse/parse.kuki:149
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:149
 			return err_4
 		}
 //line stdlib/parse/parse.kuki:150
@@ -257,11 +257,11 @@ func readAllCSV(reader *csv.Reader) ([][]string, error) {
 func CSV(data string) ([][]string, error) {
 //line stdlib/parse/parse.kuki:182
 	// pipe step 1: readAllCSV(...)
-//line stdlib/parse/parse.kuki:185
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:185
 	records, err_6 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
-//line stdlib/parse/parse.kuki:182
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:182
 	if err_6 != nil {
-//line stdlib/parse/parse.kuki:182
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:182
 		return [][]string{}, err_6
 	}
 //line stdlib/parse/parse.kuki:187
@@ -272,12 +272,12 @@ func CSV(data string) ([][]string, error) {
 func CSVRecords(data string) (CSVRows, error) {
 //line stdlib/parse/parse.kuki:193
 	// pipe step 1: readAllCSV(...)
-//line stdlib/parse/parse.kuki:196
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:196
 	records, err_8 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
-//line stdlib/parse/parse.kuki:193
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:193
 	if err_8 != nil {
 		var _zero0 CSVRows
-//line stdlib/parse/parse.kuki:193
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:193
 		return _zero0, err_8
 	}
 //line stdlib/parse/parse.kuki:198
@@ -326,9 +326,9 @@ func CSVRecords(data string) (CSVRows, error) {
 func WriteCSV(path string, rows [][]string) error {
 //line stdlib/parse/parse.kuki:225
 	f, err_9 := os.Create(path)
-//line stdlib/parse/parse.kuki:225
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:225
 	if err_9 != nil {
-//line stdlib/parse/parse.kuki:225
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:225
 		return err_9
 	}
 //line stdlib/parse/parse.kuki:226
@@ -336,11 +336,11 @@ func WriteCSV(path string, rows [][]string) error {
 //line stdlib/parse/parse.kuki:227
 	w := csv.NewWriter(f)
 //line stdlib/parse/parse.kuki:228
-//line stdlib/parse/parse.kuki:228
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:228
 	err_10 := w.WriteAll(rows)
-//line stdlib/parse/parse.kuki:228
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:228
 	if err_10 != nil {
-//line stdlib/parse/parse.kuki:228
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:228
 		return err_10
 	}
 //line stdlib/parse/parse.kuki:229
@@ -397,9 +397,9 @@ func splitNonEmpty(data string) []string {
 func Int(s string) (int, error) {
 //line stdlib/parse/parse.kuki:272
 	n, err_11 := strconv.Atoi(s)
-//line stdlib/parse/parse.kuki:272
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:272
 	if err_11 != nil {
-//line stdlib/parse/parse.kuki:272
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:272
 		return 0, err_11
 	}
 //line stdlib/parse/parse.kuki:273
@@ -410,9 +410,9 @@ func Int(s string) (int, error) {
 func IntOr(s string, defaultValue int) int {
 //line stdlib/parse/parse.kuki:280
 	n, err_12 := Int(s)
-//line stdlib/parse/parse.kuki:280
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:280
 	if err_12 != nil {
-//line stdlib/parse/parse.kuki:280
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:280
 		return defaultValue
 	}
 //line stdlib/parse/parse.kuki:281
@@ -423,9 +423,9 @@ func IntOr(s string, defaultValue int) int {
 func Float64(s string) (float64, error) {
 //line stdlib/parse/parse.kuki:286
 	f, err_13 := strconv.ParseFloat(s, 64)
-//line stdlib/parse/parse.kuki:286
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:286
 	if err_13 != nil {
-//line stdlib/parse/parse.kuki:286
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:286
 		return 0, err_13
 	}
 //line stdlib/parse/parse.kuki:287
@@ -436,9 +436,9 @@ func Float64(s string) (float64, error) {
 func Float64Or(s string, defaultValue float64) float64 {
 //line stdlib/parse/parse.kuki:292
 	f, err_14 := Float64(s)
-//line stdlib/parse/parse.kuki:292
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:292
 	if err_14 != nil {
-//line stdlib/parse/parse.kuki:292
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:292
 		return defaultValue
 	}
 //line stdlib/parse/parse.kuki:293
@@ -449,10 +449,10 @@ func Float64Or(s string, defaultValue float64) float64 {
 func Duration(s string) (time.Duration, error) {
 //line stdlib/parse/parse.kuki:298
 	d, err_15 := time.ParseDuration(s)
-//line stdlib/parse/parse.kuki:298
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:298
 	if err_15 != nil {
 		var _zero0 time.Duration
-//line stdlib/parse/parse.kuki:298
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:298
 		return _zero0, err_15
 	}
 //line stdlib/parse/parse.kuki:299
@@ -463,9 +463,9 @@ func Duration(s string) (time.Duration, error) {
 func DurationOr(s string, defaultValue time.Duration) time.Duration {
 //line stdlib/parse/parse.kuki:304
 	d, err_16 := Duration(s)
-//line stdlib/parse/parse.kuki:304
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:304
 	if err_16 != nil {
-//line stdlib/parse/parse.kuki:304
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:304
 		return defaultValue
 	}
 //line stdlib/parse/parse.kuki:305
@@ -476,9 +476,9 @@ func DurationOr(s string, defaultValue time.Duration) time.Duration {
 func URL(s string) (*url.URL, error) {
 //line stdlib/parse/parse.kuki:310
 	u, err_17 := url.Parse(s)
-//line stdlib/parse/parse.kuki:310
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:310
 	if err_17 != nil {
-//line stdlib/parse/parse.kuki:310
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:310
 		return nil, err_17
 	}
 //line stdlib/parse/parse.kuki:311
@@ -489,10 +489,10 @@ func URL(s string) (*url.URL, error) {
 func Query(s string) (url.Values, error) {
 //line stdlib/parse/parse.kuki:316
 	v, err_18 := url.ParseQuery(s)
-//line stdlib/parse/parse.kuki:316
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:316
 	if err_18 != nil {
 		var _zero0 url.Values
-//line stdlib/parse/parse.kuki:316
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:316
 		return _zero0, err_18
 	}
 //line stdlib/parse/parse.kuki:317

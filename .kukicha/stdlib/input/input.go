@@ -27,9 +27,9 @@ func ReadLine(prompt string) (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 //line stdlib/input/input.kuki:31
 	text, err_1 := reader.ReadString('\n')
-//line stdlib/input/input.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:31
 	if err_1 != nil {
-//line stdlib/input/input.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:31
 		return "", err_1
 	}
 //line stdlib/input/input.kuki:32
@@ -49,9 +49,9 @@ func ReadPassword(prompt string) (string, error) {
 		reader := bufio.NewReader(os.Stdin)
 //line stdlib/input/input.kuki:50
 		text, err_2 := reader.ReadString('\n')
-//line stdlib/input/input.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:50
 		if err_2 != nil {
-//line stdlib/input/input.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:50
 			return "", err_2
 		}
 //line stdlib/input/input.kuki:51
@@ -61,9 +61,9 @@ func ReadPassword(prompt string) (string, error) {
 	fd := int(os.Stdin.Fd())
 //line stdlib/input/input.kuki:54
 	bytes, err_3 := term.ReadPassword(fd)
-//line stdlib/input/input.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:54
 	if err_3 != nil {
-//line stdlib/input/input.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:54
 		return "", err_3
 	}
 //line stdlib/input/input.kuki:55
@@ -76,11 +76,11 @@ func ReadPassword(prompt string) (string, error) {
 func Confirm(prompt string) (bool, error) {
 //line stdlib/input/input.kuki:62
 	answer, err_4 := ReadLine(fmt.Sprintf("%v [y/N]: ", prompt))
-//line stdlib/input/input.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:62
 	if err_4 != nil {
-//line stdlib/input/input.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:62
 		err_4 = fmt.Errorf("confirm prompt: %w", err_4)
-//line stdlib/input/input.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:62
 		return false, err_4
 	}
 //line stdlib/input/input.kuki:63
@@ -109,11 +109,11 @@ func Choose(prompt string, options []string) (int, error) {
 	fmt.Println("")
 //line stdlib/input/input.kuki:82
 	raw, err_5 := ReadLine("Enter number (or q to quit): ")
-//line stdlib/input/input.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:82
 	if err_5 != nil {
-//line stdlib/input/input.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:82
 		err_5 = fmt.Errorf("choose prompt: %w", err_5)
-//line stdlib/input/input.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:82
 		return 0, err_5
 	}
 //line stdlib/input/input.kuki:83
@@ -125,9 +125,9 @@ func Choose(prompt string, options []string) (int, error) {
 	}
 //line stdlib/input/input.kuki:88
 	val, err_6 := strconv.Atoi(trimmed)
-//line stdlib/input/input.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:88
 	if err_6 != nil {
-//line stdlib/input/input.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:88
 		return -1, fmt.Errorf("invalid selection: %v", trimmed)
 	}
 //line stdlib/input/input.kuki:89
@@ -309,9 +309,9 @@ func promptField(w *os.File, reader *bufio.Reader, field FormField) (string, err
 	case FieldKindText:
 //line stdlib/input/input.kuki:224
 		line, err_7 := readLineFrom(w, reader, field.Prompt)
-//line stdlib/input/input.kuki:224
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:224
 		if err_7 != nil {
-//line stdlib/input/input.kuki:224
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:224
 			return "", err_7
 		}
 //line stdlib/input/input.kuki:225
@@ -324,9 +324,9 @@ func promptField(w *os.File, reader *bufio.Reader, field FormField) (string, err
 	case FieldKindConfirm:
 //line stdlib/input/input.kuki:229
 		line, err_8 := readLineFrom(w, reader, fmt.Sprintf("%v[y/N]: ", field.Prompt))
-//line stdlib/input/input.kuki:229
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:229
 		if err_8 != nil {
-//line stdlib/input/input.kuki:229
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:229
 			return "", err_8
 		}
 //line stdlib/input/input.kuki:230
@@ -362,9 +362,9 @@ func promptChoose(w *os.File, reader *bufio.Reader, field FormField) (string, er
 	}
 //line stdlib/input/input.kuki:245
 	raw, err_9 := readLineFrom(w, reader, "Enter number (or q to quit): ")
-//line stdlib/input/input.kuki:245
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:245
 	if err_9 != nil {
-//line stdlib/input/input.kuki:245
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:245
 		return "", err_9
 	}
 //line stdlib/input/input.kuki:246
@@ -376,9 +376,9 @@ func promptChoose(w *os.File, reader *bufio.Reader, field FormField) (string, er
 	}
 //line stdlib/input/input.kuki:249
 	val, err_10 := strconv.Atoi(trimmed)
-//line stdlib/input/input.kuki:249
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:249
 	if err_10 != nil {
-//line stdlib/input/input.kuki:249
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:249
 		return "", fmt.Errorf("invalid selection: %v", trimmed)
 	}
 //line stdlib/input/input.kuki:250
@@ -399,9 +399,9 @@ func readLineFrom(w *os.File, reader *bufio.Reader, prompt string) (string, erro
 	}
 //line stdlib/input/input.kuki:259
 	text, err_11 := reader.ReadString('\n')
-//line stdlib/input/input.kuki:259
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:259
 	if err_11 != nil {
-//line stdlib/input/input.kuki:259
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:259
 		return "", err_11
 	}
 //line stdlib/input/input.kuki:260

@@ -143,9 +143,9 @@ func CheckEmail(path string, s string) (FieldError, bool) {
 	pattern := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
 //line stdlib/validate/tags.kuki:93
 	matched, err_1 := regexp.MatchString(pattern, s)
-//line stdlib/validate/tags.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:93
 	if err_1 != nil {
-//line stdlib/validate/tags.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:93
 		panic(fmt.Sprintf("validate: invalid email pattern: %v", err_1))
 	}
 //line stdlib/validate/tags.kuki:94
@@ -161,9 +161,9 @@ func CheckEmail(path string, s string) (FieldError, bool) {
 func CheckURL(path string, s string) (FieldError, bool) {
 //line stdlib/validate/tags.kuki:100
 	parsed, err_2 := url.Parse(s)
-//line stdlib/validate/tags.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:100
 	if err_2 != nil {
-//line stdlib/validate/tags.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:100
 		return FieldError{Path: path, Rule: "url", Message: "invalid URL"}, true
 	}
 //line stdlib/validate/tags.kuki:101
@@ -179,9 +179,9 @@ func CheckURL(path string, s string) (FieldError, bool) {
 func CheckRegex(path string, s string, pattern string) (FieldError, bool) {
 //line stdlib/validate/tags.kuki:107
 	matched, err_3 := regexp.MatchString(pattern, s)
-//line stdlib/validate/tags.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:107
 	if err_3 != nil {
-//line stdlib/validate/tags.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:107
 		return FieldError{Path: path, Rule: "regex", Message: "invalid regex pattern"}, true
 	}
 //line stdlib/validate/tags.kuki:108

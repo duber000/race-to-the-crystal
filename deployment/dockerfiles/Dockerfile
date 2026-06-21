@@ -3,7 +3,7 @@
 
 FROM golang:1.26.4-bookworm AS builder
 
-ARG KUKICHA_VERSION=v0.48.3
+ARG KUKICHA_VERSION=v0.54.1
 
 # Install kukicha compiler
 RUN go install github.com/kukichalang/kukicha/cmd/kukicha@${KUKICHA_VERSION}

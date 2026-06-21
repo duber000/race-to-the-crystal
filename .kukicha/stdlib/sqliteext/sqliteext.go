@@ -21,9 +21,9 @@ func Register(pool db.Pool, registrar Registrar) error {
 	rawDB := db.RawDB(pool)
 //line stdlib/sqliteext/sqliteext.kuki:89
 	sqlConn, err_1 := rawDB.Conn(context.Background())
-//line stdlib/sqliteext/sqliteext.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:89
 	if err_1 != nil {
-//line stdlib/sqliteext/sqliteext.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:89
 		return err_1
 	}
 //line stdlib/sqliteext/sqliteext.kuki:90

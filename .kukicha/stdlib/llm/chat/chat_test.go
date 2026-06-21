@@ -205,11 +205,11 @@ func TestAskJSONStructTarget(t *testing.T) {
 	defer server.Close()
 //line stdlib/llm/chat/chat_test.kuki:135
 	// pipe step 1: chat.AskJSON(...)
-//line stdlib/llm/chat/chat_test.kuki:135
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:135
 	v, err_2 := chat.AskJSON[_Verdict_AskJSON_Test](newTestClient(server.URL), "decide")
-//line stdlib/llm/chat/chat_test.kuki:135
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:135
 	if err_2 != nil {
-//line stdlib/llm/chat/chat_test.kuki:135
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:135
 		//line stdlib/llm/chat/chat_test.kuki:136
 		t.Errorf("AskJSON struct decode failed: %v", err_2)
 		//line stdlib/llm/chat/chat_test.kuki:137
@@ -268,11 +268,11 @@ func TestAskJSONStringBackedEnum(t *testing.T) {
 	defer server.Close()
 //line stdlib/llm/chat/chat_test.kuki:151
 	// pipe step 1: chat.AskJSON(...)
-//line stdlib/llm/chat/chat_test.kuki:151
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:151
 	v, err_4 := chat.AskJSON[_AskJSONVerdict](newTestClient(server.URL), "decide")
-//line stdlib/llm/chat/chat_test.kuki:151
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:151
 	if err_4 != nil {
-//line stdlib/llm/chat/chat_test.kuki:151
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:151
 		//line stdlib/llm/chat/chat_test.kuki:152
 		t.Errorf("AskJSON enum decode failed: %v", err_4)
 		//line stdlib/llm/chat/chat_test.kuki:153
@@ -334,9 +334,9 @@ func TestWithToolAndRunTools(t *testing.T) {
 	})
 //line stdlib/llm/chat/chat_test.kuki:195
 	comp, err_5 := chat.SendRaw(c)
-//line stdlib/llm/chat/chat_test.kuki:195
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:195
 	if err_5 != nil {
-//line stdlib/llm/chat/chat_test.kuki:195
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:195
 		//line stdlib/llm/chat/chat_test.kuki:196
 		t.Errorf("SendRaw failed: %v", err_5)
 		//line stdlib/llm/chat/chat_test.kuki:197
@@ -372,9 +372,9 @@ func TestRunToolsUnregisteredToolErrors(t *testing.T) {
 	c := chat.User(newTestClient(server.URL), "say hi")
 //line stdlib/llm/chat/chat_test.kuki:221
 	comp, err_6 := chat.SendRaw(c)
-//line stdlib/llm/chat/chat_test.kuki:221
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:221
 	if err_6 != nil {
-//line stdlib/llm/chat/chat_test.kuki:221
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:221
 		//line stdlib/llm/chat/chat_test.kuki:222
 		t.Errorf("SendRaw failed: %v", err_6)
 		//line stdlib/llm/chat/chat_test.kuki:223

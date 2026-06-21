@@ -22,9 +22,9 @@ type ReleaseOptions struct {
 func ListTags(repo string) ([]string, error) {
 //line stdlib/git/git.kuki:31
 	raw, err_1 := shell.Output("gh", "api", fmt.Sprintf("repos/%v/tags", repo), "--paginate", "--jq", ".[].name")
-//line stdlib/git/git.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:31
 	if err_1 != nil {
-//line stdlib/git/git.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:31
 		return []string{}, fmt.Errorf("failed to fetch tags for %v: %v", repo, err_1)
 	}
 //line stdlib/git/git.kuki:32
@@ -62,9 +62,9 @@ func TagExists(repo string, tag string) (bool, error) {
 func DefaultBranch(repo string) (string, error) {
 //line stdlib/git/git.kuki:56
 	branch, err_2 := shell.Output("gh", "repo", "view", repo, "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name")
-//line stdlib/git/git.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:65
 	if err_2 != nil {
-//line stdlib/git/git.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:65
 		return "", fmt.Errorf("failed to get default branch for %v: %v", repo, err_2)
 	}
 //line stdlib/git/git.kuki:66
@@ -75,11 +75,11 @@ func DefaultBranch(repo string) (string, error) {
 func CurrentBranch() (string, error) {
 //line stdlib/git/git.kuki:71
 	branch, err_3 := shell.Output("git", "rev-parse", "--abbrev-ref", "HEAD")
-//line stdlib/git/git.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:71
 	if err_3 != nil {
-//line stdlib/git/git.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:71
 		err_3 = fmt.Errorf("failed to get current branch: %w", err_3)
-//line stdlib/git/git.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:71
 		return "", err_3
 	}
 //line stdlib/git/git.kuki:72
@@ -171,11 +171,11 @@ func RepoExists(repo string) (bool, error) {
 func CurrentUser() (string, error) {
 //line stdlib/git/git.kuki:133
 	login, err_4 := shell.Output("gh", "api", "user", "--jq", ".login")
-//line stdlib/git/git.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:133
 	if err_4 != nil {
-//line stdlib/git/git.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:133
 		err_4 = fmt.Errorf("failed to get current user: %w", err_4)
-//line stdlib/git/git.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:133
 		return "", err_4
 	}
 //line stdlib/git/git.kuki:134
@@ -185,13 +185,13 @@ func CurrentUser() (string, error) {
 //line stdlib/git/git.kuki:145
 func Clone(url string, path string) error {
 //line stdlib/git/git.kuki:146
-//line stdlib/git/git.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:146
 	_, err_5 := shell.Output("git", "clone", url, path)
-//line stdlib/git/git.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:146
 	if err_5 != nil {
-//line stdlib/git/git.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:146
 		err_5 = fmt.Errorf("clone failed: %w", err_5)
-//line stdlib/git/git.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:146
 		return err_5
 	}
 //line stdlib/git/git.kuki:147
@@ -201,13 +201,13 @@ func Clone(url string, path string) error {
 //line stdlib/git/git.kuki:153
 func CloneShallow(url string, path string, depth int) error {
 //line stdlib/git/git.kuki:154
-//line stdlib/git/git.kuki:154
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:154
 	_, err_6 := shell.Output("git", "clone", "--depth", fmt.Sprintf("%v", depth), url, path)
-//line stdlib/git/git.kuki:154
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:154
 	if err_6 != nil {
-//line stdlib/git/git.kuki:154
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:154
 		err_6 = fmt.Errorf("shallow clone failed: %w", err_6)
-//line stdlib/git/git.kuki:154
+//line /Users/tluker/repos/go/kukicha/stdlib/git/git.kuki:154
 		return err_6
 	}
 //line stdlib/git/git.kuki:155
