@@ -9,65 +9,65 @@ import (
 	"testing"
 )
 
-//line stdlib/sandbox/sandbox_test.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:11
 type SandboxCase struct {
 	name string
 }
 
-//line stdlib/sandbox/sandbox_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:14
 func TestSandboxFileOperations(t *testing.T) {
-//line stdlib/sandbox/sandbox_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:15
 	cases := []SandboxCase{SandboxCase{name: "file operations"}}
-//line stdlib/sandbox/sandbox_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:17
 	for _, tc := range cases {
-//line stdlib/sandbox/sandbox_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:18
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/sandbox/sandbox_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:19
 			dir, cleanup, err := files.TempDirAuto("sandbox-test")
-//line stdlib/sandbox/sandbox_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:20
 			test.AssertNoError(t, err)
-//line stdlib/sandbox/sandbox_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:21
 			defer cleanup()
-//line stdlib/sandbox/sandbox_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:23
 			box, err2 := sandbox.New(dir)
-//line stdlib/sandbox/sandbox_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:24
 			test.AssertNoError(t, err2)
-//line stdlib/sandbox/sandbox_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:25
 			defer sandbox.Close(box)
-//line stdlib/sandbox/sandbox_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:27
 			writeErr := sandbox.WriteString(box, "data", "notes.txt")
-//line stdlib/sandbox/sandbox_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:28
 			test.AssertNoError(t, writeErr)
-//line stdlib/sandbox/sandbox_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:29
 			test.AssertTrue(t, sandbox.Exists(box, "notes.txt"))
-//line stdlib/sandbox/sandbox_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:31
 			content, readErr := sandbox.ReadString(box, "notes.txt")
-//line stdlib/sandbox/sandbox_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:32
 			test.AssertNoError(t, readErr)
-//line stdlib/sandbox/sandbox_test.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:33
 			test.AssertEqual(t, content, "data")
-//line stdlib/sandbox/sandbox_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:35
 			test.AssertTrue(t, sandbox.IsFile(box, "notes.txt"))
-//line stdlib/sandbox/sandbox_test.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:37
 			mkdirErr := sandbox.MkDir(box, "subdir")
-//line stdlib/sandbox/sandbox_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:38
 			test.AssertNoError(t, mkdirErr)
-//line stdlib/sandbox/sandbox_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:39
 			test.AssertTrue(t, sandbox.IsDir(box, "subdir"))
-//line stdlib/sandbox/sandbox_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:41
 			names, listErr := sandbox.List(box, ".")
-//line stdlib/sandbox/sandbox_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:42
 			test.AssertNoError(t, listErr)
-//line stdlib/sandbox/sandbox_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:43
 			if len(names) == 0 {
-//line stdlib/sandbox/sandbox_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:44
 				t.Errorf("List should return at least one entry")
 			}
-//line stdlib/sandbox/sandbox_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:46
 			delErr := sandbox.Delete(box, "notes.txt")
-//line stdlib/sandbox/sandbox_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:47
 			test.AssertNoError(t, delErr)
-//line stdlib/sandbox/sandbox_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:48
 			test.AssertFalse(t, sandbox.Exists(box, "notes.txt"))
 		})
 	}

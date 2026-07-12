@@ -7,50 +7,50 @@ import (
 	"time"
 )
 
-//line stdlib/ctx/ctx.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:20
 type Handle struct {
 	Ctx    context.Context
 	Cancel func()
 }
 
-//line stdlib/ctx/ctx.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:26
 func noop() {
-//line stdlib/ctx/ctx.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:27
 	return
 }
 
-//line stdlib/ctx/ctx.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:30
 func Background() Handle {
-//line stdlib/ctx/ctx.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:31
 	return Handle{Ctx: context.Background(), Cancel: noop}
 }
 
-//line stdlib/ctx/ctx.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:37
 func FromContext(c context.Context) Handle {
-//line stdlib/ctx/ctx.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:38
 	return Handle{Ctx: c, Cancel: noop}
 }
 
-//line stdlib/ctx/ctx.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:43
 func WithTimeout(parent Handle, timeout time.Duration) Handle {
-//line stdlib/ctx/ctx.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:44
 	child, cancel := context.WithTimeout(parent.Ctx, timeout)
-//line stdlib/ctx/ctx.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:45
 	return Handle{Ctx: child, Cancel: cancel}
 }
 
-//line stdlib/ctx/ctx.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:49
 func WithDeadline(parent Handle, deadline time.Time) Handle {
-//line stdlib/ctx/ctx.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:50
 	child, cancel := context.WithDeadline(parent.Ctx, deadline)
-//line stdlib/ctx/ctx.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:51
 	return Handle{Ctx: child, Cancel: cancel}
 }
 
-//line stdlib/ctx/ctx.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:55
 func WithCancel(parent Handle) Handle {
-//line stdlib/ctx/ctx.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:56
 	child, cancel := context.WithCancel(parent.Ctx)
-//line stdlib/ctx/ctx.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:57
 	return Handle{Ctx: child, Cancel: cancel}
 }

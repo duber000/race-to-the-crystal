@@ -8,281 +8,281 @@ import (
 	"slices"
 )
 
-//line stdlib/iterator/iterator.kuki:9
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:9
 func Values[T any](items []T) iter.Seq[T] {
-//line stdlib/iterator/iterator.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:10
 	return slices.Values(items)
 }
 
-//line stdlib/iterator/iterator.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:13
 func Filter[T any](seq iter.Seq[T], keep func(T) bool) iter.Seq[T] {
-//line stdlib/iterator/iterator.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:14
 	return func(yield func(T) bool) {
-//line stdlib/iterator/iterator.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:15
 		for item := range seq {
-//line stdlib/iterator/iterator.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:16
 			if keep(item) {
-//line stdlib/iterator/iterator.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:17
 				if !yield(item) {
-//line stdlib/iterator/iterator.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:18
 					return
 				}
 			}
 		}
-//line stdlib/iterator/iterator.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:19
 		return
 	}
 }
 
-//line stdlib/iterator/iterator.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:26
 func Map[T any, U any](seq iter.Seq[T], transform func(T) U) iter.Seq[U] {
-//line stdlib/iterator/iterator.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:27
 	return func(yield func(U) bool) {
-//line stdlib/iterator/iterator.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:28
 		for item := range seq {
-//line stdlib/iterator/iterator.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:29
 			if !yield(transform(item)) {
-//line stdlib/iterator/iterator.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:30
 				return
 			}
 		}
-//line stdlib/iterator/iterator.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:31
 		return
 	}
 }
 
-//line stdlib/iterator/iterator.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:34
 func FlatMap[T any](seq iter.Seq[T], transform func(T) iter.Seq[T]) iter.Seq[T] {
-//line stdlib/iterator/iterator.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:35
 	return func(yield func(T) bool) {
-//line stdlib/iterator/iterator.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:36
 		for item := range seq {
-//line stdlib/iterator/iterator.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:37
 			for subItem := range transform(item) {
-//line stdlib/iterator/iterator.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:38
 				if !yield(subItem) {
-//line stdlib/iterator/iterator.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:39
 					return
 				}
 			}
 		}
-//line stdlib/iterator/iterator.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:40
 		return
 	}
 }
 
-//line stdlib/iterator/iterator.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:43
 func Take[T any](seq iter.Seq[T], n int) iter.Seq[T] {
-//line stdlib/iterator/iterator.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:44
 	return func(yield func(T) bool) {
-//line stdlib/iterator/iterator.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:45
 		count := 0
-//line stdlib/iterator/iterator.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:46
 		for item := range seq {
-//line stdlib/iterator/iterator.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:47
 			if count >= n {
-//line stdlib/iterator/iterator.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:48
 				return
 			}
-//line stdlib/iterator/iterator.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:49
 			if !yield(item) {
-//line stdlib/iterator/iterator.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:50
 				return
 			}
-//line stdlib/iterator/iterator.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:51
 			count++
 		}
-//line stdlib/iterator/iterator.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:52
 		return
 	}
 }
 
-//line stdlib/iterator/iterator.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:55
 func Skip[T any](seq iter.Seq[T], n int) iter.Seq[T] {
-//line stdlib/iterator/iterator.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:56
 	return func(yield func(T) bool) {
-//line stdlib/iterator/iterator.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:57
 		count := 0
-//line stdlib/iterator/iterator.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:58
 		for item := range seq {
-//line stdlib/iterator/iterator.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:59
 			if count >= n {
-//line stdlib/iterator/iterator.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:60
 				if !yield(item) {
-//line stdlib/iterator/iterator.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:61
 					return
 				}
 			}
-//line stdlib/iterator/iterator.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:62
 			count++
 		}
-//line stdlib/iterator/iterator.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:63
 		return
 	}
 }
 
-//line stdlib/iterator/iterator.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:66
 func Enumerate[T any](seq iter.Seq[T]) iter.Seq2[int, T] {
-//line stdlib/iterator/iterator.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:67
 	return func(yield func(int, T) bool) {
-//line stdlib/iterator/iterator.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:68
 		i := 0
-//line stdlib/iterator/iterator.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:69
 		for item := range seq {
-//line stdlib/iterator/iterator.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:70
 			if !yield(i, item) {
-//line stdlib/iterator/iterator.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:71
 				return
 			}
-//line stdlib/iterator/iterator.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:72
 			i++
 		}
-//line stdlib/iterator/iterator.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:73
 		return
 	}
 }
 
-//line stdlib/iterator/iterator.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:76
 func Chunk[T any](seq iter.Seq[T], n int) iter.Seq[[]T] {
-//line stdlib/iterator/iterator.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:77
 	return func(yield func([]T) bool) {
-//line stdlib/iterator/iterator.kuki:78
-		chunk := make([]T, 0)
-//line stdlib/iterator/iterator.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:78
+		chunk := []T{}
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:79
 		for item := range seq {
-//line stdlib/iterator/iterator.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:80
 			chunk = append(chunk, item)
-//line stdlib/iterator/iterator.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:81
 			if len(chunk) == n {
-//line stdlib/iterator/iterator.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:82
 				if !yield(chunk) {
-//line stdlib/iterator/iterator.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:83
 					return
 				}
-//line stdlib/iterator/iterator.kuki:84
-				chunk = make([]T, 0)
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:84
+				chunk = []T{}
 			}
 		}
-//line stdlib/iterator/iterator.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:86
 		if len(chunk) > 0 {
-//line stdlib/iterator/iterator.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:87
 			if !yield(chunk) {
-//line stdlib/iterator/iterator.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:88
 				return
 			}
 		}
-//line stdlib/iterator/iterator.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:89
 		return
 	}
 }
 
-//line stdlib/iterator/iterator.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:94
 func Zip[T any](seq1 iter.Seq[T], seq2 iter.Seq[T]) iter.Seq2[T, T] {
-//line stdlib/iterator/iterator.kuki:95
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:95
 	return func(yield func(T, T) bool) {
-//line stdlib/iterator/iterator.kuki:96
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:96
 		second := Collect(seq2)
-//line stdlib/iterator/iterator.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:97
 		i := 0
-//line stdlib/iterator/iterator.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:98
 		for v1 := range seq1 {
-//line stdlib/iterator/iterator.kuki:99
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:99
 			if i >= len(second) {
-//line stdlib/iterator/iterator.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:100
 				return
 			}
-//line stdlib/iterator/iterator.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:101
 			if !yield(v1, second[i]) {
-//line stdlib/iterator/iterator.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:102
 				return
 			}
-//line stdlib/iterator/iterator.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:103
 			i++
 		}
-//line stdlib/iterator/iterator.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:104
 		return
 	}
 }
 
-//line stdlib/iterator/iterator.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:108
 func Reduce[T any](seq iter.Seq[T], initial T, reducer func(T, T) T) T {
-//line stdlib/iterator/iterator.kuki:109
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:109
 	acc := initial
-//line stdlib/iterator/iterator.kuki:110
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:110
 	for item := range seq {
-//line stdlib/iterator/iterator.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:111
 		acc = reducer(acc, item)
 	}
-//line stdlib/iterator/iterator.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:112
 	return acc
 }
 
-//line stdlib/iterator/iterator.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:115
 func Collect[T any](seq iter.Seq[T]) []T {
-//line stdlib/iterator/iterator.kuki:116
-	result := make([]T, 0)
-//line stdlib/iterator/iterator.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:116
+	result := []T{}
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:117
 	for item := range seq {
-//line stdlib/iterator/iterator.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:118
 		result = append(result, item)
 	}
-//line stdlib/iterator/iterator.kuki:119
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:119
 	return result
 }
 
-//line stdlib/iterator/iterator.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:122
 func Any[T any](seq iter.Seq[T], predicate func(T) bool) bool {
-//line stdlib/iterator/iterator.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:123
 	for item := range seq {
-//line stdlib/iterator/iterator.kuki:124
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:124
 		if predicate(item) {
-//line stdlib/iterator/iterator.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:125
 			return true
 		}
 	}
-//line stdlib/iterator/iterator.kuki:126
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:126
 	return false
 }
 
-//line stdlib/iterator/iterator.kuki:129
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:129
 func All[T any](seq iter.Seq[T], predicate func(T) bool) bool {
-//line stdlib/iterator/iterator.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:130
 	for item := range seq {
-//line stdlib/iterator/iterator.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:131
 		if !predicate(item) {
-//line stdlib/iterator/iterator.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:132
 			return false
 		}
 	}
-//line stdlib/iterator/iterator.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:133
 	return true
 }
 
-//line stdlib/iterator/iterator.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:137
 func Find[T any](seq iter.Seq[T], predicate func(T) bool) (T, error) {
-//line stdlib/iterator/iterator.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:138
 	for item := range seq {
-//line stdlib/iterator/iterator.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:139
 		if predicate(item) {
-//line stdlib/iterator/iterator.kuki:140
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:140
 			return item, nil
 		}
 	}
-//line stdlib/iterator/iterator.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:141
 	var _zero0 T
 	return _zero0, errors.New("no match found")
 }
 
-//line stdlib/iterator/iterator.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:145
 func FindOr[T any](seq iter.Seq[T], predicate func(T) bool, defaultValue T) T {
-//line stdlib/iterator/iterator.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:146
 	for item := range seq {
-//line stdlib/iterator/iterator.kuki:147
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:147
 		if predicate(item) {
-//line stdlib/iterator/iterator.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:148
 			return item
 		}
 	}
-//line stdlib/iterator/iterator.kuki:149
+//line /Users/tluker/repos/go/kukicha/stdlib/iterator/iterator.kuki:149
 	return defaultValue
 }

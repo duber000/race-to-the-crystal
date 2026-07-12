@@ -10,73 +10,73 @@ import (
 	"testing"
 )
 
-//line stdlib/concurrent/concurrent_test.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:11
 func TestParallelEmpty(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:12
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:12
 	emptyTasks := []func(){}
-//line stdlib/concurrent/concurrent_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:13
 	concurrent.Parallel(emptyTasks...)
-//line stdlib/concurrent/concurrent_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:15
 	t.Logf("Parallel completed with empty task list")
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:18
 func TestParallelWithLimitEmpty(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:19
 	emptyTasks := []func(){}
-//line stdlib/concurrent/concurrent_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:20
 	concurrent.ParallelWithLimit(5, emptyTasks...)
-//line stdlib/concurrent/concurrent_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:22
 	t.Logf("ParallelWithLimit completed with empty task list")
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:25
 func TestParallelSingleTask(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:26
 	taskRun := false
-//line stdlib/concurrent/concurrent_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:27
 	task := func() {
-//line stdlib/concurrent/concurrent_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:28
 		taskRun = true
 	}
-//line stdlib/concurrent/concurrent_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:30
 	concurrent.Parallel(task)
-//line stdlib/concurrent/concurrent_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:31
 	if !taskRun {
-//line stdlib/concurrent/concurrent_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:32
 		t.Errorf("Task should have been executed")
 	}
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:36
 type MapCase struct {
 	name     string
 	input    []int
 	expected []int
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:41
 func TestMap(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:42
 	cases := []MapCase{MapCase{name: "double values", input: []int{1, 2, 3}, expected: []int{2, 4, 6}}, MapCase{name: "single element", input: []int{5}, expected: []int{10}}, MapCase{name: "empty list", input: []int{}, expected: []int{}}}
-//line stdlib/concurrent/concurrent_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:48
 	for _, tc := range cases {
-//line stdlib/concurrent/concurrent_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:49
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:50
 			results := concurrent.Map(tc.input, func(n int) int { return n * 2 })
-//line stdlib/concurrent/concurrent_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:51
 			test.AssertEqual(t, len(results), len(tc.expected))
-//line stdlib/concurrent/concurrent_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:52
 			for i, v := range results {
-//line stdlib/concurrent/concurrent_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:53
 				test.AssertEqual(t, v, tc.expected[i])
 			}
 		})
 	}
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:58
 type MapWithLimitCase struct {
 	name     string
 	input    []int
@@ -84,207 +84,207 @@ type MapWithLimitCase struct {
 	expected []int
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:64
 func TestMapWithLimit(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:65
 	cases := []MapWithLimitCase{MapWithLimitCase{name: "limit 2", input: []int{1, 2, 3, 4}, limit: 2, expected: []int{10, 20, 30, 40}}, MapWithLimitCase{name: "limit 1", input: []int{5, 10}, limit: 1, expected: []int{50, 100}}, MapWithLimitCase{name: "empty list", input: []int{}, limit: 4, expected: []int{}}}
-//line stdlib/concurrent/concurrent_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:86
 	for _, tc := range cases {
-//line stdlib/concurrent/concurrent_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:87
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:88
 			results := concurrent.MapWithLimit(tc.input, tc.limit, func(n int) int { return n * 10 })
-//line stdlib/concurrent/concurrent_test.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:89
 			test.AssertEqual(t, len(results), len(tc.expected))
-//line stdlib/concurrent/concurrent_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:90
 			for i, v := range results {
-//line stdlib/concurrent/concurrent_test.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:91
 				test.AssertEqual(t, v, tc.expected[i])
 			}
 		})
 	}
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:96
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:96
 func TestMapPreservesOrder(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:97
 	input := []int{5, 4, 3, 2, 1}
-//line stdlib/concurrent/concurrent_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:98
 	results := concurrent.Map(input, func(n int) int { return n * n })
-//line stdlib/concurrent/concurrent_test.kuki:99
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:99
 	expected := []int{25, 16, 9, 4, 1}
-//line stdlib/concurrent/concurrent_test.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:100
 	test.AssertEqual(t, len(results), len(expected))
-//line stdlib/concurrent/concurrent_test.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:101
 	for i, v := range results {
-//line stdlib/concurrent/concurrent_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:102
 		test.AssertEqual(t, v, expected[i])
 	}
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:106
 func okTask() error {
-//line stdlib/concurrent/concurrent_test.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:107
 	return nil
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:109
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:109
 func boomTask() error {
-//line stdlib/concurrent/concurrent_test.kuki:110
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:110
 	return errors.New("boom")
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:114
 func doubleOK(n int) (int, error) {
-//line stdlib/concurrent/concurrent_test.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:115
 	return n * 2, nil
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:117
 func timesTen(n int) (int, error) {
-//line stdlib/concurrent/concurrent_test.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:118
 	return n * 10, nil
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:120
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:120
 func failOnTwo(n int) (int, error) {
-//line stdlib/concurrent/concurrent_test.kuki:121
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:121
 	if n == 2 {
-//line stdlib/concurrent/concurrent_test.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:122
 		return 0, errors.New("boom")
 	}
-//line stdlib/concurrent/concurrent_test.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:123
 	return n, nil
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:125
 func TestParallelEAllOK(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:126
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:126
 	err := concurrent.ParallelE(okTask, okTask, okTask)
-//line stdlib/concurrent/concurrent_test.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:127
 	test.AssertNoError(t, err)
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:129
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:129
 func TestParallelEFirstError(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:130
 	err := concurrent.ParallelE(okTask, boomTask, okTask)
-//line stdlib/concurrent/concurrent_test.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:131
 	if err == nil {
-//line stdlib/concurrent/concurrent_test.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:132
 		t.Errorf("expected error, got nil")
 	}
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:136
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:136
 func TestMapESuccess(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:137
 	items := []int{1, 2, 3}
-//line stdlib/concurrent/concurrent_test.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:138
 	results, err := concurrent.MapE(items, doubleOK)
-//line stdlib/concurrent/concurrent_test.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:139
 	test.AssertNoError(t, err)
-//line stdlib/concurrent/concurrent_test.kuki:140
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:140
 	test.AssertEqual(t, len(results), 3)
-//line stdlib/concurrent/concurrent_test.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:141
 	for i, v := range results {
-//line stdlib/concurrent/concurrent_test.kuki:142
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:142
 		test.AssertEqual(t, v, (i+1)*2)
 	}
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:144
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:144
 func TestMapEFirstError(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:145
 	items := []int{1, 2, 3}
-//line stdlib/concurrent/concurrent_test.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:146
 	_, err := concurrent.MapE(items, failOnTwo)
-//line stdlib/concurrent/concurrent_test.kuki:147
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:147
 	if err == nil {
-//line stdlib/concurrent/concurrent_test.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:148
 		t.Errorf("expected error, got nil")
 	}
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:152
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:152
 func TestMapEWithLimitSuccess(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:153
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:153
 	items := []int{1, 2, 3, 4}
-//line stdlib/concurrent/concurrent_test.kuki:154
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:154
 	results, err := concurrent.MapEWithLimit(items, 2, timesTen)
-//line stdlib/concurrent/concurrent_test.kuki:155
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:155
 	test.AssertNoError(t, err)
-//line stdlib/concurrent/concurrent_test.kuki:156
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:156
 	test.AssertEqual(t, len(results), 4)
-//line stdlib/concurrent/concurrent_test.kuki:157
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:157
 	for i, v := range results {
-//line stdlib/concurrent/concurrent_test.kuki:158
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:158
 		test.AssertEqual(t, v, (i+1)*10)
 	}
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:161
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:161
 func TestParallelCtxSuccess(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:162
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:162
 	h := ctxpkg.WithCancel(ctxpkg.Background())
-//line stdlib/concurrent/concurrent_test.kuki:163
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:163
 	defer h.Cancel()
-//line stdlib/concurrent/concurrent_test.kuki:164
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:164
 	task := func(ch ctxpkg.Handle) error {
-//line stdlib/concurrent/concurrent_test.kuki:165
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:165
 		return nil
 	}
-//line stdlib/concurrent/concurrent_test.kuki:166
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:166
 	err := concurrent.ParallelCtx(h, task, task)
-//line stdlib/concurrent/concurrent_test.kuki:167
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:167
 	test.AssertNoError(t, err)
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:169
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:169
 func TestParallelCtxCancellation(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:170
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:170
 	h := ctxpkg.WithCancel(ctxpkg.Background())
-//line stdlib/concurrent/concurrent_test.kuki:171
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:171
 	defer h.Cancel()
-//line stdlib/concurrent/concurrent_test.kuki:173
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:173
 	task1 := func(ch ctxpkg.Handle) error {
-//line stdlib/concurrent/concurrent_test.kuki:174
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:174
 		return errors.New("boom")
 	}
-//line stdlib/concurrent/concurrent_test.kuki:175
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:175
 	task2 := func(ch ctxpkg.Handle) error {
-//line stdlib/concurrent/concurrent_test.kuki:176
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:176
 		return nil
 	}
-//line stdlib/concurrent/concurrent_test.kuki:178
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:178
 	err := concurrent.ParallelCtx(h, task1, task2)
-//line stdlib/concurrent/concurrent_test.kuki:179
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:179
 	test.AssertError(t, err)
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:182
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:182
 func doubleOKCtx(ch ctxpkg.Handle, n int) (int, error) {
-//line stdlib/concurrent/concurrent_test.kuki:183
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:183
 	return n * 2, nil
 }
 
-//line stdlib/concurrent/concurrent_test.kuki:185
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:185
 func TestMapCtxSuccess(t *testing.T) {
-//line stdlib/concurrent/concurrent_test.kuki:186
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:186
 	h := ctxpkg.WithCancel(ctxpkg.Background())
-//line stdlib/concurrent/concurrent_test.kuki:187
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:187
 	defer h.Cancel()
-//line stdlib/concurrent/concurrent_test.kuki:189
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:189
 	items := []int{1, 2, 3}
-//line stdlib/concurrent/concurrent_test.kuki:190
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:190
 	results, err := concurrent.MapCtx(h, items, doubleOKCtx)
-//line stdlib/concurrent/concurrent_test.kuki:191
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:191
 	test.AssertNoError(t, err)
-//line stdlib/concurrent/concurrent_test.kuki:192
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:192
 	test.AssertEqual(t, len(results), 3)
-//line stdlib/concurrent/concurrent_test.kuki:193
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:193
 	for i, v := range results {
-//line stdlib/concurrent/concurrent_test.kuki:194
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:194
 		test.AssertEqual(t, v, (i+1)*2)
 	}
 }

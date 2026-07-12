@@ -9,189 +9,189 @@ import (
 	"testing"
 )
 
-//line stdlib/term/term_test.kuki:12
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:12
 func resetEnv() {
-//line stdlib/term/term_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:13
 	_ = os.Unsetenv("FORCE_COLOR")
-//line stdlib/term/term_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:14
 	_ = os.Unsetenv("NO_COLOR")
-//line stdlib/term/term_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:15
 	_ = os.Unsetenv("COLUMNS")
-//line stdlib/term/term_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:16
 	term.ResetColorOverride()
 }
 
-//line stdlib/term/term_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:19
 func TestIsTTYPipe(t *testing.T) {
-//line stdlib/term/term_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:20
 	r, w, err_1 := os.Pipe()
 //line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:20
 	if err_1 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:20
 		panic("pipe failed")
 	}
-//line stdlib/term/term_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:21
 	defer r.Close()
-//line stdlib/term/term_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:22
 	defer w.Close()
-//line stdlib/term/term_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:23
 	test.AssertFalse(t, term.IsTTY(r))
-//line stdlib/term/term_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:24
 	test.AssertFalse(t, term.IsTTY(w))
 }
 
-//line stdlib/term/term_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:26
 func TestIsTTYNil(t *testing.T) {
-//line stdlib/term/term_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:27
 	var f *os.File
-//line stdlib/term/term_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:28
 	test.AssertFalse(t, term.IsTTY(f))
 }
 
-//line stdlib/term/term_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:31
 func TestColorEnabledForceColor(t *testing.T) {
-//line stdlib/term/term_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:32
 	resetEnv()
-//line stdlib/term/term_test.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:33
 	defer resetEnv()
-//line stdlib/term/term_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:34
 	_ = os.Setenv("FORCE_COLOR", "1")
-//line stdlib/term/term_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:35
 	test.AssertTrue(t, term.ColorEnabled())
 }
 
-//line stdlib/term/term_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:38
 func TestColorEnabledNoColor(t *testing.T) {
-//line stdlib/term/term_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:39
 	resetEnv()
-//line stdlib/term/term_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:40
 	defer resetEnv()
-//line stdlib/term/term_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:41
 	_ = os.Setenv("NO_COLOR", "1")
-//line stdlib/term/term_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:42
 	test.AssertFalse(t, term.ColorEnabled())
 }
 
-//line stdlib/term/term_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:45
 func TestColorEnabledForceBeatsNo(t *testing.T) {
-//line stdlib/term/term_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:46
 	resetEnv()
-//line stdlib/term/term_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:47
 	defer resetEnv()
-//line stdlib/term/term_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:48
 	_ = os.Setenv("NO_COLOR", "1")
-//line stdlib/term/term_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:49
 	_ = os.Setenv("FORCE_COLOR", "1")
-//line stdlib/term/term_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:50
 	test.AssertTrue(t, term.ColorEnabled())
 }
 
-//line stdlib/term/term_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:53
 func TestColorEnabledOverride(t *testing.T) {
-//line stdlib/term/term_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:54
 	resetEnv()
-//line stdlib/term/term_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:55
 	defer resetEnv()
-//line stdlib/term/term_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:56
 	_ = os.Setenv("FORCE_COLOR", "1")
-//line stdlib/term/term_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:57
 	term.SetColorEnabled(false)
-//line stdlib/term/term_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:58
 	test.AssertFalse(t, term.ColorEnabled())
-//line stdlib/term/term_test.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:60
 	term.SetColorEnabled(true)
-//line stdlib/term/term_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:61
 	_ = os.Setenv("NO_COLOR", "1")
-//line stdlib/term/term_test.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:62
 	test.AssertTrue(t, term.ColorEnabled())
 }
 
-//line stdlib/term/term_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:64
 func TestResetColorOverride(t *testing.T) {
-//line stdlib/term/term_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:65
 	resetEnv()
-//line stdlib/term/term_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:66
 	defer resetEnv()
-//line stdlib/term/term_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:67
 	term.SetColorEnabled(true)
-//line stdlib/term/term_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:68
 	term.ResetColorOverride()
-//line stdlib/term/term_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:69
 	_ = os.Setenv("NO_COLOR", "1")
-//line stdlib/term/term_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:70
 	test.AssertFalse(t, term.ColorEnabled())
 }
 
-//line stdlib/term/term_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:73
 func TestWidthDefault(t *testing.T) {
-//line stdlib/term/term_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:74
 	resetEnv()
-//line stdlib/term/term_test.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:75
 	defer resetEnv()
-//line stdlib/term/term_test.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:76
 	test.AssertEqual(t, term.Width(), 80)
 }
 
-//line stdlib/term/term_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:78
 func TestWidthFromEnv(t *testing.T) {
-//line stdlib/term/term_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:79
 	resetEnv()
-//line stdlib/term/term_test.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:80
 	defer resetEnv()
-//line stdlib/term/term_test.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:81
 	_ = os.Setenv("COLUMNS", "120")
-//line stdlib/term/term_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:82
 	test.AssertEqual(t, term.Width(), 120)
 }
 
-//line stdlib/term/term_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:84
 func TestWidthInvalid(t *testing.T) {
-//line stdlib/term/term_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:85
 	resetEnv()
-//line stdlib/term/term_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:86
 	defer resetEnv()
-//line stdlib/term/term_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:87
 	_ = os.Setenv("COLUMNS", "garbage")
-//line stdlib/term/term_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:88
 	test.AssertEqual(t, term.Width(), 80)
 }
 
-//line stdlib/term/term_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:90
 func TestWidthNegative(t *testing.T) {
-//line stdlib/term/term_test.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:91
 	resetEnv()
-//line stdlib/term/term_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:92
 	defer resetEnv()
-//line stdlib/term/term_test.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:93
 	_ = os.Setenv("COLUMNS", "-5")
-//line stdlib/term/term_test.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:94
 	test.AssertEqual(t, term.Width(), 80)
 }
 
-//line stdlib/term/term_test.kuki:96
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:96
 func TestVisibleWidthPlain(t *testing.T) {
-//line stdlib/term/term_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:97
 	test.AssertEqual(t, term.VisibleWidth("hello"), 5)
-//line stdlib/term/term_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:98
 	test.AssertEqual(t, term.VisibleWidth(""), 0)
 }
 
-//line stdlib/term/term_test.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:100
 func TestVisibleWidthStripsANSI(t *testing.T) {
-//line stdlib/term/term_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:102
 	test.AssertEqual(t, term.VisibleWidth("\x1b[31mhello\x1b[0m"), 5)
-//line stdlib/term/term_test.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:104
 	test.AssertEqual(t, term.VisibleWidth("\x1b[1;91merror\x1b[0m"), 5)
-//line stdlib/term/term_test.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:106
 	test.AssertEqual(t, term.VisibleWidth("\x1b[31ma \x1b[1mb\x1b[0m\x1b[31m c\x1b[0m"), 5)
 }
 
-//line stdlib/term/term_test.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:108
 func TestPadRightVisible(t *testing.T) {
-//line stdlib/term/term_test.kuki:109
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:109
 	test.AssertEqual(t, term.PadRightVisible("hi", 5), "hi   ")
-//line stdlib/term/term_test.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:111
 	test.AssertEqual(t, term.PadRightVisible("\x1b[31mhi\x1b[0m", 5), "\x1b[31mhi\x1b[0m   ")
-//line stdlib/term/term_test.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/term/term_test.kuki:113
 	test.AssertEqual(t, term.PadRightVisible("hello", 3), "hello")
 }

@@ -52,7 +52,9 @@ func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of st
             message: "missing player_name",
             data: empty map of string to any,
         }
-    player_name, _ := player_name_val.(string)
+    player_name := ""
+    if player_name_val is string as pn
+        player_name = pn
     if player_name equals ""
         return APIResponse{
             success: false,
@@ -137,7 +139,9 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
             message: "missing action type",
             data: empty map of string to any,
         }
-    type_str, _ := action_type_val.(string)
+    type_str := ""
+    if action_type_val is string as ts
+        type_str = ts
     if type_str equals ""
         return APIResponse{
             success: false,
@@ -293,22 +297,21 @@ func HandleCreateGame on h: reference HTTPHandler(auth_header: string, body: map
     player_name := "Player"
     pn_val, has_pn := body["player_name"]
     if has_pn
-        pn, pn_ok := pn_val.(string)
-        if pn_ok and pn isnt ""
-            player_name = pn
+        if pn_val is string as pn
+            if pn isnt ""
+                player_name = pn
 
     game_name := "Game"
     gn_val, has_gn := body["game_name"]
     if has_gn
-        gn, gn_ok := gn_val.(string)
-        if gn_ok and gn isnt ""
-            game_name = gn
+        if gn_val is string as gn
+            if gn isnt ""
+                game_name = gn
 
     max_players := 4
     mp_val, has_mp := body["max_players"]
     if has_mp
-        mp_parsed, mp_ok := mp_val.(int)
-        if mp_ok
+        if mp_val is int as mp_parsed
             max_players = mp_parsed
     if max_players < 2
         max_players = 2
@@ -364,8 +367,7 @@ func HandleReady on h: reference HTTPHandler(game_id: string, auth_header: strin
     ready := true
     ready_val, has_rdy := body["ready"]
     if has_rdy
-        ready_parsed, ready_ok := ready_val.(bool)
-        if ready_ok
+        if ready_val is bool as ready_parsed
             ready = ready_parsed
 
     h.lobby_mgr.set_ready(game_id, player_id, ready)
@@ -447,7 +449,7 @@ func GetClientIP on h: reference HTTPHandler(remote_addr: string, xff: string, r
             return strings.TrimSpace(parts[0])
     if real_ip isnt ""
         return real_ip
-    host, _, err := net.SplitHostPort(remote_addr)
+    host, _port, err := net.SplitHostPort(remote_addr)
     if err isnt empty
         return remote_addr
     return host
@@ -486,7 +488,7 @@ func getPositionField on h: reference HTTPHandler(data: map of string to any, ke
     json_bytes := jsonpkg.Bytes(val) onerr
         return typespkg.Position{X: 0, Y: 0}
 
-    pos := make(list of any, 0)
+    pos := empty list of any
     pos_str := string(json_bytes)
     err := jsonpkg.ParseStringInto(pos_str, reference of pos)
     if err isnt empty

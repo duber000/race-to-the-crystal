@@ -13,7 +13,7 @@ import (
 	"path"
 )
 
-//line stdlib/url/url.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:32
 type Parsed struct {
 	Scheme   string
 	Host     string
@@ -23,7 +23,7 @@ type Parsed struct {
 	Raw      string
 }
 
-//line stdlib/url/url.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:43
 type ParsedMulti struct {
 	Scheme   string
 	Host     string
@@ -33,9 +33,9 @@ type ParsedMulti struct {
 	Raw      string
 }
 
-//line stdlib/url/url.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:53
 func Parse(s string) (Parsed, error) {
-//line stdlib/url/url.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:54
 	u, err_1 := gourl.Parse(s)
 //line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:54
 	if err_1 != nil {
@@ -43,25 +43,25 @@ func Parse(s string) (Parsed, error) {
 //line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:54
 		return _zero0, err_1
 	}
-//line stdlib/url/url.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:56
 	q := map[string][]string(u.Query())
-//line stdlib/url/url.kuki:57
-	flat := make(map[string]string)
-//line stdlib/url/url.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:57
+	flat := map[string]string{}
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:58
 	for k, vs := range q {
-//line stdlib/url/url.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:59
 		if len(vs) > 0 {
-//line stdlib/url/url.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:60
 			flat[k] = vs[len(vs)-1]
 		}
 	}
-//line stdlib/url/url.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:62
 	return Parsed{Scheme: u.Scheme, Host: u.Host, Path: u.Path, Fragment: u.Fragment, Params: flat, Raw: s}, nil
 }
 
-//line stdlib/url/url.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:73
 func ParseMulti(s string) (ParsedMulti, error) {
-//line stdlib/url/url.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:74
 	u, err_2 := gourl.Parse(s)
 //line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:74
 	if err_2 != nil {
@@ -69,199 +69,199 @@ func ParseMulti(s string) (ParsedMulti, error) {
 //line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:74
 		return _zero0, err_2
 	}
-//line stdlib/url/url.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:76
 	q := map[string][]string(u.Query())
-//line stdlib/url/url.kuki:77
-	multi := make(map[string][]string)
-//line stdlib/url/url.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:77
+	multi := map[string][]string{}
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:78
 	maps.Copy(multi, q)
-//line stdlib/url/url.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:80
 	return ParsedMulti{Scheme: u.Scheme, Host: u.Host, Path: u.Path, Fragment: u.Fragment, Params: multi, Raw: s}, nil
 }
 
-//line stdlib/url/url.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:91
 type Builder struct {
 	base   string
 	keys   []string
 	values []string
 }
 
-//line stdlib/url/url.kuki:99
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:99
 func New(base string) Builder {
-//line stdlib/url/url.kuki:100
-	return Builder{base: base, keys: make([]string, 0), values: make([]string, 0)}
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:100
+	return Builder{base: base, keys: []string{}, values: []string{}}
 }
 
-//line stdlib/url/url.kuki:110
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:110
 func Param(b Builder, name string, value any) Builder {
-//line stdlib/url/url.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:111
 	b.keys = append(b.keys, name)
-//line stdlib/url/url.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:112
 	b.values = append(b.values, fmt.Sprint(value))
-//line stdlib/url/url.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:113
 	return b
 }
 
-//line stdlib/url/url.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:117
 func String(b Builder) string {
-//line stdlib/url/url.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:118
 	if len(b.keys) == 0 {
-//line stdlib/url/url.kuki:119
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:119
 		return b.base
 	}
-//line stdlib/url/url.kuki:121
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:121
 	parts := make([]string, 0, len(b.keys))
-//line stdlib/url/url.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:122
 	for i, k := range b.keys {
-//line stdlib/url/url.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:123
 		parts = append(parts, gourl.QueryEscape(k)+"="+gourl.QueryEscape(b.values[i]))
 	}
-//line stdlib/url/url.kuki:124
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:124
 	query := kukistring.Join(parts, "&")
-//line stdlib/url/url.kuki:126
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:126
 	sep := "?"
-//line stdlib/url/url.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:127
 	if kukistring.Contains(b.base, "?") {
-//line stdlib/url/url.kuki:128
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:128
 		sep = "&"
 	}
-//line stdlib/url/url.kuki:129
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:129
 	return b.base + sep + query
 }
 
-//line stdlib/url/url.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:133
 func Escape(s string) string {
-//line stdlib/url/url.kuki:134
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:134
 	return gourl.QueryEscape(s)
 }
 
-//line stdlib/url/url.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:138
 func Unescape(s string) (string, error) {
-//line stdlib/url/url.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:139
 	return gourl.QueryUnescape(s)
 }
 
-//line stdlib/url/url.kuki:150
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:150
 func CleanPath(p string) (string, error) {
-//line stdlib/url/url.kuki:151
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:151
 	if p == "" {
-//line stdlib/url/url.kuki:152
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:152
 		return "", errors.New("path is empty")
 	}
-//line stdlib/url/url.kuki:153
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:153
 	if kukistring.Contains(p, "\x00") {
-//line stdlib/url/url.kuki:154
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:154
 		return "", errors.New("path contains NUL byte")
 	}
-//line stdlib/url/url.kuki:155
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:155
 	if kukistring.Contains(p, "\\") {
-//line stdlib/url/url.kuki:156
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:156
 		return "", errors.New("path contains backslash")
 	}
-//line stdlib/url/url.kuki:157
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:157
 	lower := kukistring.ToLower(p)
-//line stdlib/url/url.kuki:158
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:158
 	if kukistring.Contains(lower, "%2e%2e") || kukistring.Contains(lower, "%2f") || kukistring.Contains(lower, "%5c") {
-//line stdlib/url/url.kuki:159
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:159
 		return "", errors.New("path contains percent-encoded traversal")
 	}
-//line stdlib/url/url.kuki:163
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:163
 	if slice.Contains(kukistring.Split(p, "/"), "..") {
-//line stdlib/url/url.kuki:164
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:164
 		return "", errors.New("path contains '..' segment")
 	}
-//line stdlib/url/url.kuki:165
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:165
 	cleaned := path.Clean(p)
-//line stdlib/url/url.kuki:166
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:166
 	if !kukistring.HasPrefix(cleaned, "/") {
-//line stdlib/url/url.kuki:167
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:167
 		cleaned = "/" + cleaned
 	}
-//line stdlib/url/url.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:168
 	return cleaned, nil
 }
 
-//line stdlib/url/url.kuki:177
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:177
 func IsSubpath(base string, candidate string) bool {
-//line stdlib/url/url.kuki:178
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:178
 	cleanBase, err_3 := CleanPath(base)
 //line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:178
 	if err_3 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:178
 		return false
 	}
-//line stdlib/url/url.kuki:179
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:179
 	cleanCand, err_4 := CleanPath(candidate)
 //line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:179
 	if err_4 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:179
 		return false
 	}
-//line stdlib/url/url.kuki:180
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:180
 	trimmedBase := kukistring.TrimRight(cleanBase, "/")
-//line stdlib/url/url.kuki:181
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:181
 	if trimmedBase == "" {
-//line stdlib/url/url.kuki:182
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:182
 		return true
 	}
-//line stdlib/url/url.kuki:183
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:183
 	if cleanCand == trimmedBase {
-//line stdlib/url/url.kuki:184
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:184
 		return true
 	}
-//line stdlib/url/url.kuki:185
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:185
 	return kukistring.HasPrefix(cleanCand, trimmedBase+"/")
 }
 
-//line stdlib/url/url.kuki:191
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:191
 func EncodeForm(values map[string]string) string {
-//line stdlib/url/url.kuki:192
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:192
 	if len(values) == 0 {
-//line stdlib/url/url.kuki:193
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:193
 		return ""
 	}
-//line stdlib/url/url.kuki:195
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:195
 	keys := make([]string, 0, len(values))
-//line stdlib/url/url.kuki:196
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:196
 	for k := range values {
-//line stdlib/url/url.kuki:197
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:197
 		keys = append(keys, k)
 	}
-//line stdlib/url/url.kuki:198
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:198
 	keys = sort.Strings(keys)
-//line stdlib/url/url.kuki:200
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:200
 	parts := make([]string, 0, len(keys))
-//line stdlib/url/url.kuki:201
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:201
 	for _, k := range keys {
-//line stdlib/url/url.kuki:202
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:202
 		parts = append(parts, gourl.QueryEscape(k)+"="+gourl.QueryEscape(values[k]))
 	}
-//line stdlib/url/url.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:203
 	return kukistring.Join(parts, "&")
 }
 
-//line stdlib/url/url.kuki:208
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:208
 func MustParse(s string) Parsed {
-//line stdlib/url/url.kuki:209
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:209
 	u, err := Parse(s)
-//line stdlib/url/url.kuki:210
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:210
 	if err != nil {
-//line stdlib/url/url.kuki:211
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:211
 		panic(fmt.Sprintf("url: invalid URL %v: %v", s, err))
 	}
-//line stdlib/url/url.kuki:212
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:212
 	return u
 }
 
-//line stdlib/url/url.kuki:216
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:216
 func MustParseMulti(s string) ParsedMulti {
-//line stdlib/url/url.kuki:217
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:217
 	u, err := ParseMulti(s)
-//line stdlib/url/url.kuki:218
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:218
 	if err != nil {
-//line stdlib/url/url.kuki:219
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:219
 		panic(fmt.Sprintf("url: invalid URL %v: %v", s, err))
 	}
-//line stdlib/url/url.kuki:220
+//line /Users/tluker/repos/go/kukicha/stdlib/url/url.kuki:220
 	return u
 }

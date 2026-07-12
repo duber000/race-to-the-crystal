@@ -71,7 +71,8 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
     perspective, has_p := state["perspective_player_id"]
     var my_game_id string
     if has_p
-        my_game_id = perspective.(string) onerr ""
+        if perspective is string as p
+            my_game_id = p
 
     log.Debug(
         "takeTurn: state size={len(state)}, perspective={my_game_id}, my_net_id={sess.player_id}",
@@ -82,7 +83,9 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
     cur, has := state["current_turn_player_id"]
     if not has
         return
-    cur_str := cur.(string) onerr ""
+    var cur_str string
+    if cur is string as s
+        cur_str = s
     log.Debug("takeTurn: current={cur_str}, my={my_game_id}")
     if cur_str isnt my_game_id
         return
@@ -99,37 +102,32 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
     if not has_actions
         return
 
-    actions_raw, raw_ok := actions_any.(list of any)
-    if not raw_ok
+    if actions_any is list of any as actions_raw
+        actions := empty list of map of string to any
+        for item in actions_raw
+            if item is map of string to any as m
+                actions = append(actions, m)
+        log.Info("Available actions: {len(actions)}")
+        if len(actions) > 0
+            chosen := PickAction(actions, strategy)
+            log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
+            result := sess.SendAction(chosen)
+            if len(result) > 0
+                if msg, has := result["message"]; has
+                    var msg_str string
+                    if msg is string as ms
+                        msg_str = ms
+                    log.Debug("Server: {msg_str}")
         return
-
-    actions := empty list of map of string to any
-    for item in actions_raw
-        m, m_ok := item.(map of string to any)
-        if m_ok
-            actions = append(actions, m)
-    log.Info("Available actions: {len(actions)}")
-    if len(actions) equals 0
-        return
-
-    chosen := PickAction(actions, strategy)
-    log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
-    result := sess.SendAction(chosen)
-    if len(result) equals 0
-        return
-
-    if msg, has := result["message"]; has
-        msg_str := msg.(string) onerr ""
-        log.Debug("Server: {msg_str}")
+    return
 
 func castInt(m: map of string to any, key: string) int
     v, has := m[key]
     if not has
         return 0
-    v_int, ok := v.(int)
-    if not ok
-        return 0
-    return v_int
+    if v is int as v_int
+        return v_int
+    return 0
 
 func runPoll(args: cli.Args)
     sess := openSession(args)
@@ -182,7 +180,8 @@ func runSSE(args: cli.Args)
         perspective, has_p := state["perspective_player_id"]
         var my_game_id string
         if has_p
-            my_game_id = perspective.(string) onerr ""
+            if perspective is string as p
+                my_game_id = p
 
         if my_game_id equals ""
             return true
@@ -190,7 +189,9 @@ func runSSE(args: cli.Args)
         cur, has := state["current_turn_player_id"]
         if not has
             return true
-        cur_str := cur.(string) onerr ""
+        var cur_str string
+        if cur is string as s
+            cur_str = s
         if cur_str isnt my_game_id
             return true
 
@@ -208,25 +209,21 @@ func runSSE(args: cli.Args)
         if not has_actions
             return true
 
-        actions_raw, raw_ok := actions_any.(list of any)
-        if not raw_ok
-            return true
-
-        actions := empty list of map of string to any
-        for item in actions_raw
-            m, m_ok := item.(map of string to any)
-            if m_ok
-                actions = append(actions, m)
-        if len(actions) equals 0
-            return true
-
-        chosen := PickAction(actions, strategy)
-        log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
-        result := sess.SendAction(chosen)
-        if len(result) > 0
-            if msg, has := result["message"]; has
-                msg_str := msg.(string) onerr ""
-                log.Debug("Server: {msg_str}")
+        if actions_any is list of any as actions_raw
+            actions := empty list of map of string to any
+            for item in actions_raw
+                if item is map of string to any as m
+                    actions = append(actions, m)
+            if len(actions) > 0
+                chosen := PickAction(actions, strategy)
+                log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
+                result := sess.SendAction(chosen)
+                if len(result) > 0
+                    if msg, has := result["message"]; has
+                        var msg_str string
+                        if msg is string as s
+                            msg_str = s
+                        log.Debug("Server: {msg_str}")
 
         return true
     )

@@ -7,411 +7,525 @@ import (
 	"time"
 )
 
-//line stdlib/datetime/datetime.kuki:16
-func Format(t time.Time, format string) string {
-//line stdlib/datetime/datetime.kuki:17
-	layout := getLayout(format)
-//line stdlib/datetime/datetime.kuki:18
-	return t.Format(layout)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:10
+type Time struct {
+	raw time.Time
 }
 
-//line stdlib/datetime/datetime.kuki:23
-func Parse(value string, format string) (time.Time, error) {
-//line stdlib/datetime/datetime.kuki:24
-	layout := getLayout(format)
-//line stdlib/datetime/datetime.kuki:25
-	return time.Parse(layout, value)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:14
+type Duration struct {
+	raw time.Duration
 }
 
-//line stdlib/datetime/datetime.kuki:29
-func ParseInLocation(value string, format string, location string) (time.Time, error) {
-//line stdlib/datetime/datetime.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:19
+func (t Time) Raw() time.Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:20
+	return t.raw
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:23
+func (t Time) IsZero() bool {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:24
+	return t.raw.IsZero()
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:28
+func (d Duration) Raw() time.Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:29
+	return d.raw
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:32
+func WrapTime(raw time.Time) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:33
+	return Time{raw: raw}
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:36
+func WrapDuration(raw time.Duration) Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:37
+	return Duration{raw: raw}
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:44
+func (t Time) Format(format string) string {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:45
 	layout := getLayout(format)
-//line stdlib/datetime/datetime.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:46
+	return t.raw.Format(layout)
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:50
+func Parse(value string, format string) (Time, error) {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:51
+	layout := getLayout(format)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:52
+	raw, err := time.Parse(layout, value)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:53
+	if err != nil {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:54
+		return Time{}, err
+	}
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:55
+	return Time{raw: raw}, nil
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:58
+func ParseInLocation(value string, format string, location string) (Time, error) {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:59
+	layout := getLayout(format)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:60
 	loc, err_1 := time.LoadLocation(location)
-//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:60
 	if err_1 != nil {
-		var _zero0 time.Time
-//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:31
+		var _zero0 Time
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:60
 		return _zero0, err_1
 	}
-//line stdlib/datetime/datetime.kuki:32
-	return time.ParseInLocation(layout, value, loc)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:61
+	raw, err := time.ParseInLocation(layout, value, loc)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:62
+	if err != nil {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:63
+		return Time{}, err
+	}
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:64
+	return Time{raw: raw}, nil
 }
 
-//line stdlib/datetime/datetime.kuki:36
-func Now() time.Time {
-//line stdlib/datetime/datetime.kuki:37
-	return time.Now()
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:68
+func Now() Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:69
+	return Time{raw: time.Now()}
 }
 
-//line stdlib/datetime/datetime.kuki:41
-func Today() time.Time {
-//line stdlib/datetime/datetime.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:73
+func Today() Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:74
 	now := time.Now()
-//line stdlib/datetime/datetime.kuki:43
-	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:75
+	return Time{raw: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())}
 }
 
-//line stdlib/datetime/datetime.kuki:47
-func Tomorrow() time.Time {
-//line stdlib/datetime/datetime.kuki:48
-	return Today().AddDate(0, 0, 1)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:78
+func Tomorrow() Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:79
+	return Time{raw: Today().raw.AddDate(0, 0, 1)}
 }
 
-//line stdlib/datetime/datetime.kuki:52
-func Yesterday() time.Time {
-//line stdlib/datetime/datetime.kuki:53
-	return Today().AddDate(0, 0, -1)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:82
+func Yesterday() Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:83
+	return Time{raw: Today().raw.AddDate(0, 0, -1)}
 }
 
-//line stdlib/datetime/datetime.kuki:60
-func Nanoseconds(n int64) time.Duration {
-//line stdlib/datetime/datetime.kuki:61
-	return time.Duration(n * 1)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:87
+func Nanoseconds(n int64) Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:88
+	return Duration{raw: time.Duration(n)}
 }
 
-//line stdlib/datetime/datetime.kuki:65
-func Microseconds(n int64) time.Duration {
-//line stdlib/datetime/datetime.kuki:66
-	return time.Duration(n * 1000)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:90
+func Microseconds(n int64) Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:91
+	return Duration{raw: time.Duration(n) * 1000}
 }
 
-//line stdlib/datetime/datetime.kuki:70
-func Milliseconds(n int64) time.Duration {
-//line stdlib/datetime/datetime.kuki:71
-	return time.Duration(n * 1000000)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:93
+func Milliseconds(n int64) Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:94
+	return Duration{raw: time.Duration(n) * 1000000}
 }
 
-//line stdlib/datetime/datetime.kuki:75
-func Seconds(n int64) time.Duration {
-//line stdlib/datetime/datetime.kuki:76
-	return time.Duration(n * 1000000000)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:96
+func Seconds(n int64) Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:97
+	return Duration{raw: time.Duration(n) * 1000000000}
 }
 
-//line stdlib/datetime/datetime.kuki:80
-func Minutes(n int64) time.Duration {
-//line stdlib/datetime/datetime.kuki:81
-	return time.Duration(n * 60000000000)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:99
+func Minutes(n int64) Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:100
+	return Duration{raw: time.Duration(n) * 60000000000}
 }
 
-//line stdlib/datetime/datetime.kuki:85
-func Hours(n int64) time.Duration {
-//line stdlib/datetime/datetime.kuki:86
-	return time.Duration(n * 3600000000000)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:102
+func Hours(n int64) Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:103
+	return Duration{raw: time.Duration(n) * 3600000000000}
 }
 
-//line stdlib/datetime/datetime.kuki:90
-func Days(n int64) time.Duration {
-//line stdlib/datetime/datetime.kuki:91
-	return time.Duration(n * 86400000000000)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:105
+func Days(n int64) Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:106
+	return Duration{raw: time.Duration(n) * 86400000000000}
 }
 
-//line stdlib/datetime/datetime.kuki:95
-func Weeks(n int64) time.Duration {
-//line stdlib/datetime/datetime.kuki:96
-	return time.Duration(n * 604800000000000)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:108
+func Weeks(n int64) Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:109
+	return Duration{raw: time.Duration(n) * 604800000000000}
 }
 
-//line stdlib/datetime/datetime.kuki:104
-func Intervals(elapsed time.Duration, interval time.Duration) int64 {
-//line stdlib/datetime/datetime.kuki:105
-	if interval == 0 {
-//line stdlib/datetime/datetime.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:111
+func Intervals(elapsed Duration, interval Duration) int64 {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:112
+	if interval.raw == 0 {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:113
 		return 0
 	}
-//line stdlib/datetime/datetime.kuki:107
-	return int64(elapsed / interval)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:114
+	return int64(elapsed.raw / interval.raw)
 }
 
-//line stdlib/datetime/datetime.kuki:113
-func AddDays(t time.Time, days int) time.Time {
-//line stdlib/datetime/datetime.kuki:114
-	return t.AddDate(0, 0, days)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:118
+func (t Time) AddDays(days int) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:119
+	return Time{raw: t.raw.AddDate(0, 0, days)}
 }
 
-//line stdlib/datetime/datetime.kuki:118
-func AddWeeks(t time.Time, weeks int) time.Time {
-//line stdlib/datetime/datetime.kuki:119
-	return t.AddDate(0, 0, weeks*7)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:121
+func (t Time) AddWeeks(weeks int) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:122
+	return Time{raw: t.raw.AddDate(0, 0, weeks*7)}
 }
 
-//line stdlib/datetime/datetime.kuki:123
-func AddMonths(t time.Time, months int) time.Time {
-//line stdlib/datetime/datetime.kuki:124
-	return t.AddDate(0, months, 0)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:124
+func (t Time) AddMonths(months int) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:125
+	return Time{raw: t.raw.AddDate(0, months, 0)}
 }
 
-//line stdlib/datetime/datetime.kuki:128
-func AddYears(t time.Time, years int) time.Time {
-//line stdlib/datetime/datetime.kuki:129
-	return t.AddDate(years, 0, 0)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:127
+func (t Time) AddYears(years int) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:128
+	return Time{raw: t.raw.AddDate(years, 0, 0)}
 }
 
-//line stdlib/datetime/datetime.kuki:133
-func SubDays(t time.Time, days int) time.Time {
-//line stdlib/datetime/datetime.kuki:134
-	return t.AddDate(0, 0, -days)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:130
+func (t Time) SubDays(days int) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:131
+	return Time{raw: t.raw.AddDate(0, 0, -days)}
 }
 
-//line stdlib/datetime/datetime.kuki:138
-func SubWeeks(t time.Time, weeks int) time.Time {
-//line stdlib/datetime/datetime.kuki:139
-	return t.AddDate(0, 0, -weeks*7)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:133
+func (t Time) SubWeeks(weeks int) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:134
+	return Time{raw: t.raw.AddDate(0, 0, -weeks*7)}
 }
 
-//line stdlib/datetime/datetime.kuki:143
-func SubMonths(t time.Time, months int) time.Time {
-//line stdlib/datetime/datetime.kuki:144
-	return t.AddDate(0, -months, 0)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:136
+func (t Time) SubMonths(months int) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:137
+	return Time{raw: t.raw.AddDate(0, -months, 0)}
 }
 
-//line stdlib/datetime/datetime.kuki:148
-func SubYears(t time.Time, years int) time.Time {
-//line stdlib/datetime/datetime.kuki:149
-	return t.AddDate(-years, 0, 0)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:139
+func (t Time) SubYears(years int) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:140
+	return Time{raw: t.raw.AddDate(-years, 0, 0)}
 }
 
-//line stdlib/datetime/datetime.kuki:155
-func IsBetween(t time.Time, start time.Time, end time.Time) bool {
-//line stdlib/datetime/datetime.kuki:156
-	atOrAfterStart := t.Equal(start)
-//line stdlib/datetime/datetime.kuki:157
-	afterStart := t.After(start)
-//line stdlib/datetime/datetime.kuki:158
-	atOrBeforeEnd := t.Equal(end)
-//line stdlib/datetime/datetime.kuki:159
-	beforeEnd := t.Before(end)
-//line stdlib/datetime/datetime.kuki:160
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:144
+func (t Time) IsBetween(start Time, end Time) bool {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:145
+	atOrAfterStart := t.raw.Equal(start.raw)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:146
+	afterStart := t.raw.After(start.raw)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:147
+	atOrBeforeEnd := t.raw.Equal(end.raw)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:148
+	beforeEnd := t.raw.Before(end.raw)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:149
 	return (atOrAfterStart || afterStart) && (atOrBeforeEnd || beforeEnd)
 }
 
-//line stdlib/datetime/datetime.kuki:164
-func IsSameDay(t1 time.Time, t2 time.Time) bool {
-//line stdlib/datetime/datetime.kuki:165
-	y1 := t1.Year()
-//line stdlib/datetime/datetime.kuki:166
-	m1 := t1.Month()
-//line stdlib/datetime/datetime.kuki:167
-	d1 := t1.Day()
-//line stdlib/datetime/datetime.kuki:168
-	y2 := t2.Year()
-//line stdlib/datetime/datetime.kuki:169
-	m2 := t2.Month()
-//line stdlib/datetime/datetime.kuki:170
-	d2 := t2.Day()
-//line stdlib/datetime/datetime.kuki:171
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:151
+func (t1 Time) IsSameDay(t2 Time) bool {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:152
+	y1 := t1.raw.Year()
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:153
+	m1 := t1.raw.Month()
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:154
+	d1 := t1.raw.Day()
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:155
+	y2 := t2.raw.Year()
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:156
+	m2 := t2.raw.Month()
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:157
+	d2 := t2.raw.Day()
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:158
 	return y1 == y2 && m1 == m2 && d1 == d2
 }
 
-//line stdlib/datetime/datetime.kuki:175
-func IsToday(t time.Time) bool {
-//line stdlib/datetime/datetime.kuki:176
-	return IsSameDay(t, time.Now())
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:160
+func (t Time) IsToday() bool {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:161
+	return t.IsSameDay(Now())
 }
 
-//line stdlib/datetime/datetime.kuki:180
-func IsYesterday(t time.Time) bool {
-//line stdlib/datetime/datetime.kuki:181
-	return IsSameDay(t, Yesterday())
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:163
+func (t Time) IsYesterday() bool {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:164
+	return t.IsSameDay(Yesterday())
 }
 
-//line stdlib/datetime/datetime.kuki:185
-func IsTomorrow(t time.Time) bool {
-//line stdlib/datetime/datetime.kuki:186
-	return IsSameDay(t, Tomorrow())
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:166
+func (t Time) IsTomorrow() bool {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:167
+	return t.IsSameDay(Tomorrow())
 }
 
-//line stdlib/datetime/datetime.kuki:190
-func IsPast(t time.Time) bool {
-//line stdlib/datetime/datetime.kuki:191
-	return t.Before(time.Now())
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:169
+func (t Time) IsPast() bool {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:170
+	return t.raw.Before(time.Now())
 }
 
-//line stdlib/datetime/datetime.kuki:195
-func IsFuture(t time.Time) bool {
-//line stdlib/datetime/datetime.kuki:196
-	return t.After(time.Now())
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:172
+func (t Time) IsFuture() bool {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:173
+	return t.raw.After(time.Now())
 }
 
-//line stdlib/datetime/datetime.kuki:203
-func Month(t time.Time) int {
-//line stdlib/datetime/datetime.kuki:204
-	return int(t.Month())
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:177
+func (t Time) Month() int {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:178
+	return int(t.raw.Month())
 }
 
-//line stdlib/datetime/datetime.kuki:209
-func Weekday(t time.Time) int {
-//line stdlib/datetime/datetime.kuki:210
-	return int(t.Weekday())
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:180
+func (t Time) Weekday() int {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:181
+	return int(t.raw.Weekday())
 }
 
-//line stdlib/datetime/datetime.kuki:214
-func WeekdayName(t time.Time) string {
-//line stdlib/datetime/datetime.kuki:215
-	return t.Weekday().String()
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:183
+func (t Time) WeekdayName() string {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:184
+	return t.raw.Weekday().String()
 }
 
-//line stdlib/datetime/datetime.kuki:221
-func FromUnix(sec int64) time.Time {
-//line stdlib/datetime/datetime.kuki:222
-	return time.Unix(sec, 0)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:188
+func (t Time) Year() int {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:189
+	return t.raw.Year()
 }
 
-//line stdlib/datetime/datetime.kuki:226
-func FromUnixMilli(msec int64) time.Time {
-//line stdlib/datetime/datetime.kuki:227
-	return time.UnixMilli(msec)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:191
+func (t Time) Day() int {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:192
+	return t.raw.Day()
 }
 
-//line stdlib/datetime/datetime.kuki:233
-func Sleep(d time.Duration) {
-//line stdlib/datetime/datetime.kuki:234
-	time.Sleep(d)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:194
+func (t Time) Hour() int {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:195
+	return t.raw.Hour()
 }
 
-//line stdlib/datetime/datetime.kuki:238
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:197
+func (t Time) Minute() int {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:198
+	return t.raw.Minute()
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:200
+func (t Time) Second() int {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:201
+	return t.raw.Second()
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:203
+func (t Time) Unix() int64 {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:204
+	return t.raw.Unix()
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:206
+func (t Time) UnixMilli() int64 {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:207
+	return t.raw.UnixMilli()
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:209
+func (t Time) Location() *time.Location {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:210
+	return t.raw.Location()
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:212
+func FromUnix(sec int64) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:213
+	return Time{raw: time.Unix(sec, 0)}
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:215
+func FromUnixMilli(msec int64) Time {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:216
+	return Time{raw: time.UnixMilli(msec)}
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:220
+func Sleep(d Duration) {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:221
+	time.Sleep(d.raw)
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:223
 func SleepSeconds(n int64) {
-//line stdlib/datetime/datetime.kuki:239
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:224
 	time.Sleep(time.Duration(n) * time.Second)
 }
 
-//line stdlib/datetime/datetime.kuki:243
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:226
 func SleepMilliseconds(n int64) {
-//line stdlib/datetime/datetime.kuki:244
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:227
 	time.Sleep(time.Duration(n) * time.Millisecond)
 }
 
-//line stdlib/datetime/datetime.kuki:250
-func InLocation(t time.Time, location string) (time.Time, error) {
-//line stdlib/datetime/datetime.kuki:251
-	loc, err_2 := time.LoadLocation(location)
-//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:251
-	if err_2 != nil {
-		var _zero0 time.Time
-//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:251
-		return _zero0, err_2
-	}
-//line stdlib/datetime/datetime.kuki:252
-	return t.In(loc), nil
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:231
+func Since(t Time) Duration {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:232
+	return Duration{raw: time.Since(t.raw)}
 }
 
-//line stdlib/datetime/datetime.kuki:261
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:235
+func (d Duration) String() string {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:236
+	return d.raw.String()
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:240
+func (t Time) InLocation(location string) (Time, error) {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:241
+	loc, err_2 := time.LoadLocation(location)
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:241
+	if err_2 != nil {
+		var _zero0 Time
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:241
+		return _zero0, err_2
+	}
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:242
+	return Time{raw: t.raw.In(loc)}, nil
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:246
 func NowISO() string {
-//line stdlib/datetime/datetime.kuki:262
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:247
 	return time.Now().Format(time.RFC3339)
 }
 
-//line stdlib/datetime/datetime.kuki:268
-func TimeAgo(t time.Time) string {
-//line stdlib/datetime/datetime.kuki:269
-	secs := int64(time.Since(t).Seconds())
-//line stdlib/datetime/datetime.kuki:270
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:249
+func (t Time) TimeAgo() string {
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:250
+	secs := int64(time.Since(t.raw).Seconds())
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:251
 	if secs < 60 {
-//line stdlib/datetime/datetime.kuki:271
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:252
 		return "just now"
 	}
-//line stdlib/datetime/datetime.kuki:272
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:253
 	mins := secs / 60
-//line stdlib/datetime/datetime.kuki:273
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:254
 	if mins < 60 {
-//line stdlib/datetime/datetime.kuki:274
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:255
 		return fmt.Sprintf("%vm ago", mins)
 	}
-//line stdlib/datetime/datetime.kuki:275
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:256
 	hours := mins / 60
-//line stdlib/datetime/datetime.kuki:276
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:257
 	if hours < 24 {
-//line stdlib/datetime/datetime.kuki:277
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:258
 		return fmt.Sprintf("%vh ago", hours)
 	}
-//line stdlib/datetime/datetime.kuki:278
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:259
 	days := hours / 24
-//line stdlib/datetime/datetime.kuki:279
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:260
 	if days < 30 {
-//line stdlib/datetime/datetime.kuki:280
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:261
 		return fmt.Sprintf("%vd ago", days)
 	}
-//line stdlib/datetime/datetime.kuki:281
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:262
 	months := days / 30
-//line stdlib/datetime/datetime.kuki:282
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:263
 	if months < 12 {
-//line stdlib/datetime/datetime.kuki:283
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:264
 		return fmt.Sprintf("%vmo ago", months)
 	}
-//line stdlib/datetime/datetime.kuki:284
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:265
 	years := days / 365
-//line stdlib/datetime/datetime.kuki:285
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:266
 	return fmt.Sprintf("%vy ago", years)
 }
 
-//line stdlib/datetime/datetime.kuki:288
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:269
 func getLayout(format string) string {
-//line stdlib/datetime/datetime.kuki:289
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:270
 	if format == "iso8601" || format == "ISO8601" {
-//line stdlib/datetime/datetime.kuki:290
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:271
 		return "2006-01-02T15:04:05Z07:00"
 	}
-//line stdlib/datetime/datetime.kuki:291
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:272
 	if format == "rfc3339" || format == "RFC3339" {
-//line stdlib/datetime/datetime.kuki:292
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:273
 		return time.RFC3339
 	}
-//line stdlib/datetime/datetime.kuki:293
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:274
 	if format == "rfc3339nano" || format == "RFC3339Nano" {
-//line stdlib/datetime/datetime.kuki:294
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:275
 		return time.RFC3339Nano
 	}
-//line stdlib/datetime/datetime.kuki:295
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:276
 	if format == "date" {
-//line stdlib/datetime/datetime.kuki:296
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:277
 		return "2006-01-02"
 	}
-//line stdlib/datetime/datetime.kuki:297
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:278
 	if format == "time" {
-//line stdlib/datetime/datetime.kuki:298
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:279
 		return "15:04:05"
 	}
-//line stdlib/datetime/datetime.kuki:299
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:280
 	if format == "datetime" {
-//line stdlib/datetime/datetime.kuki:300
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:281
 		return "2006-01-02 15:04:05"
 	}
-//line stdlib/datetime/datetime.kuki:301
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:282
 	if format == "dateTimeT" {
-//line stdlib/datetime/datetime.kuki:302
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:283
 		return "2006-01-02T15:04:05"
 	}
-//line stdlib/datetime/datetime.kuki:303
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:284
 	if format == "kitchen" {
-//line stdlib/datetime/datetime.kuki:304
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:285
 		return time.Kitchen
 	}
-//line stdlib/datetime/datetime.kuki:305
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:286
 	if format == "stamp" {
-//line stdlib/datetime/datetime.kuki:306
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:287
 		return time.Stamp
 	}
-//line stdlib/datetime/datetime.kuki:307
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:288
 	if format == "rfc822" {
-//line stdlib/datetime/datetime.kuki:308
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:289
 		return time.RFC822
 	}
-//line stdlib/datetime/datetime.kuki:309
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:290
 	if format == "rfc1123" {
-//line stdlib/datetime/datetime.kuki:310
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:291
 		return time.RFC1123
 	}
-//line stdlib/datetime/datetime.kuki:311
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:292
 	if format == "ansic" {
-//line stdlib/datetime/datetime.kuki:312
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:293
 		return time.ANSIC
 	}
-//line stdlib/datetime/datetime.kuki:313
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:294
 	if format == "unixdate" {
-//line stdlib/datetime/datetime.kuki:314
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:295
 		return time.UnixDate
 	}
-//line stdlib/datetime/datetime.kuki:316
+//line /Users/tluker/repos/go/kukicha/stdlib/datetime/datetime.kuki:296
 	return format
 }

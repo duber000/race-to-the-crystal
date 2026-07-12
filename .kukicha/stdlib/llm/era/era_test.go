@@ -9,30 +9,30 @@ import (
 	"testing"
 )
 
-//line stdlib/llm/era/era_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:10
 type StripFencesCase struct {
 	name  string
 	inVal string
 	want  string
 }
 
-//line stdlib/llm/era/era_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:15
 func TestStripFences(t *testing.T) {
-//line stdlib/llm/era/era_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:16
 	cases := []StripFencesCase{StripFencesCase{name: "no fence", inVal: "plain text", want: "plain text"}, StripFencesCase{name: "tagged fence", inVal: "```kukicha\nfunc main()\n    print(\"hi\")\n```", want: "func main()\n    print(\"hi\")"}, StripFencesCase{name: "bare fence", inVal: "```\nbody\n```", want: "body"}, StripFencesCase{name: "leading whitespace", inVal: "  \n```\nbody\n```\n  ", want: "body"}, StripFencesCase{name: "fence-like prefix only", inVal: "```", want: "```"}}
-//line stdlib/llm/era/era_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:27
 	for _, tc := range cases {
-//line stdlib/llm/era/era_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:28
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/llm/era/era_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:29
 			got := era.StripFences(tc.inVal)
-//line stdlib/llm/era/era_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:30
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line stdlib/llm/era/era_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:35
 type SelectFUTSCase struct {
 	name   string
 	tree   []era.Candidate
@@ -40,23 +40,23 @@ type SelectFUTSCase struct {
 	want   int
 }
 
-//line stdlib/llm/era/era_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:41
 func TestSelectFUTS(t *testing.T) {
-//line stdlib/llm/era/era_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:42
 	cases := []SelectFUTSCase{SelectFUTSCase{name: "empty tree", tree: []era.Candidate{}, higher: true, want: -1}, SelectFUTSCase{name: "all invalid", tree: []era.Candidate{era.Candidate{Source: "a", Score: 1.0, Parent: -1, Valid: false, Visits: 0}, era.Candidate{Source: "b", Score: 2.0, Parent: 0, Valid: false, Visits: 0}}, higher: true, want: -1}, SelectFUTSCase{name: "single valid", tree: []era.Candidate{era.Candidate{Source: "a", Score: 5.0, Parent: -1, Valid: true, Visits: 0}}, higher: true, want: 0}, SelectFUTSCase{name: "skips invalid", tree: []era.Candidate{era.Candidate{Source: "a", Score: 99.0, Parent: -1, Valid: false, Visits: 0}, era.Candidate{Source: "b", Score: 1.0, Parent: -1, Valid: true, Visits: 0}}, higher: true, want: 1}, SelectFUTSCase{name: "prefers high-score when unvisited (maximize)", tree: []era.Candidate{era.Candidate{Source: "lo", Score: 1.0, Parent: -1, Valid: true, Visits: 0}, era.Candidate{Source: "hi", Score: 10.0, Parent: -1, Valid: true, Visits: 0}}, higher: true, want: 1}, SelectFUTSCase{name: "prefers low-score when unvisited (minimize)", tree: []era.Candidate{era.Candidate{Source: "lo", Score: 1.0, Parent: -1, Valid: true, Visits: 0}, era.Candidate{Source: "hi", Score: 10.0, Parent: -1, Valid: true, Visits: 0}}, higher: false, want: 0}, SelectFUTSCase{name: "exploration pulls toward unvisited mediocre node over heavily-visited best", tree: []era.Candidate{era.Candidate{Source: "best-but-saturated", Score: 10.0, Parent: -1, Valid: true, Visits: 500}, era.Candidate{Source: "fresh-but-meh", Score: 6.0, Parent: -1, Valid: true, Visits: 0}}, higher: true, want: 1}}
-//line stdlib/llm/era/era_test.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:115
 	for _, tc := range cases {
-//line stdlib/llm/era/era_test.kuki:116
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:116
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/llm/era/era_test.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:117
 			got := era.SelectFUTS(tc.tree, tc.higher, era.DefaultExploration)
-//line stdlib/llm/era/era_test.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:118
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line stdlib/llm/era/era_test.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:123
 type RunLoopCase struct {
 	name          string
 	budget        int
@@ -65,61 +65,61 @@ type RunLoopCase struct {
 	wantTreeMin   int
 }
 
-//line stdlib/llm/era/era_test.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:133
 func stubAsk(prompt string) (string, error) {
-//line stdlib/llm/era/era_test.kuki:134
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:134
 	return "PROPOSAL", nil
 }
 
-//line stdlib/llm/era/era_test.kuki:136
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:136
 func stubScore(source string) (float64, error) {
-//line stdlib/llm/era/era_test.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:137
 	if source == "BASELINE" {
-//line stdlib/llm/era/era_test.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:138
 		return 0.0, nil
 	}
-//line stdlib/llm/era/era_test.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:139
 	return 1.0, nil
 }
 
-//line stdlib/llm/era/era_test.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:141
 func TestRunLoopWithStubs(t *testing.T) {
-//line stdlib/llm/era/era_test.kuki:142
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:142
 	cases := []RunLoopCase{RunLoopCase{name: "maximize: proposal beats baseline", budget: 3, higher: true, wantBestScore: 1.0, wantTreeMin: 2}, RunLoopCase{name: "minimize: baseline beats proposal", budget: 3, higher: false, wantBestScore: 0.0, wantTreeMin: 2}}
-//line stdlib/llm/era/era_test.kuki:158
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:158
 	for _, tc := range cases {
-//line stdlib/llm/era/era_test.kuki:159
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:159
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/llm/era/era_test.kuki:160
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:160
 			task := era.Task{Description: "stub task", Baseline: "BASELINE", Higher: tc.higher, Ideas: []string{}}
-//line stdlib/llm/era/era_test.kuki:166
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:166
 			winner, tree, err := era.Run(ctxpkg.Background(), stubAsk, task, stubScore, tc.budget)
-//line stdlib/llm/era/era_test.kuki:167
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:167
 			test.AssertNoError(t, err)
-//line stdlib/llm/era/era_test.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:168
 			test.AssertTrue(t, len(tree) >= tc.wantTreeMin)
-//line stdlib/llm/era/era_test.kuki:169
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:169
 			test.AssertTrue(t, winner.Valid)
-//line stdlib/llm/era/era_test.kuki:170
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:170
 			test.AssertEqual(t, winner.Score, tc.wantBestScore)
 		})
 	}
 }
 
-//line stdlib/llm/era/era_test.kuki:178
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:178
 func TestRunLoopCancelled(t *testing.T) {
-//line stdlib/llm/era/era_test.kuki:179
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:179
 	h := ctxpkg.WithCancel(ctxpkg.Background())
-//line stdlib/llm/era/era_test.kuki:180
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:180
 	h.Cancel()
-//line stdlib/llm/era/era_test.kuki:181
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:181
 	task := era.Task{Description: "stub task", Baseline: "BASELINE", Higher: true, Ideas: []string{}}
-//line stdlib/llm/era/era_test.kuki:187
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:187
 	winner, tree, err := era.Run(h, stubAsk, task, stubScore, 25)
-//line stdlib/llm/era/era_test.kuki:188
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:188
 	test.AssertNoError(t, err)
-//line stdlib/llm/era/era_test.kuki:189
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:189
 	test.AssertEqual(t, len(tree), 1)
-//line stdlib/llm/era/era_test.kuki:190
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era_test.kuki:190
 	test.AssertEqual(t, winner.Source, "BASELINE")
 }

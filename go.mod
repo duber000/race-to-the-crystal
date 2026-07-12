@@ -1,11 +1,11 @@
 module race-to-the-crystal
 
-go 1.26.4
+go 1.27rc2
 
 require github.com/hajimehoshi/ebiten/v2 v2.9.9
 
 require (
-	codeberg.org/kukichalang/kukicha/stdlib v0.56.3
+	codeberg.org/kukichalang/kukicha/stdlib v0.59.1
 	github.com/ebitengine/gomobile v0.0.0-20250923094054-ea854a63cce1 // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/purego v0.9.0 // indirect

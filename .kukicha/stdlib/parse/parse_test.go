@@ -12,284 +12,284 @@ import (
 	"time"
 )
 
-//line stdlib/parse/parse_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:14
 type User struct {
 	Name string
 	Age  int
 }
 
-//line stdlib/parse/parse_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:18
 func TestJSON(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:19
 	u, errs := parse.JSON[User](`{"Name":"ada","Age":36}`)
-//line stdlib/parse/parse_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:20
 	test.AssertEqual(t, len(errs), 0)
-//line stdlib/parse/parse_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:21
 	test.AssertEqual(t, u.Name, "ada")
-//line stdlib/parse/parse_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:22
 	test.AssertEqual(t, u.Age, 36)
 }
 
-//line stdlib/parse/parse_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:24
 func TestJSONParseError(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:25
 	_, errs := parse.JSON[User]("not valid json")
-//line stdlib/parse/parse_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:26
 	test.AssertEqual(t, len(errs), 1)
-//line stdlib/parse/parse_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:27
 	test.AssertEqual(t, errs[0].Path, "$")
-//line stdlib/parse/parse_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:28
 	test.AssertEqual(t, errs[0].Rule, "parse")
 }
 
-//line stdlib/parse/parse_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:31
 func TestJSONLines(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:32
 	lines := parse.JSONLines(`{"a":1}
 
  {"b":2}
 `)
-//line stdlib/parse/parse_test.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:37
 	test.AssertEqual(t, len(lines), 2)
-//line stdlib/parse/parse_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:38
 	test.AssertEqual(t, lines[0], `{"a":1}`)
-//line stdlib/parse/parse_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:39
 	test.AssertEqual(t, lines[1], `{"b":2}`)
 }
 
-//line stdlib/parse/parse_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:42
 type Config struct {
 	User  string
 	Email string
 }
 
-//line stdlib/parse/parse_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:46
 func TestYAML(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:47
 	c, errs := parse.YAML[Config]("user: alice\nemail: test@example.com")
-//line stdlib/parse/parse_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:48
 	test.AssertEqual(t, len(errs), 0)
-//line stdlib/parse/parse_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:49
 	test.AssertEqual(t, c.User, "alice")
-//line stdlib/parse/parse_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:50
 	test.AssertEqual(t, c.Email, "test@example.com")
 }
 
-//line stdlib/parse/parse_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:52
 func TestYAMLParseError(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:53
 	_, errs := parse.YAML[Config]("::: not valid yaml :::")
-//line stdlib/parse/parse_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:54
 	test.AssertEqual(t, len(errs), 1)
-//line stdlib/parse/parse_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:55
 	test.AssertEqual(t, errs[0].Path, "$")
-//line stdlib/parse/parse_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:56
 	test.AssertEqual(t, errs[0].Rule, "parse")
 }
 
-//line stdlib/parse/parse_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:59
 type LoginForm struct {
 	Name   string
 	Age    int
 	Active bool
 }
 
-//line stdlib/parse/parse_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:64
 func TestForm(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:65
 	values := url.Values{}
-//line stdlib/parse/parse_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:66
 	values.Set("Name", "ada")
-//line stdlib/parse/parse_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:67
 	values.Set("Age", "36")
-//line stdlib/parse/parse_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:68
 	values.Set("Active", "true")
-//line stdlib/parse/parse_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:69
 	form, errs := parse.Form[LoginForm](values)
-//line stdlib/parse/parse_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:70
 	test.AssertEqual(t, len(errs), 0)
-//line stdlib/parse/parse_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:71
 	test.AssertEqual(t, form.Name, "ada")
-//line stdlib/parse/parse_test.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:72
 	test.AssertEqual(t, form.Age, 36)
-//line stdlib/parse/parse_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:73
 	test.AssertEqual(t, form.Active, true)
 }
 
-//line stdlib/parse/parse_test.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:75
 func TestFormParseError(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:76
 	values := url.Values{}
-//line stdlib/parse/parse_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:77
 	values.Set("Age", "not a number")
-//line stdlib/parse/parse_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:78
 	_, errs := parse.Form[LoginForm](values)
-//line stdlib/parse/parse_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:79
 	test.AssertEqual(t, len(errs), 1)
-//line stdlib/parse/parse_test.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:80
 	test.AssertEqual(t, errs[0].Path, "Age")
-//line stdlib/parse/parse_test.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:81
 	test.AssertEqual(t, errs[0].Rule, "parse")
 }
 
-//line stdlib/parse/parse_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:84
 type AppConfig struct {
 	Host  string
 	Port  int
 	Debug bool
 }
 
-//line stdlib/parse/parse_test.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:89
 func TestEnv(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:90
 	_ = os.Setenv("APP_HOST", "localhost")
-//line stdlib/parse/parse_test.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:91
 	_ = os.Setenv("APP_PORT", "8080")
-//line stdlib/parse/parse_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:92
 	_ = os.Setenv("APP_DEBUG", "true")
-//line stdlib/parse/parse_test.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:93
 	defer os.Unsetenv("APP_HOST")
-//line stdlib/parse/parse_test.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:94
 	defer os.Unsetenv("APP_PORT")
-//line stdlib/parse/parse_test.kuki:95
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:95
 	defer os.Unsetenv("APP_DEBUG")
-//line stdlib/parse/parse_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:97
 	cfg, errs := parse.Env[AppConfig]("APP")
-//line stdlib/parse/parse_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:98
 	test.AssertEqual(t, len(errs), 0)
-//line stdlib/parse/parse_test.kuki:99
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:99
 	test.AssertEqual(t, cfg.Host, "localhost")
-//line stdlib/parse/parse_test.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:100
 	test.AssertEqual(t, cfg.Port, 8080)
-//line stdlib/parse/parse_test.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:101
 	test.AssertEqual(t, cfg.Debug, true)
 }
 
-//line stdlib/parse/parse_test.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:103
 func TestEnvParseError(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:104
 	_ = os.Setenv("APP_PORT", "notanumber")
-//line stdlib/parse/parse_test.kuki:105
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:105
 	defer os.Unsetenv("APP_PORT")
-//line stdlib/parse/parse_test.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:106
 	_, errs := parse.Env[AppConfig]("APP")
-//line stdlib/parse/parse_test.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:107
 	test.AssertEqual(t, len(errs), 1)
-//line stdlib/parse/parse_test.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:108
 	test.AssertEqual(t, errs[0].Path, "Port")
-//line stdlib/parse/parse_test.kuki:109
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:109
 	test.AssertEqual(t, errs[0].Rule, "parse")
 }
 
-//line stdlib/parse/parse_test.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:112
 func TestCSV(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:113
 	records, err := parse.CSV("name,age\nalice,30\nbob,25")
-//line stdlib/parse/parse_test.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:114
 	test.AssertNoError(t, err)
-//line stdlib/parse/parse_test.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:115
 	test.AssertEqual(t, len(records), 3)
-//line stdlib/parse/parse_test.kuki:116
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:116
 	test.AssertEqual(t, records[0][0], "name")
-//line stdlib/parse/parse_test.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:117
 	test.AssertEqual(t, records[1][0], "alice")
 }
 
-//line stdlib/parse/parse_test.kuki:120
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:120
 func TestCSVRecords(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:121
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:121
 	rows, err := parse.CSVRecords("name,age\nalice,30\nbob,25")
-//line stdlib/parse/parse_test.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:122
 	test.AssertNoError(t, err)
-//line stdlib/parse/parse_test.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:123
 	test.AssertEqual(t, len(rows), 2)
-//line stdlib/parse/parse_test.kuki:124
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:124
 	test.AssertEqual(t, rows[0]["name"], "alice")
-//line stdlib/parse/parse_test.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:125
 	test.AssertEqual(t, rows[0]["age"], "30")
-//line stdlib/parse/parse_test.kuki:126
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:126
 	test.AssertEqual(t, rows[1]["name"], "bob")
 }
 
-//line stdlib/parse/parse_test.kuki:129
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:129
 func TestWriteCSV(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:130
 	dir := t.TempDir()
-//line stdlib/parse/parse_test.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:131
 	path := filepath.Join(dir, "users.csv")
-//line stdlib/parse/parse_test.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:132
 	rows := [][]string{[]string{"name", "age"}, []string{"alice", "30"}, []string{"bob,jr", "25"}}
-//line stdlib/parse/parse_test.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:137
 	err := parse.WriteCSV(path, rows)
-//line stdlib/parse/parse_test.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:138
 	test.AssertNoError(t, err)
-//line stdlib/parse/parse_test.kuki:140
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:140
 	data, readErr := os.ReadFile(path)
-//line stdlib/parse/parse_test.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:141
 	test.AssertNoError(t, readErr)
-//line stdlib/parse/parse_test.kuki:142
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:142
 	roundTrip, err2 := parse.CSV(string(data))
-//line stdlib/parse/parse_test.kuki:143
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:143
 	test.AssertNoError(t, err2)
-//line stdlib/parse/parse_test.kuki:144
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:144
 	test.AssertEqual(t, len(roundTrip), 3)
-//line stdlib/parse/parse_test.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:145
 	test.AssertEqual(t, roundTrip[2][0], "bob,jr")
 }
 
-//line stdlib/parse/parse_test.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:148
 func TestWriteCSVRecords(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:149
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:149
 	dir := t.TempDir()
-//line stdlib/parse/parse_test.kuki:150
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:150
 	path := filepath.Join(dir, "records.csv")
-//line stdlib/parse/parse_test.kuki:151
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:151
 	records := []map[string]string{map[string]string{"name": "alice", "age": "30"}, map[string]string{"name": "bob", "age": "25"}}
-//line stdlib/parse/parse_test.kuki:155
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:155
 	err := parse.WriteCSVRecords(path, records)
-//line stdlib/parse/parse_test.kuki:156
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:156
 	test.AssertNoError(t, err)
-//line stdlib/parse/parse_test.kuki:158
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:158
 	data, readErr := os.ReadFile(path)
-//line stdlib/parse/parse_test.kuki:159
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:159
 	test.AssertNoError(t, readErr)
-//line stdlib/parse/parse_test.kuki:160
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:160
 	rows, err2 := parse.CSVRecords(string(data))
-//line stdlib/parse/parse_test.kuki:161
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:161
 	test.AssertNoError(t, err2)
-//line stdlib/parse/parse_test.kuki:162
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:162
 	test.AssertEqual(t, len(rows), 2)
-//line stdlib/parse/parse_test.kuki:163
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:163
 	test.AssertEqual(t, rows[0]["name"], "alice")
-//line stdlib/parse/parse_test.kuki:164
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:164
 	test.AssertEqual(t, rows[0]["age"], "30")
-//line stdlib/parse/parse_test.kuki:165
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:165
 	test.AssertEqual(t, rows[1]["name"], "bob")
 }
 
-//line stdlib/parse/parse_test.kuki:167
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:167
 func TestWriteCSVError(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:168
 	err := parse.WriteCSV("/nonexistent-dir-xyz/out.csv", [][]string{[]string{"a"}})
-//line stdlib/parse/parse_test.kuki:171
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:171
 	test.AssertEqual(t, err != nil, true)
 }
 
-//line stdlib/parse/parse_test.kuki:174
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:174
 func TestLines(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:175
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:175
 	lines := parse.Lines("foo\n\n  bar  \n\nbaz\n")
-//line stdlib/parse/parse_test.kuki:176
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:176
 	test.AssertEqual(t, len(lines), 3)
-//line stdlib/parse/parse_test.kuki:177
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:177
 	test.AssertEqual(t, lines[0], "foo")
-//line stdlib/parse/parse_test.kuki:178
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:178
 	test.AssertEqual(t, lines[1], "bar")
-//line stdlib/parse/parse_test.kuki:179
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:179
 	test.AssertEqual(t, lines[2], "baz")
 }
 
-//line stdlib/parse/parse_test.kuki:182
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:182
 type IntCase struct {
 	name    string
 	input   string
@@ -297,31 +297,31 @@ type IntCase struct {
 	wantErr bool
 }
 
-//line stdlib/parse/parse_test.kuki:188
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:188
 func TestInt(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:189
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:189
 	cases := []IntCase{IntCase{name: "positive", input: "42", want: 42, wantErr: false}, IntCase{name: "negative", input: "-7", want: -7, wantErr: false}, IntCase{name: "zero", input: "0", want: 0, wantErr: false}, IntCase{name: "spaces", input: " 42", want: 0, wantErr: true}, IntCase{name: "float str", input: "3.14", want: 0, wantErr: true}, IntCase{name: "empty", input: "", want: 0, wantErr: true}}
-//line stdlib/parse/parse_test.kuki:197
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:197
 	for _, tc := range cases {
-//line stdlib/parse/parse_test.kuki:198
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:198
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:199
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:199
 			n, err := parse.Int(tc.input)
-//line stdlib/parse/parse_test.kuki:200
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:200
 			if tc.wantErr {
-//line stdlib/parse/parse_test.kuki:201
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:201
 				test.AssertError(t, err)
 			} else {
-//line stdlib/parse/parse_test.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:203
 				test.AssertNoError(t, err)
-//line stdlib/parse/parse_test.kuki:204
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:204
 				test.AssertEqual(t, n, tc.want)
 			}
 		})
 	}
 }
 
-//line stdlib/parse/parse_test.kuki:208
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:208
 type Float64Case struct {
 	name    string
 	input   string
@@ -329,60 +329,60 @@ type Float64Case struct {
 	wantErr bool
 }
 
-//line stdlib/parse/parse_test.kuki:214
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:214
 func TestFloat64(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:215
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:215
 	cases := []Float64Case{Float64Case{name: "integer str", input: "42", want: 42.0, wantErr: false}, Float64Case{name: "decimal", input: "3.14", want: 3.14, wantErr: false}, Float64Case{name: "negative", input: "-1.5", want: -1.5, wantErr: false}, Float64Case{name: "not a number", input: "abc", want: 0.0, wantErr: true}, Float64Case{name: "empty", input: "", want: 0.0, wantErr: true}}
-//line stdlib/parse/parse_test.kuki:222
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:222
 	for _, tc := range cases {
-//line stdlib/parse/parse_test.kuki:223
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:223
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:224
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:224
 			f, err := parse.Float64(tc.input)
-//line stdlib/parse/parse_test.kuki:225
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:225
 			if tc.wantErr {
-//line stdlib/parse/parse_test.kuki:226
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:226
 				test.AssertError(t, err)
 			} else {
-//line stdlib/parse/parse_test.kuki:228
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:228
 				test.AssertNoError(t, err)
-//line stdlib/parse/parse_test.kuki:229
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:229
 				test.AssertEqual(t, f, tc.want)
 			}
 		})
 	}
 }
 
-//line stdlib/parse/parse_test.kuki:233
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:233
 func TestDuration(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:234
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:234
 	d, err := parse.Duration("1h30m")
-//line stdlib/parse/parse_test.kuki:235
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:235
 	test.AssertNoError(t, err)
-//line stdlib/parse/parse_test.kuki:236
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:236
 	test.AssertEqual(t, d, 90*time.Minute)
 }
 
-//line stdlib/parse/parse_test.kuki:239
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:239
 func TestURL(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:240
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:240
 	u, err := parse.URL("https://example.com/api?q=1")
-//line stdlib/parse/parse_test.kuki:241
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:241
 	test.AssertNoError(t, err)
-//line stdlib/parse/parse_test.kuki:242
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:242
 	test.AssertEqual(t, u.Host, "example.com")
-//line stdlib/parse/parse_test.kuki:243
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:243
 	test.AssertEqual(t, u.Path, "/api")
 }
 
-//line stdlib/parse/parse_test.kuki:246
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:246
 func TestQuery(t *testing.T) {
-//line stdlib/parse/parse_test.kuki:247
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:247
 	v, err := parse.Query("name=ada&age=30")
-//line stdlib/parse/parse_test.kuki:248
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:248
 	test.AssertNoError(t, err)
-//line stdlib/parse/parse_test.kuki:249
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:249
 	test.AssertEqual(t, v.Get("name"), "ada")
-//line stdlib/parse/parse_test.kuki:250
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:250
 	test.AssertEqual(t, v.Get("age"), "30")
 }

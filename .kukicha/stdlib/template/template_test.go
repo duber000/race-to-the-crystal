@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-//line stdlib/template/template_test.kuki:9
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:9
 type renderCase struct {
 	name    string
 	src     string
@@ -17,106 +17,106 @@ type renderCase struct {
 	wantErr bool
 }
 
-//line stdlib/template/template_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:16
 func TestRender(t *testing.T) {
-//line stdlib/template/template_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:17
 	cases := []renderCase{renderCase{name: "renders with data", src: `Hello {{.Name}}`, data: any(map[string]any{"Name": "Ari"}), want: "Hello Ari"}, renderCase{name: "renders empty template", src: "", data: any(map[string]any{}), want: ""}, renderCase{name: "no escaping in text", src: `{{.X}}`, data: any(map[string]any{"X": "<b>"}), want: "<b>"}, renderCase{name: "invalid template", src: `{{`, data: any(map[string]any{}), wantErr: true}}
-//line stdlib/template/template_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:38
 	for _, tc := range cases {
-//line stdlib/template/template_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:39
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/template/template_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:40
 			got, err := template.Render(tc.src, tc.data)
-//line stdlib/template/template_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:41
 			if tc.wantErr {
-//line stdlib/template/template_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:42
 				test.AssertError(t, err)
 			} else {
-//line stdlib/template/template_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:44
 				test.AssertNoError(t, err)
-//line stdlib/template/template_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:45
 				test.AssertEqual(t, got, tc.want)
 			}
 		})
 	}
 }
 
-//line stdlib/template/template_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:48
 func TestHTML(t *testing.T) {
-//line stdlib/template/template_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:49
 	t.Run("auto-escapes html", func(t *testing.T) {
-//line stdlib/template/template_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:50
 		got, err := template.HTML(`<p>{{.X}}</p>`, map[string]any{"X": "<script>"})
-//line stdlib/template/template_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:51
 		test.AssertNoError(t, err)
-//line stdlib/template/template_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:52
 		test.AssertEqual(t, got, "<p>&lt;script&gt;</p>")
 	})
-//line stdlib/template/template_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:55
 	t.Run("invalid template", func(t *testing.T) {
-//line stdlib/template/template_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:56
 		_, err := template.HTML(`{{`, map[string]any{})
-//line stdlib/template/template_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:57
 		test.AssertError(t, err)
 	})
 }
 
-//line stdlib/template/template_test.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:60
 func TestCompileRender(t *testing.T) {
-//line stdlib/template/template_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:61
 	tmpl, err_1 := template.Compile("greeting", `hi {{.Name}}`)
 //line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:61
 	if err_1 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:61
-		//line stdlib/template/template_test.kuki:62
+		//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:62
 		t.Fatalf("New failed: %v", err_1)
-		//line stdlib/template/template_test.kuki:63
+		//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:63
 		return
 	}
-//line stdlib/template/template_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:65
 	t.Run("renders parsed template", func(t *testing.T) {
-//line stdlib/template/template_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:66
 		got, err := tmpl.Render(map[string]any{"Name": "world"})
-//line stdlib/template/template_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:67
 		test.AssertNoError(t, err)
-//line stdlib/template/template_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:68
 		test.AssertEqual(t, got, "hi world")
 	})
-//line stdlib/template/template_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:71
 	t.Run("renders again with different data", func(t *testing.T) {
-//line stdlib/template/template_test.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:72
 		got, err := tmpl.Render(map[string]any{"Name": "you"})
-//line stdlib/template/template_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:73
 		test.AssertNoError(t, err)
-//line stdlib/template/template_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:74
 		test.AssertEqual(t, got, "hi you")
 	})
 }
 
-//line stdlib/template/template_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:77
 func TestCompileHTMLRender(t *testing.T) {
-//line stdlib/template/template_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:78
 	page, err_2 := template.CompileHTML("page", `<b>{{.X}}</b>`)
 //line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:78
 	if err_2 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:78
-		//line stdlib/template/template_test.kuki:79
+		//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:79
 		t.Fatalf("NewHTML failed: %v", err_2)
-		//line stdlib/template/template_test.kuki:80
+		//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:80
 		return
 	}
-//line stdlib/template/template_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:82
 	got, err := page.Render(map[string]any{"X": "<script>"})
-//line stdlib/template/template_test.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:83
 	test.AssertNoError(t, err)
-//line stdlib/template/template_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:84
 	test.AssertEqual(t, got, "<b>&lt;script&gt;</b>")
 }
 
-//line stdlib/template/template_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:86
 func TestCompileParseError(t *testing.T) {
-//line stdlib/template/template_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:87
 	_, err := template.Compile("bad", `{{`)
-//line stdlib/template/template_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:88
 	test.AssertError(t, err)
 }

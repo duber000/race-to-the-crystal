@@ -9,250 +9,250 @@ import (
 	"testing"
 )
 
-//line stdlib/test/test_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:19
 func TestAssertEqualPass(t *testing.T) {
-//line stdlib/test/test_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:20
 	test.AssertEqual(t, 1, 1)
-//line stdlib/test/test_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:21
 	test.AssertEqual(t, "foo", "foo")
-//line stdlib/test/test_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:22
 	test.AssertEqual(t, []int{1, 2, 3}, []int{1, 2, 3})
-//line stdlib/test/test_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:23
 	test.AssertEqual(t, map[string]int{"a": 1}, map[string]int{"a": 1})
 }
 
-//line stdlib/test/test_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:25
 func TestAssertNotEqualPass(t *testing.T) {
-//line stdlib/test/test_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:26
 	test.AssertNotEqual(t, 1, 2)
-//line stdlib/test/test_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:27
 	test.AssertNotEqual(t, "foo", "bar")
-//line stdlib/test/test_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:28
 	test.AssertNotEqual(t, []int{1}, []int{2})
 }
 
-//line stdlib/test/test_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:30
 func TestAssertTrueFalsePass(t *testing.T) {
-//line stdlib/test/test_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:31
 	test.AssertTrue(t, true)
-//line stdlib/test/test_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:32
 	test.AssertTrue(t, 1 == 1)
-//line stdlib/test/test_test.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:33
 	test.AssertFalse(t, false)
-//line stdlib/test/test_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:34
 	test.AssertFalse(t, 1 == 2)
 }
 
-//line stdlib/test/test_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:36
 func TestAssertNoErrorPass(t *testing.T) {
-//line stdlib/test/test_test.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:37
 	test.AssertNoError(t, nil)
 }
 
-//line stdlib/test/test_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:39
 func TestAssertErrorPass(t *testing.T) {
-//line stdlib/test/test_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:40
 	test.AssertError(t, errors.New("boom"))
 }
 
-//line stdlib/test/test_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:42
 func TestAssertNilNotNilPass(t *testing.T) {
-//line stdlib/test/test_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:43
 	test.AssertNil(t, nil)
-//line stdlib/test/test_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:44
 	test.AssertNotNil(t, "value")
-//line stdlib/test/test_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:45
 	test.AssertNotNil(t, 42)
 }
 
-//line stdlib/test/test_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:47
 func TestAssertNotEmptyPass(t *testing.T) {
-//line stdlib/test/test_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:48
 	test.AssertNotEmpty(t, "hello")
-//line stdlib/test/test_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:49
 	test.AssertNotEmpty(t, 42)
-//line stdlib/test/test_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:50
 	test.AssertNotEmpty(t, errors.New("oops"))
 }
 
-//line stdlib/test/test_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:56
 func TestFormatArgsDoNotPanic(t *testing.T) {
-//line stdlib/test/test_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:57
 	test.AssertEqual(t, 1, 1, "case %s at %d", "foo", 3)
-//line stdlib/test/test_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:58
 	test.AssertTrue(t, true, "flag=%v", true)
 }
 
-//line stdlib/test/test_test.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:62
 func TestAssertEqualFail(t *testing.T) {
-//line stdlib/test/test_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:63
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:64
 	test.AssertEqual(f, 1, 2)
-//line stdlib/test/test_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:65
 	if len(f.Errs) == 0 {
-//line stdlib/test/test_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:66
 		t.Fatalf("expected Errorf to be called")
 	}
-//line stdlib/test/test_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:67
 	if !kukistring.Contains(f.Errs[0], "expected 2, got 1") {
-//line stdlib/test/test_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:68
 		t.Errorf("bad message: %s", f.Errs[0])
 	}
 }
 
-//line stdlib/test/test_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:70
 func TestAssertEqualFailWithMessage(t *testing.T) {
-//line stdlib/test/test_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:71
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:72
 	test.AssertEqual(f, 1, 2, "case %s", "foo")
-//line stdlib/test/test_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:73
 	if len(f.Errs) == 0 {
-//line stdlib/test/test_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:74
 		t.Fatalf("expected Errorf to be called")
 	}
-//line stdlib/test/test_test.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:75
 	if !kukistring.Contains(f.Errs[0], "case foo: expected 2, got 1") {
-//line stdlib/test/test_test.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:76
 		t.Errorf("bad message: %s", f.Errs[0])
 	}
 }
 
-//line stdlib/test/test_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:78
 func TestAssertNotEqualFail(t *testing.T) {
-//line stdlib/test/test_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:79
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:80
 	test.AssertNotEqual(f, 5, 5)
-//line stdlib/test/test_test.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:81
 	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected values to differ") {
-//line stdlib/test/test_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:82
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
 
-//line stdlib/test/test_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:84
 func TestAssertTrueFail(t *testing.T) {
-//line stdlib/test/test_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:85
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:86
 	test.AssertTrue(f, false)
-//line stdlib/test/test_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:87
 	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected true") {
-//line stdlib/test/test_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:88
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
 
-//line stdlib/test/test_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:90
 func TestAssertFalseFail(t *testing.T) {
-//line stdlib/test/test_test.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:91
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:92
 	test.AssertFalse(f, true)
-//line stdlib/test/test_test.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:93
 	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected false") {
-//line stdlib/test/test_test.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:94
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
 
-//line stdlib/test/test_test.kuki:96
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:96
 func TestAssertNoErrorFail(t *testing.T) {
-//line stdlib/test/test_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:97
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:98
 	test.AssertNoError(f, errors.New("boom"))
-//line stdlib/test/test_test.kuki:99
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:99
 	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "unexpected error") {
-//line stdlib/test/test_test.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:100
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
 
-//line stdlib/test/test_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:102
 func TestAssertErrorFail(t *testing.T) {
-//line stdlib/test/test_test.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:103
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:104
 	test.AssertError(f, nil)
-//line stdlib/test/test_test.kuki:105
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:105
 	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected an error") {
-//line stdlib/test/test_test.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:106
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
 
-//line stdlib/test/test_test.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:108
 func TestAssertNilFail(t *testing.T) {
-//line stdlib/test/test_test.kuki:109
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:109
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:110
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:110
 	test.AssertNil(f, "not nil")
-//line stdlib/test/test_test.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:111
 	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected nil") {
-//line stdlib/test/test_test.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:112
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
 
-//line stdlib/test/test_test.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:114
 func TestAssertNotNilFail(t *testing.T) {
-//line stdlib/test/test_test.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:115
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:116
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:116
 	test.AssertNotNil(f, nil)
-//line stdlib/test/test_test.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:117
 	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected non-nil") {
-//line stdlib/test/test_test.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:118
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
 
-//line stdlib/test/test_test.kuki:124
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:124
 func makeTypedNilPointer() *int {
-//line stdlib/test/test_test.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:125
 	return nil
 }
 
-//line stdlib/test/test_test.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:127
 func TestAssertNilTypedNilPointer(t *testing.T) {
-//line stdlib/test/test_test.kuki:128
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:128
 	test.AssertNil(t, makeTypedNilPointer())
-//line stdlib/test/test_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:130
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:131
 	test.AssertNotNil(f, makeTypedNilPointer())
-//line stdlib/test/test_test.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:132
 	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected non-nil") {
-//line stdlib/test/test_test.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:133
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
 
-//line stdlib/test/test_test.kuki:135
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:135
 func TestAssertNotEmptyFailNil(t *testing.T) {
-//line stdlib/test/test_test.kuki:136
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:136
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:137
 	test.AssertNotEmpty(f, nil)
-//line stdlib/test/test_test.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:138
 	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "got nil") {
-//line stdlib/test/test_test.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:139
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
 
-//line stdlib/test/test_test.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:141
 func TestAssertNotEmptyFailZero(t *testing.T) {
-//line stdlib/test/test_test.kuki:142
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:142
 	f := &FakeTB{}
-//line stdlib/test/test_test.kuki:143
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:143
 	test.AssertNotEmpty(f, "")
-//line stdlib/test/test_test.kuki:144
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:144
 	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "zero value") {
-//line stdlib/test/test_test.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/test/test_test.kuki:145
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }

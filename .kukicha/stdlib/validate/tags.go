@@ -9,233 +9,233 @@ import (
 	"slices"
 )
 
-//line stdlib/validate/tags.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:16
 type FieldError struct {
 	Path    string
 	Rule    string
 	Message string
 }
 
-//line stdlib/validate/tags.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:22
 func CheckNonEmpty(path string, s string) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:23
 	if s == "" {
-//line stdlib/validate/tags.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:24
 		return FieldError{Path: path, Rule: "nonempty", Message: "value cannot be empty"}, true
 	}
-//line stdlib/validate/tags.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:25
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:29
 func CheckNonEmptyLen(path string, length int) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:30
 	if length == 0 {
-//line stdlib/validate/tags.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:31
 		return FieldError{Path: path, Rule: "nonempty", Message: "value cannot be empty"}, true
 	}
-//line stdlib/validate/tags.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:32
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:35
 func CheckNonZero(path string, n int) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:36
 	if n == 0 {
-//line stdlib/validate/tags.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:37
 		return FieldError{Path: path, Rule: "nonzero", Message: "value cannot be zero"}, true
 	}
-//line stdlib/validate/tags.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:38
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:41
 func CheckMin(path string, n int, min int) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:42
 	if n < min {
-//line stdlib/validate/tags.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:43
 		return FieldError{Path: path, Rule: "min", Message: fmt.Sprintf("value must be at least %v", min)}, true
 	}
-//line stdlib/validate/tags.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:44
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:47
 func CheckMax(path string, n int, max int) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:48
 	if n > max {
-//line stdlib/validate/tags.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:49
 		return FieldError{Path: path, Rule: "max", Message: fmt.Sprintf("value must be at most %v", max)}, true
 	}
-//line stdlib/validate/tags.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:50
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:54
 func CheckNonZeroFloat(path string, n float64) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:55
 	if n == 0.0 {
-//line stdlib/validate/tags.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:56
 		return FieldError{Path: path, Rule: "nonzero", Message: "value cannot be zero"}, true
 	}
-//line stdlib/validate/tags.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:57
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:60
 func CheckMinFloat(path string, n float64, min float64) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:61
 	if n < min {
-//line stdlib/validate/tags.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:62
 		return FieldError{Path: path, Rule: "min", Message: fmt.Sprintf("value must be at least %v", min)}, true
 	}
-//line stdlib/validate/tags.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:63
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:66
 func CheckMaxFloat(path string, n float64, max float64) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:67
 	if n > max {
-//line stdlib/validate/tags.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:68
 		return FieldError{Path: path, Rule: "max", Message: fmt.Sprintf("value must be at most %v", max)}, true
 	}
-//line stdlib/validate/tags.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:69
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:72
 func CheckMinLen(path string, length int, min int) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:73
 	if length < min {
-//line stdlib/validate/tags.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:74
 		return FieldError{Path: path, Rule: "min", Message: fmt.Sprintf("length must be at least %v", min)}, true
 	}
-//line stdlib/validate/tags.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:75
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:78
 func CheckMaxLen(path string, length int, max int) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:79
 	if length > max {
-//line stdlib/validate/tags.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:80
 		return FieldError{Path: path, Rule: "max", Message: fmt.Sprintf("length must be at most %v", max)}, true
 	}
-//line stdlib/validate/tags.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:81
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:84
 func CheckLen(path string, length int, want int) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:85
 	if length != want {
-//line stdlib/validate/tags.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:86
 		return FieldError{Path: path, Rule: "len", Message: fmt.Sprintf("length must be exactly %v", want)}, true
 	}
-//line stdlib/validate/tags.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:87
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:91
 func CheckEmail(path string, s string) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:92
 	pattern := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
-//line stdlib/validate/tags.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:93
 	matched, err_1 := regexp.MatchString(pattern, s)
 //line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:93
 	if err_1 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:93
 		panic(fmt.Sprintf("validate: invalid email pattern: %v", err_1))
 	}
-//line stdlib/validate/tags.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:94
 	if !matched {
-//line stdlib/validate/tags.kuki:95
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:95
 		return FieldError{Path: path, Rule: "email", Message: "invalid email address"}, true
 	}
-//line stdlib/validate/tags.kuki:96
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:96
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:99
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:99
 func CheckURL(path string, s string) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:100
 	parsed, err_2 := url.Parse(s)
 //line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:100
 	if err_2 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:100
 		return FieldError{Path: path, Rule: "url", Message: "invalid URL"}, true
 	}
-//line stdlib/validate/tags.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:101
 	if parsed.Scheme == "" || parsed.Host == "" {
-//line stdlib/validate/tags.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:102
 		return FieldError{Path: path, Rule: "url", Message: "URL must have scheme and host"}, true
 	}
-//line stdlib/validate/tags.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:103
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:106
 func CheckRegex(path string, s string, pattern string) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:107
 	matched, err_3 := regexp.MatchString(pattern, s)
 //line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:107
 	if err_3 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:107
 		return FieldError{Path: path, Rule: "regex", Message: "invalid regex pattern"}, true
 	}
-//line stdlib/validate/tags.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:108
 	if !matched {
-//line stdlib/validate/tags.kuki:109
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:109
 		return FieldError{Path: path, Rule: "regex", Message: "value does not match required pattern"}, true
 	}
-//line stdlib/validate/tags.kuki:110
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:110
 	return FieldError{}, false
 }
 
-//line stdlib/validate/tags.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:113
 func CheckOneOf(path string, s string, allowed []string) (FieldError, bool) {
-//line stdlib/validate/tags.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:114
 	if slices.Contains(allowed, s) {
-//line stdlib/validate/tags.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:115
 		return FieldError{}, false
 	}
-//line stdlib/validate/tags.kuki:116
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:116
 	return FieldError{Path: path, Rule: "oneof", Message: "value must be one of the allowed options"}, true
 }
 
-//line stdlib/validate/tags.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:122
 type Validatable interface {
 	Validate() []FieldError
 }
 
-//line stdlib/validate/tags.kuki:128
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:128
 func RunIfValidatable(v any) []FieldError {
-//line stdlib/validate/tags.kuki:129
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:129
 	val, ok := v.(Validatable)
-//line stdlib/validate/tags.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:130
 	if !ok {
-//line stdlib/validate/tags.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:131
 		return []FieldError{}
 	}
-//line stdlib/validate/tags.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:132
 	return val.Validate()
 }
 
-//line stdlib/validate/tags.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:137
 type TagValidatable interface {
 	ValidateTags() []FieldError
 }
 
-//line stdlib/validate/tags.kuki:144
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:144
 func RunTags(v any) []FieldError {
-//line stdlib/validate/tags.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:145
 	tagger, ok := v.(TagValidatable)
-//line stdlib/validate/tags.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:146
 	if ok {
-//line stdlib/validate/tags.kuki:147
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:147
 		return tagger.ValidateTags()
 	}
-//line stdlib/validate/tags.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:148
 	return RunIfValidatable(v)
 }

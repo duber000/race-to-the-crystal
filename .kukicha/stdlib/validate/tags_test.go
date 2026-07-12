@@ -7,278 +7,278 @@ import (
 	"testing"
 )
 
-//line stdlib/validate/tags_test.kuki:8
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:8
 func TestCheckNonEmpty(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:9
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:9
 	_, bad := validate.CheckNonEmpty("Name", "Ada")
-//line stdlib/validate/tags_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:10
 	if bad {
-//line stdlib/validate/tags_test.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:11
 		t.Fatalf("CheckNonEmpty should accept non-empty string")
 	}
-//line stdlib/validate/tags_test.kuki:12
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:12
 	fe, bad2 := validate.CheckNonEmpty("Name", "")
-//line stdlib/validate/tags_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:13
 	if !bad2 {
-//line stdlib/validate/tags_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:14
 		t.Fatalf("CheckNonEmpty should reject empty string")
 	}
-//line stdlib/validate/tags_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:15
 	if fe.Path != "Name" || fe.Rule != "nonempty" {
-//line stdlib/validate/tags_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:16
 		t.Fatalf("FieldError shape wrong: %v/%v", fe.Path, fe.Rule)
 	}
 }
 
-//line stdlib/validate/tags_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:18
 func TestCheckNonEmptyLen(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:19
 	_, bad := validate.CheckNonEmptyLen("Items", 3)
-//line stdlib/validate/tags_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:20
 	if bad {
-//line stdlib/validate/tags_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:21
 		t.Fatalf("CheckNonEmptyLen should accept non-zero length")
 	}
-//line stdlib/validate/tags_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:22
 	_, bad2 := validate.CheckNonEmptyLen("Items", 0)
-//line stdlib/validate/tags_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:23
 	if !bad2 {
-//line stdlib/validate/tags_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:24
 		t.Fatalf("CheckNonEmptyLen should reject zero length")
 	}
 }
 
-//line stdlib/validate/tags_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:26
 func TestCheckNonZero(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:27
 	_, bad := validate.CheckNonZero("Age", 5)
-//line stdlib/validate/tags_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:28
 	if bad {
-//line stdlib/validate/tags_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:29
 		t.Fatalf("CheckNonZero should accept non-zero int")
 	}
-//line stdlib/validate/tags_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:30
 	_, bad2 := validate.CheckNonZero("Age", 0)
-//line stdlib/validate/tags_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:31
 	if !bad2 {
-//line stdlib/validate/tags_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:32
 		t.Fatalf("CheckNonZero should reject zero")
 	}
 }
 
-//line stdlib/validate/tags_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:34
 func TestCheckMinMax(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:35
 	_, bad := validate.CheckMin("Age", 18, 0)
-//line stdlib/validate/tags_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:36
 	if bad {
-//line stdlib/validate/tags_test.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:37
 		t.Fatalf("CheckMin should accept value at or above min")
 	}
-//line stdlib/validate/tags_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:38
 	_, bad2 := validate.CheckMin("Age", -1, 0)
-//line stdlib/validate/tags_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:39
 	if !bad2 {
-//line stdlib/validate/tags_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:40
 		t.Fatalf("CheckMin should reject value below min")
 	}
-//line stdlib/validate/tags_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:41
 	_, bad3 := validate.CheckMax("Age", 100, 150)
-//line stdlib/validate/tags_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:42
 	if bad3 {
-//line stdlib/validate/tags_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:43
 		t.Fatalf("CheckMax should accept value at or below max")
 	}
-//line stdlib/validate/tags_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:44
 	_, bad4 := validate.CheckMax("Age", 200, 150)
-//line stdlib/validate/tags_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:45
 	if !bad4 {
-//line stdlib/validate/tags_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:46
 		t.Fatalf("CheckMax should reject value above max")
 	}
 }
 
-//line stdlib/validate/tags_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:48
 func TestCheckMinMaxLen(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:49
 	_, bad := validate.CheckMinLen("Name", 5, 1)
-//line stdlib/validate/tags_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:50
 	if bad {
-//line stdlib/validate/tags_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:51
 		t.Fatalf("CheckMinLen should accept length >= min")
 	}
-//line stdlib/validate/tags_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:52
 	_, bad2 := validate.CheckMinLen("Name", 0, 1)
-//line stdlib/validate/tags_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:53
 	if !bad2 {
-//line stdlib/validate/tags_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:54
 		t.Fatalf("CheckMinLen should reject length < min")
 	}
-//line stdlib/validate/tags_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:55
 	_, bad3 := validate.CheckMaxLen("Name", 5, 100)
-//line stdlib/validate/tags_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:56
 	if bad3 {
-//line stdlib/validate/tags_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:57
 		t.Fatalf("CheckMaxLen should accept length <= max")
 	}
-//line stdlib/validate/tags_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:58
 	_, bad4 := validate.CheckMaxLen("Name", 200, 100)
-//line stdlib/validate/tags_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:59
 	if !bad4 {
-//line stdlib/validate/tags_test.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:60
 		t.Fatalf("CheckMaxLen should reject length > max")
 	}
 }
 
-//line stdlib/validate/tags_test.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:62
 func TestCheckLen(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:63
 	_, bad := validate.CheckLen("Code", 6, 6)
-//line stdlib/validate/tags_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:64
 	if bad {
-//line stdlib/validate/tags_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:65
 		t.Fatalf("CheckLen should accept exact length")
 	}
-//line stdlib/validate/tags_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:66
 	_, bad2 := validate.CheckLen("Code", 5, 6)
-//line stdlib/validate/tags_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:67
 	if !bad2 {
-//line stdlib/validate/tags_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:68
 		t.Fatalf("CheckLen should reject mismatched length")
 	}
 }
 
-//line stdlib/validate/tags_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:70
 func TestCheckEmail(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:71
 	_, bad := validate.CheckEmail("Email", "ada@example.com")
-//line stdlib/validate/tags_test.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:72
 	if bad {
-//line stdlib/validate/tags_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:73
 		t.Fatalf("CheckEmail should accept valid address")
 	}
-//line stdlib/validate/tags_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:74
 	_, bad2 := validate.CheckEmail("Email", "not-an-email")
-//line stdlib/validate/tags_test.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:75
 	if !bad2 {
-//line stdlib/validate/tags_test.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:76
 		t.Fatalf("CheckEmail should reject invalid address")
 	}
 }
 
-//line stdlib/validate/tags_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:78
 func TestCheckURL(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:79
 	_, bad := validate.CheckURL("Site", "https://example.com")
-//line stdlib/validate/tags_test.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:80
 	if bad {
-//line stdlib/validate/tags_test.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:81
 		t.Fatalf("CheckURL should accept valid URL")
 	}
-//line stdlib/validate/tags_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:82
 	_, bad2 := validate.CheckURL("Site", "not a url")
-//line stdlib/validate/tags_test.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:83
 	if !bad2 {
-//line stdlib/validate/tags_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:84
 		t.Fatalf("CheckURL should reject value with no scheme")
 	}
 }
 
-//line stdlib/validate/tags_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:86
 func TestCheckRegex(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:87
 	_, bad := validate.CheckRegex("Zip", "12345", `^\d{5}$`)
-//line stdlib/validate/tags_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:88
 	if bad {
-//line stdlib/validate/tags_test.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:89
 		t.Fatalf("CheckRegex should accept matching value")
 	}
-//line stdlib/validate/tags_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:90
 	_, bad2 := validate.CheckRegex("Zip", "abcde", `^\d{5}$`)
-//line stdlib/validate/tags_test.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:91
 	if !bad2 {
-//line stdlib/validate/tags_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:92
 		t.Fatalf("CheckRegex should reject non-matching value")
 	}
 }
 
-//line stdlib/validate/tags_test.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:94
 func TestCheckOneOf(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:95
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:95
 	allowed := []string{"free", "pro", "enterprise"}
-//line stdlib/validate/tags_test.kuki:96
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:96
 	_, bad := validate.CheckOneOf("Tier", "pro", allowed)
-//line stdlib/validate/tags_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:97
 	if bad {
-//line stdlib/validate/tags_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:98
 		t.Fatalf("CheckOneOf should accept allowed value")
 	}
-//line stdlib/validate/tags_test.kuki:99
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:99
 	_, bad2 := validate.CheckOneOf("Tier", "platinum", allowed)
-//line stdlib/validate/tags_test.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:100
 	if !bad2 {
-//line stdlib/validate/tags_test.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:101
 		t.Fatalf("CheckOneOf should reject value outside allowed set")
 	}
 }
 
-//line stdlib/validate/tags_test.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:106
 type signupCase struct {
 	Name  string
 	Email string
 	Age   int
 }
 
-//line stdlib/validate/tags_test.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:111
 func validateSignup(s signupCase) []validate.FieldError {
-//line stdlib/validate/tags_test.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:112
 	errs := []validate.FieldError{}
-//line stdlib/validate/tags_test.kuki:113
-	if //line stdlib/validate/tags_test.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:113
+	if //line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:113
 	fe, bad := validate.CheckNonEmpty("Name", s.Name); bad {
-//line stdlib/validate/tags_test.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:114
 		errs = append(errs, fe)
 	}
-//line stdlib/validate/tags_test.kuki:115
-	if //line stdlib/validate/tags_test.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:115
+	if //line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:115
 	fe, bad := validate.CheckEmail("Email", s.Email); bad {
-//line stdlib/validate/tags_test.kuki:116
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:116
 		errs = append(errs, fe)
 	}
-//line stdlib/validate/tags_test.kuki:117
-	if //line stdlib/validate/tags_test.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:117
+	if //line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:117
 	fe, bad := validate.CheckMin("Age", s.Age, 0); bad {
-//line stdlib/validate/tags_test.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:118
 		errs = append(errs, fe)
 	}
-//line stdlib/validate/tags_test.kuki:119
-	if //line stdlib/validate/tags_test.kuki:119
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:119
+	if //line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:119
 	fe, bad := validate.CheckMax("Age", s.Age, 150); bad {
-//line stdlib/validate/tags_test.kuki:120
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:120
 		errs = append(errs, fe)
 	}
-//line stdlib/validate/tags_test.kuki:121
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:121
 	return errs
 }
 
-//line stdlib/validate/tags_test.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:123
 func TestAccumulatesAllViolations(t *testing.T) {
-//line stdlib/validate/tags_test.kuki:124
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:124
 	bad := signupCase{Name: "", Email: "nope", Age: -5}
-//line stdlib/validate/tags_test.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:125
 	errs := validateSignup(bad)
-//line stdlib/validate/tags_test.kuki:126
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:126
 	if len(errs) != 3 {
-//line stdlib/validate/tags_test.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:127
 		t.Fatalf("expected 3 violations, got %v", len(errs))
 	}
-//line stdlib/validate/tags_test.kuki:128
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:128
 	good := signupCase{Name: "Ada", Email: "ada@example.com", Age: 36}
-//line stdlib/validate/tags_test.kuki:129
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:129
 	errs2 := validateSignup(good)
-//line stdlib/validate/tags_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:130
 	if len(errs2) != 0 {
-//line stdlib/validate/tags_test.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/tags_test.kuki:131
 		t.Fatalf("expected 0 violations, got %v", len(errs2))
 	}
 }

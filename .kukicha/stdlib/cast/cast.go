@@ -3,156 +3,147 @@
 package cast
 
 import (
-	jsonpkg "codeberg.org/kukichalang/kukicha/stdlib/json"
 	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 )
 
-//line stdlib/cast/cast.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:17
 func SmartInt(value any) (int, error) {
-//line stdlib/cast/cast.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:18
 	switch v := value.(type) {
 	case int:
-//line stdlib/cast/cast.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:20
 		return v, nil
 	case int64:
-//line stdlib/cast/cast.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:22
 		return int(v), nil
 	case float64:
-//line stdlib/cast/cast.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:24
 		return int(v), nil
 	case string:
-//line stdlib/cast/cast.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:26
 		return strconv.Atoi(v)
-	case jsonpkg.Number:
-//line stdlib/cast/cast.kuki:29
-		i, err := v.Int64()
-//line stdlib/cast/cast.kuki:30
-		return int(i), err
 	case bool:
-//line stdlib/cast/cast.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:28
 		if v {
-//line stdlib/cast/cast.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:29
 			return 1, nil
 		}
-//line stdlib/cast/cast.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:30
 		return 0, nil
 	}
-//line stdlib/cast/cast.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:32
 	return 0, errors.New("cannot convert to int")
 }
 
-//line stdlib/cast/cast.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:36
 func SmartFloat64(value any) (float64, error) {
-//line stdlib/cast/cast.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:37
 	switch v := value.(type) {
 	case float64:
-//line stdlib/cast/cast.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:39
 		return v, nil
 	case float32:
-//line stdlib/cast/cast.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:41
 		return float64(v), nil
 	case int:
-//line stdlib/cast/cast.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:43
 		return float64(v), nil
 	case int64:
-//line stdlib/cast/cast.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:45
 		return float64(v), nil
 	case string:
-//line stdlib/cast/cast.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:47
 		return strconv.ParseFloat(v, 64)
-	case jsonpkg.Number:
-//line stdlib/cast/cast.kuki:53
-		return v.Float64()
 	case bool:
-//line stdlib/cast/cast.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:49
 		if v {
-//line stdlib/cast/cast.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:50
 			return 1.0, nil
 		}
-//line stdlib/cast/cast.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:51
 		return 0.0, nil
 	}
-//line stdlib/cast/cast.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:53
 	return 0.0, errors.New("cannot convert to float64")
 }
 
-//line stdlib/cast/cast.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:57
 func SmartBool(value any) (bool, error) {
-//line stdlib/cast/cast.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:58
 	switch v := value.(type) {
 	case bool:
-//line stdlib/cast/cast.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:60
 		return v, nil
 	case int:
-//line stdlib/cast/cast.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:62
 		return v != 0, nil
 	case float64:
-//line stdlib/cast/cast.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:64
 		return v != 0.0, nil
 	case string:
-//line stdlib/cast/cast.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:66
 		return strconv.ParseBool(v)
 	}
-//line stdlib/cast/cast.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:68
 	return false, errors.New("cannot convert to bool")
 }
 
-//line stdlib/cast/cast.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:72
 func SmartString(value any) (string, error) {
-//line stdlib/cast/cast.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:73
 	if value == nil {
-//line stdlib/cast/cast.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:74
 		return "", nil
 	}
-//line stdlib/cast/cast.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:75
 	result := func() string {
 		switch v := value.(type) {
 		case string:
-//line stdlib/cast/cast.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:77
 			return v
 		case int:
-//line stdlib/cast/cast.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:79
 			return strconv.Itoa(v)
 		case int64:
-//line stdlib/cast/cast.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:81
 			return strconv.FormatInt(v, 10)
 		case float64:
-//line stdlib/cast/cast.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:83
 			return fmt.Sprintf("%g", v)
 		case bool:
-//line stdlib/cast/cast.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:85
 			return strconv.FormatBool(v)
 		case []byte:
-//line stdlib/cast/cast.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:87
 			return string(v)
 		default:
-//line stdlib/cast/cast.kuki:95
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:89
 			return fmt.Sprintf("%v", value)
 		}
 	}()
-//line stdlib/cast/cast.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:91
 	return result, nil
 }
 
-//line stdlib/cast/cast.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:98
 func IsNil(value any) bool {
-//line stdlib/cast/cast.kuki:105
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:99
 	rv := reflect.ValueOf(value)
-//line stdlib/cast/cast.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:100
 	k := rv.Kind()
-//line stdlib/cast/cast.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:101
 	if k == reflect.Invalid {
-//line stdlib/cast/cast.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:102
 		return true
 	}
-//line stdlib/cast/cast.kuki:109
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:103
 	if k == reflect.Pointer || k == reflect.Slice || k == reflect.Map || k == reflect.Chan || k == reflect.Func || k == reflect.Interface {
-//line stdlib/cast/cast.kuki:110
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:104
 		return rv.IsNil()
 	}
-//line stdlib/cast/cast.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:105
 	return false
 }

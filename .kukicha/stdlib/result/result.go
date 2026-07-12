@@ -2,7 +2,7 @@
 
 package result
 
-//line stdlib/result/result.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:13
 type Result[T any, E any] interface{ isResult(*T, *E) }
 
 type Ok[T any, E any] struct {
@@ -16,3 +16,35 @@ type Err[T any, E any] struct {
 }
 
 func (Err[T, E]) isResult(*T, *E) {}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:19
+func Map[T any, E any, R any](r Result[T, E], transform func(T) R) Result[R, E] {
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:20
+	if o, _isOk := r.(Ok[T, E]); _isOk {
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:21
+		return Ok[R, E]{Value: transform(o.Value)}
+	}
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:22
+	if e, _isOk := r.(Err[T, E]); _isOk {
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:23
+		return Err[R, E]{Err: e.Err}
+	}
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:24
+	return nil
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:26
+func FlatMap[T any, E any, R any](r Result[T, E], transform func(T) Result[R, E]) Result[R, E] {
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:27
+	if o, _isOk := r.(Ok[T, E]); _isOk {
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:28
+		return transform(o.Value)
+	}
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:29
+	if e, _isOk := r.(Err[T, E]); _isOk {
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:30
+		return Err[R, E]{Err: e.Err}
+	}
+//line /Users/tluker/repos/go/kukicha/stdlib/result/result.kuki:31
+	return nil
+}

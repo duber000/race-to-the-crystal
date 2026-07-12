@@ -7,88 +7,88 @@ import (
 	gomath "math"
 )
 
-//line stdlib/math/math.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:21
 func Abs(x float64) float64 {
-//line stdlib/math/math.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:22
 	return gomath.Abs(x)
 }
 
-//line stdlib/math/math.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:27
 func AbsInt(x int) int {
-//line stdlib/math/math.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:28
 	if x < 0 {
-//line stdlib/math/math.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:29
 		return -x
 	}
-//line stdlib/math/math.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:30
 	return x
 }
 
-//line stdlib/math/math.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:36
 func Round(x float64) int {
-//line stdlib/math/math.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:37
 	return int(gomath.Round(x))
 }
 
-//line stdlib/math/math.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:42
 func RoundTo(x float64, digits int) float64 {
-//line stdlib/math/math.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:43
 	if digits < 0 {
-//line stdlib/math/math.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:44
 		digits = 0
 	}
-//line stdlib/math/math.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:45
 	factor := gomath.Pow(10.0, float64(digits))
-//line stdlib/math/math.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:46
 	return gomath.Round(x*factor) / factor
 }
 
-//line stdlib/math/math.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:50
 func Ceil(x float64) int {
-//line stdlib/math/math.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:51
 	return int(gomath.Ceil(x))
 }
 
-//line stdlib/math/math.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:55
 func Floor(x float64) int {
-//line stdlib/math/math.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:56
 	return int(gomath.Floor(x))
 }
 
-//line stdlib/math/math.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:60
 func Min[K cmp.Ordered](a K, b K) K {
-//line stdlib/math/math.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:61
 	if a < b {
-//line stdlib/math/math.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:62
 		return a
 	}
-//line stdlib/math/math.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:63
 	return b
 }
 
-//line stdlib/math/math.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:67
 func Max[K cmp.Ordered](a K, b K) K {
-//line stdlib/math/math.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:68
 	if a > b {
-//line stdlib/math/math.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:69
 		return a
 	}
-//line stdlib/math/math.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:70
 	return b
 }
 
-//line stdlib/math/math.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:74
 func Clamp[K cmp.Ordered](x K, lo K, hi K) K {
-//line stdlib/math/math.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:75
 	if x < lo {
-//line stdlib/math/math.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:76
 		return lo
 	}
-//line stdlib/math/math.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:77
 	if x > hi {
-//line stdlib/math/math.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:78
 		return hi
 	}
-//line stdlib/math/math.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:79
 	return x
 }

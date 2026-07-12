@@ -13,14 +13,14 @@ import (
 	"testing"
 )
 
-//line stdlib/sqliteext/sqliteext_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:28
 var regexpOnce = sync.Once{}
 
-//line stdlib/sqliteext/sqliteext_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:34
 func ensureRegexp(pool db.Pool) {
-//line stdlib/sqliteext/sqliteext_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:35
 	regexpOnce.Do(func() {
-//line stdlib/sqliteext/sqliteext_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:36
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:36
 		err_1 := sqliteext.Register(pool, regexpext.Register)
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:36
@@ -31,13 +31,13 @@ func ensureRegexp(pool db.Pool) {
 	})
 }
 
-//line stdlib/sqliteext/sqliteext_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:43
 func scalarString(pool db.Pool, query string) string {
-//line stdlib/sqliteext/sqliteext_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:44
 	row := db.RawDB(pool).QueryRow(query)
-//line stdlib/sqliteext/sqliteext_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:45
 	out := ""
-//line stdlib/sqliteext/sqliteext_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:46
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:46
 	err_2 := row.Scan(&out)
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:46
@@ -45,76 +45,76 @@ func scalarString(pool db.Pool, query string) string {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:46
 		panic(fmt.Sprintf("scan: %v", err_2))
 	}
-//line stdlib/sqliteext/sqliteext_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:47
 	return out
 }
 
-//line stdlib/sqliteext/sqliteext_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:49
 func TestRegister_Regexp(t *testing.T) {
-//line stdlib/sqliteext/sqliteext_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:50
 	pool, err_3 := sqlite.OpenMemory()
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:50
 	if err_3 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:50
 		panic(fmt.Sprintf("open: %v", err_3))
 	}
-//line stdlib/sqliteext/sqliteext_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:51
 	defer db.Close(pool)
-//line stdlib/sqliteext/sqliteext_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:52
 	ensureRegexp(pool)
-//line stdlib/sqliteext/sqliteext_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:54
 	t.Run("regexp_like matches", func(t *testing.T) {
-//line stdlib/sqliteext/sqliteext_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:55
 		n, err_4 := db.Count(pool, "SELECT regexp_like('hello world', '^hello')")
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:55
 		if err_4 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:55
 			panic(fmt.Sprintf("count: %v", err_4))
 		}
-//line stdlib/sqliteext/sqliteext_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:56
 		test.AssertEqual(t, n, int64(1))
 	})
-//line stdlib/sqliteext/sqliteext_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:59
 	t.Run("regexp_like does not match", func(t *testing.T) {
-//line stdlib/sqliteext/sqliteext_test.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:60
 		n, err_5 := db.Count(pool, "SELECT regexp_like('hello world', '^world')")
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:60
 		if err_5 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:60
 			panic(fmt.Sprintf("count: %v", err_5))
 		}
-//line stdlib/sqliteext/sqliteext_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:61
 		test.AssertEqual(t, n, int64(0))
 	})
-//line stdlib/sqliteext/sqliteext_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:64
 	t.Run("regexp_count counts matches", func(t *testing.T) {
-//line stdlib/sqliteext/sqliteext_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:65
 		n, err_6 := db.Count(pool, "SELECT regexp_count('a1b2c3d4', '[0-9]')")
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:65
 		if err_6 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:65
 			panic(fmt.Sprintf("count: %v", err_6))
 		}
-//line stdlib/sqliteext/sqliteext_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:66
 		test.AssertEqual(t, n, int64(4))
 	})
-//line stdlib/sqliteext/sqliteext_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:69
 	t.Run("regexp_substr extracts the first match", func(t *testing.T) {
-//line stdlib/sqliteext/sqliteext_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:70
 		got := scalarString(pool, "SELECT regexp_substr('foo123bar', '[0-9]+')")
-//line stdlib/sqliteext/sqliteext_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:71
 		test.AssertEqual(t, got, "123")
 	})
-//line stdlib/sqliteext/sqliteext_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:74
 	t.Run("regexp_replace rewrites matches", func(t *testing.T) {
-//line stdlib/sqliteext/sqliteext_test.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:75
 		got := scalarString(pool, "SELECT regexp_replace('hello world', 'world', 'kukicha')")
-//line stdlib/sqliteext/sqliteext_test.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:76
 		test.AssertEqual(t, got, "hello kukicha")
 	})
-//line stdlib/sqliteext/sqliteext_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:79
 	t.Run("REGEXP operator filters rows", func(t *testing.T) {
-//line stdlib/sqliteext/sqliteext_test.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:80
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:80
 		_, err_7 := db.Exec(pool, "CREATE TABLE words (w TEXT)")
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:80
@@ -122,7 +122,7 @@ func TestRegister_Regexp(t *testing.T) {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:80
 			panic(fmt.Sprintf("create: %v", err_7))
 		}
-//line stdlib/sqliteext/sqliteext_test.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:81
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:81
 		_, err_8 := db.Exec(pool, "INSERT INTO words (w) VALUES ('apple'), ('banana'), ('cherry')")
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:81
@@ -130,47 +130,47 @@ func TestRegister_Regexp(t *testing.T) {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:81
 			panic(fmt.Sprintf("insert: %v", err_8))
 		}
-//line stdlib/sqliteext/sqliteext_test.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:83
 		n, err_9 := db.Count(pool, "SELECT count(*) FROM words WHERE w REGEXP '^[ab]'")
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:83
 		if err_9 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:83
 			panic(fmt.Sprintf("count: %v", err_9))
 		}
-//line stdlib/sqliteext/sqliteext_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:84
 		test.AssertEqual(t, n, int64(2))
 	})
 }
 
-//line stdlib/sqliteext/sqliteext_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:92
 func TestRegister_AppliesToFreshPool(t *testing.T) {
-//line stdlib/sqliteext/sqliteext_test.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:93
 	setup, err_10 := sqlite.OpenMemory()
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:93
 	if err_10 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:93
 		panic(fmt.Sprintf("open: %v", err_10))
 	}
-//line stdlib/sqliteext/sqliteext_test.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:94
 	defer db.Close(setup)
-//line stdlib/sqliteext/sqliteext_test.kuki:95
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:95
 	ensureRegexp(setup)
-//line stdlib/sqliteext/sqliteext_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:97
 	fresh, err_11 := sqlite.OpenMemory()
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:97
 	if err_11 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:97
 		panic(fmt.Sprintf("open fresh: %v", err_11))
 	}
-//line stdlib/sqliteext/sqliteext_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:98
 	defer db.Close(fresh)
-//line stdlib/sqliteext/sqliteext_test.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:100
 	n, err_12 := db.Count(fresh, "SELECT regexp_like('foo', 'f.*')")
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:100
 	if err_12 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:100
 		panic(fmt.Sprintf("count: %v", err_12))
 	}
-//line stdlib/sqliteext/sqliteext_test.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext_test.kuki:101
 	test.AssertEqual(t, n, int64(1))
 }

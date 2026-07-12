@@ -8,128 +8,128 @@ import (
 	"testing"
 )
 
-//line stdlib/sort/sort_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:10
 type StringsCase struct {
 	name  string
 	input []string
 	want  []string
 }
 
-//line stdlib/sort/sort_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:15
 func TestStrings(t *testing.T) {
-//line stdlib/sort/sort_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:16
 	cases := []StringsCase{StringsCase{name: "already sorted", input: []string{"apple", "banana"}, want: []string{"apple", "banana"}}, StringsCase{name: "reverse order", input: []string{"banana", "apple"}, want: []string{"apple", "banana"}}, StringsCase{name: "single element", input: []string{"only"}, want: []string{"only"}}, StringsCase{name: "empty slice", input: []string{}, want: []string{}}}
-//line stdlib/sort/sort_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:35
 	for _, tc := range cases {
-//line stdlib/sort/sort_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:36
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/sort/sort_test.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:37
 			got := sort.Strings(tc.input)
-//line stdlib/sort/sort_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:38
 			test.AssertEqual(t, len(got), len(tc.want))
-//line stdlib/sort/sort_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:39
 			for i := range len(got) {
-//line stdlib/sort/sort_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:40
 				test.AssertEqual(t, got[i], tc.want[i])
 			}
 		})
 	}
 }
 
-//line stdlib/sort/sort_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:44
 type IntsCase struct {
 	name  string
 	input []int
 	want  []int
 }
 
-//line stdlib/sort/sort_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:49
 func TestInts(t *testing.T) {
-//line stdlib/sort/sort_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:50
 	cases := []IntsCase{IntsCase{name: "unsorted", input: []int{3, 1, 2}, want: []int{1, 2, 3}}, IntsCase{name: "with negatives", input: []int{0, -1, 5}, want: []int{-1, 0, 5}}, IntsCase{name: "empty", input: []int{}, want: []int{}}}
-//line stdlib/sort/sort_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:56
 	for _, tc := range cases {
-//line stdlib/sort/sort_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:57
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/sort/sort_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:58
 			got := sort.Ints(tc.input)
-//line stdlib/sort/sort_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:59
 			test.AssertEqual(t, len(got), len(tc.want))
-//line stdlib/sort/sort_test.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:60
 			for i := range len(got) {
-//line stdlib/sort/sort_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:61
 				test.AssertEqual(t, got[i], tc.want[i])
 			}
 		})
 	}
 }
 
-//line stdlib/sort/sort_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:65
 type ByCase struct {
 	name string
 }
 
-//line stdlib/sort/sort_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:68
 func TestBy(t *testing.T) {
-//line stdlib/sort/sort_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:69
 	cases := []ByCase{ByCase{name: "sort by length"}}
-//line stdlib/sort/sort_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:71
 	for _, tc := range cases {
-//line stdlib/sort/sort_test.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:72
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/sort/sort_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:73
 			words := []string{"banana", "fig", "apple", "kiwi"}
-//line stdlib/sort/sort_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:74
 			sorted := sort.By(words, func(a string, b string) bool { return len(a) < len(b) })
-//line stdlib/sort/sort_test.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:75
 			test.AssertEqual(t, sorted[0], "fig")
 		})
 	}
 }
 
-//line stdlib/sort/sort_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:79
 type ByKeyCase struct {
 	name string
 }
 
-//line stdlib/sort/sort_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:82
 func TestByKey(t *testing.T) {
-//line stdlib/sort/sort_test.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:83
 	cases := []ByKeyCase{ByKeyCase{name: "sort by string length"}}
-//line stdlib/sort/sort_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:85
 	for _, tc := range cases {
-//line stdlib/sort/sort_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:86
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/sort/sort_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:87
 			words := []string{"banana", "fig", "apple", "kiwi"}
-//line stdlib/sort/sort_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:88
 			sorted := sort.ByKey(words, func(w string) int { return len(w) })
-//line stdlib/sort/sort_test.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:89
 			test.AssertEqual(t, sorted[0], "fig")
-//line stdlib/sort/sort_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:90
 			test.AssertEqual(t, sorted[1], "kiwi")
 		})
 	}
 }
 
-//line stdlib/sort/sort_test.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:94
 type ReverseCase struct {
 	name string
 }
 
-//line stdlib/sort/sort_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:97
 func TestReverse(t *testing.T) {
-//line stdlib/sort/sort_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:98
 	cases := []ReverseCase{ReverseCase{name: "reverse ints"}}
-//line stdlib/sort/sort_test.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:100
 	for _, tc := range cases {
-//line stdlib/sort/sort_test.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:101
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/sort/sort_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:102
 			nums := []int{1, 3, 2}
-//line stdlib/sort/sort_test.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:103
 			sorted := sort.Reverse(nums, func(a int, b int) bool { return a < b })
-//line stdlib/sort/sort_test.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/sort/sort_test.kuki:104
 			test.AssertEqual(t, sorted[0], 3)
 		})
 	}

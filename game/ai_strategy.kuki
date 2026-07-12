@@ -61,7 +61,7 @@ func ChosenToActionMap(action: ChosenAction) map of string to any
         default
             return map of string to any{
                 "type": "END_TURN",
-                "data": make(map of string to any),
+                "data": empty map of string to any,
             }
 
 func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs: reference GameState, player_id: types.PlayerID) optional reference ChosenAction
@@ -294,22 +294,32 @@ func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
     type_any, has := d["type"]
     if not has
         return EndTurnAction{Description: "unknown"}, false
-    type_str, type_ok := type_any.(string)
-    if not type_ok
+    type_str := ""
+    if type_any is string as ts
+        type_str = ts
+    if type_str equals ""
         return EndTurnAction{Description: "unknown"}, false
     switch type_str
         when "MOVE"
-            tid_any, has_tid := d["token_id"]
             tok_id := 0
+            tid_any, has_tid := d["token_id"]
             if has_tid
-                tok_id, _ = tid_any.(int)
+                if tid_any is int as tid_val
+                    tok_id = tid_val
             dests := empty list of list of int
             dests_any, has_d := d["valid_destinations"]
             if has_d
-                dests, _ = dests_any.(list of list of int)
-            health, _ := d["token_health"].(string)
-            tpos, _ := d["token_position"].(list of int)
-            desc, _ := d["description"].(string)
+                if dests_any is list of list of int as dests_val
+                    dests = dests_val
+            health := ""
+            if d["token_health"] is string as h
+                health = h
+            tpos := empty list of int
+            if d["token_position"] is list of int as tp
+                tpos = tp
+            desc := ""
+            if d["description"] is string as ds
+                desc = ds
             return MoveAction{
                 TokenID: types.TokenID(tok_id),
                 TokenPosition: tpos,
@@ -318,14 +328,30 @@ func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
                 Description: desc,
             }, true
         when "ATTACK"
-            aid, _ := d["attacker_id"].(int)
-            did, _ := d["defender_id"].(int)
-            atk_pos, _ := d["attacker_position"].(list of int)
-            def_pos, _ := d["defender_position"].(list of int)
-            owner, _ := d["defender_owner"].(string)
-            dmg, _ := d["damage"].(int)
-            wk, _ := d["will_kill"].(bool)
-            desc, _ := d["description"].(string)
+            aid := 0
+            if d["attacker_id"] is int as aid_val
+                aid = aid_val
+            did := 0
+            if d["defender_id"] is int as did_val
+                did = did_val
+            atk_pos := empty list of int
+            if d["attacker_position"] is list of int as ap
+                atk_pos = ap
+            def_pos := empty list of int
+            if d["defender_position"] is list of int as dp
+                def_pos = dp
+            owner := ""
+            if d["defender_owner"] is string as ow
+                owner = ow
+            dmg := 0
+            if d["damage"] is int as dmg_val
+                dmg = dmg_val
+            wk := false
+            if d["will_kill"] is bool as wk_val
+                wk = wk_val
+            desc := ""
+            if d["description"] is string as ds
+                desc = ds
             return AttackAction{
                 AttackerID: types.TokenID(aid),
                 AttackerPosition: atk_pos,
@@ -337,10 +363,18 @@ func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
                 Description: desc,
             }, true
         when "DEPLOY"
-            hv, _ := d["health_value"].(int)
-            positions, _ := d["positions"].(list of list of int)
-            rem, _ := d["remaining"].(int)
-            desc, _ := d["description"].(string)
+            hv := 0
+            if d["health_value"] is int as hv_val
+                hv = hv_val
+            positions := empty list of list of int
+            if d["positions"] is list of list of int as ps
+                positions = ps
+            rem := 0
+            if d["remaining"] is int as rem_val
+                rem = rem_val
+            desc := ""
+            if d["description"] is string as ds
+                desc = ds
             return DeployAction{
                 HealthValue: hv,
                 Positions: positions,
@@ -348,7 +382,9 @@ func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
                 Description: desc,
             }, true
         when "END_TURN"
-            desc, _ := d["description"].(string)
+            desc := ""
+            if d["description"] is string as ds
+                desc = ds
             return EndTurnAction{Description: desc}, true
     return EndTurnAction{Description: "unknown"}, false
 

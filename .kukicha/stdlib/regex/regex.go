@@ -8,157 +8,157 @@ import (
 	"regexp"
 )
 
-//line stdlib/regex/regex.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:19
 type Pattern struct {
 	re *regexp.Regexp
 }
 
-//line stdlib/regex/regex.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:28
 func Match(pattern string, text string) bool {
-//line stdlib/regex/regex.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:29
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:30
 	return re.MatchString(text)
 }
 
-//line stdlib/regex/regex.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:40
 func MatchSafe(pattern string, text string) (bool, error) {
-//line stdlib/regex/regex.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:41
 	re, err := regexp.Compile(pattern)
-//line stdlib/regex/regex.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:42
 	if err != nil {
-//line stdlib/regex/regex.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:43
 		return false, fmt.Errorf("invalid pattern: %v", err)
 	}
-//line stdlib/regex/regex.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:44
 	return re.MatchString(text), nil
 }
 
-//line stdlib/regex/regex.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:51
 func Find(pattern string, text string) (string, error) {
-//line stdlib/regex/regex.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:52
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:53
 	result := re.FindString(text)
-//line stdlib/regex/regex.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:54
 	if result == "" {
-//line stdlib/regex/regex.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:55
 		return "", errors.New("no match found")
 	}
-//line stdlib/regex/regex.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:56
 	return result, nil
 }
 
-//line stdlib/regex/regex.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:65
 func FindOr(pattern string, text string, defaultValue string) string {
-//line stdlib/regex/regex.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:66
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:67
 	result := re.FindString(text)
-//line stdlib/regex/regex.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:68
 	if result == "" {
-//line stdlib/regex/regex.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:69
 		return defaultValue
 	}
-//line stdlib/regex/regex.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:70
 	return result
 }
 
-//line stdlib/regex/regex.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:76
 func FindAll(pattern string, text string) []string {
-//line stdlib/regex/regex.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:77
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:78
 	matches := re.FindAllString(text, -1)
-//line stdlib/regex/regex.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:79
 	if matches == nil {
-//line stdlib/regex/regex.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:80
 		return []string{}
 	}
-//line stdlib/regex/regex.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:81
 	return matches
 }
 
-//line stdlib/regex/regex.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:89
 func FindGroups(pattern string, text string) ([]string, error) {
-//line stdlib/regex/regex.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:90
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:91
 	matches := re.FindStringSubmatch(text)
-//line stdlib/regex/regex.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:92
 	if matches == nil {
-//line stdlib/regex/regex.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:93
 		return []string{}, errors.New("no match found")
 	}
-//line stdlib/regex/regex.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:94
 	return matches, nil
 }
 
-//line stdlib/regex/regex.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:103
 func FindGroupsOr(pattern string, text string, defaultValue []string) []string {
-//line stdlib/regex/regex.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:104
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:105
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:105
 	matches := re.FindStringSubmatch(text)
-//line stdlib/regex/regex.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:106
 	if matches == nil {
-//line stdlib/regex/regex.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:107
 		return defaultValue
 	}
-//line stdlib/regex/regex.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:108
 	return matches
 }
 
-//line stdlib/regex/regex.kuki:116
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:116
 func FindAllGroups(pattern string, text string) [][]string {
-//line stdlib/regex/regex.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:117
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:118
 	matches := re.FindAllStringSubmatch(text, -1)
-//line stdlib/regex/regex.kuki:119
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:119
 	if matches == nil {
-//line stdlib/regex/regex.kuki:120
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:120
 		return [][]string{}
 	}
-//line stdlib/regex/regex.kuki:121
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:121
 	return matches
 }
 
-//line stdlib/regex/regex.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:130
 func Replace(pattern string, replacement string, text string) string {
-//line stdlib/regex/regex.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:131
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:132
 	return re.ReplaceAllString(text, replacement)
 }
 
-//line stdlib/regex/regex.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:139
 func ReplaceFunc(pattern string, replacer func(string) string, text string) string {
-//line stdlib/regex/regex.kuki:140
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:140
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:141
 	return re.ReplaceAllStringFunc(text, replacer)
 }
 
-//line stdlib/regex/regex.kuki:149
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:149
 func Split(pattern string, text string) []string {
-//line stdlib/regex/regex.kuki:150
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:150
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:151
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:151
 	return re.Split(text, -1)
 }
 
-//line stdlib/regex/regex.kuki:157
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:157
 func IsValid(pattern string) bool {
-//line stdlib/regex/regex.kuki:158
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:158
 	_, err := regexp.Compile(pattern)
-//line stdlib/regex/regex.kuki:159
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:159
 	return err == nil
 }
 
-//line stdlib/regex/regex.kuki:165
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:165
 func Compile(pattern string) (Pattern, error) {
-//line stdlib/regex/regex.kuki:166
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:166
 	re, err_1 := regexp.Compile(pattern)
 //line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:166
 	if err_1 != nil {
@@ -168,90 +168,116 @@ func Compile(pattern string) (Pattern, error) {
 //line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:166
 		return _zero0, err_1
 	}
-//line stdlib/regex/regex.kuki:167
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:167
 	return Pattern{re: re}, nil
 }
 
-//line stdlib/regex/regex.kuki:172
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:172
 func MustCompile(pattern string) Pattern {
-//line stdlib/regex/regex.kuki:173
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:173
 	re := regexp.MustCompile(pattern)
-//line stdlib/regex/regex.kuki:174
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:174
 	return Pattern{re: re}
 }
 
-//line stdlib/regex/regex.kuki:178
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:178
 func MatchCompiled(p Pattern, text string) bool {
-//line stdlib/regex/regex.kuki:179
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:179
 	return p.re.MatchString(text)
 }
 
-//line stdlib/regex/regex.kuki:183
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:183
 func FindCompiled(p Pattern, text string) (string, error) {
-//line stdlib/regex/regex.kuki:184
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:184
 	result := p.re.FindString(text)
-//line stdlib/regex/regex.kuki:185
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:185
 	if result == "" {
-//line stdlib/regex/regex.kuki:186
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:186
 		return "", errors.New("no match found")
 	}
-//line stdlib/regex/regex.kuki:187
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:187
 	return result, nil
 }
 
-//line stdlib/regex/regex.kuki:191
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:194
+func FindCompiledOr(p Pattern, text string, defaultValue string) string {
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:195
+	result := p.re.FindString(text)
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:196
+	if result == "" {
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:197
+		return defaultValue
+	}
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:198
+	return result
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:202
 func FindAllCompiled(p Pattern, text string) []string {
-//line stdlib/regex/regex.kuki:192
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:203
 	matches := p.re.FindAllString(text, -1)
-//line stdlib/regex/regex.kuki:193
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:204
 	if matches == nil {
-//line stdlib/regex/regex.kuki:194
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:205
 		return []string{}
 	}
-//line stdlib/regex/regex.kuki:195
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:206
 	return matches
 }
 
-//line stdlib/regex/regex.kuki:199
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:210
 func FindGroupsCompiled(p Pattern, text string) ([]string, error) {
-//line stdlib/regex/regex.kuki:200
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:211
 	matches := p.re.FindStringSubmatch(text)
-//line stdlib/regex/regex.kuki:201
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:212
 	if matches == nil {
-//line stdlib/regex/regex.kuki:202
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:213
 		return []string{}, errors.New("no match found")
 	}
-//line stdlib/regex/regex.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:214
 	return matches, nil
 }
 
-//line stdlib/regex/regex.kuki:207
-func FindAllGroupsCompiled(p Pattern, text string) [][]string {
-//line stdlib/regex/regex.kuki:208
-	matches := p.re.FindAllStringSubmatch(text, -1)
-//line stdlib/regex/regex.kuki:209
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:221
+func FindGroupsCompiledOr(p Pattern, text string, defaultValue []string) []string {
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:222
+	matches := p.re.FindStringSubmatch(text)
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:223
 	if matches == nil {
-//line stdlib/regex/regex.kuki:210
-		return [][]string{}
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:224
+		return defaultValue
 	}
-//line stdlib/regex/regex.kuki:211
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:225
 	return matches
 }
 
-//line stdlib/regex/regex.kuki:215
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:229
+func FindAllGroupsCompiled(p Pattern, text string) [][]string {
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:230
+	matches := p.re.FindAllStringSubmatch(text, -1)
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:231
+	if matches == nil {
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:232
+		return [][]string{}
+	}
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:233
+	return matches
+}
+
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:237
 func ReplaceCompiled(p Pattern, replacement string, text string) string {
-//line stdlib/regex/regex.kuki:216
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:238
 	return p.re.ReplaceAllString(text, replacement)
 }
 
-//line stdlib/regex/regex.kuki:220
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:242
 func ReplaceFuncCompiled(p Pattern, replacer func(string) string, text string) string {
-//line stdlib/regex/regex.kuki:221
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:243
 	return p.re.ReplaceAllStringFunc(text, replacer)
 }
 
-//line stdlib/regex/regex.kuki:225
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:247
 func SplitCompiled(p Pattern, text string) []string {
-//line stdlib/regex/regex.kuki:226
+//line /Users/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:248
 	return p.re.Split(text, -1)
 }

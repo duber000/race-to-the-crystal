@@ -11,378 +11,378 @@ import (
 	"testing"
 )
 
-//line stdlib/http/http_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:13
 func TestResponseHelpers(t *testing.T) {
-//line stdlib/http/http_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:14
 	jsonRec := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:15
 	err := httphelper.JSON(jsonRec, map[string]any{"status": "ok"})
-//line stdlib/http/http_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:16
 	if err != nil {
-//line stdlib/http/http_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:17
 		t.Fatalf("JSON helper failed: %v", err)
 	}
-//line stdlib/http/http_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:18
 	resp := jsonRec.Result()
-//line stdlib/http/http_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:19
 	if resp.StatusCode != 200 {
-//line stdlib/http/http_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:20
 		t.Errorf("Expected 200, got %v", resp.StatusCode)
 	}
-//line stdlib/http/http_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:21
 	ct := resp.Header.Get("Content-Type")
-//line stdlib/http/http_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:22
 	if ct != "application/json" {
-//line stdlib/http/http_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:23
 		t.Errorf("Expected JSON content type, got %v", ct)
 	}
-//line stdlib/http/http_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:25
 	textRec := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:26
 	err2 := httphelper.TextStatus(textRec, "bye", 201)
-//line stdlib/http/http_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:27
 	if err2 != nil {
-//line stdlib/http/http_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:28
 		t.Fatalf("TextStatus failed: %v", err2)
 	}
-//line stdlib/http/http_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:29
 	if textRec.Result().StatusCode != 201 {
-//line stdlib/http/http_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:30
 		t.Errorf("Expected 201 status, got %v", textRec.Result().StatusCode)
 	}
-//line stdlib/http/http_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:31
 	if textRec.Header().Get("Content-Type") != "text/plain; charset=utf-8" {
-//line stdlib/http/http_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:32
 		t.Errorf("Expected text/plain header")
 	}
-//line stdlib/http/http_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:34
 	htmlRec := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:35
 	err3 := httphelper.SafeHTML(htmlRec, "<script>x</script>")
-//line stdlib/http/http_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:36
 	if err3 != nil {
-//line stdlib/http/http_test.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:37
 		t.Fatalf("SafeHTML failed: %v", err3)
 	}
-//line stdlib/http/http_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:38
 	if htmlRec.Header().Get("Content-Type") != "text/html; charset=utf-8" {
-//line stdlib/http/http_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:39
 		t.Errorf("Expected html content type")
 	}
-//line stdlib/http/http_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:40
 	body := htmlRec.Body.String()
-//line stdlib/http/http_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:41
 	if kukistring.Contains(body, "<") || kukistring.Contains(body, ">") {
-//line stdlib/http/http_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:42
 		t.Errorf("SafeHTML should escape content")
 	}
 }
 
-//line stdlib/http/http_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:45
 func TestSafeURL(t *testing.T) {
-//line stdlib/http/http_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:46
 	safe, err := httphelper.SafeURL("/items/test-id", map[string]string{}, map[string]string{"q": "kuki"})
-//line stdlib/http/http_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:51
 	if err != nil {
-//line stdlib/http/http_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:52
 		t.Fatalf("SafeURL failed: %v", err)
 	}
-//line stdlib/http/http_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:53
 	_, parseErr := url.ParseRequestURI(safe)
-//line stdlib/http/http_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:54
 	if parseErr != nil {
-//line stdlib/http/http_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:55
 		t.Errorf("SafeURL should return valid URL, parse error %v", parseErr)
 	}
 }
 
-//line stdlib/http/http_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:58
 func TestRequestHelpers(t *testing.T) {
-//line stdlib/http/http_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:59
 	req, _ := http.NewRequest("GET", "https://example.com/search?page=3&verbose=1", nil)
-//line stdlib/http/http_test.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:60
 	if httphelper.GetQueryParam(req, "page") != "3" {
-//line stdlib/http/http_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:61
 		t.Errorf("GetQueryParam returned wrong page")
 	}
-//line stdlib/http/http_test.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:62
 	if httphelper.GetQueryParamOr(req, "missing", "5") != "5" {
-//line stdlib/http/http_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:63
 		t.Errorf("GetQueryParamOr should fallback to default")
 	}
-//line stdlib/http/http_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:65
 	page, err := httphelper.GetQueryInt(req, "page")
-//line stdlib/http/http_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:66
 	if err != nil {
-//line stdlib/http/http_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:67
 		t.Fatalf("GetQueryInt failed: %v", err)
 	}
-//line stdlib/http/http_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:68
 	if page != 3 {
-//line stdlib/http/http_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:69
 		t.Errorf("Expected page 3, got %v", page)
 	}
-//line stdlib/http/http_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:70
 	if httphelper.GetQueryIntOr(req, "missing", 7) != 7 {
-//line stdlib/http/http_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:71
 		t.Errorf("GetQueryIntOr default mismatch")
 	}
-//line stdlib/http/http_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:73
 	verbose, err2 := httphelper.GetQueryBool(req, "verbose")
-//line stdlib/http/http_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:74
 	if err2 != nil {
-//line stdlib/http/http_test.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:75
 		t.Fatalf("GetQueryBool failed: %v", err2)
 	}
-//line stdlib/http/http_test.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:76
 	if !verbose {
-//line stdlib/http/http_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:77
 		t.Errorf("Expected verbose true")
 	}
-//line stdlib/http/http_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:78
 	if !httphelper.GetQueryBoolOr(req, "missing", true) {
-//line stdlib/http/http_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:79
 		t.Errorf("GetQueryBoolOr should return default when missing")
 	}
 }
 
-//line stdlib/http/http_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:82
 func TestSafeRedirect(t *testing.T) {
-//line stdlib/http/http_test.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:83
 	rec := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:84
 	err := httphelper.SafeRedirect(rec, "https://example.com/home", "example.com")
-//line stdlib/http/http_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:85
 	if err != nil {
-//line stdlib/http/http_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:86
 		t.Fatalf("SafeRedirect failed: %v", err)
 	}
-//line stdlib/http/http_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:87
 	if rec.Result().Header.Get("Location") != "https://example.com/home" {
-//line stdlib/http/http_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:88
 		t.Errorf("Expected location header to match redirect target")
 	}
-//line stdlib/http/http_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:90
 	rec2 := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:91
 	err2 := httphelper.SafeRedirect(rec2, "https://evil.com", "example.com")
-//line stdlib/http/http_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:92
 	if err2 == nil {
-//line stdlib/http/http_test.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:93
 		t.Fatalf("SafeRedirect should return error for blocked host")
 	}
-//line stdlib/http/http_test.kuki:96
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:96
 	rec3 := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:97
 	err3 := httphelper.SafeRedirect(rec3, "/dashboard", "example.com")
-//line stdlib/http/http_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:98
 	if err3 != nil {
-//line stdlib/http/http_test.kuki:99
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:99
 		t.Fatalf("SafeRedirect should allow relative path: %v", err3)
 	}
-//line stdlib/http/http_test.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:100
 	if rec3.Result().Header.Get("Location") != "/dashboard" {
-//line stdlib/http/http_test.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:101
 		t.Errorf("Expected /dashboard location header")
 	}
-//line stdlib/http/http_test.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:104
 	rejects := []string{"javascript:alert(1)", "data:text/html,<script>alert(1)</script>", "file:///etc/passwd", "vbscript:msgbox(1)", "//evil.com/path", "dashboard"}
-//line stdlib/http/http_test.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:112
 	for _, bad := range rejects {
-//line stdlib/http/http_test.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:113
 		rec := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:114
 		err := httphelper.SafeRedirect(rec, bad, "example.com")
-//line stdlib/http/http_test.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:115
 		if err == nil {
-//line stdlib/http/http_test.kuki:116
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:116
 			t.Errorf("SafeRedirect should reject %v", bad)
 		}
-//line stdlib/http/http_test.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:117
 		if rec.Result().Header.Get("Location") != "" {
-//line stdlib/http/http_test.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:118
 			t.Errorf("Location header should not be set for rejected URL: %v", bad)
 		}
 	}
 }
 
-//line stdlib/http/http_test.kuki:121
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:121
 func TestMethodAndSecurityHelpers(t *testing.T) {
-//line stdlib/http/http_test.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:122
 	req := httptest.NewRequest("POST", "/", nil)
-//line stdlib/http/http_test.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:123
 	if !httphelper.IsPost(req) {
-//line stdlib/http/http_test.kuki:124
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:124
 		t.Errorf("Expected IsPost true")
 	}
-//line stdlib/http/http_test.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:125
 	if httphelper.IsGet(req) {
-//line stdlib/http/http_test.kuki:126
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:126
 		t.Errorf("Expected IsGet false when method is POST")
 	}
-//line stdlib/http/http_test.kuki:128
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:128
 	rec := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:129
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:129
 	httphelper.SetSecureHeaders(rec)
-//line stdlib/http/http_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:130
 	if rec.Header().Get("X-Content-Type-Options") != "nosniff" {
-//line stdlib/http/http_test.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:131
 		t.Errorf("Expected secure headers to be set")
 	}
-//line stdlib/http/http_test.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:133
 	rec2 := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:134
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:134
 	httphelper.MethodNotAllowed(rec2, "GET", "POST")
-//line stdlib/http/http_test.kuki:135
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:135
 	if rec2.Result().StatusCode != 405 {
-//line stdlib/http/http_test.kuki:136
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:136
 		t.Errorf("Expected 405 for MethodNotAllowed")
 	}
-//line stdlib/http/http_test.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:137
 	if rec2.Header().Get("Allow") != "GET, POST" {
-//line stdlib/http/http_test.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:138
 		t.Errorf("Allow header should list provided methods")
 	}
 }
 
-//line stdlib/http/http_test.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:141
 func TestTrustedHosts(t *testing.T) {
-//line stdlib/http/http_test.kuki:142
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:142
 	called := false
-//line stdlib/http/http_test.kuki:143
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:143
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//line stdlib/http/http_test.kuki:144
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:144
 		called = true
-//line stdlib/http/http_test.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:145
 		w.WriteHeader(200)
 	})
-//line stdlib/http/http_test.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:148
 	mw := httphelper.TrustedHosts(inner, "example.com", "api.example.com")
-//line stdlib/http/http_test.kuki:151
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:151
 	req1 := httptest.NewRequest("GET", "http://example.com/", nil)
-//line stdlib/http/http_test.kuki:152
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:152
 	req1.Host = "Example.com:8080"
-//line stdlib/http/http_test.kuki:153
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:153
 	rec1 := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:154
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:154
 	mw.ServeHTTP(rec1, req1)
-//line stdlib/http/http_test.kuki:155
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:155
 	if !called {
-//line stdlib/http/http_test.kuki:156
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:156
 		t.Errorf("Expected inner handler to be called for allowed host")
 	}
-//line stdlib/http/http_test.kuki:157
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:157
 	if rec1.Result().StatusCode != 200 {
-//line stdlib/http/http_test.kuki:158
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:158
 		t.Errorf("Expected 200 for allowed host, got %v", rec1.Result().StatusCode)
 	}
-//line stdlib/http/http_test.kuki:161
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:161
 	called = false
-//line stdlib/http/http_test.kuki:162
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:162
 	req2 := httptest.NewRequest("GET", "http://evil.com/", nil)
-//line stdlib/http/http_test.kuki:163
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:163
 	req2.Host = "evil.com"
-//line stdlib/http/http_test.kuki:164
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:164
 	rec2 := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:165
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:165
 	mw.ServeHTTP(rec2, req2)
-//line stdlib/http/http_test.kuki:166
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:166
 	if called {
-//line stdlib/http/http_test.kuki:167
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:167
 		t.Errorf("Inner handler must not run for disallowed host")
 	}
-//line stdlib/http/http_test.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:168
 	if rec2.Result().StatusCode != 400 {
-//line stdlib/http/http_test.kuki:169
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:169
 		t.Errorf("Expected 400 for disallowed host, got %v", rec2.Result().StatusCode)
 	}
-//line stdlib/http/http_test.kuki:172
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:172
 	called = false
-//line stdlib/http/http_test.kuki:173
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:173
 	req3 := httptest.NewRequest("GET", "http://example.com/", nil)
-//line stdlib/http/http_test.kuki:174
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:174
 	req3.Host = "example.com\r\nX-Injected: yes"
-//line stdlib/http/http_test.kuki:175
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:175
 	rec3 := httptest.NewRecorder()
-//line stdlib/http/http_test.kuki:176
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:176
 	mw.ServeHTTP(rec3, req3)
-//line stdlib/http/http_test.kuki:177
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:177
 	if called {
-//line stdlib/http/http_test.kuki:178
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:178
 		t.Errorf("Inner handler must not run for CRLF-injected host")
 	}
-//line stdlib/http/http_test.kuki:179
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:179
 	if rec3.Result().StatusCode != 400 {
-//line stdlib/http/http_test.kuki:180
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:180
 		t.Errorf("Expected 400 for CRLF-injected host, got %v", rec3.Result().StatusCode)
 	}
 }
 
-//line stdlib/http/http_test.kuki:183
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:183
 func TestRealIP(t *testing.T) {
-//line stdlib/http/http_test.kuki:185
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:185
 	req1 := httptest.NewRequest("GET", "/", nil)
-//line stdlib/http/http_test.kuki:186
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:186
 	req1.RemoteAddr = "203.0.113.5:1234"
-//line stdlib/http/http_test.kuki:187
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:187
 	req1.Header.Set("X-Forwarded-For", "9.9.9.9, 10.0.0.1")
-//line stdlib/http/http_test.kuki:188
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:188
 	ip1 := httphelper.RealIP(req1)
-//line stdlib/http/http_test.kuki:189
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:189
 	if ip1 != "203.0.113.5" {
-//line stdlib/http/http_test.kuki:190
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:190
 		t.Errorf("Expected peer IP when no trusted proxies, got %v", ip1)
 	}
-//line stdlib/http/http_test.kuki:193
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:193
 	req2 := httptest.NewRequest("GET", "/", nil)
-//line stdlib/http/http_test.kuki:194
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:194
 	req2.RemoteAddr = "10.0.0.5:443"
-//line stdlib/http/http_test.kuki:195
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:195
 	req2.Header.Set("X-Forwarded-For", "203.0.113.42")
-//line stdlib/http/http_test.kuki:196
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:196
 	ip2 := httphelper.RealIP(req2, "10.0.0.0/8")
-//line stdlib/http/http_test.kuki:197
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:197
 	if ip2 != "203.0.113.42" {
-//line stdlib/http/http_test.kuki:198
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:198
 		t.Errorf("Expected client IP from XFF, got %v", ip2)
 	}
-//line stdlib/http/http_test.kuki:201
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:201
 	req3 := httptest.NewRequest("GET", "/", nil)
-//line stdlib/http/http_test.kuki:202
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:202
 	req3.RemoteAddr = "10.0.0.5:443"
-//line stdlib/http/http_test.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:203
 	req3.Header.Set("X-Forwarded-For", "198.51.100.7, 10.0.0.99, 10.0.0.42")
-//line stdlib/http/http_test.kuki:204
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:204
 	ip3 := httphelper.RealIP(req3, "10.0.0.0/8")
-//line stdlib/http/http_test.kuki:205
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:205
 	if ip3 != "198.51.100.7" {
-//line stdlib/http/http_test.kuki:206
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:206
 		t.Errorf("Expected client IP skipping trusted hops, got %v", ip3)
 	}
-//line stdlib/http/http_test.kuki:209
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:209
 	req4 := httptest.NewRequest("GET", "/", nil)
-//line stdlib/http/http_test.kuki:210
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:210
 	req4.RemoteAddr = "203.0.113.5:9000"
-//line stdlib/http/http_test.kuki:211
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:211
 	req4.Header.Set("X-Forwarded-For", "1.2.3.4")
-//line stdlib/http/http_test.kuki:212
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:212
 	ip4 := httphelper.RealIP(req4, "10.0.0.0/8")
-//line stdlib/http/http_test.kuki:213
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:213
 	if ip4 != "203.0.113.5" {
-//line stdlib/http/http_test.kuki:214
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:214
 		t.Errorf("Expected peer when peer not trusted, got %v", ip4)
 	}
-//line stdlib/http/http_test.kuki:217
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:217
 	req5 := httptest.NewRequest("GET", "/", nil)
-//line stdlib/http/http_test.kuki:218
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:218
 	req5.RemoteAddr = "10.0.0.5:443"
-//line stdlib/http/http_test.kuki:219
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:219
 	req5.Header.Set("X-Real-Ip", "198.51.100.99")
-//line stdlib/http/http_test.kuki:220
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:220
 	ip5 := httphelper.RealIP(req5, "10.0.0.0/8")
-//line stdlib/http/http_test.kuki:221
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:221
 	if ip5 != "198.51.100.99" {
-//line stdlib/http/http_test.kuki:222
+//line /Users/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:222
 		t.Errorf("Expected X-Real-Ip when no XFF, got %v", ip5)
 	}
 }

@@ -20,242 +20,242 @@ import (
 	"time"
 )
 
-//line stdlib/parse/parse.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:27
 type CSVRows = []map[string]string
 
-//line stdlib/parse/parse.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:34
 func JSON[T any](data string) (T, []validate.FieldError) {
-//line stdlib/parse/parse.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:35
 	target := *new(T)
-//line stdlib/parse/parse.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:36
 	err := json.ParseStringInto(data, &target)
-//line stdlib/parse/parse.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:37
 	if err != nil {
-//line stdlib/parse/parse.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:38
 		return target, []validate.FieldError{validate.FieldError{Path: "$", Rule: "parse", Message: err.Error()}}
 	}
-//line stdlib/parse/parse.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:41
 	return target, validate.RunIfValidatable(target)
 }
 
-//line stdlib/parse/parse.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:49
 func Form[T any](values url.Values) (T, []validate.FieldError) {
-//line stdlib/parse/parse.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:50
 	target := *new(T)
-//line stdlib/parse/parse.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:51
 	errs := []validate.FieldError{}
-//line stdlib/parse/parse.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:52
 	elemType := reflect.TypeOf(target)
-//line stdlib/parse/parse.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:53
 	if elemType == nil || elemType.Kind() != reflect.Struct {
-//line stdlib/parse/parse.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:54
 		return target, []validate.FieldError{validate.FieldError{Path: "$", Rule: "parse", Message: "parse.Form requires a struct type"}}
 	}
-//line stdlib/parse/parse.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:61
 	elemPtr := reflect.New(elemType)
-//line stdlib/parse/parse.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:62
 	elem := elemPtr.Elem()
-//line stdlib/parse/parse.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:64
 	numFields := elemType.NumField()
-//line stdlib/parse/parse.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:65
 	for i := range numFields {
-//line stdlib/parse/parse.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:66
 		field := elemType.Field(i)
-//line stdlib/parse/parse.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:67
 		if !field.IsExported() {
-//line stdlib/parse/parse.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:68
 			continue
 		}
-//line stdlib/parse/parse.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:69
 		if !values.Has(field.Name) {
-//line stdlib/parse/parse.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:70
 			continue
 		}
-//line stdlib/parse/parse.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:71
 		raw := values.Get(field.Name)
-//line stdlib/parse/parse.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:72
 		setErr := assignString(elem.Field(i), raw)
-//line stdlib/parse/parse.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:73
 		if setErr != nil {
-//line stdlib/parse/parse.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:74
 			errs = append(errs, validate.FieldError{Path: field.Name, Rule: "parse", Message: setErr.Error()})
 		}
 	}
-//line stdlib/parse/parse.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:79
 	parsed := elemPtr.Elem().Interface().(T)
-//line stdlib/parse/parse.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:80
 	errs = append(errs, validate.RunIfValidatable(parsed)...)
-//line stdlib/parse/parse.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:81
 	return parsed, errs
 }
 
-//line stdlib/parse/parse.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:88
 func Env[T any](prefix string) (T, []validate.FieldError) {
-//line stdlib/parse/parse.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:89
 	target := *new(T)
-//line stdlib/parse/parse.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:90
 	errs := []validate.FieldError{}
-//line stdlib/parse/parse.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:91
 	elemType := reflect.TypeOf(target)
-//line stdlib/parse/parse.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:92
 	if elemType == nil || elemType.Kind() != reflect.Struct {
-//line stdlib/parse/parse.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:93
 		return target, []validate.FieldError{validate.FieldError{Path: "$", Rule: "parse", Message: "parse.Env requires a struct type"}}
 	}
-//line stdlib/parse/parse.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:100
 	elemPtr := reflect.New(elemType)
-//line stdlib/parse/parse.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:101
 	elem := elemPtr.Elem()
-//line stdlib/parse/parse.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:103
 	numFields := elemType.NumField()
-//line stdlib/parse/parse.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:104
 	for i := range numFields {
-//line stdlib/parse/parse.kuki:105
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:105
 		field := elemType.Field(i)
-//line stdlib/parse/parse.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:106
 		if !field.IsExported() {
-//line stdlib/parse/parse.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:107
 			continue
 		}
-//line stdlib/parse/parse.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:108
 		key := envKey(prefix, field.Name)
-//line stdlib/parse/parse.kuki:109
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:109
 		raw, present := os.LookupEnv(key)
-//line stdlib/parse/parse.kuki:110
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:110
 		if !present {
-//line stdlib/parse/parse.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:111
 			continue
 		}
-//line stdlib/parse/parse.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:112
 		setErr := assignString(elem.Field(i), raw)
-//line stdlib/parse/parse.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:113
 		if setErr != nil {
-//line stdlib/parse/parse.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:114
 			errs = append(errs, validate.FieldError{Path: field.Name, Rule: "parse", Message: setErr.Error()})
 		}
 	}
-//line stdlib/parse/parse.kuki:119
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:119
 	parsed := elemPtr.Elem().Interface().(T)
-//line stdlib/parse/parse.kuki:120
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:120
 	errs = append(errs, validate.RunIfValidatable(parsed)...)
-//line stdlib/parse/parse.kuki:121
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:121
 	return parsed, errs
 }
 
-//line stdlib/parse/parse.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:123
 func envKey(prefix string, name string) string {
-//line stdlib/parse/parse.kuki:124
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:124
 	upperName := kukistring.ToUpper(name)
-//line stdlib/parse/parse.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:125
 	if prefix == "" {
-//line stdlib/parse/parse.kuki:126
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:126
 		return upperName
 	}
-//line stdlib/parse/parse.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:127
 	return kukistring.ToUpper(prefix) + "_" + upperName
 }
 
-//line stdlib/parse/parse.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:131
 func assignString(fv reflect.Value, raw string) error {
-//line stdlib/parse/parse.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:132
 	kind := fv.Kind()
-//line stdlib/parse/parse.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:133
 	if kind == reflect.String {
-//line stdlib/parse/parse.kuki:134
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:134
 		fv.SetString(raw)
-//line stdlib/parse/parse.kuki:135
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:135
 		return nil
 	}
-//line stdlib/parse/parse.kuki:136
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:136
 	if kind == reflect.Bool {
-//line stdlib/parse/parse.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:137
 		b, err_1 := strconv.ParseBool(raw)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:137
 		if err_1 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:137
 			return err_1
 		}
-//line stdlib/parse/parse.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:138
 		fv.SetBool(b)
-//line stdlib/parse/parse.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:139
 		return nil
 	}
-//line stdlib/parse/parse.kuki:140
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:140
 	if kind == reflect.Int || kind == reflect.Int8 || kind == reflect.Int16 || kind == reflect.Int32 || kind == reflect.Int64 {
-//line stdlib/parse/parse.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:141
 		n, err_2 := strconv.ParseInt(raw, 10, 64)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:141
 		if err_2 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:141
 			return err_2
 		}
-//line stdlib/parse/parse.kuki:142
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:142
 		fv.SetInt(n)
-//line stdlib/parse/parse.kuki:143
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:143
 		return nil
 	}
-//line stdlib/parse/parse.kuki:144
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:144
 	if kind == reflect.Uint || kind == reflect.Uint8 || kind == reflect.Uint16 || kind == reflect.Uint32 || kind == reflect.Uint64 {
-//line stdlib/parse/parse.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:145
 		n, err_3 := strconv.ParseUint(raw, 10, 64)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:145
 		if err_3 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:145
 			return err_3
 		}
-//line stdlib/parse/parse.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:146
 		fv.SetUint(n)
-//line stdlib/parse/parse.kuki:147
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:147
 		return nil
 	}
-//line stdlib/parse/parse.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:148
 	if kind == reflect.Float32 || kind == reflect.Float64 {
-//line stdlib/parse/parse.kuki:149
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:149
 		f, err_4 := strconv.ParseFloat(raw, 64)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:149
 		if err_4 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:149
 			return err_4
 		}
-//line stdlib/parse/parse.kuki:150
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:150
 		fv.SetFloat(f)
-//line stdlib/parse/parse.kuki:151
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:151
 		return nil
 	}
-//line stdlib/parse/parse.kuki:152
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:152
 	return fmt.Errorf("unsupported field kind: %v", kind)
 }
 
-//line stdlib/parse/parse.kuki:159
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:159
 func JSONLines(data string) []string {
-//line stdlib/parse/parse.kuki:160
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:160
 	return splitNonEmpty(data)
 }
 
-//line stdlib/parse/parse.kuki:167
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:167
 func YAML[T any](data string) (T, []validate.FieldError) {
-//line stdlib/parse/parse.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:168
 	target := *new(T)
-//line stdlib/parse/parse.kuki:169
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:169
 	err := yaml.Unmarshal([]byte(data), &target)
-//line stdlib/parse/parse.kuki:170
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:170
 	if err != nil {
-//line stdlib/parse/parse.kuki:171
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:171
 		return target, []validate.FieldError{validate.FieldError{Path: "$", Rule: "parse", Message: err.Error()}}
 	}
-//line stdlib/parse/parse.kuki:174
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:174
 	return target, validate.RunIfValidatable(target)
 }
 
-//line stdlib/parse/parse.kuki:176
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:176
 func readAllCSV(reader *csv.Reader) ([][]string, error) {
-//line stdlib/parse/parse.kuki:177
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:177
 	return reader.ReadAll()
 }
 
-//line stdlib/parse/parse.kuki:181
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:181
 func CSV(data string) ([][]string, error) {
-//line stdlib/parse/parse.kuki:182
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:182
 	// pipe step 1: readAllCSV(...)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:185
 	records, err_6 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
@@ -264,13 +264,13 @@ func CSV(data string) ([][]string, error) {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:182
 		return [][]string{}, err_6
 	}
-//line stdlib/parse/parse.kuki:187
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:187
 	return records, nil
 }
 
-//line stdlib/parse/parse.kuki:192
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:192
 func CSVRecords(data string) (CSVRows, error) {
-//line stdlib/parse/parse.kuki:193
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:193
 	// pipe step 1: readAllCSV(...)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:196
 	records, err_8 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
@@ -280,18 +280,18 @@ func CSVRecords(data string) (CSVRows, error) {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:193
 		return _zero0, err_8
 	}
-//line stdlib/parse/parse.kuki:198
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:198
 	if len(records) == 0 {
-//line stdlib/parse/parse.kuki:199
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:199
 		return nil, errors.New("no data in CSV")
 	}
-//line stdlib/parse/parse.kuki:201
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:201
 	headers := records[0]
-//line stdlib/parse/parse.kuki:202
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:202
 	result := make(CSVRows, 0, len(records)-1)
-//line stdlib/parse/parse.kuki:204
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:204
 	numRecords := len(records)
-//line stdlib/parse/parse.kuki:205
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:205
 	{
 		_iStart, _iEnd := 1, numRecords
 		_iStep := _iStart - _iStart + 1
@@ -299,43 +299,43 @@ func CSVRecords(data string) (CSVRows, error) {
 			_iStep = -_iStep
 		}
 		for i := _iStart; i != _iEnd; i += _iStep {
-//line stdlib/parse/parse.kuki:206
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:206
 			row := records[i]
-//line stdlib/parse/parse.kuki:207
-			rowMap := make(map[string]string)
-//line stdlib/parse/parse.kuki:209
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:207
+			rowMap := map[string]string{}
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:209
 			numHeaders := len(headers)
-//line stdlib/parse/parse.kuki:210
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:210
 			numCols := len(row)
-//line stdlib/parse/parse.kuki:211
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:211
 			maxCols := min(numCols, numHeaders)
-//line stdlib/parse/parse.kuki:213
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:213
 			for j := range maxCols {
-//line stdlib/parse/parse.kuki:214
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:214
 				rowMap[headers[j]] = row[j]
 			}
-//line stdlib/parse/parse.kuki:216
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:216
 			result = append(result, rowMap)
 		}
 	}
-//line stdlib/parse/parse.kuki:218
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:218
 	return result, nil
 }
 
-//line stdlib/parse/parse.kuki:224
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:224
 func WriteCSV(path string, rows [][]string) error {
-//line stdlib/parse/parse.kuki:225
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:225
 	f, err_9 := os.Create(path)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:225
 	if err_9 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:225
 		return err_9
 	}
-//line stdlib/parse/parse.kuki:226
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:226
 	defer f.Close()
-//line stdlib/parse/parse.kuki:227
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:227
 	w := csv.NewWriter(f)
-//line stdlib/parse/parse.kuki:228
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:228
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:228
 	err_10 := w.WriteAll(rows)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:228
@@ -343,111 +343,111 @@ func WriteCSV(path string, rows [][]string) error {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:228
 		return err_10
 	}
-//line stdlib/parse/parse.kuki:229
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:229
 	return w.Error()
 }
 
-//line stdlib/parse/parse.kuki:238
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:238
 func WriteCSVRecords(path string, records CSVRows) error {
-//line stdlib/parse/parse.kuki:239
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:239
 	if len(records) == 0 {
-//line stdlib/parse/parse.kuki:240
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:240
 		return os.WriteFile(path, []byte{}, 0644)
 	}
-//line stdlib/parse/parse.kuki:242
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:242
 	headers := []string{}
-//line stdlib/parse/parse.kuki:243
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:243
 	for k := range records[0] {
-//line stdlib/parse/parse.kuki:244
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:244
 		headers = append(headers, k)
 	}
-//line stdlib/parse/parse.kuki:245
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:245
 	sort.Strings(headers)
-//line stdlib/parse/parse.kuki:247
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:247
 	rows := [][]string{headers}
-//line stdlib/parse/parse.kuki:248
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:248
 	for _, rec := range records {
-//line stdlib/parse/parse.kuki:249
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:249
 		row := make([]string, 0, len(headers))
-//line stdlib/parse/parse.kuki:250
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:250
 		for _, h := range headers {
-//line stdlib/parse/parse.kuki:251
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:251
 			row = append(row, rec[h])
 		}
-//line stdlib/parse/parse.kuki:252
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:252
 		rows = append(rows, row)
 	}
-//line stdlib/parse/parse.kuki:254
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:254
 	return WriteCSV(path, rows)
 }
 
-//line stdlib/parse/parse.kuki:259
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:259
 func Lines(data string) []string {
-//line stdlib/parse/parse.kuki:260
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:260
 	return splitNonEmpty(data)
 }
 
-//line stdlib/parse/parse.kuki:262
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:262
 func splitNonEmpty(data string) []string {
-//line stdlib/parse/parse.kuki:263
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:263
 	return slice.Filter(slice.Map(kukistring.Split(data, "\n"), kukistring.TrimSpace), func(line string) bool { return len(line) > 0 })
 }
 
-//line stdlib/parse/parse.kuki:271
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:271
 func Int(s string) (int, error) {
-//line stdlib/parse/parse.kuki:272
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:272
 	n, err_11 := strconv.Atoi(s)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:272
 	if err_11 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:272
 		return 0, err_11
 	}
-//line stdlib/parse/parse.kuki:273
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:273
 	return n, nil
 }
 
-//line stdlib/parse/parse.kuki:279
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:279
 func IntOr(s string, defaultValue int) int {
-//line stdlib/parse/parse.kuki:280
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:280
 	n, err_12 := Int(s)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:280
 	if err_12 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:280
 		return defaultValue
 	}
-//line stdlib/parse/parse.kuki:281
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:281
 	return n
 }
 
-//line stdlib/parse/parse.kuki:285
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:285
 func Float64(s string) (float64, error) {
-//line stdlib/parse/parse.kuki:286
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:286
 	f, err_13 := strconv.ParseFloat(s, 64)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:286
 	if err_13 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:286
 		return 0, err_13
 	}
-//line stdlib/parse/parse.kuki:287
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:287
 	return f, nil
 }
 
-//line stdlib/parse/parse.kuki:291
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:291
 func Float64Or(s string, defaultValue float64) float64 {
-//line stdlib/parse/parse.kuki:292
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:292
 	f, err_14 := Float64(s)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:292
 	if err_14 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:292
 		return defaultValue
 	}
-//line stdlib/parse/parse.kuki:293
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:293
 	return f
 }
 
-//line stdlib/parse/parse.kuki:297
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:297
 func Duration(s string) (time.Duration, error) {
-//line stdlib/parse/parse.kuki:298
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:298
 	d, err_15 := time.ParseDuration(s)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:298
 	if err_15 != nil {
@@ -455,39 +455,39 @@ func Duration(s string) (time.Duration, error) {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:298
 		return _zero0, err_15
 	}
-//line stdlib/parse/parse.kuki:299
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:299
 	return d, nil
 }
 
-//line stdlib/parse/parse.kuki:303
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:303
 func DurationOr(s string, defaultValue time.Duration) time.Duration {
-//line stdlib/parse/parse.kuki:304
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:304
 	d, err_16 := Duration(s)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:304
 	if err_16 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:304
 		return defaultValue
 	}
-//line stdlib/parse/parse.kuki:305
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:305
 	return d
 }
 
-//line stdlib/parse/parse.kuki:309
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:309
 func URL(s string) (*url.URL, error) {
-//line stdlib/parse/parse.kuki:310
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:310
 	u, err_17 := url.Parse(s)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:310
 	if err_17 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:310
 		return nil, err_17
 	}
-//line stdlib/parse/parse.kuki:311
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:311
 	return u, nil
 }
 
-//line stdlib/parse/parse.kuki:315
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:315
 func Query(s string) (url.Values, error) {
-//line stdlib/parse/parse.kuki:316
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:316
 	v, err_18 := url.ParseQuery(s)
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:316
 	if err_18 != nil {
@@ -495,6 +495,6 @@ func Query(s string) (url.Values, error) {
 //line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:316
 		return _zero0, err_18
 	}
-//line stdlib/parse/parse.kuki:317
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:317
 	return v, nil
 }

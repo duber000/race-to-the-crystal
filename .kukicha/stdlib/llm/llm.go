@@ -7,48 +7,48 @@ import (
 	"maps"
 )
 
-//line stdlib/llm/llm.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:25
 type JSONObject = map[string]any
 
-//line stdlib/llm/llm.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:32
 type SchemaProperty struct {
 	Name        string
 	Type        string
 	Description string
 }
 
-//line stdlib/llm/llm.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:38
 func Prop(name string, typ string, description string) SchemaProperty {
-//line stdlib/llm/llm.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:39
 	return SchemaProperty{Name: name, Type: typ, Description: description}
 }
 
-//line stdlib/llm/llm.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:43
 func Schema(props []SchemaProperty) JSONObject {
-//line stdlib/llm/llm.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:44
 	properties := make(JSONObject)
-//line stdlib/llm/llm.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:45
 	for _, prop := range props {
-//line stdlib/llm/llm.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:46
 		properties[prop.Name] = map[string]any{"type": prop.Type, "description": prop.Description}
 	}
-//line stdlib/llm/llm.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:50
 	return map[string]any{"type": "object", "properties": properties}
 }
 
-//line stdlib/llm/llm.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:58
 func Required(schema JSONObject, names []string) JSONObject {
-//line stdlib/llm/llm.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:59
 	out := make(JSONObject)
-//line stdlib/llm/llm.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:60
 	maps.Copy(out, schema)
-//line stdlib/llm/llm.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:61
 	out["required"] = names
-//line stdlib/llm/llm.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:62
 	return out
 }
 
-//line stdlib/llm/llm.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:73
 type StreamEvent interface{ isStreamEvent() }
 
 type Delta struct {
@@ -88,5 +88,5 @@ type Error struct {
 
 func (Error) isStreamEvent() {}
 
-//line stdlib/llm/llm.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:94
 type Content = content.Content

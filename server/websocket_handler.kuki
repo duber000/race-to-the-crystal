@@ -95,7 +95,9 @@ func ProcessMessage on wh: reference WebSocketHandler(client_id: string, raw_dat
     msg_type_val, has := data["type"]
     if not has
         return data
-    msg_type := msg_type_val.(string) onerr return data
+    msg_type := ""
+    if msg_type_val is string as s
+        msg_type = s
     msg_type = strpkg.ToLower(msg_type)
     data["type"] = msg_type
     data["player_id"] = client_id
@@ -108,7 +110,7 @@ func GetClientCount on wh: reference WebSocketHandler int
 
 func GetClientsInGame on wh: reference WebSocketHandler(game_id: string) list of string
     result := empty list of string
-    for _, client in wh.clients
+    for _client_id, client in wh.clients
         if client.game_id equals game_id and client.player_id isnt ""
             result = append(result, client.player_id)
     return result

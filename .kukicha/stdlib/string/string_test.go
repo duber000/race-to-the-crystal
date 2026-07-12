@@ -9,52 +9,52 @@ import (
 	"testing"
 )
 
-//line stdlib/string/string_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:10
 type StringCase struct {
 	name  string
 	input string
 	want  string
 }
 
-//line stdlib/string/string_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:16
 func TestToUpperToLower(t *testing.T) {
-//line stdlib/string/string_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:17
 	upperCases := []StringCase{StringCase{name: "all lower", input: "hello", want: "HELLO"}, StringCase{name: "mixed", input: "Hello World", want: "HELLO WORLD"}, StringCase{name: "empty", input: "", want: ""}}
-//line stdlib/string/string_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:23
 	for _, tc := range upperCases {
-//line stdlib/string/string_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:24
 		t.Run(fmt.Sprintf("ToUpper/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:25
 			test.AssertEqual(t, kukistring.ToUpper(tc.input), tc.want)
 		})
 	}
-//line stdlib/string/string_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:28
 	lowerCases := []StringCase{StringCase{name: "all upper", input: "HELLO", want: "hello"}, StringCase{name: "mixed", input: "Hello World", want: "hello world"}, StringCase{name: "empty", input: "", want: ""}}
-//line stdlib/string/string_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:34
 	for _, tc := range lowerCases {
-//line stdlib/string/string_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:35
 		t.Run(fmt.Sprintf("ToLower/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:36
 			test.AssertEqual(t, kukistring.ToLower(tc.input), tc.want)
 		})
 	}
 }
 
-//line stdlib/string/string_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:40
 func TestTitle(t *testing.T) {
-//line stdlib/string/string_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:41
 	titleCases := []StringCase{StringCase{name: "simple", input: "hello world", want: "Hello World"}, StringCase{name: "already titled", input: "Hello World", want: "Hello World"}, StringCase{name: "empty", input: "", want: ""}, StringCase{name: "single word", input: "hello", want: "Hello"}}
-//line stdlib/string/string_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:48
 	for _, tc := range titleCases {
-//line stdlib/string/string_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:49
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/string/string_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:50
 			test.AssertEqual(t, kukistring.Title(tc.input), tc.want)
 		})
 	}
 }
 
-//line stdlib/string/string_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:54
 type TrimCase struct {
 	name   string
 	input  string
@@ -62,196 +62,196 @@ type TrimCase struct {
 	want   string
 }
 
-//line stdlib/string/string_test.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:60
 func TestTrimFunctions(t *testing.T) {
-//line stdlib/string/string_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:61
 	trimCases := []TrimCase{TrimCase{name: "spaces", input: "  hello  ", cutset: " ", want: "hello"}, TrimCase{name: "x chars", input: "xxhelloxx", cutset: "x", want: "hello"}}
-//line stdlib/string/string_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:66
 	for _, tc := range trimCases {
-//line stdlib/string/string_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:67
 		t.Run(fmt.Sprintf("Trim/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:68
 			test.AssertEqual(t, kukistring.Trim(tc.input, tc.cutset), tc.want)
 		})
 	}
-//line stdlib/string/string_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:71
 	trimSpaceCases := []StringCase{StringCase{name: "spaces", input: "  hello  ", want: "hello"}, StringCase{name: "tabs and newlines", input: "\t hello \n", want: "hello"}}
-//line stdlib/string/string_test.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:76
 	for _, tc := range trimSpaceCases {
-//line stdlib/string/string_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:77
 		t.Run(fmt.Sprintf("TrimSpace/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:78
 			test.AssertEqual(t, kukistring.TrimSpace(tc.input), tc.want)
 		})
 	}
-//line stdlib/string/string_test.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:81
 	prefixCases := []TrimCase{TrimCase{name: "removes prefix", input: "hello world", cutset: "hello ", want: "world"}, TrimCase{name: "not present", input: "hello world", cutset: "xyz", want: "hello world"}, TrimCase{name: "empty prefix", input: "hello world", cutset: "", want: "hello world"}}
-//line stdlib/string/string_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:87
 	for _, tc := range prefixCases {
-//line stdlib/string/string_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:88
 		t.Run(fmt.Sprintf("TrimPrefix/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:89
 			test.AssertEqual(t, kukistring.TrimPrefix(tc.input, tc.cutset), tc.want)
 		})
 	}
-//line stdlib/string/string_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:92
 	suffixCases := []TrimCase{TrimCase{name: "removes suffix", input: "hello world", cutset: " world", want: "hello"}, TrimCase{name: "not present", input: "hello world", cutset: "xyz", want: "hello world"}}
-//line stdlib/string/string_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:97
 	for _, tc := range suffixCases {
-//line stdlib/string/string_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:98
 		t.Run(fmt.Sprintf("TrimSuffix/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:99
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:99
 			test.AssertEqual(t, kukistring.TrimSuffix(tc.input, tc.cutset), tc.want)
 		})
 	}
-//line stdlib/string/string_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:102
 	t.Run("TrimLeft removes leading x", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:103
 		test.AssertEqual(t, kukistring.TrimLeft("xxhello", "x"), "hello")
 	})
-//line stdlib/string/string_test.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:106
 	t.Run("TrimRight removes trailing x", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:107
 		test.AssertEqual(t, kukistring.TrimRight("helloxx", "x"), "hello")
 	})
 }
 
-//line stdlib/string/string_test.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:111
 func TestSplitJoin(t *testing.T) {
-//line stdlib/string/string_test.kuki:112
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:112
 	t.Run("split on comma", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:113
 		parts := kukistring.Split("a,b,c", ",")
-//line stdlib/string/string_test.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:114
 		test.AssertEqual(t, len(parts), 3)
-//line stdlib/string/string_test.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:115
 		test.AssertEqual(t, parts[0], "a")
-//line stdlib/string/string_test.kuki:116
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:116
 		test.AssertEqual(t, parts[1], "b")
-//line stdlib/string/string_test.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:117
 		test.AssertEqual(t, parts[2], "c")
 	})
-//line stdlib/string/string_test.kuki:120
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:120
 	t.Run("join with dash", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:121
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:121
 		parts := kukistring.Split("a,b,c", ",")
-//line stdlib/string/string_test.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:122
 		test.AssertEqual(t, kukistring.Join(parts, "-"), "a-b-c")
 	})
-//line stdlib/string/string_test.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:125
 	t.Run("split on empty string", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:126
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:126
 		chars := kukistring.Split("abc", "")
-//line stdlib/string/string_test.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:127
 		test.AssertEqual(t, len(chars), 3)
 	})
-//line stdlib/string/string_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:130
 	t.Run("join with empty separator", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:131
 		chars := kukistring.Split("abc", "")
-//line stdlib/string/string_test.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:132
 		test.AssertEqual(t, kukistring.Join(chars, ""), "abc")
 	})
 }
 
-//line stdlib/string/string_test.kuki:136
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:136
 func TestSplitN(t *testing.T) {
-//line stdlib/string/string_test.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:137
 	t.Run("limit to 2 parts", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:138
 		parts := kukistring.SplitN("a:b:c:d", ":", 2)
-//line stdlib/string/string_test.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:139
 		test.AssertEqual(t, len(parts), 2)
-//line stdlib/string/string_test.kuki:140
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:140
 		test.AssertEqual(t, parts[0], "a")
-//line stdlib/string/string_test.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:141
 		test.AssertEqual(t, parts[1], "b:c:d")
 	})
 }
 
-//line stdlib/string/string_test.kuki:145
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:145
 func TestFields(t *testing.T) {
-//line stdlib/string/string_test.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:146
 	t.Run("splits on whitespace", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:147
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:147
 		parts := kukistring.Fields("  hello   world  ")
-//line stdlib/string/string_test.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:148
 		test.AssertEqual(t, len(parts), 2)
-//line stdlib/string/string_test.kuki:149
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:149
 		test.AssertEqual(t, parts[0], "hello")
-//line stdlib/string/string_test.kuki:150
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:150
 		test.AssertEqual(t, parts[1], "world")
 	})
-//line stdlib/string/string_test.kuki:153
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:153
 	t.Run("empty string returns empty slice", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:154
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:154
 		none := kukistring.Fields("")
-//line stdlib/string/string_test.kuki:155
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:155
 		test.AssertEqual(t, len(none), 0)
 	})
 }
 
-//line stdlib/string/string_test.kuki:159
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:159
 func TestSearchFunctions(t *testing.T) {
-//line stdlib/string/string_test.kuki:160
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:160
 	s := "hello world"
-//line stdlib/string/string_test.kuki:162
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:162
 	containsCases := []TrimCase{TrimCase{name: "world present", input: s, cutset: "world", want: "true"}, TrimCase{name: "hello present", input: s, cutset: "hello", want: "true"}, TrimCase{name: "xyz absent", input: s, cutset: "xyz", want: "false"}, TrimCase{name: "empty always present", input: s, cutset: "", want: "true"}}
-//line stdlib/string/string_test.kuki:169
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:169
 	for _, tc := range containsCases {
-//line stdlib/string/string_test.kuki:170
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:170
 		t.Run(fmt.Sprintf("Contains/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:171
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:171
 			got := kukistring.Contains(tc.input, tc.cutset)
-//line stdlib/string/string_test.kuki:172
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:172
 			wantBool := tc.want == "true"
-//line stdlib/string/string_test.kuki:173
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:173
 			test.AssertEqual(t, got, wantBool)
 		})
 	}
-//line stdlib/string/string_test.kuki:176
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:176
 	t.Run("HasPrefix/hello", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:177
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:177
 		test.AssertEqual(t, kukistring.HasPrefix(s, "hello"), true)
 	})
-//line stdlib/string/string_test.kuki:180
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:180
 	t.Run("HasPrefix/world false", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:181
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:181
 		test.AssertEqual(t, kukistring.HasPrefix(s, "world"), false)
 	})
-//line stdlib/string/string_test.kuki:184
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:184
 	t.Run("HasSuffix/world", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:185
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:185
 		test.AssertEqual(t, kukistring.HasSuffix(s, "world"), true)
 	})
-//line stdlib/string/string_test.kuki:188
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:188
 	t.Run("HasSuffix/hello false", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:189
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:189
 		test.AssertEqual(t, kukistring.HasSuffix(s, "hello"), false)
 	})
-//line stdlib/string/string_test.kuki:193
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:193
 	t.Run("HasSuffix/multibyte match", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:194
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:194
 		test.AssertEqual(t, kukistring.HasSuffix("café", "é"), true)
 	})
-//line stdlib/string/string_test.kuki:197
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:197
 	t.Run("HasSuffix/multibyte no match", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:198
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:198
 		test.AssertEqual(t, kukistring.HasSuffix("café", "c"), false)
 	})
-//line stdlib/string/string_test.kuki:201
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:201
 	t.Run("HasSuffix/CJK match", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:202
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:202
 		test.AssertEqual(t, kukistring.HasSuffix("日本語", "語"), true)
 	})
-//line stdlib/string/string_test.kuki:205
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:205
 	t.Run("HasSuffix/CJK no match", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:206
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:206
 		test.AssertEqual(t, kukistring.HasSuffix("日本語", "日"), false)
 	})
 }
 
-//line stdlib/string/string_test.kuki:210
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:210
 type IndexCase struct {
 	name  string
 	input string
@@ -259,31 +259,31 @@ type IndexCase struct {
 	want  int
 }
 
-//line stdlib/string/string_test.kuki:216
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:216
 func TestIndexFunctions(t *testing.T) {
-//line stdlib/string/string_test.kuki:217
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:217
 	indexCases := []IndexCase{IndexCase{name: "world at 6", input: "hello world", sub: "world", want: 6}, IndexCase{name: "hello at 0", input: "hello world", sub: "hello", want: 0}, IndexCase{name: "xyz not found", input: "hello world", sub: "xyz", want: -1}}
-//line stdlib/string/string_test.kuki:223
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:223
 	for _, tc := range indexCases {
-//line stdlib/string/string_test.kuki:224
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:224
 		t.Run(fmt.Sprintf("Index/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:225
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:225
 			test.AssertEqual(t, kukistring.Index(tc.input, tc.sub), tc.want)
 		})
 	}
-//line stdlib/string/string_test.kuki:228
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:228
 	lastIndexCases := []IndexCase{IndexCase{name: "last abc at 3", input: "abcabc", sub: "abc", want: 3}, IndexCase{name: "xyz not found", input: "abcabc", sub: "xyz", want: -1}}
-//line stdlib/string/string_test.kuki:233
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:233
 	for _, tc := range lastIndexCases {
-//line stdlib/string/string_test.kuki:234
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:234
 		t.Run(fmt.Sprintf("LastIndex/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:235
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:235
 			test.AssertEqual(t, kukistring.LastIndex(tc.input, tc.sub), tc.want)
 		})
 	}
 }
 
-//line stdlib/string/string_test.kuki:239
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:239
 type CountCase struct {
 	name  string
 	input string
@@ -291,65 +291,65 @@ type CountCase struct {
 	want  int
 }
 
-//line stdlib/string/string_test.kuki:245
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:245
 func TestCount(t *testing.T) {
-//line stdlib/string/string_test.kuki:246
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:246
 	cases := []CountCase{CountCase{name: "l appears twice", input: "hello", sub: "l", want: 2}, CountCase{name: "ll appears once", input: "hello", sub: "ll", want: 1}, CountCase{name: "x absent", input: "hello", sub: "x", want: 0}}
-//line stdlib/string/string_test.kuki:252
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:252
 	for _, tc := range cases {
-//line stdlib/string/string_test.kuki:253
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:253
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/string/string_test.kuki:254
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:254
 			test.AssertEqual(t, kukistring.Count(tc.input, tc.sub), tc.want)
 		})
 	}
 }
 
-//line stdlib/string/string_test.kuki:258
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:258
 func TestReplaceFunctions(t *testing.T) {
-//line stdlib/string/string_test.kuki:259
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:259
 	t.Run("ReplaceAll replaces all", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:260
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:260
 		test.AssertEqual(t, kukistring.ReplaceAll("aabbcc", "b", "x"), "aaxxcc")
 	})
-//line stdlib/string/string_test.kuki:263
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:263
 	t.Run("ReplaceAll no match", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:264
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:264
 		test.AssertEqual(t, kukistring.ReplaceAll("hello", "x", "y"), "hello")
 	})
-//line stdlib/string/string_test.kuki:267
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:267
 	t.Run("Replace first only", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:268
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:268
 		test.AssertEqual(t, kukistring.Replace("aabbcc", "b", "x", 1), "aaxbcc")
 	})
-//line stdlib/string/string_test.kuki:271
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:271
 	t.Run("Replace n=-1 replaces all", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:272
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:272
 		test.AssertEqual(t, kukistring.Replace("aabbcc", "b", "x", -1), "aaxxcc")
 	})
 }
 
-//line stdlib/string/string_test.kuki:276
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:276
 func TestRepeat(t *testing.T) {
-//line stdlib/string/string_test.kuki:277
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:277
 	cases := []StringCase{StringCase{name: "repeat 3 times", input: "ab", want: "ababab"}, StringCase{name: "repeat 1 time", input: "x", want: "x"}, StringCase{name: "repeat 0 times", input: "x", want: ""}}
-//line stdlib/string/string_test.kuki:283
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:283
 	counts := []int{3, 1, 0}
-//line stdlib/string/string_test.kuki:284
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:284
 	for i := range len(cases) {
-//line stdlib/string/string_test.kuki:285
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:285
 		tc := cases[i]
-//line stdlib/string/string_test.kuki:286
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:286
 		n := counts[i]
-//line stdlib/string/string_test.kuki:287
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:287
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/string/string_test.kuki:288
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:288
 			test.AssertEqual(t, kukistring.Repeat(tc.input, n), tc.want)
 		})
 	}
 }
 
-//line stdlib/string/string_test.kuki:292
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:292
 type PadCase struct {
 	name  string
 	input string
@@ -358,260 +358,260 @@ type PadCase struct {
 	want  string
 }
 
-//line stdlib/string/string_test.kuki:299
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:299
 func TestPadFunctions(t *testing.T) {
-//line stdlib/string/string_test.kuki:300
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:300
 	rightCases := []PadCase{PadCase{name: "pad with spaces", input: "hi", width: 5, pad: " ", want: "hi   "}, PadCase{name: "already long enough", input: "hello", width: 3, pad: " ", want: "hello"}, PadCase{name: "pad with dash", input: "hi", width: 5, pad: "-", want: "hi---"}}
-//line stdlib/string/string_test.kuki:306
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:306
 	for _, tc := range rightCases {
-//line stdlib/string/string_test.kuki:307
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:307
 		t.Run(fmt.Sprintf("PadRight/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:308
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:308
 			test.AssertEqual(t, kukistring.PadRight(tc.input, tc.width, tc.pad), tc.want)
 		})
 	}
-//line stdlib/string/string_test.kuki:311
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:311
 	leftCases := []PadCase{PadCase{name: "pad with spaces", input: "hi", width: 5, pad: " ", want: "   hi"}, PadCase{name: "already long enough", input: "hello", width: 3, pad: " ", want: "hello"}, PadCase{name: "pad with dash", input: "hi", width: 5, pad: "-", want: "---hi"}}
-//line stdlib/string/string_test.kuki:317
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:317
 	for _, tc := range leftCases {
-//line stdlib/string/string_test.kuki:318
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:318
 		t.Run(fmt.Sprintf("PadLeft/%v", tc.name), func(t *testing.T) {
-//line stdlib/string/string_test.kuki:319
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:319
 			test.AssertEqual(t, kukistring.PadLeft(tc.input, tc.width, tc.pad), tc.want)
 		})
 	}
 }
 
-//line stdlib/string/string_test.kuki:323
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:323
 func TestEqualFold(t *testing.T) {
-//line stdlib/string/string_test.kuki:324
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:324
 	cases := []TrimCase{TrimCase{name: "same case diff", input: "Hello", cutset: "hello", want: "true"}, TrimCase{name: "all caps", input: "WORLD", cutset: "world", want: "true"}, TrimCase{name: "different strings", input: "hello", cutset: "world", want: "false"}, TrimCase{name: "both empty", input: "", cutset: "", want: "true"}}
-//line stdlib/string/string_test.kuki:331
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:331
 	for _, tc := range cases {
-//line stdlib/string/string_test.kuki:332
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:332
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/string/string_test.kuki:333
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:333
 			got := kukistring.EqualFold(tc.input, tc.cutset)
-//line stdlib/string/string_test.kuki:334
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:334
 			wantBool := tc.want == "true"
-//line stdlib/string/string_test.kuki:335
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:335
 			test.AssertEqual(t, got, wantBool)
 		})
 	}
 }
 
-//line stdlib/string/string_test.kuki:339
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:339
 func TestCompare(t *testing.T) {
-//line stdlib/string/string_test.kuki:340
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:340
 	t.Run("a less than b", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:341
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:341
 		test.AssertEqual(t, kukistring.Compare("a", "b"), -1)
 	})
-//line stdlib/string/string_test.kuki:344
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:344
 	t.Run("equal strings", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:345
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:345
 		test.AssertEqual(t, kukistring.Compare("abc", "abc"), 0)
 	})
-//line stdlib/string/string_test.kuki:348
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:348
 	t.Run("a greater than b", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:349
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:349
 		test.AssertEqual(t, kukistring.Compare("b", "a"), 1)
 	})
-//line stdlib/string/string_test.kuki:352
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:352
 	t.Run("empty strings equal", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:353
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:353
 		test.AssertEqual(t, kukistring.Compare("", ""), 0)
 	})
 }
 
-//line stdlib/string/string_test.kuki:357
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:357
 func TestIsBlank(t *testing.T) {
-//line stdlib/string/string_test.kuki:358
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:358
 	t.Run("IsBlank/empty", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:359
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:359
 		test.AssertEqual(t, kukistring.IsBlank(""), true)
 	})
-//line stdlib/string/string_test.kuki:362
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:362
 	t.Run("IsBlank/spaces", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:363
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:363
 		test.AssertEqual(t, kukistring.IsBlank("   "), true)
 	})
-//line stdlib/string/string_test.kuki:366
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:366
 	t.Run("IsBlank/tabs and newlines", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:367
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:367
 		test.AssertEqual(t, kukistring.IsBlank("\t\n"), true)
 	})
-//line stdlib/string/string_test.kuki:370
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:370
 	t.Run("IsBlank/non-blank", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:371
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:371
 		test.AssertEqual(t, kukistring.IsBlank("hello"), false)
 	})
-//line stdlib/string/string_test.kuki:374
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:374
 	t.Run("IsBlank/space with char", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:375
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:375
 		test.AssertEqual(t, kukistring.IsBlank(" x "), false)
 	})
 }
 
-//line stdlib/string/string_test.kuki:379
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:379
 func TestOr(t *testing.T) {
-//line stdlib/string/string_test.kuki:380
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:380
 	t.Run("Or/empty returns defaultValue", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:381
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:381
 		test.AssertEqual(t, kukistring.Or("", "<none>"), "<none>")
 	})
-//line stdlib/string/string_test.kuki:384
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:384
 	t.Run("Or/non-empty returns input", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:385
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:385
 		test.AssertEqual(t, kukistring.Or("v1.2.3", "<none>"), "v1.2.3")
 	})
-//line stdlib/string/string_test.kuki:388
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:388
 	t.Run("Or/whitespace is non-empty", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:389
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:389
 		test.AssertEqual(t, kukistring.Or(" ", "<none>"), " ")
 	})
 }
 
-//line stdlib/string/string_test.kuki:393
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:393
 func TestLines(t *testing.T) {
-//line stdlib/string/string_test.kuki:394
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:394
 	t.Run("three lines", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:395
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:395
 		lines := kukistring.Lines("line1\nline2\nline3")
-//line stdlib/string/string_test.kuki:396
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:396
 		test.AssertEqual(t, len(lines), 3)
-//line stdlib/string/string_test.kuki:397
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:397
 		test.AssertEqual(t, lines[0], "line1")
-//line stdlib/string/string_test.kuki:398
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:398
 		test.AssertEqual(t, lines[2], "line3")
 	})
-//line stdlib/string/string_test.kuki:401
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:401
 	t.Run("single line no newline", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:402
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:402
 		single := kukistring.Lines("hello")
-//line stdlib/string/string_test.kuki:403
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:403
 		test.AssertEqual(t, len(single), 1)
-//line stdlib/string/string_test.kuki:404
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:404
 		test.AssertEqual(t, single[0], "hello")
 	})
 }
 
-//line stdlib/string/string_test.kuki:408
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:408
 func TestCenter(t *testing.T) {
-//line stdlib/string/string_test.kuki:409
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:409
 	t.Run("even padding", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:410
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:410
 		test.AssertEqual(t, kukistring.Center("hi", 6, " "), "  hi  ")
 	})
-//line stdlib/string/string_test.kuki:413
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:413
 	t.Run("odd padding goes right", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:414
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:414
 		test.AssertEqual(t, kukistring.Center("hi", 5, " "), " hi  ")
 	})
-//line stdlib/string/string_test.kuki:417
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:417
 	t.Run("longer than width returns unchanged", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:418
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:418
 		test.AssertEqual(t, kukistring.Center("hello", 3, " "), "hello")
 	})
-//line stdlib/string/string_test.kuki:421
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:421
 	t.Run("custom pad char", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:422
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:422
 		test.AssertEqual(t, kukistring.Center("X", 5, "-"), "--X--")
 	})
 }
 
-//line stdlib/string/string_test.kuki:426
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:426
 func TestTruncate(t *testing.T) {
-//line stdlib/string/string_test.kuki:427
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:427
 	t.Run("shorter than max returns unchanged", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:428
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:428
 		test.AssertEqual(t, kukistring.Truncate("hello", 10), "hello")
 	})
-//line stdlib/string/string_test.kuki:431
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:431
 	t.Run("longer is cut with ellipsis", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:432
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:432
 		test.AssertEqual(t, kukistring.Truncate("hello world", 8), "hello...")
 	})
-//line stdlib/string/string_test.kuki:435
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:435
 	t.Run("collapses newlines to spaces", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:436
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:436
 		test.AssertEqual(t, kukistring.Truncate("a\nb", 10), "a b")
 	})
-//line stdlib/string/string_test.kuki:439
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:439
 	t.Run("zero or negative max returns empty", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:440
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:440
 		test.AssertEqual(t, kukistring.Truncate("abc", 0), "")
-//line stdlib/string/string_test.kuki:441
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:441
 		test.AssertEqual(t, kukistring.Truncate("abc", -1), "")
 	})
-//line stdlib/string/string_test.kuki:444
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:444
 	t.Run("max shorter than ellipsis hard-truncates", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:445
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:445
 		test.AssertEqual(t, kukistring.Truncate("abcdef", 2), "ab")
-//line stdlib/string/string_test.kuki:446
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:446
 		test.AssertEqual(t, kukistring.Truncate("abcdef", 3), "abc")
 	})
-//line stdlib/string/string_test.kuki:449
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:449
 	t.Run("unicode is rune-safe", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:450
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:450
 		test.AssertEqual(t, kukistring.Truncate("日本語テキスト", 5), "日本...")
 	})
 }
 
-//line stdlib/string/string_test.kuki:454
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:454
 func TestRound(t *testing.T) {
-//line stdlib/string/string_test.kuki:455
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:455
 	t.Run("two digits", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:456
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:456
 		test.AssertEqual(t, kukistring.Round(3.14159, 2), "3.14")
 	})
-//line stdlib/string/string_test.kuki:459
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:459
 	t.Run("zero digits drops decimal", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:460
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:460
 		test.AssertEqual(t, kukistring.Round(3.7, 0), "4")
 	})
-//line stdlib/string/string_test.kuki:463
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:463
 	t.Run("negative digits clamp to zero", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:464
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:464
 		test.AssertEqual(t, kukistring.Round(2.9, -1), "3")
 	})
 }
 
-//line stdlib/string/string_test.kuki:468
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:468
 func TestWithCommas(t *testing.T) {
-//line stdlib/string/string_test.kuki:469
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:469
 	t.Run("small numbers unchanged", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:470
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:470
 		test.AssertEqual(t, kukistring.WithCommas(0), "0")
-//line stdlib/string/string_test.kuki:471
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:471
 		test.AssertEqual(t, kukistring.WithCommas(42), "42")
-//line stdlib/string/string_test.kuki:472
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:472
 		test.AssertEqual(t, kukistring.WithCommas(999), "999")
 	})
-//line stdlib/string/string_test.kuki:475
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:475
 	t.Run("thousands", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:476
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:476
 		test.AssertEqual(t, kukistring.WithCommas(1000), "1,000")
-//line stdlib/string/string_test.kuki:477
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:477
 		test.AssertEqual(t, kukistring.WithCommas(12345), "12,345")
 	})
-//line stdlib/string/string_test.kuki:480
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:480
 	t.Run("millions and beyond", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:481
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:481
 		test.AssertEqual(t, kukistring.WithCommas(1234567), "1,234,567")
-//line stdlib/string/string_test.kuki:482
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:482
 		test.AssertEqual(t, kukistring.WithCommas(1000000000), "1,000,000,000")
 	})
-//line stdlib/string/string_test.kuki:485
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:485
 	t.Run("negative numbers", func(t *testing.T) {
-//line stdlib/string/string_test.kuki:486
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:486
 		test.AssertEqual(t, kukistring.WithCommas(-1234567), "-1,234,567")
-//line stdlib/string/string_test.kuki:487
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:487
 		test.AssertEqual(t, kukistring.WithCommas(-500), "-500")
 	})
 }
 
-//line stdlib/string/string_test.kuki:491
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:491
 type CutCase struct {
 	name       string
 	s          string
@@ -621,21 +621,21 @@ type CutCase struct {
 	wantFound  bool
 }
 
-//line stdlib/string/string_test.kuki:499
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:499
 func TestCut(t *testing.T) {
-//line stdlib/string/string_test.kuki:500
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:500
 	cases := []CutCase{CutCase{name: "basic", s: "a,b,c", sep: ",", wantBefore: "a", wantAfter: "b,c", wantFound: true}, CutCase{name: "not found", s: "abc", sep: ",", wantBefore: "abc", wantAfter: "", wantFound: false}, CutCase{name: "empty sep", s: "abc", sep: "", wantBefore: "", wantAfter: "abc", wantFound: true}, CutCase{name: "starts with sep", s: ",abc", sep: ",", wantBefore: "", wantAfter: "abc", wantFound: true}, CutCase{name: "ends with sep", s: "abc,", sep: ",", wantBefore: "abc", wantAfter: "", wantFound: true}}
-//line stdlib/string/string_test.kuki:543
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:543
 	for _, tc := range cases {
-//line stdlib/string/string_test.kuki:544
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:544
 		t.Run(tc.name, func(t *testing.T) {
-//line stdlib/string/string_test.kuki:545
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:545
 			before, after, found := kukistring.Cut(tc.s, tc.sep)
-//line stdlib/string/string_test.kuki:546
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:546
 			test.AssertEqual(t, before, tc.wantBefore)
-//line stdlib/string/string_test.kuki:547
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:547
 			test.AssertEqual(t, after, tc.wantAfter)
-//line stdlib/string/string_test.kuki:548
+//line /Users/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:548
 			test.AssertEqual(t, found, tc.wantFound)
 		})
 	}

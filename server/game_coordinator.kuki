@@ -33,7 +33,7 @@ func NewGameSession(game_id: string, lobby: reference GameLobby) reference GameS
 
 func initialize_players on s: reference GameSession(lobby: reference GameLobby)
     idx := 0
-    for _, info in lobby.players
+    for _idx, info in lobby.players
         game_pid := "player_{idx}"
         s.network_to_game_id[info.player_id] = game_pid
         s.game_to_network_id[game_pid] = info.player_id
@@ -106,9 +106,9 @@ func create_session on gc: reference GameCoordinator(lobby: reference GameLobby)
     for info in players
         pid_val, has_id := info["player_id"]
         if has_id
-            pid_str, pid_ok := pid_val.(string)
-            if pid_ok and pid_str isnt ""
-                gc.player_to_game[pid_str] = game_id
+            if pid_val is string as pid_str
+                if pid_str isnt ""
+                    gc.player_to_game[pid_str] = game_id
     return gc.active_games[game_id]
 
 func get_session on gc: reference GameCoordinator(game_id: string) optional reference GameSession
@@ -128,7 +128,7 @@ func end_session on gc: reference GameCoordinator(game_id: string) bool
     if session equals empty
         return false
     nids := empty list of string
-    for nid, _ in session.network_to_game_id
+    for nid, _game_id in session.network_to_game_id
         nids = append(nids, nid)
     for nid in nids
         delete gc.player_to_game[nid]
@@ -150,7 +150,7 @@ func get_active_game_count on gc: reference GameCoordinator int
 
 func list_active_games on gc: reference GameCoordinator list of map of string to any
     result := empty list of map of string to any
-    for _, session in gc.active_games
+    for _game_id, session in gc.active_games
         entry := map of string to any{
             "id": session.game_id,
             "name": session.game_name,

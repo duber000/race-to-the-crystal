@@ -15,19 +15,19 @@ import (
 	"strconv"
 )
 
-//line stdlib/llm/era/era.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:56
 const DefaultExploration = 1.4142135623730951
 
-//line stdlib/llm/era/era.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:61
 const RecombinationProbability = 0.25
 
-//line stdlib/llm/era/era.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:64
 const DefaultTopK = 3
 
-//line stdlib/llm/era/era.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:71
 const MaxBlockBytes = 16384
 
-//line stdlib/llm/era/era.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:76
 type Task struct {
 	Description string
 	Baseline    string
@@ -35,7 +35,7 @@ type Task struct {
 	Ideas       []string
 }
 
-//line stdlib/llm/era/era.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:88
 type Candidate struct {
 	Source string
 	Score  float64
@@ -44,54 +44,54 @@ type Candidate struct {
 	Visits int
 }
 
-//line stdlib/llm/era/era.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:101
 func Run(h ctxpkg.Handle, ask func(string) (string, error), task Task, score func(string) (float64, error), budget int) (Candidate, []Candidate, error) {
-//line stdlib/llm/era/era.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:102
 	tree := []Candidate{}
-//line stdlib/llm/era/era.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:103
 	rootScore, rootErr := score(task.Baseline)
-//line stdlib/llm/era/era.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:104
 	root := Candidate{Source: task.Baseline, Score: rootScore, Parent: -1, Valid: rootErr == nil, Visits: 0}
-//line stdlib/llm/era/era.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:111
 	tree = append(tree, root)
-//line stdlib/llm/era/era.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:113
 	for range budget {
-//line stdlib/llm/era/era.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:114
 		if h.Ctx.Err() != nil {
-//line stdlib/llm/era/era.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:115
 			break
 		}
-//line stdlib/llm/era/era.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:117
 		parentIdx := SelectFUTS(tree, task.Higher, DefaultExploration)
-//line stdlib/llm/era/era.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:118
 		if parentIdx < 0 {
-//line stdlib/llm/era/era.kuki:119
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:119
 			break
 		}
-//line stdlib/llm/era/era.kuki:121
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:121
 		useRecombine := countValid(tree) >= DefaultTopK && rand.Float64() < RecombinationProbability
-//line stdlib/llm/era/era.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:122
 		var proposal string
-//line stdlib/llm/era/era.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:123
 		var proposeErr error
-//line stdlib/llm/era/era.kuki:124
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:124
 		if useRecombine {
-//line stdlib/llm/era/era.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:125
 			proposal, proposeErr = ProposeRecombination(ask, task, topK(tree, task.Higher, DefaultTopK))
 		} else {
-//line stdlib/llm/era/era.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:127
 			proposal, proposeErr = ProposeRewrite(ask, task, tree[parentIdx], best(tree, task.Higher))
 		}
-//line stdlib/llm/era/era.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:131
 		tree[parentIdx].Visits = tree[parentIdx].Visits + 1
-//line stdlib/llm/era/era.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:132
 		if proposeErr != nil {
-//line stdlib/llm/era/era.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:133
 			continue
 		}
-//line stdlib/llm/era/era.kuki:135
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:135
 		candScore, candErr := score(proposal)
-//line stdlib/llm/era/era.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:138
 		candParent := func() int {
 			if useRecombine {
 				return -1
@@ -99,87 +99,87 @@ func Run(h ctxpkg.Handle, ask func(string) (string, error), task Task, score fun
 				return parentIdx
 			}
 		}()
-//line stdlib/llm/era/era.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:139
 		cand := Candidate{Source: proposal, Score: candScore, Parent: candParent, Valid: candErr == nil, Visits: 0}
-//line stdlib/llm/era/era.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:146
 		tree = append(tree, cand)
 	}
-//line stdlib/llm/era/era.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:148
 	return best(tree, task.Higher), tree, nil
 }
 
-//line stdlib/llm/era/era.kuki:154
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:154
 func SelectFUTS(tree []Candidate, higher bool, exploration float64) int {
-//line stdlib/llm/era/era.kuki:155
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:155
 	if len(tree) == 0 {
-//line stdlib/llm/era/era.kuki:156
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:156
 		return -1
 	}
-//line stdlib/llm/era/era.kuki:158
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:158
 	totalVisits := 0
-//line stdlib/llm/era/era.kuki:159
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:159
 	validCount := 0
-//line stdlib/llm/era/era.kuki:160
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:160
 	for _, c := range tree {
-//line stdlib/llm/era/era.kuki:161
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:161
 		if c.Valid {
-//line stdlib/llm/era/era.kuki:162
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:162
 			validCount = validCount + 1
-//line stdlib/llm/era/era.kuki:163
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:163
 			totalVisits = totalVisits + c.Visits + 1
 		}
 	}
-//line stdlib/llm/era/era.kuki:164
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:164
 	if validCount == 0 {
-//line stdlib/llm/era/era.kuki:165
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:165
 		return -1
 	}
-//line stdlib/llm/era/era.kuki:167
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:167
 	lo, hi := minMaxValidScore(tree)
-//line stdlib/llm/era/era.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:168
 	span := hi - lo
-//line stdlib/llm/era/era.kuki:169
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:169
 	if span == 0.0 {
-//line stdlib/llm/era/era.kuki:170
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:170
 		span = 1.0
 	}
-//line stdlib/llm/era/era.kuki:172
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:172
 	bestIdx := -1
-//line stdlib/llm/era/era.kuki:173
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:173
 	bestUCB := math.Inf(-1)
-//line stdlib/llm/era/era.kuki:174
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:174
 	for idx := range len(tree) {
-//line stdlib/llm/era/era.kuki:175
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:175
 		c := tree[idx]
-//line stdlib/llm/era/era.kuki:176
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:176
 		if !c.Valid {
-//line stdlib/llm/era/era.kuki:177
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:177
 			continue
 		}
-//line stdlib/llm/era/era.kuki:178
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:178
 		norm := (c.Score - lo) / span
-//line stdlib/llm/era/era.kuki:179
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:179
 		if !higher {
-//line stdlib/llm/era/era.kuki:180
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:180
 			norm = 1.0 - norm
 		}
-//line stdlib/llm/era/era.kuki:181
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:181
 		ucb := norm + exploration*math.Sqrt(math.Log(float64(totalVisits))/float64(c.Visits+1))
-//line stdlib/llm/era/era.kuki:182
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:182
 		if ucb > bestUCB {
-//line stdlib/llm/era/era.kuki:183
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:183
 			bestUCB = ucb
-//line stdlib/llm/era/era.kuki:184
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:184
 			bestIdx = idx
 		}
 	}
-//line stdlib/llm/era/era.kuki:185
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:185
 	return bestIdx
 }
 
-//line stdlib/llm/era/era.kuki:190
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:190
 func ProposeRewrite(ask func(string) (string, error), task Task, parent Candidate, best Candidate) (string, error) {
-//line stdlib/llm/era/era.kuki:191
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:191
 	direction := func() string {
 		if task.Higher {
 			return "MAXIMIZE"
@@ -187,33 +187,33 @@ func ProposeRewrite(ask func(string) (string, error), task Task, parent Candidat
 			return "MINIMIZE"
 		}
 	}()
-//line stdlib/llm/era/era.kuki:192
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:192
 	instructions := fmt.Sprintf("You are improving a piece of source code to %v a numeric score.\nProblem: %v\nParent score: %v\nCurrent best score: %v\nReturn ONLY the complete new source. No prose, explanations, or markdown fences.", direction, task.Description, parent.Score, best.Score)
-//line stdlib/llm/era/era.kuki:193
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:193
 	blocks := []string{safe.Wrap("PARENT_SOURCE", safe.Truncate(parent.Source, MaxBlockBytes))}
-//line stdlib/llm/era/era.kuki:194
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:194
 	if len(task.Ideas) > 0 {
-//line stdlib/llm/era/era.kuki:195
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:195
 		ideas := safe.Truncate(strpkg.Join(task.Ideas, "\n---\n"), MaxBlockBytes)
-//line stdlib/llm/era/era.kuki:196
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:196
 		blocks = append(blocks, safe.Wrap("IDEAS", ideas))
 	}
-//line stdlib/llm/era/era.kuki:197
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:197
 	prompt := safe.Frame(instructions, blocks)
-//line stdlib/llm/era/era.kuki:198
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:198
 	raw, err_1 := ask(prompt)
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:198
 	if err_1 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:198
 		return "", err_1
 	}
-//line stdlib/llm/era/era.kuki:199
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:199
 	return stripFences(raw), nil
 }
 
-//line stdlib/llm/era/era.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:203
 func ProposeRecombination(ask func(string) (string, error), task Task, top []Candidate) (string, error) {
-//line stdlib/llm/era/era.kuki:204
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:204
 	direction := func() string {
 		if task.Higher {
 			return "MAXIMIZE"
@@ -221,53 +221,53 @@ func ProposeRecombination(ask func(string) (string, error), task Task, top []Can
 			return "MINIMIZE"
 		}
 	}()
-//line stdlib/llm/era/era.kuki:205
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:205
 	instructions := fmt.Sprintf("Synthesize a hybrid source that combines the strongest aspects of the candidates below to %v the score.\nProblem: %v\nReturn ONLY the complete new source. No prose, explanations, or markdown fences.", direction, task.Description)
-//line stdlib/llm/era/era.kuki:206
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:206
 	blocks := []string{}
-//line stdlib/llm/era/era.kuki:207
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:207
 	for i := range len(top) {
-//line stdlib/llm/era/era.kuki:208
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:208
 		c := top[i]
-//line stdlib/llm/era/era.kuki:209
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:209
 		label := fmt.Sprintf("CANDIDATE_%v_SCORE_%v", i+1, c.Score)
-//line stdlib/llm/era/era.kuki:210
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:210
 		blocks = append(blocks, safe.Wrap(label, safe.Truncate(c.Source, MaxBlockBytes)))
 	}
-//line stdlib/llm/era/era.kuki:211
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:211
 	if len(task.Ideas) > 0 {
-//line stdlib/llm/era/era.kuki:212
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:212
 		ideas := safe.Truncate(strpkg.Join(task.Ideas, "\n---\n"), MaxBlockBytes)
-//line stdlib/llm/era/era.kuki:213
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:213
 		blocks = append(blocks, safe.Wrap("IDEAS", ideas))
 	}
-//line stdlib/llm/era/era.kuki:214
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:214
 	prompt := safe.Frame(instructions, blocks)
-//line stdlib/llm/era/era.kuki:215
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:215
 	raw, err_2 := ask(prompt)
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:215
 	if err_2 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:215
 		return "", err_2
 	}
-//line stdlib/llm/era/era.kuki:216
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:216
 	return stripFences(raw), nil
 }
 
-//line stdlib/llm/era/era.kuki:236
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:236
 func BuildScore(source string) (float64, error) {
-//line stdlib/llm/era/era.kuki:237
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:237
 	dir, cleanup, dirErr := files.TempDirAuto("era-build-")
-//line stdlib/llm/era/era.kuki:238
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:238
 	if dirErr != nil {
-//line stdlib/llm/era/era.kuki:239
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:239
 		return 0.0, dirErr
 	}
-//line stdlib/llm/era/era.kuki:240
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:240
 	defer cleanup()
-//line stdlib/llm/era/era.kuki:241
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:241
 	path := files.Join(dir, "candidate.kuki")
-//line stdlib/llm/era/era.kuki:242
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:242
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:242
 	err_3 := files.WriteString(path, source)
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:242
@@ -275,26 +275,26 @@ func BuildScore(source string) (float64, error) {
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:242
 		return 0, err_3
 	}
-//line stdlib/llm/era/era.kuki:243
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:243
 	shell.Output("kukicha", "build", "--json", "--skip-build", path)
-//line stdlib/llm/era/era.kuki:244
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:244
 	return 1.0, nil
 }
 
-//line stdlib/llm/era/era.kuki:249
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:249
 func RunScore(source string, metric func(string) (float64, error)) (float64, error) {
-//line stdlib/llm/era/era.kuki:250
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:250
 	dir, cleanup, dirErr := files.TempDirAuto("era-run-")
-//line stdlib/llm/era/era.kuki:251
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:251
 	if dirErr != nil {
-//line stdlib/llm/era/era.kuki:252
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:252
 		return 0.0, dirErr
 	}
-//line stdlib/llm/era/era.kuki:253
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:253
 	defer cleanup()
-//line stdlib/llm/era/era.kuki:254
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:254
 	path := files.Join(dir, "candidate.kuki")
-//line stdlib/llm/era/era.kuki:255
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:255
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:255
 	err_4 := files.WriteString(path, source)
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:255
@@ -302,27 +302,27 @@ func RunScore(source string, metric func(string) (float64, error)) (float64, err
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:255
 		return 0, err_4
 	}
-//line stdlib/llm/era/era.kuki:256
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:256
 	out, err_5 := shell.Output("kukicha", "run", path)
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:256
 	if err_5 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:256
 		return 0, err_5
 	}
-//line stdlib/llm/era/era.kuki:257
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:257
 	return metric(out)
 }
 
-//line stdlib/llm/era/era.kuki:264
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:264
 func BenchScore(source string, setup func(string) (string, error), benchName string) (float64, error) {
-//line stdlib/llm/era/era.kuki:265
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:265
 	workDir, err_6 := setup(source)
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:265
 	if err_6 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:265
 		return 0, err_6
 	}
-//line stdlib/llm/era/era.kuki:266
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:266
 	// pipe step 1: Output(...)
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:268
 	out, err_8 := shell.New("go", "test", "-bench", benchName, "-benchmem", "-count=1", "-run=^$", "./...").Dir(workDir).Output()
@@ -331,137 +331,137 @@ func BenchScore(source string, setup func(string) (string, error), benchName str
 //line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:266
 		return 0, err_8
 	}
-//line stdlib/llm/era/era.kuki:269
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:269
 	return parseBenchNsPerOp(out, benchName)
 }
 
-//line stdlib/llm/era/era.kuki:276
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:276
 func StripFences(s string) string {
-//line stdlib/llm/era/era.kuki:277
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:277
 	return stripFences(s)
 }
 
-//line stdlib/llm/era/era.kuki:279
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:279
 func stripFences(s string) string {
-//line stdlib/llm/era/era.kuki:280
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:280
 	s = strpkg.TrimSpace(s)
-//line stdlib/llm/era/era.kuki:281
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:281
 	if !strpkg.HasPrefix(s, "```") {
-//line stdlib/llm/era/era.kuki:282
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:282
 		return s
 	}
-//line stdlib/llm/era/era.kuki:283
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:283
 	lines := strpkg.Split(s, "\n")
-//line stdlib/llm/era/era.kuki:284
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:284
 	if len(lines) < 2 {
-//line stdlib/llm/era/era.kuki:285
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:285
 		return s
 	}
-//line stdlib/llm/era/era.kuki:286
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:286
 	lines = lines[1:]
-//line stdlib/llm/era/era.kuki:287
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:287
 	if len(lines) > 0 && strpkg.HasPrefix(lines[len(lines)-1], "```") {
-//line stdlib/llm/era/era.kuki:288
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:288
 		lines = lines[:len(lines)-1]
 	}
-//line stdlib/llm/era/era.kuki:289
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:289
 	return strpkg.TrimSpace(strpkg.Join(lines, "\n"))
 }
 
-//line stdlib/llm/era/era.kuki:291
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:291
 func countValid(tree []Candidate) int {
-//line stdlib/llm/era/era.kuki:292
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:292
 	n := 0
-//line stdlib/llm/era/era.kuki:293
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:293
 	for _, c := range tree {
-//line stdlib/llm/era/era.kuki:294
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:294
 		if c.Valid {
-//line stdlib/llm/era/era.kuki:295
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:295
 			n = n + 1
 		}
 	}
-//line stdlib/llm/era/era.kuki:296
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:296
 	return n
 }
 
-//line stdlib/llm/era/era.kuki:298
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:298
 func minMaxValidScore(tree []Candidate) (float64, float64) {
-//line stdlib/llm/era/era.kuki:299
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:299
 	lo := math.Inf(1)
-//line stdlib/llm/era/era.kuki:300
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:300
 	hi := math.Inf(-1)
-//line stdlib/llm/era/era.kuki:301
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:301
 	for _, c := range tree {
-//line stdlib/llm/era/era.kuki:302
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:302
 		if !c.Valid {
-//line stdlib/llm/era/era.kuki:303
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:303
 			continue
 		}
-//line stdlib/llm/era/era.kuki:304
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:304
 		if c.Score < lo {
-//line stdlib/llm/era/era.kuki:305
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:305
 			lo = c.Score
 		}
-//line stdlib/llm/era/era.kuki:306
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:306
 		if c.Score > hi {
-//line stdlib/llm/era/era.kuki:307
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:307
 			hi = c.Score
 		}
 	}
-//line stdlib/llm/era/era.kuki:308
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:308
 	return lo, hi
 }
 
-//line stdlib/llm/era/era.kuki:310
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:310
 func best(tree []Candidate, higher bool) Candidate {
-//line stdlib/llm/era/era.kuki:311
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:311
 	var bestC Candidate
-//line stdlib/llm/era/era.kuki:312
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:312
 	found := false
-//line stdlib/llm/era/era.kuki:313
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:313
 	for _, c := range tree {
-//line stdlib/llm/era/era.kuki:314
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:314
 		if !c.Valid {
-//line stdlib/llm/era/era.kuki:315
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:315
 			continue
 		}
-//line stdlib/llm/era/era.kuki:316
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:316
 		if !found {
-//line stdlib/llm/era/era.kuki:317
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:317
 			bestC = c
-//line stdlib/llm/era/era.kuki:318
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:318
 			found = true
-//line stdlib/llm/era/era.kuki:319
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:319
 			continue
 		}
-//line stdlib/llm/era/era.kuki:320
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:320
 		if higher && c.Score > bestC.Score {
-//line stdlib/llm/era/era.kuki:321
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:321
 			bestC = c
 		}
-//line stdlib/llm/era/era.kuki:322
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:322
 		if !higher && c.Score < bestC.Score {
-//line stdlib/llm/era/era.kuki:323
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:323
 			bestC = c
 		}
 	}
-//line stdlib/llm/era/era.kuki:324
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:324
 	return bestC
 }
 
-//line stdlib/llm/era/era.kuki:326
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:326
 func topK(tree []Candidate, higher bool, k int) []Candidate {
-//line stdlib/llm/era/era.kuki:327
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:327
 	valid := []Candidate{}
-//line stdlib/llm/era/era.kuki:328
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:328
 	for _, c := range tree {
-//line stdlib/llm/era/era.kuki:329
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:329
 		if c.Valid {
-//line stdlib/llm/era/era.kuki:330
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:330
 			valid = append(valid, c)
 		}
 	}
-//line stdlib/llm/era/era.kuki:331
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:331
 	valid = sort.By(valid, func(a Candidate, b Candidate) bool {
 		return func() bool {
 			if higher {
@@ -471,37 +471,37 @@ func topK(tree []Candidate, higher bool, k int) []Candidate {
 			}
 		}()
 	})
-//line stdlib/llm/era/era.kuki:332
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:332
 	if len(valid) > k {
-//line stdlib/llm/era/era.kuki:333
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:333
 		valid = valid[:k]
 	}
-//line stdlib/llm/era/era.kuki:334
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:334
 	return valid
 }
 
-//line stdlib/llm/era/era.kuki:336
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:336
 func parseBenchNsPerOp(out string, benchName string) (float64, error) {
-//line stdlib/llm/era/era.kuki:337
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:337
 	prefix := fmt.Sprintf("Benchmark%v", benchName)
-//line stdlib/llm/era/era.kuki:338
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:338
 	for _, line := range strpkg.Lines(out) {
-//line stdlib/llm/era/era.kuki:339
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:339
 		if !strpkg.HasPrefix(line, prefix) {
-//line stdlib/llm/era/era.kuki:340
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:340
 			continue
 		}
-//line stdlib/llm/era/era.kuki:341
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:341
 		fields := strpkg.Fields(line)
-//line stdlib/llm/era/era.kuki:343
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:343
 		for i := range len(fields) {
-//line stdlib/llm/era/era.kuki:344
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:344
 			if fields[i] == "ns/op" && i > 0 {
-//line stdlib/llm/era/era.kuki:345
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:345
 				return strconv.ParseFloat(fields[i-1], 64)
 			}
 		}
 	}
-//line stdlib/llm/era/era.kuki:346
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/era/era.kuki:346
 	return 0.0, fmt.Errorf("no benchmark line matched %v", benchName)
 }

@@ -8,125 +8,125 @@ import (
 	"testing"
 )
 
-//line stdlib/math/math_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:10
 func TestAbs(t *testing.T) {
-//line stdlib/math/math_test.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:11
 	t.Run("negative", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:12
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:12
 		test.AssertEqual(t, math.Abs(-3.14), 3.14)
 	})
-//line stdlib/math/math_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:15
 	t.Run("positive", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:16
 		test.AssertEqual(t, math.Abs(3.14), 3.14)
 	})
-//line stdlib/math/math_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:19
 	t.Run("zero", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:20
 		test.AssertEqual(t, math.Abs(0.0), 0.0)
 	})
 }
 
-//line stdlib/math/math_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:24
 func TestAbsInt(t *testing.T) {
-//line stdlib/math/math_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:25
 	t.Run("negative", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:26
 		test.AssertEqual(t, math.AbsInt(-42), 42)
 	})
-//line stdlib/math/math_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:29
 	t.Run("positive", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:30
 		test.AssertEqual(t, math.AbsInt(42), 42)
 	})
 }
 
-//line stdlib/math/math_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:34
 func TestRound(t *testing.T) {
-//line stdlib/math/math_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:35
 	t.Run("rounds up", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:36
 		test.AssertEqual(t, math.Round(3.7), 4)
 	})
-//line stdlib/math/math_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:39
 	t.Run("rounds down", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:40
 		test.AssertEqual(t, math.Round(3.2), 3)
 	})
-//line stdlib/math/math_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:43
 	t.Run("half away from zero", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:44
 		test.AssertEqual(t, math.Round(2.5), 3)
-//line stdlib/math/math_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:45
 		test.AssertEqual(t, math.Round(-2.5), -3)
 	})
 }
 
-//line stdlib/math/math_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:49
 func TestRoundTo(t *testing.T) {
-//line stdlib/math/math_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:50
 	t.Run("two digits", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:51
 		test.AssertEqual(t, math.RoundTo(3.14159, 2), 3.14)
 	})
-//line stdlib/math/math_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:54
 	t.Run("zero digits", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:55
 		test.AssertEqual(t, math.RoundTo(3.7, 0), 4.0)
 	})
 }
 
-//line stdlib/math/math_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:59
 func TestCeilFloor(t *testing.T) {
-//line stdlib/math/math_test.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:60
 	t.Run("ceil", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:61
 		test.AssertEqual(t, math.Ceil(2.1), 3)
-//line stdlib/math/math_test.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:62
 		test.AssertEqual(t, math.Ceil(2.0), 2)
 	})
-//line stdlib/math/math_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:65
 	t.Run("floor", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:66
 		test.AssertEqual(t, math.Floor(2.9), 2)
-//line stdlib/math/math_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:67
 		test.AssertEqual(t, math.Floor(2.0), 2)
 	})
 }
 
-//line stdlib/math/math_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:71
 func TestMinMax(t *testing.T) {
-//line stdlib/math/math_test.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:72
 	t.Run("ints", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:73
 		test.AssertEqual(t, math.Min(3, 7), 3)
-//line stdlib/math/math_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:74
 		test.AssertEqual(t, math.Max(3, 7), 7)
 	})
-//line stdlib/math/math_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:77
 	t.Run("floats", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:78
 		test.AssertEqual(t, math.Min(1.5, 0.5), 0.5)
-//line stdlib/math/math_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:79
 		test.AssertEqual(t, math.Max(1.5, 0.5), 1.5)
 	})
 }
 
-//line stdlib/math/math_test.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:83
 func TestClamp(t *testing.T) {
-//line stdlib/math/math_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:84
 	t.Run("inside range", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:85
 		test.AssertEqual(t, math.Clamp(50, 0, 100), 50)
 	})
-//line stdlib/math/math_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:88
 	t.Run("below lo", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:89
 		test.AssertEqual(t, math.Clamp(-10, 0, 100), 0)
 	})
-//line stdlib/math/math_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:92
 	t.Run("above hi", func(t *testing.T) {
-//line stdlib/math/math_test.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:93
 		test.AssertEqual(t, math.Clamp(150, 0, 100), 100)
 	})
 }

@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-//line stdlib/log/log.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:29
 type Level int
 
 const (
@@ -44,7 +44,7 @@ func (e Level) String() string {
 	}
 }
 
-//line stdlib/log/log.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:39
 type Format string
 
 const (
@@ -78,295 +78,295 @@ func (e Format) String() string {
 	}
 }
 
-//line stdlib/log/log.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:45
 type Logger struct {
 	W      *os.File
 	Level  Level
 	Format Format
 }
 
-//line stdlib/log/log.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:51
 func New(w *os.File) Logger {
-//line stdlib/log/log.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:52
 	return Logger{W: w, Level: LevelInfo, Format: FormatText}
 }
 
-//line stdlib/log/log.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:56
 var defaultLogger Logger = New(os.Stderr)
 
-//line stdlib/log/log.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:61
 func SetLevel(level Level) {
-//line stdlib/log/log.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:62
 	defaultLogger.Level = level
 }
 
-//line stdlib/log/log.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:65
 func SetFormat(format Format) {
-//line stdlib/log/log.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:66
 	defaultLogger.Format = format
 }
 
-//line stdlib/log/log.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:69
 func levelName(level Level) string {
-//line stdlib/log/log.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:70
 	switch level {
 	case LevelDebug:
-//line stdlib/log/log.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:72
 		return "DEBUG"
 	case LevelInfo:
-//line stdlib/log/log.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:74
 		return "INFO"
 	case LevelWarn:
-//line stdlib/log/log.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:76
 		return "WARN"
 	case LevelError:
-//line stdlib/log/log.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:78
 		return "ERROR"
 	case LevelFatal:
-//line stdlib/log/log.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:80
 		return "FATAL"
 	default:
 		panic("unreachable")
 	}
 }
 
-//line stdlib/log/log.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:83
 func colorize(level Level, name string, w *os.File) string {
-//line stdlib/log/log.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:84
 	if !term.ColorEnabledFor(w) {
-//line stdlib/log/log.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:85
 		return name
 	}
-//line stdlib/log/log.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:86
 	s := color.NewStyler(w)
-//line stdlib/log/log.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:87
 	switch level {
 	case LevelDebug:
-//line stdlib/log/log.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:89
 		return s.Gray(name)
 	case LevelInfo:
-//line stdlib/log/log.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:91
 		return s.Cyan(name)
 	case LevelWarn:
-//line stdlib/log/log.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:93
 		return s.Yellow(name)
 	case LevelError:
-//line stdlib/log/log.kuki:95
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:95
 		return s.Red(name)
 	case LevelFatal:
-//line stdlib/log/log.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:97
 		return s.Error(name)
 	}
-//line stdlib/log/log.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:98
 	return name
 }
 
-//line stdlib/log/log.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:102
 func needsQuoting(s string) bool {
-//line stdlib/log/log.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:103
 	if s == "" {
-//line stdlib/log/log.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:104
 		return true
 	}
-//line stdlib/log/log.kuki:105
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:105
 	return strings.ContainsAny(s, " \t\n\"=")
 }
 
-//line stdlib/log/log.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:108
 func formatValue(v any) string {
-//line stdlib/log/log.kuki:109
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:109
 	s := fmt.Sprintf("%v", v)
-//line stdlib/log/log.kuki:110
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:110
 	if !needsQuoting(s) {
-//line stdlib/log/log.kuki:111
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:111
 		return s
 	}
-//line stdlib/log/log.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:113
 	return fmt.Sprintf("%q", s)
 }
 
-//line stdlib/log/log.kuki:117
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:117
 func encodeJSONValue(v any) string {
-//line stdlib/log/log.kuki:118
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:118
 	bytes, err_1 := json.Bytes(v)
 //line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:118
 	if err_1 != nil {
 //line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:118
-		//line stdlib/log/log.kuki:119
+		//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:119
 		return fmt.Sprintf("%q", fmt.Sprintf("%v", v))
 	}
-//line stdlib/log/log.kuki:121
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:121
 	return fmt.Sprintf("%s", bytes)
 }
 
-//line stdlib/log/log.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:125
 func emitText(l Logger, level Level, msg string, kv []any) {
-//line stdlib/log/log.kuki:126
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:126
 	var b strings.Builder
-//line stdlib/log/log.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:127
 	b.WriteString(time.Now().Format("15:04:05"))
-//line stdlib/log/log.kuki:128
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:128
 	b.WriteString(" ")
-//line stdlib/log/log.kuki:129
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:129
 	b.WriteString(colorize(level, levelName(level), l.W))
-//line stdlib/log/log.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:130
 	b.WriteString(" ")
-//line stdlib/log/log.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:131
 	b.WriteString(msg)
-//line stdlib/log/log.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:132
 	i := 0
-//line stdlib/log/log.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:133
 	for i < len(kv) {
-//line stdlib/log/log.kuki:134
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:134
 		b.WriteString(" ")
-//line stdlib/log/log.kuki:135
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:135
 		key := fmt.Sprintf("%v", kv[i])
-//line stdlib/log/log.kuki:136
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:136
 		b.WriteString(key)
-//line stdlib/log/log.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:137
 		b.WriteString("=")
-//line stdlib/log/log.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:138
 		if i+1 < len(kv) {
-//line stdlib/log/log.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:139
 			b.WriteString(formatValue(kv[i+1]))
 		} else {
-//line stdlib/log/log.kuki:141
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:141
 			b.WriteString("MISSING_VALUE")
 		}
-//line stdlib/log/log.kuki:142
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:142
 		i = i + 2
 	}
-//line stdlib/log/log.kuki:143
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:143
 	b.WriteString("\n")
-//line stdlib/log/log.kuki:144
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:144
 	fmt.Fprint(l.W, b.String())
 }
 
-//line stdlib/log/log.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:148
 func emitJSON(l Logger, level Level, msg string, kv []any) {
-//line stdlib/log/log.kuki:149
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:149
 	var b strings.Builder
-//line stdlib/log/log.kuki:150
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:150
 	b.WriteString("{\"time\":")
-//line stdlib/log/log.kuki:151
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:151
 	b.WriteString(encodeJSONValue(time.Now().Format(time.RFC3339)))
-//line stdlib/log/log.kuki:152
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:152
 	b.WriteString(",\"level\":")
-//line stdlib/log/log.kuki:153
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:153
 	b.WriteString(encodeJSONValue(levelName(level)))
-//line stdlib/log/log.kuki:154
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:154
 	b.WriteString(",\"msg\":")
-//line stdlib/log/log.kuki:155
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:155
 	b.WriteString(encodeJSONValue(msg))
-//line stdlib/log/log.kuki:156
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:156
 	i := 0
-//line stdlib/log/log.kuki:157
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:157
 	for i < len(kv) {
-//line stdlib/log/log.kuki:158
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:158
 		b.WriteString(",")
-//line stdlib/log/log.kuki:159
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:159
 		key := fmt.Sprintf("%v", kv[i])
-//line stdlib/log/log.kuki:160
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:160
 		b.WriteString(encodeJSONValue(key))
-//line stdlib/log/log.kuki:161
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:161
 		b.WriteString(":")
-//line stdlib/log/log.kuki:162
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:162
 		if i+1 < len(kv) {
-//line stdlib/log/log.kuki:163
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:163
 			b.WriteString(encodeJSONValue(kv[i+1]))
 		} else {
-//line stdlib/log/log.kuki:165
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:165
 			b.WriteString(encodeJSONValue("MISSING_VALUE"))
 		}
-//line stdlib/log/log.kuki:166
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:166
 		i = i + 2
 	}
-//line stdlib/log/log.kuki:167
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:167
 	b.WriteString("}\n")
-//line stdlib/log/log.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:168
 	fmt.Fprint(l.W, b.String())
 }
 
-//line stdlib/log/log.kuki:171
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:171
 func (l Logger) emit(level Level, msg string, kv []any) {
-//line stdlib/log/log.kuki:172
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:172
 	if level < l.Level {
-//line stdlib/log/log.kuki:173
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:173
 		return
 	}
-//line stdlib/log/log.kuki:174
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:174
 	switch l.Format {
 	case FormatJSON:
-//line stdlib/log/log.kuki:176
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:176
 		emitJSON(l, level, msg, kv)
 	case FormatText:
-//line stdlib/log/log.kuki:178
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:178
 		emitText(l, level, msg, kv)
 	default:
 		panic("unreachable")
 	}
 }
 
-//line stdlib/log/log.kuki:182
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:182
 func (l Logger) Debug(msg string, kv ...any) {
-//line stdlib/log/log.kuki:183
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:183
 	l.emit(LevelDebug, msg, kv)
 }
 
-//line stdlib/log/log.kuki:185
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:185
 func (l Logger) Info(msg string, kv ...any) {
-//line stdlib/log/log.kuki:186
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:186
 	l.emit(LevelInfo, msg, kv)
 }
 
-//line stdlib/log/log.kuki:188
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:188
 func (l Logger) Warn(msg string, kv ...any) {
-//line stdlib/log/log.kuki:189
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:189
 	l.emit(LevelWarn, msg, kv)
 }
 
-//line stdlib/log/log.kuki:191
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:191
 func (l Logger) Error(msg string, kv ...any) {
-//line stdlib/log/log.kuki:192
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:192
 	l.emit(LevelError, msg, kv)
 }
 
-//line stdlib/log/log.kuki:197
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:197
 func (l Logger) Fatal(msg any, kv ...any) {
-//line stdlib/log/log.kuki:198
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:198
 	l.emit(LevelFatal, fmt.Sprint(msg), kv)
-//line stdlib/log/log.kuki:199
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:199
 	os.Exit(1)
 }
 
-//line stdlib/log/log.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:203
 func Debug(msg string, kv ...any) {
-//line stdlib/log/log.kuki:204
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:204
 	defaultLogger.emit(LevelDebug, msg, kv)
 }
 
-//line stdlib/log/log.kuki:206
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:206
 func Info(msg string, kv ...any) {
-//line stdlib/log/log.kuki:207
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:207
 	defaultLogger.emit(LevelInfo, msg, kv)
 }
 
-//line stdlib/log/log.kuki:209
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:209
 func Warn(msg string, kv ...any) {
-//line stdlib/log/log.kuki:210
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:210
 	defaultLogger.emit(LevelWarn, msg, kv)
 }
 
-//line stdlib/log/log.kuki:212
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:212
 func Error(msg string, kv ...any) {
-//line stdlib/log/log.kuki:213
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:213
 	defaultLogger.emit(LevelError, msg, kv)
 }
 
-//line stdlib/log/log.kuki:215
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:215
 func Fatal(msg any, kv ...any) {
-//line stdlib/log/log.kuki:216
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:216
 	defaultLogger.emit(LevelFatal, fmt.Sprint(msg), kv)
-//line stdlib/log/log.kuki:217
+//line /Users/tluker/repos/go/kukicha/stdlib/log/log.kuki:217
 	os.Exit(1)
 }

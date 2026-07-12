@@ -1,6 +1,6 @@
 module codeberg.org/kukichalang/kukicha/stdlib
 
-go 1.26.4
+go 1.27rc2
 
 require (
 	github.com/modelcontextprotocol/go-sdk v1.6.0

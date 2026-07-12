@@ -13,96 +13,96 @@ import (
 	"time"
 )
 
-//line stdlib/signal/signal_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:15
 func TestWaitFor(t *testing.T) {
-//line stdlib/signal/signal_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:16
 	go func() {
-//line stdlib/signal/signal_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:17
 		time.Sleep(10 * time.Millisecond)
-//line stdlib/signal/signal_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:18
 		p, _ := os.FindProcess(os.Getpid())
-//line stdlib/signal/signal_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:19
 		_ = p.Signal(syscall.SIGUSR1)
 	}()
-//line stdlib/signal/signal_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:21
 	sig, err := signal.WaitFor(signal.UserDefined1)
-//line stdlib/signal/signal_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:22
 	test.AssertNoError(t, err)
-//line stdlib/signal/signal_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:23
 	test.AssertEqual(t, sig == signal.UserDefined1, true)
 }
 
-//line stdlib/signal/signal_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:25
 func TestWaitForNoSignals(t *testing.T) {
-//line stdlib/signal/signal_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:26
 	_, err := signal.WaitFor()
-//line stdlib/signal/signal_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:27
 	test.AssertEqual(t, err != nil, true)
 }
 
-//line stdlib/signal/signal_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:30
 func TestOnInterrupt(t *testing.T) {
-//line stdlib/signal/signal_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:31
 	wg := sync.WaitGroup{}
-//line stdlib/signal/signal_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:32
 	wg.Add(1)
-//line stdlib/signal/signal_test.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:33
 	fired := false
-//line stdlib/signal/signal_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:34
 	signal.OnInterrupt(func() {
-//line stdlib/signal/signal_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:35
 		fired = true
-//line stdlib/signal/signal_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:36
 		wg.Done()
 	})
-//line stdlib/signal/signal_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:39
 	time.Sleep(10 * time.Millisecond)
-//line stdlib/signal/signal_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:40
 	p, _ := os.FindProcess(os.Getpid())
-//line stdlib/signal/signal_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:41
 	_ = p.Signal(os.Interrupt)
-//line stdlib/signal/signal_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:43
 	wg.Wait()
-//line stdlib/signal/signal_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:44
 	test.AssertEqual(t, fired, true)
 }
 
-//line stdlib/signal/signal_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:47
 func TestContext(t *testing.T) {
-//line stdlib/signal/signal_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:48
 	ctx, stop := signal.Context(signal.UserDefined2)
-//line stdlib/signal/signal_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:49
 	defer stop()
-//line stdlib/signal/signal_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:51
 	go func() {
-//line stdlib/signal/signal_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:52
 		time.Sleep(10 * time.Millisecond)
-//line stdlib/signal/signal_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:53
 		p, _ := os.FindProcess(os.Getpid())
-//line stdlib/signal/signal_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:54
 		_ = p.Signal(syscall.SIGUSR2)
 	}()
-//line stdlib/signal/signal_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:56
 	deadline, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-//line stdlib/signal/signal_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:57
 	defer cancel()
-//line stdlib/signal/signal_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:59
 	select {
 	case <-ctx.Done():
-//line stdlib/signal/signal_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:61
 		test.AssertEqual(t, ctx.Err() != nil, true)
 	case <-deadline.Done():
-//line stdlib/signal/signal_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:63
 		t.Fatal("signal.Context did not cancel within deadline")
 	}
 }
 
-//line stdlib/signal/signal_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:65
 func TestContextDefaults(t *testing.T) {
-//line stdlib/signal/signal_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:66
 	ctx, stop := signal.Context()
-//line stdlib/signal/signal_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:67
 	defer stop()
-//line stdlib/signal/signal_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal_test.kuki:68
 	test.AssertEqual(t, ctx == nil, false)
 }

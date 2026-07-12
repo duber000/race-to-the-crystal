@@ -8,307 +8,307 @@ import (
 	"sync"
 )
 
-//line stdlib/concurrent/concurrent.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:11
 func Parallel(tasks ...func()) {
-//line stdlib/concurrent/concurrent.kuki:12
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:12
 	wg := sync.WaitGroup{}
-//line stdlib/concurrent/concurrent.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:13
 	for _, task := range tasks {
-//line stdlib/concurrent/concurrent.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:14
 		wg.Go(task)
 	}
-//line stdlib/concurrent/concurrent.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:15
 	wg.Wait()
 }
 
-//line stdlib/concurrent/concurrent.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:20
 func ParallelWithLimit(limit int, tasks ...func()) {
-//line stdlib/concurrent/concurrent.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:21
 	wg := sync.WaitGroup{}
-//line stdlib/concurrent/concurrent.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:22
 	sem := make(chan int, limit)
-//line stdlib/concurrent/concurrent.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:23
 	for _, task := range tasks {
-//line stdlib/concurrent/concurrent.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:24
 		sem <- 1
-//line stdlib/concurrent/concurrent.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:25
 		wg.Go(func() {
-//line stdlib/concurrent/concurrent.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:26
 			task()
-//line stdlib/concurrent/concurrent.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:27
 			<-sem
 		})
 	}
-//line stdlib/concurrent/concurrent.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:30
 	wg.Wait()
 }
 
-//line stdlib/concurrent/concurrent.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:36
 func Map[T any, R any](items []T, fn func(T) R) []R {
-//line stdlib/concurrent/concurrent.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:37
 	results := make([]R, len(items))
-//line stdlib/concurrent/concurrent.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:38
 	wg := sync.WaitGroup{}
-//line stdlib/concurrent/concurrent.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:39
 	for i, item := range items {
-//line stdlib/concurrent/concurrent.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:40
 		wg.Go(func() {
-//line stdlib/concurrent/concurrent.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:41
 			results[i] = fn(item)
 		})
 	}
-//line stdlib/concurrent/concurrent.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:44
 	wg.Wait()
-//line stdlib/concurrent/concurrent.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:45
 	return results
 }
 
-//line stdlib/concurrent/concurrent.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:50
 func MapWithLimit[T any, R any](items []T, limit int, fn func(T) R) []R {
-//line stdlib/concurrent/concurrent.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:51
 	results := make([]R, len(items))
-//line stdlib/concurrent/concurrent.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:52
 	wg := sync.WaitGroup{}
-//line stdlib/concurrent/concurrent.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:53
 	sem := make(chan int, limit)
-//line stdlib/concurrent/concurrent.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:54
 	for i, item := range items {
-//line stdlib/concurrent/concurrent.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:55
 		sem <- 1
-//line stdlib/concurrent/concurrent.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:56
 		wg.Go(func() {
-//line stdlib/concurrent/concurrent.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:57
 			results[i] = fn(item)
-//line stdlib/concurrent/concurrent.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:58
 			<-sem
 		})
 	}
-//line stdlib/concurrent/concurrent.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:61
 	wg.Wait()
-//line stdlib/concurrent/concurrent.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:62
 	return results
 }
 
-//line stdlib/concurrent/concurrent.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:75
 func ParallelE(tasks ...func() error) error {
-//line stdlib/concurrent/concurrent.kuki:76
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:76
 	wg := sync.WaitGroup{}
-//line stdlib/concurrent/concurrent.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:77
 	mu := sync.Mutex{}
-//line stdlib/concurrent/concurrent.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:78
 	errs := []error{}
-//line stdlib/concurrent/concurrent.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:79
 	for _, task := range tasks {
-//line stdlib/concurrent/concurrent.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:80
 		wg.Go(func() {
-//line stdlib/concurrent/concurrent.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:81
 			err := task()
-//line stdlib/concurrent/concurrent.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:82
 			if err != nil {
-//line stdlib/concurrent/concurrent.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:83
 				mu.Lock()
-//line stdlib/concurrent/concurrent.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:84
 				errs = append(errs, err)
-//line stdlib/concurrent/concurrent.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:85
 				mu.Unlock()
 			}
 		})
 	}
-//line stdlib/concurrent/concurrent.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:88
 	wg.Wait()
-//line stdlib/concurrent/concurrent.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:89
 	if len(errs) > 0 {
-//line stdlib/concurrent/concurrent.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:90
 		return errors.Join(errs...)
 	}
-//line stdlib/concurrent/concurrent.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:91
 	return nil
 }
 
-//line stdlib/concurrent/concurrent.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:97
 func MapE[T any, R any](items []T, fn func(T) (R, error)) ([]R, error) {
-//line stdlib/concurrent/concurrent.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:98
 	results := make([]R, len(items))
-//line stdlib/concurrent/concurrent.kuki:99
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:99
 	wg := sync.WaitGroup{}
-//line stdlib/concurrent/concurrent.kuki:100
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:100
 	mu := sync.Mutex{}
-//line stdlib/concurrent/concurrent.kuki:101
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:101
 	errs := []error{}
-//line stdlib/concurrent/concurrent.kuki:102
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:102
 	for i, item := range items {
-//line stdlib/concurrent/concurrent.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:103
 		wg.Go(func() {
-//line stdlib/concurrent/concurrent.kuki:104
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:104
 			r, err := fn(item)
-//line stdlib/concurrent/concurrent.kuki:105
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:105
 			if err != nil {
-//line stdlib/concurrent/concurrent.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:106
 				mu.Lock()
-//line stdlib/concurrent/concurrent.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:107
 				errs = append(errs, err)
-//line stdlib/concurrent/concurrent.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:108
 				mu.Unlock()
 			} else {
-//line stdlib/concurrent/concurrent.kuki:110
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:110
 				results[i] = r
 			}
 		})
 	}
-//line stdlib/concurrent/concurrent.kuki:113
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:113
 	wg.Wait()
-//line stdlib/concurrent/concurrent.kuki:114
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:114
 	if len(errs) > 0 {
-//line stdlib/concurrent/concurrent.kuki:115
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:115
 		return results, errors.Join(errs...)
 	}
-//line stdlib/concurrent/concurrent.kuki:116
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:116
 	return results, nil
 }
 
-//line stdlib/concurrent/concurrent.kuki:122
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:122
 func MapEWithLimit[T any, R any](items []T, limit int, fn func(T) (R, error)) ([]R, error) {
-//line stdlib/concurrent/concurrent.kuki:123
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:123
 	results := make([]R, len(items))
-//line stdlib/concurrent/concurrent.kuki:124
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:124
 	wg := sync.WaitGroup{}
-//line stdlib/concurrent/concurrent.kuki:125
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:125
 	sem := make(chan int, limit)
-//line stdlib/concurrent/concurrent.kuki:126
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:126
 	mu := sync.Mutex{}
-//line stdlib/concurrent/concurrent.kuki:127
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:127
 	errs := []error{}
-//line stdlib/concurrent/concurrent.kuki:128
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:128
 	for i, item := range items {
-//line stdlib/concurrent/concurrent.kuki:129
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:129
 		mu.Lock()
-//line stdlib/concurrent/concurrent.kuki:130
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:130
 		failed := len(errs) > 0
-//line stdlib/concurrent/concurrent.kuki:131
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:131
 		mu.Unlock()
-//line stdlib/concurrent/concurrent.kuki:132
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:132
 		if failed {
-//line stdlib/concurrent/concurrent.kuki:133
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:133
 			break
 		}
-//line stdlib/concurrent/concurrent.kuki:134
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:134
 		sem <- 1
-//line stdlib/concurrent/concurrent.kuki:135
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:135
 		wg.Go(func() {
-//line stdlib/concurrent/concurrent.kuki:136
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:136
 			r, err := fn(item)
-//line stdlib/concurrent/concurrent.kuki:137
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:137
 			if err != nil {
-//line stdlib/concurrent/concurrent.kuki:138
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:138
 				mu.Lock()
-//line stdlib/concurrent/concurrent.kuki:139
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:139
 				errs = append(errs, err)
-//line stdlib/concurrent/concurrent.kuki:140
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:140
 				mu.Unlock()
 			} else {
-//line stdlib/concurrent/concurrent.kuki:142
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:142
 				results[i] = r
 			}
-//line stdlib/concurrent/concurrent.kuki:143
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:143
 			<-sem
 		})
 	}
-//line stdlib/concurrent/concurrent.kuki:146
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:146
 	wg.Wait()
-//line stdlib/concurrent/concurrent.kuki:147
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:147
 	if len(errs) > 0 {
-//line stdlib/concurrent/concurrent.kuki:148
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:148
 		return results, errors.Join(errs...)
 	}
-//line stdlib/concurrent/concurrent.kuki:149
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:149
 	return results, nil
 }
 
-//line stdlib/concurrent/concurrent.kuki:156
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:156
 func ParallelCtx(parent ctxpkg.Handle, tasks ...func(ctxpkg.Handle) error) error {
-//line stdlib/concurrent/concurrent.kuki:157
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:157
 	childH := ctxpkg.WithCancel(parent)
-//line stdlib/concurrent/concurrent.kuki:158
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:158
 	defer childH.Cancel()
-//line stdlib/concurrent/concurrent.kuki:160
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:160
 	wg := sync.WaitGroup{}
-//line stdlib/concurrent/concurrent.kuki:161
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:161
 	mu := sync.Mutex{}
-//line stdlib/concurrent/concurrent.kuki:162
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:162
 	errs := []error{}
-//line stdlib/concurrent/concurrent.kuki:163
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:163
 	for _, task := range tasks {
-//line stdlib/concurrent/concurrent.kuki:164
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:164
 		wg.Go(func() {
-//line stdlib/concurrent/concurrent.kuki:165
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:165
 			err := task(childH)
-//line stdlib/concurrent/concurrent.kuki:166
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:166
 			if err != nil {
-//line stdlib/concurrent/concurrent.kuki:167
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:167
 				mu.Lock()
-//line stdlib/concurrent/concurrent.kuki:168
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:168
 				errs = append(errs, err)
-//line stdlib/concurrent/concurrent.kuki:169
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:169
 				childH.Cancel()
-//line stdlib/concurrent/concurrent.kuki:170
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:170
 				mu.Unlock()
 			}
 		})
 	}
-//line stdlib/concurrent/concurrent.kuki:173
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:173
 	wg.Wait()
-//line stdlib/concurrent/concurrent.kuki:174
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:174
 	if len(errs) > 0 {
-//line stdlib/concurrent/concurrent.kuki:175
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:175
 		return errors.Join(errs...)
 	}
-//line stdlib/concurrent/concurrent.kuki:176
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:176
 	return nil
 }
 
-//line stdlib/concurrent/concurrent.kuki:181
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:181
 func MapCtx[T any, R any](parent ctxpkg.Handle, items []T, fn func(ctxpkg.Handle, T) (R, error)) ([]R, error) {
-//line stdlib/concurrent/concurrent.kuki:182
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:182
 	childH := ctxpkg.WithCancel(parent)
-//line stdlib/concurrent/concurrent.kuki:183
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:183
 	defer childH.Cancel()
-//line stdlib/concurrent/concurrent.kuki:185
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:185
 	results := make([]R, len(items))
-//line stdlib/concurrent/concurrent.kuki:186
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:186
 	wg := sync.WaitGroup{}
-//line stdlib/concurrent/concurrent.kuki:187
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:187
 	mu := sync.Mutex{}
-//line stdlib/concurrent/concurrent.kuki:188
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:188
 	errs := []error{}
-//line stdlib/concurrent/concurrent.kuki:190
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:190
 	for i, item := range items {
-//line stdlib/concurrent/concurrent.kuki:191
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:191
 		wg.Go(func() {
-//line stdlib/concurrent/concurrent.kuki:192
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:192
 			r, err := fn(childH, item)
-//line stdlib/concurrent/concurrent.kuki:193
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:193
 			if err != nil {
-//line stdlib/concurrent/concurrent.kuki:194
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:194
 				mu.Lock()
-//line stdlib/concurrent/concurrent.kuki:195
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:195
 				errs = append(errs, err)
-//line stdlib/concurrent/concurrent.kuki:196
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:196
 				childH.Cancel()
-//line stdlib/concurrent/concurrent.kuki:197
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:197
 				mu.Unlock()
 			} else {
-//line stdlib/concurrent/concurrent.kuki:199
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:199
 				results[i] = r
 			}
 		})
 	}
-//line stdlib/concurrent/concurrent.kuki:202
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:202
 	wg.Wait()
-//line stdlib/concurrent/concurrent.kuki:203
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:203
 	if len(errs) > 0 {
-//line stdlib/concurrent/concurrent.kuki:204
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:204
 		return results, errors.Join(errs...)
 	}
-//line stdlib/concurrent/concurrent.kuki:205
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:205
 	return results, nil
 }

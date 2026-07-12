@@ -10,95 +10,95 @@ import (
 	"testing"
 )
 
-//line stdlib/shellguard/shellguard_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:10
 func TestEmptyGuardDeniesAll(t *testing.T) {
-//line stdlib/shellguard/shellguard_test.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:11
 	g := shellguard.New()
-//line stdlib/shellguard/shellguard_test.kuki:12
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:12
 	err := shellguard.Check(g, "kubectl", "get", "pods")
-//line stdlib/shellguard/shellguard_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:13
 	test.AssertError(t, err)
-//line stdlib/shellguard/shellguard_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:14
 	test.AssertFalse(t, shellguard.Allowed(g, "kubectl", "get", "pods"))
 }
 
-//line stdlib/shellguard/shellguard_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:16
 func TestAllowSubcommand(t *testing.T) {
-//line stdlib/shellguard/shellguard_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:17
 	g := shellguard.Allow(shellguard.New(), "kubectl", []string{"rollout", "get"})
-//line stdlib/shellguard/shellguard_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:19
 	test.AssertNoError(t, shellguard.Check(g, "kubectl", "rollout", "restart", "api"))
-//line stdlib/shellguard/shellguard_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:20
 	test.AssertNoError(t, shellguard.Check(g, "kubectl", "get", "pods"))
-//line stdlib/shellguard/shellguard_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:22
 	test.AssertError(t, shellguard.Check(g, "kubectl", "delete", "pod", "foo"))
-//line stdlib/shellguard/shellguard_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:23
 	test.AssertError(t, shellguard.Check(g, "git", "log"))
 }
 
-//line stdlib/shellguard/shellguard_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:25
 func TestMissingSubcommand(t *testing.T) {
-//line stdlib/shellguard/shellguard_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:26
 	g := shellguard.Allow(shellguard.New(), "kubectl", []string{"rollout"})
-//line stdlib/shellguard/shellguard_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:27
 	test.AssertError(t, shellguard.Check(g, "kubectl"))
 }
 
-//line stdlib/shellguard/shellguard_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:29
 func TestAllowAny(t *testing.T) {
-//line stdlib/shellguard/shellguard_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:30
 	g := shellguard.AllowAny(shellguard.New(), "echo")
-//line stdlib/shellguard/shellguard_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:31
 	test.AssertNoError(t, shellguard.Check(g, "echo", "hello"))
-//line stdlib/shellguard/shellguard_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:32
 	test.AssertNoError(t, shellguard.Check(g, "echo"))
-//line stdlib/shellguard/shellguard_test.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:33
 	test.AssertError(t, shellguard.Check(g, "cat", "x"))
 }
 
-//line stdlib/shellguard/shellguard_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:35
 func TestAllowUnions(t *testing.T) {
-//line stdlib/shellguard/shellguard_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:36
 	g := shellguard.Allow(shellguard.Allow(shellguard.New(), "git", []string{"log"}), "git", []string{"diff", "status"})
-//line stdlib/shellguard/shellguard_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:40
 	test.AssertNoError(t, shellguard.Check(g, "git", "log"))
-//line stdlib/shellguard/shellguard_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:41
 	test.AssertNoError(t, shellguard.Check(g, "git", "diff"))
-//line stdlib/shellguard/shellguard_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:42
 	test.AssertNoError(t, shellguard.Check(g, "git", "status"))
-//line stdlib/shellguard/shellguard_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:43
 	test.AssertError(t, shellguard.Check(g, "git", "push"))
 }
 
-//line stdlib/shellguard/shellguard_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:45
 func refuseProdFlag(args []string) error {
-//line stdlib/shellguard/shellguard_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:46
 	if slice.Contains(args, "--prod") {
-//line stdlib/shellguard/shellguard_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:47
 		return errors.New("no prod flag allowed")
 	}
-//line stdlib/shellguard/shellguard_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:48
 	return nil
 }
 
-//line stdlib/shellguard/shellguard_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:50
 func TestArgValidator(t *testing.T) {
-//line stdlib/shellguard/shellguard_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:51
 	g := shellguard.WithArgValidator(shellguard.Allow(shellguard.New(), "kubectl", []string{"rollout"}), "kubectl", refuseProdFlag)
-//line stdlib/shellguard/shellguard_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:55
 	test.AssertNoError(t, shellguard.Check(g, "kubectl", "rollout", "restart", "api"))
-//line stdlib/shellguard/shellguard_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:56
 	test.AssertError(t, shellguard.Check(g, "kubectl", "rollout", "restart", "--prod"))
 }
 
-//line stdlib/shellguard/shellguard_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:58
 func TestMultipleBinaries(t *testing.T) {
-//line stdlib/shellguard/shellguard_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:59
 	g := shellguard.Allow(shellguard.Allow(shellguard.New(), "kubectl", []string{"get"}), "git", []string{"status"})
-//line stdlib/shellguard/shellguard_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:63
 	test.AssertNoError(t, shellguard.Check(g, "kubectl", "get", "pods"))
-//line stdlib/shellguard/shellguard_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:64
 	test.AssertNoError(t, shellguard.Check(g, "git", "status"))
-//line stdlib/shellguard/shellguard_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/shellguard/shellguard_test.kuki:65
 	test.AssertError(t, shellguard.Check(g, "rm", "-rf", "/"))
 }
