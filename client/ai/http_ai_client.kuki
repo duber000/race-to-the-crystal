@@ -7,6 +7,8 @@ import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "strings"
 
+type Payload = map of string to any
+
 type Session
     base_url: string
     player_id: string
@@ -68,9 +70,7 @@ func CreateGame on s: reference Session(game_name: string, player_name: string) 
             log.Error("CreateGame: {error}")
             return false
 
-    defer
-        if resp isnt empty
-            dereference resp.Body.Close()
+    defer resp.Close()
 
     status := resp.StatusCode
     if status isnt 200
@@ -101,9 +101,7 @@ func JoinGame on s: reference Session(game_id: string, player_name: string) bool
             log.Error("JoinGame: {error}")
             return false
 
-    defer
-        if resp isnt empty
-            dereference resp.Body.Close()
+    defer resp.Close()
 
     status := resp.StatusCode
     if status isnt 200
@@ -122,35 +120,32 @@ func JoinGame on s: reference Session(game_id: string, player_name: string) bool
     s.fillSessionFromData(data.data)
     return true
 
-func FetchState on s: reference Session map of string to any
+func FetchState on s: reference Session Payload
     url := "{s.base_url}/api/game/{s.game_id}/state"
     resp := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Header("Authorization", "Bearer {s.token}")
         |> fetch.Do() onerr
             log.Error("FetchState: {error}")
-            return empty map of string to any
+            return empty Payload
 
-    defer
-        if resp isnt empty
-            dereference resp.Body.Close()
+    defer resp.Close()
 
     status := resp.StatusCode
     if status equals 400 or status equals 404
-        return empty map of string to any
+        return empty Payload
     if status isnt 200
         log.Error("FetchState: status {resp.StatusCode}")
-        return empty map of string to any
+        return empty Payload
 
     wrapper := mapResponse{}
     fetch.Decode(resp, reference of wrapper) onerr
         log.Error("FetchState: decode failed: {error}")
-        return empty map of string to any
+        return empty Payload
 
-    state, ok := wrapper.data.(map of string to any)
-    if not ok
-        return empty map of string to any
-    return state
+    if wrapper.data is Payload as state
+        return state
+    return empty Payload
 
 type mapResponse
     success: bool
@@ -166,37 +161,35 @@ type actionsAPIResponse
     message: string
     data: actionsData
 
-func FetchActions on s: reference Session map of string to any
+func FetchActions on s: reference Session Payload
     url := "{s.base_url}/api/game/{s.game_id}/actions"
     resp := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Header("Authorization", "Bearer {s.token}")
         |> fetch.Do() onerr
             log.Error("FetchActions: {error}")
-            return empty map of string to any
+            return empty Payload
 
-    defer
-        if resp isnt empty
-            dereference resp.Body.Close()
+    defer resp.Close()
 
     status := resp.StatusCode
     if status equals 400 or status equals 404
-        return empty map of string to any
+        return empty Payload
     if status isnt 200
         log.Error("FetchActions: status {resp.StatusCode}")
-        return empty map of string to any
+        return empty Payload
 
     wrapper := actionsAPIResponse{}
     fetch.Decode(resp, reference of wrapper) onerr
         log.Error("FetchActions: decode failed: {error}")
-        return empty map of string to any
+        return empty Payload
 
-    result := make(map of string to any)
+    result := make(Payload)
     result["phase"] = wrapper.data.phase
     result["actions"] = wrapper.data.actions
     return result
 
-func SendAction on s: reference Session(action: gamepkg.ChosenAction) map of string to any
+func SendAction on s: reference Session(action: gamepkg.ChosenAction) Payload
     url := "{s.base_url}/api/game/{s.game_id}/action"
     body := gamepkg.ChosenToActionMap(action)
 
@@ -207,16 +200,14 @@ func SendAction on s: reference Session(action: gamepkg.ChosenAction) map of str
         |> fetch.Body(body)
         |> fetch.Do() onerr
             log.Error("SendAction: {error}")
-            return empty map of string to any
+            return empty Payload
 
-    defer
-        if resp isnt empty
-            dereference resp.Body.Close()
+    defer resp.Close()
 
-    wrapper := make(map of string to any)
+    wrapper := make(Payload)
     fetch.Decode(resp, reference of wrapper) onerr
         log.Error("SendAction: decode failed: {error}")
-        return empty map of string to any
+        return empty Payload
 
     return wrapper
 
@@ -228,44 +219,54 @@ func TryAutoStart on s: reference Session bool
     host_id_any, has := lobby["host_player_id"]
     if not has
         return false
-    host_id := host_id_any.(string) onerr ""
+    host_id := ""
+    if host_id_any is string as hv
+        host_id = hv
     if host_id isnt s.player_id
         return false
 
     status_any, has_s := lobby["status"]
     if not has_s
         return false
-    status := status_any.(string) onerr ""
+    status := ""
+    if status_any is string as sv
+        status = sv
     if status isnt "WAITING"
         return true
 
     cur_any, has_c := lobby["current_players"]
     if not has_c
         return false
-    cur := cur_any.(int) onerr 0
+    cur := 0
+    if cur_any is int as cv
+        cur = cv
     min_any, has_m := lobby["min_players"]
     if not has_m
         return false
-    min_p := min_any.(int) onerr 0
+    min_p := 0
+    if min_any is int as mv
+        min_p = mv
     if cur < min_p
         return false
 
     players_any, has_p := lobby["players"]
     if not has_p
         return false
-    players, players_ok := players_any.(list of any)
-    if not players_ok
+    if players_any is list of any as players
+        for p in players
+            if p is Payload as p_map
+                ready_any, has_r := p_map["is_ready"]
+                if not has_r
+                    return false
+                ready := false
+                if ready_any is bool as bv
+                    ready = bv
+                if not ready
+                    return false
+            else
+                return false
+    else
         return false
-    for p in players
-        p_map, p_ok := p.(map of string to any)
-        if not p_ok
-            return false
-        ready_any, has_r := p_map["is_ready"]
-        if not has_r
-            return false
-        ready := ready_any.(bool) onerr false
-        if not ready
-            return false
 
     log.Info("Auto-starting game as host")
     return s.StartGame()
@@ -286,9 +287,7 @@ func SetReady on s: reference Session(ready: bool) bool
             log.Error("SetReady: {error}")
             return false
 
-    defer
-        if resp isnt empty
-            dereference resp.Body.Close()
+    defer resp.Close()
 
     status := resp.StatusCode
     if status isnt 200
@@ -306,9 +305,7 @@ func StartGame on s: reference Session bool
             log.Error("StartGame: {error}")
             return false
 
-    defer
-        if resp isnt empty
-            dereference resp.Body.Close()
+    defer resp.Close()
 
     status := resp.StatusCode
     if status isnt 200
@@ -324,72 +321,77 @@ type lobbiesAPIResponse
     message: string
     data: lobbiesData
 
-func ListLobbies on s: reference Session list of map of string to any
+func ListLobbies on s: reference Session list of Payload
     url := "{s.base_url}/api/games"
     resp := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Do() onerr
             log.Error("ListLobbies: {error}")
-            return empty list of map of string to any
+            return empty list of Payload
 
-    defer
-        if resp isnt empty
-            dereference resp.Body.Close()
+    defer resp.Close()
 
     status := resp.StatusCode
     if status isnt 200
-        return empty list of map of string to any
+        return empty list of Payload
 
     wrapper := lobbiesAPIResponse{}
     fetch.Decode(resp, reference of wrapper) onerr
-        return empty list of map of string to any
+        return empty list of Payload
 
-    result := empty list of map of string to any
+    result := empty list of Payload
     for item in wrapper.data.games
-        m, m_ok := item.(map of string to any)
-        if m_ok
+        if item is Payload as m
             result = append(result, m)
     return result
 
-func GetLobby on s: reference Session map of string to any
+func GetLobby on s: reference Session Payload
     lobbies := s.ListLobbies()
     for lobby in lobbies
         gid_any, has := lobby["game_id"]
         if not has
             continue
-        gid := gid_any.(string) onerr ""
+        gid := ""
+        if gid_any is string as gv
+            gid = gv
         if gid equals s.game_id
             return lobby
-    return empty map of string to any
+    return empty Payload
 
-func IsMyTurn(state: map of string to any, player_id: string) bool
+func IsMyTurn(state: Payload, player_id: string) bool
     if state equals empty
         return false
     cur, has := state["current_turn_player_id"]
     if not has
         return false
-    cur_str := cur.(string) onerr ""
+    cur_str := ""
+    if cur is string as cv
+        cur_str = cv
     return cur_str equals player_id
 
-func IsGameOver(state: map of string to any) bool
+func IsGameOver(state: Payload) bool
     if state equals empty
         return false
     phase, has := state["phase"]
     if not has
         return false
-    phase_str := phase.(string) onerr ""
+    phase_str := ""
+    if phase is string as pv
+        phase_str = pv
     return phase_str equals "ENDED"
 
-func IsGameActive(state: map of string to any) bool
+func IsGameActive(state: Payload) bool
     if state equals empty
         return false
     phase, has := state["phase"]
     if not has
         return false
-    phase_str := phase.(string) onerr ""
+    phase_str := ""
+    if phase is string as pv
+        phase_str = pv
     return phase_str equals "PLAYING"
 
-func PickAction(actions: list of map of string to any, strategy: gamepkg.AIStrategyName) gamepkg.ChosenAction
+func PickAction(actions: list of Payload, strategy: gamepkg.AIStrategyName) gamepkg.ChosenAction
     actions_typed := gamepkg.ActionsFromDicts(actions)
     if len(actions_typed) equals 0
         return gamepkg.ChosenEndTurn
@@ -415,10 +417,9 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
             log.Error("SSE connect failed: {error}")
             return
 
-    defer
-        dereference resp.Body.Close()
-
-    body := dereference resp.Body
+    raw := resp.Raw()
+    defer raw.Body.Close()
+    body := raw.Body
     scanner := bufio.NewScanner(body)
     scanner.Buffer(make(list of byte, 0, 64 * 1024), 1024 * 1024)
 
@@ -448,18 +449,18 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
     if err isnt empty
         log.Error("SSE scan error: {err}")
 
-func ExtractStateFromSSE(ev: SSEEvent) map of string to any
-    parsed := make(map of string to any)
-    jsonpkg.ParseStringInto(ev.data, reference of parsed) onerr return empty map of string to any
+func ExtractStateFromSSE(ev: SSEEvent) Payload
+    parsed := make(Payload)
+    jsonpkg.ParseStringInto(ev.data, reference of parsed) onerr return empty Payload
 
     state_any, has_state := parsed["state"]
     if has_state
-        state := state_any.(map of string to any)
-        return state
+        if state_any is Payload as state
+            return state
 
     gs_any, has_gs := parsed["game_state"]
     if has_gs
-        gs := gs_any.(map of string to any)
-        return gs
+        if gs_any is Payload as gs
+            return gs
 
     return parsed

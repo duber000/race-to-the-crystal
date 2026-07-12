@@ -423,7 +423,7 @@ func ActionDataToDict(d: ActionResultData) map of string to any
                 "mystery_triggered": d.MysteryTriggered,
             }
             if d.MysteryTriggered
-                m["mystery_effect"] = d.MysteryEffect.String()
+                m["mystery_effect"] = enums.MysteryEffectName(d.MysteryEffect)
             return m
         when AttackData
             return map of string to any{
