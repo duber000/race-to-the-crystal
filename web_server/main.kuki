@@ -42,7 +42,7 @@ func NewWebServer(config: WebServerConfig) (WebServer, error)
 func Start on ws: reference WebServer
     mux := http.NewServeMux()
     mux.HandleFunc(`GET /{$}`, ws.handleRoot)
-    mux.HandleFunc("GET /api/config", ws.handleConfig)
+    mux.Handle("GET /api/config", httphelper.Handler(ws.handleConfig))
     mux.Handle(
         "GET /static/",
         http.StripPrefix("/static/", http.FileServer(http.Dir(ws.config.static_dir))),
@@ -71,7 +71,7 @@ func Start on ws: reference WebServer
 func handleRoot on ws: reference WebServer(w: http.ResponseWriter, r: reference http.Request)
     http.ServeFile(w, r, ws.config.index_path)
 
-func handleConfig on ws: reference WebServer(w: http.ResponseWriter, r: reference http.Request)
+func handleConfig on ws: reference WebServer(response: httphelper.Response, request: httphelper.Request)
     config_data := map of string to any{
         "mercure_hub_url": ws.config.mercure_hub_url,
         "mercure_topic": ws.config.mercure_topic_prefix,
@@ -80,7 +80,7 @@ func handleConfig on ws: reference WebServer(w: http.ResponseWriter, r: referenc
         "api_version": "1.0.0",
         "features": list of string{"mercure"},
     }
-    httphelper.JSON(w, config_data) onerr
+    response.JSON(config_data) onerr
         log.Error("Failed to encode config JSON")
 
 func main()

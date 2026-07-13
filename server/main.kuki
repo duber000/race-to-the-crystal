@@ -79,24 +79,24 @@ func Start on gs: reference GameServer
     receive from ch
 
 func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
-    mux.HandleFunc("/", gs.handleHTTP)
-    mux.HandleFunc("/api/game/create", gs.handleCreateGameRoute)
-    mux.HandleFunc("/api/game/\{game_id\}/join", gs.handleJoinGameRoute)
-    mux.HandleFunc("/api/game/\{game_id\}/action", gs.handleActionRoute)
-    mux.HandleFunc("/api/game/\{game_id\}/state", gs.handleGetStateRoute)
-    mux.HandleFunc("/api/game/\{game_id\}/actions", gs.handleGetActionsRoute)
-    mux.HandleFunc("/api/game/\{game_id\}/leave", gs.handleLeaveGameRoute)
-    mux.HandleFunc("/api/game/\{game_id\}/ready", gs.handleReadyRoute)
-    mux.HandleFunc("/api/game/\{game_id\}/start", gs.handleStartGameRoute)
-    mux.HandleFunc("/api/games", gs.handleListGamesRoute)
+    mux.Handle("/", httphelper.Handler(gs.handleHTTP))
+    mux.Handle("/api/game/create", httphelper.Handler(gs.handleCreateGameRoute))
+    mux.Handle("/api/game/\{game_id\}/join", httphelper.Handler(gs.handleJoinGameRoute))
+    mux.Handle("/api/game/\{game_id\}/action", httphelper.Handler(gs.handleActionRoute))
+    mux.Handle("/api/game/\{game_id\}/state", httphelper.Handler(gs.handleGetStateRoute))
+    mux.Handle("/api/game/\{game_id\}/actions", httphelper.Handler(gs.handleGetActionsRoute))
+    mux.Handle("/api/game/\{game_id\}/leave", httphelper.Handler(gs.handleLeaveGameRoute))
+    mux.Handle("/api/game/\{game_id\}/ready", httphelper.Handler(gs.handleReadyRoute))
+    mux.Handle("/api/game/\{game_id\}/start", httphelper.Handler(gs.handleStartGameRoute))
+    mux.Handle("/api/games", httphelper.Handler(gs.handleListGamesRoute))
 
-func handleHTTP on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
+func handleHTTP on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
     if gs.config.static_dir equals ""
-        httphelper.JSONNotFound(w, "no static files configured") onerr discard
+        response.JSONNotFound("no static files configured") onerr discard
         return
 
-    path := r.URL.Path
+    path := request.URL().Path
     if path equals "/"
         path = "/index.html"
 
@@ -105,143 +105,143 @@ func handleHTTP on gs: reference GameServer(w: http.ResponseWriter, r: reference
 
     prefix := filepath.Clean(gs.config.static_dir)
     if not strings.HasPrefix(file_path, prefix)
-        httphelper.JSONNotFound(w, "not found") onerr discard
+        response.JSONNotFound("not found") onerr discard
         return
 
-    http.ServeFile(w, r, file_path)
+    response.ServeFile(request, file_path)
 
-func handleCreateGameRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
-    if not httphelper.IsPost(r)
-        httphelper.MethodNotAllowed(w, "POST")
+func handleCreateGameRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    if not request.IsPost()
+        response.MethodNotAllowed("POST")
         return
 
     ip := gs.http_handler.GetClientIP(
-        r.RemoteAddr,
-        httphelper.GetHeader(r, "X-Forwarded-For"),
-        httphelper.GetHeader(r, "X-Real-IP"),
+        request.RemoteAddr(),
+        request.GetHeader("X-Forwarded-For"),
+        request.GetHeader("X-Real-IP"),
     )
-    auth_header := httphelper.GetHeader(r, "Authorization")
+    auth_header := request.GetHeader("Authorization")
 
     body := make(map of string to any)
-    httphelper.ReadJSON(r, reference of body) onerr
-        httphelper.JSONBadRequest(w, "invalid JSON body")
+    request.ReadJSON(reference of body) onerr
+        response.JSONBadRequest("invalid JSON body")
         return
 
     result := gs.http_handler.HandleCreateGame(auth_header, body, ip)
-    gs.writeAPIResponse(w, result)
+    gs.writeAPIResponse(response, result)
 
-func handleJoinGameRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
-    if not httphelper.IsPost(r)
-        httphelper.MethodNotAllowed(w, "POST")
+func handleJoinGameRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    if not request.IsPost()
+        response.MethodNotAllowed("POST")
         return
 
-    game_id := r.PathValue("game_id")
+    game_id := request.PathValue("game_id")
     ip := gs.http_handler.GetClientIP(
-        r.RemoteAddr,
-        httphelper.GetHeader(r, "X-Forwarded-For"),
-        httphelper.GetHeader(r, "X-Real-IP"),
+        request.RemoteAddr(),
+        request.GetHeader("X-Forwarded-For"),
+        request.GetHeader("X-Real-IP"),
     )
 
     body := make(map of string to any)
-    httphelper.ReadJSON(r, reference of body) onerr
+    request.ReadJSON(reference of body) onerr
         body = empty map of string to any
 
     result := gs.http_handler.HandleJoinGame(game_id, body, ip)
-    gs.writeAPIResponse(w, result)
+    gs.writeAPIResponse(response, result)
 
-func handleActionRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
-    if not httphelper.IsPost(r)
-        httphelper.MethodNotAllowed(w, "POST")
+func handleActionRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    if not request.IsPost()
+        response.MethodNotAllowed("POST")
         return
 
-    game_id := r.PathValue("game_id")
-    auth_header := httphelper.GetHeader(r, "Authorization")
+    game_id := request.PathValue("game_id")
+    auth_header := request.GetHeader("Authorization")
 
     body := make(map of string to any)
-    httphelper.ReadJSON(r, reference of body) onerr
-        httphelper.JSONBadRequest(w, "invalid JSON body")
+    request.ReadJSON(reference of body) onerr
+        response.JSONBadRequest("invalid JSON body")
         return
 
     result := gs.http_handler.HandleAction(game_id, auth_header, body)
-    gs.writeAPIResponse(w, result)
+    gs.writeAPIResponse(response, result)
 
-func handleGetStateRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
-    if not httphelper.IsGet(r)
-        httphelper.MethodNotAllowed(w, "GET")
+func handleGetStateRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    if not request.IsGet()
+        response.MethodNotAllowed("GET")
         return
 
-    game_id := r.PathValue("game_id")
-    auth_header := httphelper.GetHeader(r, "Authorization")
+    game_id := request.PathValue("game_id")
+    auth_header := request.GetHeader("Authorization")
 
     result := gs.http_handler.HandleGetState(game_id, auth_header)
-    gs.writeAPIResponse(w, result)
+    gs.writeAPIResponse(response, result)
 
-func handleGetActionsRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
-    if not httphelper.IsGet(r)
-        httphelper.MethodNotAllowed(w, "GET")
+func handleGetActionsRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    if not request.IsGet()
+        response.MethodNotAllowed("GET")
         return
 
-    game_id := r.PathValue("game_id")
-    auth_header := httphelper.GetHeader(r, "Authorization")
+    game_id := request.PathValue("game_id")
+    auth_header := request.GetHeader("Authorization")
 
     result := gs.http_handler.HandleGetActions(game_id, auth_header)
-    gs.writeAPIResponse(w, result)
+    gs.writeAPIResponse(response, result)
 
-func handleLeaveGameRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
-    if not httphelper.IsPost(r)
-        httphelper.MethodNotAllowed(w, "POST")
+func handleLeaveGameRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    if not request.IsPost()
+        response.MethodNotAllowed("POST")
         return
 
-    game_id := r.PathValue("game_id")
-    auth_header := httphelper.GetHeader(r, "Authorization")
+    game_id := request.PathValue("game_id")
+    auth_header := request.GetHeader("Authorization")
 
     result := gs.http_handler.HandleLeaveGame(game_id, auth_header)
-    gs.writeAPIResponse(w, result)
+    gs.writeAPIResponse(response, result)
 
-func handleReadyRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
-    if not httphelper.IsPost(r)
-        httphelper.MethodNotAllowed(w, "POST")
+func handleReadyRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    if not request.IsPost()
+        response.MethodNotAllowed("POST")
         return
 
-    game_id := r.PathValue("game_id")
-    auth_header := httphelper.GetHeader(r, "Authorization")
+    game_id := request.PathValue("game_id")
+    auth_header := request.GetHeader("Authorization")
 
     body := make(map of string to any)
-    httphelper.ReadJSON(r, reference of body) onerr
+    request.ReadJSON(reference of body) onerr
         log.Debug("Ready endpoint: empty or invalid body, using defaults")
 
     result := gs.http_handler.HandleReady(game_id, auth_header, body)
-    gs.writeAPIResponse(w, result)
+    gs.writeAPIResponse(response, result)
 
-func handleStartGameRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
-    if not httphelper.IsPost(r)
-        httphelper.MethodNotAllowed(w, "POST")
+func handleStartGameRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    if not request.IsPost()
+        response.MethodNotAllowed("POST")
         return
 
-    game_id := r.PathValue("game_id")
-    auth_header := httphelper.GetHeader(r, "Authorization")
+    game_id := request.PathValue("game_id")
+    auth_header := request.GetHeader("Authorization")
 
     result := gs.http_handler.HandleStartGame(game_id, auth_header)
-    gs.writeAPIResponse(w, result)
+    gs.writeAPIResponse(response, result)
 
-func handleListGamesRoute on gs: reference GameServer(w: http.ResponseWriter, r: reference http.Request)
-    httphelper.SetSecureHeaders(w)
-    if not httphelper.IsGet(r)
-        httphelper.MethodNotAllowed(w, "GET")
+func handleListGamesRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    if not request.IsGet()
+        response.MethodNotAllowed("GET")
         return
 
     result := gs.http_handler.HandleListGames()
-    gs.writeAPIResponse(w, result)
+    gs.writeAPIResponse(response, result)
 
-func writeAPIResponse on gs: reference GameServer(w: http.ResponseWriter, result: APIResponse)
+func writeAPIResponse on gs: reference GameServer(response: httphelper.Response, result: APIResponse)
     status := 200
     if not result.success
         status = 400
@@ -253,10 +253,10 @@ func writeAPIResponse on gs: reference GameServer(w: http.ResponseWriter, result
     }
 
     if result.success
-        httphelper.JSON(w, response_data) onerr
+        response.JSON(response_data) onerr
             log.Error("Failed to write JSON response")
     else
-        httphelper.JSONError(w, result.message, status) onerr
+        response.JSONError(result.message, status) onerr
             log.Error("Failed to write JSON error response")
 
 func main()
