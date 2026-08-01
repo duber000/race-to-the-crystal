@@ -11,215 +11,216 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:19
 type Encoder struct {
 	writer io.Writer
 	indent string
 	prefix string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:25
 type Decoder struct {
 	reader io.Reader
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:32
 func NewEncoder(writer io.Writer) Encoder {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:33
 	enc := Encoder{writer: writer, indent: "", prefix: ""}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:34
 	return enc
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:39
 func WithIndent(enc Encoder, indent string) Encoder {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:40
 	enc.indent = indent
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:41
 	return enc
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:45
 func WithPrefix(enc Encoder, prefix string) Encoder {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:46
 	enc.prefix = prefix
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:47
 	return enc
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:53
 func Encode(enc Encoder, value any) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:54
 	opts := []jsonv2.Options{}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:55
 	if enc.indent != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:56
 		opts = append(opts, jsontext.WithIndent(enc.indent))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:57
 	if enc.prefix != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:58
 		opts = append(opts, jsontext.WithIndentPrefix(enc.prefix))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:59
 	return jsonv2.MarshalWrite(enc.writer, value, opts...)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:65
 func NewDecoder(reader io.Reader) Decoder {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:66
 	dec := Decoder{reader: reader}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:67
 	return dec
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:72
 func Decode(dec Decoder, target any) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:73
 	return jsonv2.UnmarshalRead(dec.reader, target)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:77
 func Bytes(value any) ([]byte, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:78
 	return jsonv2.Marshal(value)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:82
 func PrettyBytes(value any) ([]byte, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:83
 	return jsonv2.Marshal(value, jsontext.WithIndent("  "))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:89
 func String(value any) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:90
 	data, err_1 := jsonv2.Marshal(value)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:90
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:90
 		return "", err_1
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:91
 	return string(data), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:95
 func PrettyString(value any) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:96
 	data, err_2 := jsonv2.Marshal(value, jsontext.WithIndent("  "))
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:96
 	if err_2 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:96
 		return "", err_2
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:97
 	return string(data), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:102
 func ParseInto(data []byte, target any) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:103
 	return jsonv2.Unmarshal(data, target)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:108
 func ParseStringInto(data string, target any) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:109
 	return jsonv2.Unmarshal([]byte(data), target)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:116
 func Write(writer io.Writer, value any) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:117
 	return Encode(NewEncoder(writer), value)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:124
 func ReadInto(reader io.Reader, target any) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:125
 	return Decode(NewDecoder(reader), target)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:131
 func WriteOutput(v any) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:132
 	data, err_3 := Bytes(v)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:132
 	if err_3 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:132
 		return err_3
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:133
 	fmt.Fprintln(os.Stdout, string(data))
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:134
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:139
 func Read[T any](reader io.Reader) (T, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:134
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:140
 	data := *new(T)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:141
 	// pipe step 1: ReadInto(...)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:141
 	err_4 := ReadInto(reader, &data)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:141
 	if err_4 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:141
 		err_4 = fmt.Errorf("failed to read json: %w", err_4)
 		var _zero0 T
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:141
 		return _zero0, err_4
 	}
 	_ = reader
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:142
 	return data, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:141
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:146
 func Parse[T any](data []byte) (T, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:147
 	out := *new(T)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:143
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:148
 	err_5 := ParseInto(data, &out)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:148
 	if err_5 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:148
 		err_5 = fmt.Errorf("failed to parse json: %w", err_5)
 		var _zero0 T
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:148
 		return _zero0, err_5
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:144
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:149
 	return out, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:153
 func ParseString[T any](data string) (T, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:154
 	out := *new(T)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:151
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:155
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:155
 	err_6 := ParseStringInto(data, &out)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:155
 	if err_6 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:155
 		err_6 = fmt.Errorf("failed to parse json: %w", err_6)
 		var _zero0 T
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:155
 		return _zero0, err_6
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:156
 	return out, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:174
 type JSONValue interface{ isJSONValue() }
 
 type Null struct{}
@@ -256,178 +257,178 @@ type Object struct {
 
 func (Object) isJSONValue() {}
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:192
 func decodeJSON(v any) JSONValue {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:193
 	if v == nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:190
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:194
 		return Null{}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:195
 	switch t := v.(type) {
 	case bool:
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:193
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:197
 		return Bool{Value: t}
 	case float64:
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:199
 		return Num{Value: t}
 	case string:
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:201
 		return Str{Value: t}
 	case []any:
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:203
 		items := []JSONValue{}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:204
 		for _, e := range t {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:205
 			items = append(items, decodeJSON(e))
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:206
 		return Array{Items: items}
 	case map[string]any:
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:204
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:208
 		fields := map[string]JSONValue{}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:209
 		for k, val := range t {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:206
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:210
 			fields[k] = decodeJSON(val)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:207
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:211
 		return Object{Fields: fields}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:209
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:213
 	return Null{}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:217
 func ParseValue(data []byte) (JSONValue, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:218
 	raw := *new(any)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:215
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:219
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:219
 	err_7 := ParseInto(data, &raw)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:219
 	if err_7 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:219
 		err_7 = fmt.Errorf("failed to parse json value: %w", err_7)
 		var _zero0 JSONValue
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:219
 		return _zero0, err_7
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:220
 	return decodeJSON(raw), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:220
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:224
 func ParseStringValue(data string) (JSONValue, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:221
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:225
 	raw := *new(any)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:222
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:226
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:226
 	err_8 := ParseStringInto(data, &raw)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:226
 	if err_8 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:226
 		err_8 = fmt.Errorf("failed to parse json value: %w", err_8)
 		var _zero0 JSONValue
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:226
 		return _zero0, err_8
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:227
 	return decodeJSON(raw), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:227
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:232
 func ReadValue(reader io.Reader) (JSONValue, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:228
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:233
 	raw := *new(any)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:234
 	// pipe step 1: ReadInto(...)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:234
 	err_9 := ReadInto(reader, &raw)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:234
 	if err_9 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:234
 		err_9 = fmt.Errorf("failed to read json value: %w", err_9)
 		var _zero0 JSONValue
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:234
 		return _zero0, err_9
 	}
 	_ = reader
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:230
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:235
 	return decodeJSON(raw), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:256
 type Frozen struct {
 	Canonical string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:257
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:262
 func ParseFrozen(data []byte) (Frozen, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:258
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:263
 	v := jsontext.Value(data)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:259
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:264
 	if !v.IsValid() {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:260
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:265
 		return Frozen{}, errors.New("invalid json")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:261
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:266
 	cp := v.Clone()
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:262
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:267
 	// kukicha: could not infer return count; use explicit capture if incorrect
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:262
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:267
 	err_10 := cp.Canonicalize()
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:262
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:267
 	if err_10 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:262
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:267
 		return Frozen{}, err_10
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:263
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:268
 	return Frozen{Canonical: string(cp)}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:267
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:272
 func ParseStringFrozen(data string) (Frozen, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:268
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:273
 	return ParseFrozen([]byte(data))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:274
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:279
 func (f Frozen) Thaw() JSONValue {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:275
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:280
 	v, err := ParseStringValue(f.Canonical)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:276
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:281
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:277
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:282
 		return Null{}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:278
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:283
 	return v
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:281
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:286
 func (f Frozen) String() string {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:282
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:287
 	return f.Canonical
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:288
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:293
 func Pretty(s string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:289
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:294
 	v := jsontext.Value([]byte(s))
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:290
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:295
 	err := v.Indent(jsontext.WithIndent("  "))
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:291
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:296
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:292
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:297
 		return s
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:293
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:298
 	return string(v)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:303
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:308
 type Naming interface{ isNaming() }
 
 type AsIs struct{}
@@ -446,7 +447,7 @@ type KebabCase struct{}
 
 func (KebabCase) isNaming() {}
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:323
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:328
 type Codec struct {
 	naming      Naming
 	renames     map[string]string
@@ -454,404 +455,1047 @@ type Codec struct {
 	omitEmpties map[string]bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:330
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:335
 type codecField struct {
 	jsonKey   string
 	index     int
 	omitEmpty bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:336
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:341
 type codecTable struct {
 	fields     []codecField
 	keyToIndex map[string]int
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:343
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:348
 func NewCodec(naming Naming) Codec {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:344
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:349
 	return Codec{naming: naming, renames: map[string]string{}, omits: map[string]bool{}, omitEmpties: map[string]bool{}}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:353
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:358
 func (c Codec) Omit(field string) Codec {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:354
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:359
 	next := c
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:355
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:360
 	next.omits[field] = true
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:356
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:361
 	return next
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:360
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:365
 func (c Codec) Rename(field string, key string) Codec {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:361
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:366
 	next := c
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:362
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:367
 	next.renames[field] = key
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:363
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:368
 	return next
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:366
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:371
 func (c Codec) OmitEmpty(field string) Codec {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:367
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:372
 	next := c
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:368
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:373
 	next.omitEmpties[field] = true
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:369
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:374
 	return next
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:380
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:385
 func EncodeWith(c Codec, value any) ([]byte, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:381
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:386
 	rt := reflect.TypeOf(value)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:382
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:387
 	if rt == nil || rt.Kind() != reflect.Struct {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:383
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:388
 		return jsonv2.Marshal(value)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:385
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:390
 	table := c.buildTable(rt)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:386
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:391
 	rv := reflect.ValueOf(value)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:388
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:393
 	buf := bytes.Buffer{}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:389
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:394
 	buf.WriteString("{")
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:390
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:395
 	first := true
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:391
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:396
 	for _, f := range table.fields {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:392
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:397
 		fv := rv.Field(f.index)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:393
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:398
 		if f.omitEmpty && isZero(fv) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:394
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:399
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:395
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:400
 		if !first {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:396
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:401
 			buf.WriteString(",")
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:397
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:402
 		first = false
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:399
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:404
 		keyBytes, kerr := jsonv2.Marshal(f.jsonKey)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:400
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:405
 		if kerr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:401
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:406
 			return nil, kerr
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:402
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:407
 		buf.Write(keyBytes)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:403
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:408
 		buf.WriteString(":")
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:405
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:410
 		valBytes, verr := jsonv2.Marshal(fv.Interface())
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:406
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:411
 		if verr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:407
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:412
 			return nil, verr
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:408
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:413
 		buf.Write(valBytes)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:410
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:415
 	buf.WriteString("}")
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:411
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:416
 	return buf.Bytes(), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:417
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:422
 func decodeStringInto(c Codec, rt reflect.Type, data string) (any, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:418
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:423
 	if rt == nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:419
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:424
 		return nil, nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:420
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:425
 	if rt.Kind() != reflect.Struct {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:421
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:426
 		out := reflect.New(rt)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:422
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:427
 		err := jsonv2.Unmarshal([]byte(data), out.Interface())
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:423
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:428
 		return out.Elem().Interface().(any), err
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:425
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:430
 	table := c.buildTable(rt)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:431
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:436
 	rawFields := map[string]jsontext.Value{}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:432
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:437
 	err := jsonv2.Unmarshal([]byte(data), &rawFields)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:433
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:438
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:434
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:439
 		return nil, err
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:439
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:444
 	elemPtr := reflect.New(rt)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:440
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:445
 	elem := elemPtr.Elem()
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:442
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:447
 	for key, raw := range rawFields {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:443
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:448
 		idx, found := table.keyToIndex[key]
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:444
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:449
 		if !found {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:445
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:450
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:446
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:451
 		field := elem.Field(idx)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:447
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:452
 		fieldPtr := reflect.New(field.Type())
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:448
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:453
 		fieldErr := jsonv2.Unmarshal(raw, fieldPtr.Interface())
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:449
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:454
 		if fieldErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:450
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:455
 			return nil, fieldErr
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:451
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:456
 		field.Set(fieldPtr.Elem())
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:453
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:458
 	return elem.Interface().(any), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:466
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:470
 func DecodeStringWith[T any](c Codec, data string) (T, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:467
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:471
 	target := *new(T)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:468
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:472
 	rt := reflect.TypeOf(target)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:469
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:473
 	v, err := decodeStringInto(c, rt, data)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:470
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:474
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:471
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:475
 		var _zero0 T
 		return _zero0, err
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:472
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:476
 	return v.(T), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:478
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:481
 func DecodeWith[T any](c Codec, data []byte) (T, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:479
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:482
 	target := *new(T)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:480
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:483
 	rt := reflect.TypeOf(target)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:481
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:484
 	v, err := decodeStringInto(c, rt, string(data))
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:482
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:485
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:483
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:486
 		var _zero0 T
 		return _zero0, err
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:484
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:487
 	return v.(T), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:492
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:495
 func (c Codec) buildTable(rt reflect.Type) codecTable {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:493
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:496
 	fields := []codecField{}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:494
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:497
 	keyToIndex := map[string]int{}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:496
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:499
 	for i := range rt.NumField() {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:497
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:500
 		field := rt.Field(i)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:498
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:501
 		if !field.IsExported() {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:499
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:502
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:501
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:504
 		goName := field.Name
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:504
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:507
 		if c.omits[goName] {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:505
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:508
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:506
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:509
 		tag := field.Tag.Get("json")
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:507
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:510
 		if tag == "-" {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:508
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:511
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:511
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:514
 		jsonKey := ""
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:512
-		if //line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:512
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:515
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:515
 		renamed, ok := c.renames[goName]; ok {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:513
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:516
 			jsonKey = renamed
 		} else if tag != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:515
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:518
 			parts := strings.Split(tag, ",")
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:516
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:519
 			jsonKey = parts[0]
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:517
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:520
 		if jsonKey == "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:518
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:521
 			jsonKey = applyNaming(goName, c.naming)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:521
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:524
 		omitEmpty := c.omitEmpties[goName]
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:522
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:525
 		if !omitEmpty && tag != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:523
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:526
 			parts := strings.SplitSeq(tag, ",")
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:524
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:527
 			for p := range parts {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:525
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:528
 				if p == "omitempty" {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:526
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:529
 					omitEmpty = true
 				}
 			}
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:528
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:531
 		fields = append(fields, codecField{jsonKey: jsonKey, index: i, omitEmpty: omitEmpty})
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:533
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:536
 		keyToIndex[jsonKey] = i
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:535
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:538
 	return codecTable{fields: fields, keyToIndex: keyToIndex}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:538
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:541
 func applyNaming(name string, naming Naming) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:539
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:542
 	switch n := naming.(type) {
 	case AsIs:
 		_ = n
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:541
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:544
 		return name
 	case SnakeCase:
 		_ = n
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:543
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:546
 		return toDelimited(name, underscoreRune)
 	case CamelCase:
 		_ = n
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:545
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:548
 		return toCamelCase(name)
 	case KebabCase:
 		_ = n
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:547
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:550
 		return toDelimited(name, hyphenRune)
 	default:
 		panic("unreachable")
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:550
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:553
 const underscoreRune = rune(95)
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:553
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:556
 const hyphenRune = rune(45)
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:557
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:560
 func toDelimited(s string, delim rune) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:558
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:561
 	if s == "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:559
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:562
 		return s
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:560
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:563
 	runes := []rune(s)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:561
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:564
 	result := []rune{}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:562
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:565
 	for i, r := range runes {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:563
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:566
 		if unicode.IsUpper(r) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:564
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:567
 			if i > 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:565
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:568
 				prev := runes[i-1]
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:566
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:569
 				if unicode.IsLower(prev) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:567
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:570
 					result = append(result, delim)
 				} else if i+1 < len(runes) && unicode.IsLower(runes[i+1]) && unicode.IsUpper(prev) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:569
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:572
 					result = append(result, delim)
 				}
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:570
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:573
 			result = append(result, unicode.ToLower(r))
 		} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:572
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:575
 			result = append(result, r)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:573
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:576
 	return string(result)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:576
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:579
 func toCamelCase(s string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:577
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:580
 	if s == "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:578
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:581
 		return s
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:579
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:582
 	runes := []rune(s)
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:580
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:583
 	if unicode.IsUpper(runes[0]) {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:581
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:584
 		runes[0] = unicode.ToLower(runes[0])
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:582
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:585
 	return string(runes)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:585
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:588
 func isZero(v reflect.Value) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:586
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:589
 	kind := v.Kind()
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:587
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:590
 	if kind == reflect.Bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:588
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:591
 		return !v.Bool()
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:589
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:592
 	if kind == reflect.Int || kind == reflect.Int8 || kind == reflect.Int16 || kind == reflect.Int32 || kind == reflect.Int64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:590
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:593
 		return v.Int() == 0
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:591
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:594
 	if kind == reflect.Uint || kind == reflect.Uint8 || kind == reflect.Uint16 || kind == reflect.Uint32 || kind == reflect.Uint64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:592
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:595
 		return v.Uint() == 0
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:593
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:596
 	if kind == reflect.Float32 || kind == reflect.Float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:594
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:597
 		return v.Float() == 0.0
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:595
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:598
 	if kind == reflect.String {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:596
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:599
 		return v.String() == ""
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:597
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:600
 	if kind == reflect.Pointer || kind == reflect.Interface || kind == reflect.Slice || kind == reflect.Map || kind == reflect.Chan || kind == reflect.Func {
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:598
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:601
 		return v.IsNil()
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/json/json.kuki:599
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:602
 	return false
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:627
+var ErrPathNotFound = errors.New("json: path not found")
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:631
+var ErrTypeMismatch = errors.New("json: value is not of the expected type")
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:637
+func walkPath(data []byte, keys []string) (jsontext.Value, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:638
+	if len(keys) == 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:639
+		v := jsontext.Value(data)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:640
+		if !v.IsValid() {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:641
+			return nil, errors.New("invalid json")
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:642
+		return v.Clone(), nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:644
+	dec := jsontext.NewDecoder(bytes.NewReader(data))
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:645
+	return walkPathDec(dec, keys)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:651
+func walkPathDec(dec *jsontext.Decoder, keys []string) (jsontext.Value, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:652
+	if len(keys) == 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:653
+		v, derr := dec.ReadValue()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:654
+		if derr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:655
+			return nil, derr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:656
+		return v.Clone(), nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:658
+	head := keys[0]
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:659
+	rest := keys[1:]
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:662
+	if strings.HasPrefix(head, "[") && strings.HasSuffix(head, "]") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:663
+		idxStr := head[1 : len(head)-1]
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:664
+		idx, err_11 := strconv.Atoi(idxStr)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:664
+		if err_11 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:664
+			return nil, fmt.Errorf("json: invalid array index '%v'", head)
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:665
+		return walkArrayIndex(dec, idx, rest)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:668
+	return walkObjectKey(dec, head, rest)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:673
+func walkObjectKey(dec *jsontext.Decoder, key string, rest []string) (jsontext.Value, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:674
+	tok, terr := dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:675
+	if terr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:676
+		return nil, terr
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:677
+	if tok.Kind() != jsontext.KindBeginObject {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:678
+		return nil, wrapTypeMismatch(fmt.Sprintf("object at key '%v'", key), tok.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:680
+	for {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:681
+		nameTok, nerr := dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:682
+		if nerr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:683
+			return nil, nerr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:684
+		if nameTok.Kind() == jsontext.KindEndObject {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:685
+			return nil, wrapNotFound(fmt.Sprintf("key '%v' not found", key))
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:686
+		if nameTok.Kind() != jsontext.KindString {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:687
+			return nil, fmt.Errorf("json: expected string key, got %v", nameTok.Kind())
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:689
+		name := nameTok.String()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:690
+		if name == key {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:691
+			return walkPathDec(dec, rest)
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:693
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:693
+		serr := dec.SkipValue(); serr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:694
+			return nil, serr
+		}
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:700
+func walkArrayIndex(dec *jsontext.Decoder, idx int, rest []string) (jsontext.Value, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:701
+	tok, terr := dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:702
+	if terr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:703
+		return nil, terr
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:704
+	if tok.Kind() != jsontext.KindBeginArray {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:705
+		return nil, wrapTypeMismatch(fmt.Sprintf("array at index %v", idx), tok.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:707
+	i := 0
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:708
+	for {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:710
+		kind := dec.PeekKind()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:711
+		if kind == jsontext.KindEndArray {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:712
+			_, _ = dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:713
+			return nil, wrapNotFound(fmt.Sprintf("array index %v out of bounds", idx))
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:715
+		if i == idx {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:716
+			return walkPathDec(dec, rest)
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:718
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:718
+		serr := dec.SkipValue(); serr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:719
+			return nil, serr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:720
+		i = i + 1
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:723
+func wrapNotFound(msg string) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:724
+	return fmt.Errorf("%w: %s", ErrPathNotFound, msg)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:728
+func valueToJSONValue(v jsontext.Value) (JSONValue, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:729
+	if !v.IsValid() {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:730
+		return Null{}, errors.New("invalid json value")
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:731
+	raw := *new(any)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:732
+	err := jsonv2.Unmarshal(v, &raw)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:733
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:734
+		return nil, err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:735
+	return decodeJSON(raw), nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:742
+func Get(data []byte, keys ...string) (JSONValue, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:743
+	v, err := walkPath(data, keys)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:744
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:745
+		if errors.Is(err, ErrPathNotFound) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:746
+			return Null{}, nil
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:747
+		return nil, err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:748
+	return valueToJSONValue(v)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:752
+func GetFromString(data string, keys ...string) (JSONValue, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:753
+	return Get([]byte(data), keys...)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:759
+func GetString(data []byte, keys ...string) (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:760
+	v, err := walkPath(data, keys)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:761
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:762
+		return "", err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:763
+	if v.Kind() != jsontext.KindString {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:764
+		return "", wrapTypeMismatch("string", v.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:766
+	raw := *new(any)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:767
+	uerr := jsonv2.Unmarshal(v, &raw)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:768
+	if uerr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:769
+		return "", uerr
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:770
+	s, ok := raw.(string)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:771
+	if !ok {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:772
+		return "", wrapTypeMismatch("string", v.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:773
+	return s, nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:776
+func GetFromStringString(data string, keys ...string) (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:777
+	return GetString([]byte(data), keys...)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:784
+func GetInt(data []byte, keys ...string) (int64, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:785
+	v, err := walkPath(data, keys)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:786
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:787
+		return 0, err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:788
+	if v.Kind() != jsontext.KindNumber {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:789
+		return 0, wrapTypeMismatch("number", v.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:790
+	n, perr := strconv.ParseInt(string(v), 10, 64)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:791
+	if perr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:793
+		f, ferr := strconv.ParseFloat(string(v), 64)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:794
+		if ferr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:795
+			return 0, perr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:796
+		return int64(f), nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:797
+	return n, nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:800
+func GetFromStringInt(data string, keys ...string) (int64, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:801
+	return GetInt([]byte(data), keys...)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:806
+func GetFloat(data []byte, keys ...string) (float64, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:807
+	v, err := walkPath(data, keys)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:808
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:809
+		return 0.0, err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:810
+	if v.Kind() != jsontext.KindNumber {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:811
+		return 0.0, wrapTypeMismatch("number", v.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:812
+	return strconv.ParseFloat(string(v), 64)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:815
+func GetFromStringFloat(data string, keys ...string) (float64, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:816
+	return GetFloat([]byte(data), keys...)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:821
+func GetBool(data []byte, keys ...string) (bool, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:822
+	v, err := walkPath(data, keys)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:823
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:824
+		return false, err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:825
+	if v.Kind() == jsontext.KindTrue {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:826
+		return true, nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:827
+	if v.Kind() == jsontext.KindFalse {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:828
+		return false, nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:829
+	return false, wrapTypeMismatch("bool", v.Kind())
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:832
+func GetFromStringBool(data string, keys ...string) (bool, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:833
+	return GetBool([]byte(data), keys...)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:838
+func GetStringOr(data []byte, keys []string, def string) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:839
+	s, err_12 := GetString(data, keys...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:839
+	if err_12 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:839
+		return def
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:840
+	return s
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:844
+func GetIntOr(data []byte, keys []string, def int64) int64 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:845
+	n, err_13 := GetInt(data, keys...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:845
+	if err_13 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:845
+		return def
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:846
+	return n
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:850
+func GetFloatOr(data []byte, keys []string, def float64) float64 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:851
+	f, err_14 := GetFloat(data, keys...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:851
+	if err_14 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:851
+		return def
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:852
+	return f
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:856
+func GetBoolOr(data []byte, keys []string, def bool) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:857
+	b, err_15 := GetBool(data, keys...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:857
+	if err_15 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:857
+		return def
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:858
+	return b
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:861
+func wrapTypeMismatch(want string, got jsontext.Kind) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:862
+	return fmt.Errorf("%w: wanted %s, got %s", ErrTypeMismatch, want, got)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:878
+func EachKey(data []byte, cb func(int, JSONValue, error), paths [][]string) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:879
+	for i, path := range paths {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:880
+		v, err := Get(data, path...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:881
+		cb(i, v, err)
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:887
+func GetArrayLen(data []byte, keys ...string) (int, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:888
+	v, err := walkPath(data, keys)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:889
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:890
+		return 0, err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:891
+	if !isArrayValue(v) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:892
+		return 0, wrapTypeMismatch("array", v.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:893
+	return countArrayElements(v)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:899
+func GetObjectLen(data []byte, keys ...string) (int, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:900
+	v, err := walkPath(data, keys)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:901
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:902
+		return 0, err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:903
+	if !isObjectValue(v) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:904
+		return 0, wrapTypeMismatch("object", v.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:905
+	return countObjectMembers(v)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:908
+func isArrayValue(v jsontext.Value) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:909
+	return v.Kind() == jsontext.KindBeginArray
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:912
+func isObjectValue(v jsontext.Value) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:913
+	return v.Kind() == jsontext.KindBeginObject
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:917
+func countArrayElements(v jsontext.Value) (int, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:918
+	dec := jsontext.NewDecoder(bytes.NewReader(v))
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:919
+	tok, terr := dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:920
+	if terr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:921
+		return 0, terr
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:922
+	if tok.Kind() != jsontext.KindBeginArray {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:923
+		return 0, wrapTypeMismatch("array", tok.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:924
+	count := 0
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:925
+	for {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:926
+		kind := dec.PeekKind()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:927
+		if kind == jsontext.KindEndArray {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:928
+			_, _ = dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:929
+			return count, nil
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:930
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:930
+		serr := dec.SkipValue(); serr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:931
+			return 0, serr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:932
+		count = count + 1
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:936
+func countObjectMembers(v jsontext.Value) (int, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:937
+	dec := jsontext.NewDecoder(bytes.NewReader(v))
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:938
+	tok, terr := dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:939
+	if terr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:940
+		return 0, terr
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:941
+	if tok.Kind() != jsontext.KindBeginObject {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:942
+		return 0, wrapTypeMismatch("object", tok.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:943
+	count := 0
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:944
+	for {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:945
+		nameTok, nerr := dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:946
+		if nerr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:947
+			return 0, nerr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:948
+		if nameTok.Kind() == jsontext.KindEndObject {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:949
+			return count, nil
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:950
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:950
+		serr := dec.SkipValue(); serr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:951
+			return 0, serr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:952
+		count = count + 1
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:958
+func EachArray(data []byte, cb func(JSONValue), keys ...string) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:959
+	v, err := walkPath(data, keys)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:960
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:961
+		return err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:962
+	if !isArrayValue(v) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:963
+		return wrapTypeMismatch("array", v.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:964
+	dec := jsontext.NewDecoder(bytes.NewReader(v))
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:965
+	_, _ = dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:966
+	for {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:967
+		kind := dec.PeekKind()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:968
+		if kind == jsontext.KindEndArray {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:969
+			return nil
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:970
+		elem, rerr := dec.ReadValue()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:971
+		if rerr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:972
+			return rerr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:973
+		jv, jerr := valueToJSONValue(elem)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:974
+		if jerr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:975
+			return jerr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:976
+		cb(jv)
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:982
+func EachObject(data []byte, cb func(string, JSONValue) error, keys ...string) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:983
+	v, err := walkPath(data, keys)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:984
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:985
+		return err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:986
+	if !isObjectValue(v) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:987
+		return wrapTypeMismatch("object", v.Kind())
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:988
+	dec := jsontext.NewDecoder(bytes.NewReader(v))
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:989
+	_, _ = dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:990
+	for {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:991
+		nameTok, nerr := dec.ReadToken()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:992
+		if nerr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:993
+			return nerr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:994
+		if nameTok.Kind() == jsontext.KindEndObject {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:995
+			return nil
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:996
+		if nameTok.Kind() != jsontext.KindString {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:997
+			return fmt.Errorf("json: expected string key, got %v", nameTok.Kind())
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:999
+		name := nameTok.String()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:1000
+		val, rerr := dec.ReadValue()
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:1001
+		if rerr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:1002
+			return rerr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:1003
+		jv, jerr := valueToJSONValue(val)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:1004
+		if jerr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:1005
+			return jerr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:1006
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:1006
+		cerr := cb(name, jv); cerr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:1007
+			return cerr
+		}
+	}
 }

@@ -3,280 +3,280 @@
 package set_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/set"
-	"codeberg.org/kukichalang/kukicha/stdlib/slice"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
+	"kukicha.org/kukicha/stdlib/set"
+	"kukicha.org/kukicha/stdlib/slice"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:11
 func TestNew(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:12
 	t.Run("creates empty set", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:13
 		s := set.New("")
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:14
 		test.AssertEqual(t, len(s), 0)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:15
 		test.AssertTrue(t, len(s) == 0)
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:18
 	t.Run("can add items after creation", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:19
 		s := set.New("")
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:20
 		set.AddIn(s, "a")
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:21
 		test.AssertEqual(t, len(s), 1)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:22
 		test.AssertTrue(t, set.Contains(s, "a"))
 	})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:26
 type FromCase struct {
 	name    string
 	input   []string
 	wantLen int
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:31
 func TestFrom(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:32
 	cases := []FromCase{FromCase{name: "empty", input: []string{}, wantLen: 0}, FromCase{name: "three unique", input: []string{"a", "b", "c"}, wantLen: 3}, FromCase{name: "duplicates deduplicated", input: []string{"a", "a", "b"}, wantLen: 2}}
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:38
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:39
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:40
 			s := set.From(tc.input)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:41
 			test.AssertEqual(t, len(s), tc.wantLen)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:45
 type AddCase struct {
 	name    string
 	item    string
 	wantLen int
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:50
 func TestAdd(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:51
 	base := set.From([]string{"a", "b"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:52
 	cases := []AddCase{AddCase{name: "new item", item: "c", wantLen: 3}, AddCase{name: "existing item", item: "a", wantLen: 2}}
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:57
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:58
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:59
 			s2 := set.Add(base, tc.item)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:60
 			test.AssertEqual(t, len(s2), tc.wantLen)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:61
 			test.AssertEqual(t, len(base), 2)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:65
 func TestAddIn(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:66
 	t.Run("adds new item in place", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:67
 		s := set.From([]string{"a", "b"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:68
 		set.AddIn(s, "c")
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:69
 		test.AssertEqual(t, len(s), 3)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:70
 		test.AssertTrue(t, set.Contains(s, "c"))
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:73
 	t.Run("idempotent for existing item", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:74
 		s := set.From([]string{"a"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:75
 		set.AddIn(s, "a")
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:76
 		test.AssertEqual(t, len(s), 1)
 	})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:80
 type RemoveCase struct {
 	name    string
 	item    string
 	wantLen int
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:85
 func TestRemove(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:86
 	base := set.From([]string{"a", "b", "c"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:87
 	cases := []RemoveCase{RemoveCase{name: "existing item", item: "b", wantLen: 2}, RemoveCase{name: "missing item", item: "z", wantLen: 3}}
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:92
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:93
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:94
 			s2 := set.Remove(base, tc.item)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:95
 			test.AssertEqual(t, len(s2), tc.wantLen)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:96
 			test.AssertEqual(t, len(base), 3)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:100
 func TestRemoveIn(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:101
 	t.Run("removes existing item in place", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:102
 		s := set.From([]string{"a", "b", "c"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:103
 		set.RemoveIn(s, "b")
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:104
 		test.AssertEqual(t, len(s), 2)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:105
 		test.AssertFalse(t, set.Contains(s, "b"))
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:108
 	t.Run("no-op for missing item", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:109
 		s := set.From([]string{"a"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:110
 		set.RemoveIn(s, "z")
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:111
 		test.AssertEqual(t, len(s), 1)
 	})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:115
 func TestContains(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:116
 	s := set.From([]string{"x", "y"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:117
 	t.Run("present", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:118
 		test.AssertTrue(t, set.Contains(s, "x"))
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:121
 	t.Run("absent", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:122
 		test.AssertFalse(t, set.Contains(s, "z"))
 	})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:126
 func TestToSlice(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:127
 	s := set.From([]string{"a", "b", "c"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:128
 	items := set.ToSlice(s)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:129
 	test.AssertEqual(t, len(items), 3)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:130
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:130
 	t.Run("contains all elements", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:131
 		test.AssertTrue(t, slice.Contains(items, "a"))
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:132
 		test.AssertTrue(t, slice.Contains(items, "b"))
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:133
 		test.AssertTrue(t, slice.Contains(items, "c"))
 	})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:137
 func TestUnion(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:138
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:138
 	a := set.From([]string{"a", "b"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:139
 	b := set.From([]string{"b", "c"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:140
 	u := set.Union(a, b)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:141
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:141
 	t.Run("correct size", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:142
 		test.AssertEqual(t, len(u), 3)
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:145
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:145
 	t.Run("contains all elements", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:146
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:146
 		test.AssertTrue(t, set.Contains(u, "a"))
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:147
 		test.AssertTrue(t, set.Contains(u, "b"))
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:148
 		test.AssertTrue(t, set.Contains(u, "c"))
 	})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:152
 func TestIntersect(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:153
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:153
 	a := set.From([]string{"a", "b", "c"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:154
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:154
 	b := set.From([]string{"b", "c", "d"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:155
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:155
 	i := set.Intersect(a, b)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:156
 	t.Run("correct size", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:157
 		test.AssertEqual(t, len(i), 2)
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:160
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:160
 	t.Run("contains shared elements", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:161
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:161
 		test.AssertTrue(t, set.Contains(i, "b"))
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:162
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:162
 		test.AssertTrue(t, set.Contains(i, "c"))
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:163
 		test.AssertFalse(t, set.Contains(i, "a"))
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:164
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:164
 		test.AssertFalse(t, set.Contains(i, "d"))
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:167
 	t.Run("disjoint sets yield empty", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:168
 		x := set.From([]string{"x"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:169
 		y := set.From([]string{"y"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:170
 		test.AssertTrue(t, len(set.Intersect(x, y)) == 0)
 	})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:174
 func TestDifference(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:175
 	a := set.From([]string{"a", "b", "c"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:176
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:176
 	b := set.From([]string{"b", "c", "d"})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:177
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:177
 	d := set.Difference(a, b)
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:178
 	t.Run("correct size", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:179
 		test.AssertEqual(t, len(d), 1)
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:182
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:182
 	t.Run("only a-exclusive elements", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:183
 		test.AssertTrue(t, set.Contains(d, "a"))
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:184
 		test.AssertFalse(t, set.Contains(d, "b"))
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:185
 		test.AssertFalse(t, set.Contains(d, "d"))
 	})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:189
 type SubsetCase struct {
 	name  string
 	sub   []string
@@ -284,35 +284,35 @@ type SubsetCase struct {
 	want  bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:195
 func TestIsSubset(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:196
 	cases := []SubsetCase{SubsetCase{name: "proper subset", sub: []string{"a"}, super: []string{"a", "b"}, want: true}, SubsetCase{name: "equal sets", sub: []string{"a", "b"}, super: []string{"a", "b"}, want: true}, SubsetCase{name: "not a subset", sub: []string{"a", "c"}, super: []string{"a", "b"}, want: false}, SubsetCase{name: "empty is subset of all", sub: []string{}, super: []string{"a"}, want: true}}
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:223
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:224
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:225
 			test.AssertEqual(t, set.IsSubset(set.From(tc.sub), set.From(tc.super)), tc.want)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:229
 func TestIsSuperset(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:230
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:230
 	t.Run("superset", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:231
 		test.AssertTrue(t, set.IsSuperset(set.From([]string{"a", "b", "c"}), set.From([]string{"a", "b"})))
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:237
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:237
 	t.Run("not superset", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:238
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:238
 		test.AssertFalse(t, set.IsSuperset(set.From([]string{"a"}), set.From([]string{"a", "b"})))
 	})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:245
 type EqualCase struct {
 	name string
 	a    []string
@@ -320,15 +320,15 @@ type EqualCase struct {
 	want bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:251
 func TestEqual(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:252
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:252
 	cases := []EqualCase{EqualCase{name: "equal", a: []string{"a", "b"}, b: []string{"b", "a"}, want: true}, EqualCase{name: "different elements", a: []string{"a"}, b: []string{"b"}, want: false}, EqualCase{name: "different sizes", a: []string{"a", "b"}, b: []string{"a"}, want: false}, EqualCase{name: "both empty", a: []string{}, b: []string{}, want: true}}
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:274
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:274
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:275
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:275
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:276
+//line /var/home/tluker/repos/go/kukicha/stdlib/set/set_test.kuki:276
 			test.AssertEqual(t, set.Equal(set.From(tc.a), set.From(tc.b)), tc.want)
 		})
 	}

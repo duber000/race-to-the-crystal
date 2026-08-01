@@ -3,30 +3,30 @@
 package git_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/git"
-	"codeberg.org/kukichalang/kukicha/stdlib/shell"
-	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
+	"kukicha.org/kukicha/stdlib/git"
+	"kukicha.org/kukicha/stdlib/shell"
+	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/kukicha/stdlib/test"
 	"os/exec"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:16
 func ghAvailable() bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:17
 	_, err := exec.LookPath("gh")
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:18
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:19
 		return false
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:20
 	result := shell.New("gh", "auth", "status").Execute()
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:21
 	return result.Success()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:25
 type PreviewReleaseCase struct {
 	name           string
 	repo           string
@@ -35,238 +35,238 @@ type PreviewReleaseCase struct {
 	expectContains string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:32
 func TestPreviewRelease(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:33
 	cases := []PreviewReleaseCase{PreviewReleaseCase{name: "basic release", repo: "owner/repo", tag: "v1.0.0", opts: git.ReleaseOptions{}, expectContains: "gh release create v1.0.0 --repo owner/repo --title v1.0.0"}, PreviewReleaseCase{name: "with draft", repo: "owner/repo", tag: "v2.0.0", opts: git.ReleaseOptions{Draft: true}, expectContains: "--draft"}, PreviewReleaseCase{name: "with target", repo: "owner/repo", tag: "v1.0.0", opts: git.ReleaseOptions{Target: "main"}, expectContains: "--target main"}, PreviewReleaseCase{name: "with generate notes", repo: "owner/repo", tag: "v1.0.0", opts: git.ReleaseOptions{GenerateNotes: true}, expectContains: "--generate-notes"}, PreviewReleaseCase{name: "custom title", repo: "owner/repo", tag: "v1.0.0", opts: git.ReleaseOptions{Title: "Release 1.0"}, expectContains: "--title Release 1.0"}, PreviewReleaseCase{name: "all options", repo: "myorg/myrepo", tag: "v3.0.0", opts: git.ReleaseOptions{Title: "Big Release", Target: "release-branch", Draft: true, GenerateNotes: true}, expectContains: "gh release create v3.0.0 --repo myorg/myrepo"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:83
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:84
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:85
 			got := git.PreviewRelease(tc.repo, tc.tag, tc.opts)
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:86
 			test.AssertTrue(t, kukistring.Contains(got, tc.expectContains))
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:90
 type PreviewReleaseAllFlagsCase struct {
 	name string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:93
 func TestPreviewReleaseAllFlags(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:94
 	cases := []PreviewReleaseAllFlagsCase{PreviewReleaseAllFlagsCase{name: "all flags present"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:96
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:97
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:98
 			opts := git.ReleaseOptions{Title: "My Release", Target: "main", Draft: true, GenerateNotes: true}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:104
 			got := git.PreviewRelease("owner/repo", "v1.0.0", opts)
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:105
 			test.AssertTrue(t, kukistring.Contains(got, "--target main"))
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:106
 			test.AssertTrue(t, kukistring.Contains(got, "--generate-notes"))
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:107
 			test.AssertTrue(t, kukistring.Contains(got, "--draft"))
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:108
 			test.AssertTrue(t, kukistring.Contains(got, "--title My Release"))
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:112
 type PreviewReleaseNoFlagsCase struct {
 	name string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:115
 func TestPreviewReleaseNoFlags(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:116
 	cases := []PreviewReleaseNoFlagsCase{PreviewReleaseNoFlagsCase{name: "no optional flags"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:118
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:119
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:120
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:120
 			opts := git.ReleaseOptions{}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:121
 			got := git.PreviewRelease("owner/repo", "v1.0.0", opts)
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:122
 			test.AssertFalse(t, kukistring.Contains(got, "--target"))
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:123
 			test.AssertFalse(t, kukistring.Contains(got, "--generate-notes"))
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:124
 			test.AssertFalse(t, kukistring.Contains(got, "--draft"))
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:125
 			test.AssertEqual(t, got, "gh release create v1.0.0 --repo owner/repo --title v1.0.0")
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:129
 type CurrentBranchCase struct {
 	name string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:132
 func TestCurrentBranch(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:133
 	cases := []CurrentBranchCase{CurrentBranchCase{name: "returns a branch name"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:135
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:136
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:137
 			branch, err := git.CurrentBranch()
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:138
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:138
 			test.AssertNoError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:139
 			test.AssertTrue(t, len(branch) > 0)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:143
 type ListTagsCase struct {
 	name string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:146
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:146
 func TestListTags(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:147
 	if !ghAvailable() {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:148
 		t.Skip("gh CLI not available or not authenticated")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:150
 	cases := []ListTagsCase{ListTagsCase{name: "list tags from public repo"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:152
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:153
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:153
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:154
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:154
 			tags, err := git.ListTags("cli/cli")
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:155
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:155
 			test.AssertNoError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:156
 			test.AssertTrue(t, len(tags) > 0)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:160
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:160
 type DefaultBranchCase struct {
 	name string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:163
 func TestDefaultBranch(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:164
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:164
 	if !ghAvailable() {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:165
 		t.Skip("gh CLI not available or not authenticated")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:167
 	cases := []DefaultBranchCase{DefaultBranchCase{name: "default branch of cli/cli"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:169
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:170
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:171
 			branch, err := git.DefaultBranch("cli/cli")
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:172
 			test.AssertNoError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:173
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:173
 			test.AssertEqual(t, branch, "trunk")
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:177
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:177
 type CurrentUserCase struct {
 	name string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:180
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:180
 func TestCurrentUser(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:181
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:181
 	if !ghAvailable() {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:182
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:182
 		t.Skip("gh CLI not available or not authenticated")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:184
 	cases := []CurrentUserCase{CurrentUserCase{name: "returns authenticated user"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:186
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:187
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:188
 			user, err := git.CurrentUser()
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:189
 			test.AssertNoError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:190
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:190
 			test.AssertTrue(t, len(user) > 0)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:194
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:194
 type TagExistsCase struct {
 	name string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:197
 func TestTagExists(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:198
 	if !ghAvailable() {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:199
 		t.Skip("gh CLI not available or not authenticated")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:201
 	cases := []TagExistsCase{TagExistsCase{name: "existing tag"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:203
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:204
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:204
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:205
 			exists, err := git.TagExists("cli/cli", "v2.0.0")
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:206
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:206
 			test.AssertNoError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:207
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:207
 			test.AssertTrue(t, exists)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:211
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:211
 type RepoExistsCase struct {
 	name string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:214
 func TestRepoExists(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:215
 	if !ghAvailable() {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:216
 		t.Skip("gh CLI not available or not authenticated")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:218
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:218
 	cases := []RepoExistsCase{RepoExistsCase{name: "existing repo"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:220
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:220
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:221
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:221
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:222
 			exists, err := git.RepoExists("cli/cli")
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:223
 			test.AssertNoError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/git/git_test.kuki:224
 			test.AssertTrue(t, exists)
 		})
 	}

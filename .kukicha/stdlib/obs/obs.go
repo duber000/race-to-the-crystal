@@ -3,18 +3,18 @@
 package obs
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/json"
-	"codeberg.org/kukichalang/kukicha/stdlib/random"
 	"fmt"
+	"kukicha.org/kukicha/stdlib/json"
+	"kukicha.org/kukicha/stdlib/random"
 	"maps"
 	"os"
 	"time"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:15
 type Fields = map[string]any
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:19
 type Logger struct {
 	Service       string
 	Environment   string
@@ -22,137 +22,137 @@ type Logger struct {
 	CorrelationID string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:26
 type Timer struct {
 	Logger    Logger
 	Operation string
 	StartedAt time.Time
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:32
 func New(service string, environment string) Logger {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:33
 	return Logger{Service: service, Environment: environment, Component: "", CorrelationID: ""}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:36
 func NewCorrelationID() string {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:37
 	return random.String(16)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:41
 func kvToFields(kv []any) Fields {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:42
 	f := make(Fields)
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:43
 	i := 0
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:44
 	for i < len(kv)-1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:45
 		f[fmt.Sprintf("%v", kv[i])] = kv[i+1]
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:46
 		i = i + 2
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:47
 	return f
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:51
 func Debug(logger Logger, message string, kv ...any) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:52
 	Log(logger, "debug", message, kvToFields(kv))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:56
 func Info(logger Logger, message string, kv ...any) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:57
 	Log(logger, "info", message, kvToFields(kv))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:60
 func Warn(logger Logger, message string, kv ...any) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:61
 	Log(logger, "warn", message, kvToFields(kv))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:64
 func Error(logger Logger, message string, kv ...any) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:65
 	Log(logger, "error", message, kvToFields(kv))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:68
 func Log(logger Logger, level string, message string, fields Fields) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:69
 	payload := map[string]any{"ts": time.Now().Format(time.RFC3339Nano), "level": level, "message": message}
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:75
 	if logger.Service != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:76
 		payload["service"] = logger.Service
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:77
 	if logger.Environment != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:78
 		payload["environment"] = logger.Environment
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:79
 	if logger.Component != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:80
 		payload["component"] = logger.Component
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:81
 	if logger.CorrelationID != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:82
 		payload["correlation_id"] = logger.CorrelationID
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:83
 	if fields != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:84
 		maps.Copy(payload, fields)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:86
 	line, err_1 := json.Bytes(payload)
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:86
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:86
-		//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:86
+		//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:87
 		fmt.Fprintf(os.Stderr, "[obs:%s] %s\n", level, message)
-		//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:88
+		//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:88
 		return
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:90
 	fmt.Fprintf(os.Stderr, "%s\n", line)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:93
 func Start(logger Logger, operation string) Timer {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:94
 	return Timer{Logger: logger, Operation: operation, StartedAt: time.Now()}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:98
 func Stop(timer Timer, kv ...any) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:99
 	fields := kvToFields(kv)
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:100
 	fields["operation"] = timer.Operation
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:101
 	fields["duration_ms"] = time.Since(timer.StartedAt).Milliseconds()
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:102
 	Log(timer.Logger, "info", "operation complete", fields)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:106
 func Fail(timer Timer, reason string, kv ...any) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:107
 	fields := kvToFields(kv)
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:108
 	fields["operation"] = timer.Operation
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:109
 	fields["duration_ms"] = time.Since(timer.StartedAt).Milliseconds()
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:110
 	fields["reason"] = reason
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs.kuki:111
 	Log(timer.Logger, "error", "operation failed", fields)
 }

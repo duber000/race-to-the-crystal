@@ -3,373 +3,373 @@
 package color
 
 import (
-	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
-	"codeberg.org/kukichalang/kukicha/stdlib/term"
 	"fmt"
+	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/kukicha/stdlib/term"
 	"os"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:27
 type Styler struct {
 	w *os.File
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:33
 func NewStyler(w *os.File) Styler {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:34
 	return Styler{w: w}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:38
 var defaultStyler Styler = NewStyler(os.Stdout)
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:41
 func Enabled() bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:42
 	return term.ColorEnabledFor(defaultStyler.w)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:47
 func SetEnabled(enabled bool) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:48
 	term.SetColorEnabled(enabled)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:51
 func (s Styler) enabled() bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:52
 	return term.ColorEnabledFor(s.w)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:60
 func wrap(code string, text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:61
 	reopen := fmt.Sprintf("\x1b[0m\x1b[%vm", code)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:62
 	inner := kukistring.ReplaceAll(text, "\x1b[0m", reopen)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:63
 	return fmt.Sprintf("\x1b[%vm%v\x1b[0m", code, inner)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:67
 func (s Styler) Bold(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:68
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:69
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:70
 	return wrap("1", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:72
 func (s Styler) Dim(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:73
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:74
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:75
 	return wrap("2", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:77
 func (s Styler) Italic(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:78
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:79
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:80
 	return wrap("3", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:82
 func (s Styler) Underline(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:83
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:84
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:85
 	return wrap("4", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:87
 func (s Styler) Red(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:88
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:89
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:90
 	return wrap("31", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:92
 func (s Styler) Green(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:93
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:94
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:95
 	return wrap("32", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:97
 func (s Styler) Yellow(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:98
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:99
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:100
 	return wrap("33", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:102
 func (s Styler) Blue(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:103
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:104
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:105
 	return wrap("34", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:107
 func (s Styler) Magenta(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:108
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:109
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:110
 	return wrap("35", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:112
 func (s Styler) Cyan(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:113
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:114
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:114
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:115
 	return wrap("36", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:117
 func (s Styler) Gray(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:118
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:119
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:120
 	return wrap("90", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:122
 func (s Styler) BrightRed(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:123
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:124
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:125
 	return wrap("91", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:127
 func (s Styler) BrightGreen(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:128
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:129
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:130
 	return wrap("92", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:132
 func (s Styler) BrightYellow(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:133
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:134
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:134
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:135
 	return wrap("93", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:137
 func (s Styler) BrightBlue(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:138
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:138
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:139
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:140
 	return wrap("94", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:141
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:142
 func (s Styler) BrightMagenta(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:143
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:144
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:144
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:145
 	return wrap("95", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:146
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:147
 func (s Styler) BrightCyan(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:148
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:149
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:150
 	return wrap("96", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:152
 func (s Styler) BrightWhite(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:153
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:153
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:154
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:154
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:155
 	return wrap("97", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:158
 func (s Styler) Error(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:158
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:159
 	if !s.enabled() {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:159
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:160
 		return text
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:160
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:161
 	return wrap("1;91", text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:164
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:165
 func Bold(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:166
 	return defaultStyler.Bold(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:168
 func Dim(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:169
 	return defaultStyler.Dim(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:171
 func Italic(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:172
 	return defaultStyler.Italic(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:173
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:174
 func Underline(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:175
 	return defaultStyler.Underline(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:176
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:177
 func Red(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:177
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:178
 	return defaultStyler.Red(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:180
 func Green(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:180
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:181
 	return defaultStyler.Green(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:182
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:183
 func Yellow(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:184
 	return defaultStyler.Yellow(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:186
 func Blue(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:187
 	return defaultStyler.Blue(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:189
 func Magenta(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:190
 	return defaultStyler.Magenta(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:192
 func Cyan(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:193
 	return defaultStyler.Cyan(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:194
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:195
 func Gray(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:196
 	return defaultStyler.Gray(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:198
 func BrightRed(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:199
 	return defaultStyler.BrightRed(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:201
 func BrightGreen(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:202
 	return defaultStyler.BrightGreen(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:204
 func BrightYellow(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:204
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:205
 	return defaultStyler.BrightYellow(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:206
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:207
 func BrightBlue(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:207
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:208
 	return defaultStyler.BrightBlue(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:209
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:210
 func BrightMagenta(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:210
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:211
 	return defaultStyler.BrightMagenta(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:212
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:213
 func BrightCyan(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:214
 	return defaultStyler.BrightCyan(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:216
 func BrightWhite(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:217
 	return defaultStyler.BrightWhite(text)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:218
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:219
 func Error(text string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color.kuki:219
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color.kuki:220
 	return defaultStyler.Error(text)
 }

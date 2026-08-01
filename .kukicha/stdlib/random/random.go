@@ -4,39 +4,39 @@ package random
 
 import "math/rand"
 
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:20
 func String(length int) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:21
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:22
 	b := make([]byte, length)
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:23
 	for i := range length {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:24
 		b[i] = charset[rand.Intn(len(charset))]
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:25
 	return string(b)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:29
 func Int(min int, max int) int {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:30
 	if min >= max {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:31
 		return min
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:32
 	return min + rand.Intn(max-min)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:36
 func Float(min float64, max float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:37
 	if min >= max {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:38
 		return min
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:39
 	return min + rand.Float64()*(max-min)
 }

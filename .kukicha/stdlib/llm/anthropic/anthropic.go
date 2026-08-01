@@ -4,20 +4,20 @@ package anthropic
 
 import (
 	"bufio"
-	"codeberg.org/kukichalang/kukicha/stdlib/content"
-	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
-	"codeberg.org/kukichalang/kukicha/stdlib/env"
-	"codeberg.org/kukichalang/kukicha/stdlib/fetch"
-	"codeberg.org/kukichalang/kukicha/stdlib/json"
-	"codeberg.org/kukichalang/kukicha/stdlib/llm"
-	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"context"
 	"encoding/json/jsontext"
 	"errors"
 	"fmt"
+	"kukicha.org/kukicha/stdlib/content"
+	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
+	"kukicha.org/kukicha/stdlib/env"
+	"kukicha.org/kukicha/stdlib/fetch"
+	"kukicha.org/kukicha/stdlib/json"
+	"kukicha.org/kukicha/stdlib/llm"
+	kukistring "kukicha.org/kukicha/stdlib/string"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:41
 type rawContentBlock struct {
 	Type      string         `json:"type"`
 	Text      string         `json:"text,omitempty"`
@@ -30,18 +30,18 @@ type rawContentBlock struct {
 	Source    jsontext.Value `json:"source,omitempty"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:54
 type ThinkingConfig struct {
 	Type         string `json:"type"`
 	BudgetTokens int    `json:"budget_tokens,omitempty"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:59
 type OutputConfig struct {
 	Format any `json:"format,omitempty"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:64
 type MessageRole string
 
 const (
@@ -75,26 +75,26 @@ func (e MessageRole) String() string {
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:70
 type Message struct {
 	Role    MessageRole `json:"role"`
 	Content any         `json:"content"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:75
 type Tool struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	InputSchema any    `json:"input_schema"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:81
 type ToolChoice struct {
 	Type string `json:"type"`
 	Name string `json:"name,omitempty"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:86
 type Usage struct {
 	InputTokens              int `json:"input_tokens"`
 	OutputTokens             int `json:"output_tokens"`
@@ -102,7 +102,7 @@ type Usage struct {
 	CacheReadInputTokens     int `json:"cache_read_input_tokens,omitempty"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:94
 type rawResponse struct {
 	ID           string            `json:"id"`
 	Type         string            `json:"type"`
@@ -114,7 +114,7 @@ type rawResponse struct {
 	Usage        Usage             `json:"usage"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:107
 type Response struct {
 	ID           string
 	Type         string
@@ -126,7 +126,7 @@ type Response struct {
 	Usage        Usage
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:118
 type MessagesRequest struct {
 	Model         string    `json:"model"`
 	Messages      []Message `json:"messages"`
@@ -146,7 +146,7 @@ type MessagesRequest struct {
 	InferenceGeo  string    `json:"inference_geo,omitempty"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:139
 type rawStreamEvent struct {
 	Type         string          `json:"type"`
 	Index        int             `json:"index,omitempty"`
@@ -156,7 +156,7 @@ type rawStreamEvent struct {
 	Usage        Usage           `json:"usage,omitzero"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:148
 type rawDelta struct {
 	Type         string `json:"type,omitempty"`
 	Text         string `json:"text,omitempty"`
@@ -166,7 +166,7 @@ type rawDelta struct {
 	StopSequence string `json:"stop_sequence,omitempty"`
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:157
 type Client struct {
 	model            string
 	baseURL          string
@@ -194,327 +194,327 @@ type Client struct {
 	ctx              context.Context
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:185
 func anyToJsontext(v any) jsontext.Value {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:186
 	if v == nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:187
 		return nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:188
 	data, err := json.Bytes(v)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:189
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:190
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:190
 		return nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:191
 	return jsontext.Value(data)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:195
 func jsontextToAny(v jsontext.Value) any {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:196
 	if !v.IsValid() {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:197
 		return nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:198
 	var out any
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:199
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:199
 	err_1 := json.ParseInto(v, &out)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:199
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:199
-		//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:199
+		//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:200
 		return nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:202
 	return out
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:207
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:207
 func decodeToolResultContent(raw jsontext.Value) []content.Content {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:208
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:208
 	if !raw.IsValid() {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:209
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:209
 		return []content.Content{}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:210
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:210
 	var v any
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:211
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:211
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:211
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:211
 	err_2 := json.ParseInto(raw, &v)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:211
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:211
 	if err_2 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:211
-		//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:212
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:211
+		//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:212
 		return []content.Content{}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:214
 	if s, _isOk := v.(string); _isOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:215
 		return []content.Content{content.Text{Body: s}}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:216
 	if items, _isOk := v.([]any); _isOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:217
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:217
 		out := []content.Content{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:218
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:218
 		for _, it := range items {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:219
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:219
 			data, _ := json.Bytes(it)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:220
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:220
 			block := rawContentBlock{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:221
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:221
 			err := json.ParseInto(data, &block)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:222
 			if err == nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:223
 				out = append(out, decodeContentBlock(block))
 			}
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:224
 		return out
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:225
 	return []content.Content{}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:229
 func encodeToolResultContent(items []content.Content) any {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:230
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:230
 	if len(items) == 1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:231
-		if //line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:231
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:231
 		t, ok := items[0].(content.Text); ok {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:232
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:232
 			return t.Body
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:233
 	return encodeContent(items)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:236
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:236
 func decodeContentBlock(b rawContentBlock) content.Content {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:237
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:237
 	if b.Type == "text" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:238
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:238
 		return content.Text{Body: b.Text}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:239
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:239
 	if b.Type == "thinking" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:240
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:240
 		return content.Thinking{Body: b.Thinking}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:241
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:241
 	if b.Type == "tool_use" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:242
 		return content.ToolUse{ID: b.ID, Name: b.Name, Input: jsontextToAny(b.Input)}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:243
 	if b.Type == "tool_result" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:244
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:244
 		return content.ToolResult{ToolUseID: b.ToolUseID, Items: decodeToolResultContent(b.Content)}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:245
 	if b.Type == "image" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:246
 		return content.Image{Source: jsontextToAny(b.Source)}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:247
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:247
 	return content.Text{Body: ""}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:252
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:252
 func encodeContentBlock(c content.Content) rawContentBlock {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:253
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:253
 	switch c := c.(type) {
 	case content.Text:
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:255
 		return rawContentBlock{Type: "text", Text: c.Body}
 	case content.Thinking:
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:257
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:257
 		return rawContentBlock{Type: "thinking", Thinking: c.Body}
 	case content.ToolUse:
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:259
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:259
 		return rawContentBlock{Type: "tool_use", ID: c.ID, Name: c.Name, Input: anyToJsontext(c.Input)}
 	case content.ToolResult:
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:261
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:261
 		return rawContentBlock{Type: "tool_result", ToolUseID: c.ToolUseID, Content: anyToJsontext(encodeToolResultContent(c.Items))}
 	case content.Image:
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:267
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:267
 		return rawContentBlock{Type: "image", Source: anyToJsontext(c.Source)}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:269
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:269
 	return rawContentBlock{}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:272
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:272
 func decodeResponse(r rawResponse) Response {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:273
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:273
 	blocks := []content.Content{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:274
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:274
 	for _, b := range r.Content {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:275
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:275
 		blocks = append(blocks, decodeContentBlock(b))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:276
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:276
 	return Response{ID: r.ID, Type: r.Type, Role: r.Role, Content: blocks, Model: r.Model, StopReason: r.StopReason, StopSequence: r.StopSequence, Usage: r.Usage}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:288
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:288
 func encodeContent(blocks []content.Content) []rawContentBlock {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:289
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:289
 	out := []rawContentBlock{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:290
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:290
 	for _, c := range blocks {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:291
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:291
 		out = append(out, encodeContentBlock(c))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:292
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:292
 	return out
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:296
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:296
 func New(model string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:297
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:297
 	return Client{model: model, apiVersion: "2023-06-01", maxTokens: 1024}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:300
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:300
 func BaseURL(c Client, url string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:301
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:301
 	c.baseURL = url
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:302
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:302
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:305
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:305
 func Path(c Client, path string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:306
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:306
 	c.path = path
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:307
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:307
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:311
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:311
 func APIKey(c Client, key string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:312
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:312
 	c.apiKey = key
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:313
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:313
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:316
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:316
 func APIVersion(c Client, version string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:317
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:317
 	c.apiVersion = version
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:318
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:318
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:321
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:321
 func System(c Client, system string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:322
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:322
 	c.system = system
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:323
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:323
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:326
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:326
 func User(c Client, content string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:327
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:327
 	c.messages = append(c.messages, Message{Role: MessageRoleUser, Content: content})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:328
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:328
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:332
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:332
 func Assistant(c Client, content string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:333
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:333
 	c.messages = append(c.messages, Message{Role: MessageRoleAssistant, Content: content})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:334
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:334
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:337
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:337
 func AddMessage(c Client, role MessageRole, content any) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:338
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:338
 	c.messages = append(c.messages, Message{Role: role, Content: content})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:339
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:339
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:342
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:342
 func ToolResult(c Client, toolUseID string, result string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:343
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:343
 	block := rawContentBlock{Type: "tool_result", ToolUseID: toolUseID, Content: anyToJsontext(result)}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:348
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:348
 	c.messages = append(c.messages, Message{Role: MessageRoleUser, Content: []rawContentBlock{block}})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:349
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:349
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:352
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:352
 func MaxTokens(c Client, tokens int) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:353
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:353
 	c.maxTokens = tokens
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:354
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:354
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:357
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:357
 func Temperature(c Client, temp float64) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:358
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:358
 	c.temperature = temp
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:359
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:359
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:362
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:362
 func TopP(c Client, p float64) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:363
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:363
 	c.topP = p
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:364
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:364
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:367
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:367
 func TopK(c Client, k int) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:368
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:368
 	c.topK = k
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:369
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:369
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:372
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:372
 func StopSequences(c Client, sequences []string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:373
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:373
 	c.stopSequences = sequences
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:374
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:374
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:377
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:377
 func AdaptiveThinking(c Client) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:378
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:378
 	c.thinking = ThinkingConfig{Type: "adaptive"}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:379
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:379
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:382
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:382
 func Thinking(c Client, budgetTokens int) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:383
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:383
 	c.thinking = ThinkingConfig{Type: "enabled", BudgetTokens: budgetTokens}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:384
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:384
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:387
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:387
 type ThinkingEffort string
 
 const (
@@ -558,23 +558,23 @@ func (e ThinkingEffort) String() string {
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:395
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:395
 func WithThinkingEffort(c Client, effort ThinkingEffort) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:396
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:396
 	c.effort = string(effort)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:397
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:397
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:400
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:400
 func OutputFormat(c Client, format any) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:401
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:401
 	c.outputConfig = OutputConfig{Format: format}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:402
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:402
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:405
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:405
 type InferenceRegion string
 
 const (
@@ -608,655 +608,655 @@ func (e InferenceRegion) String() string {
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:411
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:411
 func WithInferenceRegion(c Client, region InferenceRegion) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:412
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:412
 	c.inferenceGeo = string(region)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:413
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:413
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:416
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:416
 func AddTool(c Client, name string, description string, inputSchema any) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:417
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:417
 	c.tools = append(c.tools, Tool{Name: name, Description: description, InputSchema: inputSchema})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:418
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:418
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:421
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:421
 func ToolChoiceAuto(c Client) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:422
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:422
 	c.toolChoice = ToolChoice{Type: "auto"}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:423
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:423
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:426
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:426
 func ToolChoiceAny(c Client) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:427
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:427
 	c.toolChoice = ToolChoice{Type: "any"}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:428
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:428
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:431
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:431
 func ToolChoiceTool(c Client, name string) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:432
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:432
 	c.toolChoice = ToolChoice{Type: "tool", Name: name}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:433
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:433
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:436
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:436
 func Stream(c Client, handler func(string)) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:437
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:437
 	c.streamHandler = handler
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:438
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:438
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:444
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:444
 func StreamEvents(c Client, handler func(llm.StreamEvent)) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:445
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:445
 	c.eventHandler = handler
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:446
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:446
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:449
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:449
 func Retry(c Client, maxAttempts int, delayMs int) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:450
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:450
 	c.retryMaxAttempts = maxAttempts
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:451
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:451
 	c.retryDelayMs = delayMs
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:452
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:452
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:455
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:455
 func WithContext(c Client, h ctxpkg.Handle) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:456
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:456
 	c.ctx = h.Ctx
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:457
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:457
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:461
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:461
 func Ask(c Client, prompt string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:462
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:462
 	c = User(c, prompt)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:463
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:463
 	return doExecute(c)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:466
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:466
 func Send(c Client) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:467
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:467
 	return doExecute(c)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:470
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:470
 func AskRaw(c Client, prompt string) (Response, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:471
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:471
 	c = User(c, prompt)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:472
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:472
 	return doExecuteRaw(c)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:475
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:475
 func SendRaw(c Client) (Response, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:476
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:476
 	return doExecuteRaw(c)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:479
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:479
 func Complete(model string, prompt string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:480
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:480
 	return Ask(New(model), prompt)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:483
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:483
 func CompleteWithSystem(model string, system string, prompt string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:484
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:484
 	c := New(model)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:485
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:485
 	c = System(c, system)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:486
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:486
 	return Ask(c, prompt)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:491
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:491
 func FromResponse(c Client, resp Response) Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:492
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:492
 	c.messages = append(c.messages, Message{Role: MessageRoleAssistant, Content: encodeContent(resp.Content)})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:493
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:493
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:500
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:500
 func ExecuteToolUses(c Client, resp Response, handlers map[string]func(string) string) (Client, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:501
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:501
 	c = FromResponse(c, resp)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:502
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:502
 	resultBlocks := []rawContentBlock{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:503
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:503
 	hasAny := false
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:504
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:504
 	for _, block := range resp.Content {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:505
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:505
 		if tu, _isOk := block.(content.ToolUse); _isOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:506
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:506
 			hasAny = true
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:507
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:507
 			handler, ok := handlers[tu.Name]
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:508
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:508
 			if !ok {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:509
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:509
 				return c, fmt.Errorf("no handler registered for tool: %v", tu.Name)
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:510
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:510
 			argsJSON := ""
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:511
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:511
 			switch inputVal := tu.Input.(type) {
 			case string:
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:513
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:513
 				argsJSON = inputVal
 			case map[string]any:
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:515
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:515
 				inputBytes, err_3 := json.Bytes(inputVal)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:515
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:515
 				if err_3 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:515
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:515
 					err_3 = fmt.Errorf("encode tool input: %w", err_3)
 					var _zero0 Client
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:515
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:515
 					return _zero0, err_3
 				}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:516
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:516
 				argsJSON = string(inputBytes)
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:518
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:518
 			result := handler(argsJSON)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:519
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:519
 			resultBlocks = append(resultBlocks, rawContentBlock{Type: "tool_result", ToolUseID: tu.ID, Content: anyToJsontext(result)})
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:524
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:524
 	if !hasAny {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:525
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:525
 		return c, nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:526
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:526
 	c.messages = append(c.messages, Message{Role: MessageRoleUser, Content: resultBlocks})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:527
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:527
 	return c, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:530
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:530
 func GetText(resp Response) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:531
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:531
 	result := ""
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:532
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:532
 	for _, block := range resp.Content {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:533
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:533
 		if t, _isOk := block.(content.Text); _isOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:534
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:534
 			result = result + t.Body
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:535
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:535
 	return result
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:538
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:538
 func GetThinking(resp Response) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:539
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:539
 	result := ""
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:540
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:540
 	for _, block := range resp.Content {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:541
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:541
 		if th, _isOk := block.(content.Thinking); _isOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:542
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:542
 			result = result + th.Body
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:543
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:543
 	return result
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:546
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:546
 func GetToolUses(resp Response) []content.ToolUse {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:547
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:547
 	uses := []content.ToolUse{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:548
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:548
 	for _, block := range resp.Content {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:549
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:549
 		if tu, _isOk := block.(content.ToolUse); _isOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:550
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:550
 			uses = append(uses, tu)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:551
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:551
 	return uses
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:554
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:554
 func HasToolUses(resp Response) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:555
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:555
 	return resp.StopReason == "tool_use"
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:557
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:557
 func resolveAPIKey(c Client) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:558
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:558
 	if c.apiKey != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:559
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:559
 		return c.apiKey
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:560
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:560
 	return env.GetOr("ANTHROPIC_API_KEY", "")
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:562
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:562
 func resolveBaseURL(c Client) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:563
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:563
 	if c.baseURL != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:564
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:564
 		return c.baseURL
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:565
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:565
 	return "https://api.anthropic.com"
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:567
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:567
 func resolvePath(c Client) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:568
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:568
 	if c.path != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:569
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:569
 		return c.path
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:570
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:570
 	return "/v1/messages"
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:572
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:572
 func buildRequest(c Client) MessagesRequest {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:573
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:573
 	req := MessagesRequest{Model: c.model, Messages: c.messages, MaxTokens: c.maxTokens}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:574
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:574
 	if c.system != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:575
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:575
 		req.System = c.system
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:576
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:576
 	if c.temperature != 0.0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:577
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:577
 		req.Temperature = c.temperature
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:578
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:578
 	if c.topP != 0.0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:579
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:579
 		req.TopP = c.topP
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:580
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:580
 	if c.topK != 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:581
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:581
 		req.TopK = c.topK
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:582
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:582
 	if len(c.stopSequences) > 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:583
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:583
 		req.StopSequences = c.stopSequences
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:584
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:584
 	if len(c.tools) > 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:585
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:585
 		req.Tools = c.tools
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:586
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:586
 	if c.toolChoice != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:587
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:587
 		req.ToolChoice = c.toolChoice
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:588
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:588
 	if c.metadata != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:589
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:589
 		req.Metadata = c.metadata
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:590
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:590
 	if c.thinking != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:591
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:591
 		req.Thinking = c.thinking
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:592
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:592
 	if c.effort != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:593
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:593
 		req.Effort = c.effort
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:594
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:594
 	if c.outputConfig != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:595
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:595
 		req.OutputConfig = c.outputConfig
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:596
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:596
 	if c.inferenceGeo != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:597
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:597
 		req.InferenceGeo = c.inferenceGeo
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:598
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:598
 	if c.streamHandler != nil || c.eventHandler != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:599
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:599
 		req.Stream = true
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:600
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:600
 	return req
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:602
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:602
 func doExecute(c Client) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:603
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:603
 	if c.streamHandler != nil || c.eventHandler != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:604
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:604
 		return doExecuteStream(c)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:605
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:605
 	resp, err_4 := doExecuteRaw(c)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:605
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:605
 	if err_4 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:605
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:605
 		return "", err_4
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:606
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:606
 	return GetText(resp), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:608
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:608
 func doExecuteRaw(c Client) (Response, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:609
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:609
 	url := fmt.Sprintf("%v%v", resolveBaseURL(c), resolvePath(c))
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:610
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:610
 	apiKey := resolveAPIKey(c)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:611
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:611
 	body := buildRequest(c)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:613
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:613
 	req := fetch.Header(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), "anthropic-version", c.apiVersion)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:618
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:618
 	if c.ctx != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:619
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:619
 		req = fetch.WithContext(req, ctxpkg.FromContext(c.ctx))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:620
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:620
 	if apiKey != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:621
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:621
 		req = fetch.Header(req, "x-api-key", apiKey)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:623
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:623
 	req = fetch.Body(req, body)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:625
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:625
 	if c.retryMaxAttempts > 1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:626
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:626
 		req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:628
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:628
 	resp, err_5 := fetch.Do(req)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:628
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:628
 	if err_5 != nil {
 		var _zero0 Response
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:628
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:628
 		return _zero0, err_5
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:630
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:630
 	rawResp := resp.Raw()
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:631
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:631
 	defer rawResp.Body.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:633
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:633
 	if resp.StatusCode >= 400 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:634
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:634
 		return Response{}, fmt.Errorf("Anthropic API request failed (%v)", resp.StatusCode)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:636
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:636
 	raw := rawResponse{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:637
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:637
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:637
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:637
 	err_6 := json.ReadInto(rawResp.Body, &raw)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:637
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:637
 	if err_6 != nil {
 		var _zero0 Response
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:637
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:637
 		return _zero0, err_6
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:638
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:638
 	return decodeResponse(raw), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:640
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:640
 func doExecuteStream(c Client) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:641
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:641
 	resp, err_7 := doExecuteStreamRaw(c)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:641
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:641
 	if err_7 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:641
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:641
 		return "", err_7
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:642
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:642
 	return GetText(resp), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:644
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:644
 func emitStreamEvent(c Client, raw rawStreamEvent) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:645
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:645
 	if c.eventHandler == nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:646
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:646
 		return
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:647
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:647
 	if raw.Type == "content_block_start" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:648
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:648
 		if raw.ContentBlock.Type == "tool_use" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:649
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:649
 			c.eventHandler(llm.ToolCallStart{Index: raw.Index, ID: raw.ContentBlock.ID, Name: raw.ContentBlock.Name})
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:654
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:654
 		return
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:655
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:655
 	if raw.Type == "content_block_delta" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:656
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:656
 		if raw.Delta.Type == "text_delta" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:657
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:657
 			c.eventHandler(llm.Delta{Body: raw.Delta.Text})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:658
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:658
 			return
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:659
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:659
 		if raw.Delta.Type == "thinking_delta" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:660
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:660
 			c.eventHandler(llm.ThinkingDelta{Body: raw.Delta.Thinking})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:661
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:661
 			return
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:662
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:662
 		if raw.Delta.Type == "input_json_delta" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:663
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:663
 			c.eventHandler(llm.ToolCallArgs{Index: raw.Index, Body: raw.Delta.PartialJSON})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:664
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:664
 			return
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:665
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:665
 		return
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:666
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:666
 	if raw.Type == "message_stop" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:667
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:667
 		c.eventHandler(llm.Completed{})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:668
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:668
 		return
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:669
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:669
 	if raw.Type == "error" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:670
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:670
 		c.eventHandler(llm.Error{Message: "Anthropic streaming error"})
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:671
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:671
 		return
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:673
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:673
 func doExecuteStreamRaw(c Client) (Response, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:674
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:674
 	url := fmt.Sprintf("%v%v", resolveBaseURL(c), resolvePath(c))
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:675
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:675
 	apiKey := resolveAPIKey(c)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:676
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:676
 	body := buildRequest(c)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:678
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:678
 	req := fetch.Header(fetch.Header(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), "Accept", "text/event-stream"), "anthropic-version", c.apiVersion)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:684
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:684
 	if c.ctx != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:685
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:685
 		req = fetch.WithContext(req, ctxpkg.FromContext(c.ctx))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:686
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:686
 	if apiKey != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:687
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:687
 		req = fetch.Header(req, "x-api-key", apiKey)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:689
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:689
 	req = fetch.Body(req, body)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:691
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:691
 	if c.retryMaxAttempts > 1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:692
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:692
 		req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:694
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:694
 	resp, err_8 := fetch.Do(req)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:694
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:694
 	if err_8 != nil {
 		var _zero0 Response
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:694
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:694
 		return _zero0, err_8
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:696
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:696
 	rawResp := resp.Raw()
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:697
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:697
 	defer rawResp.Body.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:699
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:699
 	if resp.StatusCode >= 400 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:700
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:700
 		return Response{}, fmt.Errorf("Anthropic API request failed (%v)", resp.StatusCode)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:702
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:702
 	contentBlocks := map[int]rawContentBlock{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:703
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:703
 	inputAccum := map[int]string{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:704
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:704
 	maxIdx := -1
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:705
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:705
 	scanner := bufio.NewScanner(rawResp.Body)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:706
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:706
 	scanner.Buffer([]byte{}, 1048576)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:707
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:707
 	for scanner.Scan() {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:708
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:708
 		line := scanner.Text()
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:709
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:709
 		if line == "" || kukistring.HasPrefix(line, "event:") || kukistring.HasPrefix(line, ":") {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:710
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:710
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:711
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:711
 		if kukistring.HasPrefix(line, "data: ") {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:712
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:712
 			data := kukistring.TrimPrefix(line, "data: ")
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:713
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:713
 			evt := rawStreamEvent{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:714
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:714
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:714
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:714
 			err_9 := json.ParseInto([]byte(data), &evt)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:714
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:714
 			if err_9 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:714
-				//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:715
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:714
+				//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:715
 				continue
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:717
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:717
 			emitStreamEvent(c, evt)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:719
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:719
 			if evt.Type == "content_block_start" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:720
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:720
 				idx := evt.Index
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:721
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:721
 				contentBlocks[idx] = evt.ContentBlock
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:722
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:722
 				if idx > maxIdx {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:723
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:723
 					maxIdx = idx
 				}
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:725
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:725
 			if evt.Type == "content_block_delta" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:726
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:726
 				idx := evt.Index
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:727
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:727
 				block := contentBlocks[idx]
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:728
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:728
 				if evt.Delta.Type == "text_delta" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:729
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:729
 					block.Type = "text"
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:730
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:730
 					block.Text = block.Text + evt.Delta.Text
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:731
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:731
 					if c.streamHandler != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:732
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:732
 						c.streamHandler(evt.Delta.Text)
 					}
 				}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:733
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:733
 				if evt.Delta.Type == "input_json_delta" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:734
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:734
 					block.Type = "tool_use"
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:735
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:735
 					inputAccum[idx] = inputAccum[idx] + evt.Delta.PartialJSON
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:736
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:736
 					block.Input = jsontext.Value([]byte(inputAccum[idx]))
 				}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:737
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:737
 				contentBlocks[idx] = block
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:738
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:738
 				if idx > maxIdx {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:739
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:739
 					maxIdx = idx
 				}
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:741
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:741
 			if evt.Type == "error" {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:742
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:742
 				return Response{}, errors.New("Anthropic streaming error")
 			}
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:744
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:744
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:744
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:744
 	err_10 := scanner.Err()
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:744
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:744
 	if err_10 != nil {
 		var _zero0 Response
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:744
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:744
 		return _zero0, err_10
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:746
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:746
 	blocks := []content.Content{}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:747
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:747
 	for i := range maxIdx + 1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:748
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:748
 		_, ok := contentBlocks[i]
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:749
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:749
 		if ok {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:750
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:750
 			blocks = append(blocks, decodeContentBlock(contentBlocks[i]))
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:752
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:752
 	return Response{Content: blocks}, nil
 }

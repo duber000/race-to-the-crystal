@@ -3,191 +3,191 @@
 package log_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/log"
-	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
-	"codeberg.org/kukichalang/kukicha/stdlib/term"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
+	"kukicha.org/kukicha/stdlib/log"
+	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/kukicha/stdlib/term"
+	"kukicha.org/kukicha/stdlib/test"
 	"os"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:15
 func captureToFile(t *testing.T) (*os.File, string) {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:16
 	f, err_1 := os.CreateTemp("", "kuki-log-test-*.log")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:16
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:16
 		panic("CreateTemp failed")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:17
 	return f, f.Name()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:20
 func readAll(t *testing.T, path string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:21
 	bytes, err_2 := os.ReadFile(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:21
 	if err_2 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:21
 		panic("ReadFile failed")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:22
 	return fmt.Sprintf("%s", bytes)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:25
 func init() {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:26
 	term.SetColorEnabled(false)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:30
 func TestTextFormatBasic(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:31
 	f, path := captureToFile(t)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:32
 	defer os.Remove(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:34
 	l := log.New(f)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:35
 	l.Info("hello", "key", "value")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:36
 	_ = f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:38
 	got := readAll(t, path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:39
 	test.AssertTrue(t, kukistring.Contains(got, "INFO"))
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:40
 	test.AssertTrue(t, kukistring.Contains(got, "hello"))
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:41
 	test.AssertTrue(t, kukistring.Contains(got, "key=value"))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:43
 func TestTextFormatQuotesValueWithSpace(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:44
 	f, path := captureToFile(t)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:45
 	defer os.Remove(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:47
 	l := log.New(f)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:48
 	l.Info("msg", "k", "two words")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:49
 	_ = f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:51
 	got := readAll(t, path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:52
 	test.AssertTrue(t, kukistring.Contains(got, "k=\"two words\""))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:54
 func TestTextFormatMissingValue(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:55
 	f, path := captureToFile(t)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:56
 	defer os.Remove(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:58
 	l := log.New(f)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:59
 	l.Info("msg", "dangling")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:60
 	_ = f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:62
 	got := readAll(t, path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:63
 	test.AssertTrue(t, kukistring.Contains(got, "dangling=MISSING_VALUE"))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:67
 func TestJSONFormat(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:68
 	f, path := captureToFile(t)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:69
 	defer os.Remove(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:71
 	l := log.New(f)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:72
 	l.Format = log.FormatJSON
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:73
 	l.Error("save failed", "err", "disk full")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:74
 	_ = f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:76
 	got := readAll(t, path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:77
 	test.AssertTrue(t, kukistring.Contains(got, "\"level\":\"ERROR\""))
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:78
 	test.AssertTrue(t, kukistring.Contains(got, "\"msg\":\"save failed\""))
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:79
 	test.AssertTrue(t, kukistring.Contains(got, "\"err\":\"disk full\""))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:83
 func TestLevelFilter(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:84
 	f, path := captureToFile(t)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:85
 	defer os.Remove(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:87
 	l := log.New(f)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:88
 	l.Level = log.LevelWarn
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:89
 	l.Debug("debug-msg")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:90
 	l.Info("info-msg")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:91
 	l.Warn("warn-msg")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:92
 	l.Error("error-msg")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:93
 	_ = f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:95
 	got := readAll(t, path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:96
 	test.AssertFalse(t, kukistring.Contains(got, "debug-msg"))
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:97
 	test.AssertFalse(t, kukistring.Contains(got, "info-msg"))
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:98
 	test.AssertTrue(t, kukistring.Contains(got, "warn-msg"))
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:99
 	test.AssertTrue(t, kukistring.Contains(got, "error-msg"))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:103
 func TestPackageLevelInheritsLevel(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:104
 	log.SetLevel(log.LevelError)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:105
 	defer log.SetLevel(log.LevelInfo)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:109
 	log.Info("filtered")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:110
 	log.Error("emitted")
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:114
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:114
 func TestColorHonorsTermOverride(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:115
 	term.SetColorEnabled(true)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:116
 	defer term.SetColorEnabled(false)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:118
 	f, path := captureToFile(t)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:119
 	defer os.Remove(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:121
 	l := log.New(f)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:122
 	l.Info("x")
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:123
 	_ = f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:125
 	got := readAll(t, path)
-//line /Users/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:127
 	test.AssertTrue(t, kukistring.Contains(got, "\x1b["))
 }

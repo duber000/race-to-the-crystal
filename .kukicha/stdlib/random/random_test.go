@@ -3,68 +3,68 @@
 package random_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/random"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
+	"kukicha.org/kukicha/stdlib/random"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:10
 type LengthCase struct {
 	name string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:13
 func TestRandomStringLength(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:14
 	cases := []LengthCase{LengthCase{name: "lengths"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:16
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:17
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:18
 			s := random.String(10)
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:19
 			test.AssertEqual(t, len(s), 10)
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:21
 			zero := random.String(0)
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:22
 			test.AssertEqual(t, zero, "")
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:26
 func TestRandomInt(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:27
 	for range 100 {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:28
 		v := random.Int(5, 10)
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:29
 		if v < 5 || v >= 10 {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:30
 			t.Errorf("random.Int(5, 10) = %d, out of range", v)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:33
 	test.AssertEqual(t, random.Int(7, 7), 7)
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:36
 	test.AssertEqual(t, random.Int(10, 5), 10)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:39
 func TestRandomFloat(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:40
 	for range 100 {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:41
 		v := random.Float(1.0, 2.0)
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:42
 		if v < 1.0 || v >= 2.0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:43
 			t.Errorf("random.Float(1.0, 2.0) = %f, out of range", v)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:46
 	test.AssertEqual(t, random.Float(3.5, 3.5), 3.5)
-//line /Users/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:49
 	test.AssertEqual(t, random.Float(2.0, 1.0), 2.0)
 }

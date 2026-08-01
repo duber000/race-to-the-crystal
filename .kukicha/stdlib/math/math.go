@@ -7,88 +7,82 @@ import (
 	gomath "math"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:21
-func Abs(x float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:22
-	return gomath.Abs(x)
-}
-
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:21
 func AbsInt(x int) int {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:22
 	if x < 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:23
 		return -x
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:24
 	return x
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:30
 func Round(x float64) int {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:31
 	return int(gomath.Round(x))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:36
 func RoundTo(x float64, digits int) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:37
 	if digits < 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:38
 		digits = 0
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:39
 	factor := gomath.Pow(10.0, float64(digits))
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:40
 	return gomath.Round(x*factor) / factor
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:44
 func Ceil(x float64) int {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:45
 	return int(gomath.Ceil(x))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:49
 func Floor(x float64) int {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:50
 	return int(gomath.Floor(x))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:60
-func Min[K cmp.Ordered](a K, b K) K {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:54
+func Min[T cmp.Ordered](a T, b T) T {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:55
 	if a < b {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:56
 		return a
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:57
 	return b
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:67
-func Max[K cmp.Ordered](a K, b K) K {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:61
+func Max[T cmp.Ordered](a T, b T) T {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:62
 	if a > b {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:63
 		return a
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:64
 	return b
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:74
-func Clamp[K cmp.Ordered](x K, lo K, hi K) K {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:68
+func Clamp[T cmp.Ordered](x T, lo T, hi T) T {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:69
 	if x < lo {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:70
 		return lo
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:71
 	if x > hi {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:72
 		return hi
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:73
 	return x
 }

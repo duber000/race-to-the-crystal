@@ -3,109 +3,109 @@
 package policy_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/policy"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"context"
+	"kukicha.org/kukicha/stdlib/policy"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:10
 func prodGate(ctx context.Context, attrs map[string]string) policy.Decision {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:11
 	if attrs["env"] == "prod" {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:12
 		return policy.RequiresApproval{ToUser: "oncall", TTL: 600}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:13
 	return policy.Allowed{}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:15
 func TestUnregisteredActionDenied(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:16
 	reg := policy.New()
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:17
 	decision := policy.Check(reg, context.Background(), "kubectl-restart", map[string]string{})
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:19
 	if d, _isOk := decision.(policy.Denied); _isOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:20
 		test.AssertTrue(t, len(d.Reason) > 0)
 	} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:22
 		t.Errorf("expected Denied for unregistered action")
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:24
 func TestAllowedRule(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:25
 	reg := policy.Register(policy.New(), "ping", policy.AllowAll)
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:26
 	decision := policy.Check(reg, context.Background(), "ping", map[string]string{})
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:28
 	test.AssertTrue(t, func() bool { _, _isOk := decision.(policy.Allowed); return _isOk }())
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:30
 func TestRequiresApprovalRule(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:31
 	reg := policy.Register(policy.New(), "kubectl-restart", prodGate)
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:32
 	attrs := map[string]string{"env": "prod", "workload": "api"}
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:33
 	decision := policy.Check(reg, context.Background(), "kubectl-restart", attrs)
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:35
 	if d, _isOk := decision.(policy.RequiresApproval); _isOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:36
 		test.AssertEqual(t, d.ToUser, "oncall")
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:37
 		test.AssertEqual(t, d.TTL, 600)
 	} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:39
 		t.Errorf("expected RequiresApproval")
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:41
 func TestAllowedOnStagingEnv(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:42
 	reg := policy.Register(policy.New(), "kubectl-restart", prodGate)
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:43
 	attrs := map[string]string{"env": "staging"}
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:44
 	decision := policy.Check(reg, context.Background(), "kubectl-restart", attrs)
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:46
 	test.AssertTrue(t, func() bool { _, _isOk := decision.(policy.Allowed); return _isOk }())
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:48
 func TestDenyAllRule(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:49
 	reg := policy.Register(policy.New(), "dangerous", policy.DenyAll("never run this"))
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:50
 	decision := policy.Check(reg, context.Background(), "dangerous", map[string]string{})
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:52
 	if d, _isOk := decision.(policy.Denied); _isOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:53
 		test.AssertEqual(t, d.Reason, "never run this")
 	} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:55
 		t.Errorf("expected Denied")
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:57
 func TestRegisterReplacesRule(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:58
 	reg := policy.Register(policy.Register(policy.New(), "act", policy.AllowAll), "act", policy.DenyAll("now denied"))
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:62
 	decision := policy.Check(reg, context.Background(), "act", map[string]string{})
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:63
 	if d, _isOk := decision.(policy.Denied); _isOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:64
 		test.AssertEqual(t, d.Reason, "now denied")
 	} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy_test.kuki:66
 		t.Errorf("expected Denied after replacement")
 	}
 }

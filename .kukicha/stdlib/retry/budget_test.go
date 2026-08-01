@@ -3,122 +3,122 @@
 package retry_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/retry"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"errors"
+	"kukicha.org/kukicha/stdlib/retry"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 	"time"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:11
 var budgetCalls int = 0
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:13
 func resetBudgetCalls() {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:14
 	budgetCalls = 0
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:16
 func budgetFail() error {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:17
 	budgetCalls = budgetCalls + 1
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:18
 	return errors.New("boom")
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:20
 func budgetOK() error {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:21
 	budgetCalls = budgetCalls + 1
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:22
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:24
 func TestBudgetOpensAfterLimit(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:25
 	resetBudgetCalls()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:26
 	b := retry.WithKey(retry.WithLimit(retry.NewBudget(), 2, time.Minute), "svc-a")
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:29
 	cfg := retry.Linear(retry.Delay(retry.Attempts(retry.New(), 1), 1))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:31
 	err1 := retry.DoBudget(b, cfg, budgetFail)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:32
 	test.AssertError(t, err1)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:33
 	test.AssertFalse(t, errors.Is(err1, retry.BudgetExceeded))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:35
 	err2 := retry.DoBudget(b, cfg, budgetFail)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:36
 	test.AssertError(t, err2)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:39
 	callsBefore := budgetCalls
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:40
 	err3 := retry.DoBudget(b, cfg, budgetFail)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:41
 	test.AssertTrue(t, errors.Is(err3, retry.BudgetExceeded))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:42
 	test.AssertEqual(t, budgetCalls, callsBefore)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:44
 func TestBudgetSuccessClears(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:45
 	resetBudgetCalls()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:46
 	b := retry.WithKey(retry.WithLimit(retry.NewBudget(), 2, time.Minute), "svc-b")
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:49
 	cfg := retry.Linear(retry.Delay(retry.Attempts(retry.New(), 1), 1))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:51
 	_ = retry.DoBudget(b, cfg, budgetFail)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:52
 	_ = retry.DoBudget(b, cfg, budgetOK)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:54
 	test.AssertFalse(t, retry.Open(b))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:57
 	_ = retry.DoBudget(b, cfg, budgetFail)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:58
 	test.AssertFalse(t, retry.Open(b))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:60
 func TestBudgetWindowRollover(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:61
 	resetBudgetCalls()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:62
 	b := retry.WithKey(retry.WithLimit(retry.NewBudget(), 2, 50*time.Millisecond), "svc-c")
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:65
 	cfg := retry.Linear(retry.Delay(retry.Attempts(retry.New(), 1), 1))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:67
 	_ = retry.DoBudget(b, cfg, budgetFail)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:68
 	_ = retry.DoBudget(b, cfg, budgetFail)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:69
 	test.AssertTrue(t, retry.Open(b))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:72
 	time.Sleep(80 * time.Millisecond)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:73
 	test.AssertFalse(t, retry.Open(b))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:75
 func TestBudgetKeyIsolation(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:76
 	resetBudgetCalls()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:77
 	b := retry.WithLimit(retry.NewBudget(), 1, time.Minute)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:78
 	cfg := retry.Linear(retry.Delay(retry.Attempts(retry.New(), 1), 1))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:80
 	bA := retry.WithKey(b, "A")
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:81
 	bB := retry.WithKey(b, "B")
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:83
 	_ = retry.DoBudget(bA, cfg, budgetFail)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:84
 	test.AssertTrue(t, retry.Open(bA))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget_test.kuki:85
 	test.AssertFalse(t, retry.Open(bB))
 }

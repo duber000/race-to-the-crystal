@@ -3,52 +3,52 @@
 package sqliteext
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/db"
 	"context"
 	"errors"
 	sqlite3 "github.com/ncruces/go-sqlite3"
 	_ "github.com/ncruces/go-sqlite3/driver"
+	"kukicha.org/kukicha/stdlib/db"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:81
 type Registrar = func(*sqlite3.Conn) error
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:88
 func Register(pool db.Pool, registrar Registrar) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:89
 	sqlite3.AutoExtension(registrar)
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:90
 	rawDB := db.RawDB(pool)
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:91
 	sqlConn, err_1 := rawDB.Conn(context.Background())
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:91
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:91
 		return err_1
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:92
 	defer sqlConn.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:93
 	return sqlConn.Raw(makeRegisterCallback(registrar))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:95
 func makeRegisterCallback(registrar Registrar) func(any) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:96
 	return func(driverConn any) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:97
 		rawer, ok := driverConn.(rawConnector)
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:98
 		if !ok {
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:99
 			return errors.New("sqliteext.Register: driver does not support raw connection access")
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:100
 		return registrar(rawer.Raw())
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:103
 type rawConnector interface {
 	Raw() *sqlite3.Conn
 }

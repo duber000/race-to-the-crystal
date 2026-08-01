@@ -3,65 +3,65 @@
 package netguard_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/netguard"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
+	"kukicha.org/kukicha/stdlib/netguard"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:10
 type GuardCase struct {
 	name string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:13
 func TestAllowBlockGuards(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:14
 	cases := []GuardCase{GuardCase{name: "allow and block"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:16
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:17
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:18
 			allowGuard, err := netguard.NewAllow([]string{"192.0.2.0/24"})
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:19
 			test.AssertNoError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:20
 			test.AssertTrue(t, netguard.Check(allowGuard, "192.0.2.1"))
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:21
 			test.AssertFalse(t, netguard.Check(allowGuard, "198.51.100.1"))
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:23
 			blockGuard, err2 := netguard.NewBlock([]string{"203.0.113.0/24"})
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:24
 			test.AssertNoError(t, err2)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:25
 			test.AssertFalse(t, netguard.Check(blockGuard, "203.0.113.1"))
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:29
 type SSRFCase struct {
 	name    string
 	ip      string
 	allowed bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:34
 func TestSSRFGuard(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:35
 	cases := []SSRFCase{SSRFCase{name: "private IPv4", ip: "10.0.0.5", allowed: false}, SSRFCase{name: "public IPv4", ip: "8.8.8.8", allowed: true}, SSRFCase{name: "loopback IPv6", ip: "::1", allowed: false}, SSRFCase{name: "IPv4-mapped private", ip: "::ffff:10.0.0.1", allowed: false}, SSRFCase{name: "IPv4-mapped public", ip: "::ffff:8.8.8.8", allowed: true}, SSRFCase{name: "6to4 private", ip: "2002:0a00:0001::", allowed: false}, SSRFCase{name: "6to4 public", ip: "2002:0808:0808::", allowed: true}, SSRFCase{name: "Teredo private", ip: "2001:0000:4136:e378:8000:63bf:f5ff:fff0", allowed: false}, SSRFCase{name: "Teredo public", ip: "2001:0000:4136:e378:8000:63bf:f7f7:f7f7", allowed: true}, SSRFCase{name: "NAT64 private", ip: "64:ff9b::10.0.0.1", allowed: false}, SSRFCase{name: "NAT64 public", ip: "64:ff9b::8.8.8.8", allowed: true}, SSRFCase{name: "ISATAP private", ip: "2001:db8::200:5efe:10.0.0.1", allowed: false}, SSRFCase{name: "ISATAP public", ip: "2001:db8::200:5efe:8.8.8.8", allowed: true}, SSRFCase{name: "ISATAP link-local", ip: "fe80::200:5efe:8.8.8.8", allowed: false}}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:56
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:57
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:58
 			guard := netguard.NewSSRFGuard()
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:59
 			if tc.allowed {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:60
 				test.AssertTrue(t, netguard.Check(guard, tc.ip))
 			} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard_test.kuki:62
 				test.AssertFalse(t, netguard.Check(guard, tc.ip))
 			}
 		})

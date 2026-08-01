@@ -2,56 +2,47 @@
 
 package errors
 
-import (
-	goerrors "errors"
-	"fmt"
-)
+import "fmt"
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:19
 func Wrap(err error, msg string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:20
 	return fmt.Errorf("%s: %w", msg, err)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:26
 func Opaque(err error, msg string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:27
 	return fmt.Errorf("%s: %s", msg, err)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:32
 type PublicError struct {
 	internal string
 	public   string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:37
 func (e PublicError) Error() string {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:38
 	return e.internal
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:43
 func NewPublic(internalMsg string, publicMsg string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:44
 	return PublicError{internal: internalMsg, public: publicMsg}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:49
 func Public(err error) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:50
 	e, ok := err.(PublicError)
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:51
 	if ok {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:52
 		return e.public
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:53
 	return "an error occurred"
-}
-
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:65
-func Join(errs ...error) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:66
-	return goerrors.Join(errs...)
 }

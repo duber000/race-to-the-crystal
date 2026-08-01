@@ -3,163 +3,163 @@
 package retry_test
 
 import (
-	ctxpkg "codeberg.org/kukichalang/kukicha/stdlib/ctx"
-	"codeberg.org/kukichalang/kukicha/stdlib/retry"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"errors"
+	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
+	"kukicha.org/kukicha/stdlib/retry"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:12
 var testCalls int = 0
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:14
 func resetCounter() {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:15
 	testCalls = 0
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:17
 func alwaysOK() error {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:18
 	testCalls = testCalls + 1
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:19
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:21
 func alwaysFail() error {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:22
 	testCalls = testCalls + 1
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:23
 	return errors.New("always fails")
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:25
 func failUntilThree() error {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:26
 	testCalls = testCalls + 1
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:27
 	if testCalls < 3 {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:28
 		return errors.New("transient")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:29
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:31
 func TestRetryConfiguration(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:32
 	cfg := retry.Delay(retry.Attempts(retry.New(), 5), 100)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:33
 	test.AssertEqual(t, cfg.MaxAttempts, 5)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:34
 	test.AssertEqual(t, cfg.InitialDelay, 100)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:35
 	test.AssertEqual(t, cfg.Strategy, retry.StrategyExponential)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:37
 func TestLinearStrategy(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:38
 	cfg := retry.Linear(retry.New())
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:39
 	test.AssertEqual(t, cfg.Strategy, retry.StrategyLinear)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:41
 func TestExponentialStrategy(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:42
 	cfg := retry.Exponential(retry.Linear(retry.New()))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:43
 	test.AssertEqual(t, cfg.Strategy, retry.StrategyExponential)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:45
 func TestDoSucceedsFirstTry(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:46
 	resetCounter()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:47
 	cfg := retry.Delay(retry.Attempts(retry.New(), 3), 1)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:48
 	err := retry.Do(cfg, alwaysOK)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:49
 	test.AssertNil(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:50
 	test.AssertEqual(t, testCalls, 1)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:52
 func TestDoSucceedsOnRetry(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:53
 	resetCounter()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:54
 	cfg := retry.Linear(retry.Delay(retry.Attempts(retry.New(), 3), 1))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:55
 	err := retry.Do(cfg, failUntilThree)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:56
 	test.AssertNil(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:57
 	test.AssertEqual(t, testCalls, 3)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:59
 func TestDoExhaustsAttempts(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:60
 	resetCounter()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:61
 	cfg := retry.Linear(retry.Delay(retry.Attempts(retry.New(), 3), 1))
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:62
 	err := retry.Do(cfg, alwaysFail)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:63
 	test.AssertNotNil(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:64
 	test.AssertEqual(t, testCalls, 3)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:66
 func TestDoCtxSuccess(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:67
 	h := ctxpkg.WithCancel(ctxpkg.Background())
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:68
 	defer h.Cancel()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:69
 	resetCounter()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:70
 	cfg := retry.Delay(retry.Attempts(retry.New(), 3), 1)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:71
 	err := retry.DoCtx(h, cfg, func(ch ctxpkg.Handle) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:72
 		testCalls = testCalls + 1
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:73
 		return nil
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:76
 	test.AssertNoError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:77
 	test.AssertEqual(t, testCalls, 1)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:79
 func TestDoCtxCancellation(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:80
 	h := ctxpkg.WithCancel(ctxpkg.Background())
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:81
 	h.Cancel()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:83
 	resetCounter()
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:84
 	cfg := retry.Delay(retry.Attempts(retry.New(), 3), 1)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:85
 	err := retry.DoCtx(h, cfg, func(ch ctxpkg.Handle) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:86
 		testCalls = testCalls + 1
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:87
 		return nil
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:91
 	test.AssertError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:92
 	test.AssertEqual(t, testCalls, 0)
 }

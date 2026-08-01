@@ -5,74 +5,150 @@ package signal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	gosignal "os/signal"
 	"syscall"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:23
-var Interrupt os.Signal = os.Interrupt
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:25
+type Signal string
 
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:25
-var Terminate os.Signal = syscall.SIGTERM
+const (
+	SignalInterrupt    Signal = "interrupt"
+	SignalTerminate    Signal = "terminate"
+	SignalHangup       Signal = "hangup"
+	SignalUserDefined1 Signal = "user-defined-1"
+	SignalUserDefined2 Signal = "user-defined-2"
+)
 
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:27
-var Hangup os.Signal = syscall.SIGHUP
-
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:29
-var UserDefined1 os.Signal = syscall.SIGUSR1
-
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:31
-var UserDefined2 os.Signal = syscall.SIGUSR2
-
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:36
-func WaitFor(sigs ...os.Signal) (os.Signal, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:37
-	if len(sigs) == 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:38
-		return nil, errors.New("signal.WaitFor needs at least one signal")
-	}
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:39
-	ch := make(chan os.Signal, 1)
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:40
-	gosignal.Notify(ch, sigs...)
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:41
-	defer gosignal.Stop(ch)
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:42
-	sig := <-ch
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:43
-	return sig, nil
+func AllSignal() []Signal {
+	return []Signal{SignalInterrupt, SignalTerminate, SignalHangup, SignalUserDefined1, SignalUserDefined2}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:49
+func ParseSignal(s string) (Signal, error) {
+	switch s {
+	case "interrupt":
+		return SignalInterrupt, nil
+	case "terminate":
+		return SignalTerminate, nil
+	case "hangup":
+		return SignalHangup, nil
+	case "user-defined-1":
+		return SignalUserDefined1, nil
+	case "user-defined-2":
+		return SignalUserDefined2, nil
+	}
+	var zero Signal
+	return zero, fmt.Errorf("invalid Signal %q (valid: interrupt, terminate, hangup, user-defined-1, user-defined-2)", s)
+}
+
+func (e Signal) String() string {
+	return string(e)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:33
+func toOSSignal(s Signal) os.Signal {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:34
+	if s == SignalTerminate {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:35
+		return syscall.SIGTERM
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:36
+	if s == SignalHangup {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:37
+		return syscall.SIGHUP
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:38
+	if s == SignalUserDefined1 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:39
+		return syscall.SIGUSR1
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:40
+	if s == SignalUserDefined2 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:41
+		return syscall.SIGUSR2
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:42
+	return os.Interrupt
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:47
+func WaitFor(sigs ...Signal) (Signal, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:48
+	if len(sigs) == 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:49
+		return SignalInterrupt, errors.New("signal.WaitFor needs at least one signal")
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:50
+	osSigs := []os.Signal{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:51
+	for _, s := range sigs {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:52
+		osSigs = append(osSigs, toOSSignal(s))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:53
+	ch := make(chan os.Signal, 1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:54
+	gosignal.Notify(ch, osSigs...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:55
+	defer gosignal.Stop(ch)
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:56
+	received := <-ch
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:57
+	return fromOSSignal(received, sigs), nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:62
+func fromOSSignal(osSig os.Signal, candidates []Signal) Signal {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:63
+	for _, c := range candidates {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:64
+		if toOSSignal(c) == osSig {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:65
+			return c
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:66
+	return SignalInterrupt
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:72
 func OnInterrupt(handler func()) {
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:73
 	if handler == nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:74
 		return
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:75
 	ch := make(chan os.Signal, 1)
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:53
-	gosignal.Notify(ch, Interrupt)
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:76
+	gosignal.Notify(ch, os.Interrupt)
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:77
 	go func() {
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:78
 		<-ch
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:79
 		gosignal.Stop(ch)
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:80
 		handler()
 	}()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:66
-func Context(sigs ...os.Signal) (context.Context, func()) {
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:89
+func Context(sigs ...Signal) (context.Context, func()) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:90
 	if len(sigs) == 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:68
-		sigs = []os.Signal{Interrupt, Terminate}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:91
+		sigs = []Signal{SignalInterrupt, SignalTerminate}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:69
-	return gosignal.NotifyContext(context.Background(), sigs...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:92
+	osSigs := []os.Signal{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:93
+	for _, s := range sigs {
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:94
+		osSigs = append(osSigs, toOSSignal(s))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:95
+	return gosignal.NotifyContext(context.Background(), osSigs...)
 }

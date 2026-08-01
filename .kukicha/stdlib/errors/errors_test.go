@@ -3,13 +3,13 @@
 package errors_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/errors"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	goerrors "errors"
+	"kukicha.org/kukicha/stdlib/errors"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:11
 type WrapCase struct {
 	name      string
 	baseMsg   string
@@ -17,41 +17,41 @@ type WrapCase struct {
 	wantEqual bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:17
 func TestWrap(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:18
 	cases := []WrapCase{WrapCase{name: "wraps and identifies base error", baseMsg: "base", wrapMsg: "context", wantEqual: true}, WrapCase{name: "does not match different error", baseMsg: "base", wrapMsg: "context", wantEqual: false}}
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:33
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:34
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:35
 			base := goerrors.New(tc.baseMsg)
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:36
 			wrapped := errors.Wrap(base, tc.wrapMsg)
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:37
 			if tc.wantEqual {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:38
 				test.AssertTrue(t, goerrors.Is(wrapped, base))
 			} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:40
 				test.AssertFalse(t, goerrors.Is(wrapped, goerrors.New("different")))
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:42
 			unwrapped := goerrors.Unwrap(wrapped)
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:43
 			if tc.wantEqual {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:44
 				test.AssertEqual(t, unwrapped.Error(), tc.baseMsg)
 			} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:46
 				test.AssertNotEmpty(t, unwrapped)
 			}
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:50
 type OpaqueCase struct {
 	name    string
 	msg     string
@@ -59,57 +59,57 @@ type OpaqueCase struct {
 	wantMsg string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:56
 func TestOpaque(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:57
 	cases := []OpaqueCase{OpaqueCase{name: "formats message", msg: "inner detail", wrapMsg: "subsystem", wantMsg: "subsystem: inner detail"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:66
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:67
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:68
 			base := goerrors.New(tc.msg)
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:69
 			opaque := errors.Opaque(base, tc.wrapMsg)
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:70
 			test.AssertEqual(t, opaque.Error(), tc.wantMsg)
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:72
 			test.AssertFalse(t, goerrors.Is(opaque, base))
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:78
 type PublicErrorCase struct {
 	name     string
 	internal string
 	public   string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:83
 func TestPublicError(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:84
 	cases := []PublicErrorCase{PublicErrorCase{name: "Error() returns internal message", internal: "pg: connection refused to 10.0.0.1", public: "database unavailable"}, PublicErrorCase{name: "Public() returns public message", internal: "auth token expired at 2024-01-01", public: "session expired, please log in again"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:97
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:98
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:99
 			e := errors.NewPublic(tc.internal, tc.public)
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:100
 			test.AssertEqual(t, e.Error(), tc.internal)
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:101
 			test.AssertEqual(t, errors.Public(e), tc.public)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:104
 func TestPublicFallback(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:105
 	plain := goerrors.New("some internal error")
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:106
 	msg := errors.Public(plain)
-//line /Users/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:107
 	test.AssertEqual(t, msg, "an error occurred")
 }

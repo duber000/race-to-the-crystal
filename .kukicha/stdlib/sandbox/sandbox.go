@@ -3,351 +3,351 @@
 package sandbox
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/json"
 	"fmt"
 	"io/fs"
+	"kukicha.org/kukicha/stdlib/json"
 	"os"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:21
 type Root struct {
 	root *os.Root
 	Path string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:28
 func New(path string) (Root, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
 	r, err_1 := os.OpenRoot(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
 		err_1 = fmt.Errorf("sandbox open: %w", err_1)
 		var _zero0 Root
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:29
 		return _zero0, err_1
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:30
 	return Root{root: r, Path: path}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:33
 func Close(r Root) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:34
 	return r.root.Close()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:37
 func Read(r Root, path string) ([]byte, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
 	data, err_2 := r.root.ReadFile(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
 	if err_2 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
 		err_2 = fmt.Errorf("sandbox read: %w", err_2)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:38
 		return []byte{}, err_2
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:39
 	return data, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:42
 func ReadString(r Root, path string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:43
 	data, err_3 := Read(r, path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:43
 	if err_3 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:43
 		return "", err_3
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:44
 	return string(data), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:49
 func ReadStringOr(r Root, path string, defaultValue string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:50
 	data, err_4 := Read(r, path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:50
 	if err_4 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:50
 		return defaultValue
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:51
 	return string(data)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:54
 func WriteString(r Root, data string, path string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
 	err_5 := r.root.WriteFile(path, []byte(data), 0o644)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
 	if err_5 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
 		err_5 = fmt.Errorf("sandbox write: %w", err_5)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:55
 		return err_5
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:56
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:59
 func Write(r Root, data any, path string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
 	jsonData, err_6 := json.PrettyBytes(data)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
 	if err_6 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
 		err_6 = fmt.Errorf("sandbox write json: %w", err_6)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:60
 		return err_6
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
 	err_7 := r.root.WriteFile(path, jsonData, 0o644)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
 	if err_7 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
 		err_7 = fmt.Errorf("sandbox write: %w", err_7)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:61
 		return err_7
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:62
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:65
 func AppendString(r Root, data string, path string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
 	f, err_8 := r.root.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
 	if err_8 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
 		err_8 = fmt.Errorf("sandbox append: %w", err_8)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:66
 		return err_8
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:67
 	defer f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
 	_, err_9 := f.Write([]byte(data))
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
 	if err_9 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
 		err_9 = fmt.Errorf("sandbox append: %w", err_9)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:68
 		return err_9
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:69
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:72
 func Append(r Root, data any, path string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
 	jsonData, err_10 := json.Bytes(data)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
 	if err_10 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
 		err_10 = fmt.Errorf("sandbox append json: %w", err_10)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:73
 		return err_10
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:74
 	jsonData = append(jsonData, '\n')
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
 	f, err_11 := r.root.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
 	if err_11 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
 		err_11 = fmt.Errorf("sandbox append: %w", err_11)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:75
 		return err_11
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:76
 	defer f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
 	_, err_12 := f.Write(jsonData)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
 	if err_12 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
 		err_12 = fmt.Errorf("sandbox append: %w", err_12)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:77
 		return err_12
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:78
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:81
 func MkDir(r Root, path string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
 	err_13 := r.root.Mkdir(path, 0o755)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
 	if err_13 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
 		err_13 = fmt.Errorf("sandbox mkdir: %w", err_13)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:82
 		return err_13
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:83
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:86
 func MkDirAll(r Root, path string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
 	err_14 := r.root.MkdirAll(path, 0o755)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
 	if err_14 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
 		err_14 = fmt.Errorf("sandbox mkdirall: %w", err_14)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:87
 		return err_14
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:88
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:91
 func List(r Root, path string) ([]string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
 	f, err_15 := r.root.Open(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
 	if err_15 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
 		err_15 = fmt.Errorf("sandbox list: %w", err_15)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:92
 		return []string{}, err_15
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:93
 	defer f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
 	entries, err_16 := f.ReadDir(-1)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
 	if err_16 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
 		err_16 = fmt.Errorf("sandbox list: %w", err_16)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:94
 		return []string{}, err_16
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:95
 	names := make([]string, len(entries))
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:96
 	for i, e := range entries {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:97
 		names[i] = e.Name()
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:98
 	return names, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:101
 func Exists(r Root, path string) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:102
 	_, err := r.root.Stat(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:103
 	return err == nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:106
 func IsDir(r Root, path string) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:107
 	info, err_17 := r.root.Stat(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:107
 	if err_17 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:107
 		return false
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:108
 	return info.IsDir()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:111
 func IsFile(r Root, path string) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:112
 	info, err_18 := r.root.Stat(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:112
 	if err_18 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:112
 		return false
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:113
 	return !info.IsDir()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:117
 func Stat(r Root, path string) (os.FileInfo, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:118
 	info, err_19 := r.root.Stat(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:118
 	if err_19 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:118
 		err_19 = fmt.Errorf("sandbox stat: %w", err_19)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:118
 		return nil, err_19
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:119
 	return info, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:122
 func Delete(r Root, path string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:122
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:123
 	err_20 := r.root.Remove(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:123
 	if err_20 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:123
 		err_20 = fmt.Errorf("sandbox delete: %w", err_20)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:123
 		return err_20
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:124
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:127
 func DeleteAll(r Root, path string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:127
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:128
 	err_21 := r.root.RemoveAll(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:128
 	if err_21 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:128
 		err_21 = fmt.Errorf("sandbox deleteall: %w", err_21)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:128
 		return err_21
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:129
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:132
 func Move(r Root, src string, dst string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:132
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:133
 	err_22 := r.root.Rename(src, dst)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:133
 	if err_22 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:133
 		err_22 = fmt.Errorf("sandbox move: %w", err_22)
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:133
 		return err_22
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:134
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:138
 func FS(r Root) fs.FS {
-//line /Users/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:139
 	return r.root.FS()
 }

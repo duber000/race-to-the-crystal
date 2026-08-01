@@ -3,52 +3,52 @@
 package markdown_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/markdown"
-	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
+	"kukicha.org/kukicha/stdlib/markdown"
+	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:10
 func TestToHTMLBasic(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:11
 	out := markdown.ToHTML("# Hello\n\nWorld")
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:12
 	test.AssertTrue(t, kukistring.Contains(out, "<h1>Hello</h1>"))
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:13
 	test.AssertTrue(t, kukistring.Contains(out, "<p>World</p>"))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:15
 func TestToHTMLEscapesRawHTML(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:16
 	out := markdown.ToHTML("Hello <script>alert(1)</script>")
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:17
 	test.AssertFalse(t, kukistring.Contains(out, "<script>"))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:19
 func TestToHTMLWithTables(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:20
 	src := "| a | b |\n|---|---|\n| 1 | 2 |"
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:21
 	out := markdown.ToHTMLWith(src, markdown.Options{Tables: true})
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:22
 	test.AssertTrue(t, kukistring.Contains(out, "<table>"))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:24
 func TestToHTMLWithHardWrap(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:25
 	out := markdown.ToHTMLWith("line one\nline two", markdown.Options{HardWrap: true})
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:26
 	test.AssertTrue(t, kukistring.Contains(out, "<br"))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:28
 func TestToHTMLAutoLink(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:29
 	out := markdown.ToHTML("Visit https://example.com today")
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:30
 	test.AssertTrue(t, kukistring.Contains(out, "<a href=\"https://example.com\""))
 }

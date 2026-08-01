@@ -1,6 +1,1 @@
-petiole main
-
-import "image/color"
-
-import "github.com/hajimehoshi/ebiten/v2"
-
+petiole ui

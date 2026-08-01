@@ -3,13 +3,13 @@
 package semver_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/semver"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
+	"kukicha.org/kukicha/stdlib/semver"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:10
 type ParseCase struct {
 	name    string
 	tag     string
@@ -17,31 +17,31 @@ type ParseCase struct {
 	wantErr bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:16
 func TestParse(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:17
 	cases := []ParseCase{ParseCase{name: "v prefix", tag: "v1.2.3", want: "v1.2.3", wantErr: false}, ParseCase{name: "no prefix", tag: "1.2.3", want: "1.2.3", wantErr: false}, ParseCase{name: "zeros", tag: "v0.0.0", want: "v0.0.0", wantErr: false}, ParseCase{name: "large numbers", tag: "v10.20.30", want: "v10.20.30", wantErr: false}, ParseCase{name: "invalid abc", tag: "abc", want: "", wantErr: true}, ParseCase{name: "too few parts", tag: "v1.2", want: "", wantErr: true}, ParseCase{name: "too many parts", tag: "v1.2.3.4", want: "", wantErr: true}, ParseCase{name: "empty string", tag: "", want: "", wantErr: true}, ParseCase{name: "non-numeric", tag: "v1.x.3", want: "", wantErr: true}}
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:29
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:30
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:31
 			v, err := semver.Parse(tc.tag)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:32
 			if tc.wantErr {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:33
 				test.AssertError(t, err)
 			} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:35
 				test.AssertNoError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:36
 				test.AssertEqual(t, semver.Format(v), tc.want)
 			}
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:40
 type BumpCase struct {
 	name  string
 	tag   string
@@ -49,83 +49,83 @@ type BumpCase struct {
 	want  string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:46
 func TestBump(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:47
 	cases := []BumpCase{BumpCase{name: "patch", tag: "v1.2.3", level: "patch", want: "v1.2.4"}, BumpCase{name: "minor", tag: "v1.2.3", level: "minor", want: "v1.3.0"}, BumpCase{name: "major", tag: "v1.2.3", level: "major", want: "v2.0.0"}, BumpCase{name: "patch from zero", tag: "v0.0.0", level: "patch", want: "v0.0.1"}, BumpCase{name: "minor from zero", tag: "v0.0.0", level: "minor", want: "v0.1.0"}, BumpCase{name: "no prefix patch", tag: "1.2.3", level: "patch", want: "1.2.4"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:56
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:57
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:58
 			v, err_1 := semver.Parse(tc.tag)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:58
 			if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:58
 				panic(fmt.Sprintf("%v", err_1))
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:59
 			got := semver.Format(semver.Bump(v, tc.level))
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:60
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:64
 type FormatCase struct {
 	name string
 	tag  string
 	want string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:69
 func TestFormat(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:70
 	cases := []FormatCase{FormatCase{name: "with prefix", tag: "v1.2.3", want: "v1.2.3"}, FormatCase{name: "without prefix", tag: "1.2.3", want: "1.2.3"}, FormatCase{name: "zeros", tag: "v0.0.0", want: "v0.0.0"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:76
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:77
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:78
 			v, err_2 := semver.Parse(tc.tag)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:78
 			if err_2 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:78
 				panic(fmt.Sprintf("%v", err_2))
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:79
 			got := semver.Format(v)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:80
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:84
 type ValidCase struct {
 	name string
 	tag  string
 	want bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:89
 func TestValid(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:90
 	cases := []ValidCase{ValidCase{name: "valid with v", tag: "v1.2.3", want: true}, ValidCase{name: "valid without v", tag: "1.2.3", want: true}, ValidCase{name: "invalid", tag: "abc", want: false}, ValidCase{name: "too few parts", tag: "v1.2", want: false}, ValidCase{name: "empty", tag: "", want: false}}
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:98
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:99
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:100
 			got := semver.Valid(tc.tag)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:101
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:105
 type CompareCase struct {
 	name string
 	a    string
@@ -133,37 +133,37 @@ type CompareCase struct {
 	want int
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:111
 func TestCompare(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:112
 	cases := []CompareCase{CompareCase{name: "equal", a: "v1.2.3", b: "v1.2.3", want: 0}, CompareCase{name: "a greater major", a: "v2.0.0", b: "v1.9.9", want: 1}, CompareCase{name: "b greater major", a: "v1.0.0", b: "v2.0.0", want: -1}, CompareCase{name: "a greater minor", a: "v1.3.0", b: "v1.2.9", want: 1}, CompareCase{name: "b greater minor", a: "v1.2.0", b: "v1.3.0", want: -1}, CompareCase{name: "a greater patch", a: "v1.2.4", b: "v1.2.3", want: 1}, CompareCase{name: "b greater patch", a: "v1.2.3", b: "v1.2.4", want: -1}}
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:122
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:123
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:124
 			a, err_3 := semver.Parse(tc.a)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:124
 			if err_3 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:124
 				panic(fmt.Sprintf("%v", err_3))
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:125
 			b, err_4 := semver.Parse(tc.b)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:125
 			if err_4 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:125
 				panic(fmt.Sprintf("%v", err_4))
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:126
 			got := semver.Compare(a, b)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:127
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:131
 type HighestCase struct {
 	name    string
 	tags    []string
@@ -171,24 +171,24 @@ type HighestCase struct {
 	wantErr bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:137
 func TestHighest(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:138
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:138
 	cases := []HighestCase{HighestCase{name: "mixed tags", tags: []string{"v1.0.0", "v2.1.0", "v1.5.3"}, want: "v2.1.0", wantErr: false}, HighestCase{name: "single tag", tags: []string{"v1.0.0"}, want: "v1.0.0", wantErr: false}, HighestCase{name: "with invalid", tags: []string{"v1.0.0", "not-semver", "v2.0.0"}, want: "v2.0.0", wantErr: false}, HighestCase{name: "no valid tags", tags: []string{"abc", "def"}, want: "", wantErr: true}, HighestCase{name: "empty list", tags: []string{}, want: "", wantErr: true}}
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:166
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:167
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:168
 			got, err := semver.Highest(tc.tags)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:169
 			if tc.wantErr {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:170
 				test.AssertError(t, err)
 			} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:172
 				test.AssertNoError(t, err)
-//line /Users/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:173
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:173
 				test.AssertEqual(t, got, tc.want)
 			}
 		})

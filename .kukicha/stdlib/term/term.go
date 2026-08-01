@@ -8,166 +8,166 @@ import (
 	"unicode/utf8"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:25
 var colorOverridden bool
 
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:27
 var colorOverrideValue bool
 
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:32
 func IsTTY(f *os.File) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:33
 	if f == nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:34
 		return false
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:35
 	info, err_1 := f.Stat()
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:35
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:35
 		return false
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:36
 	return info.Mode()&os.ModeCharDevice != 0
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:46
 func ColorEnabledFor(w *os.File) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:47
 	if colorOverridden {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:48
 		return colorOverrideValue
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:49
 	if os.Getenv("FORCE_COLOR") != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:50
 		return true
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:51
 	if os.Getenv("NO_COLOR") != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:52
 		return false
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:53
 	return IsTTY(w)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:56
 func ColorEnabled() bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:57
 	return ColorEnabledFor(os.Stdout)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:62
 func SetColorEnabled(enabled bool) {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:63
 	colorOverridden = true
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:64
 	colorOverrideValue = enabled
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:68
 func ResetColorOverride() {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:69
 	colorOverridden = false
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:70
 	colorOverrideValue = false
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:80
 func VisibleWidth(s string) int {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:81
 	width := 0
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:82
 	i := 0
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:83
 	n := len(s)
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:84
 	for i < n {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:85
 		if s[i] == 0x1b && i+1 < n && s[i+1] == 0x5b {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:87
 			i = i + 2
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:88
 			for i < n {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:89
 				b := s[i]
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:90
 				i = i + 1
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:91
 				if b >= 0x40 && b <= 0x7e {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:92
 					break
 				}
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:93
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:94
 		_, size := utf8.DecodeRuneInString(s[i:])
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:95
 		if size == 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:96
 			i = i + 1
 		} else {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:98
 			i = i + size
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:99
 		width = width + 1
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:100
 	return width
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:105
 func PadRightVisible(s string, n int) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:106
 	w := VisibleWidth(s)
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:107
 	if w >= n {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:108
 		return s
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:109
 	pad := n - w
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:110
 	out := s
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:111
 	j := 0
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:112
 	for j < pad {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:113
 		out = out + " "
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:114
 		j = j + 1
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:115
 	return out
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:121
 func Width() int {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:120
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:122
 	cols := os.Getenv("COLUMNS")
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:123
 	if cols == "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:124
 		return 80
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:125
 	n, err_2 := strconv.Atoi(cols)
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:125
 	if err_2 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:125
 		return 80
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:126
 	if n <= 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:127
 		return 80
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/term/term.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:128
 	return n
 }

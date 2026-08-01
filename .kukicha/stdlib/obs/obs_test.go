@@ -3,64 +3,64 @@
 package obs_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/obs"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
+	"kukicha.org/kukicha/stdlib/obs"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 	"time"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:12
 func TestLoggerFields(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:13
 	logger := obs.New("svc", "env")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:14
 	test.AssertEqual(t, logger.Service, "svc")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:15
 	test.AssertEqual(t, logger.Environment, "env")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:16
 	test.AssertEqual(t, logger.Component, "")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:17
 	test.AssertEqual(t, logger.CorrelationID, "")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:19
 	logger.Component = "api"
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:20
 	logger.CorrelationID = "cid"
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:21
 	test.AssertEqual(t, logger.Component, "api")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:22
 	test.AssertEqual(t, logger.CorrelationID, "cid")
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:26
 func TestCorrelationID(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:27
 	id := obs.NewCorrelationID()
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:28
 	test.AssertEqual(t, len(id), 16)
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:30
 	other := obs.NewCorrelationID()
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:31
 	test.AssertNotEqual(t, id, other)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:35
 func TestTimerFields(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:36
 	logger := obs.New("svc", "env")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:37
 	before := time.Now()
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:38
 	timer := obs.Start(logger, "op")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:40
 	test.AssertEqual(t, timer.Operation, "op")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:41
 	test.AssertEqual(t, timer.Logger.Service, "svc")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:42
 	test.AssertTrue(t, !timer.StartedAt.Before(before))
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:44
 	obs.Stop(timer)
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:45
 	obs.Fail(timer, "error")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:46
 	obs.Info(logger, "with fields", "port", 8080)
 }

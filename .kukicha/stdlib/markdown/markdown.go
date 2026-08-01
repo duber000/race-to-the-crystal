@@ -11,7 +11,7 @@ import (
 	gmhtml "github.com/yuin/goldmark/renderer/html"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:25
 type Options struct {
 	Tables         bool
 	Strikethrough  bool
@@ -24,83 +24,83 @@ type Options struct {
 	AllowRawHTML   bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:39
 func ToHTML(md string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:40
 	return ToHTMLWith(md, Options{Tables: true, Strikethrough: true, TaskList: true, AutoLink: true})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:48
 func ToHTMLWith(md string, opts Options) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:49
 	md_engine := newConverter(opts)
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:50
 	buf := bytes.Buffer{}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
 	err_1 := md_engine.Convert([]byte(md), &buf)
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:53
 		return ""
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:54
 	return buf.String()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:56
 func newConverter(opts Options) goldmark.Markdown {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:57
 	exts := []goldmark.Extender{}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:58
 	if opts.Tables {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:59
 		exts = append(exts, extension.Table)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:60
 	if opts.Strikethrough {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:61
 		exts = append(exts, extension.Strikethrough)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:62
 	if opts.TaskList {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:63
 		exts = append(exts, extension.TaskList)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:64
 	if opts.Footnotes {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:65
 		exts = append(exts, extension.Footnote)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:66
 	if opts.DefinitionList {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:67
 		exts = append(exts, extension.DefinitionList)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:68
 	if opts.AutoLink {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:69
 		exts = append(exts, extension.Linkify)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:71
 	parserOpts := []parser.Option{}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:72
 	if opts.AutoHeadingID {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:73
 		parserOpts = append(parserOpts, parser.WithAutoHeadingID())
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:75
 	rendererOpts := []renderer.Option{}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:76
 	if opts.HardWrap {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:77
 		rendererOpts = append(rendererOpts, gmhtml.WithHardWraps())
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:78
 	if opts.AllowRawHTML {
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:79
 		rendererOpts = append(rendererOpts, gmhtml.WithUnsafe())
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown.kuki:81
 	return goldmark.New(goldmark.WithExtensions(exts...), goldmark.WithParserOptions(parserOpts...), goldmark.WithRendererOptions(rendererOpts...))
 }

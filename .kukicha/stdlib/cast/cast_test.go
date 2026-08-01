@@ -3,134 +3,134 @@
 package cast_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/cast"
+	"kukicha.org/kukicha/stdlib/cast"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:9
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:9
 func TestSmartInt(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:10
 	val, err := cast.SmartInt(5)
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:11
 	if err != nil || val != 5 {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:12
 		t.Fatalf("SmartInt failed for int: %v", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:13
 	val2, err2 := cast.SmartInt("7")
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:14
 	if err2 != nil || val2 != 7 {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:15
 		t.Fatalf("SmartInt failed for string: %v", err2)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:17
 	val4, err4 := cast.SmartInt(true)
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:18
 	if err4 != nil || val4 != 1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:19
 		t.Fatalf("SmartInt failed for bool: %v", err4)
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:22
 func TestSmartFloat64(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:23
 	val, err := cast.SmartFloat64(1.5)
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:24
 	if err != nil || val != 1.5 {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:25
 		t.Fatalf("SmartFloat64 failed for float64: %v", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:26
 	val2, err2 := cast.SmartFloat64("2.5")
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:27
 	if err2 != nil || val2 == 0.0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:28
 		t.Fatalf("SmartFloat64 failed for string: %v", err2)
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:31
 func TestSmartBoolAndString(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:32
 	val, err := cast.SmartBool("true")
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:33
 	if err != nil || !val {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:34
 		t.Fatalf("SmartBool failed for string true: %v", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:35
 	val2, err2 := cast.SmartBool(0)
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:36
 	if err2 != nil || val2 {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:37
 		t.Fatalf("SmartBool failed for int zero: %v", err2)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:39
 	str, err3 := cast.SmartString(10)
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:40
 	if err3 != nil || str != "10" {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:41
 		t.Fatalf("SmartString should convert int to string: %v", err3)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:43
 	str2, err4 := cast.SmartString(nil)
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:44
 	if err4 != nil || str2 != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:45
 		t.Fatalf("SmartString should handle empty value: %v", err4)
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:48
 func TestIsNil(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:49
 	if !cast.IsNil(nil) {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:50
 		t.Fatalf("IsNil(empty) should be true")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:52
 	var p *int
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:53
 	var anyP any = p
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:54
 	if !cast.IsNil(anyP) {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:55
 		t.Fatalf("IsNil(typed-nil pointer) should be true")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:57
 	x := 5
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:58
 	if cast.IsNil(&x) {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:59
 		t.Fatalf("IsNil(non-nil pointer) should be false")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:61
 	if cast.IsNil(42) {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:62
 		t.Fatalf("IsNil(int) should be false")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:64
 	if cast.IsNil("hello") {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:65
 		t.Fatalf("IsNil(string) should be false")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:67
 	var nilSlice []int
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:68
 	var anySlice any = nilSlice
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:69
 	if !cast.IsNil(anySlice) {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:70
 		t.Fatalf("IsNil(nil slice) should be true")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:72
 	var nilMap map[string]int
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:73
 	var anyMap any = nilMap
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:74
 	if !cast.IsNil(anyMap) {
-//line /Users/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:75
 		t.Fatalf("IsNil(nil map) should be true")
 	}
 }

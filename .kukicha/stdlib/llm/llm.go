@@ -3,52 +3,52 @@
 package llm
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/content"
+	"kukicha.org/kukicha/stdlib/content"
 	"maps"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:25
 type JSONObject = map[string]any
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:32
 type SchemaProperty struct {
 	Name        string
 	Type        string
 	Description string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:38
 func Prop(name string, typ string, description string) SchemaProperty {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:39
 	return SchemaProperty{Name: name, Type: typ, Description: description}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:43
 func Schema(props []SchemaProperty) JSONObject {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:44
 	properties := make(JSONObject)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:45
 	for _, prop := range props {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:46
 		properties[prop.Name] = map[string]any{"type": prop.Type, "description": prop.Description}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:50
 	return map[string]any{"type": "object", "properties": properties}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:58
 func Required(schema JSONObject, names []string) JSONObject {
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:59
 	out := make(JSONObject)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:60
 	maps.Copy(out, schema)
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:61
 	out["required"] = names
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:62
 	return out
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:73
 type StreamEvent interface{ isStreamEvent() }
 
 type Delta struct {
@@ -88,5 +88,5 @@ type Error struct {
 
 func (Error) isStreamEvent() {}
 
-//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:94
 type Content = content.Content

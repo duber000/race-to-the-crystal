@@ -3,32 +3,32 @@
 package ctx_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/ctx"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
+	"kukicha.org/kukicha/stdlib/ctx"
+	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 	"time"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:11
 func TestBackground(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:12
 	h := ctx.Background()
-//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:13
 	test.AssertEqual(t, h.Ctx.Err(), nil)
-//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:15
 	h.Cancel()
-//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:16
 	test.AssertEqual(t, h.Ctx.Err(), nil)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:19
 func TestWithTimeoutCancel(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:20
 	h := ctx.WithTimeout(ctx.Background(), 60*time.Second)
-//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:21
 	test.AssertEqual(t, h.Ctx.Err(), nil)
-//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:22
 	h.Cancel()
-//line /Users/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:23
 	test.AssertNotEqual(t, h.Ctx.Err(), nil)
 }

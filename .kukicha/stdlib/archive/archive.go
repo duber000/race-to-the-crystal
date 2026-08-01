@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:26
 type Entry struct {
 	Name    string
 	Size    int64
@@ -24,700 +24,700 @@ type Entry struct {
 	IsDir   bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:36
 const defaultMaxExtractBytes = 2147483648
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:44
 func Extract(archivePath string, dest string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:45
 	return ExtractLimit(archivePath, dest, defaultMaxExtractBytes)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:53
 func ExtractLimit(archivePath string, dest string, maxBytes int64) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:54
 	if maxBytes <= 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:55
 		return fmt.Errorf("archive: extract limit must be positive, got %v", maxBytes)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:56
 	format := detectFormat(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:57
 	if format == "zip" {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:58
 		return extractZip(archivePath, dest, maxBytes)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:59
 	if format == "targz" {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:60
 		return extractTarGz(archivePath, dest, maxBytes)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:61
 	return fmt.Errorf("archive: unrecognized format for %v (want .zip, .tar.gz, or .tgz)", archivePath)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:69
 func List(archivePath string) ([]Entry, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:70
 	format := detectFormat(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:71
 	if format == "zip" {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:72
 		return listZip(archivePath)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:73
 	if format == "targz" {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:74
 		return listTarGz(archivePath)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:75
 	return nil, fmt.Errorf("archive: unrecognized format for %v", archivePath)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:80
 func ReadEntry(archivePath string, name string) ([]byte, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:81
 	format := detectFormat(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:82
 	if format == "zip" {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:83
 		return readEntryZip(archivePath, name)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:84
 	if format == "targz" {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:85
 		return readEntryTarGz(archivePath, name)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:86
 	return nil, fmt.Errorf("archive: unrecognized format for %v", archivePath)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:93
 func WriteZip(archivePath string, paths []string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:94
 	for _, p := range paths {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:95
 		if filepath.IsAbs(p) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:96
 			return fmt.Errorf("archive: absolute paths not allowed in WriteZip: %v", p)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:97
 		if !filepath.IsLocal(p) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:98
 			return fmt.Errorf("archive: path escapes source directory in WriteZip: %v", p)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:100
 	out, err_1 := os.Create(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:100
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:100
 		return err_1
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:101
 	defer out.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:103
 	zw := zip.NewWriter(out)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:104
 	defer zw.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:106
 	for _, p := range paths {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:107
 		info, err_2 := os.Stat(p)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:107
 		if err_2 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:107
 			return err_2
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:108
 		if info.IsDir() {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:109
 			return fmt.Errorf("archive: WriteZip does not recurse directories (%v); use WriteTarGz for directory trees", p)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:111
 		hdr, err_3 := zip.FileInfoHeader(info)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:111
 		if err_3 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:111
 			return err_3
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:112
 		hdr.Name = filepath.ToSlash(p)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:113
 		hdr.Method = zip.Deflate
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:115
 		w, err_4 := zw.CreateHeader(hdr)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:115
 		if err_4 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:115
 			return err_4
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:117
 		src, err_5 := os.Open(p)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:117
 		if err_5 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:117
 			return err_5
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:118
 		_, copyErr := io.Copy(w, src)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:119
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:119
 		err_6 := src.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:119
 		if err_6 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:119
 			return err_6
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:120
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:120
 		if copyErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:121
 			return copyErr
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:122
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:127
 func WriteTarGz(archivePath string, sourceDir string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:128
 	info, err_7 := os.Stat(sourceDir)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:128
 	if err_7 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:128
 		return err_7
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:129
 	if !info.IsDir() {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:130
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:130
 		return fmt.Errorf("archive: WriteTarGz source must be a directory: %v", sourceDir)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:132
 	out, err_8 := os.Create(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:132
 	if err_8 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:132
 		return err_8
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:133
 	defer out.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:135
 	gw := gzip.NewWriter(out)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:136
 	defer gw.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:138
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:138
 	tw := tar.NewWriter(gw)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:139
 	defer tw.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:141
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:141
 	return writeTarDir(tw, sourceDir, sourceDir)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:144
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:144
 func detectFormat(path string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:145
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:145
 	lower := strings.ToLower(path)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:146
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:146
 	if strings.HasSuffix(lower, ".zip") {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:147
 		return "zip"
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:148
 	if strings.HasSuffix(lower, ".tar.gz") || strings.HasSuffix(lower, ".tgz") {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:149
 		return "targz"
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:150
 	return ""
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:156
 func safeJoin(dest string, name string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:157
 	if !filepath.IsLocal(name) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:158
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:158
 		return "", fmt.Errorf("archive: entry escapes destination: %v", name)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:159
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:159
 	return filepath.Join(dest, name), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:164
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:164
 func copyCapped(dst io.Writer, src io.Reader, remaining int64) (int64, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:165
 	limited := io.LimitReader(src, remaining+1)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:166
 	written, err_9 := io.Copy(dst, limited)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:166
 	if err_9 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:166
 		return 0, err_9
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:167
 	if written > remaining {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:168
 		return written, errors.New("archive: extracted size exceeds limit")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:169
 	return written, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:171
 func extractZip(archivePath string, dest string, maxBytes int64) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:172
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:172
 	err_10 := os.MkdirAll(dest, 0o755)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:172
 	if err_10 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:172
 		return err_10
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:174
 	r, err_11 := zip.OpenReader(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:174
 	if err_11 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:174
 		return err_11
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:175
 	defer r.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:177
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:177
 	remaining := maxBytes
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:178
 	for _, f := range r.File {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:179
 		target, err_12 := safeJoin(dest, f.Name)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:179
 		if err_12 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:179
 			return err_12
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:183
 		if f.FileInfo().IsDir() {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:184
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:184
 			err_13 := os.MkdirAll(target, f.Mode().Perm())
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:184
 			if err_13 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:184
 				return err_13
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:185
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:187
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:187
 		err_14 := os.MkdirAll(filepath.Dir(target), 0o755)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:187
 		if err_14 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:187
 			return err_14
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:189
 		rc, err_15 := f.Open()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:189
 		if err_15 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:189
 			return err_15
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:190
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:190
 		out, openErr := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode().Perm())
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:191
 		if openErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:192
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:192
 			err_16 := rc.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:192
 			if err_16 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:192
 				return err_16
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:193
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:193
 			return openErr
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:194
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:194
 		written, copyErr := copyCapped(out, rc, remaining)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:195
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:195
 		err_17 := rc.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:195
 		if err_17 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:195
 			return err_17
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:196
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:196
 		err_18 := out.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:196
 		if err_18 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:196
 			return err_18
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:197
 		if copyErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:198
 			return copyErr
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:199
 		remaining = remaining - written
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:200
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:202
 func extractTarGz(archivePath string, dest string, maxBytes int64) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:203
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:203
 	err_19 := os.MkdirAll(dest, 0o755)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:203
 	if err_19 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:203
 		return err_19
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:205
 	f, err_20 := os.Open(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:205
 	if err_20 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:205
 		return err_20
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:206
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:206
 	defer f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:208
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:208
 	gz, err_21 := gzip.NewReader(f)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:208
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:208
 	if err_21 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:208
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:208
 		return err_21
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:209
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:209
 	defer gz.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:211
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:211
 	tr := tar.NewReader(gz)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:212
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:212
 	remaining := maxBytes
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:213
 	for {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:214
 		hdr, hdrErr := tr.Next()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:215
 		if errors.Is(hdrErr, io.EOF) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:216
 			break
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:217
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:217
 		if hdrErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:218
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:218
 			return hdrErr
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:220
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:220
 		target, err_22 := safeJoin(dest, hdr.Name)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:220
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:220
 		if err_22 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:220
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:220
 			return err_22
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:224
 		if hdr.Typeflag == tar.TypeDir {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:225
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:225
 			err_23 := os.MkdirAll(target, hdr.FileInfo().Mode().Perm())
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:225
 			if err_23 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:225
 				return err_23
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:226
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:226
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:228
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:228
 		if hdr.Typeflag != tar.TypeReg {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:229
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:231
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:231
 		err_24 := os.MkdirAll(filepath.Dir(target), 0o755)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:231
 		if err_24 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:231
 			return err_24
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:233
 		out, err_25 := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, hdr.FileInfo().Mode().Perm())
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:233
 		if err_25 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:233
 			return err_25
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:234
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:234
 		written, copyErr := copyCapped(out, tr, remaining)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:235
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:235
 		err_26 := out.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:235
 		if err_26 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:235
 			return err_26
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:236
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:236
 		if copyErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:237
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:237
 			return copyErr
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:238
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:238
 		remaining = remaining - written
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:239
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:239
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:241
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:241
 func listZip(archivePath string) ([]Entry, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:242
 	r, err_27 := zip.OpenReader(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:242
 	if err_27 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:242
 		return []Entry{}, err_27
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:243
 	defer r.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:245
 	entries := []Entry{}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:246
 	for _, f := range r.File {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:247
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:247
 		info := f.FileInfo()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:248
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:248
 		entries = append(entries, Entry{Name: f.Name, Size: info.Size(), Mode: info.Mode(), ModTime: info.ModTime(), IsDir: info.IsDir()})
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:255
 	return entries, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:257
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:257
 func listTarGz(archivePath string) ([]Entry, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:258
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:258
 	f, err_28 := os.Open(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:258
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:258
 	if err_28 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:258
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:258
 		return []Entry{}, err_28
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:259
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:259
 	defer f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:261
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:261
 	gz, err_29 := gzip.NewReader(f)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:261
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:261
 	if err_29 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:261
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:261
 		return []Entry{}, err_29
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:262
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:262
 	defer gz.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:264
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:264
 	tr := tar.NewReader(gz)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:265
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:265
 	entries := []Entry{}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:266
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:266
 	for {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:267
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:267
 		hdr, hdrErr := tr.Next()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:268
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:268
 		if errors.Is(hdrErr, io.EOF) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:269
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:269
 			break
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:270
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:270
 		if hdrErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:271
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:271
 			return nil, hdrErr
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:272
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:272
 		fi := hdr.FileInfo()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:273
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:273
 		entries = append(entries, Entry{Name: hdr.Name, Size: hdr.Size, Mode: fi.Mode(), ModTime: hdr.ModTime, IsDir: fi.IsDir()})
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:280
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:280
 	return entries, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:282
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:282
 func readEntryZip(archivePath string, name string) ([]byte, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:283
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:283
 	r, err_30 := zip.OpenReader(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:283
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:283
 	if err_30 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:283
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:283
 		return []byte{}, err_30
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:284
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:284
 	defer r.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:286
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:286
 	for _, f := range r.File {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:287
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:287
 		if f.Name == name {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:288
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:288
 			if f.FileInfo().IsDir() {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:289
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:289
 				return nil, fmt.Errorf("archive: entry is a directory: %v", name)
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:290
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:290
 			rc, err_31 := f.Open()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:290
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:290
 			if err_31 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:290
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:290
 				return []byte{}, err_31
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:291
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:291
 			defer rc.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:292
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:292
 			return io.ReadAll(rc)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:293
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:293
 	return nil, fmt.Errorf("archive: entry not found: %v", name)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:295
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:295
 func readEntryTarGz(archivePath string, name string) ([]byte, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:296
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:296
 	f, err_32 := os.Open(archivePath)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:296
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:296
 	if err_32 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:296
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:296
 		return []byte{}, err_32
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:297
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:297
 	defer f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:299
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:299
 	gz, err_33 := gzip.NewReader(f)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:299
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:299
 	if err_33 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:299
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:299
 		return []byte{}, err_33
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:300
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:300
 	defer gz.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:302
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:302
 	tr := tar.NewReader(gz)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:303
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:303
 	for {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:304
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:304
 		hdr, hdrErr := tr.Next()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:305
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:305
 		if errors.Is(hdrErr, io.EOF) {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:306
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:306
 			break
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:307
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:307
 		if hdrErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:308
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:308
 			return nil, hdrErr
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:309
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:309
 		if hdr.Name == name {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:310
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:310
 			if hdr.FileInfo().IsDir() {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:311
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:311
 				return nil, fmt.Errorf("archive: entry is a directory: %v", name)
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:312
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:312
 			return io.ReadAll(tr)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:313
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:313
 	return nil, fmt.Errorf("archive: entry not found: %v", name)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:315
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:315
 func writeTarDir(tw *tar.Writer, root string, dir string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:316
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:316
 	entries, err_34 := os.ReadDir(dir)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:316
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:316
 	if err_34 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:316
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:316
 		return err_34
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:317
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:317
 	for _, e := range entries {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:318
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:318
 		full := filepath.Join(dir, e.Name())
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:319
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:319
 		info, err_35 := e.Info()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:319
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:319
 		if err_35 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:319
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:319
 			return err_35
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:320
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:320
 		rel, err_36 := filepath.Rel(root, full)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:320
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:320
 		if err_36 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:320
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:320
 			return err_36
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:322
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:322
 		hdr, err_37 := tar.FileInfoHeader(info, "")
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:322
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:322
 		if err_37 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:322
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:322
 			return err_37
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:323
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:323
 		hdr.Name = filepath.ToSlash(rel)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:324
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:324
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:324
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:324
 		err_38 := tw.WriteHeader(hdr)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:324
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:324
 		if err_38 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:324
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:324
 			return err_38
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:326
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:326
 		if info.IsDir() {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:327
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:327
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:327
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:327
 			err_39 := writeTarDir(tw, root, full)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:327
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:327
 			if err_39 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:327
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:327
 				return err_39
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:328
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:328
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:330
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:330
 		if !info.Mode().IsRegular() {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:331
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:331
 			continue
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:333
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:333
 		src, err_40 := os.Open(full)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:333
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:333
 		if err_40 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:333
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:333
 			return err_40
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:334
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:334
 		_, copyErr := io.Copy(tw, src)
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:335
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:335
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:335
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:335
 		err_41 := src.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:335
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:335
 		if err_41 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:335
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:335
 			return err_41
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:336
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:336
 		if copyErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:337
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:337
 			return copyErr
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:338
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive.kuki:338
 	return nil
 }

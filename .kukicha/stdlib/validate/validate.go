@@ -3,9 +3,9 @@
 package validate
 
 import (
-	kukistring "codeberg.org/kukichalang/kukicha/stdlib/string"
 	"errors"
 	"fmt"
+	kukistring "kukicha.org/kukicha/stdlib/string"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -15,478 +15,478 @@ import (
 	"unicode"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:19
 func NotEmpty(s string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:20
 	if kukistring.TrimSpace(s) == "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:21
 		return "", errors.New("value cannot be empty")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:22
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:26
 func MinLength(s string, n int) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:27
 	if len(s) < n {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:28
 		return s, fmt.Errorf("value must be at least %v characters", n)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:29
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:33
 func MaxLength(s string, n int) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:34
 	if len(s) > n {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:35
 		return s, fmt.Errorf("value must be at most %v characters", n)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:36
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:40
 func Length(s string, n int) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:41
 	if len(s) != n {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:42
 		return s, fmt.Errorf("value must be exactly %v characters", n)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:43
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:47
 func LengthBetween(s string, min int, max int) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:48
 	length := len(s)
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:49
 	if length < min || length > max {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:50
 		return s, fmt.Errorf("value must be between %v and %v characters", min, max)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:51
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:59
 func Matches(s string, pattern string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:60
 	matched, err_1 := regexp.MatchString(pattern, s)
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:60
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:60
 		err_1 = fmt.Errorf("invalid pattern: %w", err_1)
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:60
 		return "", err_1
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:61
 	if !matched {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:62
 		return s, errors.New("value does not match required pattern")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:63
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:69
 func Email(s string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:71
 	pattern := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:72
 	matched, err_2 := regexp.MatchString(pattern, s)
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:72
 	if err_2 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:72
 		panic(fmt.Sprintf("validate: invalid email pattern: %v", err_2))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:73
 	if !matched {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:74
 		return s, errors.New("invalid email address")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:75
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:79
 func URL(s string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:80
 	parsed, err_3 := url.Parse(s)
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:80
 	if err_3 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:80
 		err_3 = fmt.Errorf("invalid URL: %w", err_3)
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:80
 		return "", err_3
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:81
 	if parsed.Scheme == "" || parsed.Host == "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:82
 		return s, errors.New("URL must have scheme and host")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:83
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:87
 func Alpha(s string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:88
 	for _, r := range s {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:89
 		if !unicode.IsLetter(r) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:90
 			return s, errors.New("value must contain only letters")
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:91
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:95
 func Alphanumeric(s string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:96
 	for _, r := range s {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:97
 		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:98
 			return s, errors.New("value must contain only letters and numbers")
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:99
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:103
 func Numeric(s string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:104
 	for _, r := range s {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:105
 		if !unicode.IsDigit(r) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:106
 			return s, errors.New("value must contain only digits")
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:107
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:111
 func NoWhitespace(s string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:112
 	for _, r := range s {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:113
 		if unicode.IsSpace(r) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:114
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:114
 			return s, errors.New("value cannot contain whitespace")
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:115
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:119
 func StartsWith(s string, prefix string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:120
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:120
 	if !kukistring.HasPrefix(s, prefix) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:121
 		return s, fmt.Errorf("value must start with '%v'", prefix)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:122
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:126
 func EndsWith(s string, suffix string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:127
 	if !kukistring.HasSuffix(s, suffix) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:128
 		return s, fmt.Errorf("value must end with '%v'", suffix)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:129
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:133
 func Contains(s string, substr string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:134
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:134
 	if !strings.Contains(s, substr) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:135
 		return s, fmt.Errorf("value must contain '%v'", substr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:136
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:140
 func OneOf(s string, allowed ...string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:141
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:141
 	if slices.Contains(allowed, s) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:142
 		return s, nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:143
 	return s, errors.New("value must be one of the allowed options")
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:149
 func Positive(n int) (int, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:150
 	if n <= 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:151
 		return n, errors.New("value must be positive")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:152
 	return n, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:156
 func Negative(n int) (int, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:157
 	if n >= 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:158
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:158
 		return n, errors.New("value must be negative")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:159
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:159
 	return n, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:163
 func NonNegative(n int) (int, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:164
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:164
 	if n < 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:165
 		return n, errors.New("value cannot be negative")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:166
 	return n, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:170
 func NonZero(n int) (int, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:171
 	if n == 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:172
 		return n, errors.New("value cannot be zero")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:173
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:173
 	return n, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:177
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:177
 func InRange(n int, min int, max int) (int, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:178
 	if n < min || n > max {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:179
 		return n, fmt.Errorf("value must be between %v and %v", min, max)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:180
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:180
 	return n, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:184
 func Min(n int, min int) (int, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:185
 	if n < min {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:186
 		return n, fmt.Errorf("value must be at least %v", min)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:187
 	return n, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:191
 func Max(n int, max int) (int, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:192
 	if n > max {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:193
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:193
 		return n, fmt.Errorf("value must be at most %v", max)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:194
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:194
 	return n, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:200
 func PositiveFloat(n float64) (float64, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:201
 	if n <= 0.0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:202
 		return n, errors.New("value must be positive")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:203
 	return n, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:207
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:207
 func InRangeFloat(n float64, min float64, max float64) (float64, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:208
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:208
 	if n < min || n > max {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:209
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:209
 		return n, fmt.Errorf("value must be between %v and %v", min, max)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:210
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:210
 	return n, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:216
 func ParseInt(s string) (int, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:217
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:217
 	val, err_4 := strconv.Atoi(s)
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:217
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:217
 	if err_4 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:217
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:217
 		return 0, fmt.Errorf("invalid integer: %v", s)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:218
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:218
 	return val, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:222
 func ParsePositiveInt(s string) (int, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:223
 	val, err_5 := strconv.Atoi(s)
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:223
 	if err_5 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:223
 		return 0, fmt.Errorf("invalid integer: %v", s)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:224
 	if val <= 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:225
 		return val, errors.New("value must be positive")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:226
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:226
 	return val, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:230
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:230
 func ParseFloat(s string) (float64, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:231
 	val, err_6 := strconv.ParseFloat(s, 64)
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:231
 	if err_6 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:231
 		return 0.0, fmt.Errorf("invalid number: %v", s)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:232
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:232
 	return val, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:237
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:237
 func ParseBool(s string) (bool, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:238
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:238
 	lower := kukistring.ToLower(kukistring.TrimSpace(s))
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:239
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:239
 	if lower == "true" || lower == "1" || lower == "yes" || lower == "on" {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:240
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:240
 		return true, nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:241
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:241
 	if lower == "false" || lower == "0" || lower == "no" || lower == "off" {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:242
 		return false, nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:243
 	return false, fmt.Errorf("invalid boolean: %v", s)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:249
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:249
 func NotEmptyList(items []any) ([]any, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:250
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:250
 	if len(items) == 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:251
 		return items, errors.New("list cannot be empty")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:252
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:252
 	return items, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:256
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:256
 func ListMinLength(items []any, n int) ([]any, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:257
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:257
 	if len(items) < n {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:258
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:258
 		return items, fmt.Errorf("list must have at least %v elements", n)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:259
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:259
 	return items, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:263
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:263
 func ListMaxLength(items []any, n int) ([]any, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:264
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:264
 	if len(items) > n {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:265
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:265
 		return items, fmt.Errorf("list must have at most %v elements", n)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:266
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:266
 	return items, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:273
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:273
 func WithMessage(value string, err error, message string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:274
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:274
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:275
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:275
 		return value, fmt.Errorf("%v", message)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:276
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:276
 	return value, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:280
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:280
 func Require(s string, fieldName string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:281
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:281
 	if kukistring.TrimSpace(s) == "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:282
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:282
 		return "", fmt.Errorf("%v is required", fieldName)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:283
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:283
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:290
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:290
 func NoHTML(s string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:291
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:291
 	if strings.Contains(s, "<") || strings.Contains(s, ">") {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:292
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:292
 		return s, errors.New("value must not contain HTML")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:293
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:293
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:300
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:300
 func SafeFilename(s string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:301
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:301
 	if s == "" || s == "." || s == ".." {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:302
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:302
 		return s, errors.New("unsafe filename")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:303
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:303
 	if !filepath.IsLocal(s) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:304
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:304
 		return s, errors.New("filename contains unsafe characters")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:305
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:305
 	if strings.Contains(s, "\x00") {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:306
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:306
 		return s, errors.New("filename contains unsafe characters")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:307
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:307
 	return s, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:312
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:312
 func NoNullBytes(s string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:313
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:313
 	if strings.Contains(s, "\x00") {
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:314
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:314
 		return s, errors.New("value must not contain null bytes")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:315
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:315
 	return s, nil
 }

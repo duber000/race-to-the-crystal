@@ -3,13 +3,13 @@
 package table
 
 import (
-	strpkg "codeberg.org/kukichalang/kukicha/stdlib/string"
-	"codeberg.org/kukichalang/kukicha/stdlib/term"
 	"fmt"
+	strpkg "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/kukicha/stdlib/term"
 	"strings"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:23
 type Style string
 
 const (
@@ -48,305 +48,305 @@ func (e Style) String() string {
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:29
 type Table struct {
 	Headers []string
 	Rows    [][]string
 	Style   Style
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:36
 func New(headers []string) Table {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:37
 	return Table{Headers: headers, Rows: [][]string{}, Style: StylePlain}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:42
 func AddRow(t Table, row []string) Table {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:43
 	padded := make([]string, len(t.Headers))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:44
 	for i := range len(t.Headers) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:45
 		if i < len(row) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:46
 			padded[i] = row[i]
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:47
 	t.Rows = append(t.Rows, padded)
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:48
 	return t
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:52
 func WithStyle(t Table, style Style) Table {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:53
 	t.Style = style
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:54
 	return t
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:58
 func Print(t Table) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:59
 	fmt.Println(renderTable(t, t.Style))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:63
 func ToString(t Table) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:64
 	return renderTable(t, t.Style)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:70
 func renderTable(t Table, style Style) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:71
 	widths := make([]int, len(t.Headers))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:72
 	for i := range len(t.Headers) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:73
 		widths[i] = term.VisibleWidth(t.Headers[i])
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:74
 	for _, row := range t.Rows {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:75
 		for i := range len(t.Headers) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:76
 			if i < len(row) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:77
 				w := term.VisibleWidth(row[i])
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:78
 				if w > widths[i] {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:79
 					widths[i] = w
 				}
 			}
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:81
 	out := strings.Builder{}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:83
 	switch style {
 	case StyleMarkdown:
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:85
 		out.WriteString(renderMarkdownRow(t.Headers, widths))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:86
 		out.WriteString(renderMarkdownSep(widths))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:87
 		for _, row := range t.Rows {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:88
 			out.WriteString(renderMarkdownRow(row, widths))
 		}
 	case StyleBox:
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:90
 		out.WriteString(renderBoxTop(widths))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:91
 		out.WriteString(renderBoxRow(t.Headers, widths))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:92
 		out.WriteString(renderBoxMid(widths))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:93
 		for _, row := range t.Rows {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:94
 			out.WriteString(renderBoxRow(row, widths))
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:95
 		out.WriteString(renderBoxBottom(widths))
 	case StylePlain:
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:97
 		out.WriteString(renderPlainRow(t.Headers, widths))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:98
 		out.WriteString(renderPlainSep(widths))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:99
 		for _, row := range t.Rows {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:100
 			out.WriteString(renderPlainRow(row, widths))
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:102
 	return out.String()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:104
 func renderPlainRow(cols []string, widths []int) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:105
 	sb := strings.Builder{}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:106
 	for i := range len(widths) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:107
 		val := ""
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:108
 		if i < len(cols) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:109
 			val = cols[i]
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:110
 		sb.WriteString(term.PadRightVisible(val, widths[i]))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:111
 		if i < len(widths)-1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:112
 			sb.WriteString("  ")
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:113
 	sb.WriteString("\n")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:114
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:114
 	return sb.String()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:116
 func renderPlainSep(widths []int) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:117
 	sb := strings.Builder{}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:118
 	for i := range len(widths) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:119
 		sb.WriteString(strpkg.Repeat("-", widths[i]))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:120
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:120
 		if i < len(widths)-1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:121
 			sb.WriteString("  ")
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:122
 	sb.WriteString("\n")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:123
 	return sb.String()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:125
 func renderMarkdownRow(cols []string, widths []int) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:126
 	sb := strings.Builder{}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:127
 	sb.WriteString("|")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:128
 	for i := range len(widths) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:129
 		val := ""
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:130
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:130
 		if i < len(cols) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:131
 			val = cols[i]
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:132
 		sb.WriteString(fmt.Sprintf(" %v |", term.PadRightVisible(val, widths[i])))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:133
 	sb.WriteString("\n")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:134
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:134
 	return sb.String()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:136
 func renderMarkdownSep(widths []int) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:137
 	sb := strings.Builder{}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:138
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:138
 	sb.WriteString("|")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:139
 	for i := range len(widths) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:140
 		dashes := max(widths[i], 3)
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:141
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:141
 		sb.WriteString(" ")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:142
 		sb.WriteString(strpkg.Repeat("-", dashes))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:143
 		sb.WriteString(" |")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:144
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:144
 	sb.WriteString("\n")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:145
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:145
 	return sb.String()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:147
 func renderBoxTop(widths []int) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:148
 	sb := strings.Builder{}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:149
 	sb.WriteString("┌")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:150
 	for i := range len(widths) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:151
 		sb.WriteString(strpkg.Repeat("─", widths[i]+2))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:152
 		if i < len(widths)-1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:153
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:153
 			sb.WriteString("┬")
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:154
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:154
 	sb.WriteString("┐\n")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:155
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:155
 	return sb.String()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:157
 func renderBoxMid(widths []int) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:158
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:158
 	sb := strings.Builder{}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:159
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:159
 	sb.WriteString("├")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:160
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:160
 	for i := range len(widths) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:161
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:161
 		sb.WriteString(strpkg.Repeat("─", widths[i]+2))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:162
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:162
 		if i < len(widths)-1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:163
 			sb.WriteString("┼")
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:164
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:164
 	sb.WriteString("┤\n")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:165
 	return sb.String()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:167
 func renderBoxBottom(widths []int) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:168
 	sb := strings.Builder{}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:169
 	sb.WriteString("└")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:170
 	for i := range len(widths) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:171
 		sb.WriteString(strpkg.Repeat("─", widths[i]+2))
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:172
 		if i < len(widths)-1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:173
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:173
 			sb.WriteString("┴")
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:174
 	sb.WriteString("┘\n")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:175
 	return sb.String()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:177
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:177
 func renderBoxRow(cols []string, widths []int) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:178
 	sb := strings.Builder{}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:179
 	sb.WriteString("│")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:180
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:180
 	for i := range len(widths) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:181
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:181
 		val := ""
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:182
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:182
 		if i < len(cols) {
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:183
 			val = cols[i]
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:184
 		sb.WriteString(fmt.Sprintf(" %v │", term.PadRightVisible(val, widths[i])))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:185
 	sb.WriteString("\n")
-//line /Users/tluker/repos/go/kukicha/stdlib/table/table.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/table/table.kuki:186
 	return sb.String()
 }

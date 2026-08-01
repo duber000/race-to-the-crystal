@@ -66,6 +66,7 @@ func CreateGame on s: reference Session(game_name: string, player_name: string) 
         |> fetch.Method("POST")
         |> fetch.Header("Content-Type", "application/json")
         |> fetch.Body(body)
+        |> fetch.Retry(3, 500)
         |> fetch.Do() onerr
             log.Error("CreateGame: {error}")
             return false
@@ -97,6 +98,7 @@ func JoinGame on s: reference Session(game_id: string, player_name: string) bool
         |> fetch.Method("POST")
         |> fetch.Header("Content-Type", "application/json")
         |> fetch.Body(body)
+        |> fetch.Retry(3, 500)
         |> fetch.Do() onerr
             log.Error("JoinGame: {error}")
             return false
@@ -125,6 +127,7 @@ func FetchState on s: reference Session Payload
     resp := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Header("Authorization", "Bearer {s.token}")
+        |> fetch.Retry(3, 500)
         |> fetch.Do() onerr
             log.Error("FetchState: {error}")
             return empty Payload
@@ -166,6 +169,7 @@ func FetchActions on s: reference Session Payload
     resp := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Header("Authorization", "Bearer {s.token}")
+        |> fetch.Retry(3, 500)
         |> fetch.Do() onerr
             log.Error("FetchActions: {error}")
             return empty Payload
@@ -198,6 +202,7 @@ func SendAction on s: reference Session(action: gamepkg.ChosenAction) Payload
         |> fetch.Header("Content-Type", "application/json")
         |> fetch.Header("Authorization", "Bearer {s.token}")
         |> fetch.Body(body)
+        |> fetch.Retry(3, 500)
         |> fetch.Do() onerr
             log.Error("SendAction: {error}")
             return empty Payload
@@ -283,6 +288,7 @@ func SetReady on s: reference Session(ready: bool) bool
         |> fetch.Header("Content-Type", "application/json")
         |> fetch.Header("Authorization", "Bearer {s.token}")
         |> fetch.Body(body)
+        |> fetch.Retry(3, 500)
         |> fetch.Do() onerr
             log.Error("SetReady: {error}")
             return false
@@ -301,6 +307,7 @@ func StartGame on s: reference Session bool
     resp := fetch.New(url)
         |> fetch.Method("POST")
         |> fetch.Header("Authorization", "Bearer {s.token}")
+        |> fetch.Retry(3, 500)
         |> fetch.Do() onerr
             log.Error("StartGame: {error}")
             return false
@@ -325,6 +332,7 @@ func ListLobbies on s: reference Session list of Payload
     url := "{s.base_url}/api/games"
     resp := fetch.New(url)
         |> fetch.Method("GET")
+        |> fetch.Retry(3, 500)
         |> fetch.Do() onerr
             log.Error("ListLobbies: {error}")
             return empty list of Payload
@@ -413,6 +421,7 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
         |> fetch.Method("GET")
         |> fetch.Header("Authorization", "Bearer {s.token}")
         |> fetch.Header("Accept", "text/event-stream")
+        |> fetch.Retry(3, 500)
         |> fetch.Do() onerr
             log.Error("SSE connect failed: {error}")
             return

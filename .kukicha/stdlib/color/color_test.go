@@ -3,235 +3,235 @@
 package color_test
 
 import (
-	"codeberg.org/kukichalang/kukicha/stdlib/color"
-	"codeberg.org/kukichalang/kukicha/stdlib/term"
-	"codeberg.org/kukichalang/kukicha/stdlib/test"
 	"fmt"
+	"kukicha.org/kukicha/stdlib/color"
+	"kukicha.org/kukicha/stdlib/term"
+	"kukicha.org/kukicha/stdlib/test"
 	"os"
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:13
 type BoldCase struct {
 	name  string
 	input string
 	want  string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:18
 func TestBoldEnabled(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:19
 	color.SetEnabled(true)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:20
 	cases := []BoldCase{BoldCase{name: "simple", input: "hello", want: "\x1b[1mhello\x1b[0m"}, BoldCase{name: "empty", input: "", want: "\x1b[1m\x1b[0m"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:24
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:25
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:26
 			test.AssertEqual(t, color.Bold(tc.input), tc.want)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:31
 type StyleCase struct {
 	name string
 	fn   func(string) string
 	code string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:36
 func TestStylesEnabled(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:37
 	color.SetEnabled(true)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:38
 	cases := []StyleCase{StyleCase{name: "Bold", fn: color.Bold, code: "1"}, StyleCase{name: "Dim", fn: color.Dim, code: "2"}, StyleCase{name: "Italic", fn: color.Italic, code: "3"}, StyleCase{name: "Underline", fn: color.Underline, code: "4"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:44
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:45
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:46
 			got := tc.fn("x")
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:47
 			want := fmt.Sprintf("\x1b[%vmx\x1b[0m", tc.code)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:48
 			test.AssertEqual(t, got, want)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:53
 type ColorCase struct {
 	name string
 	fn   func(string) string
 	code string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:58
 func TestColorsEnabled(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:59
 	color.SetEnabled(true)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:60
 	cases := []ColorCase{ColorCase{name: "Red", fn: color.Red, code: "31"}, ColorCase{name: "Green", fn: color.Green, code: "32"}, ColorCase{name: "Yellow", fn: color.Yellow, code: "33"}, ColorCase{name: "Blue", fn: color.Blue, code: "34"}, ColorCase{name: "Magenta", fn: color.Magenta, code: "35"}, ColorCase{name: "Cyan", fn: color.Cyan, code: "36"}, ColorCase{name: "Gray", fn: color.Gray, code: "90"}, ColorCase{name: "BrightRed", fn: color.BrightRed, code: "91"}, ColorCase{name: "BrightGreen", fn: color.BrightGreen, code: "92"}, ColorCase{name: "BrightYellow", fn: color.BrightYellow, code: "93"}, ColorCase{name: "BrightBlue", fn: color.BrightBlue, code: "94"}, ColorCase{name: "BrightMagenta", fn: color.BrightMagenta, code: "95"}, ColorCase{name: "BrightCyan", fn: color.BrightCyan, code: "96"}, ColorCase{name: "BrightWhite", fn: color.BrightWhite, code: "97"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:76
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:77
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:78
 			got := tc.fn("x")
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:79
 			want := fmt.Sprintf("\x1b[%vmx\x1b[0m", tc.code)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:80
 			test.AssertEqual(t, got, want)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:85
 type DisabledCase struct {
 	name string
 	fn   func(string) string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:89
 func TestDisabled(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:90
 	color.SetEnabled(false)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:91
 	cases := []DisabledCase{DisabledCase{name: "Bold", fn: color.Bold}, DisabledCase{name: "Dim", fn: color.Dim}, DisabledCase{name: "Italic", fn: color.Italic}, DisabledCase{name: "Underline", fn: color.Underline}, DisabledCase{name: "Red", fn: color.Red}, DisabledCase{name: "Green", fn: color.Green}, DisabledCase{name: "Yellow", fn: color.Yellow}, DisabledCase{name: "Blue", fn: color.Blue}, DisabledCase{name: "Magenta", fn: color.Magenta}, DisabledCase{name: "Cyan", fn: color.Cyan}, DisabledCase{name: "Gray", fn: color.Gray}, DisabledCase{name: "BrightRed", fn: color.BrightRed}, DisabledCase{name: "BrightGreen", fn: color.BrightGreen}, DisabledCase{name: "BrightYellow", fn: color.BrightYellow}, DisabledCase{name: "BrightBlue", fn: color.BrightBlue}, DisabledCase{name: "BrightMagenta", fn: color.BrightMagenta}, DisabledCase{name: "BrightCyan", fn: color.BrightCyan}, DisabledCase{name: "BrightWhite", fn: color.BrightWhite}}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:111
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:112
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:113
 			test.AssertEqual(t, tc.fn("hello"), "hello")
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:118
 type SemanticCase struct {
 	name string
 	fn   func(string) string
 	want string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:123
 func TestSemanticHelpers(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:124
 	color.SetEnabled(true)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:125
 	cases := []SemanticCase{SemanticCase{name: "Error", fn: color.Error, want: "\x1b[1;91mtest\x1b[0m"}}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:128
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:129
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:130
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:130
 			test.AssertEqual(t, tc.fn("test"), tc.want)
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:135
 func TestSemanticDisabled(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:136
 	color.SetEnabled(false)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:137
 	cases := []DisabledCase{DisabledCase{name: "Error", fn: color.Error}}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:140
 	for _, tc := range cases {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:141
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:141
 		t.Run(tc.name, func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:142
 			test.AssertEqual(t, tc.fn("hello"), "hello")
 		})
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:147
 func TestNesting(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:148
 	color.SetEnabled(true)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:151
 	t.Run("inner reset re-opens outer style", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:152
 		inner := color.Bold("b")
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:153
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:153
 		got := color.Red(inner)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:154
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:154
 		want := "\x1b[31m\x1b[1mb\x1b[0m\x1b[31m\x1b[0m"
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:155
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:155
 		test.AssertEqual(t, got, want)
 	})
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:159
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:159
 	t.Run("no inner reset is unchanged", func(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:160
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:160
 		got := color.Red("plain")
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:161
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:161
 		want := "\x1b[31mplain\x1b[0m"
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:162
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:162
 		test.AssertEqual(t, got, want)
 	})
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:167
 func TestSetEnabled(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:168
 	color.SetEnabled(true)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:169
 	test.AssertTrue(t, color.Enabled())
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:172
 	test.AssertTrue(t, term.ColorEnabled())
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:174
 	color.SetEnabled(false)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:175
 	test.AssertFalse(t, color.Enabled())
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:176
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:176
 	test.AssertFalse(t, term.ColorEnabled())
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:178
 	color.SetEnabled(true)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:179
 	test.AssertTrue(t, color.Enabled())
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:183
 func TestStylerHonorsOverride(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:184
 	term.SetColorEnabled(true)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:185
 	defer term.ResetColorOverride()
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:187
 	s := color.NewStyler(os.Stderr)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:188
 	test.AssertEqual(t, s.Red("x"), "\x1b[31mx\x1b[0m")
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:190
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:190
 	term.SetColorEnabled(false)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:191
 	test.AssertEqual(t, s.Red("x"), "x")
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:195
 func TestStylerNonTTY(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:196
 	term.ResetColorOverride()
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:197
 	defer term.ResetColorOverride()
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:198
 	_ = os.Unsetenv("FORCE_COLOR")
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:199
 	_ = os.Unsetenv("NO_COLOR")
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:201
 	f, err_1 := os.Open("color.kuki")
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:201
 	if err_1 != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:201
 		panic("open failed")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:202
 	defer f.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:203
 	s := color.NewStyler(f)
-//line /Users/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/color/color_test.kuki:205
 	test.AssertEqual(t, s.Red("x"), "x")
 }
