@@ -177,20 +177,20 @@ type Response struct {
 type ResponseRequest struct {
 	Model              string            `json:"model"`
 	Input              any               `json:"input"`
-	Instructions       string            `json:"instructions,omitempty"`
-	PreviousResponseID string            `json:"previous_response_id,omitempty"`
-	Temperature        float64           `json:"temperature,omitempty"`
-	TopP               float64           `json:"top_p,omitempty"`
-	MaxOutputTokens    int               `json:"max_output_tokens,omitempty"`
-	PresencePenalty    float64           `json:"presence_penalty,omitempty"`
-	FrequencyPenalty   float64           `json:"frequency_penalty,omitempty"`
-	Tools              []Tool            `json:"tools,omitempty"`
-	ToolChoice         any               `json:"tool_choice,omitempty"`
-	Stream             bool              `json:"stream,omitempty"`
-	Store              bool              `json:"store,omitempty"`
-	Truncation         string            `json:"truncation,omitempty"`
-	Metadata           map[string]string `json:"metadata,omitempty"`
-	Text               any               `json:"text,omitempty"`
+	Instructions       string            `json:"instructions,omitzero"`
+	PreviousResponseID string            `json:"previous_response_id,omitzero"`
+	Temperature        float64           `json:"temperature,omitzero"`
+	TopP               float64           `json:"top_p,omitzero"`
+	MaxOutputTokens    int               `json:"max_output_tokens,omitzero"`
+	PresencePenalty    float64           `json:"presence_penalty,omitzero"`
+	FrequencyPenalty   float64           `json:"frequency_penalty,omitzero"`
+	Tools              []Tool            `json:"tools,omitzero"`
+	ToolChoice         any               `json:"tool_choice,omitzero"`
+	Stream             bool              `json:"stream,omitzero"`
+	Store              bool              `json:"store,omitzero"`
+	Truncation         string            `json:"truncation,omitzero"`
+	Metadata           map[string]string `json:"metadata,omitzero"`
+	Text               any               `json:"text,omitzero"`
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/responses/responses.kuki:171

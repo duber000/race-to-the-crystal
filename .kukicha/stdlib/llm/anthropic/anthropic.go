@@ -131,19 +131,19 @@ type MessagesRequest struct {
 	Model         string    `json:"model"`
 	Messages      []Message `json:"messages"`
 	MaxTokens     int       `json:"max_tokens"`
-	System        string    `json:"system,omitempty"`
-	Temperature   float64   `json:"temperature,omitempty"`
-	TopP          float64   `json:"top_p,omitempty"`
-	TopK          int       `json:"top_k,omitempty"`
-	StopSequences []string  `json:"stop_sequences,omitempty"`
-	Stream        bool      `json:"stream,omitempty"`
-	Tools         []Tool    `json:"tools,omitempty"`
-	ToolChoice    any       `json:"tool_choice,omitempty"`
-	Metadata      any       `json:"metadata,omitempty"`
-	Thinking      any       `json:"thinking,omitempty"`
-	Effort        string    `json:"effort,omitempty"`
-	OutputConfig  any       `json:"output_config,omitempty"`
-	InferenceGeo  string    `json:"inference_geo,omitempty"`
+	System        string    `json:"system,omitzero"`
+	Temperature   float64   `json:"temperature,omitzero"`
+	TopP          float64   `json:"top_p,omitzero"`
+	TopK          int       `json:"top_k,omitzero"`
+	StopSequences []string  `json:"stop_sequences,omitzero"`
+	Stream        bool      `json:"stream,omitzero"`
+	Tools         []Tool    `json:"tools,omitzero"`
+	ToolChoice    any       `json:"tool_choice,omitzero"`
+	Metadata      any       `json:"metadata,omitzero"`
+	Thinking      any       `json:"thinking,omitzero"`
+	Effort        string    `json:"effort,omitzero"`
+	OutputConfig  any       `json:"output_config,omitzero"`
+	InferenceGeo  string    `json:"inference_geo,omitzero"`
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/anthropic/anthropic.kuki:139

@@ -91,7 +91,7 @@ Requires Go 1.26+. See `go.mod` for the current version.
 <!-- kukicha:start -->
 ## Writing Kukicha
 
-Kukicha is a near-superset of Go: most Go compiles as-is — including `{ }` brace blocks — with a few exceptions (`range`, `case`/`default`, `struct {}`, `chan T`, `goto`, generic `[T]` declarations, parenthesized `const ( ... )`, Go-style `type X interface { ... }` declarations, and C-style `for init; cond; post { }` loops) that have Kukicha replacements. Go-compat forms are for migration, not authoring: **always write Kukicha syntax** (4-space indentation, `and`/`or`/`not`, `list of T`, `onerr`, pipes, enums) and use Kukicha's stdlib (`stdlib/*`) over raw Go packages. Fall back to Go only when Kukicha has no equivalent.
+Kukicha is a near-superset of Go: most Go compiles as-is — including `{ }` brace blocks — with a few exceptions (`case`/`default`, `chan T`, `goto`, generic `[T]` declarations, parenthesized `const ( ... )`, Go-style `type X interface { ... }` declarations, and C-style `for init; cond; post { }` loops) that have Kukicha replacements. Anonymous `struct { ... }` types and literals parse directly (`struct { field: Type }{field: value}`). Go-compat forms are for migration, not authoring: **always write Kukicha syntax** (4-space indentation, `and`/`or`/`not`, `list of T`, `onerr`, pipes, enums) and use Kukicha's stdlib (`stdlib/*`) over raw Go packages. Fall back to Go only when Kukicha has no equivalent.
 
 Comments start with `#` (Go's `//` is not a comment in Kukicha — it parses as two division operators).
 
@@ -149,7 +149,7 @@ func main()
 | `send val to ch` / `receive from ch` | `ch <- val` / `<-ch` |
 | `when` / `default` | `case` / `default` |
 | `# comment` | `// comment` |
-| `for item in items` | `for _, item := range items` |
+| `for item in items` / `for i, v := range items` | `for _, item := range items` / `for i, v := range items` |
 | `for i from 0 to 10` | `for i := 0; i < 10; i++` |
 | `for i from 0 through 10` | `for i := 0; i <= 10; i++` |
 | `interface Reader` + indented methods | `type Reader interface { ... }` |
@@ -163,7 +163,7 @@ func main()
 
 ```kukicha
 const PI = 3.14159
-const MaxRetries int = 5
+const MaxRetries: int = 5
 ```
 
 `const` works at the top level or inside a function body (for tunables you want visually flagged as immutable). For a group of related constants, use `enum` instead (see [Enums](#enums)) — the parenthesized `const ( ... )` form and `iota` are Go-only.
@@ -175,8 +175,8 @@ const MaxRetries int = 5
 count := 42           # inferred type
 count = 100           # reassignment
 
-var p reference int   # zero-value declaration — error: must initialize or use optional
-var xs list of string
+var p: reference int   # zero-value declaration — error: must initialize or use optional
+var xs: list of string
 
 func Add(a: int, b: int) int
     return a + b
@@ -192,9 +192,16 @@ func Greet(name: string, greeting: string = "Hello") string
 
 result := Greet("Alice", greeting: "Hi")
 files.Copy(from: src, to: dst)
+
+quantity := 5.0
+unitPrice := 10.0
+discount := 0.2
+total := calculateTotal(quantity: quantity, unitPrice: unitPrice, discount: discount)
 ```
 
 `name: Type` is the canonical form everywhere a name binds to a type — parameters, receivers, lambda parameters, struct fields, and variant-enum payload fields. Bare `name Type` parses for Go compatibility but warns as deprecated (`kukicha fmt -w` rewrites it). `error "message"` constructs an error value (Kukicha's `errors.New`/`fmt.Errorf`); interpolation works inside the string: `error "bad value {x}"`.
+
+Named-argument types are type-checked against their parameter types (a `f(count: "three")` where `count` is `int` is a compile error, not a silent pass). Keep the value explicit even when it has the same name as its label: write `f(count: count)`.
 
 ### Strings and Interpolation
 
@@ -292,6 +299,12 @@ enum Status
     NotFound = 404
     Error = 500
 
+# An explicit integer raw type declares an internal ordinal sequence.
+enum Phase: int
+    Queued      # 0
+    Running     # 1
+    Complete    # 2
+
 func example()
     status := Status.OK    # dot access → transpiles to StatusOK
 
@@ -310,7 +323,7 @@ enum Bump: string
 b := ParseBump(raw) onerr panic "{error}"   # error names the bad value + the valid set
 ```
 
-- Underlying type (int or string) inferred from the values; all must match. Integer enums warn if no case has value 0; duplicate raw string values are a compile error.
+- Underlying type (int or string) is inferred from explicit values; all values must match. Use `enum Name: int` (or another integer type such as `int64`) for an ordinal sequence with omitted values. Without an explicit integer raw type, every value-enum case needs `= value`. Keep values explicit for database, protocol, and persisted data. Integer enums warn if no case has value 0; duplicate raw string values are a compile error.
 - Auto-generated: a `String()` method, an `All<Name>() list of <Name>` iterator in declaration order (`for s in AllStatus()`; declaring your own `All<Name>` is a compile error), and — for string-valued enums — a package-level `Parse<Name>(s string) (<Name>, error)` that composes with `onerr` and auto-propagation.
 - The `: string` annotation only changes `String()` to return the raw value (`"patch"`) instead of the case name (`"Patch"`); `Parse<Name>`/`All<Name>` are generated either way. It does not make the enum string-valued — the `= "json"` values do that.
 - The enum *type name itself is not a value* — `x := Status` is rejected (use `Status.OK` or a conversion `Status(200)`). Same rule for plain type names and package names (`y := fmt` is rejected).
@@ -488,12 +501,13 @@ resp := fetch.Get(url) |> fetch.CheckStatus() onerr panic "{error}"
 
 # Piped switch — expression-only (RHS of assignment or return, never a bare
 # statement; use statement-form `switch x` for side-effect dispatch).
-# Arms yield their value with `return`
+# A single-expression arm yields its value bare; `return` is required for
+# multi-statement and multi-value arms.
 role := user.Role |> switch
     when "admin"
-        return "admin"
+        "admin"
     default
-        return "user"
+        "user"
 
 # On a variant enum — exhaustiveness-checked; `as v` names the piped value
 area := shape |> switch as v
@@ -657,7 +671,9 @@ func example3()
     }
 ```
 
-Inference works in return statements, `onerr` handlers, function arguments, assignments, and typed list elements.
+Inference works in return statements, `onerr` handlers, function arguments, assignments, and typed list elements. Idiomatic Kukicha uses named `type` declarations (`type User \n    name: string`) and untyped literals (`{name: "Alice"}`). Anonymous struct types (`struct { name: string }`) and explicit literals parse for Go compatibility and interop.
+
+Struct literal field values are explicit, including when the local has the same name: `User{name: name, age: age}`. This keeps the source self-contained and mirrors named arguments.
 
 ### Comprehensions
 
@@ -676,8 +692,8 @@ func comprehensionExample(users: list of User)
 
     # map of K to V for X in XS if COND  (filtered)
     activeByID := map of u.id to u.name for u in users if u.active
-    _ = byID
-    _ = activeByID
+    print(byID)
+    print(activeByID)
 ```
 
 For filter+map over a slice (the former `list of EXPR for X in XS`), use a pipe chain — it reads left-to-right and the result is typed `list of T`, not `list of any`:
@@ -691,9 +707,9 @@ func pipeExample(users: list of User)
     names := users |> slice.Map((u) => u.name)
     activeNames := users |> slice.Filter((u) => u.active) |> slice.Map((u) => u.name)
     uniqueNames := set.From(users |> slice.Map((u) => u.name))
-    _ = names
-    _ = activeNames
-    _ = uniqueNames
+    print(names)
+    print(activeNames)
+    print(uniqueNames)
 ```
 
 The map-comprehension desugar reuses the generic stdlib — `map of K to V for X in XS` becomes `slice.ToMap(XS, (X) => K, (X) => V)`, so the result is `map of K to V`, not `map of any to any`. `stdlib/slice` is auto-imported; you don't need an explicit `import "stdlib/slice"` to use a map comprehension. The formatter prints the desugared `slice.ToMap` form, not the comprehension syntax — a known tradeoff of parser-level desugar.
@@ -779,7 +795,8 @@ defer resource.Close()
 
 # Block form (emits defer func() { ... }())
 defer
-    if r := recover(); r isnt empty
+    r := recover()
+    if r isnt empty
         tx.Rollback()
         panic(r)
 ```
@@ -875,7 +892,7 @@ The stdlib is extracted to `.kukicha/stdlib/` on `kukicha init` — **read the `
 
 **Collections & strings.** `stdlib/slice` (`Filter`/`Map`/`Reject`/`Partition`/`Sort`/`First`/`FindOr`/`Sum`/`Min`/`Max`…), `stdlib/maps`, `stdlib/set`, `stdlib/sort` (`By`/`ByKey`), `stdlib/string` as `strpkg`, `stdlib/regex` (`MustCompile` + `*Compiled` variants), `stdlib/iterator` (lazy `iter.Seq`), `stdlib/cast` (`SmartInt`/`SmartBool`/`IsNil`…), `stdlib/math` (`Abs`/`Round`/`Clamp` — reach for Go's `math` for `Sqrt`/`Pow`/…).
 
-**Data & encoding.** `stdlib/json` as `jsonpkg` (`String`/`PrettyString` for JSON production — prefer over hand-written JSON strings that hit the interpolation rule; `Bytes`/`PrettyBytes` for `[]byte`; naming-aware `Codec` for tag-free JSON — `NewCodec(json.SnakeCase).Omit("Password") |> EncodeWith(v)`; `c |> DecodeStringWith of T from data`), `stdlib/parse` (typed `parse.JSON of T from text`, also YAML/Form/Env/CSV/Int/URL — auto-runs `Validate()`), `stdlib/encoding` (base64/hex), `stdlib/template`, `stdlib/markdown` (CommonMark+GFM, pair with `http.SafeHTML` for untrusted input).
+**Data & encoding.** `stdlib/json` as `jsonpkg` (`String`/`PrettyString` for JSON production — prefer over hand-written JSON strings that hit the interpolation rule; `Bytes`/`PrettyBytes` for `[]byte`; naming-aware `Codec` for tag-free JSON — `NewCodec(json.SnakeCase).Omit("Password") |> EncodeWith(v)`; `c |> DecodeStringWith of T from data`; two decode shapes — `ParseString of T` returns a fresh zero-based value for complete documents, while `ParseStringInto`/`ParseInto`/`ReadInto` decode *into* a pre-populated target so fields absent from the JSON keep their existing values — use the `*Into` family when layering a config file over `Config{...}` defaults), `stdlib/parse` (typed `parse.JSON of T from text`, also YAML/Form/Env/CSV/Int/URL — auto-runs `Validate()`), `stdlib/encoding` (base64/hex), `stdlib/template`, `stdlib/markdown` (CommonMark+GFM, pair with `http.SafeHTML` for untrusted input).
 
 **I/O & files.** `stdlib/files` (`Read`/`Write`/`Copy`/`List`/`Watch`/…), `stdlib/archive` (zip+tar.gz, zip-slip + decompression-bomb safe), `stdlib/sandbox` (filesystem jail for HTTP handlers), `stdlib/shell` (`Output`/`Lines`/`Capture` + `shell.New |> .Dir |> .Env |> .Stdin |> .Output()` builder), `stdlib/blob` (unified S3-compatible object storage client — AWS S3, Cloudflare R2, GCS, MinIO, Backblaze B2, Wasabi; `OpenEnv`/`Put`/`Get`/`ListAll`).
 
@@ -910,13 +927,13 @@ c := chat.New("openai:gpt-4o-mini")
     |> chat.User("Weather in Paris?")
 comp := c |> chat.SendRaw onerr panic "{error}"
 if chat.HasToolCalls(comp)
-    handlers := make(map of string to func(string) string)
+    handlers := empty map of string to func(string) string
     handlers["get_weather"] = (args: string) => "Sunny, 22°C"
     c = chat.ExecuteToolCalls(c, comp, handlers) onerr panic "{error}"
 
 # MCP server tool with typed args
 mcp.Tool of PriceArgs(server, "get_price", "Get stock price", schema,
-    func(args: PriceArgs) (any, error)
+    (args: PriceArgs) =>
         return lookupPrice(args.Symbol), empty)
 
 # ToolWithOpts — annotation hints + enum-restricted property
@@ -925,7 +942,7 @@ schema2 := mcp.Schema(list of mcp.SchemaProperty{
 }) |> mcp.Required(list of string{"direction"})
 mcp.ToolWithOpts of SortArgs(server, "sort_items", "Sort a list", schema2,
     mcp.ToolOpts{ReadOnly: true, Title: "Sort Items"},
-    func(args: SortArgs) (any, error)
+    (args: SortArgs) =>
         return sortItems(args.Direction), empty)
 ```
 

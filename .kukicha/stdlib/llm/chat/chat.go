@@ -216,19 +216,19 @@ type Chunk struct {
 type CompletionRequest struct {
 	Model            string    `json:"model"`
 	Messages         []Message `json:"messages"`
-	Temperature      float64   `json:"temperature,omitempty"`
-	MaxTokens        int       `json:"max_tokens,omitempty"`
-	TopP             float64   `json:"top_p,omitempty"`
-	N                int       `json:"n,omitempty"`
-	Stop             []string  `json:"stop,omitempty"`
-	PresencePenalty  float64   `json:"presence_penalty,omitempty"`
-	FrequencyPenalty float64   `json:"frequency_penalty,omitempty"`
-	Seed             int       `json:"seed,omitempty"`
-	User             string    `json:"user,omitempty"`
-	Stream           bool      `json:"stream,omitempty"`
-	Tools            []Tool    `json:"tools,omitempty"`
-	ToolChoice       any       `json:"tool_choice,omitempty"`
-	ResponseFormat   any       `json:"response_format,omitempty"`
+	Temperature      float64   `json:"temperature,omitzero"`
+	MaxTokens        int       `json:"max_tokens,omitzero"`
+	TopP             float64   `json:"top_p,omitzero"`
+	N                int       `json:"n,omitzero"`
+	Stop             []string  `json:"stop,omitzero"`
+	PresencePenalty  float64   `json:"presence_penalty,omitzero"`
+	FrequencyPenalty float64   `json:"frequency_penalty,omitzero"`
+	Seed             int       `json:"seed,omitzero"`
+	User             string    `json:"user,omitzero"`
+	Stream           bool      `json:"stream,omitzero"`
+	Tools            []Tool    `json:"tools,omitzero"`
+	ToolChoice       any       `json:"tool_choice,omitzero"`
+	ResponseFormat   any       `json:"response_format,omitzero"`
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat.kuki:161

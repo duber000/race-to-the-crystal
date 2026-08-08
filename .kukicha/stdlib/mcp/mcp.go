@@ -203,11 +203,11 @@ func encodeContent(c content.Content) mcp.Content {
 		return &mcp.EmbeddedResource{Resource: &mcp.ResourceContents{URI: c.URI, MIMEType: c.MIMEType, Text: c.Text, Blob: c.Blob}}
 	case content.ToolUse:
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:124
-		input, ok := c.Input.(map[string]any)
+		input := map[string]any{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:125
-		if !ok {
+		if inputMap, _isOk := c.Input.(map[string]any); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:126
-			input = nil
+			input = inputMap
 		}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:127
 		return &mcp.ToolUseContent{ID: c.ID, Name: c.Name, Input: input}

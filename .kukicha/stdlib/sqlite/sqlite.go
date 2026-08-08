@@ -969,112 +969,108 @@ func makeBackupFunc(destPath string) func(any) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:675
 	return func(driverConn any) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:676
-		rawer, ok := driverConn.(rawConnector)
+		if rawer, _isOk := driverConn.(rawConnector); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:677
-		if !ok {
+			return rawer.Raw().Backup("main", "file:"+destPath)
+		}
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:678
-			return goerrors.New("sqlite.Backup: driver does not support raw connection access")
-		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:679
-		return rawer.Raw().Backup("main", "file:"+destPath)
+		return goerrors.New("sqlite.Backup: driver does not support raw connection access")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:681
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:680
 func makeRegisterFuncCallback(name string, nArgs int, sfn sqlite3.ScalarFunction) func(any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:682
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:681
 	return func(driverConn any) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:682
+		if rawer, _isOk := driverConn.(rawConnector); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:683
-		rawer, ok := driverConn.(rawConnector)
+			conn := rawer.Raw()
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:684
-		if !ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:685
-			return goerrors.New("sqlite.CreateFunction: driver does not support raw connection access")
+			return conn.CreateFunction(name, nArgs, sqlite3.DETERMINISTIC, sfn)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:686
-		conn := rawer.Raw()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:687
-		return conn.CreateFunction(name, nArgs, sqlite3.DETERMINISTIC, sfn)
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:685
+		return goerrors.New("sqlite.CreateFunction: driver does not support raw connection access")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:692
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:690
 const underscoreRune = rune(95)
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:694
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:692
 const minusByte = byte(45)
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:697
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:695
 func isValidPragmaName(name string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:698
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:696
 	if len(name) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:699
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:697
 		return false
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:700
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:698
 	for _, r := range name {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:701
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:699
 		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != underscoreRune {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:702
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:700
 			return false
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:703
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:701
 	return true
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:707
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:705
 func isValidPragmaValue(value string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:708
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:706
 	if len(value) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:709
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:707
 		return false
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:710
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:708
 	v := value
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:711
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:709
 	if v[0] == minusByte {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:712
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:710
 		v = v[1:]
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:713
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:711
 		if len(v) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:714
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:712
 			return false
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:715
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:713
 	for _, r := range v {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:716
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:714
 		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != underscoreRune {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:717
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:715
 			return false
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:718
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:716
 	return true
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:721
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:719
 func quoteIdentifier(name string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:722
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:720
 	return "\"" + strpkg.ReplaceAll(name, "\"", "\"\"") + "\""
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:725
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:723
 func formatSQLValue(v any) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:726
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:724
 	if v == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:727
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:725
 		return "NULL"
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:728
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:726
 	if i, _isOk := v.(int64); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:729
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:727
 		return fmt.Sprintf("%v", i)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:730
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:728
 	if f, _isOk := v.(float64); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:731
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:729
 		return func() string {
 			onerrVal_35, err_36 := cast.SmartString(f)
 			if err_36 != nil {
@@ -1083,9 +1079,9 @@ func formatSQLValue(v any) string {
 			return onerrVal_35
 		}()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:732
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:730
 	if b, _isOk := v.(bool); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:733
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:731
 		return func() string {
 			if b {
 				return "1"
@@ -1094,8 +1090,8 @@ func formatSQLValue(v any) string {
 			}
 		}()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:735
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:733
 	s := fmt.Sprintf("%v", v)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:736
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:734
 	return "'" + strpkg.ReplaceAll(s, "'", "''") + "'"
 }

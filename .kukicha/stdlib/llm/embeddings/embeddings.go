@@ -39,10 +39,10 @@ type Response struct {
 type Request struct {
 	Model          string `json:"model"`
 	Input          any    `json:"input"`
-	Dimensions     int    `json:"dimensions,omitempty"`
-	EncodingFormat string `json:"encoding_format,omitempty"`
-	User           string `json:"user,omitempty"`
-	InputType      string `json:"input_type,omitempty"`
+	Dimensions     int    `json:"dimensions,omitzero"`
+	EncodingFormat string `json:"encoding_format,omitzero"`
+	User           string `json:"user,omitzero"`
+	InputType      string `json:"input_type,omitzero"`
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:61

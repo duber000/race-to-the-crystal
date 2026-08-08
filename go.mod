@@ -4,7 +4,7 @@ go 1.27rc2
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.9.9
-	kukicha.org/kukicha/stdlib v0.73.0
+	kukicha.org/kukicha/stdlib v0.77.0
 )
 
 require (

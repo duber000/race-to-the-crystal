@@ -632,8 +632,7 @@ func loadFieldMaps(elemType reflect.Type) *fieldMaps {
 	if //line /var/home/tluker/repos/go/kukicha/stdlib/db/db.kuki:384
 	cached, ok := fieldMapCache.Load(elemType); ok {
 //line /var/home/tluker/repos/go/kukicha/stdlib/db/db.kuki:385
-		if //line /var/home/tluker/repos/go/kukicha/stdlib/db/db.kuki:385
-		m, ok2 := cached.(*fieldMaps); ok2 {
+		if m, _isOk := cached.(*fieldMaps); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/db/db.kuki:386
 			return m
 		}

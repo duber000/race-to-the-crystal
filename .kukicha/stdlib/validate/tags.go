@@ -212,30 +212,26 @@ type Validatable interface {
 //line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:128
 func RunIfValidatable(v any) []FieldError {
 //line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:129
-	val, ok := v.(Validatable)
+	if val, _isOk := v.(Validatable); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:130
-	if !ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:131
-		return []FieldError{}
+		return val.Validate()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:132
-	return val.Validate()
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:131
+	return []FieldError{}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:136
 type TagValidatable interface {
 	ValidateTags() []FieldError
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:144
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:143
 func RunTags(v any) []FieldError {
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:144
+	if tagger, _isOk := v.(TagValidatable); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:145
-	tagger, ok := v.(TagValidatable)
-//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:146
-	if ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:147
 		return tagger.ValidateTags()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/validate/tags.kuki:146
 	return RunIfValidatable(v)
 }

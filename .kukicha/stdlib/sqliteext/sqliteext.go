@@ -37,18 +37,16 @@ func makeRegisterCallback(registrar Registrar) func(any) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:96
 	return func(driverConn any) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:97
-		rawer, ok := driverConn.(rawConnector)
+		if rawer, _isOk := driverConn.(rawConnector); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:98
-		if !ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:99
-			return errors.New("sqliteext.Register: driver does not support raw connection access")
+			return registrar(rawer.Raw())
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:100
-		return registrar(rawer.Raw())
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:99
+		return errors.New("sqliteext.Register: driver does not support raw connection access")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqliteext/sqliteext.kuki:102
 type rawConnector interface {
 	Raw() *sqlite3.Conn
 }

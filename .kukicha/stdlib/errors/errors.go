@@ -37,12 +37,10 @@ func NewPublic(internalMsg string, publicMsg string) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:49
 func Public(err error) string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:50
-	e, ok := err.(PublicError)
+	if e, _isOk := err.(PublicError); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:51
-	if ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:52
 		return e.public
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:52
 	return "an error occurred"
 }
