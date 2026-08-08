@@ -17,28 +17,28 @@ type TokenBucket
     last_refill: float64
 
 func NewTokenBucket(capacity: int, refill_rate: float64) TokenBucket
-    now := float64(time.Now().UnixNano()) / 1e9
+    now := time.Now().UnixNano() as float64 / 1e9
     return TokenBucket{
         capacity: capacity,
         refill_rate: refill_rate,
-        tokens: float64(capacity),
+        tokens: capacity as float64,
         last_refill: now,
     }
 
 func Consume on tb: reference TokenBucket(count: int) bool
     tb.refill()
-    if tb.tokens < float64(count)
+    if tb.tokens < count as float64
         return false
-    tb.tokens = tb.tokens - float64(count)
+    tb.tokens = tb.tokens - count as float64
     return true
 
 func refill on tb: reference TokenBucket
-    now := float64(time.Now().UnixNano()) / 1e9
+    now := time.Now().UnixNano() as float64 / 1e9
     elapsed := now - tb.last_refill
     if elapsed > 0.0
         tb.tokens = tb.tokens + elapsed * tb.refill_rate
-        if tb.tokens > float64(tb.capacity)
-            tb.tokens = float64(tb.capacity)
+        if tb.tokens > tb.capacity as float64
+            tb.tokens = tb.capacity as float64
         tb.last_refill = now
 
 type TimedEvent
@@ -57,8 +57,8 @@ func NewSlidingWindowCounter(max_events: int, window_seconds: int) SlidingWindow
     }
 
 func TryEvent on sw: reference SlidingWindowCounter bool
-    now := float64(time.Now().UnixNano()) / 1e9
-    cutoff := now - float64(sw.window_seconds)
+    now := time.Now().UnixNano() as float64 / 1e9
+    cutoff := now - sw.window_seconds as float64
     filtered := empty list of TimedEvent
     for evt in sw.events
         if evt.timestamp >= cutoff
@@ -70,8 +70,8 @@ func TryEvent on sw: reference SlidingWindowCounter bool
     return true
 
 func GetCount on sw: reference SlidingWindowCounter int
-    now := float64(time.Now().UnixNano()) / 1e9
-    cutoff := now - float64(sw.window_seconds)
+    now := time.Now().UnixNano() as float64 / 1e9
+    cutoff := now - sw.window_seconds as float64
     count := 0
     for evt in sw.events
         if evt.timestamp >= cutoff
@@ -104,7 +104,7 @@ func get_action_bucket on rl: reference RateLimiter(player_id: string) reference
     bucket, ok := rl.player_actions[player_id]
     if ok
         return bucket
-    new_bucket := NewTokenBucket(10, float64(MAX_ACTIONS_PER_SECOND))
+    new_bucket := NewTokenBucket(10, MAX_ACTIONS_PER_SECOND as float64)
     rl.player_actions[player_id] = reference of new_bucket
     return rl.player_actions[player_id]
 

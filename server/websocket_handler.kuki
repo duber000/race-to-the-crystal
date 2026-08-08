@@ -86,7 +86,7 @@ func UpdateClientPlayerID on wh: reference WebSocketHandler(client_id: string, p
 
 func BroadcastToGame on wh: reference WebSocketHandler(game_id: string, data: map of string to any)
     json_bytes := jsonpkg.Bytes(data) onerr return
-    log.Debug("Broadcasting to game {game_id}: {string(json_bytes)}")
+    log.Debug("Broadcasting to game {game_id}: {json_bytes as string}")
 
 func ProcessMessage on wh: reference WebSocketHandler(client_id: string, raw_data: string) map of string to any
     data := make(map of string to any)

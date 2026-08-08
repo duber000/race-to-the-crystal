@@ -32,7 +32,7 @@ func CreatePlayerToken(player_id: string, game_id: string, secret_key: string, e
         PlayerID: player_id,
         GameID: game_id,
         Iat: now,
-        Exp: now + int64(expiration_hours * 3600),
+        Exp: now + (expiration_hours * 3600) as int64,
     }
     payload_bytes := jsonpkg.Bytes(payload_data) onerr return ""
 

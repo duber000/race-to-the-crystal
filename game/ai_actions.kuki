@@ -283,7 +283,7 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
 
     message := "Token #{TokenID} moved from ({old_pos.X},{old_pos.Y}) to ({dest.X},{dest.Y})"
     mystery_triggered := false
-    var mystery_eff enums.MysteryEffect
+    var mystery_eff: enums.MysteryEffect
 
     cell := gs.board.get_cell_at(dest)
     if cell isnt empty and dereference cell.cell_type equals enums.MYSTERY

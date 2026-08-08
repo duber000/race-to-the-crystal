@@ -52,7 +52,7 @@ func execute_game_action on s: reference GameSession(network_player_id: string, 
     log.Info(
         "Before action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}",
     )
-    var result gamepkg.ActionResult = api.DoAction(action)
+    var result: gamepkg.ActionResult = api.DoAction(action)
 
     log.Info(
         "After action: s.game_state.current={s.game_state.CurrentTurnPlayerID()}, s.game_state.turn={s.game_state.TurnNumber()}",
@@ -74,7 +74,7 @@ func get_winner_network_id on s: reference GameSession string
     wid := s.game_state.WinnerID()
     if wid equals ""
         return ""
-    nid, has := s.game_to_network_id[string(wid)]
+    nid, has := s.game_to_network_id[wid as string]
     if has
         return nid
     return ""
@@ -83,9 +83,9 @@ func get_current_network_player_id on s: reference GameSession string
     cpid := s.game_state.CurrentTurnPlayerID()
     if cpid equals ""
         return ""
-    nid, has := s.game_to_network_id[string(cpid)]
+    nid, has := s.game_to_network_id[cpid as string]
     if has
-        return string(nid)
+        return nid as string
     return ""
 
 type GameCoordinator

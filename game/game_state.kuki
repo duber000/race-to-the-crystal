@@ -207,13 +207,13 @@ func AttackToken on gs: reference GameState(attacker_id: types.TokenID, defender
     damage := a_ref.attack_power()
     pe := gs.crystal_effects.get_player_effects(a_ref.player_id)
     if pe.has_effect(enums.DAMAGE_BOOST)
-        damage = int(float64(damage) * constants.CRYSTAL_DAMAGE_BOOST_MULTIPLIER)
+        damage = (damage as float64 * constants.CRYSTAL_DAMAGE_BOOST_MULTIPLIER) as int
 
     was_killed := d_ref.take_damage(damage)
     if was_killed
         gs.remove_token(defender_id)
 
-    var result enums.CombatResult
+    var result: enums.CombatResult
     if was_killed
         result = enums.KILLED
     else
@@ -395,14 +395,14 @@ func ToDict on gs: reference GameState map of string to any
     result := make(map of string to any)
     result["phase"] = enums.GamePhaseName(gs.phase)
     result["turn_number"] = gs.turn_number
-    result["current_turn_player_id"] = string(gs.current_turn_player_id)
+    result["current_turn_player_id"] = gs.current_turn_player_id as string
     if gs.winner_id isnt ""
-        result["winner_id"] = string(gs.winner_id)
+        result["winner_id"] = gs.winner_id as string
     result["turn_phase"] = enums.TurnPhaseName(gs.turn_phase)
     player_list := empty list of map of string to any
     for pid, p in gs.players
         pd := map of string to any{
-            "id": string(pid),
+            "id": pid as string,
             "name": p.name,
             "is_active": p.is_active,
             "is_ready": p.is_ready,

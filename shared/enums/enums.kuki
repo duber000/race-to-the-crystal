@@ -2,15 +2,15 @@ petiole enums
 
 enum CellType
     NORMAL = 0
-    GENERATOR
-    CRYSTAL
-    MYSTERY
-    START
+    GENERATOR = 1
+    CRYSTAL = 2
+    MYSTERY = 3
+    START = 4
 
 enum GamePhase
     SETUP = 0
-    PLAYING
-    ENDED
+    PLAYING = 1
+    ENDED = 2
 
 func GamePhaseName(p: GamePhase) string
     switch p
@@ -25,8 +25,8 @@ func GamePhaseName(p: GamePhase) string
 
 enum TurnPhase
     MOVEMENT = 0
-    ACTION
-    END_TURN
+    ACTION = 1
+    END_TURN = 2
 
 func TurnPhaseName(p: TurnPhase) string
     switch p
@@ -60,7 +60,7 @@ func PlayerIndex(c: PlayerColor) int
 
 enum MysteryEffect
     HEAL = 0
-    TELEPORT
+    TELEPORT = 1
 
 func MysteryEffectName(e: MysteryEffect) string
     switch e
@@ -73,8 +73,8 @@ func MysteryEffectName(e: MysteryEffect) string
 
 enum CombatResult
     HIT = 0
-    KILLED
-    INVALID
+    KILLED = 1
+    INVALID = 2
 
 enum CrystalEffect: string
     FOG_OF_WAR = "fog_of_war"
@@ -84,10 +84,10 @@ enum CrystalEffect: string
 
 enum Direction
     UP = 0
-    DOWN
-    LEFT
-    RIGHT
-    UP_LEFT
-    UP_RIGHT
-    DOWN_LEFT
-    DOWN_RIGHT
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
+    UP_LEFT = 4
+    UP_RIGHT = 5
+    DOWN_LEFT = 6
+    DOWN_RIGHT = 7

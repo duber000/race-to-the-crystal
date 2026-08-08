@@ -13,9 +13,9 @@ const CELL_SIZE = 32
 
 enum ScreenKind
     MainMenu = 0
-    Lobby
-    Game
-    Victory
+    Lobby = 1
+    Game = 2
+    Victory = 3
 
 type DesktopPos
     X: int
@@ -73,7 +73,7 @@ type DesktopApp
 
 type DesktopAdapter
 
-var app DesktopApp
+var app: DesktopApp
 
 func init()
     app = DesktopApp{

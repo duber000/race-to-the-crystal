@@ -69,7 +69,7 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
         return
 
     perspective, has_p := state["perspective_player_id"]
-    var my_game_id string
+    var my_game_id: string
     if has_p
         if perspective is string as p
             my_game_id = p
@@ -83,7 +83,7 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
     cur, has := state["current_turn_player_id"]
     if not has
         return
-    var cur_str string
+    var cur_str: string
     if cur is string as s
         cur_str = s
     log.Debug("takeTurn: current={cur_str}, my={my_game_id}")
@@ -114,7 +114,7 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
             result := sess.SendAction(chosen)
             if len(result) > 0
                 if msg, has := result["message"]; has
-                    var msg_str string
+                    var msg_str: string
                     if msg is string as ms
                         msg_str = ms
                     log.Debug("Server: {msg_str}")
@@ -150,7 +150,7 @@ func runPoll(args: cli.Args)
                 takeTurn(reference of sess, strategy)
                 if not sess.active
                     return
-                datetime.SleepMilliseconds(int64(poll_ms))
+                datetime.SleepMilliseconds(poll_ms as int64)
 
 func runSSE(args: cli.Args)
     sess := openSession(args)
@@ -178,7 +178,7 @@ func runSSE(args: cli.Args)
             return false
 
         perspective, has_p := state["perspective_player_id"]
-        var my_game_id string
+        var my_game_id: string
         if has_p
             if perspective is string as p
                 my_game_id = p
@@ -189,7 +189,7 @@ func runSSE(args: cli.Args)
         cur, has := state["current_turn_player_id"]
         if not has
             return true
-        var cur_str string
+        var cur_str: string
         if cur is string as s
             cur_str = s
         if cur_str isnt my_game_id
@@ -220,7 +220,7 @@ func runSSE(args: cli.Args)
                 result := sess.SendAction(chosen)
                 if len(result) > 0
                     if msg, has := result["message"]; has
-                        var msg_str string
+                        var msg_str: string
                         if msg is string as s
                             msg_str = s
                         log.Debug("Server: {msg_str}")

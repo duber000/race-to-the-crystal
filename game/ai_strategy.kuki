@@ -145,7 +145,7 @@ func filter_deploys(actions: list of ActionResponse) list of DeployAction
 
 func best_attack(attacks: list of AttackAction) ChosenAction
     best_dmg := 0
-    var best AttackAction
+    var best: AttackAction
 
     for atk in attacks
         if atk.WillKill and atk.Damage > best_dmg
@@ -185,7 +185,7 @@ func best_move(moves: list of MoveAction, gs: reference GameState, player_id: ty
 
 func best_deploy(deploys: list of DeployAction) ChosenAction
     best_hv := 0
-    var chosen DeployAction
+    var chosen: DeployAction
 
     for dp in deploys
         if dp.HealthValue > best_hv
@@ -237,7 +237,7 @@ func score_destination(dest: types.Position, objectives: list of types.Position,
         dy := dest.Y - obj.Y
         if dy < 0
             dy = -dy
-        dist := float64(dx + dy)
+        dist := (dx + dy) as float64
         if dist < min_dist
             min_dist = dist
 
