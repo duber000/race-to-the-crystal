@@ -42,6 +42,12 @@ func movement_range on t: reference Token int
         return 2
     return 1
 
+func Position on t: reference Token types.Position
+    return t.position
+
+func ID on t: reference Token types.TokenID
+    return t.id
+
 func attack_power on t: reference Token int
     return t.health / 2
 

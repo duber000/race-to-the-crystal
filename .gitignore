@@ -31,6 +31,7 @@ server/server
 web_server/web_server
 race-desktop
 race-ai-client
+learn/learn
 *.go
 web_server/static/babylon.js
 web_server/static/babylonjs.loaders.min.js

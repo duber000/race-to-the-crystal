@@ -1,0 +1,63 @@
+petiole main
+
+# 09-strategist: give your strategy a type with methods.
+#
+# Run it with:  kukicha run learn/examples/09-strategist/
+#
+# New ideas: type declarations (your own data structure), methods
+# (func X on s: reference Strategist), and reconstructing your object
+# from the memo each turn — the game world forgets your objects between
+# turns, so rebuild them from remembered state.
+
+import "race-to-the-crystal/learn" as learn
+import "stdlib/parse"
+
+type Strategist
+    name: string
+    target_x: int
+    target_y: int
+    move_count: int
+
+func NewStrategist() Strategist
+    return Strategist{name: "MarchBot", target_x: 12, target_y: 12, move_count: 0}
+
+func Describe on s: reference Strategist string
+    return "{s.name} (heading to {s.target_x},{s.target_y}; {s.move_count} moves made)"
+
+func Step on s: reference Strategist(api: reference learn.LearnerAPI, tid: int)
+    pos := api.TokenPosition(tid)
+    dx := 0
+    dy := 0
+    if pos.X < s.target_x
+        dx = 1
+    else if pos.X > s.target_x
+        dx = -1
+    if pos.Y < s.target_y
+        dy = 1
+    else if pos.Y > s.target_y
+        dy = -1
+    if dx isnt 0 or dy isnt 0
+        _ = api.Move(tid, pos.X + dx, pos.Y + dy)
+        s.move_count = s.move_count + 1
+
+func PlayTurn(api: reference learn.LearnerAPI)
+    api.Say("--- Turn {api.TurnNumber()} ---")
+
+    bot := NewStrategist()
+    bot.name = api.Recall("bot_name")
+    bot.move_count = parse.IntOr(api.Recall("bot_moves"), 0)
+
+    api.Say(bot.Describe())
+
+    if len(api.MyTokens()) equals 0
+        _ = api.Place(10, 2, 2)
+    for tid in api.MyTokens()
+        bot.Step(api, tid)
+
+    api.Memo("bot_name", bot.name)
+    api.Memo("bot_moves", "{bot.move_count}")
+    _ = api.Done()
+
+func main()
+    sim := learn.NewSimulation(learn.NewConfig())
+    sim.Run(PlayTurn)

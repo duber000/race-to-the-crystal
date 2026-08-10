@@ -1,0 +1,41 @@
+petiole main
+
+# 05-decisions: if / else if with math and comparisons.
+#
+# Run it with:  kukicha run learn/examples/05-decisions/
+#
+# New ideas: math.AbsInt, a small Distance helper, and deciding between
+# marching and holding based on distance to the crystal (12,12).
+
+import "race-to-the-crystal/learn" as learn
+import "stdlib/math"
+
+func Distance(a: int, b: int) int
+    return math.AbsInt(a - b)
+
+func PlayTurn(api: reference learn.LearnerAPI)
+    api.Say("--- Turn {api.TurnNumber()} ---")
+
+    mine := api.MyTokens()
+    if len(mine) equals 0
+        _ = api.Place(10, 2, 2)
+        _ = api.Done()
+        return
+
+    tid := mine[0]
+    pos := api.TokenPosition(tid)
+    dist := Distance(pos.X, 12) + Distance(pos.Y, 12)
+    api.Say("token {tid} is {dist} steps from the crystal")
+
+    if dist > 3
+        _ = api.Move(tid, pos.X + 1, pos.Y)
+    else if dist equals 0
+        api.Say("on the crystal — holding position")
+    else
+        api.Say("close — holding position")
+
+    _ = api.Done()
+
+func main()
+    sim := learn.NewSimulation(learn.NewConfig())
+    sim.Run(PlayTurn)

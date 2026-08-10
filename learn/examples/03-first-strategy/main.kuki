@@ -1,0 +1,63 @@
+petiole main
+
+# 03-first-strategy: use the game's own action list to make decisions.
+# "Ask the game what you can do, then do the most aggressive thing."
+#
+# Run it with:  kukicha run learn/examples/03-first-strategy/
+#
+# api.Actions() returns the typed list of actions available to you:
+# AttackAction, MoveAction, DeployAction, EndTurnAction. This example
+# picks the first attack, else the first move, else deploys, else ends.
+
+import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/learn" as learn
+
+func DoAttack(api: reference learn.LearnerAPI, actions: list of gamepkg.ActionResponse) bool
+    for a in actions
+        switch a as v
+            when gamepkg.AttackAction
+                _ = api.Attack(v.AttackerID as int, v.DefenderID as int)
+                return true
+            default
+                continue
+
+    return false
+
+func DoMove(api: reference learn.LearnerAPI, actions: list of gamepkg.ActionResponse) bool
+    for a in actions
+        switch a as v
+            when gamepkg.MoveAction
+                dest := v.ValidDestinations[0]
+                _ = api.Move(v.TokenID as int, dest[0], dest[1])
+                return true
+            default
+                continue
+
+    return false
+
+func DoDeploy(api: reference learn.LearnerAPI, actions: list of gamepkg.ActionResponse) bool
+    for a in actions
+        switch a as v
+            when gamepkg.DeployAction
+                pos := v.Positions[0]
+                _ = api.Place(v.HealthValue, pos[0], pos[1])
+                return true
+            default
+                continue
+
+    return false
+
+func PlayTurn(api: reference learn.LearnerAPI)
+    api.Say("--- Turn {api.TurnNumber()} ---")
+    actions := api.Actions()
+    if DoAttack(api, actions)
+        return
+    if DoMove(api, actions)
+        return
+    if DoDeploy(api, actions)
+        return
+    _ = api.Done()
+
+func main()
+    sim := learn.NewSimulation(learn.NewConfig())
+    sim.Run(PlayTurn)

@@ -48,6 +48,7 @@ make clean
 The project is split into strictly separated layers:
 
 - **`game/`** – Pure game logic with zero rendering or network dependencies. `GameState` (struct in `game/game_state.kuki`) is the central state container. `GameAPI` (`game/api.kuki`) is the high-level façade used by AI clients and the server coordinator. `schemas.kuki` defines all action/response types.
+- **`learn/`** – Learn-to-program layer. `LearnerAPI` (`learn/learn_api.kuki`) is the teaching façade over `GameAPI` (friendlier names, narrated actions, `Memo`/`Recall`). `Simulation` (`learn/simulation.kuki`) runs a full game in-process: the learner plays `player_0`, other players use the AI strategies. Runnable example scripts live in `learn/examples/` (course: `docs/tutorials/`).
 - **`shared/`** – Cross-cutting primitives: `enums/` (all game enums), `constants/` (all numeric constants), `types/` (`TokenID`, `PlayerID`, `Position` type aliases), `errs/` (standardized error definitions).
 - **`server/`** – Server built on Go net/http + gorilla/websocket. `GameCoordinator` manages `GameSession` instances, each wrapping a `GameState`. JWT auth for the HTTP API is in `server/auth.kuki`. Mercure SSE publishing is in `server/mercure_publisher.kuki`.
 - **`client/`** – Desktop client using Ebitengine. `renderer_2d.kuki` and UI views in `ui/` implement the game views. `ai/ai_client.kuki` and `ai/http_ai_client.kuki` are AI player implementations.
@@ -77,6 +78,7 @@ All numeric game constants live in `shared/constants/`. All enums live in `share
 ### Game logic entry points
 - To modify or extend game rules: work inside `game/` (no rendering or network imports allowed)
 - To expose a new action to AI/server: add it to `game/ai_actions.kuki`, then expose via `GameAPI` in `game/api.kuki`
+- To expose game state to learner scripts: add methods to `LearnerAPI` in `learn/learn_api.kuki` (which may call exported `GameState`/`Token` accessors — add accessors in `game/` when cross-package field access is needed)
 - To add a new network message: add to `MessageType` and handle in the server message routing
 
 ### Testing

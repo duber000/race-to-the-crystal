@@ -1,0 +1,137 @@
+petiole learn
+
+# The Simulation runs a full Race to the Crystal game in-process for a
+# learner script. You are player_0; the other players are driven by the
+# game's AI strategies (random, aggressive, defensive).
+#
+# The simulation calls your PlayTurn function once at the start of each of
+# your turns. Whatever you leave unfinished when PlayTurn returns is ended
+# for you — the turn ends automatically.
+
+import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+
+const DEFAULT_PLAYERS = 2
+
+const DEFAULT_MAX_TURNS = 200
+
+const MAX_ACTIONS_PER_AI_TURN = 30
+
+type Config
+    Players: int
+    AIStrategy: gamepkg.AIStrategyName
+    MaxTurns: int
+
+func NewConfig() Config
+    return Config{
+        Players: DEFAULT_PLAYERS,
+        AIStrategy: gamepkg.AIStrategyNameRANDOM,
+        MaxTurns: DEFAULT_MAX_TURNS,
+    }
+
+type Result
+    WinnerName: string
+    TurnsPlayed: int
+    GameEnded: bool
+    Reason: string
+
+type Simulation
+    game: reference gamepkg.GameState
+    learner_id: types.PlayerID
+    config: Config
+
+func NewSimulation(cfg: Config) Simulation
+    player_count := cfg.Players
+    if player_count < 1
+        player_count = 1
+    if player_count > 4
+        player_count = 4
+    gs := gamepkg.CreateGame(player_count)
+    return Simulation{game: reference of gs, learner_id: types.PlayerID("player_0"), config: cfg}
+
+# Run plays the game until someone wins, the AI gives up, or the turn
+# budget runs out. Your play function is called once per learner turn.
+func Run on s: reference Simulation(play: func(reference LearnerAPI)) Result
+    s.game.StartGame()
+    api := NewLearnerAPI(s.game, s.learner_id)
+
+    learner_name := s.player_name(s.learner_id)
+    api.Say("Game on! You are {learner_name}. The board is 24x24.")
+    api.Say(api.Board())
+
+    turn := 0
+    for turn < s.config.MaxTurns
+        if s.game.Phase() equals enums.ENDED
+            break
+        turn = turn + 1
+
+        if s.game.CurrentTurnPlayerID() equals s.learner_id
+            play(reference of api)
+            if s.game.Phase() isnt enums.ENDED
+                if s.game.CurrentTurnPlayerID() equals s.learner_id
+                    _ = api.Done()
+        else
+            ai_pid := s.game.CurrentTurnPlayerID()
+            s.run_ai_turn(ai_pid, reference of api)
+
+            # Safety: if the AI failed to advance the turn, force it to end.
+            if s.game.Phase() equals enums.PLAYING
+                if s.game.CurrentTurnPlayerID() equals ai_pid
+                    _ = gamepkg.ExecuteAction(gamepkg.NewEndTurnAction(), s.game, ai_pid)
+
+    return s.finish(reference of api, turn)
+
+func finish on s: reference Simulation(api: reference LearnerAPI, turn: int) Result
+    if s.game.Phase() equals enums.ENDED
+        winner := s.player_name(s.game.WinnerID())
+        api.Say("")
+        api.Say("GAME OVER - {winner} wins!")
+        api.Say(api.Board())
+        return Result{WinnerName: winner, TurnsPlayed: turn, GameEnded: true, Reason: "winner"}
+
+    api.Say("")
+    api.Say("Simulation stopped after {turn} turns (turn budget exhausted).")
+    return Result{WinnerName: "", TurnsPlayed: turn, GameEnded: false, Reason: "max_turns"}
+
+func player_name on s: reference Simulation(pid: types.PlayerID) string
+    p_ref := s.game.GetPlayer(pid)
+    if p_ref equals empty
+        return pid as string
+    return dereference p_ref.Name()
+
+func run_ai_turn on s: reference Simulation(ai_pid: types.PlayerID, api: reference LearnerAPI)
+    ai_api := gamepkg.NewGameAPI(s.game, ai_pid)
+    guard := 0
+    for guard < MAX_ACTIONS_PER_AI_TURN
+        if s.game.Phase() isnt enums.PLAYING
+            return
+        if s.game.CurrentTurnPlayerID() isnt ai_pid
+            return
+
+        actions := ai_api.Actions()
+        if len(actions) equals 0
+            return
+
+        chosen_ref := gamepkg.ChooseAction(s.config.AIStrategy, actions, s.game, ai_pid)
+        if chosen_ref equals empty
+            return
+
+        action := chosen_to_action(dereference chosen_ref)
+        result := gamepkg.ExecuteAction(action, s.game, ai_pid)
+        if not result.Success
+            return
+        guard = guard + 1
+
+func chosen_to_action(c: gamepkg.ChosenAction) gamepkg.AIAction
+    switch c as v
+        when gamepkg.ChosenMove
+            dest := types.Pos(v.Destination[0], v.Destination[1])
+            return gamepkg.NewMoveAction(v.TokenID, dest)
+        when gamepkg.ChosenAttack
+            return gamepkg.NewAttackAction(v.AttackerID, v.DefenderID)
+        when gamepkg.ChosenDeploy
+            pos := types.Pos(v.Position[0], v.Position[1])
+            return gamepkg.NewDeployAction(v.HealthValue, pos)
+        default
+            return gamepkg.NewEndTurnAction()

@@ -1,4 +1,4 @@
-.PHONY: help check build desktop desktop-run web-server web-server-run test test-verbose test-specific clean lint format
+.PHONY: help check build desktop desktop-run web-server web-server-run test test-verbose test-specific clean lint format learn learn-run learn-check learn-test
 
 PKG_CONFIG_LIBS = x11 xrandr xcursor xinerama xi xrender gl xxf86vm
 CGO_CFLAGS ?= $(shell pkg-config --cflags $(PKG_CONFIG_LIBS) 2>/dev/null)
@@ -36,6 +36,20 @@ web-server: ## Build the web server
 web-server-run: ## Build and run the web server
 	$(MAKE) web-server
 	./web_server
+
+learn: ## List learner example scripts
+	@ls learn/examples/
+
+learn-run: ## Run a learner example (usage: make learn-run NAME=02-formation)
+	kukicha run ./learn/examples/$(NAME)/
+
+learn-check: ## Type-check the learn package and every learner example
+	kukicha check ./learn/
+	@for d in learn/examples/*/; do kukicha check "$$d"; done
+
+learn-test: ## Brew and run the learn package tests
+	kukicha brew ./learn/
+	go test ./learn/
 
 test: ## Run all tests
 	kukicha build ./...

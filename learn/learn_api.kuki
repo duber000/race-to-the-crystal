@@ -1,0 +1,141 @@
+petiole learn
+
+# The LearnerAPI is the teaching facade for Race to the Crystal.
+#
+# It wraps the game's GameAPI with friendlier names, narrates every action
+# to the terminal (like the Minecraft Pi API's postToChat), and keeps a
+# small memo you can use to remember things between your turns.
+#
+# See docs/tutorials/ for the accompanying course. Run a learner script with:
+#
+#   kukicha run learn/examples/<name>/
+#
+# A learner script looks like this:
+#
+#   petiole main
+#   import "race-to-the-crystal/learn" as learn
+#
+#   func PlayTurn(api: reference learn.LearnerAPI)
+#       api.Say("my turn!")
+#       _ := api.Place(8, 0, 0)
+#       _ := api.Done()
+#
+#   func main()
+#       sim := learn.NewSimulation(learn.NewConfig())
+#       sim.Run(PlayTurn)
+
+import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+
+type LearnerAPI
+    api: gamepkg.GameAPI
+    game: reference gamepkg.GameState
+    player_id: types.PlayerID
+    history: list of string
+    memo: map of string to string
+
+func NewLearnerAPI(gs: reference gamepkg.GameState, player_id: types.PlayerID) LearnerAPI
+    return LearnerAPI{
+        api: gamepkg.NewGameAPI(gs, player_id),
+        game: gs,
+        player_id: player_id,
+        history: empty list of string,
+        memo: make(map of string to string),
+    }
+
+# Say prints a message to the terminal and records it in your history.
+func Say on api: reference LearnerAPI(msg: string)
+    print(msg)
+    api.history = append(api.history, msg)
+
+# Board returns the ASCII map of the 24x24 grid from your point of view.
+func Board on api: reference LearnerAPI string
+    return api.api.BoardMap()
+
+# Observe returns the full situation report: tokens, generators, crystal,
+# available actions, victory conditions.
+func Observe on api: reference LearnerAPI string
+    return api.api.Observe()
+
+# Victory returns the victory conditions and current crystal progress.
+func Victory on api: reference LearnerAPI string
+    return api.api.VictoryConditions()
+
+# Reserve returns how many tokens of each health value remain undeployed.
+func Reserve on api: reference LearnerAPI map of int to int
+    return api.api.GetReserveCounts()
+
+# Tokens returns a text description of your deployed tokens.
+func Tokens on api: reference LearnerAPI string
+    return api.api.Describe()
+
+# MyTurn reports whether it is your turn right now.
+func MyTurn on api: reference LearnerAPI bool
+    return api.api.IsMyTurn()
+
+# Phase reports the current game phase (MOVEMENT, ACTION, ...).
+func Phase on api: reference LearnerAPI string
+    return api.api.GetPhase()
+
+# TurnNumber reports the current turn number.
+func TurnNumber on api: reference LearnerAPI int
+    return api.game.TurnNumber()
+
+# GameOver reports whether the game has ended.
+func GameOver on api: reference LearnerAPI bool
+    return api.game.Phase() equals enums.ENDED
+
+# Actions returns the typed list of actions available to you right now
+# (MoveAction, AttackAction, DeployAction, EndTurnAction).
+func Actions on api: reference LearnerAPI list of gamepkg.ActionResponse
+    return api.api.Actions()
+
+# TokenPosition returns the board position of one of your tokens.
+# Returns (-1, -1) if the token does not exist.
+func TokenPosition on api: reference LearnerAPI(token_id: int) types.Position
+    t_ref := api.game.GetToken(types.TokenID(token_id))
+    if t_ref equals empty
+        return types.Pos(-1, -1)
+    return t_ref.Position()
+
+# MyTokens returns the ids of all your deployed, alive tokens.
+func MyTokens on api: reference LearnerAPI list of int
+    result := empty list of int
+    tokens := api.game.GetPlayerTokens(api.player_id)
+    for t in tokens
+        result = append(result, t.ID() as int)
+    return result
+
+# Place deploys a token of the given health (10, 8, 6, or 4) from your
+# reserve onto your deployment corner at (x, y). Valid during MOVEMENT.
+func Place on api: reference LearnerAPI(health: int, x: int, y: int) gamepkg.ActionResult
+    return api.narrate(api.api.Deploy(health, x, y))
+
+# Move moves your token to (x, y). Valid during MOVEMENT.
+func Move on api: reference LearnerAPI(token_id: int, x: int, y: int) gamepkg.ActionResult
+    return api.narrate(api.api.Move(types.TokenID(token_id), x, y))
+
+# Attack hits the defender token with your attacker token. Valid during ACTION.
+func Attack on api: reference LearnerAPI(attacker_id: int, defender_id: int) gamepkg.ActionResult
+    return api.narrate(api.api.Attack(types.TokenID(attacker_id), types.TokenID(defender_id)))
+
+# Done ends your turn (generators and crystal are checked at this point).
+# You do not need to call it: the simulation ends your turn automatically
+# when your PlayTurn function returns.
+func Done on api: reference LearnerAPI gamepkg.ActionResult
+    return api.narrate(api.api.EndTurn())
+
+# Memo remembers a value for you across turns (like a small notebook).
+func Memo on api: reference LearnerAPI(key: string, value: string)
+    api.memo[key] = value
+
+# Recall reads back a value you remembered with Memo.
+func Recall on api: reference LearnerAPI(key: string) string
+    return api.memo[key]
+
+# narrate prints the result of an action and records it in history.
+func narrate on api: reference LearnerAPI(result: gamepkg.ActionResult) gamepkg.ActionResult
+    print(result.Message)
+    api.history = append(api.history, result.Message)
+    return result

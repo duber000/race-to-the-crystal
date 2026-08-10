@@ -1,0 +1,43 @@
+petiole learn
+
+import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/shared/types" as types
+import "stdlib/test"
+import "testing"
+
+func TestSimulationRunsToCompletion(t: reference testing.T)
+    sim := NewSimulation(NewConfig())
+    result := sim.Run((api: reference LearnerAPI) =>
+        reserve := api.Reserve()
+        if reserve[10] > 0
+            _ = api.Place(10, 2, 2)
+        _ = api.Done()
+    )
+
+    test.AssertTrue(t, result.TurnsPlayed > 0)
+    test.AssertTrue(t, result.GameEnded or result.Reason equals "max_turns")
+
+func TestSimulationWithAggressiveAI(t: reference testing.T)
+    cfg := NewConfig()
+    cfg.AIStrategy = gamepkg.AIStrategyNameAGGRESSIVE
+    sim := NewSimulation(cfg)
+    result := sim.Run((api: reference LearnerAPI) =>
+        _ = api.Done()
+    )
+
+    test.AssertTrue(t, result.TurnsPlayed > 0)
+
+func TestSimulationEndsTurnAutomatically(t: reference testing.T)
+    sim := NewSimulation(NewConfig())
+    result := sim.Run((api: reference LearnerAPI) =>
+        api.Say("observe only")
+    )
+
+    test.AssertTrue(t, result.TurnsPlayed > 0)
+
+func TestLearnerMemo(t: reference testing.T)
+    gs := gamepkg.CreateGame(2)
+    api := NewLearnerAPI(reference of gs, types.PlayerID("player_0"))
+    api.Memo("key", "value")
+    test.AssertEqual(t, api.Recall("key"), "value")
+    test.AssertEqual(t, api.Recall("missing"), "")

@@ -1,0 +1,29 @@
+petiole main
+
+# 01-hello: your first program that plays Race to the Crystal.
+#
+# Run it with:  kukicha run learn/examples/01-hello/
+#
+# The simulation creates a fresh game, you are player 0, and the other
+# player is driven by the random AI strategy. Your PlayTurn function is
+# called at the start of each of your turns; when it returns, your turn
+# ends automatically.
+
+import "race-to-the-crystal/learn" as learn
+
+func PlayTurn(api: reference learn.LearnerAPI)
+    api.Say("--- my turn ---")
+
+    reserve := api.Reserve()
+    api.Say(
+        "In reserve: {reserve[10]}x 10hp, {reserve[8]}x 8hp, {reserve[6]}x 6hp, {reserve[4]}x 4hp",
+    )
+
+    # (0,0), (1,0), (2,0) are already taken by your starting tokens,
+    # so deploy at the free corner cell (2,2).
+    _ = api.Place(10, 2, 2)
+    _ = api.Done()
+
+func main()
+    sim := learn.NewSimulation(learn.NewConfig())
+    sim.Run(PlayTurn)

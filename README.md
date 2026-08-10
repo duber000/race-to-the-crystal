@@ -115,6 +115,8 @@ All client types (desktop, web, AI) can play together in the same game!
 ```
 race-to-the-crystal/
 ├── game/          # Core game logic + *_test.kuki unit tests (no rendering deps)
+├── learn/         # Learn-to-program package: LearnerAPI + in-process simulation
+│   └── examples/  # Runnable learner scripts (01-hello … 10-strategy-ladder)
 ├── client/        # Desktop client (Kukicha + Ebitengine) and AI clients
 ├── server/        # Game server (HTTP/WebSocket + REST, JWT auth)
 ├── web_server/    # Web client host (Babylon.js frontend + Mercure config)
@@ -127,6 +129,19 @@ race-to-the-crystal/
 │   └── production/  # Production quadlets
 ├── tests/         # Legacy pytest suite (being ported to *_test.kuki)
 └── docs/          # Detailed documentation
+    └── tutorials/ # Learn to Program with Kukicha course (10 chapters)
+```
+
+### Learn to program
+
+Write Kukicha programs that play the game, no server needed — modeled on
+*Learn to Program with Minecraft*. See `docs/tutorials/` for the course
+and `learn/examples/` for runnable scripts:
+
+```bash
+make learn-run NAME=01-hello   # run a learner example
+make learn-check               # type-check the learn package + all examples
+make learn-test                # run the learn package tests
 ```
 
 ### Testing

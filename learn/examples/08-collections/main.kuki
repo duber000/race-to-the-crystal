@@ -1,0 +1,42 @@
+petiole main
+
+# 08-collections: lists and maps — your tokens as a list, the reserve
+# as a map.
+#
+# Run it with:  kukicha run learn/examples/08-collections/
+#
+# New ideas: list of int from MyTokens(), iterating a map's keys and
+# values (for hv, count in reserve), len().
+
+import "race-to-the-crystal/learn" as learn
+
+func StrongestReserve(reserve: map of int to int) int
+    strongest := 0
+    for hv, count in reserve
+        if count > 0 and hv > strongest
+            strongest = hv
+    return strongest
+
+func PlayTurn(api: reference learn.LearnerAPI)
+    api.Say("--- Turn {api.TurnNumber()} ---")
+
+    mine := api.MyTokens()
+    api.Say("deployed tokens: {len(mine)} -> {mine}")
+
+    reserve := api.Reserve()
+    strongest := StrongestReserve(reserve)
+    api.Say("strongest reserve health: {strongest}")
+
+    if strongest > 0 and len(mine) < 5
+        _ = api.Place(strongest, 2, 2)
+
+    for tid in mine
+        pos := api.TokenPosition(tid)
+        if pos.X < 12
+            _ = api.Move(tid, pos.X + 1, pos.Y)
+
+    _ = api.Done()
+
+func main()
+    sim := learn.NewSimulation(learn.NewConfig())
+    sim.Run(PlayTurn)

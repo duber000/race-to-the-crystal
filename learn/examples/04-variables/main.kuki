@@ -1,0 +1,37 @@
+petiole main
+
+# 04-variables: declare and use variables — ints, bools, strings, maps.
+#
+# Run it with:  kukicha run learn/examples/04-variables/
+#
+# New ideas: := declares a variable, Reserve() returns a map of health
+# values to remaining counts, and Say interpolates values into strings.
+
+import "race-to-the-crystal/learn" as learn
+
+func PlayTurn(api: reference learn.LearnerAPI)
+    turn := api.TurnNumber()
+    api.Say("--- Turn {turn} ---")
+
+    reserve := api.Reserve()
+    has_10 := reserve[10] > 0
+    has_4 := reserve[4] > 0
+
+    api.Say("10hp in reserve: {has_10}, 4hp in reserve: {has_4}")
+
+    if has_10
+        result := api.Place(10, 2, 2)
+        if result.Success
+            api.Say("placed a 10hp token")
+        else
+            api.Say("could not place: {result.Message}")
+    else if has_4
+        _ = api.Place(4, 2, 2)
+    else
+        api.Say("reserve is empty")
+
+    _ = api.Done()
+
+func main()
+    sim := learn.NewSimulation(learn.NewConfig())
+    sim.Run(PlayTurn)

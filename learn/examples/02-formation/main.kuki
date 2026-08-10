@@ -1,0 +1,60 @@
+petiole main
+
+# 02-formation: build a line of three tokens across three turns, then
+# march them toward the crystal.
+#
+# Run it with:  kukicha run learn/examples/02-formation/
+#
+# This example teaches three things:
+#   - one action per phase: after you Place, the phase becomes ACTION, so
+#     you can only deploy once per turn — a formation takes several turns
+#   - structured results: Place returns DeployData with the new token's id
+#   - memo: Memo/Recall lets you keep state between your turns
+
+import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/learn" as learn
+import "stdlib/parse"
+
+func DeployFormation(api: reference learn.LearnerAPI)
+    pos := parse.IntOr(api.Recall("next"), 0)
+    result := api.Place(10, pos, 2)
+    switch result.Data as dd
+        when gamepkg.DeployData
+            api.Memo("t{pos}", "{dd.NewTokenID}")
+            api.Say("token #{dd.NewTokenID} deployed at ({pos}, 2)")
+        default
+            api.Say("place failed: {result.Message}")
+
+    api.Memo("next", "{pos + 1}")
+    if pos + 1 >= 3
+        api.Memo("phase", "march")
+
+func MarchToCrystal(api: reference learn.LearnerAPI)
+    for i from 0 to 3
+        tid := parse.IntOr(api.Recall("t{i}"), 0)
+        if tid <= 0
+            continue
+        pos := api.TokenPosition(tid)
+        dx := 0
+        dy := 0
+        if pos.X < 12
+            dx = 1
+        else if pos.X > 12
+            dx = -1
+        if pos.Y < 12
+            dy = 1
+        else if pos.Y > 12
+            dy = -1
+        if dx isnt 0 or dy isnt 0
+            _ = api.Move(tid, pos.X + dx, pos.Y + dy)
+
+func PlayTurn(api: reference learn.LearnerAPI)
+    api.Say("--- Turn {api.TurnNumber()} ---")
+    if api.Recall("phase") equals "march"
+        MarchToCrystal(api)
+    else
+        DeployFormation(api)
+
+func main()
+    sim := learn.NewSimulation(learn.NewConfig())
+    sim.Run(PlayTurn)

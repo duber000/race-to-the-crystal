@@ -246,10 +246,13 @@ func _auto_deploy_starting_tokens on gs: reference GameState(player_id: types.Pl
         if dc.cell_type isnt enums.NORMAL
             continue
 
-        t := reference of reserve[deployed]
-        t.position = pos
-        t.is_deployed = true
-        gs.board.set_occupant(pos, t.id)
+        tok := reserve[deployed]
+        t_ref := gs.GetToken(tok.id)
+        if t_ref equals empty
+            continue
+        t_ref.position = pos
+        t_ref.is_deployed = true
+        gs.board.set_occupant(pos, t_ref.id)
         deployed = deployed + 1
 
 func sort_slice(tokens: list of Token)

@@ -1,0 +1,55 @@
+petiole main
+
+# 07-functions: split your turn into named, reusable functions.
+#
+# Run it with:  kukicha run learn/examples/07-functions/
+#
+# New ideas: func with parameters and return values, and composing a
+# turn from small pieces.
+
+import "race-to-the-crystal/learn" as learn
+
+func StepTowardCrystal(api: reference learn.LearnerAPI, tid: int) bool
+    pos := api.TokenPosition(tid)
+    dx := 0
+    dy := 0
+    if pos.X < 12
+        dx = 1
+    else if pos.X > 12
+        dx = -1
+    if pos.Y < 12
+        dy = 1
+    else if pos.Y > 12
+        dy = -1
+    if dx equals 0 and dy equals 0
+        return false
+    _ = api.Move(tid, pos.X + dx, pos.Y + dy)
+    return true
+
+func DeployOne(api: reference learn.LearnerAPI) bool
+    reserve := api.Reserve()
+    if reserve[10] equals 0
+        return false
+    for x from 0 to 3
+        result := api.Place(10, x, 2)
+        if result.Success
+            return true
+    return false
+
+func PlayTurn(api: reference learn.LearnerAPI)
+    api.Say("--- Turn {api.TurnNumber()} ---")
+
+    if DeployOne(api)
+        api.Say("deployed a 10hp token")
+
+    moved := 0
+    for tid in api.MyTokens()
+        if StepTowardCrystal(api, tid)
+            moved = moved + 1
+    api.Say("moved {moved} token(s) toward the crystal")
+
+    _ = api.Done()
+
+func main()
+    sim := learn.NewSimulation(learn.NewConfig())
+    sim.Run(PlayTurn)
