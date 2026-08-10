@@ -50,6 +50,29 @@ end). The simulation ends your turn for you when `PlayTurn` returns.
 - Your starting three tokens are auto-deployed at (0,0), (1,0), (2,0) —
   the rest wait in your reserve.
 
+## Where this fits in the learning path
+
+This course is the **command-an-existing-game** track, modeled on
+*Learn to Program with Minecraft*: you script an existing game world
+through a typed API, and the payoff is a strategy that beats the AI.
+It assumes you already program in some language.
+
+The companion track is the **game tutorials in the `game` repo at
+`~/repos/kukicha/game`** (part of
+Kukicha's stdlib) — the *build-your-own-game* track: 8 lessons writing
+2D browser games with `stdlib/game` (drawing, input, animation,
+collision), capped by a full Breakout clone. No game engine experience
+required.
+
+- Complete beginners: the game tutorials make the gentler first step,
+  then this course as your second project
+- Programmers new to Kukicha: either track works standalone — this
+  course for API-driven strategy code, the game repo for making things
+
+For language fundamentals, the Kukicha main repo's
+`~/repos/go/kukicha/docs/tutorials/` (beginner, shell-to-kukicha,
+web-app, data-scripting) covers the CLI/scripting side of the language.
+
 ## Course map
 
 | Ch | Topic | Example |
