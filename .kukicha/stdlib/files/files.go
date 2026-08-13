@@ -36,7 +36,7 @@ func ReadString(path string) (string, error) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:35
-func Write(data any, path string) error {
+func WriteJSON(data any, path string) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:36
 	// pipe step 1: json.PrettyBytes(...)
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:36
@@ -59,150 +59,162 @@ func Write(data any, path string) error {
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:47
+func WriteBytes(data []byte, path string) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:48
+	return os.WriteFile(path, data, 0o644)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:56
+func Write(data any, path string) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:57
+	return WriteJSON(data, path)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:63
 func WriteString(data string, path string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:64
 	return os.WriteFile(path, []byte(data), 0o644)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:71
 func Append(data any, path string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:72
 	file, err_6 := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:72
 	if err_6 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:72
 		return err_6
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:73
 	defer file.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:75
 	jsonData, err_7 := json.Bytes(data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:75
 	if err_7 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:75
 		return err_7
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:77
 	jsonData = append(jsonData, '\n')
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:78
 	file.Write(jsonData)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:79
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:86
 func AppendString(data string, path string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:87
 	file, err_8 := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:87
 	if err_8 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:87
 		return err_8
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:88
 	defer file.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:90
 	file.Write([]byte(data))
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:91
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:98
 func AppendLine(data string, path string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:99
 	return AppendString(fmt.Sprintf("%v\n", data), path)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:104
 func Exists(path string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:105
 	_, err_9 := os.Stat(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:105
 	if err_9 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:105
 		return false
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:106
 	return true
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:111
 func IsDir(path string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:112
 	info, err_10 := os.Stat(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:112
 	if err_10 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:112
 		return false
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:113
 	return info.IsDir()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:118
 func IsFile(path string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:119
 	info, err_11 := os.Stat(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:119
 	if err_11 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:119
 		return false
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:120
 	return !info.IsDir()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:127
 func List(path string) ([]string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:128
 	entries, err_12 := os.ReadDir(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:128
 	if err_12 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:128
 		return []string{}, err_12
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:130
 	result := make([]string, 0, len(entries))
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:131
 	for _, entry := range entries {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:132
 		result = append(result, entry.Name())
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:134
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:140
 func ListRecursive(path string) ([]string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:141
 	result := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:123
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:142
 	err_13 := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:143
 		if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:144
 			return err
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:145
 		if !info.IsDir() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:146
 			result = append(result, filePath)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:147
 		return nil
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:142
 	if err_13 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:142
 		return []string{}, err_13
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:150
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:156
 type Entry struct {
 	Name    string
 	Path    string
@@ -211,495 +223,495 @@ type Entry struct {
 	ModTime int64
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:168
 func ListEntries(path string) ([]Entry, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:169
 	raw, err_14 := os.ReadDir(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:169
 	if err_14 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:169
 		return []Entry{}, err_14
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:171
 	result := make([]Entry, 0, len(raw))
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:153
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:172
 	for _, entry := range raw {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:154
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:173
 		info, err_15 := entry.Info()
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:154
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:173
 		if err_15 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:154
-			//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:155
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:173
+			//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:174
 			continue
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:176
 		result = append(result, Entry{Name: entry.Name(), Path: filepath.Join(path, entry.Name()), IsDir: entry.IsDir(), Size: info.Size(), ModTime: info.ModTime().Unix()})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:184
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:189
 func ListDirs(path string) ([]string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:190
 	entries, err_16 := ListEntries(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:190
 	if err_16 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:190
 		return []string{}, err_16
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:173
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:192
 	result := make([]string, 0, len(entries))
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:193
 	for _, entry := range entries {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:194
 		if entry.IsDir {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:176
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:195
 			result = append(result, entry.Name)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:197
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:203
 func ListFiles(path string) ([]string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:204
 	entries, err_17 := ListEntries(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:204
 	if err_17 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:204
 		return []string{}, err_17
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:206
 	result := make([]string, 0, len(entries))
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:207
 	for _, entry := range entries {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:208
 		if !entry.IsDir {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:190
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:209
 			result = append(result, entry.Name)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:211
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:218
 func ListByModTime(path string) ([]Entry, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:219
 	entries, err_18 := ListEntries(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:219
 	if err_18 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:219
 		return []Entry{}, err_18
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:220
 	sort.Slice(entries, func(i int, j int) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:221
 		return entries[i].ModTime > entries[j].ModTime
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:224
 	return entries, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:212
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:231
 func Walk(path string) ([]Entry, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:232
 	result := []Entry{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:214
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:233
 	err_19 := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:234
 		if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:235
 			return err
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:217
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:236
 		result = append(result, Entry{Name: info.Name(), Path: filePath, IsDir: info.IsDir(), Size: info.Size(), ModTime: info.ModTime().Unix()})
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:243
 		return nil
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:233
 	if err_19 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:233
 		return []Entry{}, err_19
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:227
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:246
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:236
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:255
 func Glob(pattern string) ([]string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:237
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:256
 	if !strings.Contains(pattern, "**") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:238
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:257
 		return filepath.Glob(pattern)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:261
 	root := globWalkRoot(pattern)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:262
 	if root == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:244
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:263
 		root = "."
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:265
 	matcher, err := compileGlob(pattern)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:247
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:266
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:248
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:267
 		return nil, err
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:250
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:269
 	matches := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:251
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:270
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:270
 	err_20 := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:252
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:271
 		if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:253
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:272
 			return err
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:254
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:273
 		if matcher.MatchString(path) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:274
 			matches = append(matches, path)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:256
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:275
 		return nil
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:270
 	if err_20 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:270
 		return []string{}, err_20
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:259
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:278
 	return matches, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:263
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:282
 func globWalkRoot(pattern string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:264
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:283
 	parts := strings.Split(pattern, "/")
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:265
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:284
 	keep := make([]string, 0, len(parts))
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:266
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:285
 	for _, part := range parts {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:267
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:286
 		if strings.ContainsAny(part, "*?[") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:268
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:287
 			break
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:269
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:288
 		keep = append(keep, part)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:270
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:289
 	return strings.Join(keep, "/")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:275
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:294
 func compileGlob(pattern string) (*regexp.Regexp, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:276
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:295
 	builder := strings.Builder{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:277
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:296
 	builder.WriteString("^")
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:279
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:298
 	i := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:280
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:299
 	runes := []byte(pattern)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:281
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:300
 	for i < len(runes) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:282
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:301
 		c := string(runes[i])
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:283
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:302
 		if c == "*" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:284
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:303
 			if i+1 < len(runes) && string(runes[i+1]) == "*" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:287
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:306
 				if i+2 < len(runes) && string(runes[i+2]) == "/" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:288
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:307
 					builder.WriteString("(?:.*/)?")
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:289
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:308
 					i = i + 3
 				} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:291
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:310
 					builder.WriteString(".*")
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:292
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:311
 					i = i + 2
 				}
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:294
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:313
 				builder.WriteString("[^/]*")
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:295
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:314
 				i = i + 1
 			}
 		} else if c == "?" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:297
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:316
 			builder.WriteString("[^/]")
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:298
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:317
 			i = i + 1
 		} else if c == "." {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:300
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:319
 			builder.WriteString("\\.")
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:301
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:320
 			i = i + 1
 		} else if c == "+" || c == "(" || c == ")" || c == "$" || c == "^" || c == "|" || c == "{" || c == "}" || c == "\\" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:303
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:322
 			builder.WriteString("\\")
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:304
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:323
 			builder.WriteString(c)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:305
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:324
 			i = i + 1
 		} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:307
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:326
 			builder.WriteString(c)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:308
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:327
 			i = i + 1
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:310
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:329
 	builder.WriteString("$")
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:311
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:330
 	return regexp.Compile(builder.String())
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:317
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:336
 func Delete(path string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:318
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:337
 	return os.Remove(path)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:325
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:344
 func DeleteAll(path string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:326
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:345
 	return os.RemoveAll(path)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:333
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:352
 func Copy(src string, dst string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:334
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:353
 	sourceFile, err_21 := os.Open(src)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:334
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:353
 	if err_21 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:334
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:353
 		return err_21
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:335
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:354
 	defer sourceFile.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:337
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:356
 	destFile, err_22 := os.Create(dst)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:337
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:356
 	if err_22 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:337
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:356
 		return err_22
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:338
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:357
 	defer destFile.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:340
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:359
 	io.Copy(destFile, sourceFile)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:341
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:360
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:347
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:366
 func Move(src string, dst string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:348
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:367
 	return os.Rename(src, dst)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:353
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:372
 func MkDir(path string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:354
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:373
 	return os.Mkdir(path, 0o755)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:359
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:378
 func MkDirAll(path string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:360
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:379
 	return os.MkdirAll(path, 0o755)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:366
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:385
 func TempFile(prefix string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:367
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:386
 	file, err_23 := os.CreateTemp("", prefix)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:367
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:386
 	if err_23 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:367
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:386
 		return "", err_23
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:368
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:387
 	path := file.Name()
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:369
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:369
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:388
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:388
 	err_24 := file.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:369
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:388
 	if err_24 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:369
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:388
 		return "", err_24
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:370
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:389
 	return path, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:376
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:395
 func TempDir(prefix string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:377
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:396
 	return os.MkdirTemp("", prefix)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:386
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:405
 func TempDirAuto(prefix string) (string, func(), error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:387
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:406
 	path, err_25 := os.MkdirTemp("", prefix)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:387
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:406
 	if err_25 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:387
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:406
 		return "", nil, err_25
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:388
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:407
 	cleanup := func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:389
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:389
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:408
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:408
 		err_26 := os.RemoveAll(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:389
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:408
 		if err_26 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:389
-			//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:390
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:408
+			//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:409
 			fmt.Fprintln(os.Stderr, fmt.Sprintf("files.TempDirAuto cleanup: %v", err_26))
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:392
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:411
 	return path, cleanup, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:397
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:416
 func Size(path string) (int64, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:398
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:417
 	info, err_27 := os.Stat(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:398
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:417
 	if err_27 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:398
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:417
 		return 0, err_27
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:399
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:418
 	return info.Size(), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:404
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:423
 func ModTime(path string) (int64, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:405
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:424
 	info, err_28 := os.Stat(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:405
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:424
 	if err_28 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:405
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:424
 		return 0, err_28
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:406
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:425
 	return info.ModTime().Unix(), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:411
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:430
 func Basename(path string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:412
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:431
 	return filepath.Base(path)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:417
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:436
 func Dirname(path string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:418
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:437
 	return filepath.Dir(path)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:423
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:442
 func Extension(path string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:424
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:443
 	return filepath.Ext(path)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:430
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:449
 func Join(parts ...string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:431
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:450
 	return filepath.Join(parts...)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:437
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:456
 func Abs(path string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:438
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:457
 	return filepath.Abs(path)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:443
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:462
 func UseWith(path string, action func(string)) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:444
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:463
 	defer os.RemoveAll(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:445
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:464
 	action(path)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:453
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:472
 func Watch(pattern string, callback func(string)) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:454
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:473
 	lastModified := map[string]int64{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:457
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:476
 	matches, err_29 := filepath.Glob(pattern)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:457
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:476
 	if err_29 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:457
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:476
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:458
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:477
 	if len(matches) != 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:459
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:478
 		for _, match := range matches {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:460
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:479
 			info, err_30 := os.Stat(match)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:460
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:479
 			if err_30 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:460
-				//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:461
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:479
+				//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:480
 				continue
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:463
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:482
 			lastModified[match] = info.ModTime().UnixNano()
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:465
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:484
 	for {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:466
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:485
 		time.Sleep(500 * time.Millisecond)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:468
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:487
 		matches, err_31 := filepath.Glob(pattern)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:468
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:487
 		if err_31 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:468
-			//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:469
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:487
+			//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:488
 			continue
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:471
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:490
 		for _, match := range matches {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:472
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:491
 			info, err_32 := os.Stat(match)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:472
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:491
 			if err_32 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:472
-				//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:473
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:491
+				//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:492
 				continue
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:475
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:494
 			currentModTime := info.ModTime().UnixNano()
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:478
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:497
 			lastModTime := lastModified[match]
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:480
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:499
 			if lastModTime == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:482
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:501
 				lastModified[match] = currentModTime
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:483
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:502
 				callback(match)
 			} else if currentModTime > lastModTime {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:486
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:505
 				lastModified[match] = currentModTime
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:487
+//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:506
 				callback(match)
 			}
 		}

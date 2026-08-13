@@ -27,8 +27,14 @@ func ParseStrategy(s string) (Strategy, error) {
 	case "exponential":
 		return StrategyExponential, nil
 	}
+	switch s {
+	case "Linear":
+		return StrategyLinear, nil
+	case "Exponential":
+		return StrategyExponential, nil
+	}
 	var zero Strategy
-	return zero, fmt.Errorf("invalid Strategy %q (valid: linear, exponential)", s)
+	return zero, fmt.Errorf("invalid Strategy %q (valid: \"linear\", \"exponential\")", s)
 }
 
 func (e Strategy) String() string {

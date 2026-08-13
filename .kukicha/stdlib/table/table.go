@@ -31,8 +31,16 @@ func ParseStyle(s string) (Style, error) {
 	case "markdown":
 		return StyleMarkdown, nil
 	}
+	switch s {
+	case "Plain":
+		return StylePlain, nil
+	case "Box":
+		return StyleBox, nil
+	case "Markdown":
+		return StyleMarkdown, nil
+	}
 	var zero Style
-	return zero, fmt.Errorf("invalid Style %q (valid: plain, box, markdown)", s)
+	return zero, fmt.Errorf("invalid Style %q (valid: \"plain\", \"box\", \"markdown\")", s)
 }
 
 func (e Style) String() string {

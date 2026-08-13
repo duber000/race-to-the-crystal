@@ -563,55 +563,61 @@ func TestRound(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:455
 	t.Run("two digits", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:456
+		test.AssertEqual(t, kukistring.RoundString(3.14159, 2), "3.14")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:457
 		test.AssertEqual(t, kukistring.Round(3.14159, 2), "3.14")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:459
-	t.Run("zero digits drops decimal", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:460
+	t.Run("zero digits drops decimal", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:461
+		test.AssertEqual(t, kukistring.RoundString(3.7, 0), "4")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:462
 		test.AssertEqual(t, kukistring.Round(3.7, 0), "4")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:463
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:465
 	t.Run("negative digits clamp to zero", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:464
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:466
+		test.AssertEqual(t, kukistring.RoundString(2.9, -1), "3")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:467
 		test.AssertEqual(t, kukistring.Round(2.9, -1), "3")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:468
-func TestWithCommas(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:469
-	t.Run("small numbers unchanged", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:470
-		test.AssertEqual(t, kukistring.WithCommas(0), "0")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:471
-		test.AssertEqual(t, kukistring.WithCommas(42), "42")
+func TestWithCommas(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:472
+	t.Run("small numbers unchanged", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:473
+		test.AssertEqual(t, kukistring.WithCommas(0), "0")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:474
+		test.AssertEqual(t, kukistring.WithCommas(42), "42")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:475
 		test.AssertEqual(t, kukistring.WithCommas(999), "999")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:475
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:478
 	t.Run("thousands", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:476
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:479
 		test.AssertEqual(t, kukistring.WithCommas(1000), "1,000")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:477
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:480
 		test.AssertEqual(t, kukistring.WithCommas(12345), "12,345")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:480
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:483
 	t.Run("millions and beyond", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:481
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:484
 		test.AssertEqual(t, kukistring.WithCommas(1234567), "1,234,567")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:482
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:485
 		test.AssertEqual(t, kukistring.WithCommas(1000000000), "1,000,000,000")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:485
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:488
 	t.Run("negative numbers", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:486
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:489
 		test.AssertEqual(t, kukistring.WithCommas(-1234567), "-1,234,567")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:487
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:490
 		test.AssertEqual(t, kukistring.WithCommas(-500), "-500")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:491
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:494
 type CutCase struct {
 	name       string
 	s          string
@@ -621,21 +627,21 @@ type CutCase struct {
 	wantFound  bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:499
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:502
 func TestCut(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:500
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:503
 	cases := []CutCase{CutCase{name: "basic", s: "a,b,c", sep: ",", wantBefore: "a", wantAfter: "b,c", wantFound: true}, CutCase{name: "not found", s: "abc", sep: ",", wantBefore: "abc", wantAfter: "", wantFound: false}, CutCase{name: "empty sep", s: "abc", sep: "", wantBefore: "", wantAfter: "abc", wantFound: true}, CutCase{name: "starts with sep", s: ",abc", sep: ",", wantBefore: "", wantAfter: "abc", wantFound: true}, CutCase{name: "ends with sep", s: "abc,", sep: ",", wantBefore: "abc", wantAfter: "", wantFound: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:543
-	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:544
-		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:545
-			before, after, found := kukistring.Cut(tc.s, tc.sep)
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:546
-			test.AssertEqual(t, before, tc.wantBefore)
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:547
-			test.AssertEqual(t, after, tc.wantAfter)
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:548
+			before, after, found := kukistring.Cut(tc.s, tc.sep)
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:549
+			test.AssertEqual(t, before, tc.wantBefore)
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:550
+			test.AssertEqual(t, after, tc.wantAfter)
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:551
 			test.AssertEqual(t, found, tc.wantFound)
 		})
 	}

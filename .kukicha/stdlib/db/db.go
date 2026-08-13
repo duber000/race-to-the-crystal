@@ -61,8 +61,20 @@ func ParseIsolationLevel(s string) (IsolationLevel, error) {
 	case "serializable":
 		return IsolationLevelSerializable, nil
 	}
+	switch s {
+	case "Default":
+		return IsolationLevelDefault, nil
+	case "ReadUncommitted":
+		return IsolationLevelReadUncommitted, nil
+	case "ReadCommitted":
+		return IsolationLevelReadCommitted, nil
+	case "RepeatableRead":
+		return IsolationLevelRepeatableRead, nil
+	case "Serializable":
+		return IsolationLevelSerializable, nil
+	}
 	var zero IsolationLevel
-	return zero, fmt.Errorf("invalid IsolationLevel %q (valid: , read_uncommitted, read_committed, repeatable_read, serializable)", s)
+	return zero, fmt.Errorf("invalid IsolationLevel %q (valid: \"\", \"read_uncommitted\", \"read_committed\", \"repeatable_read\", \"serializable\")", s)
 }
 
 func (e IsolationLevel) String() string {

@@ -54,8 +54,24 @@ func ParseLogLevel(s string) (LogLevel, error) {
 	case "emergency":
 		return LogLevelEmergency, nil
 	}
+	switch s {
+	case "Debug":
+		return LogLevelDebug, nil
+	case "Info":
+		return LogLevelInfo, nil
+	case "Warning":
+		return LogLevelWarning, nil
+	case "Error":
+		return LogLevelError, nil
+	case "Critical":
+		return LogLevelCritical, nil
+	case "Alert":
+		return LogLevelAlert, nil
+	case "Emergency":
+		return LogLevelEmergency, nil
+	}
 	var zero LogLevel
-	return zero, fmt.Errorf("invalid LogLevel %q (valid: debug, info, warning, error, critical, alert, emergency)", s)
+	return zero, fmt.Errorf("invalid LogLevel %q (valid: \"debug\", \"info\", \"warning\", \"error\", \"critical\", \"alert\", \"emergency\")", s)
 }
 
 func (e LogLevel) String() string {
@@ -101,8 +117,16 @@ func ParseElicitAction(s string) (ElicitAction, error) {
 	case "cancel":
 		return ElicitActionCancel, nil
 	}
+	switch s {
+	case "Accept":
+		return ElicitActionAccept, nil
+	case "Decline":
+		return ElicitActionDecline, nil
+	case "Cancel":
+		return ElicitActionCancel, nil
+	}
 	var zero ElicitAction
-	return zero, fmt.Errorf("invalid ElicitAction %q (valid: accept, decline, cancel)", s)
+	return zero, fmt.Errorf("invalid ElicitAction %q (valid: \"accept\", \"decline\", \"cancel\")", s)
 }
 
 func (e ElicitAction) String() string {

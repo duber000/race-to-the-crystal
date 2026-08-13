@@ -39,8 +39,20 @@ func ParseSignal(s string) (Signal, error) {
 	case "user-defined-2":
 		return SignalUserDefined2, nil
 	}
+	switch s {
+	case "Interrupt":
+		return SignalInterrupt, nil
+	case "Terminate":
+		return SignalTerminate, nil
+	case "Hangup":
+		return SignalHangup, nil
+	case "UserDefined1":
+		return SignalUserDefined1, nil
+	case "UserDefined2":
+		return SignalUserDefined2, nil
+	}
 	var zero Signal
-	return zero, fmt.Errorf("invalid Signal %q (valid: interrupt, terminate, hangup, user-defined-1, user-defined-2)", s)
+	return zero, fmt.Errorf("invalid Signal %q (valid: \"interrupt\", \"terminate\", \"hangup\", \"user-defined-1\", \"user-defined-2\")", s)
 }
 
 func (e Signal) String() string {

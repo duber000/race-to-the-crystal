@@ -245,8 +245,16 @@ func Parse_AskJSONVerdict(s string) (_AskJSONVerdict, error) {
 	case "ignore":
 		return _AskJSONVerdictIgnore, nil
 	}
+	switch s {
+	case "Restart":
+		return _AskJSONVerdictRestart, nil
+	case "Rollback":
+		return _AskJSONVerdictRollback, nil
+	case "Ignore":
+		return _AskJSONVerdictIgnore, nil
+	}
 	var zero _AskJSONVerdict
-	return zero, fmt.Errorf("invalid _AskJSONVerdict %q (valid: restart, rollback, ignore)", s)
+	return zero, fmt.Errorf("invalid _AskJSONVerdict %q (valid: \"restart\", \"rollback\", \"ignore\")", s)
 }
 
 func (e _AskJSONVerdict) String() string {

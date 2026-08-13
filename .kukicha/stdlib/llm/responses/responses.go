@@ -43,8 +43,18 @@ func ParseMessageRole(s string) (MessageRole, error) {
 	case "developer":
 		return MessageRoleDeveloper, nil
 	}
+	switch s {
+	case "System":
+		return MessageRoleSystem, nil
+	case "User":
+		return MessageRoleUser, nil
+	case "Assistant":
+		return MessageRoleAssistant, nil
+	case "Developer":
+		return MessageRoleDeveloper, nil
+	}
 	var zero MessageRole
-	return zero, fmt.Errorf("invalid MessageRole %q (valid: system, user, assistant, developer)", s)
+	return zero, fmt.Errorf("invalid MessageRole %q (valid: \"system\", \"user\", \"assistant\", \"developer\")", s)
 }
 
 func (e MessageRole) String() string {

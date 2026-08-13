@@ -42,8 +42,18 @@ func ParseMessageRole(s string) (MessageRole, error) {
 	case "tool":
 		return MessageRoleTool, nil
 	}
+	switch s {
+	case "System":
+		return MessageRoleSystem, nil
+	case "User":
+		return MessageRoleUser, nil
+	case "Assistant":
+		return MessageRoleAssistant, nil
+	case "Tool":
+		return MessageRoleTool, nil
+	}
 	var zero MessageRole
-	return zero, fmt.Errorf("invalid MessageRole %q (valid: system, user, assistant, tool)", s)
+	return zero, fmt.Errorf("invalid MessageRole %q (valid: \"system\", \"user\", \"assistant\", \"tool\")", s)
 }
 
 func (e MessageRole) String() string {
@@ -89,8 +99,20 @@ func ParseFinishReason(s string) (FinishReason, error) {
 	case "function_call":
 		return FinishReasonFunctionCall, nil
 	}
+	switch s {
+	case "Stop":
+		return FinishReasonStop, nil
+	case "Length":
+		return FinishReasonLength, nil
+	case "ToolCalls":
+		return FinishReasonToolCalls, nil
+	case "ContentFilter":
+		return FinishReasonContentFilter, nil
+	case "FunctionCall":
+		return FinishReasonFunctionCall, nil
+	}
 	var zero FinishReason
-	return zero, fmt.Errorf("invalid FinishReason %q (valid: stop, length, tool_calls, content_filter, function_call)", s)
+	return zero, fmt.Errorf("invalid FinishReason %q (valid: \"stop\", \"length\", \"tool_calls\", \"content_filter\", \"function_call\")", s)
 }
 
 func (e FinishReason) String() string {

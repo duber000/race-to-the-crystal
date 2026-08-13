@@ -54,3 +54,17 @@ func WithCancel(parent Handle) Handle {
 //line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:60
 	return Handle{Ctx: child, Cancel: cancel}
 }
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:66
+func WithValue(parent Handle, key any, value any) Handle {
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:67
+	child := context.WithValue(parent.Ctx, key, value)
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:68
+	return Handle{Ctx: child, Cancel: parent.Cancel}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:75
+func GetValue(h Handle, key any) any {
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:76
+	return h.Ctx.Value(key)
+}

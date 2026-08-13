@@ -63,8 +63,14 @@ func ParseFormat(s string) (Format, error) {
 	case "json":
 		return FormatJSON, nil
 	}
+	switch s {
+	case "Text":
+		return FormatText, nil
+	case "JSON":
+		return FormatJSON, nil
+	}
 	var zero Format
-	return zero, fmt.Errorf("invalid Format %q (valid: text, json)", s)
+	return zero, fmt.Errorf("invalid Format %q (valid: \"text\", \"json\")", s)
 }
 
 func (e Format) String() string {

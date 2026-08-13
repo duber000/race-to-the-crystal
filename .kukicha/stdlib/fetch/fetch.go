@@ -103,8 +103,24 @@ func ParseHTTPMethod(s string) (HTTPMethod, error) {
 	case "OPTIONS":
 		return HTTPMethodOPTIONS, nil
 	}
+	switch s {
+	case "GET":
+		return HTTPMethodGET, nil
+	case "POST":
+		return HTTPMethodPOST, nil
+	case "PUT":
+		return HTTPMethodPUT, nil
+	case "PATCH":
+		return HTTPMethodPATCH, nil
+	case "DELETE":
+		return HTTPMethodDELETE, nil
+	case "HEAD":
+		return HTTPMethodHEAD, nil
+	case "OPTIONS":
+		return HTTPMethodOPTIONS, nil
+	}
 	var zero HTTPMethod
-	return zero, fmt.Errorf("invalid HTTPMethod %q (valid: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS)", s)
+	return zero, fmt.Errorf("invalid HTTPMethod %q (valid: \"GET\", \"POST\", \"PUT\", \"PATCH\", \"DELETE\", \"HEAD\", \"OPTIONS\")", s)
 }
 
 func (e HTTPMethod) String() string {

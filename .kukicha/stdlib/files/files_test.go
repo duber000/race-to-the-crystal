@@ -81,7 +81,7 @@ func TestWriteJSON(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files_test.kuki:56
 			testData := TestData{Name: "test", Value: 42}
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files_test.kuki:58
-			err = files.Write(testData, testFile)
+			err = files.WriteJSON(testData, testFile)
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files_test.kuki:59
 			test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files_test.kuki:60

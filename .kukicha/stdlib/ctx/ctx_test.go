@@ -32,3 +32,25 @@ func TestWithTimeoutCancel(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:23
 	test.AssertNotEqual(t, h.Ctx.Err(), nil)
 }
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:27
+type authKey struct {
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:30
+func TestWithValue(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:31
+	h := ctx.WithValue(ctx.Background(), authKey{}, "user-42")
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:32
+	v := ctx.GetValue(h, authKey{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:33
+	test.AssertEqual(t, v, "user-42")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:36
+func TestGetValueMissing(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:37
+	h := ctx.Background()
+//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:38
+	test.AssertEqual(t, ctx.GetValue(h, authKey{}), nil)
+}

@@ -60,8 +60,14 @@ func ParseMessageRole(s string) (MessageRole, error) {
 	case "assistant":
 		return MessageRoleAssistant, nil
 	}
+	switch s {
+	case "User":
+		return MessageRoleUser, nil
+	case "Assistant":
+		return MessageRoleAssistant, nil
+	}
 	var zero MessageRole
-	return zero, fmt.Errorf("invalid MessageRole %q (valid: user, assistant)", s)
+	return zero, fmt.Errorf("invalid MessageRole %q (valid: \"user\", \"assistant\")", s)
 }
 
 func (e MessageRole) String() string {
@@ -539,8 +545,18 @@ func ParseThinkingEffort(s string) (ThinkingEffort, error) {
 	case "max":
 		return ThinkingEffortMax, nil
 	}
+	switch s {
+	case "Low":
+		return ThinkingEffortLow, nil
+	case "Medium":
+		return ThinkingEffortMedium, nil
+	case "High":
+		return ThinkingEffortHigh, nil
+	case "Max":
+		return ThinkingEffortMax, nil
+	}
 	var zero ThinkingEffort
-	return zero, fmt.Errorf("invalid ThinkingEffort %q (valid: low, medium, high, max)", s)
+	return zero, fmt.Errorf("invalid ThinkingEffort %q (valid: \"low\", \"medium\", \"high\", \"max\")", s)
 }
 
 func (e ThinkingEffort) String() string {
@@ -593,8 +609,14 @@ func ParseInferenceRegion(s string) (InferenceRegion, error) {
 	case "us":
 		return InferenceRegionUS, nil
 	}
+	switch s {
+	case "Global":
+		return InferenceRegionGlobal, nil
+	case "US":
+		return InferenceRegionUS, nil
+	}
 	var zero InferenceRegion
-	return zero, fmt.Errorf("invalid InferenceRegion %q (valid: global, us)", s)
+	return zero, fmt.Errorf("invalid InferenceRegion %q (valid: \"global\", \"us\")", s)
 }
 
 func (e InferenceRegion) String() string {
