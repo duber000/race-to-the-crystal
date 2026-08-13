@@ -20,7 +20,7 @@ type WebServerConfig
 
 func WebServerConfigFromEnv() WebServerConfig
     return WebServerConfig{
-        port: env.GetIntOrDefault("WEB_PORT", 8000),
+        port: env.GetIntOr("WEB_PORT", 8000),
         static_dir: env.GetOr("STATIC_DIR", "web_server/static"),
         index_path: env.GetOr("INDEX_PATH", "web_server/templates/index.html"),
         game_server_url: env.GetOr("GAME_SERVER_URL", "http://localhost:8080"),

@@ -17,10 +17,10 @@ type ServerConfig
 
 func ServerConfigFromEnv() ServerConfig
     return ServerConfig{
-        http_port: env.GetIntOrDefault("HTTP_PORT", 8080),
+        http_port: env.GetIntOr("HTTP_PORT", 8080),
         static_dir: env.GetOr("STATIC_DIR", ""),
         jwt_secret: env.GetOr("JWT_SECRET_KEY", ""),
-        debug: env.GetBoolOrDefault("DEBUG", false),
+        debug: env.GetBoolOr("DEBUG", false),
     }
 
 type GameServer
