@@ -144,7 +144,7 @@ func ValidateDeploy(data: map of string to any) optional reference ValidationRes
 func is_position_value(val: any) bool
     pos := empty list of int
     bytes := jsonpkg.Bytes(val) onerr return false
-    jsonpkg.ParseInto(bytes, reference of pos) onerr return false
+    jsonpkg.ParseBytesInto(bytes, reference of pos) onerr return false
     return len(pos) equals 2
 
 func NormalizeActionData(data: map of string to any) map of string to any

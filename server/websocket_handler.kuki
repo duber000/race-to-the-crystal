@@ -90,7 +90,7 @@ func BroadcastToGame on wh: reference WebSocketHandler(game_id: string, data: ma
 
 func ProcessMessage on wh: reference WebSocketHandler(client_id: string, raw_data: string) map of string to any
     data := make(map of string to any)
-    jsonpkg.ParseStringInto(raw_data, reference of data) onerr return data
+    jsonpkg.ParseInto(raw_data, reference of data) onerr return data
 
     msg_type_val, has := data["type"]
     if not has

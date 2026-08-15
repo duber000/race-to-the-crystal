@@ -460,7 +460,7 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
 
 func ExtractStateFromSSE(ev: SSEEvent) Payload
     parsed := make(Payload)
-    jsonpkg.ParseStringInto(ev.data, reference of parsed) onerr return empty Payload
+    jsonpkg.ParseInto(ev.data, reference of parsed) onerr return empty Payload
 
     state_any, has_state := parsed["state"]
     if has_state

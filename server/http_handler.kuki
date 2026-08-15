@@ -490,7 +490,7 @@ func getPositionField on h: reference HTTPHandler(data: map of string to any, ke
 
     pos := empty list of any
     pos_str := json_bytes as string
-    err := jsonpkg.ParseStringInto(pos_str, reference of pos)
+    err := jsonpkg.ParseInto(pos_str, reference of pos)
     if err isnt empty
         return typespkg.Position{X: 0, Y: 0}
 

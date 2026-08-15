@@ -68,7 +68,7 @@ func VerifyPlayerToken(token_str: string, secret_key: string) optional reference
 
     payload_bytes := base64url_decode(payload_b64)
     claims := JWTClaims{}
-    jsonpkg.ParseInto(payload_bytes, reference of claims) onerr return empty
+    jsonpkg.ParseBytesInto(payload_bytes, reference of claims) onerr return empty
 
     now := time.Now().Unix()
     if now > claims.Exp
