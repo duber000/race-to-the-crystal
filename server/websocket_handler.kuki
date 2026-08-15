@@ -1,8 +1,10 @@
 petiole main
 
+import "github.com/gorilla/websocket"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/string" as strpkg
+import "sync"
 
 const MAX_MESSAGE_SIZE = 1024
 
@@ -14,6 +16,8 @@ type WSClient
     game_id: string
     connected_at: float64
     ip_address: string
+    conn: optional reference websocket.Conn
+    write_mu: sync.Mutex
 
 func NewWSClient(client_id: string) WSClient
     return WSClient{
@@ -37,7 +41,7 @@ func NewWSMessage(game_id: string, data: map of string to any) WSMessage
     return WSMessage{game_id: game_id, data: data}
 
 type WebSocketHandler
-    clients: map of string to WSClient
+    clients: map of string to reference WSClient
     game_sessions: map of string to string
     on_connect: optional reference func(string, string, string)
     on_disconnect: optional reference func(string)
@@ -45,7 +49,7 @@ type WebSocketHandler
 
 func NewWebSocketHandler() WebSocketHandler
     return WebSocketHandler{
-        clients: make(map of string to WSClient),
+        clients: make(map of string to reference WSClient),
         game_sessions: make(map of string to string),
     }
 
@@ -58,7 +62,7 @@ func SetOnDisconnect on wh: reference WebSocketHandler(handler: reference func(s
 func SetOnMessage on wh: reference WebSocketHandler(handler: reference func(string, string, map of string to any))
     wh.on_message = handler
 
-func RegisterClient on wh: reference WebSocketHandler(client: WSClient)
+func RegisterClient on wh: reference WebSocketHandler(client: reference WSClient)
     wh.clients[client.client_id] = client
     wh.game_sessions[client.client_id] = client.game_id
     if wh.on_connect isnt empty
@@ -74,7 +78,6 @@ func UpdateClientGameID on wh: reference WebSocketHandler(client_id: string, gam
     client, ok := wh.clients[client_id]
     if ok
         client.game_id = game_id
-        wh.clients[client_id] = client
         wh.game_sessions[client_id] = game_id
 
 func UpdateClientPlayerID on wh: reference WebSocketHandler(client_id: string, player_id: string, player_name: string)
@@ -82,11 +85,32 @@ func UpdateClientPlayerID on wh: reference WebSocketHandler(client_id: string, p
     if ok
         client.player_id = player_id
         client.player_name = player_name
-        wh.clients[client_id] = client
 
-func BroadcastToGame on wh: reference WebSocketHandler(game_id: string, data: map of string to any)
+func SendToClient on wh: reference WebSocketHandler(client_id: string, data: map of string to any) bool
+    client, ok := wh.clients[client_id]
+    if not ok
+        return false
+    if client.conn is empty
+        return false
+    json_bytes := jsonpkg.Bytes(data) onerr return false
+    client.write_mu.Lock()
+    defer client.write_mu.Unlock()
+    err := dereference client.conn.WriteMessage(websocket.TextMessage, json_bytes)
+    if err isnt empty
+        log.Debug("WebSocket send to {client_id} failed: {err}")
+        return false
+    return true
+
+func BroadcastToGame on wh: reference WebSocketHandler(game_id: string, data: JSONMap)
     json_bytes := jsonpkg.Bytes(data) onerr return
     log.Debug("Broadcasting to game {game_id}: {json_bytes as string}")
+    for _client_id, client in wh.clients
+        if client.game_id equals game_id and client.conn isnt empty
+            client.write_mu.Lock()
+            err := dereference client.conn.WriteMessage(websocket.TextMessage, json_bytes)
+            client.write_mu.Unlock()
+            if err isnt empty
+                log.Debug("WebSocket broadcast failed: {err}")
 
 func ProcessMessage on wh: reference WebSocketHandler(client_id: string, raw_data: string) map of string to any
     data := make(map of string to any)
@@ -115,8 +139,8 @@ func GetClientsInGame on wh: reference WebSocketHandler(game_id: string) list of
             result = append(result, client.player_id)
     return result
 
-func GetClientByID on wh: reference WebSocketHandler(client_id: string) WSClient
+func GetClientByID on wh: reference WebSocketHandler(client_id: string) optional reference WSClient
     client, ok := wh.clients[client_id]
     if ok
         return client
-    return WSClient{}
+    return empty

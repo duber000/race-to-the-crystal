@@ -164,7 +164,7 @@ Renderer3D.prototype.isMysterySquare = function(x, y, gameState) {
     if (!gameState.board || !gameState.board.grid) return false;
     if (y < 0 || y >= gameState.board.grid.length) return false;
     if (x < 0 || x >= gameState.board.grid[y].length) return false;
-    return gameState.board.grid[y][x].cell_type === 4;
+    return gameState.board.grid[y][x].cell_type === 3;
 };
 
 Renderer3D.prototype.checkCrystalEffectTrigger = function(gameState) {

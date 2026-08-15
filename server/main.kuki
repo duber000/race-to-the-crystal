@@ -30,6 +30,7 @@ type GameServer
     ws_handler: WebSocketHandler
     mercure: MercurePublisher
     http_handler: HTTPHandler
+    ws_endpoint: WebSocketEndpoint
 
 func NewGameServer(config: ServerConfig) (GameServer, error)
     mercure_cfg := MercureConfigFromEnv()
@@ -57,6 +58,13 @@ func NewGameServer(config: ServerConfig) (GameServer, error)
     return gs, empty
 
 func Start on gs: reference GameServer
+    gs.ws_endpoint = NewWebSocketEndpoint(
+        reference of gs.coordinator,
+        reference of gs.lobby_mgr,
+        reference of gs.ws_handler,
+        reference of gs.mercure,
+        reference of gs.http_handler,
+    )
     mux := http.NewServeMux()
     gs.registerRoutes(mux)
 
@@ -79,6 +87,7 @@ func Start on gs: reference GameServer
     receive from ch
 
 func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
+    mux.Handle("/ws", httphelper.Handler(gs.handleWebSocketRoute))
     mux.Handle("/", httphelper.Handler(gs.handleHTTP))
     mux.Handle("/api/game/create", httphelper.Handler(gs.handleCreateGameRoute))
     mux.Handle("/api/game/\{game_id\}/join", httphelper.Handler(gs.handleJoinGameRoute))
@@ -89,6 +98,9 @@ func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
     mux.Handle("/api/game/\{game_id\}/ready", httphelper.Handler(gs.handleReadyRoute))
     mux.Handle("/api/game/\{game_id\}/start", httphelper.Handler(gs.handleStartGameRoute))
     mux.Handle("/api/games", httphelper.Handler(gs.handleListGamesRoute))
+
+func handleWebSocketRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    gs.ws_endpoint.HandleWebSocket(response, request)
 
 func handleHTTP on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
     response.SetSecureHeaders()

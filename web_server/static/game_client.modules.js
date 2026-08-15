@@ -2,6 +2,12 @@
 // Game Client Modules - Separated Concerns from GameClient
 // ==========================================================================
 
+import { NetworkManager } from './network_manager.js';
+import { CameraController } from './camera_controller.js';
+import { InputHandler } from './input_handler.js';
+import { Renderer3D } from './game_client.renderer.js';
+import { STATE, TurnPhase, BOARD_CONFIG, BOARD_WIDTH, BOARD_HEIGHT, CELL_SIZE, WALL_HEIGHT } from './game_client.constants.js';
+
 /**
  * Connection Manager - Handles network connection and state synchronization
  */

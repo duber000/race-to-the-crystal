@@ -13,11 +13,14 @@ Network=game-net.network
 # Environment configuration
 Environment=WEB_PORT=8000
 Environment=GAME_SERVER_URL=http://race-game-api:8080
-Environment=MERCURE_HUB_URL=http://127.0.0.1:8880/.well-known/mercure
+Environment=MERCURE_HUB_URL=http://race-caddy/.well-known/mercure
 Environment=MERCURE_TOPIC_PREFIX=https://api.game.local/game
 # WebSocket-primary: SSE state-sync is disabled until the Mercure payload
 # shapes and per-player perspective topics are implemented
 Environment=MERCURE_ENABLED=false
+
+# Secrets loaded from file (created during deployment)
+EnvironmentFile=%h/.config/containers/systemd/race-secrets.env
 
 [Service]
 Type=notify

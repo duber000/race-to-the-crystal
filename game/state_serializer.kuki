@@ -1,0 +1,163 @@
+petiole game
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+
+type StateDict = map of string to any
+
+# Wire format for crystal effects: numeric, matching the frontend's
+# CRYSTAL_EFFECT mapping (FOG_OF_WAR=1 .. SPEED_BOOST=4).
+func crystal_effect_number(e: enums.CrystalEffect) int
+    switch e
+        when enums.FOG_OF_WAR
+            return 1
+        when enums.PHANTOM_ENEMIES
+            return 2
+        when enums.DAMAGE_BOOST
+            return 3
+        when enums.SPEED_BOOST
+            return 4
+        default
+            return 0
+
+func token_to_dict(t: reference Token) StateDict
+    return StateDict{
+        "id": t.id as int,
+        "player_id": t.player_id as string,
+        "health": t.health,
+        "max_health": t.max_health,
+        "position": list of int{t.position.X, t.position.Y},
+        "is_alive": t.is_alive,
+        "is_deployed": t.is_deployed,
+    }
+
+func player_to_dict(p: reference Player, color_index: int) StateDict
+    token_ids := empty list of int
+    for tid in p.token_ids
+        token_ids = append(token_ids, tid as int)
+    return StateDict{
+        "id": p.id as string,
+        "player_id": p.id as string,
+        "name": p.name,
+        "player_name": p.name,
+        "color": p.color,
+        "color_index": color_index,
+        "token_ids": token_ids,
+        "is_ready": p.is_ready,
+        "is_active": p.is_active,
+    }
+
+func cell_to_dict(c: Cell) StateDict
+    occupants := empty list of int
+    for tid in c.occupants
+        occupants = append(occupants, tid as int)
+    return StateDict{
+        "position": list of int{c.position.X, c.position.Y},
+        "cell_type": c.cell_type as int,
+        "occupants": occupants,
+    }
+
+func board_to_dict(b: reference Board) StateDict
+    grid := empty list of list of StateDict
+    for row in b.grid
+        row_dicts := empty list of StateDict
+        for cell in row
+            row_dicts = append(row_dicts, cell_to_dict(cell))
+        grid = append(grid, row_dicts)
+    return StateDict{
+        "width": b.width,
+        "height": b.height,
+        "grid": grid,
+    }
+
+func crystal_to_dict(c: reference Crystal) StateDict
+    holding_ids := empty list of int
+    for tid in c.holding_token_ids
+        holding_ids = append(holding_ids, tid as int)
+    return StateDict{
+        "position": list of int{c.position.X, c.position.Y},
+        "holding_player_id": c.holding_player_id as string,
+        "holding_token_ids": holding_ids,
+        "turns_held": c.turns_held,
+        "base_tokens_required": c.base_tokens_required,
+    }
+
+func generator_to_dict(g: Generator) StateDict
+    cap_ids := empty list of int
+    for tid in g.capture_token_ids
+        cap_ids = append(cap_ids, tid as int)
+    return StateDict{
+        "id": g.id,
+        "position": list of int{g.position.X, g.position.Y},
+        "capturing_player_id": g.capturing_player_id as string,
+        "capture_token_ids": cap_ids,
+        "turns_held": g.turns_held,
+        "is_disabled": g.is_disabled,
+    }
+
+func active_effect_to_dict(e: ActiveEffect) StateDict
+    return StateDict{
+        "effect_type": crystal_effect_number(e.effect_type),
+        "turns_remaining": e.turns_remaining,
+        "applied_turn": e.applied_turn,
+    }
+
+func effects_to_dict on m: reference CrystalEffectsManager(map_of_players: map of types.PlayerID to reference Player) StateDict
+    player_effects := make(map of string to StateDict)
+    for pid, _ in map_of_players
+        pe := m.get_player_effects(pid)
+        active := empty list of StateDict
+        for eff in pe.active_effects
+            active = append(active, active_effect_to_dict(eff))
+        player_effects[pid as string] = StateDict{"active_effects": active}
+    return StateDict{"player_effects": player_effects}
+
+# Full client-facing state dict. `perspective` is the game player id
+# ("player_0") to annotate the state with; pass "" to omit.
+func ClientStateDict on gs: reference GameState (perspective: string) StateDict
+    players_map := make(map of string to StateDict)
+    idx := 0
+    for pid, p in gs.players
+        players_map[pid as string] = player_to_dict(p, idx)
+        idx = idx + 1
+
+    tokens_map := make(map of string to StateDict)
+    for tid, t in gs.tokens
+        tokens_map["{tid}"] = token_to_dict(t)
+
+    gens := empty list of StateDict
+    for g in gs.generators
+        gens = append(gens, generator_to_dict(g))
+
+    result := StateDict{
+        "board": board_to_dict(reference of gs.board),
+        "players": players_map,
+        "tokens": tokens_map,
+        "generators": gens,
+        "crystal_effects": gs.crystal_effects.effects_to_dict(gs.players),
+        "current_turn_player_id": gs.current_turn_player_id as string,
+        "turn_number": gs.turn_number,
+        "phase": enums.GamePhaseName(gs.phase),
+        "turn_phase": enums.TurnPhaseName(gs.turn_phase),
+    }
+    if gs.winner_id isnt ""
+        result["winner_id"] = gs.winner_id as string
+    if gs.crystal_instance isnt empty
+        result["crystal"] = crystal_to_dict(gs.crystal_instance)
+    if gs.last_triggered_crystal_effect isnt empty
+        ev := dereference gs.last_triggered_crystal_effect
+        result["last_triggered_crystal_effect"] = list of any{
+            ev.player_id as string,
+            crystal_effect_number(ev.effect_type),
+        }
+    if gs.last_triggered_mystery_event isnt empty
+        ev := dereference gs.last_triggered_mystery_event
+        result["last_triggered_mystery_event"] = list of any{
+            ev.TokenID as int,
+            list of int{ev.Position.X, ev.Position.Y},
+            ev.effect,
+        }
+    if perspective isnt ""
+        result["perspective_player_id"] = perspective
+        result["your_player_id"] = perspective
+    return result

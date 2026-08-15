@@ -158,7 +158,7 @@ Renderer3D.prototype.createSpecialCells = function(gameState) {
         for (let y = 0; y < gameState.board.grid.length; y++) {
             for (let x = 0; x < gameState.board.grid[y].length; x++) {
                 const cell = gameState.board.grid[y][x];
-                if (cell.cell_type === 4) {
+                if (cell.cell_type === 3) {
                     this.createMysteryRing(x, y);
                 }
             }

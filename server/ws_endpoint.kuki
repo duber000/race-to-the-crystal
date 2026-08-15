@@ -1,0 +1,356 @@
+petiole main
+
+import "github.com/gorilla/websocket"
+import "net/http"
+import "race-to-the-crystal/game" as gamepkg
+import "stdlib/json" as jsonpkg
+import "stdlib/log"
+import "stdlib/random"
+import "stdlib/string" as strpkg
+import "stdlib/http" as httphelper
+
+var ws_upgrader = websocket.Upgrader{
+    ReadBufferSize: 8192,
+    WriteBufferSize: 8192,
+    CheckOrigin: check_ws_origin,
+}
+
+func check_ws_origin(r: reference http.Request) bool
+    return true
+
+type WebSocketEndpoint
+    coordinator: reference GameCoordinator
+    lobby_mgr: reference LobbyManager
+    ws_handler: reference WebSocketHandler
+    mercure: reference MercurePublisher
+    http_handler: reference HTTPHandler
+
+func NewWebSocketEndpoint(coordinator: reference GameCoordinator, lobby_mgr: reference LobbyManager, ws_handler: reference WebSocketHandler, mercure: reference MercurePublisher, http_handler: reference HTTPHandler) WebSocketEndpoint
+    return WebSocketEndpoint{
+        coordinator: coordinator,
+        lobby_mgr: lobby_mgr,
+        ws_handler: ws_handler,
+        mercure: mercure,
+        http_handler: http_handler,
+    }
+
+func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Response, request: httphelper.Request)
+    conn, err := ws_upgrader.Upgrade(response.Raw(), request.Raw(), empty)
+    if err isnt empty
+        log.Warn("WebSocket upgrade failed: {err}")
+        return
+    client_id := random.String(16)
+    client := NewWSClient(client_id)
+    client.conn = conn
+    ep.ws_handler.RegisterClient(reference of client)
+    log.Info("WebSocket client connected: {client_id}")
+    defer conn.Close()
+    for
+        _msg_type, raw, err := conn.ReadMessage()
+        if err isnt empty
+            break
+        ep.handleClientMessage(client_id, raw as string)
+    ep.handleClientDisconnect(client_id)
+
+func handleClientMessage on ep: reference WebSocketEndpoint(client_id: string, raw_data: string)
+    data := make(JSONMap)
+    jsonpkg.ParseInto(raw_data, reference of data) onerr
+        ep.sendError(client_id, "Invalid JSON format")
+        return
+    msg_type_val, has := data["type"]
+    if not has
+        return
+    msg_type := ""
+    if msg_type_val is string as s
+        msg_type = s
+    msg_type = strpkg.ToLower(msg_type)
+    switch msg_type
+        when "connect"
+            ep.handleConnect(client_id, data)
+        when "list_games"
+            ep.handleListGames(client_id)
+        when "create_game"
+            ep.handleCreateGame(client_id, data)
+        when "join_game"
+            ep.handleJoinGame(client_id, data)
+        when "leave_game"
+            ep.handleLeaveGame(client_id, data)
+        when "ready"
+            ep.handleReady(client_id, data)
+        when "start_game"
+            ep.handleStartGame(client_id, data)
+        when "move", "attack", "deploy", "end_turn"
+            ep.handleGameAction(client_id, msg_type, data)
+        when "sse_fallback_request"
+            ep.handleStateRequest(client_id)
+        when "disconnect"
+            ep.handleClientDisconnect(client_id)
+        default
+            ep.sendError(client_id, "Unknown message type: {msg_type}")
+
+func handleConnect on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
+    client := ep.ws_handler.GetClientByID(client_id)
+    if client equals empty
+        return
+    player_name := "Player"
+    pn_val, has_pn := data["player_name"]
+    if has_pn
+        if pn_val is string as pn
+            if pn isnt ""
+                player_name = pn
+    client.player_id = client_id
+    client.player_name = player_name
+    client.client_type = ClientType.WEB_BROWSER
+    ep.ws_handler.SendToClient(client_id, JSONMap{
+        "type": "CONNECT_ACK",
+        "player_id": client_id,
+        "player_name": player_name,
+        "client_type": "WEB_BROWSER",
+        "server_version": "1.0.0",
+    })
+    log.Info("WebSocket player connected: {player_name} ({client_id})")
+
+func handleListGames on ep: reference WebSocketEndpoint(client_id: string)
+    games := ep.lobby_mgr.list_available_lobbies()
+    ep.ws_handler.SendToClient(client_id, JSONMap{
+        "type": "GAME_LIST",
+        "games": games,
+    })
+
+func handleCreateGame on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
+    client := ep.ws_handler.GetClientByID(client_id)
+    if client equals empty or client.player_id equals ""
+        ep.sendError(client_id, "Not connected")
+        return
+    game_name := "Game"
+    gn_val, has_gn := data["game_name"]
+    if has_gn
+        if gn_val is string as gn
+            if gn isnt ""
+                game_name = gn
+    max_players := 4
+    mp_val, has_mp := data["max_players"]
+    if has_mp
+        if mp_val is int as mp_parsed
+            max_players = mp_parsed
+    if max_players < 2
+        max_players = 2
+    if max_players > 4
+        max_players = 4
+    lobby := ep.lobby_mgr.create_lobby(client.player_id, client.player_name, game_name, ClientType.WEB_BROWSER, max_players)
+    if lobby equals empty
+        ep.sendError(client_id, "Failed to create game")
+        return
+    client.game_id = lobby.game_id
+    ep.ws_handler.UpdateClientGameID(client_id, client.game_id)
+    ep.ws_handler.SendToClient(client_id, JSONMap{
+        "type": "CREATE_GAME",
+        "game_id": lobby.game_id,
+        "game_name": lobby.game_name,
+        "host_player_id": lobby.host_player_id,
+        "max_players": lobby.max_players,
+        "current_players": len(lobby.players),
+        "status": lobby.status.String(),
+    })
+
+func handleJoinGame on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
+    client := ep.ws_handler.GetClientByID(client_id)
+    if client equals empty or client.player_id equals ""
+        ep.sendError(client_id, "Not connected")
+        return
+    game_id := ""
+    gid_val, has_gid := data["game_id"]
+    if has_gid
+        if gid_val is string as gid
+            game_id = gid
+    if game_id equals ""
+        ep.sendError(client_id, "No game_id provided")
+        return
+    lobby := ep.lobby_mgr.join_lobby(game_id, client.player_id, client.player_name, ClientType.WEB_BROWSER)
+    if lobby equals empty
+        ep.sendError(client_id, "Cannot join game")
+        return
+    client.game_id = game_id
+    ep.ws_handler.UpdateClientGameID(client_id, game_id)
+    ep.ws_handler.SendToClient(client_id, JSONMap{
+        "type": "JOIN_GAME",
+        "game_id": lobby.game_id,
+        "game_name": lobby.game_name,
+        "host_player_id": lobby.host_player_id,
+        "max_players": lobby.max_players,
+        "current_players": len(lobby.players),
+        "status": lobby.status.String(),
+        "players": lobby.get_player_list(),
+    })
+    ep.ws_handler.BroadcastToGame(game_id, JSONMap{
+        "type": "PLAYER_JOINED",
+        "game_id": game_id,
+        "player_id": client.player_id,
+        "player_name": client.player_name,
+        "lobby": lobby.to_dict(),
+    })
+
+func handleLeaveGame on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
+    client := ep.ws_handler.GetClientByID(client_id)
+    if client equals empty or client.game_id equals ""
+        return
+    game_id := client.game_id
+    player_id := client.player_id
+    ep.lobby_mgr.leave_lobby(game_id, player_id)
+    client.game_id = ""
+    ep.ws_handler.UpdateClientGameID(client_id, "")
+    ep.ws_handler.SendToClient(client_id, JSONMap{"type": "LEAVE_GAME", "game_id": game_id})
+    lobby := ep.lobby_mgr.get_lobby(game_id)
+    if lobby isnt empty
+        ep.ws_handler.BroadcastToGame(game_id, JSONMap{
+            "type": "PLAYER_LEFT",
+            "game_id": game_id,
+            "player_id": player_id,
+            "lobby": lobby.to_dict(),
+        })
+
+func handleReady on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
+    client := ep.ws_handler.GetClientByID(client_id)
+    if client equals empty or client.game_id equals ""
+        ep.sendError(client_id, "Not in a game")
+        return
+    ready := true
+    rdy_val, has_rdy := data["ready"]
+    if has_rdy
+        if rdy_val is bool as rdy
+            ready = rdy
+    ep.lobby_mgr.set_ready(client.game_id, client.player_id, ready)
+    lobby := ep.lobby_mgr.get_lobby(client.game_id)
+    if lobby isnt empty
+        ep.ws_handler.BroadcastToGame(client.game_id, JSONMap{
+            "type": "READY",
+            "game_id": client.game_id,
+            "player_id": client.player_id,
+            "ready": ready,
+            "lobby": lobby.to_dict(),
+        })
+
+func handleStartGame on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
+    client := ep.ws_handler.GetClientByID(client_id)
+    if client equals empty or client.player_id equals ""
+        ep.sendError(client_id, "Not connected")
+        return
+    lobby := ep.lobby_mgr.get_player_lobby(client.player_id)
+    if lobby equals empty
+        ep.sendError(client_id, "Not in a lobby")
+        return
+    if lobby.host_player_id isnt client.player_id
+        ep.sendError(client_id, "Only the host can start the game")
+        return
+    start_result := ep.lobby_mgr.start_game(lobby.game_id)
+    if start_result equals empty
+        ep.sendError(client_id, "Cannot start game")
+        return
+    session := ep.coordinator.create_session(lobby)
+    ep.lobby_mgr.set_game_in_progress(lobby.game_id)
+    ep.broadcastState(session)
+    ep.ws_handler.BroadcastToGame(lobby.game_id, JSONMap{
+        "type": "START_GAME",
+        "game_id": lobby.game_id,
+    })
+
+func handleGameAction on ep: reference WebSocketEndpoint(client_id: string, msg_type: string, data: JSONMap)
+    client := ep.ws_handler.GetClientByID(client_id)
+    if client equals empty or client.player_id equals ""
+        ep.sendError(client_id, "Not connected")
+        return
+    session := ep.coordinator.get_player_session(client.player_id)
+    if session equals empty
+        ep.sendError(client_id, "Not in a game")
+        return
+    action_type := gamepkg.ParseActionType(strpkg.ToUpper(msg_type)) onerr
+        ep.sendInvalidAction(client_id, msg_type, "unknown action type")
+        return
+    normalized := NormalizeActionData(data)
+    validation_err := ValidateActionFields(action_type, normalized)
+    if validation_err isnt empty
+        ep.sendInvalidAction(client_id, msg_type, "validation failed: {dereference validation_err.message}")
+        return
+    action := ep.http_handler.buildGameAction(client.player_id, action_type, normalized)
+    success, message, _result_data := session.execute_game_action(client.player_id, action)
+    if not success
+        ep.sendInvalidAction(client_id, msg_type, message)
+        return
+    ep.broadcastState(session)
+    if session.is_game_over()
+        ep.broadcastGameWon(session)
+        ep.lobby_mgr.finish_game(session.game_id)
+
+func handleStateRequest on ep: reference WebSocketEndpoint(client_id: string)
+    client := ep.ws_handler.GetClientByID(client_id)
+    if client equals empty or client.game_id equals ""
+        return
+    session := ep.coordinator.get_session(client.game_id)
+    if session equals empty
+        return
+    game_pid := ""
+    gp_val, has_gp := session.network_to_game_id[client.player_id]
+    if has_gp
+        game_pid = gp_val
+    state := session.game_state.ClientStateDict(game_pid)
+    ep.ws_handler.SendToClient(client_id, JSONMap{
+        "type": "FULL_STATE",
+        "game_id": session.game_id,
+        "game_state": state,
+    })
+
+func handleClientDisconnect on ep: reference WebSocketEndpoint(client_id: string)
+    client := ep.ws_handler.GetClientByID(client_id)
+    if client equals empty
+        return
+    game_id := client.game_id
+    player_id := client.player_id
+    player_name := client.player_name
+    ep.lobby_mgr.remove_player_from_all(player_id)
+    ep.coordinator.remove_player(player_id)
+    ep.ws_handler.UnregisterClient(client_id)
+    if game_id isnt ""
+        lobby := ep.lobby_mgr.get_lobby(game_id)
+        if lobby isnt empty
+            ep.ws_handler.BroadcastToGame(game_id, JSONMap{
+                "type": "PLAYER_DISCONNECTED",
+                "game_id": game_id,
+                "player_id": player_id,
+                "player_name": player_name,
+                "lobby": lobby.to_dict(),
+            })
+    log.Info("WebSocket client disconnected: {client_id}")
+
+func sendError on ep: reference WebSocketEndpoint(client_id: string, message: string)
+    ep.ws_handler.SendToClient(client_id, JSONMap{"type": "ERROR", "error": message})
+
+func sendInvalidAction on ep: reference WebSocketEndpoint(client_id: string, action_type: string, reason: string)
+    ep.ws_handler.SendToClient(client_id, JSONMap{
+        "type": "INVALID_ACTION",
+        "action_type": action_type,
+        "reason": reason,
+    })
+
+func broadcastState on ep: reference WebSocketEndpoint(session: reference GameSession)
+    for nid, game_pid in session.network_to_game_id
+        state := session.game_state.ClientStateDict(game_pid)
+        ep.ws_handler.SendToClient(nid, JSONMap{
+            "type": "FULL_STATE",
+            "game_id": session.game_id,
+            "game_state": state,
+        })
+
+func broadcastGameWon on ep: reference WebSocketEndpoint(session: reference GameSession)
+    winner_network_id := session.get_winner_network_id()
+    winner_name := "Unknown"
+    wid := session.game_state.WinnerID()
+    if wid isnt ""
+        player := session.game_state.GetPlayer(wid)
+        if player isnt empty
+            winner_name = player.Name()
+    ep.ws_handler.BroadcastToGame(session.game_id, JSONMap{
+        "type": "GAME_WON",
+        "game_id": session.game_id,
+        "winner_id": winner_network_id,
+        "winner_name": winner_name,
+    })

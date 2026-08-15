@@ -14,6 +14,14 @@
  *   animator.update(deltaTime);
  */
 
+// Numeric crystal-effect wire codes (match the server's ClientStateDict).
+const CrystalEffect = {
+    FOG_OF_WAR: 1,
+    PHANTOM_ENEMIES: 2,
+    DAMAGE_BOOST: 3,
+    SPEED_BOOST: 4
+};
+
 class CrystalEffectAnimator {
     constructor(scene) {
         this.scene = scene;
