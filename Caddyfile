@@ -17,8 +17,8 @@ http://:80 {
         cors_origins *
     }
 
-    # Proxy to FastAPI backend
-    reverse_proxy race-game-api:8080 {
+    # Proxy to the web server (serves the frontend and proxies /api + /ws to the game API)
+    reverse_proxy race-web-server:8000 {
         # Preserve original host header
         header_up Host {http.request.header.Host}
         header_up X-Real-IP {http.request.remote.host}

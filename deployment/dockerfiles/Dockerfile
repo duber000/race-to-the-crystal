@@ -1,12 +1,12 @@
 # Race to the Crystal - Game Server
 # Multi-stage build: transpile Kukicha → Go, compile static binary, copy to slim runtime
 
-FROM golang:1.26.4-bookworm AS builder
+FROM golang:1.27rc3-bookworm AS builder
 
-ARG KUKICHA_VERSION=v0.54.1
+ARG KUKICHA_VERSION=v0.80.1
 
 # Install kukicha compiler
-RUN go install github.com/kukichalang/kukicha/cmd/kukicha@${KUKICHA_VERSION}
+RUN go install kukicha.org/kukicha/cmd/kukicha@${KUKICHA_VERSION}
 
 WORKDIR /src
 

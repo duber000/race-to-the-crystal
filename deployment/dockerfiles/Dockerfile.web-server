@@ -1,0 +1,48 @@
+# Race to the Crystal - Web Server (Babylon.js frontend + API/WS proxy)
+# Multi-stage build: transpile Kukicha → Go, compile static binary, copy to slim runtime
+
+FROM golang:1.27rc3-bookworm AS builder
+
+ARG KUKICHA_VERSION=v0.80.1
+
+# Install kukicha compiler
+RUN go install kukicha.org/kukicha/cmd/kukicha@${KUKICHA_VERSION}
+
+WORKDIR /src
+
+# Copy module files and vendored stdlib first for layer caching
+COPY go.mod go.sum ./
+COPY .kukicha/ .kukicha/
+RUN go mod download
+
+# Copy the web server package
+COPY web_server/ web_server/
+
+# Remove stale transpiled Go files so kukicha regenerates from .kuki source
+RUN find web_server/ -name 'main.go' -delete
+
+# Transpile .kuki → .go, then compile a static binary
+RUN KUKICHA_TOOLCHAIN=local KUKICHA_DISABLE_STDLIB_PIN_CHECK=1 kukicha build ./web_server/
+RUN CGO_ENABLED=0 GOOS=linux go build -o /web-server ./web_server/
+
+
+FROM debian:bookworm-slim
+
+RUN adduser --disabled-password --gecos "" appuser && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /web-server /usr/local/bin/web-server
+COPY web_server/static/ /app/web_server/static/
+COPY web_server/templates/ /app/web_server/templates/
+
+USER appuser
+
+ENV WEB_PORT=8000
+ENV STATIC_DIR=/app/web_server/static
+ENV INDEX_PATH=/app/web_server/templates/index.html
+
+EXPOSE 8000
+
+CMD ["/usr/local/bin/web-server"]
