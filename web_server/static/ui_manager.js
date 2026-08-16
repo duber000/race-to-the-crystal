@@ -123,8 +123,11 @@ class UIManager {
     showDeploymentIndicator(health) {
         const indicator = document.getElementById("deployment-indicator");
         if (indicator) {
-            indicator.textContent = `Deploy ${health} HP`;
             indicator.classList.remove("hidden");
+            const value = document.getElementById("deployment-indicator-value");
+            if (value) {
+                value.textContent = `${health} HP`;
+            }
         }
     }
 
@@ -140,10 +143,27 @@ class UIManager {
         return this.selectedDeployHealth;
     }
 
+    setupDeploymentMenu() {
+        const menu = document.getElementById("deployment-menu");
+        if (!menu || this.deploymentMenuSetup) return;
+        this.deploymentMenuSetup = true;
+        menu.querySelectorAll(".deploy-btn").forEach((btn) => {
+            btn.onclick = () => {
+                const health = parseInt(btn.dataset.health, 10) || 4;
+                this.selectedDeployHealth = health;
+                this.toggleDeploymentMenu(false);
+                this.showDeploymentIndicator(health);
+            };
+        });
+    }
+
     toggleDeploymentMenu(open) {
         this.deploymentMenuOpen = open;
         const menu = document.getElementById("deployment-menu");
         if (menu) {
+            if (open) {
+                this.setupDeploymentMenu();
+            }
             menu.classList.toggle("hidden", !open);
         }
     }

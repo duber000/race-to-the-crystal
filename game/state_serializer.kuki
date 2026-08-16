@@ -77,6 +77,7 @@ func crystal_to_dict(c: reference Crystal) StateDict
     return StateDict{
         "position": list of int{c.position.X, c.position.Y},
         "holding_player_id": c.holding_player_id as string,
+        "controlling_player_id": c.holding_player_id as string,
         "holding_token_ids": holding_ids,
         "turns_held": c.turns_held,
         "base_tokens_required": c.base_tokens_required,

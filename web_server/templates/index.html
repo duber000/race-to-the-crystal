@@ -209,6 +209,25 @@
     <!-- Hidden until ui_manager.showScreen('in_game') reveals it. -->
     <div id="connectionStatus" class="connection-status hidden">Connected</div>
 
+    <!-- Deploy Menu -->
+    <div id="deployment-menu" class="hidden">
+        <div class="deployment-menu-title">DEPLOY TOKEN</div>
+        <div class="deployment-menu-grid">
+            <button class="deploy-btn" data-health="10">10 HP &mdash; Slow (1 tile)</button>
+            <button class="deploy-btn" data-health="8">8 HP &mdash; Slow (1 tile)</button>
+            <button class="deploy-btn" data-health="6">6 HP &mdash; Fast (2 tiles)</button>
+            <button class="deploy-btn" data-health="4">4 HP &mdash; Fast (2 tiles)</button>
+        </div>
+        <div class="deployment-menu-hint">Pick a strength, then click a cell on the board to deploy</div>
+    </div>
+
+    <!-- Deploy Indicator -->
+    <div id="deployment-indicator" class="hidden">
+        <div class="deployment-indicator-subtitle">Deploying token:</div>
+        <div class="deployment-indicator-value" id="deployment-indicator-value">-</div>
+        <div class="deployment-indicator-hint">Click a cell on the board to place it</div>
+    </div>
+
     <!-- Page glue: hostname autofill, player-count stepper, mobile action-bar wiring -->
     <script src="/static/index.page.js"></script>
 

@@ -89,6 +89,12 @@ class GameClient {
     console.log("Game client initialized");
   }
 
+  handleKeyDown(data) {
+    if (this.inputController) {
+      this.inputController.handleKeyDown(data);
+    }
+  }
+
   handleStateChanged(state) {
     if (this.connectionManager.getConnectionState() !== STATE.IN_GAME) {
       return;

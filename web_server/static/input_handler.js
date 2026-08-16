@@ -220,6 +220,7 @@ class InputHandler {
             if (distance < INPUT_CONFIG.DRAG_THRESHOLD) {
                 this.handleClick(event);
             }
+            this.isLMBDragging = false;
         } else if (event.button === 2 && this.isRMBDown) { // Right mouse button
             this.isRMBDown = false;
             this.isPanning = false;
@@ -243,8 +244,18 @@ class InputHandler {
         // Update hover state
         this.updateHoverState(event);
 
-        // Handle panning
-        if (this.isPanning) {
+        // LMB drag: pan the camera once movement passes the click threshold
+        if (this.isLMBDown && !this.isLMBDragging) {
+            const dx = event.clientX - this.lmbDownPosition.x;
+            const dy = event.clientY - this.lmbDownPosition.y;
+            if (Math.sqrt(dx * dx + dy * dy) > INPUT_CONFIG.DRAG_THRESHOLD) {
+                this.isLMBDragging = true;
+                this.lastPanPosition = { x: event.clientX, y: event.clientY };
+            }
+        }
+
+        // Handle panning (right-button or left-button drag)
+        if (this.isPanning || this.isLMBDragging) {
             const deltaX = event.clientX - this.lastPanPosition.x;
             const deltaY = event.clientY - this.lastPanPosition.y;
 
@@ -264,6 +275,7 @@ class InputHandler {
         this.isLMBDown = false;
         this.isRMBDown = false;
         this.isPanning = false;
+        this.isLMBDragging = false;
         this.hoveredCell = null;
         this.emit('hover', { gridX: null, gridY: null });
     }
@@ -366,8 +378,9 @@ class InputHandler {
 
         // Prevent default browser behavior for game keys
         const gameKeys = [
-            'end', 'escape', 'd', 'v', 'tab', 'q', 'e', 'arrowup', 'arrowdown',
-            'arrowleft', 'arrowright', 'm', 'w', 'a', 's', 'z', 'x', 'c'
+            'end', 'escape', 'd', 'r', 'v', 'tab', 'q', 'e', 'arrowup', 'arrowdown',
+            'arrowleft', 'arrowright', 'm', 'w', 'a', 's', 'z', 'x', 'c', ' ',
+            'enter', '+', '=', '-', '_', '1', '2', '3', '4'
         ];
 
         if (gameKeys.includes(key)) {
@@ -387,12 +400,15 @@ class InputHandler {
         // Handle game keys
         switch (key) {
             case 'end':
+            case ' ':
+            case 'enter':
                 this.emit('keydown', { key: 'end_turn' });
                 break;
             case 'escape':
                 this.emit('keydown', { key: 'cancel' });
                 break;
             case 'd':
+            case 'r':
                 this.emit('keydown', { key: 'deploy' });
                 break;
             case 'v':
@@ -434,8 +450,24 @@ class InputHandler {
             case 'c':
                 this.emit('keydown', { key: 'camera_left' });
                 break;
-            case ' ': // Space bar for camera right
-                this.emit('keydown', { key: 'camera_right' });
+            case '+':
+            case '=':
+                this.emit('keydown', { key: 'zoom_in' });
+                break;
+            case '-':
+            case '_':
+                this.emit('keydown', { key: 'zoom_out' });
+                break;
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+                this.emit('keydown', { key: 'switch_player', playerIndex: parseInt(key, 10) - 1 });
+                break;
+            default:
+                if (event.ctrlKey && key === 'q') {
+                    this.emit('keydown', { key: 'quit' });
+                }
                 break;
         }
     }

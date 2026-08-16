@@ -483,21 +483,27 @@ class InputController {
                 this.gameClient.cameraController.lookDown();
                 break;
             case "move_token_forward":
-                this.moveControlledToken('forward');
+                this.moveControlledOrCamera('forward');
                 break;
             case "move_token_backward":
-                this.moveControlledToken('backward');
+                this.moveControlledOrCamera('backward');
                 break;
             case "move_token_left":
-                this.moveControlledToken('left');
+                this.moveControlledOrCamera('left');
                 break;
             case "move_token_right":
-                this.moveControlledToken('right');
+                this.moveControlledOrCamera('right');
                 break;
             case "toggle_music":
                 if (this.gameClient.renderer) {
                     this.gameClient.renderer.toggleMusic();
                 }
+                break;
+            case "zoom_in":
+                this.gameClient.cameraController.adjustFOV(15);
+                break;
+            case "zoom_out":
+                this.gameClient.cameraController.adjustFOV(-15);
                 break;
             case "camera_forward":
                 this.gameClient.cameraController.moveCameraForward();
@@ -571,6 +577,29 @@ class InputController {
             if (token) {
                 this.gameClient.cameraController.updateFirstPersonCamera(token);
             }
+        }
+    }
+
+    moveControlledOrCamera(direction) {
+        // WASD/arrows steer the controlled token in first-person mode,
+        // and pan the camera in overview mode.
+        if (this.gameClient.cameraController.cameraMode === "firstperson") {
+            this.moveControlledToken(direction);
+            return;
+        }
+        switch (direction) {
+            case 'forward':
+                this.gameClient.cameraController.moveCameraForward();
+                break;
+            case 'backward':
+                this.gameClient.cameraController.moveCameraBackward();
+                break;
+            case 'left':
+                this.gameClient.cameraController.moveCameraLeft();
+                break;
+            case 'right':
+                this.gameClient.cameraController.moveCameraRight();
+                break;
         }
     }
 
