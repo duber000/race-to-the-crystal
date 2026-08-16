@@ -151,6 +151,7 @@ func handleCreateGame on ep: reference WebSocketEndpoint(client_id: string, data
         "max_players": lobby.max_players,
         "current_players": len(lobby.players),
         "status": lobby.status.String(),
+        "players": lobby.get_player_list(),
     })
 
 func handleJoinGame on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)

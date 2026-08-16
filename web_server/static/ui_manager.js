@@ -173,10 +173,36 @@ class UIManager {
     // Lobby Browser UI
     // ==========================================================================
 
-    setupLobbyBrowserHandlers(onCreateGame, onRefreshGames, onDisconnect) {
+    setupLobbyBrowserHandlers(onCreateGame, onJoinGame, onRefreshGames, onDisconnect) {
         this.onCreateGame = onCreateGame;
+        this.onJoinGame = onJoinGame;
         this.onRefreshGames = onRefreshGames;
         this.onDisconnect = onDisconnect;
+
+        // Setup join by game ID
+        const joinIdBtn = document.getElementById("join-by-id-btn");
+        const joinIdInput = document.getElementById("join-game-id-input");
+        const joinById = () => {
+            if (!joinIdInput) return;
+            const gameId = joinIdInput.value.trim();
+            if (!gameId) {
+                this.showLobbyError("Please enter a game ID");
+                return;
+            }
+            if (this.onJoinGame) {
+                this.onJoinGame(gameId);
+            }
+        };
+        if (joinIdBtn) {
+            joinIdBtn.onclick = joinById;
+        }
+        if (joinIdInput) {
+            joinIdInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    joinById();
+                }
+            });
+        }
 
         // Setup create game button - shows inline form
         const createBtn = document.getElementById("create-game-btn");

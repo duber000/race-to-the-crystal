@@ -37,6 +37,33 @@ class ConnectionManager {
             this.networkManager.requestGameList();
         });
 
+        this.networkManager.on("game_list", (data) => {
+            this.gameClient.uiManager.renderGameList(data.games || []);
+        });
+
+        this.networkManager.on("lobby_joined", (data) => {
+            this.gameClient.updateUIState(STATE.IN_LOBBY);
+            this.gameClient.uiManager.setupWaitingRoomHandlers(
+                () => this.gameClient.uiController.toggleReady(),
+                () => this.gameClient.uiController.startGame(),
+                () => this.gameClient.uiController.leaveLobby(),
+            );
+            this.refreshLobbyUI(data.lobby, !!data.isHost);
+        });
+
+        this.networkManager.on("lobby_updated", (data) => {
+            this.refreshLobbyUI(data.lobby, this.networkManager.isPlayerHost());
+        });
+
+        this.networkManager.on("game_starting", () => {
+            this.gameClient.updateUIState(STATE.GAME_STARTING);
+        });
+
+        this.networkManager.on("lobby_left", () => {
+            this.gameClient.updateUIState(STATE.CONNECTED);
+            this.networkManager.requestGameList();
+        });
+
         this.networkManager.on("error", (data) => {
             this.gameClient.uiManager.showConnectionError(data.message);
             this.gameClient.updateUIState(STATE.DISCONNECTED);
@@ -61,8 +88,7 @@ class ConnectionManager {
     }
 
     setupFineGrainedHandlers() {
-        this.networkManager.on("token_moved", (data) => {
-            this.handleTokenMoved(data);
+        this.networkManager.on("token_moved", (data) => {            this.handleTokenMoved(data);
         });
 
         this.networkManager.on("combat_result", (data) => {
@@ -96,6 +122,21 @@ class ConnectionManager {
         this.networkManager.on("invalid_action", (data) => {
             this.gameClient.uiManager.showActionError(data.message);
         });
+    }
+
+    refreshLobbyUI(lobby, isHost) {
+        if (!lobby) return;
+        this.gameClient.uiManager.renderWaitingRoom(
+            lobby,
+            isHost,
+            this.networkManager.isPlayerReady(),
+        );
+        this.gameClient.uiManager.updateReadyButton(this.networkManager.isPlayerReady());
+        this.gameClient.uiManager.updateStartButtonState(
+            lobby,
+            isHost,
+            () => this.gameClient.uiController.startGame(),
+        );
     }
 
     handleFullState(data) {
@@ -861,6 +902,12 @@ class UIController {
                     return;
                 }
                 this.gameClient.networkManager.createGame(gameName, playerCount || 4);
+            },
+            (gameId) => {
+                if (!this.gameClient.networkManager) {
+                    return;
+                }
+                this.gameClient.networkManager.joinGame(gameId);
             },
             () => {
                 if (!this.gameClient.networkManager) {

@@ -72,6 +72,9 @@ class GameClient {
       get: () => this.stateManager.validMoves,
       set: (v) => { this.stateManager.validMoves = v; }
     });
+    Object.defineProperty(this, 'networkManager', {
+      get: () => (this.connectionManager ? this.connectionManager.networkManager : null)
+    });
 
     // Setup state change callback
     this.stateManager.setChangeCallback((state) => this.handleStateChanged(state));
