@@ -62,7 +62,7 @@
                     window.gameClient.handleKeyDown?.({ key: 'end_turn' });
                     break;
                 case 'reset':
-                    window.gameClient.cameraController?.resetView();
+                    window.gameClient.inputController?.resetToOverview();
                     break;
                 case 'menu': {
                     const hud = document.getElementById('hud');
@@ -75,9 +75,21 @@
         }
     }
 
+    // First-person mode has no touch look/move controls yet — hide the View
+    // button on touch-only devices so users can't enter a dead-end view.
+    function updateCameraButtonVisibility() {
+        const cameraBtn = document.getElementById('mobile-btn-camera');
+        if (!cameraBtn) return;
+        const touchOnly = window.matchMedia('(pointer: coarse)').matches &&
+            !window.matchMedia('(pointer: fine)').matches;
+        cameraBtn.classList.toggle('hidden', touchOnly);
+    }
+
     function wireMobileActionBar() {
         const bar = document.getElementById('mobile-action-bar');
         if (!bar) return;
+
+        updateCameraButtonVisibility();
 
         bar.querySelectorAll('.action-btn[data-action]').forEach((btn) => {
             const action = btn.dataset.action;

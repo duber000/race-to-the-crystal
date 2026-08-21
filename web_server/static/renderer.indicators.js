@@ -33,13 +33,21 @@ Renderer3D.prototype.updateHoverIndicator = function(gridX, gridY) {
     this.hoverMesh = square;
 };
 
+// Valid-move sets may contain "x,y" strings (from calculateValidMoves) or
+// [x, y] arrays — accept both so callers never need to convert.
+function toGridCoords(entry) {
+    if (Array.isArray(entry)) return entry;
+    return entry.split(',').map(Number);
+}
+
 Renderer3D.prototype.updateValidMoveIndicators = function(moves) {
     this.validMoveMeshes.forEach((mesh) => mesh.dispose());
     this.validMoveMeshes = [];
 
     if (!moves || moves.size === 0) return;
 
-    moves.forEach(([gridX, gridY]) => {
+    moves.forEach((entry) => {
+        const [gridX, gridY] = toGridCoords(entry);
         const centerX = gridX * CELL_SIZE + CELL_SIZE / 2;
         const centerZ = gridY * CELL_SIZE + CELL_SIZE / 2;
 
@@ -66,8 +74,8 @@ Renderer3D.prototype.updateValidAttackIndicators = function(attacks) {
 
     if (!attacks || attacks.size === 0) return;
 
-    attacks.forEach((posKey) => {
-        const [gridX, gridY] = posKey.split(',').map(Number);
+    attacks.forEach((entry) => {
+        const [gridX, gridY] = toGridCoords(entry);
         const centerX = gridX * CELL_SIZE + CELL_SIZE / 2;
         const centerZ = gridY * CELL_SIZE + CELL_SIZE / 2;
 

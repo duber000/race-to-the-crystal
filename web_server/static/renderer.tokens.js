@@ -336,6 +336,22 @@ class TokenRenderer {
         }
     }
 
+    /**
+     * Hide the controlled token (mesh + health label) so it does not block
+     * the first-person view; pass null to show all tokens again.
+     */
+    setControlledToken(controlledTokenId) {
+        this.tokens3D.forEach((tokenData, tokenId) => {
+            const visible = tokenId !== controlledTokenId;
+            if (tokenData.mesh) {
+                tokenData.mesh.setEnabled(visible);
+            }
+            if (tokenData.healthLabel) {
+                tokenData.healthLabel.setEnabled(visible);
+            }
+        });
+    }
+
     updateTokenSelectionGlow(selectedTokenId) {
         this.tokens3D.forEach((tokenData, tokenId) => {
             if (tokenData.mesh && tokenData.mesh.material) {

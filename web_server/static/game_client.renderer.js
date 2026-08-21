@@ -58,6 +58,16 @@ Renderer3D.prototype.updateTokenSelectionGlow = function(selectedTokenId) {
 };
 
 /**
+ * Hide the controlled token in first-person mode (null shows all tokens).
+ * Delegates to TokenRenderer; safe to call every frame.
+ */
+Renderer3D.prototype.updateControlledTokenVisibility = function(controlledTokenId) {
+    if (this.tokenRenderer) {
+        this.tokenRenderer.setControlledToken(controlledTokenId);
+    }
+};
+
+/**
  * Cleanup token resources
  */
 Renderer3D.prototype.cleanupTokens = function() {

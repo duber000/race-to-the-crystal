@@ -109,7 +109,12 @@ class InputHandler {
         };
         this.boundPointerDown = (event) => {
             if (this.cameraController.cameraMode === "firstperson" && !this.pointerLocked) {
-                this.canvas.requestPointerLock();
+                // requestPointerLock returns a Promise in modern browsers;
+                // swallow rejections (e.g. Esc cooldown re-lock attempts)
+                const lockResult = this.canvas.requestPointerLock();
+                if (lockResult && typeof lockResult.catch === 'function') {
+                    lockResult.catch(() => {});
+                }
             }
             this.handlePointerDown(event);
         };
@@ -131,6 +136,9 @@ class InputHandler {
         this.boundTouchMove = (event) => {
             this.handleTouchMove(event);
         };
+        this.boundContextMenu = (event) => {
+            event.preventDefault();
+        };
 
         // Pointer lock for FPS mouse look
         document.addEventListener('pointerlockchange', this.boundPointerLock);
@@ -146,6 +154,9 @@ class InputHandler {
 
         // Mouse leave
         this.canvas.addEventListener('mouseleave', this.boundMouseLeave);
+
+        // Suppress the browser context menu (right-drag pans the camera)
+        this.canvas.addEventListener('contextmenu', this.boundContextMenu);
 
         // Touch start
         this.canvas.addEventListener('touchstart', this.boundTouchStart);
@@ -177,7 +188,7 @@ class InputHandler {
             const pointers = this.cameraController.camera.inputs.attached.pointers;
             if (pointers) {
                 pointers.multiTouchPanning = true;
-                pointers.pinchToZoom = true;
+                pointers.multiTouchPanAndZoom = true;
             }
         }
     }
@@ -259,8 +270,8 @@ class InputHandler {
             const deltaX = event.clientX - this.lastPanPosition.x;
             const deltaY = event.clientY - this.lastPanPosition.y;
 
-            this.cameraController.moveCameraRight(-deltaX * 0.01);
-            this.cameraController.moveCameraForward(deltaY * 0.01);
+            this.cameraController.moveCameraRight(-deltaX * 0.5);
+            this.cameraController.moveCameraForward(deltaY * 0.5);
 
             this.lastPanPosition = { x: event.clientX, y: event.clientY };
         }
@@ -379,12 +390,18 @@ class InputHandler {
         // Prevent default browser behavior for game keys
         const gameKeys = [
             'end', 'escape', 'd', 'r', 'v', 'tab', 'q', 'e', 'arrowup', 'arrowdown',
-            'arrowleft', 'arrowright', 'm', 'w', 'a', 's', 'z', 'x', 'c', ' ',
+            'arrowleft', 'arrowright', 'm', 'w', 'a', 's', ' ',
             'enter', '+', '=', '-', '_', '1', '2', '3', '4'
         ];
 
         if (gameKeys.includes(key)) {
             event.preventDefault();
+        }
+
+        // Ctrl+Q must be checked before the plain 'q' rotation case
+        if (event.ctrlKey && key === 'q') {
+            this.emit('keydown', { key: 'quit' });
+            return;
         }
 
         // Exit pointer lock on Escape or when toggling camera back to overview
@@ -441,15 +458,6 @@ class InputHandler {
             case 'm':
                 this.emit('keydown', { key: 'toggle_music' });
                 break;
-            case 'z':
-                this.emit('keydown', { key: 'camera_forward' });
-                break;
-            case 'x':
-                this.emit('keydown', { key: 'camera_backward' });
-                break;
-            case 'c':
-                this.emit('keydown', { key: 'camera_left' });
-                break;
             case '+':
             case '=':
                 this.emit('keydown', { key: 'zoom_in' });
@@ -464,11 +472,6 @@ class InputHandler {
             case '4':
                 this.emit('keydown', { key: 'switch_player', playerIndex: parseInt(key, 10) - 1 });
                 break;
-            default:
-                if (event.ctrlKey && key === 'q') {
-                    this.emit('keydown', { key: 'quit' });
-                }
-                break;
         }
     }
 
@@ -480,8 +483,15 @@ class InputHandler {
     handleClick(event) {
         // Convert screen coordinates to grid coordinates
         const rect = this.canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+        let x = event.clientX - rect.left;
+        let y = event.clientY - rect.top;
+
+        // With the pointer locked the cursor is hidden and frozen — pick
+        // through the screen center like a crosshair instead.
+        if (this.pointerLocked) {
+            x = rect.width / 2;
+            y = rect.height / 2;
+        }
         
         // Use Babylon.js picking to get grid coordinates
         const pickResult = this.scene.pick(x, y);
@@ -581,6 +591,7 @@ class InputHandler {
         if (this.boundPointerUp) this.canvas.removeEventListener('mouseup', this.boundPointerUp);
         if (this.boundMouseMove) this.canvas.removeEventListener('mousemove', this.boundMouseMove);
         if (this.boundMouseLeave) this.canvas.removeEventListener('mouseleave', this.boundMouseLeave);
+        if (this.boundContextMenu) this.canvas.removeEventListener('contextmenu', this.boundContextMenu);
         if (this.boundTouchStart) this.canvas.removeEventListener('touchstart', this.boundTouchStart);
         if (this.boundTouchEnd) this.canvas.removeEventListener('touchend', this.boundTouchEnd);
         if (this.boundTouchMove) this.canvas.removeEventListener('touchmove', this.boundTouchMove);

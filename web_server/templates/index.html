@@ -21,7 +21,6 @@
     <!-- Preload critical JavaScript resources -->
     <!-- Regular scripts -->
     <link rel="preload" href="/static/mercure_client.js" as="script">
-    <link rel="preload" href="/static/game_client.camera.js" as="script">
     <link rel="preload" href="/static/game_client.crystal_effects.js" as="script">
     <!-- ES6 modules (loaded via <script type="module">) -->
     <link rel="modulepreload" href="/static/game_client.constants.js">
@@ -136,9 +135,8 @@
         </summary>
         <div class="panel-content" id="controls-content">
             <ul>
-                <li><strong>Hold Left-click:</strong> Move around board</li>
                 <li><strong>Left-click:</strong> Select token / Move / Attack</li>
-                <li><strong>Right-click + Drag:</strong> Pan/look around</li>
+                <li><strong>Drag (left or right button):</strong> Pan camera</li>
                 <li><strong>Mouse wheel:</strong> Zoom in/out</li>
                 <li><strong>Space / Enter:</strong> End turn</li>
                 <li><strong>R:</strong> Deploy menu</li>
@@ -148,11 +146,12 @@
                 <summary class="more-controls-header">More Controls</summary>
                 <div class="more-controls-content" id="more-controls-content">
                     <ul>
-                        <li><strong>WASD / Arrow Keys:</strong> Move camera position</li>
-                        <li><strong>V:</strong> Toggle camera (Overview ↔ First-Person)</li>
-                        <li><strong>TAB:</strong> Cycle through your tokens (3D)</li>
-                        <li><strong>Q / E:</strong> Rotate camera left/right (3D)</li>
-                        <li><strong>+ / -:</strong> Adjust field of view (FOV)</li>
+                        <li><strong>V:</strong> Toggle Overview ↔ First-Person</li>
+                        <li><strong>First-person look:</strong> Click the board to capture the mouse (ESC releases)</li>
+                        <li><strong>WASD / Arrow Keys:</strong> Move token (first-person) / pan camera (overview)</li>
+                        <li><strong>TAB:</strong> Cycle through your tokens (first-person)</li>
+                        <li><strong>Q / E:</strong> Rotate camera left/right (first-person)</li>
+                        <li><strong>+ / -:</strong> Zoom (overview) / field of view (first-person)</li>
                         <li><strong>1-4:</strong> Switch player view</li>
                         <li><strong>M:</strong> Toggle music/sound</li>
                         <li><strong>Ctrl+Q:</strong> Quit game</li>
@@ -247,9 +246,6 @@
 
     <!-- Device capabilities detection (no imports, can be regular script) -->
     <script type="module" src="/static/game_client.device.js"></script>
-
-    <!-- Camera controller (no imports, can be regular script) -->
-    <script src="/static/game_client.camera.js"></script>
 
     <!-- WebGL/Babylon renderer module (loads all renderer modules) -->
     <script type="module" src="/static/game_client.renderer.js"></script>

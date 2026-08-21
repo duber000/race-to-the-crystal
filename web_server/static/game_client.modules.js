@@ -261,6 +261,9 @@ class ConnectionManager {
             }
             this.gameClient.uiManager.clearSelection();
         }
+
+        // Keep first-person highlights in sync with turn/phase/token changes
+        this.gameClient.inputController?.refreshFPIndicators();
     }
 
     connectToServer(host, port, playerName) {
@@ -363,7 +366,7 @@ class InputController {
         if (this.gameClient.selectedTokenId === null) {
             this.handleTokenSelection(tokenAtCell);
         } else {
-            this.handleTokenAction(tokenAtCell);
+            this.handleTokenAction(gridX, gridY, tokenAtCell);
         }
     }
 
@@ -389,7 +392,7 @@ class InputController {
         }
     }
 
-    handleTokenAction(tokenAtCell) {
+    handleTokenAction(gridX, gridY, tokenAtCell) {
         const selectedToken = this.gameClient.gameState.tokens[this.gameClient.selectedTokenId];
 
         // Clicking same token - deselect
@@ -408,10 +411,11 @@ class InputController {
             return;
         }
 
-        // Move to empty cell
-        const moveKey = `${tokenAtCell ? tokenAtCell.position[0] : 'none'},${tokenAtCell ? tokenAtCell.position[1] : 'none'}`;
+        // Move to the clicked cell (empty cells have no token to read a
+        // position from, so the move key must come from the click coords)
+        const moveKey = `${gridX},${gridY}`;
         if (this.gameClient.validMoves.has(moveKey)) {
-            this.attemptMove(tokenAtCell);
+            this.attemptMove([gridX, gridY]);
         }
     }
 
@@ -428,19 +432,15 @@ class InputController {
         }
     }
 
-    attemptMove(tokenAtCell) {
-        const destination = tokenAtCell ? [tokenAtCell.position[0], tokenAtCell.position[1]] : null;
-        if (destination) {
-            this.networkManager.moveToken(this.gameClient.selectedTokenId, destination);
-            if (this.gameClient.renderer) {
-                this.gameClient.renderer.playSound("move");
-            }
+    attemptMove(destination) {
+        if (!destination) {
+            return;
+        }
+        this.networkManager.moveToken(this.gameClient.selectedTokenId, destination);
+        if (this.gameClient.renderer) {
+            this.gameClient.renderer.playSound("move");
         }
         this.clearSelection();
-        if (this.gameClient.renderer) {
-            this.gameClient.renderer.updateValidMoveIndicators(null);
-            this.gameClient.renderer.updateTokenSelectionGlow(null);
-        }
     }
 
     clearSelection() {
@@ -500,10 +500,10 @@ class InputController {
                 }
                 break;
             case "zoom_in":
-                this.gameClient.cameraController.adjustFOV(15);
+                this.gameClient.cameraController.adjustZoom(1);
                 break;
             case "zoom_out":
-                this.gameClient.cameraController.adjustFOV(-15);
+                this.gameClient.cameraController.adjustZoom(-1);
                 break;
             case "camera_forward":
                 this.gameClient.cameraController.moveCameraForward();
@@ -516,12 +516,6 @@ class InputController {
                 break;
             case "camera_right":
                 this.gameClient.cameraController.moveCameraRight();
-                break;
-            case "zoom_out":
-                this.gameClient.cameraController.adjustFOV(15);
-                break;
-            case "zoom_in":
-                this.gameClient.cameraController.adjustFOV(-15);
                 break;
             case "quit":
                 this.quitGame();
@@ -557,13 +551,22 @@ class InputController {
     }
 
     toggleCameraMode() {
-        this.gameClient.renderer.camera = this.gameClient.cameraController.toggleCameraMode();
-        // Re-attach pipeline to the new active camera
-        if (this.gameClient.renderer.pipeline) {
-            this.gameClient.renderer.pipeline.addCamera(this.gameClient.renderer.camera);
-        }
-        if (this.gameClient.cameraController.cameraMode === "firstperson") {
+        const enteringFP = this.gameClient.cameraController.cameraMode === "overview";
+        this.gameClient.cameraController.toggleCameraMode();
+
+        if (enteringFP) {
+            // Selection is a pointer-driven overview concept; deselect so the
+            // FP indicators reflect the controlled token instead.
+            this.gameClient.stateManager.clearSelection();
             this.initializeFirstPersonMode();
+        } else {
+            this.gameClient.controlledTokenId = null;
+            this.gameClient.cameraController.controlledTokenId = null;
+            if (this.gameClient.renderer) {
+                this.gameClient.renderer.updateControlledTokenVisibility(null);
+                this.gameClient.renderer.updateValidMoveIndicators(null);
+                this.gameClient.renderer.updateValidAttackIndicators(null);
+            }
         }
     }
 
@@ -575,8 +578,35 @@ class InputController {
             this.gameClient.controlledTokenId = newTokenId;
             const token = this.gameClient.gameState?.tokens?.[this.gameClient.controlledTokenId];
             if (token) {
-                this.gameClient.cameraController.updateFirstPersonCamera(token);
+                this.gameClient.cameraController.snapToToken(token);
             }
+            this.refreshFPIndicators();
+        }
+    }
+
+    /**
+     * Refresh the valid-move/attack highlights for the controlled token in
+     * first-person mode, so WASD movement never happens blind.
+     */
+    refreshFPIndicators() {
+        if (this.gameClient.cameraController?.cameraMode !== "firstperson") return;
+        if (!this.gameClient.gameState || !this.gameClient.renderer) return;
+
+        if (this.gameClient.gameState.current_turn_player_id !== this.gameClient.localPlayerId) {
+            this.gameClient.renderer.updateValidMoveIndicators(null);
+            this.gameClient.renderer.updateValidAttackIndicators(null);
+            return;
+        }
+
+        const token = this.gameClient.gameState.tokens[this.gameClient.controlledTokenId];
+        if (!token || !token.is_alive || !token.is_deployed) return;
+
+        if (this.gameClient.turnPhase === TurnPhase.MOVEMENT) {
+            this.gameClient.renderer.updateValidMoveIndicators(this.calculateValidMoves(token));
+            this.gameClient.renderer.updateValidAttackIndicators(null);
+        } else if (this.gameClient.turnPhase === TurnPhase.ACTION) {
+            this.gameClient.renderer.updateValidMoveIndicators(null);
+            this.gameClient.renderer.updateValidAttackIndicators(this.calculateValidAttackTargets(token));
         }
     }
 
@@ -611,7 +641,7 @@ class InputController {
 
         // Must have a controlled token
         if (this.gameClient.controlledTokenId === null) {
-            this.gameClient.uiManager.showActionError("No token selected!");
+            this.gameClient.uiManager.showActionError("No token controlled! Press TAB to cycle tokens.");
             return;
         }
 
@@ -633,75 +663,75 @@ class InputController {
             return;
         }
 
-        // Calculate destination based on camera orientation
-        const destination = this.calculateDestinationFromCameraRotation(token.position, direction);
-        const [destX, destY] = destination;
-
-        // Check if destination is on the board
-        if (destX < 0 || destX >= BOARD_WIDTH || destY < 0 || destY >= BOARD_HEIGHT) {
-            this.gameClient.uiManager.showActionError("Cannot move off the board!");
+        // Pick the valid destination that best matches the camera-relative
+        // input direction (8-way, so diagonals work and walls never dead-end)
+        const destination = this.calculateCameraRelativeDestination(token, direction);
+        if (!destination) {
+            this.gameClient.uiManager.showActionError("No valid move in that direction!");
             return;
         }
 
-        // Check if it's a valid move by calculating valid moves for this token
-        const validMoves = this.calculateValidMoves(token);
-        const moveKey = `${destX},${destY}`;
-
-        if (validMoves.has(moveKey)) {
-            this.networkManager.moveToken(this.gameClient.controlledTokenId, destination);
-            if (this.gameClient.renderer) {
-                this.gameClient.renderer.playSound("move");
-            }
-            this.gameClient.validMoves = new Set();
-            if (this.gameClient.renderer) {
-                this.gameClient.renderer.updateValidMoveIndicators(null);
-            }
-        } else {
-            this.gameClient.uiManager.showActionError("Invalid move!");
+        this.networkManager.moveToken(this.gameClient.controlledTokenId, destination);
+        if (this.gameClient.renderer) {
+            this.gameClient.renderer.playSound("move");
         }
+        this.refreshFPIndicators();
     }
 
-    calculateDestinationFromCameraRotation(currentPos, direction) {
-        // Get camera rotation in degrees
-        // 0° = facing north (-Z), 90° = facing west (-X), 180° = facing south (+Z), 270° = facing east (+X)
-        const rotation = this.gameClient.cameraController.tokenRotation;
+    /**
+     * Compute the camera-relative desired world direction for a movement
+     * input, then choose the reachable neighbor cell whose direction best
+     * matches it. The camera's horizontal view direction is derived from the
+     * same yaw (tokenRotation) that drives the first-person camera, so "W"
+     * always moves toward what the player sees — including diagonals.
+     * @param {Object} token - Controlled token with position [gridX, gridY]
+     * @param {string} direction - 'forward' | 'backward' | 'left' | 'right'
+     * @returns {Array|null} [gridX, gridY] destination, or null if no valid moves
+     */
+    calculateCameraRelativeDestination(token, direction) {
+        const angle = this.gameClient.cameraController.tokenRotation * (Math.PI / 180);
+        const forwardX = Math.sin(angle);
+        const forwardZ = Math.cos(angle);
+        const rightX = Math.cos(angle);
+        const rightZ = -Math.sin(angle);
 
-        // Normalize rotation to 0-360
-        const normalizedRotation = ((rotation % 360) + 360) % 360;
-
-        // Determine cardinal direction based on rotation
-        // Quantize to nearest 90 degrees
-        const cardinalIndex = Math.round(normalizedRotation / 90) % 4;
-
-        // Cardinal directions in grid space:
-        // 0: North (-Y), 1: West (-X), 2: South (+Y), 3: East (+X)
-        const cardinals = [
-            [0, -1],  // North: -Y (toward 0,0)
-            [-1, 0],  // West: -X (toward 0,0)
-            [0, 1],   // South: +Y (toward 23,23)
-            [1, 0]    // East: +X (toward 23,23)
-        ];
-
-        let directionIndex = cardinalIndex;
-
-        // Adjust based on movement direction
+        let desiredX = 0;
+        let desiredZ = 0;
         switch (direction) {
             case 'forward':
-                // Keep current facing direction
+                desiredX = forwardX; desiredZ = forwardZ;
                 break;
             case 'backward':
-                directionIndex = (directionIndex + 2) % 4;
+                desiredX = -forwardX; desiredZ = -forwardZ;
                 break;
             case 'left':
-                directionIndex = (directionIndex + 3) % 4;
+                desiredX = -rightX; desiredZ = -rightZ;
                 break;
             case 'right':
-                directionIndex = (directionIndex + 1) % 4;
+                desiredX = rightX; desiredZ = rightZ;
                 break;
         }
 
-        const [dx, dy] = cardinals[directionIndex];
-        return [currentPos[0] + dx, currentPos[1] + dy];
+        const [posX, posY] = token.position;
+        const validMoves = this.calculateValidMoves(token);
+        const offsets = [
+            [-1, -1], [-1, 0], [-1, 1],
+            [0, -1],           [0, 1],
+            [1, -1],  [1, 0],  [1, 1],
+        ];
+
+        let best = null;
+        let bestScore = -Infinity;
+        for (const [ox, oy] of offsets) {
+            const key = `${posX + ox},${posY + oy}`;
+            if (!validMoves.has(key)) continue;
+            const score = ox * desiredX + oy * desiredZ;
+            if (score > bestScore) {
+                bestScore = score;
+                best = [posX + ox, posY + oy];
+            }
+        }
+        return best;
     }
 
     calculateValidMoves(token) {
@@ -819,14 +849,28 @@ class InputController {
     }
 
     initializeFirstPersonMode() {
-        const aliveTokens = this.getAliveTokens();
-        if (aliveTokens.length > 0) {
-            this.gameClient.controlledTokenId = aliveTokens[0].id;
-            const token = this.gameClient.gameState?.tokens?.[this.gameClient.controlledTokenId];
-            if (token) {
-                this.gameClient.cameraController.updateFirstPersonCamera(token);
-            }
+        const newTokenId = this.gameClient.cameraController.cycleControlledToken(
+            this.getAliveTokens(),
+        );
+        if (!newTokenId) return;
+
+        this.gameClient.controlledTokenId = newTokenId;
+        const token = this.gameClient.gameState?.tokens?.[newTokenId];
+        if (token) {
+            this.gameClient.cameraController.snapToToken(token);
         }
+        this.refreshFPIndicators();
+    }
+
+    /**
+     * Mobile Reset action: leave first-person cleanly (restoring token
+     * visibility and indicators), then fly the camera back to overview.
+     */
+    resetToOverview() {
+        if (this.gameClient.cameraController?.cameraMode === "firstperson") {
+            this.toggleCameraMode();
+        }
+        this.gameClient.cameraController?.resetView();
     }
 
     quitGame() {
@@ -847,15 +891,16 @@ class InputController {
         if (playerIndex !== undefined && this.gameClient.gameState) {
             const playerIds = Object.keys(this.gameClient.gameState.players);
             if (playerIndex < playerIds.length) {
+                // First-person control follows the local player; drop back to
+                // overview when spectating someone else's perspective.
+                if (this.gameClient.cameraController?.cameraMode === "firstperson") {
+                    this.toggleCameraMode();
+                }
                 this.gameClient.localPlayerId = playerIds[playerIndex];
                 if (this.gameClient.renderer) {
                     this.gameClient.renderer.localPlayerId = this.gameClient.localPlayerId;
                 }
                 this.clearSelection();
-                if (this.gameClient.renderer) {
-                    this.gameClient.renderer.updateValidMoveIndicators(null);
-                    this.gameClient.renderer.updateTokenSelectionGlow(null);
-                }
             }
         }
     }
@@ -1012,15 +1057,23 @@ class UIController {
         );
 
         this.gameClient.renderer.setCameraUpdateCallback(() => {
+            const cameraController = this.gameClient.cameraController;
+            let token = null;
             if (
-                this.gameClient.cameraController.cameraMode === "firstperson" &&
+                cameraController.cameraMode === "firstperson" &&
                 this.gameClient.gameState &&
                 this.gameClient.controlledTokenId !== null
             ) {
-                const token = this.gameClient.gameState.tokens[this.gameClient.controlledTokenId];
-                if (token) {
-                    this.gameClient.cameraController.updateFirstPersonCamera(token);
-                }
+                token = this.gameClient.gameState.tokens[this.gameClient.controlledTokenId] || null;
+            }
+            cameraController.update(token);
+
+            // Re-apply every frame so mesh recreation on state updates
+            // cannot resurrect the token blocking the first-person view.
+            if (this.gameClient.renderer) {
+                this.gameClient.renderer.updateControlledTokenVisibility(
+                    token ? token.id : null,
+                );
             }
         });
 

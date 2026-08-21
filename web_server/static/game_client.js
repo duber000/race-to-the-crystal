@@ -5,10 +5,8 @@
 // Import modules
 import { StateManager } from './state_manager.js';
 import { UIManager } from './ui_manager.js';
-import { CameraController } from './camera_controller.js';
 import { DeviceCapabilities } from './game_client.device.js';
-import { BOARD_CONFIG, GAME_PHASE, UI_STATE, INPUT_CONFIG, TurnPhase, STATE, CELL_SIZE, BOARD_WIDTH, BOARD_HEIGHT, WALL_HEIGHT } from './game_client.constants.js';
-import { Renderer3D } from './game_client.renderer.js';
+import { GAME_PHASE, TurnPhase, STATE } from './game_client.constants.js';
 import { ConnectionManager, InputController, UIController } from './game_client.modules.js';
 
 /**
@@ -39,9 +37,8 @@ class GameClient {
     this.connectionManager = new ConnectionManager(this);
     this.uiController = new UIController(this);
 
-    // Module instances (initialized later)
+    // Module instances (initialized later by UIController.initGameModules)
     this.cameraController = null;
-    // InputController will be initialized later in initGameModules with proper parameters
     this.inputController = null;
     this.inputHandler = null; // For backward compatibility
     this.renderer = null;
@@ -105,7 +102,7 @@ class GameClient {
     if (this.renderer) {
       this.renderer.localPlayerId = this.stateManager.localPlayerId;
       this.renderer.updateGameState(state);
-      this.renderer.updateValidMoveIndicators(this.stateManager.selectedTokenId);
+      this.renderer.updateValidMoveIndicators(this.stateManager.validMoves);
       this.renderer.updateTokenSelectionGlow(this.stateManager.selectedTokenId);
     }
 
@@ -123,6 +120,9 @@ class GameClient {
       }
       this.uiManager.clearSelection();
     }
+
+    // Keep first-person highlights in sync with state updates
+    this.inputController?.refreshFPIndicators();
   }
 
   updateUIState(state) {
@@ -152,123 +152,6 @@ class GameClient {
     }
   }
 
-  // handleClick is now handled by InputController
-
-  handleKeyDown(data) {
-    const key = data.key;
-    switch (key) {
-      case "end_turn":
-        this.connectionManager.networkManager.endTurn();
-        this.selectedTokenId = null;
-        this.validMoves = new Set();
-        this.renderer.updateValidMoveIndicators(null);
-        this.renderer.updateTokenSelectionGlow(null);
-        break;
-      case "cancel":
-        this.cancelAction();
-        break;
-      case "deploy":
-        this.toggleDeploymentMenu();
-        break;
-      case "camera_toggle":
-        this.renderer.camera = this.cameraController.toggleCameraMode();
-        // Re-attach pipeline to the new active camera
-        if (this.renderer.pipeline) {
-          this.renderer.pipeline.addCamera(this.renderer.camera);
-        }
-        if (this.cameraController.cameraMode === "firstperson") {
-          const aliveTokens = this.getAliveTokens();
-          if (aliveTokens.length > 0) {
-            this.controlledTokenId = aliveTokens[0].id;
-            const token = this.gameState?.tokens?.[this.controlledTokenId];
-            if (token) {
-              this.cameraController.updateFirstPersonCamera(token);
-            }
-          }
-        }
-        break;
-      case "cycle_token":
-        const newTokenId = this.cameraController.cycleControlledToken(
-          this.getAliveTokens(),
-        );
-        if (newTokenId) {
-          this.controlledTokenId = newTokenId;
-          const token = this.gameState?.tokens?.[this.controlledTokenId];
-          if (token) {
-            this.cameraController.updateFirstPersonCamera(token);
-          }
-        }
-        break;
-      case "rotate_left":
-        this.cameraController.rotateCameraLeft();
-        break;
-      case "rotate_right":
-        this.cameraController.rotateCameraRight();
-        break;
-      case "look_up":
-        this.cameraController.lookUp();
-        break;
-      case "look_down":
-        this.cameraController.lookDown();
-        break;
-      case "move_token_forward":
-        this.moveControlledToken('forward');
-        break;
-      case "move_token_backward":
-        this.moveControlledToken('backward');
-        break;
-      case "move_token_left":
-        this.moveControlledToken('left');
-        break;
-      case "move_token_right":
-        this.moveControlledToken('right');
-        break;
-      case "toggle_music":
-        if (this.renderer) {
-          this.renderer.toggleMusic();
-        }
-        break;
-      case "camera_forward":
-        this.cameraController.moveCameraForward();
-        break;
-      case "camera_backward":
-        this.cameraController.moveCameraBackward();
-        break;
-      case "camera_left":
-        this.cameraController.moveCameraLeft();
-        break;
-      case "camera_right":
-        this.cameraController.moveCameraRight();
-        break;
-      case "zoom_out":
-        this.cameraController.adjustFOV(15);
-        break;
-      case "zoom_in":
-        this.cameraController.adjustFOV(-15);
-        break;
-      case "quit":
-        this.quitGame();
-        break;
-      case "switch_player":
-        if (data.playerIndex !== undefined && this.gameState) {
-          const playerIds = Object.keys(this.gameState.players);
-          if (data.playerIndex < playerIds.length) {
-            this.localPlayerId = playerIds[data.playerIndex];
-            if (this.renderer) {
-              this.renderer.localPlayerId = this.localPlayerId;
-            }
-            this.selectedTokenId = null;
-            this.validMoves = new Set();
-            if (this.renderer) {
-              this.renderer.updateValidMoveIndicators(null);
-              this.renderer.updateTokenSelectionGlow(null);
-            }
-          }
-        }
-        break;
-    }
-  }
-
   getTokenAt(gridX, gridY) {
     if (!this.gameState) return null;
 
@@ -285,72 +168,9 @@ class GameClient {
     return null;
   }
 
-  // These methods are now handled by the respective controllers
-  // InputController handles: isOurToken, getAliveTokens, calculateValidAttackTargets, 
-  // calculateValidMoves, calculateDestinationFromCameraRotation, moveControlledToken
-  // UIController handles: toggleDeploymentMenu, cancelAction, toggleReady, startGame, leaveLobby
-  // ConnectionManager handles: quitGame (network cleanup)
-
-  initGameModules() {
-    // Initialize renderer with device capabilities
-    this.renderer = new Renderer3D(this.canvas, this.deviceCapabilities);
-    this.renderer.initScene();
-    this.renderer.loadSounds();
-
-    // Initialize camera controller with device capabilities
-    this.cameraController = new CameraController(
-      this.renderer.scene,
-      this.canvas,
-      BOARD_WIDTH,
-      BOARD_HEIGHT,
-      CELL_SIZE,
-      WALL_HEIGHT,
-      this.deviceCapabilities,
-    );
-
-    // Initialize the post-processing pipeline now that we have a camera
-    if (this.renderer && this.cameraController.camera) {
-      this.renderer.initPipeline(this.cameraController.camera);
-    }
-
-    // Initialize input controller with device capabilities
-    this.inputController = new InputController(
-      this.canvas,
-      this.cameraController,
-      () => this.gameState,
-      () => this.connectionManager.getConnectionState(),
-      this.renderer.engine,
-      this.deviceCapabilities,
-    );
-    // Replace the old inputHandler reference for compatibility
-    this.inputHandler = this.inputController;
-
-    this.renderer.setCameraUpdateCallback(() => {
-      if (
-        this.cameraController.cameraMode === "firstperson" &&
-        this.gameState &&
-        this.controlledTokenId !== null
-      ) {
-        const token = this.gameState.tokens[this.controlledTokenId];
-        if (token) {
-          this.cameraController.updateFirstPersonCamera(token);
-        }
-      }
-    });
-
-    this.renderer.startRenderLoop();
-
-    requestAnimationFrame(() => {
-      this.inputHandler.setupEventListeners();
-      this.setupInputHandlers();
-    });
-  }
-
-  setupInputHandlers() {
-    if (this.inputController) {
-      this.inputController.setupInputHandlers();
-    }
-  }
+  // Game actions are handled by the controllers in game_client.modules.js:
+  // InputController (input → game actions, first-person movement),
+  // UIController (module init, screens), ConnectionManager (network, quit).
 
   quitGame() {
     // Clean up all resources
