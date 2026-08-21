@@ -131,11 +131,11 @@ func SmartBoolOr(value any, defaultValue bool) bool {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:99
-func SmartString(value any) (string, error) {
+func SmartString(value any) string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:100
 	if value == nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:101
-		return "", nil
+		return ""
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:102
 	result := func() string {
@@ -164,7 +164,7 @@ func SmartString(value any) (string, error) {
 		}
 	}()
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:118
-	return result, nil
+	return result
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:125

@@ -38,70 +38,70 @@ func Embed(f Fragment) string {
 	return f.Content
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:63
 func WriteTo(w http.ResponseWriter, f Fragment) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:64
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 //line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:65
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	io.WriteString(w, f.Content)
 //line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:66
-	io.WriteString(w, f.Content)
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:67
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:70
 func WriteStatusTo(w http.ResponseWriter, f Fragment, status int) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:71
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:72
 	w.WriteHeader(status)
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:73
 	io.WriteString(w, f.Content)
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:74
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:78
 func Join(fragments ...Fragment) Fragment {
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:79
 	buf := bytes.Buffer{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:80
 	for _, f := range fragments {
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:81
 		buf.WriteString(f.Content)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:82
 	return Fragment{Content: buf.String()}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:90
 func Map(items []any, f func(any) Fragment) Fragment {
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:91
 	buf := bytes.Buffer{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:92
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:93
 		result := f(item)
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:94
 		buf.WriteString(result.Content)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:95
 	return Fragment{Content: buf.String()}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:99
 func When(condition bool, f Fragment) Fragment {
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:100
 	if condition {
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:101
 		return f
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:102
 	return Fragment{Content: ""}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:106
 func WhenElse(condition bool, ifTrue Fragment, ifFalse Fragment) Fragment {
-//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/html/html.kuki:107
 	return func() Fragment {
 		if condition {
 			return ifTrue

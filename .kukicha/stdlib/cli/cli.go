@@ -1028,177 +1028,177 @@ func IsJSON(args Args) bool {
 	return val == "json"
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:773
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:772
 func (args Args) Context() context.Context {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:774
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:773
 	ctx, _ := signal.Context(signal.SignalInterrupt, signal.SignalTerminate)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:775
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:774
 	return ctx
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:778
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:777
 func (args Args) Respond(data any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:779
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:778
 	if IsJSON(args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:780
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:780
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:779
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:779
 		err_1 := json.WriteOutput(data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:780
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:779
 		if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:780
-			//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:781
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:779
+			//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:780
 			Fatal(fmt.Sprintf("failed to encode json: %v", err_1))
-			//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:782
+			//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:781
 			return
 		}
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:784
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:783
 		fmt.Println(fmt.Sprint(data))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:787
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:786
 func IsTTY() bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:788
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:787
 	return term.IsTTY(os.Stdout)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:791
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:790
 func Info(msg string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:792
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:791
 	fmt.Fprintln(os.Stderr, msg)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:795
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:794
 func Success(msg string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:796
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:795
 	fmt.Fprintln(os.Stderr, msg)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:799
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:798
 func Fatal(msg string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:800
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:799
 	fmt.Fprintln(os.Stderr, msg)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:801
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:800
 	os.Exit(1)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:804
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:803
 func GetString(args Args, name string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:805
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:804
 	return args.values[name]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:808
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:807
 func GetStringOr(args Args, name string, defaultVal string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:809
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:808
 	val := args.values[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:810
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:809
 	if val == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:811
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:810
 		return defaultVal
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:812
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:811
 	return val
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:815
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:814
 func GetBool(args Args, name string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:816
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:815
 	val := args.values[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:817
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:816
 	return val == "true" || val == "1" || val == "yes"
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:820
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:819
 func GetBoolOr(args Args, name string, defaultVal bool) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:821
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:820
 	val := args.values[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:822
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:821
 	if val == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:823
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:822
 		return defaultVal
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:824
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:823
 	return val == "true" || val == "1" || val == "yes"
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:827
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:826
 func GetInt(args Args, name string) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:828
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:827
 	strVal := args.values[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:829
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:828
 	if strVal == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:830
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:829
 		return 0, fmt.Errorf("argument %v not found", name)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:832
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:831
 	return strconv.Atoi(strVal)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:835
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:834
 func GetIntOr(args Args, name string, defaultVal int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:836
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:835
 	strVal := args.values[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:837
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:836
 	if strVal == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:838
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:837
 		return defaultVal
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:839
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:838
 	n, err_2 := strconv.Atoi(strVal)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:839
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:838
 	if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:839
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:838
 		n = defaultVal
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:840
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:839
 	return n
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:844
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:843
 func GetRest(args Args, name string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:845
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:844
 	vals := args.rest[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:846
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:845
 	if vals == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:847
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:846
 		return []string{}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:848
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:847
 	return vals
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:854
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:853
 func ParseArgs(app *App, osArgs []string) Args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:855
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:854
 	values := map[string]string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:856
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:855
 	for _, f := range app.GlobalFlags {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:856
+		values[f.Name] = f.DefaultValue
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:857
-		values[f.Name] = f.DefaultValue
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:858
 	for _, f := range app.Flags {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:859
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:858
 		values[f.Name] = f.DefaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:860
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:859
 	positionalNames := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:861
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:860
 	for _, a := range app.Args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:862
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:861
 		positionalNames = append(positionalNames, a.Name)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:863
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:862
 	allFlagDefs := []FlagDef{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:864
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:863
 	allFlagDefs = append(allFlagDefs, app.GlobalFlags...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:865
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:864
 	allFlagDefs = append(allFlagDefs, app.Flags...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:866
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:865
 	restMap := map[string][]string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:867
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:866
 	start := func() int {
 		if len(osArgs) > 0 {
 			return 1
@@ -1206,8 +1206,8 @@ func ParseArgs(app *App, osArgs []string) Args {
 			return 0
 		}
 	}()
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:876
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:875
 	parseFlagsAndPositionals(osArgs, start, values, restMap, positionalNames, allFlagDefs, app.RestArgName)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:877
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:876
 	return Args{values: values, rest: restMap}
 }

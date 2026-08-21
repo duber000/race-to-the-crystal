@@ -246,99 +246,93 @@ func RoundString(x float64, digits int) string {
 	return fmt.Sprintf("%.*f", digits, x)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:219
-func Round(x float64, digits int) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:220
-	return RoundString(x, digits)
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:226
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:221
 func WithCommas(n int) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:227
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:222
 	s := fmt.Sprintf("%d", n)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:228
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:223
 	negative := false
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:224
 	if strings.HasPrefix(s, "-") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:230
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:225
 		negative = true
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:226
 		s = s[1:]
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:228
 	digits := len(s)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:234
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:229
 	if digits <= 3 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:230
 		if negative {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:236
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:231
 			return "-" + s
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:237
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:232
 		return s
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:240
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:235
 	parts := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:241
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:236
 	for digits > 3 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:237
 		parts = append(parts, s[digits-3:])
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:238
 		s = s[:digits-3]
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:244
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:239
 		digits = len(s)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:240
 	parts = append(parts, s)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:248
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:243
 	flipped := make([]string, 0, len(parts))
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:249
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:244
 	for i := range len(parts) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:250
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:245
 		flipped = append(flipped, parts[len(parts)-1-i])
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:246
 	out := strings.Join(flipped, ",")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:253
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:248
 	if negative {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:254
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:249
 		return "-" + out
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:250
 	return out
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:261
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:256
 func EqualFold(s string, t string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:262
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:257
 	return strings.EqualFold(s, t)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:267
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:262
 func Compare(a string, b string) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:268
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:263
 	return strings.Compare(a, b)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:273
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:268
 func IsBlank(s string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:274
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:269
 	return len(strings.TrimSpace(s)) == 0
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:280
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:275
 func Or(s string, defaultValue string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:281
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:276
 	if s == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:282
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:277
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:283
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:278
 	return s
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:286
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:283
 func Lines(s string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:287
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:284
 	return strings.Split(s, "\n")
 }

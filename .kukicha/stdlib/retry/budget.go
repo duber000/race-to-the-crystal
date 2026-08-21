@@ -33,84 +33,84 @@ func NewBudget() Budget {
 	return Budget{Key: "", MaxFailures: 3, Window: time.Minute, state: &s}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:48
 func WithLimit(b Budget, maxFailures int, window time.Duration) Budget {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:49
 	b.MaxFailures = maxFailures
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:50
 	b.Window = window
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:51
 	return b
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:56
 func WithKey(b Budget, key string) Budget {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:57
 	b.Key = key
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:58
 	return b
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:63
 func Open(b Budget) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:64
 	b.state.mu.Lock()
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:65
 	defer b.state.mu.Unlock()
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:66
 	pruneLocked(b)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:67
 	return len(b.state.failures[b.Key]) >= b.MaxFailures
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:73
 func DoBudget(b Budget, cfg Config, fn func() error) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:74
 	if Open(b) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:75
 		return BudgetExceeded
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:76
 	err := Do(cfg, fn)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:77
 	record(b, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:78
 	return err
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:81
 func record(b Budget, err error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:82
 	b.state.mu.Lock()
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:83
 	defer b.state.mu.Unlock()
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:84
 	if err == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:85
 		delete(b.state.failures, b.Key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:86
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:87
 	pruneLocked(b)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:88
 	b.state.failures[b.Key] = append(b.state.failures[b.Key], time.Now())
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:91
 func pruneLocked(b Budget) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:92
 	now := time.Now()
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:93
 	kept := []time.Time{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:94
 	for _, t := range b.state.failures[b.Key] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:95
 		if now.Sub(t) < b.Window {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:96
 			kept = append(kept, t)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/budget.kuki:97
 	b.state.failures[b.Key] = kept
 }

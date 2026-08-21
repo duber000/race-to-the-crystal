@@ -19,9 +19,9 @@ type User struct {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:18
-func TestJSON(t *testing.T) {
+func TestValidateJSON(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:19
-	u, errs := parse.JSON[User](`{"Name":"ada","Age":36}`)
+	u, errs := parse.ValidateJSON[User](`{"Name":"ada","Age":36}`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:20
 	test.AssertEqual(t, len(errs), 0)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:21
@@ -31,9 +31,9 @@ func TestJSON(t *testing.T) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:24
-func TestJSONParseError(t *testing.T) {
+func TestValidateJSONParseError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:25
-	_, errs := parse.JSON[User]("not valid json")
+	_, errs := parse.ValidateJSON[User]("not valid json")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:26
 	test.AssertEqual(t, len(errs), 1)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:27
@@ -64,9 +64,9 @@ type Config struct {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:46
-func TestYAML(t *testing.T) {
+func TestValidateYAML(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:47
-	c, errs := parse.YAML[Config]("user: alice\nemail: test@example.com")
+	c, errs := parse.ValidateYAML[Config]("user: alice\nemail: test@example.com")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:48
 	test.AssertEqual(t, len(errs), 0)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:49
@@ -76,9 +76,9 @@ func TestYAML(t *testing.T) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:52
-func TestYAMLParseError(t *testing.T) {
+func TestValidateYAMLParseError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:53
-	_, errs := parse.YAML[Config]("::: not valid yaml :::")
+	_, errs := parse.ValidateYAML[Config]("::: not valid yaml :::")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:54
 	test.AssertEqual(t, len(errs), 1)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:55
@@ -276,9 +276,9 @@ func TestWriteCSVError(t *testing.T) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:174
-func TestLines(t *testing.T) {
+func TestNonEmptyLines(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:175
-	lines := parse.Lines("foo\n\n  bar  \n\nbaz\n")
+	lines := parse.NonEmptyLines("foo\n\n  bar  \n\nbaz\n")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:176
 	test.AssertEqual(t, len(lines), 3)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:177
@@ -364,25 +364,13 @@ func TestDuration(t *testing.T) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:239
-func TestURL(t *testing.T) {
+func TestQuery(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:240
-	u, err := parse.URL("https://example.com/api?q=1")
+	v, err := parse.Query("name=ada&age=30")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:241
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:242
-	test.AssertEqual(t, u.Host, "example.com")
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:243
-	test.AssertEqual(t, u.Path, "/api")
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:246
-func TestQuery(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:247
-	v, err := parse.Query("name=ada&age=30")
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:248
-	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:249
 	test.AssertEqual(t, v["name"][0], "ada")
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:250
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:243
 	test.AssertEqual(t, v["age"][0], "30")
 }

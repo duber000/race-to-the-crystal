@@ -221,7 +221,7 @@ func append_crystal_info(lines: list of string, gs: reference GameState) list of
             "  (Base: {constants.CRYSTAL_BASE_TOKENS_REQUIRED}, reduced by {disabled_count} disabled generator(s))",
         )
 
-    holders := crystal_holders(gs.crystal_instance, gs)
+    holders := crystal_holders(reference of crys, gs)
     if len(holders) > 0
         lines = append(lines, "  Current holders:")
         for pid, count in holders
@@ -377,21 +377,20 @@ func list_available_actions(gs: reference GameState, player_id: types.PlayerID) 
 func add_movement_actions(actions: list of ActionResponse, deployed: list of Token, gs: reference GameState) list of ActionResponse
     for t in deployed
         t_ref := gs.GetToken(t.id)
-        if t_ref equals empty
-            continue
-        effective_range := gs.GetTokenMovementRange(t_ref)
-        valid_moves := get_valid_moves(t_ref, reference of gs.board, effective_range, gs.tokens)
-        if len(valid_moves) > 0
-            dests := empty list of list of int
-            for m in valid_moves
-                dests = append(dests, list of int{m.X, m.Y})
-            actions = append(actions, MoveAction{
-                TokenID: t.id,
-                TokenPosition: list of int{t.position.X, t.position.Y},
-                TokenHealth: "{t.health}/{t.max_health}",
-                ValidDestinations: dests,
-                Description: "Move token #{t.id} ({t.max_health}hp) from ({t.position.X},{t.position.Y})",
-            })
+        if t_ref isnt empty
+            effective_range := gs.GetTokenMovementRange(t_ref)
+            valid_moves := get_valid_moves(t_ref, reference of gs.board, effective_range, gs.tokens)
+            if len(valid_moves) > 0
+                dests := empty list of list of int
+                for m in valid_moves
+                    dests = append(dests, list of int{m.X, m.Y})
+                actions = append(actions, MoveAction{
+                    TokenID: t.id,
+                    TokenPosition: list of int{t.position.X, t.position.Y},
+                    TokenHealth: "{t.health}/{t.max_health}",
+                    ValidDestinations: dests,
+                    Description: "Move token #{t.id} ({t.max_health}hp) from ({t.position.X},{t.position.Y})",
+                })
     return actions
 
 func add_deployment_actions(actions: list of ActionResponse, gs: reference GameState, player_id: types.PlayerID, p: Player) list of ActionResponse
@@ -402,8 +401,9 @@ func add_deployment_actions(actions: list of ActionResponse, gs: reference GameS
             available := empty list of list of int
             for pos in corner_positions
                 cell := gs.board.get_cell_at(pos)
-                if cell isnt empty and not dereference cell.is_occupied()
-                    available = append(available, list of int{pos.X, pos.Y})
+                if cell isnt empty
+                    if not dereference cell.is_occupied()
+                        available = append(available, list of int{pos.X, pos.Y})
             if len(available) > 0
                 actions = append(actions, DeployAction{
                     HealthValue: hv,
@@ -416,31 +416,30 @@ func add_deployment_actions(actions: list of ActionResponse, gs: reference GameS
 func add_attack_actions(actions: list of ActionResponse, deployed: list of Token, gs: reference GameState) list of ActionResponse
     for t in deployed
         t_ref := gs.GetToken(t.id)
-        if t_ref equals empty
-            continue
-        attackable := get_attackable_targets(t_ref, gs.tokens)
-        for target in attackable
-            damage := t.health / 2
-            will_kill_target := would_kill(t_ref, reference of target)
-            target_player := gs.GetPlayer(target.player_id)
-            target_color := "Unknown"
-            if target_player isnt empty
-                target_color = color_name(dereference target_player.color)
+        if t_ref isnt empty
+            attackable := get_attackable_targets(t_ref, gs.tokens)
+            for target in attackable
+                damage := t.health / 2
+                will_kill_target := would_kill(t_ref, reference of target)
+                target_player := gs.GetPlayer(target.player_id)
+                target_color := "Unknown"
+                if target_player isnt empty
+                    target_color = color_name(dereference target_player.color)
 
-            kill_tag := ""
-            if will_kill_target
-                kill_tag = " (KILL)"
+                kill_tag := ""
+                if will_kill_target
+                    kill_tag = " (KILL)"
 
-            actions = append(actions, AttackAction{
-                AttackerID: t.id,
-                AttackerPosition: list of int{t.position.X, t.position.Y},
-                DefenderID: target.id,
-                DefenderPosition: list of int{target.position.X, target.position.Y},
-                DefenderOwner: target_color,
-                Damage: damage,
-                WillKill: will_kill_target,
-                Description: "Attack token #{target.id} ({target_color}) with token #{t.id} for {damage} damage{kill_tag}",
-            })
+                actions = append(actions, AttackAction{
+                    AttackerID: t.id,
+                    AttackerPosition: list of int{t.position.X, t.position.Y},
+                    DefenderID: target.id,
+                    DefenderPosition: list of int{target.position.X, target.position.Y},
+                    DefenderOwner: target_color,
+                    Damage: damage,
+                    WillKill: will_kill_target,
+                    Description: "Attack token #{target.id} ({target_color}) with token #{t.id} for {damage} damage{kill_tag}",
+                })
     return actions
 
 func add_end_turn_action(actions: list of ActionResponse) list of ActionResponse
@@ -484,7 +483,7 @@ func explain_victory_conditions(gs: reference GameState) string
 
     if gs.crystal_instance isnt empty
         crys := dereference gs.crystal_instance
-        holders := crystal_holders(gs.crystal_instance, gs)
+        holders := crystal_holders(reference of crys, gs)
         if len(holders) > 0
             lines = append(lines, "Current crystal progress:")
             for pid, count in holders

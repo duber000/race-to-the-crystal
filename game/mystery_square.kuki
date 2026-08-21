@@ -35,10 +35,11 @@ func trigger_mystery_event(tok: reference Token, brd: reference Board, player_in
 
     for pos in deploy_positions
         cell := brd.get_cell_at(pos)
-        if cell isnt empty and not dereference cell.is_occupied()
-            teleport_pos = pos
-            found = true
-            break
+        if cell isnt empty
+            if not dereference cell.is_occupied()
+                teleport_pos = pos
+                found = true
+                break
 
     if not found
         teleport_pos = brd.get_starting_position(player_index)

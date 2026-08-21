@@ -53,14 +53,14 @@ func TestBytes(t *testing.T) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:39
-type ParseIntoCase struct {
+type ParseBytesIntoCase struct {
 	name string
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:42
-func TestParseInto(t *testing.T) {
+func TestParseBytesInto(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:43
-	cases := []ParseIntoCase{ParseIntoCase{name: "decode person"}}
+	cases := []ParseBytesIntoCase{ParseBytesIntoCase{name: "decode person"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:45
 	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:46
@@ -74,7 +74,7 @@ func TestParseInto(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:51
 			result := *new(Person)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:52
-			parseErr := json.ParseInto(data, &result)
+			parseErr := json.ParseBytesInto(data, &result)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:53
 			test.AssertNoError(t, parseErr)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:54
@@ -107,7 +107,7 @@ func TestBytesParseIntoRoundTrip(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:71
 			restored := *new(Person)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:72
-			err2 := json.ParseInto(data, &restored)
+			err2 := json.ParseBytesInto(data, &restored)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:73
 			test.AssertNoError(t, err2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:75
@@ -197,7 +197,7 @@ func TestStringRoundTrip(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:127
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:129
-	restored, err2 := json.ParseString[Person](s)
+	restored, err2 := json.Parse[Person](s)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:130
 	test.AssertNoError(t, err2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:131
@@ -481,7 +481,7 @@ func TestParseIntoInvalidJSON(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:297
 			result := *new(Person)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:298
-			err := json.ParseInto(invalid, &result)
+			err := json.ParseBytesInto(invalid, &result)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:299
 			test.AssertError(t, err)
 		})
@@ -508,7 +508,7 @@ func TestParseStringSample(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:313
 	raw := `{"name": "Judy", "age": 27}`
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:314
-	p, err := json.ParseString[Person](raw)
+	p, err := json.Parse[Person](raw)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:315
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:316
@@ -522,7 +522,7 @@ func TestParseSample(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:321
 	raw := []byte(`{"name": "Karl", "age": 51}`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:322
-	p, err := json.Parse[Person](raw)
+	p, err := json.ParseBytes[Person](raw)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:323
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:324
@@ -534,7 +534,7 @@ func TestParseSample(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:328
 func TestParseInvalidJSON(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:329
-	_, err := json.ParseString[Person]("not valid json")
+	_, err := json.Parse[Person]("not valid json")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:330
 	test.AssertError(t, err)
 }
@@ -556,7 +556,7 @@ func TestReadSample(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:341
 func TestParseStringMap(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:342
-	counts, err := json.ParseString[map[string]int](`{"a": 1, "b": 2}`)
+	counts, err := json.Parse[map[string]int](`{"a": 1, "b": 2}`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:343
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:344
@@ -568,7 +568,7 @@ func TestParseStringMap(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:348
 func TestParseStringValueNull(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:349
-	v, err := json.ParseStringValue("null")
+	v, err := json.ParseValue("null")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:350
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:351
@@ -585,7 +585,7 @@ func TestParseStringValueNull(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:357
 func TestParseStringValueBool(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:358
-	v, err := json.ParseStringValue("true")
+	v, err := json.ParseValue("true")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:359
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:360
@@ -603,7 +603,7 @@ func TestParseStringValueBool(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:367
 func TestParseStringValueNum(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:368
-	v, err := json.ParseStringValue("42.5")
+	v, err := json.ParseValue("42.5")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:369
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:370
@@ -621,7 +621,7 @@ func TestParseStringValueNum(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:377
 func TestParseStringValueStr(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:378
-	v, err := json.ParseStringValue(`"hello"`)
+	v, err := json.ParseValue(`"hello"`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:379
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:380
@@ -641,7 +641,7 @@ func TestParseStringValueNested(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:389
 	raw := `{"name": "ada", "tags": ["x", 7, true, null]}`
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:390
-	v, err := json.ParseStringValue(raw)
+	v, err := json.ParseValue(raw)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:391
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:393
@@ -690,7 +690,7 @@ func TestParseStringValueNested(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:420
 func TestParseValueBytes(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:421
-	v, err := json.ParseValue([]byte(`{"k":1}`))
+	v, err := json.ParseBytesValue([]byte(`{"k":1}`))
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:422
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:423
@@ -728,7 +728,7 @@ func TestReadValueFromReader(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:443
 func TestParseStringValueInvalid(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:444
-	_, err := json.ParseStringValue("not valid")
+	_, err := json.ParseValue("not valid")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:445
 	test.AssertError(t, err)
 }
@@ -736,11 +736,11 @@ func TestParseStringValueInvalid(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:448
 func TestFrozenCanonicalEquality(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:449
-	a, errA := json.ParseStringFrozen(`{"b":2,"a":1}`)
+	a, errA := json.ParseFrozen(`{"b":2,"a":1}`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:450
 	test.AssertNoError(t, errA)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:451
-	b, errB := json.ParseStringFrozen(`{"a":1,"b":2}`)
+	b, errB := json.ParseFrozen(`{"a":1,"b":2}`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:452
 	test.AssertNoError(t, errB)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:453
@@ -757,13 +757,13 @@ func TestFrozenAsMapKey(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:459
 	seen := map[json.Frozen]bool{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:460
-	a, err := json.ParseStringFrozen(`{"x":1}`)
+	a, err := json.ParseFrozen(`{"x":1}`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:461
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:462
 	seen[a] = true
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:464
-	b, err2 := json.ParseStringFrozen(`{"x": 1}`)
+	b, err2 := json.ParseFrozen(`{"x": 1}`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:465
 	test.AssertNoError(t, err2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:466
@@ -772,7 +772,7 @@ func TestFrozenAsMapKey(t *testing.T) {
 		t.Error("frozen value with equivalent content should hit existing map key")
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:469
-	c, err3 := json.ParseStringFrozen(`{"x":2}`)
+	c, err3 := json.ParseFrozen(`{"x":2}`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:470
 	test.AssertNoError(t, err3)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:471
@@ -785,7 +785,7 @@ func TestFrozenAsMapKey(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:475
 func TestFrozenThawObject(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:476
-	f, err := json.ParseStringFrozen(`{"name":"alice","age":30}`)
+	f, err := json.ParseFrozen(`{"name":"alice","age":30}`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:477
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:478
@@ -805,7 +805,7 @@ func TestFrozenThawObject(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:487
 func TestFrozenInvalid(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:488
-	_, err := json.ParseStringFrozen("not valid")
+	_, err := json.ParseFrozen("not valid")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:489
 	test.AssertError(t, err)
 }
@@ -1178,7 +1178,7 @@ func TestGet(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:706
 		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:707
-			v, err := json.GetFromString(sampleGet, tc.keys...)
+			v, err := json.Get(sampleGet, tc.keys...)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:708
 			test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:709
@@ -1224,13 +1224,13 @@ func TestGet(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:729
 func TestGetString(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:730
-	s, err := json.GetFromStringString(sampleGet, "person", "name", "first")
+	s, err := json.GetString(sampleGet, "person", "name", "first")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:731
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:732
 	test.AssertEqual(t, s, "Leonid")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:734
-	s2, err2 := json.GetFromStringString(sampleGet, "person", "avatars", "[1]", "type")
+	s2, err2 := json.GetString(sampleGet, "person", "avatars", "[1]", "type")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:735
 	test.AssertNoError(t, err2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:736
@@ -1242,7 +1242,7 @@ func TestGetStringEscapes(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:740
 	raw := `{"msg":"hello\nworld"}`
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:741
-	s, err := json.GetFromStringString(raw, "msg")
+	s, err := json.GetString(raw, "msg")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:742
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:743
@@ -1252,7 +1252,7 @@ func TestGetStringEscapes(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:746
 func TestGetStringMissing(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:747
-	_, err := json.GetFromStringString(sampleGet, "person", "missing")
+	_, err := json.GetString(sampleGet, "person", "missing")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:748
 	test.AssertError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:749
@@ -1265,7 +1265,7 @@ func TestGetStringMissing(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:753
 func TestGetStringTypeMismatch(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:754
-	_, err := json.GetFromStringString(sampleGet, "active")
+	_, err := json.GetString(sampleGet, "active")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:755
 	test.AssertError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:756
@@ -1278,7 +1278,7 @@ func TestGetStringTypeMismatch(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:760
 func TestGetInt(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:761
-	n, err := json.GetFromStringInt(sampleGet, "person", "github", "followers")
+	n, err := json.GetInt(sampleGet, "person", "github", "followers")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:762
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:763
@@ -1290,7 +1290,7 @@ func TestGetIntFloatLiteral(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:768
 	raw := `{"x": 42.0}`
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:769
-	n, err := json.GetFromStringInt(raw, "x")
+	n, err := json.GetInt(raw, "x")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:770
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:771
@@ -1300,7 +1300,7 @@ func TestGetIntFloatLiteral(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:774
 func TestGetIntMissing(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:775
-	_, err := json.GetFromStringInt(sampleGet, "person", "missing")
+	_, err := json.GetInt(sampleGet, "person", "missing")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:776
 	test.AssertError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:777
@@ -1313,7 +1313,7 @@ func TestGetIntMissing(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:781
 func TestGetIntTypeMismatch(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:782
-	_, err := json.GetFromStringInt(sampleGet, "person", "name", "first")
+	_, err := json.GetInt(sampleGet, "person", "name", "first")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:783
 	test.AssertError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:784
@@ -1326,7 +1326,7 @@ func TestGetIntTypeMismatch(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:788
 func TestGetFloat(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:789
-	f, err := json.GetFromStringFloat(sampleGet, "score")
+	f, err := json.GetFloat(sampleGet, "score")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:790
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:791
@@ -1336,7 +1336,7 @@ func TestGetFloat(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:794
 func TestGetFloatTypeMismatch(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:795
-	_, err := json.GetFromStringFloat(sampleGet, "person", "name", "first")
+	_, err := json.GetFloat(sampleGet, "person", "name", "first")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:796
 	test.AssertError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:797
@@ -1349,13 +1349,13 @@ func TestGetFloatTypeMismatch(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:801
 func TestGetBool(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:802
-	b, err := json.GetFromStringBool(sampleGet, "active")
+	b, err := json.GetBool(sampleGet, "active")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:803
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:804
 	test.AssertTrue(t, b)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:806
-	b2, err2 := json.GetFromStringBool(sampleGet, "person", "github", "verified")
+	b2, err2 := json.GetBool(sampleGet, "person", "github", "verified")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:807
 	test.AssertNoError(t, err2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:808
@@ -1367,7 +1367,7 @@ func TestGetBoolFalse(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:812
 	raw := `{"flag": false}`
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:813
-	b, err := json.GetFromStringBool(raw, "flag")
+	b, err := json.GetBool(raw, "flag")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:814
 	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:815
@@ -1377,7 +1377,7 @@ func TestGetBoolFalse(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:818
 func TestGetBoolTypeMismatch(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:819
-	_, err := json.GetFromStringBool(sampleGet, "score")
+	_, err := json.GetBool(sampleGet, "score")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:820
 	test.AssertError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:821
@@ -1390,345 +1390,432 @@ func TestGetBoolTypeMismatch(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:825
 func TestGetStringOr(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:826
-	s := json.GetStringOr([]byte(sampleGet), []string{"person", "name", "first"}, "(unknown)")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:831
+	s := json.GetStringOr(sampleGet, "(unknown)", "person", "name", "first")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:827
 	test.AssertEqual(t, s, "Leonid")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:833
-	s2 := json.GetStringOr([]byte(sampleGet), []string{"person", "missing"}, "(unknown)")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:834
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:829
+	s2 := json.GetStringOr(sampleGet, "(unknown)", "person", "missing")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:830
 	test.AssertEqual(t, s2, "(unknown)")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:837
-	s3 := json.GetStringOr([]byte(sampleGet), []string{"active"}, "(unknown)")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:838
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:833
+	s3 := json.GetStringOr(sampleGet, "(unknown)", "active")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:834
 	test.AssertEqual(t, s3, "(unknown)")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:841
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:837
 func TestGetIntOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:842
-	n := json.GetIntOr([]byte(sampleGet), []string{"person", "github", "followers"}, int64(0))
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:847
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:838
+	n := json.GetIntOr(sampleGet, int64(0), "person", "github", "followers")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:839
 	test.AssertEqual(t, n, int64(109))
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:849
-	n2 := json.GetIntOr([]byte(sampleGet), []string{"person", "missing"}, int64(-1))
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:850
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:841
+	n2 := json.GetIntOr(sampleGet, int64(-1), "person", "missing")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:842
 	test.AssertEqual(t, n2, int64(-1))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:853
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:845
 func TestGetFloatOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:854
-	f := json.GetFloatOr([]byte(sampleGet), []string{"score"}, 1.0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:855
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:846
+	f := json.GetFloatOr(sampleGet, 1.0, "score")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:847
 	test.AssertEqual(t, f, 42.5)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:857
-	f2 := json.GetFloatOr([]byte(sampleGet), []string{"missing"}, 1.0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:858
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:849
+	f2 := json.GetFloatOr(sampleGet, 1.0, "missing")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:850
 	test.AssertEqual(t, f2, 1.0)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:861
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:853
 func TestGetBoolOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:862
-	b := json.GetBoolOr([]byte(sampleGet), []string{"active"}, false)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:863
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:854
+	b := json.GetBoolOr(sampleGet, false, "active")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:855
 	test.AssertTrue(t, b)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:865
-	b2 := json.GetBoolOr([]byte(sampleGet), []string{"missing"}, false)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:866
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:857
+	b2 := json.GetBoolOr(sampleGet, false, "missing")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:858
 	test.AssertFalse(t, b2)
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:862
+func TestGetBytesFamily(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:863
+	raw := []byte(sampleGet)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:865
+	v, err := json.GetBytes(raw, "person", "name", "first")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:866
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:867
+	switch s := v.(type) {
+	case json.Str:
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:869
-func TestGetMalformedJSON(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:870
-	_, err := json.GetFromString("not valid", "x")
+		test.AssertEqual(t, s.Value, "Leonid")
+	default:
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:871
-	test.AssertError(t, err)
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:876
-func TestGetArrayIndexOutOfBounds(t *testing.T) {
+		t.Error("expected Str variant from GetBytes")
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:873
+	st, serr := json.GetStringBytes(raw, "person", "name", "first")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:874
+	test.AssertNoError(t, serr)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:875
+	test.AssertEqual(t, st, "Leonid")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:877
-	v, err := json.GetFromString(sampleGet, "person", "avatars", "[99]", "url")
+	n := json.GetIntBytesOr(raw, int64(-1), "person", "missing")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:878
-	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:879
-	switch v := v.(type) {
-	case json.Null:
-		_ = v
+	test.AssertEqual(t, n, int64(-1))
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:880
+	f := json.GetFloatBytesOr(raw, 1.0, "score")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:881
-		return
-	}
+	test.AssertEqual(t, f, 42.5)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:883
-	t.Error("expected Null variant for out-of-bounds index")
-}
-
+	bo := json.GetBoolBytesOr(raw, false, "missing")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:884
+	test.AssertFalse(t, bo)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:886
+	alen, aerr := json.GetArrayLenBytes(raw, "tags")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:887
-func TestGetIndexOnNonArray(t *testing.T) {
+	test.AssertNoError(t, aerr)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:888
-	_, err := json.GetFromString(sampleGet, "person", "name", "[0]")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:889
-	test.AssertError(t, err)
+	test.AssertEqual(t, alen, 5)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:890
-	if !errors.Is(err, json.ErrTypeMismatch) {
+	olen, oerr := json.GetObjectLenBytes(raw, "person", "name")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:891
-		t.Error("expected ErrTypeMismatch for indexing a non-array")
-	}
-}
-
+	test.AssertNoError(t, oerr)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:892
+	test.AssertEqual(t, olen, 3)
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:894
-func TestEachKey(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:895
-	paths := [][]string{[]string{"person", "name", "fullName"}, []string{"person", "github", "followers"}, []string{"missing"}, []string{"company", "name"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:901
-	hits := map[int]string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:902
-	cb := func(idx int, v json.JSONValue, err error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:903
-		if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:904
-			return
-		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:905
-		switch x := v.(type) {
-		case json.Str:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:907
-			hits[idx] = x.Value
-		case json.Num:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:909
-			hits[idx] = fmt.Sprint(x.Value)
-		case json.Null:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:911
-			hits[idx] = "null"
-		default:
-			panic("unreachable")
-		}
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:913
-	json.EachKey([]byte(sampleGet), cb, paths)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:915
-	test.AssertEqual(t, hits[0], "Leonid Bugaev")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:916
-	test.AssertEqual(t, hits[1], "109")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:917
-	test.AssertEqual(t, hits[2], "null")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:918
-	test.AssertEqual(t, hits[3], "Acme")
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:921
-func TestGetArrayLen(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:922
-	n, err := json.GetArrayLen([]byte(sampleGet), "person", "avatars")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:923
-	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:924
-	test.AssertEqual(t, n, 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:926
-	n2, err2 := json.GetArrayLen([]byte(sampleGet), "tags")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:927
-	test.AssertNoError(t, err2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:928
-	test.AssertEqual(t, n2, 5)
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:931
-func TestGetArrayLenTypeMismatch(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:932
-	_, err := json.GetArrayLen([]byte(sampleGet), "company")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:933
-	test.AssertError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:934
-	if !errors.Is(err, json.ErrTypeMismatch) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:935
-		t.Error("expected ErrTypeMismatch for non-array on GetArrayLen")
-	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:938
-func TestGetObjectLen(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:939
-	n, err := json.GetObjectLen([]byte(sampleGet), "person", "name")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:940
-	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:941
-	test.AssertEqual(t, n, 3)
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:944
-func TestGetObjectLenTypeMismatch(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:945
-	_, err := json.GetObjectLen([]byte(sampleGet), "tags")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:946
-	test.AssertError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:947
-	if !errors.Is(err, json.ErrTypeMismatch) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:948
-		t.Error("expected ErrTypeMismatch for non-object on GetObjectLen")
-	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:951
-func TestEachArray(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:952
 	urls := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:953
-	cb := func(item json.JSONValue) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:954
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:895
+	acb := func(item json.JSONValue) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:896
 		switch o := item.(type) {
 		case json.Object:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:956
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:898
 			switch u := o.Fields["url"].(type) {
 			case json.Str:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:958
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:900
 				urls = append(urls, u.Value)
 			}
 		default:
 			panic("unreachable")
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:960
-	err := json.EachArray([]byte(sampleGet), cb, "person", "avatars")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:961
-	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:962
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:902
+	jerr := json.EachArrayBytes(raw, acb, "person", "avatars")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:903
+	test.AssertNoError(t, jerr)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:904
 	test.AssertEqual(t, len(urls), 2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:906
+	keys := []string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:907
+	kcb := func(k string, v json.JSONValue) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:908
+		keys = append(keys, k)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:909
+		return nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:910
+	eerr := json.EachObjectBytes(raw, kcb, "person", "name")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:911
+	test.AssertNoError(t, eerr)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:912
+	test.AssertEqual(t, len(keys), 3)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:915
+func TestGetMalformedJSON(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:916
+	_, err := json.Get("not valid", "x")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:917
+	test.AssertError(t, err)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:922
+func TestGetArrayIndexOutOfBounds(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:923
+	v, err := json.Get(sampleGet, "person", "avatars", "[99]", "url")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:924
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:925
+	switch v := v.(type) {
+	case json.Null:
+		_ = v
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:927
+		return
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:929
+	t.Error("expected Null variant for out-of-bounds index")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:933
+func TestGetIndexOnNonArray(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:934
+	_, err := json.Get(sampleGet, "person", "name", "[0]")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:935
+	test.AssertError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:936
+	if !errors.Is(err, json.ErrTypeMismatch) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:937
+		t.Error("expected ErrTypeMismatch for indexing a non-array")
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:940
+func TestEachKey(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:941
+	paths := [][]string{[]string{"person", "name", "fullName"}, []string{"person", "github", "followers"}, []string{"missing"}, []string{"company", "name"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:947
+	hits := map[int]string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:948
+	cb := func(idx int, v json.JSONValue, err error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:949
+		if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:950
+			return
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:951
+		switch x := v.(type) {
+		case json.Str:
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:953
+			hits[idx] = x.Value
+		case json.Num:
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:955
+			hits[idx] = fmt.Sprint(x.Value)
+		case json.Null:
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:957
+			hits[idx] = "null"
+		default:
+			panic("unreachable")
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:959
+	json.EachKey(sampleGet, cb, paths)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:961
+	test.AssertEqual(t, hits[0], "Leonid Bugaev")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:962
+	test.AssertEqual(t, hits[1], "109")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:963
-	test.AssertEqual(t, urls[0], "https://example.com/a1.png")
+	test.AssertEqual(t, hits[2], "null")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:964
-	test.AssertEqual(t, urls[1], "https://example.com/a2.png")
+	test.AssertEqual(t, hits[3], "Acme")
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:967
-func TestEachArrayTypeMismatch(t *testing.T) {
+func TestGetArrayLen(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:968
-	cb := func(item json.JSONValue) {
+	n, err := json.GetArrayLen(sampleGet, "person", "avatars")
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:969
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:970
+	test.AssertEqual(t, n, 2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:972
+	n2, err2 := json.GetArrayLen(sampleGet, "tags")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:973
+	test.AssertNoError(t, err2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:974
+	test.AssertEqual(t, n2, 5)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:977
+func TestGetArrayLenTypeMismatch(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:978
+	_, err := json.GetArrayLen(sampleGet, "company")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:979
+	test.AssertError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:980
+	if !errors.Is(err, json.ErrTypeMismatch) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:981
+		t.Error("expected ErrTypeMismatch for non-array on GetArrayLen")
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:984
+func TestGetObjectLen(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:985
+	n, err := json.GetObjectLen(sampleGet, "person", "name")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:986
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:987
+	test.AssertEqual(t, n, 3)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:990
+func TestGetObjectLenTypeMismatch(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:991
+	_, err := json.GetObjectLen(sampleGet, "tags")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:992
+	test.AssertError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:993
+	if !errors.Is(err, json.ErrTypeMismatch) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:994
+		t.Error("expected ErrTypeMismatch for non-object on GetObjectLen")
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:997
+func TestEachArray(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:998
+	urls := []string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:999
+	cb := func(item json.JSONValue) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1000
+		switch o := item.(type) {
+		case json.Object:
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1002
+			switch u := o.Fields["url"].(type) {
+			case json.Str:
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1004
+				urls = append(urls, u.Value)
+			}
+		default:
+			panic("unreachable")
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1006
+	err := json.EachArray(sampleGet, cb, "person", "avatars")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1007
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1008
+	test.AssertEqual(t, len(urls), 2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1009
+	test.AssertEqual(t, urls[0], "https://example.com/a1.png")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1010
+	test.AssertEqual(t, urls[1], "https://example.com/a2.png")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1013
+func TestEachArrayTypeMismatch(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1014
+	cb := func(item json.JSONValue) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1015
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:970
-	err := json.EachArray([]byte(sampleGet), cb, "company")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:971
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1016
+	err := json.EachArray(sampleGet, cb, "company")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1017
 	test.AssertError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:972
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1018
 	if !errors.Is(err, json.ErrTypeMismatch) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:973
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1019
 		t.Error("expected ErrTypeMismatch for non-array on EachArray")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:976
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1022
 func TestEachObject(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:977
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1023
 	keys := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:978
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1024
 	cb := func(k string, v json.JSONValue) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:979
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1025
 		keys = append(keys, k)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:980
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1026
 		return nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:981
-	err := json.EachObject([]byte(sampleGet), cb, "person", "name")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:982
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1027
+	err := json.EachObject(sampleGet, cb, "person", "name")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1028
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:983
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1029
 	test.AssertEqual(t, len(keys), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:985
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1031
 	found := false
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:986
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1032
 	for _, k := range keys {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:987
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1033
 		if k == "first" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:988
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1034
 			found = true
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:989
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1035
 	test.AssertTrue(t, found)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:992
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1038
 func TestEachObjectCallbackAbort(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:993
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1039
 	count := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:994
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1040
 	cb := func(k string, v json.JSONValue) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:995
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1041
 		count = count + 1
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:996
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1042
 		return errors.New("stop")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:997
-	err := json.EachObject([]byte(sampleGet), cb, "person", "name")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:998
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1043
+	err := json.EachObject(sampleGet, cb, "person", "name")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1044
 	test.AssertError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:999
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1045
 	test.AssertEqual(t, count, 1)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1003
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1049
 func TestGetMatchesParseValue(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1004
-	tree, perr := json.ParseStringValue(sampleGet)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1005
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1050
+	tree, perr := json.ParseValue(sampleGet)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1051
 	test.AssertNoError(t, perr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1008
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1054
 	rootObj := json.Object{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1009
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1055
 	switch r := tree.(type) {
 	case json.Object:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1011
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1057
 		rootObj = r
 	default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1013
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1059
 		t.Fatal("expected Object at root")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1015
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1061
 	personObj := json.Object{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1016
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1062
 	switch p := rootObj.Fields["person"].(type) {
 	case json.Object:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1018
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1064
 		personObj = p
 	default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1020
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1066
 		t.Fatal("expected Object at person")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1022
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1068
 	githubObj := json.Object{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1023
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1069
 	switch g := personObj.Fields["github"].(type) {
 	case json.Object:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1025
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1071
 		githubObj = g
 	default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1027
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1073
 		t.Fatal("expected Object at github")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1029
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1075
 	treeFollowers := json.Num{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1030
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1076
 	switch f := githubObj.Fields["followers"].(type) {
 	case json.Num:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1032
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1078
 		treeFollowers = f
 	default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1034
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1080
 		t.Fatal("expected Num at followers")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1037
-	got, gerr := json.GetFromString(sampleGet, "person", "github", "followers")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1038
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1083
+	got, gerr := json.Get(sampleGet, "person", "github", "followers")
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1084
 	test.AssertNoError(t, gerr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1039
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1085
 	switch gf := got.(type) {
 	case json.Num:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1041
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1087
 		test.AssertEqual(t, gf.Value, treeFollowers.Value)
 	default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1043
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json_test.kuki:1089
 		t.Error("expected Num from Get for followers")
 	}
 }

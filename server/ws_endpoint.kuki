@@ -1,13 +1,14 @@
 petiole main
 
-import "github.com/gorilla/websocket"
 import "net/http"
 import "race-to-the-crystal/game" as gamepkg
+import "stdlib/http" as httphelper
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/random"
 import "stdlib/string" as strpkg
-import "stdlib/http" as httphelper
+
+import "github.com/gorilla/websocket"
 
 var ws_upgrader = websocket.Upgrader{
     ReadBufferSize: 8192,
@@ -45,7 +46,7 @@ func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Res
     ep.ws_handler.RegisterClient(reference of client)
     log.Info("WebSocket client connected: {client_id}")
     defer conn.Close()
-    for
+    for true
         _msg_type, raw, err := conn.ReadMessage()
         if err isnt empty
             break
@@ -57,6 +58,7 @@ func handleClientMessage on ep: reference WebSocketEndpoint(client_id: string, r
     jsonpkg.ParseInto(raw_data, reference of data) onerr
         ep.sendError(client_id, "Invalid JSON format")
         return
+
     msg_type_val, has := data["type"]
     if not has
         return
@@ -119,7 +121,10 @@ func handleListGames on ep: reference WebSocketEndpoint(client_id: string)
 
 func handleCreateGame on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
     client := ep.ws_handler.GetClientByID(client_id)
-    if client equals empty or client.player_id equals ""
+    if client equals empty
+        ep.sendError(client_id, "Not connected")
+        return
+    if client.player_id equals ""
         ep.sendError(client_id, "Not connected")
         return
     game_name := "Game"
@@ -137,7 +142,13 @@ func handleCreateGame on ep: reference WebSocketEndpoint(client_id: string, data
         max_players = 2
     if max_players > 4
         max_players = 4
-    lobby := ep.lobby_mgr.create_lobby(client.player_id, client.player_name, game_name, ClientType.WEB_BROWSER, max_players)
+    lobby := ep.lobby_mgr.create_lobby(
+        client.player_id,
+        client.player_name,
+        game_name,
+        ClientType.WEB_BROWSER,
+        max_players,
+    )
     if lobby equals empty
         ep.sendError(client_id, "Failed to create game")
         return
@@ -156,7 +167,10 @@ func handleCreateGame on ep: reference WebSocketEndpoint(client_id: string, data
 
 func handleJoinGame on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
     client := ep.ws_handler.GetClientByID(client_id)
-    if client equals empty or client.player_id equals ""
+    if client equals empty
+        ep.sendError(client_id, "Not connected")
+        return
+    if client.player_id equals ""
         ep.sendError(client_id, "Not connected")
         return
     game_id := ""
@@ -193,7 +207,9 @@ func handleJoinGame on ep: reference WebSocketEndpoint(client_id: string, data: 
 
 func handleLeaveGame on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
     client := ep.ws_handler.GetClientByID(client_id)
-    if client equals empty or client.game_id equals ""
+    if client equals empty
+        return
+    if client.game_id equals ""
         return
     game_id := client.game_id
     player_id := client.player_id
@@ -212,7 +228,10 @@ func handleLeaveGame on ep: reference WebSocketEndpoint(client_id: string, data:
 
 func handleReady on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
     client := ep.ws_handler.GetClientByID(client_id)
-    if client equals empty or client.game_id equals ""
+    if client equals empty
+        ep.sendError(client_id, "Not in a game")
+        return
+    if client.game_id equals ""
         ep.sendError(client_id, "Not in a game")
         return
     ready := true
@@ -233,7 +252,10 @@ func handleReady on ep: reference WebSocketEndpoint(client_id: string, data: JSO
 
 func handleStartGame on ep: reference WebSocketEndpoint(client_id: string, data: JSONMap)
     client := ep.ws_handler.GetClientByID(client_id)
-    if client equals empty or client.player_id equals ""
+    if client equals empty
+        ep.sendError(client_id, "Not connected")
+        return
+    if client.player_id equals ""
         ep.sendError(client_id, "Not connected")
         return
     lobby := ep.lobby_mgr.get_player_lobby(client.player_id)
@@ -257,7 +279,10 @@ func handleStartGame on ep: reference WebSocketEndpoint(client_id: string, data:
 
 func handleGameAction on ep: reference WebSocketEndpoint(client_id: string, msg_type: string, data: JSONMap)
     client := ep.ws_handler.GetClientByID(client_id)
-    if client equals empty or client.player_id equals ""
+    if client equals empty
+        ep.sendError(client_id, "Not connected")
+        return
+    if client.player_id equals ""
         ep.sendError(client_id, "Not connected")
         return
     session := ep.coordinator.get_player_session(client.player_id)
@@ -267,10 +292,15 @@ func handleGameAction on ep: reference WebSocketEndpoint(client_id: string, msg_
     action_type := gamepkg.ParseActionType(strpkg.ToUpper(msg_type)) onerr
         ep.sendInvalidAction(client_id, msg_type, "unknown action type")
         return
+
     normalized := NormalizeActionData(data)
     validation_err := ValidateActionFields(action_type, normalized)
     if validation_err isnt empty
-        ep.sendInvalidAction(client_id, msg_type, "validation failed: {dereference validation_err.message}")
+        ep.sendInvalidAction(
+            client_id,
+            msg_type,
+            "validation failed: {dereference validation_err.message}",
+        )
         return
     action := ep.http_handler.buildGameAction(client.player_id, action_type, normalized)
     success, message, _result_data := session.execute_game_action(client.player_id, action)
@@ -284,7 +314,9 @@ func handleGameAction on ep: reference WebSocketEndpoint(client_id: string, msg_
 
 func handleStateRequest on ep: reference WebSocketEndpoint(client_id: string)
     client := ep.ws_handler.GetClientByID(client_id)
-    if client equals empty or client.game_id equals ""
+    if client equals empty
+        return
+    if client.game_id equals ""
         return
     session := ep.coordinator.get_session(client.game_id)
     if session equals empty

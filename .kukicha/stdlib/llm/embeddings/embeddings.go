@@ -378,23 +378,28 @@ func executeRaw(c Client, input any) (Response, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:239
 	rawResp := resp.Raw()
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:240
-	defer rawResp.Body.Close()
+	if rawResp == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:241
+		return Response{}, errors.New("embeddings: response body unavailable")
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:242
+	defer rawResp.Body.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:244
 	if resp.StatusCode >= 400 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:245
 		return Response{}, fmt.Errorf("embeddings: API request failed (%v)", resp.StatusCode)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:247
 	out := Response{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:246
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:248
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:248
 	err_4 := jsonpkg.ReadInto(rawResp.Body, &out)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:248
 	if err_4 != nil {
 		var _zero0 Response
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:248
 		return _zero0, err_4
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:247
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:249
 	return out, nil
 }

@@ -232,8 +232,9 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
         return InvalidResult("DEPLOY_FAILED: out_of_bounds | pos=({pos.X},{pos.Y}) | board_size=24x24")
 
     cell := gs.board.get_cell_at(pos)
-    if cell isnt empty and dereference cell.is_occupied()
-        return InvalidResult("DEPLOY_FAILED: cell_occupied | pos=({pos.X},{pos.Y})")
+    if cell isnt empty
+        if dereference cell.is_occupied()
+            return InvalidResult("DEPLOY_FAILED: cell_occupied | pos=({pos.X},{pos.Y})")
 
     p_ref := gs.GetPlayer(player_id)
     if p_ref equals empty
@@ -286,29 +287,30 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
     var mystery_eff: enums.MysteryEffect
 
     cell := gs.board.get_cell_at(dest)
-    if cell isnt empty and dereference cell.cell_type equals enums.MYSTERY
-        p_ref := gs.GetPlayer(player_id)
-        if p_ref isnt empty
-            p := dereference p_ref
-            player_index := enums.PlayerIndex(p.color)
-            mystery_result := trigger_mystery_event(tok_ref, reference of gs.board, player_index)
+    if cell isnt empty
+        if dereference cell.cell_type equals enums.MYSTERY
+            p_ref := gs.GetPlayer(player_id)
+            if p_ref isnt empty
+                p := dereference p_ref
+                player_index := enums.PlayerIndex(p.color)
+                mystery_result := trigger_mystery_event(tok_ref, reference of gs.board, player_index)
 
-            gs.last_triggered_mystery_event = reference of MysteryEvent{
-                TokenID: TokenID,
-                Position: dest,
-                effect: enums.MysteryEffectName(mystery_result.effect),
-            }
+                gs.last_triggered_mystery_event = reference of MysteryEvent{
+                    TokenID: TokenID,
+                    Position: dest,
+                    effect: enums.MysteryEffectName(mystery_result.effect),
+                }
 
-            message = message + "\n  Token landed on a MYSTERY square!"
-            mystery_triggered = true
-            mystery_eff = mystery_result.effect
+                message = message + "\n  Token landed on a MYSTERY square!"
+                mystery_triggered = true
+                mystery_eff = mystery_result.effect
 
-            if mystery_result.effect equals enums.HEAL
-                message = message + "\n  HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
-            else
-                gs.board.clear_occupant(dest, TokenID)
-                gs.board.set_occupant(mystery_result.new_position, TokenID)
-                message = message + "\n  TAILS! Token teleported back to deployment area ({mystery_result.new_position.X},{mystery_result.new_position.Y})!"
+                if mystery_result.effect equals enums.HEAL
+                    message = message + "\n  HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
+                else
+                    gs.board.clear_occupant(dest, TokenID)
+                    gs.board.set_occupant(mystery_result.new_position, TokenID)
+                    message = message + "\n  TAILS! Token teleported back to deployment area ({mystery_result.new_position.X},{mystery_result.new_position.Y})!"
 
     gs.turn_phase = enums.ACTION
     message = message + "\n  Phase changed to ACTION (you can attack or end turn)"

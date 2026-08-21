@@ -115,7 +115,7 @@ func effects_to_dict on m: reference CrystalEffectsManager(map_of_players: map o
 
 # Full client-facing state dict. `perspective` is the game player id
 # ("player_0") to annotate the state with; pass "" to omit.
-func ClientStateDict on gs: reference GameState (perspective: string) StateDict
+func ClientStateDict on gs: reference GameState(perspective: string) StateDict
     players_map := make(map of string to StateDict)
     idx := 0
     for pid, p in gs.players
@@ -144,7 +144,8 @@ func ClientStateDict on gs: reference GameState (perspective: string) StateDict
     if gs.winner_id isnt ""
         result["winner_id"] = gs.winner_id as string
     if gs.crystal_instance isnt empty
-        result["crystal"] = crystal_to_dict(gs.crystal_instance)
+        crys := dereference gs.crystal_instance
+        result["crystal"] = crystal_to_dict(reference of crys)
     if gs.last_triggered_crystal_effect isnt empty
         ev := dereference gs.last_triggered_crystal_effect
         result["last_triggered_crystal_effect"] = list of any{

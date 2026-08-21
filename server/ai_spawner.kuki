@@ -32,7 +32,6 @@ func SpawnAIForGame on sp: reference AISpawner(game_id: string, num_ai: int, hos
         ai_name := "AI-{sp.ai_counter}"
         strategy := strategies[i % len(strategies)]
 
-        cmdname := "uv"
         args := list of string{
             "run",
             "race-ai-client",
@@ -48,7 +47,7 @@ func SpawnAIForGame on sp: reference AISpawner(game_id: string, num_ai: int, hos
             strategy,
         }
 
-        cmd := exec.Command(cmdname, many args)
+        cmd := exec.Command("uv", many args)
         cmd.Stdout = os.Stdout
         cmd.Stderr = os.Stderr
         err := cmd.Start()

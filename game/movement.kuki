@@ -63,22 +63,20 @@ func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int,
                 continue
 
             cell := brd.get_cell(nx, ny)
-            if cell equals empty
-                continue
+            if cell isnt empty
+                dc := dereference cell
+                if dc.is_occupied() and tokens_map isnt empty
+                    if dc.has_enemy_tokens(player_id, tokens_map)
+                        continue
+                    if dc.cell_type isnt enums.GENERATOR and dc.cell_type isnt enums.CRYSTAL
+                        continue
 
-            dc := dereference cell
-            if dc.is_occupied() and tokens_map isnt empty
-                if dc.has_enemy_tokens(player_id, tokens_map)
-                    continue
-                if dc.cell_type isnt enums.GENERATOR and dc.cell_type isnt enums.CRYSTAL
-                    continue
+                visited[npos] = true
 
-            visited[npos] = true
+                if npos isnt start
+                    result = append(result, npos)
 
-            if npos isnt start
-                result = append(result, npos)
-
-            queue = append(queue, BfsItem{pos: npos, dist: distance + 1})
+                queue = append(queue, BfsItem{pos: npos, dist: distance + 1})
 
     return result
 
@@ -127,14 +125,13 @@ func find_path(start: types.Position, end: types.Position, brd: reference Board,
                 return new_path, true
 
             cell := brd.get_cell(nx, ny)
-            if cell equals empty
-                continue
-            if cell.is_occupied()
-                continue
+            if cell isnt empty
+                if cell.is_occupied()
+                    continue
 
-            visited[npos] = true
-            new_path := append(item.path, npos)
-            queue = append(queue, PathItem{pos: npos, path: new_path})
+                visited[npos] = true
+                new_path := append(item.path, npos)
+                queue = append(queue, PathItem{pos: npos, path: new_path})
 
     return empty list of types.Position, false
 
