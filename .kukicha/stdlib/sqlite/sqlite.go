@@ -17,153 +17,167 @@ import (
 	"unicode"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:41
 func Open(path string) (db.Pool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:42
 	return db.Open("sqlite3", "file:"+path+"?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:53
 func OpenPath(path string) (db.Pool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:52
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:54
 	err_1 := files.MkDirAll(files.Dirname(path))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:54
 	if err_1 != nil {
 		var _zero0 db.Pool
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:54
 		return _zero0, err_1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:55
 	return Open(path)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:60
 func OpenMemory() (db.Pool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:61
 	return db.Open("sqlite3", "file::memory:?_pragma=foreign_keys(ON)")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:64
-func OpenWith(path string, pragmas map[string]string) (db.Pool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:65
-	parts := make([]string, 0, len(pragmas))
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:66
-	for k, v := range pragmas {
+func OpenWith(path string, pragmas map[string]string) (db.Pool, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:67
-		if !isValidPragmaName(k) {
+	parts := make([]string, 0, len(pragmas))
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:68
+	for k, v := range pragmas {
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:69
+		if !isValidPragmaName(k) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:70
 			return db.Pool{}, fmt.Errorf("sqlite.OpenWith: invalid pragma name: %v", k)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:71
 		if !isValidPragmaValue(v) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:72
 			return db.Pool{}, fmt.Errorf("sqlite.OpenWith: invalid pragma value: %v", v)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:73
 		parts = append(parts, fmt.Sprintf("_pragma=%v(%v)", k, v))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:72
-	connStr := "file:" + path
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:73
-	if len(parts) > 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:74
+	connStr := "file:" + path
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:75
+	if len(parts) > 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:76
 		connStr = connStr + "?" + strpkg.Join(parts, "&")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:77
 	return db.Open("sqlite3", connStr)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:97
+type Registrar = func(*sqlite3.Conn) error
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:114
+func OpenWithExtensions(path string, pragmas map[string]string, registrars ...Registrar) (db.Pool, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:115
+	for _, registrar := range registrars {
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:116
+		sqlite3.AutoExtension(registrar)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:117
+	return OpenWith(path, pragmas)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:126
 func Pragma(pool db.Pool, name string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:127
 	if !isValidPragmaName(name) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:128
 		return "", fmt.Errorf("sqlite.Pragma: invalid pragma name: %v", name)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:129
 	rawDB := db.RawDB(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:130
 	row := rawDB.QueryRow(fmt.Sprintf("PRAGMA %v", name))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:131
 	value := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:90
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:132
 	err_2 := row.Scan(&value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:132
 	if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:132
 		return "", err_2
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:133
 	return value, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:138
 func SetPragma(pool db.Pool, name string, value string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:139
 	if !isValidPragmaName(name) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:140
 		return fmt.Errorf("sqlite.SetPragma: invalid pragma name: %v", name)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:141
 	if !isValidPragmaValue(value) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:142
 		return fmt.Errorf("sqlite.SetPragma: invalid pragma value: %v", value)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:143
 	db.RawDB(pool).Exec(fmt.Sprintf("PRAGMA %v = %v", name, value))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:144
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:149
 func PragmaInt(pool db.Pool, name string) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:150
 	val, err_3 := Pragma(pool, name)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:150
 	if err_3 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:150
 		return 0, err_3
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:151
 	result, err := cast.SmartInt(val)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:151
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:151
 		return 0, fmt.Errorf("sqlite.PragmaInt: failed to parse '%v'", val)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:152
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:157
 func SetPragmaInt(pool db.Pool, name string, value int) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:158
 	return SetPragma(pool, name, fmt.Sprintf("%v", value))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:163
 func PragmaBool(pool db.Pool, name string) (bool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:164
 	val, err_4 := Pragma(pool, name)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:164
 	if err_4 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:164
 		return false, err_4
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:165
 	if val == "1" || val == "ON" || val == "on" || val == "true" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:166
 		return true, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:167
 	return false, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:130
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:172
 func SetPragmaBool(pool db.Pool, name string, value bool) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:173
 	return SetPragma(pool, name, func() string {
 		if value {
 			return "1"
@@ -173,125 +187,125 @@ func SetPragmaBool(pool db.Pool, name string, value bool) error {
 	}())
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:182
 func Tables(pool db.Pool) ([]string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:141
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:183
 	rawDB := db.RawDB(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:184
 	rows, err_5 := rawDB.Query("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:184
 	if err_5 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:184
 		return []string{}, err_5
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:145
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:187
 	defer rows.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:146
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:188
 	names := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:189
 	for rows.Next() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:190
 		name := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:149
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:191
 		err_6 := rows.Scan(&name)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:191
 		if err_6 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:191
 			return []string{}, err_6
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:192
 		names = append(names, name)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:151
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:193
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:193
 	err_7 := rows.Err()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:193
 	if err_7 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:193
 		return []string{}, err_7
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:194
 	return names, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:198
 func TableExists(pool db.Pool, name string) (bool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:199
 	return db.Exists(pool, "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:162
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:204
 func IntegrityCheck(pool db.Pool) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:205
 	rawDB := db.RawDB(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:164
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:206
 	row := rawDB.QueryRow("PRAGMA integrity_check")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:207
 	result := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:166
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:208
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:208
 	err_8 := row.Scan(&result)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:208
 	if err_8 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:208
 		return err_8
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:209
 	if result != "ok" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:210
 		return fmt.Errorf("sqlite.IntegrityCheck: %v", result)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:211
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:173
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:215
 func Vacuum(pool db.Pool) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:216
 	db.Exec(pool, "VACUUM")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:217
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:181
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:223
 func Backup(pool db.Pool, destPath string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:182
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:224
 	rawDB := db.RawDB(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:225
 	sqlConn, err_9 := rawDB.Conn(context.Background())
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:225
 	if err_9 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:225
 		return err_9
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:226
 	defer sqlConn.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:227
 	return sqlConn.Raw(makeBackupFunc(destPath))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:231
 func Version(pool db.Pool) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:190
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:232
 	rawDB := db.RawDB(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:233
 	row := rawDB.QueryRow("SELECT sqlite_version()")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:234
 	version := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:193
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:193
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:235
 	err_10 := row.Scan(&version)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:193
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:235
 	if err_10 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:193
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:235
 		return "", err_10
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:194
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:236
 	return version, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:245
 type Column struct {
 	CID        int
 	Name       string
@@ -301,7 +315,7 @@ type Column struct {
 	PrimaryKey int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:255
 type Index struct {
 	Name    string
 	Table   string
@@ -309,13 +323,13 @@ type Index struct {
 	Columns []string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:221
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:263
 type indexMeta struct {
 	name   string
 	unique bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:228
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:270
 type ForeignKey struct {
 	ID       int
 	Seq      int
@@ -326,750 +340,750 @@ type ForeignKey struct {
 	OnDelete string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:241
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:283
 func Columns(pool db.Pool, table string) ([]Column, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:284
 	if !isValidPragmaName(table) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:285
 		return []Column{}, fmt.Errorf("sqlite.Columns: invalid table name: %v", table)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:244
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:286
 	rawDB := db.RawDB(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:287
 	rows, err_11 := rawDB.Query(fmt.Sprintf("PRAGMA table_info(%v)", db.QuoteIdentifier(table)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:287
 	if err_11 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:287
 		return []Column{}, err_11
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:288
 	defer rows.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:247
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:289
 	cols := []Column{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:248
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:290
 	for rows.Next() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:249
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:291
 		cid := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:250
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:292
 		name := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:293
 		colType := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:252
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:294
 		notnull := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:253
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:295
 		defaultVal := sql.NullString{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:254
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:296
 		pk := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:255
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:297
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:297
 		err_12 := rows.Scan(&cid, &name, &colType, &notnull, &defaultVal, &pk)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:297
 		if err_12 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:297
 			return []Column{}, err_12
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:263
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:305
 		cols = append(cols, Column{CID: cid, Name: name, Type: colType, NotNull: notnull == 1, Default: defaultVal.String, PrimaryKey: pk})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:271
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:271
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:313
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:313
 	err_13 := rows.Err()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:271
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:313
 	if err_13 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:271
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:313
 		return []Column{}, err_13
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:272
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:314
 	return cols, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:277
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:319
 func Indexes(pool db.Pool, table string) ([]Index, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:278
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:320
 	if !isValidPragmaName(table) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:279
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:321
 		return []Index{}, fmt.Errorf("sqlite.Indexes: invalid table name: %v", table)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:280
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:322
 	rawDB := db.RawDB(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:281
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:323
 	idxRows, err_14 := rawDB.Query(fmt.Sprintf("PRAGMA index_list(%v)", db.QuoteIdentifier(table)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:281
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:323
 	if err_14 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:281
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:323
 		return []Index{}, err_14
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:282
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:324
 	metas := []indexMeta{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:283
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:325
 	for idxRows.Next() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:284
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:326
 		seq := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:285
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:327
 		name := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:286
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:328
 		unique := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:287
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:329
 		origin := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:288
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:330
 		partial := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:289
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:289
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:331
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:331
 		err_15 := idxRows.Scan(&seq, &name, &unique, &origin, &partial)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:289
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:331
 		if err_15 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:289
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:331
 			return []Index{}, err_15
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:296
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:338
 		metas = append(metas, indexMeta{name: name, unique: unique == 1})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:297
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:297
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:339
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:339
 	err_16 := idxRows.Err()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:297
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:339
 	if err_16 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:297
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:339
 		return []Index{}, err_16
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:298
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:298
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:340
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:340
 	err_17 := idxRows.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:298
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:340
 	if err_17 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:298
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:340
 		return []Index{}, err_17
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:300
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:342
 	idxs := []Index{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:301
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:343
 	for _, meta := range metas {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:302
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:344
 		cols, err_18 := indexColumns(rawDB, meta.name)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:302
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:344
 		if err_18 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:302
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:344
 			return []Index{}, err_18
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:303
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:345
 		idxs = append(idxs, Index{Name: meta.name, Table: table, Unique: meta.unique, Columns: cols})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:309
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:351
 	return idxs, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:311
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:353
 func indexColumns(rawDB *sql.DB, indexName string) ([]string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:312
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:354
 	colRows, err_19 := rawDB.Query(fmt.Sprintf("PRAGMA index_info(%v)", db.QuoteIdentifier(indexName)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:312
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:354
 	if err_19 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:312
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:354
 		return []string{}, err_19
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:313
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:355
 	defer colRows.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:314
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:356
 	cols := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:315
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:357
 	for colRows.Next() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:316
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:358
 		seqno := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:317
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:359
 		cid := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:318
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:360
 		colName := sql.NullString{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:319
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:319
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:361
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:361
 		err_20 := colRows.Scan(&seqno, &cid, &colName)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:319
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:361
 		if err_20 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:319
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:361
 			return []string{}, err_20
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:320
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:362
 		cols = append(cols, colName.String)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:321
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:321
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:363
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:363
 	err_21 := colRows.Err()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:321
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:363
 	if err_21 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:321
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:363
 		return []string{}, err_21
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:322
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:364
 	return cols, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:330
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:372
 func ForeignKeys(pool db.Pool, table string) ([]ForeignKey, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:331
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:373
 	if !isValidPragmaName(table) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:332
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:374
 		return []ForeignKey{}, fmt.Errorf("sqlite.ForeignKeys: invalid table name: %v", table)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:333
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:375
 	rawDB := db.RawDB(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:334
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:376
 	fkRows, err_22 := rawDB.Query(fmt.Sprintf("PRAGMA foreign_key_list(%v)", db.QuoteIdentifier(table)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:334
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:376
 	if err_22 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:334
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:376
 		return []ForeignKey{}, err_22
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:335
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:377
 	defer fkRows.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:336
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:378
 	fks := []ForeignKey{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:337
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:379
 	for fkRows.Next() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:338
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:380
 		id := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:339
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:381
 		seq := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:340
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:382
 		refTable := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:341
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:383
 		fromCol := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:342
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:384
 		toCol := sql.NullString{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:343
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:385
 		onUpdate := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:344
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:386
 		onDelete := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:345
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:387
 		match := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:346
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:346
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:388
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:388
 		err_23 := fkRows.Scan(&id, &seq, &refTable, &fromCol, &toCol, &onUpdate, &onDelete, &match)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:346
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:388
 		if err_23 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:346
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:388
 			return []ForeignKey{}, err_23
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:356
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:398
 		fks = append(fks, ForeignKey{ID: id, Seq: seq, Table: refTable, From: fromCol, To: toCol.String, OnUpdate: onUpdate, OnDelete: onDelete})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:365
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:365
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:407
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:407
 	err_24 := fkRows.Err()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:365
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:407
 	if err_24 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:365
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:407
 		return []ForeignKey{}, err_24
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:366
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:408
 	return fks, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:376
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:418
 func AddNotNull(pool db.Pool, table string, column string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:377
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:419
 	if !isValidPragmaName(table) || !isValidPragmaName(column) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:378
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:420
 		return goerrors.New("sqlite.AddNotNull: invalid table or column name")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:379
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:421
 	db.RawDB(pool).Exec(fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v SET NOT NULL", db.QuoteIdentifier(table), db.QuoteIdentifier(column)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:382
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:424
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:388
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:430
 func DropNotNull(pool db.Pool, table string, column string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:389
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:431
 	if !isValidPragmaName(table) || !isValidPragmaName(column) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:390
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:432
 		return goerrors.New("sqlite.DropNotNull: invalid table or column name")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:391
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:433
 	db.RawDB(pool).Exec(fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v DROP NOT NULL", db.QuoteIdentifier(table), db.QuoteIdentifier(column)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:394
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:436
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:401
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:443
 func AddCheck(pool db.Pool, table string, expr string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:402
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:444
 	if !isValidPragmaName(table) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:403
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:445
 		return goerrors.New("sqlite.AddCheck: invalid table name")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:404
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:446
 	if len(expr) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:405
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:447
 		return goerrors.New("sqlite.AddCheck: empty check expression")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:406
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:448
 	db.RawDB(pool).Exec(fmt.Sprintf("ALTER TABLE %v ADD CHECK (%v)", db.QuoteIdentifier(table), expr))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:407
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:449
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:415
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:457
 func DropCheck(pool db.Pool, table string, constraintName string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:416
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:458
 	if !isValidPragmaName(table) || !isValidPragmaName(constraintName) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:417
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:459
 		return goerrors.New("sqlite.DropCheck: invalid table or constraint name")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:418
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:460
 	db.RawDB(pool).Exec(fmt.Sprintf("ALTER TABLE %v DROP CONSTRAINT %v", db.QuoteIdentifier(table), constraintName))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:419
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:461
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:425
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:467
 func ReindexExpressions(pool db.Pool) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:426
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:468
 	db.Exec(pool, "REINDEX EXPRESSIONS")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:427
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:469
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:433
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:475
 func DropIndex(pool db.Pool, name string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:434
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:476
 	return DropIndexWithIgnore(pool, name, false)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:440
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:482
 func DropIndexWithIgnore(pool db.Pool, name string, ignore bool) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:441
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:483
 	if !isValidPragmaName(name) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:442
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:484
 		return fmt.Errorf("sqlite.DropIndex: invalid index name: %v", name)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:443
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:485
 	if ignore {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:444
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:486
 		exists, err_25 := db.Exists(pool, "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?", name)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:444
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:486
 		if err_25 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:444
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:486
 			return err_25
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:445
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:487
 		if !exists {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:446
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:488
 			return nil
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:447
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:489
 	_, err := db.RawDB(pool).Exec(fmt.Sprintf("DROP INDEX %v", db.QuoteIdentifier(name)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:448
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:490
 	return err
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:466
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:508
 func BatchExec(pool db.Pool, query string, rows [][]any) (int64, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:467
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:509
 	total := int64(0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:468
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:510
 	err := db.Transaction(pool, func(tx db.Tx) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:469
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:511
 		errs := []error{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:470
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:512
 		for _, row := range rows {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:471
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:513
 			n, rowErr := db.TxExec(tx, query, row...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:472
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:514
 			if rowErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:473
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:515
 				errs = append(errs, rowErr)
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:475
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:517
 				total = total + n
 			}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:476
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:518
 		return goerrors.Join(errs...)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:479
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:521
 	return total, err
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:496
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:538
 func CreateFunction(pool db.Pool, name string, nArgs int, fn func([]string) string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:497
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:539
 	return registerScalarFunction(pool, name, nArgs, makeScalarFunc(fn))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:508
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:550
 func CreateFunctionFloat(pool db.Pool, name string, nArgs int, fn func([]string) float64) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:509
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:551
 	return registerScalarFunction(pool, name, nArgs, makeScalarFuncFloat(fn))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:518
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:560
 func CreateFunctionInt(pool db.Pool, name string, nArgs int, fn func([]string) int64) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:519
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:561
 	return registerScalarFunction(pool, name, nArgs, makeScalarFuncInt(fn))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:533
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:575
 func CreateFunctionBool(pool db.Pool, name string, nArgs int, fn func([]string) bool) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:534
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:576
 	return registerScalarFunction(pool, name, nArgs, makeScalarFuncBool(fn))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:548
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:590
 func CreateBlobFunction(pool db.Pool, name string, nArgs int, fn func([][]byte) []byte) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:549
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:591
 	return registerScalarFunction(pool, name, nArgs, makeScalarFuncBlob(fn))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:560
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:602
 func CreateBlobFunctionFloat(pool db.Pool, name string, nArgs int, fn func([][]byte) float64) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:561
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:603
 	return registerScalarFunction(pool, name, nArgs, makeScalarFuncBlobFloat(fn))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:566
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:608
 func registerScalarFunction(pool db.Pool, name string, nArgs int, sfn sqlite3.ScalarFunction) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:567
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:609
 	rawDB := db.RawDB(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:568
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:610
 	rawDB.SetMaxOpenConns(1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:569
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:611
 	sqlConn, err_26 := rawDB.Conn(context.Background())
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:569
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:611
 	if err_26 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:569
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:611
 		return err_26
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:570
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:612
 	defer sqlConn.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:571
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:613
 	return sqlConn.Raw(makeRegisterFuncCallback(name, nArgs, sfn))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:573
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:615
 func makeScalarFunc(fn func([]string) string) sqlite3.ScalarFunction {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:574
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:616
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:575
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:617
 		strArgs := make([]string, len(args))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:576
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:618
 		for i, arg := range args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:577
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:619
 			strArgs[i] = arg.Text()
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:578
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:620
 		ctx.ResultText(fn(strArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:580
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:622
 func makeScalarFuncFloat(fn func([]string) float64) sqlite3.ScalarFunction {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:581
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:623
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:582
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:624
 		strArgs := make([]string, len(args))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:583
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:625
 		for i, arg := range args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:584
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:626
 			strArgs[i] = arg.Text()
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:585
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:627
 		ctx.ResultFloat(fn(strArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:587
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:629
 func makeScalarFuncInt(fn func([]string) int64) sqlite3.ScalarFunction {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:588
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:630
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:589
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:631
 		strArgs := make([]string, len(args))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:590
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:632
 		for i, arg := range args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:591
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:633
 			strArgs[i] = arg.Text()
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:592
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:634
 		ctx.ResultInt64(fn(strArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:594
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:636
 func makeScalarFuncBool(fn func([]string) bool) sqlite3.ScalarFunction {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:595
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:637
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:596
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:638
 		strArgs := make([]string, len(args))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:597
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:639
 		for i, arg := range args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:598
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:640
 			strArgs[i] = arg.Text()
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:599
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:641
 		ctx.ResultBool(fn(strArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:601
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:643
 func makeScalarFuncBlob(fn func([][]byte) []byte) sqlite3.ScalarFunction {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:602
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:644
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:603
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:645
 		blobArgs := make([][]byte, len(args))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:604
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:646
 		for i, arg := range args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:605
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:647
 			blobArgs[i] = arg.Blob(nil)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:606
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:648
 		ctx.ResultBlob(fn(blobArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:608
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:650
 func makeScalarFuncBlobFloat(fn func([][]byte) float64) sqlite3.ScalarFunction {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:609
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:651
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:610
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:652
 		blobArgs := make([][]byte, len(args))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:611
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:653
 		for i, arg := range args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:612
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:654
 			blobArgs[i] = arg.Blob(nil)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:613
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:655
 		ctx.ResultFloat(fn(blobArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:623
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:665
 func Dump(pool db.Pool) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:624
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:666
 	rawDB := db.RawDB(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:625
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:667
 	b := strings.Builder{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:628
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:670
 	schemaRows, err_27 := rawDB.Query("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL ORDER BY CASE type WHEN 'table' THEN 1 WHEN 'view' THEN 2 WHEN 'index' THEN 3 WHEN 'trigger' THEN 4 END")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:628
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:670
 	if err_27 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:628
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:670
 		return "", err_27
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:631
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:673
 	defer schemaRows.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:632
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:674
 	for schemaRows.Next() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:633
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:675
 		sqlText := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:634
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:634
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:676
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:676
 		err_28 := schemaRows.Scan(&sqlText)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:634
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:676
 		if err_28 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:634
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:676
 			return "", err_28
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:635
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:677
 		b.WriteString(sqlText)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:636
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:678
 		b.WriteString(";\n")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:637
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:637
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:679
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:679
 	err_29 := schemaRows.Err()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:637
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:679
 	if err_29 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:637
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:679
 		return "", err_29
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:640
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:682
 	tables, err_30 := Tables(pool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:640
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:682
 	if err_30 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:640
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:682
 		return "", err_30
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:641
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:683
 	for _, table := range tables {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:642
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:642
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:684
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:684
 		err_31 := dumpTable(rawDB, &b, table)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:642
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:684
 		if err_31 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:642
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:684
 			return "", err_31
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:644
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:686
 	return b.String(), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:646
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:688
 func dumpTable(rawDB *sql.DB, b *strings.Builder, table string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:647
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:689
 	dataRows, err_32 := rawDB.Query(fmt.Sprintf("SELECT * FROM %v", db.QuoteIdentifier(table)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:647
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:689
 	if err_32 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:647
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:689
 		return err_32
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:648
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:690
 	defer dataRows.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:649
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:691
 	columns, err_33 := dataRows.Columns()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:649
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:691
 	if err_33 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:649
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:691
 		return err_33
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:651
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:693
 	for dataRows.Next() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:652
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:694
 		values := make([]any, len(columns))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:653
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:695
 		ptrs := make([]any, len(columns))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:654
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:696
 		for i := range len(values) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:655
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:697
 			ptrs[i] = &values[i]
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:656
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:656
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:698
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:698
 		err_34 := dataRows.Scan(ptrs...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:656
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:698
 		if err_34 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:656
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:698
 			return err_34
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:658
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:700
 		b.WriteString(fmt.Sprintf("INSERT INTO %v VALUES(", db.QuoteIdentifier(table)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:659
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:701
 		for i, v := range values {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:660
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:702
 			if i > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:661
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:703
 				b.WriteString(", ")
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:662
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:704
 			b.WriteString(formatSQLValue(v))
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:663
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:705
 		b.WriteString(");\n")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:664
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:706
 	return dataRows.Err()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:671
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:713
 type rawConnector interface {
 	Raw() *sqlite3.Conn
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:674
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:716
 func makeBackupFunc(destPath string) func(any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:675
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:717
 	return func(driverConn any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:676
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:718
 		if rawer, _isOk := driverConn.(rawConnector); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:677
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:719
 			return rawer.Raw().Backup("main", "file:"+destPath)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:678
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:720
 		return goerrors.New("sqlite.Backup: driver does not support raw connection access")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:680
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:722
 func makeRegisterFuncCallback(name string, nArgs int, sfn sqlite3.ScalarFunction) func(any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:681
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:723
 	return func(driverConn any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:682
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:724
 		if rawer, _isOk := driverConn.(rawConnector); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:683
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:725
 			conn := rawer.Raw()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:684
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:726
 			return conn.CreateFunction(name, nArgs, sqlite3.DETERMINISTIC, sfn)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:685
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:727
 		return goerrors.New("sqlite.CreateFunction: driver does not support raw connection access")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:690
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:732
 const underscoreRune = rune(95)
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:692
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:734
 const minusByte = byte(45)
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:695
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:737
 func isValidPragmaName(name string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:696
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:738
 	if len(name) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:697
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:739
 		return false
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:698
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:740
 	for _, r := range name {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:699
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:741
 		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != underscoreRune {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:700
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:742
 			return false
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:701
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:743
 	return true
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:705
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:747
 func isValidPragmaValue(value string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:706
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:748
 	if len(value) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:707
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:749
 		return false
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:708
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:750
 	v := value
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:709
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:751
 	if v[0] == minusByte {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:710
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:752
 		v = v[1:]
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:711
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:753
 		if len(v) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:712
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:754
 			return false
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:713
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:755
 	for _, r := range v {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:714
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:756
 		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != underscoreRune {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:715
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:757
 			return false
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:716
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:758
 	return true
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:719
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:761
 func formatSQLValue(v any) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:720
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:762
 	if v == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:721
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:763
 		return "NULL"
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:722
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:764
 	if i, _isOk := v.(int64); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:723
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:765
 		return fmt.Sprintf("%v", i)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:724
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:766
 	if f, _isOk := v.(float64); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:725
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:767
 		return cast.SmartString(f)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:726
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:768
 	if b, _isOk := v.(bool); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:727
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:769
 		return func() string {
 			if b {
 				return "1"
@@ -1078,8 +1092,8 @@ func formatSQLValue(v any) string {
 			}
 		}()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:729
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:771
 	s := fmt.Sprintf("%v", v)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:730
+//line /var/home/tluker/repos/go/kukicha/stdlib/sqlite/sqlite.kuki:772
 	return "'" + strpkg.ReplaceAll(s, "'", "''") + "'"
 }

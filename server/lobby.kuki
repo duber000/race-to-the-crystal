@@ -10,7 +10,7 @@ const MAX_PLAYER_NAME_LENGTH = 30
 
 const ALLOWED_NAME_PATTERN = `^[a-zA-Z0-9_\- \.]+$`
 
-var NAME_REGEX = regex.MustCompile(ALLOWED_NAME_PATTERN)
+var NAME_REGEX = regex.MustCompile(`^[a-zA-Z0-9_\- \.]+$`)
 
 enum ClientType: string
     HUMAN = "HUMAN"

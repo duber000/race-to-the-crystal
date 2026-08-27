@@ -427,6 +427,9 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
             return
 
     raw := resp.Raw()
+    if raw is empty
+        log.Error("SSE raw empty")
+        return
     defer raw.Body.Close()
     body := raw.Body
     scanner := bufio.NewScanner(body)
