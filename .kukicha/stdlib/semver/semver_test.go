@@ -195,6 +195,37 @@ func TestCompare(t *testing.T) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:156
+func TestEqual(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:157
+	a, err_5 := semver.Parse("v1.2.3")
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:157
+	if err_5 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:157
+		panic(fmt.Sprintf("%v", err_5))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:158
+	same, err_6 := semver.Parse("1.2.3")
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:158
+	if err_6 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:158
+		panic(fmt.Sprintf("%v", err_6))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:159
+	other, err_7 := semver.Parse("v1.2.4")
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:159
+	if err_7 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:159
+		panic(fmt.Sprintf("%v", err_7))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:160
+	test.AssertTrue(t, semver.Equal(a, same))
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:161
+	test.AssertTrue(t, semver.Equal(a, a))
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:162
+	test.AssertFalse(t, semver.Equal(a, other))
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:165
 type HighestCase struct {
 	name    string
 	tags    []string
@@ -202,24 +233,24 @@ type HighestCase struct {
 	wantErr bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:162
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:171
 func TestHighest(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:172
 	cases := []HighestCase{HighestCase{name: "mixed tags", tags: []string{"v1.0.0", "v2.1.0", "v1.5.3"}, want: "v2.1.0", wantErr: false}, HighestCase{name: "single tag", tags: []string{"v1.0.0"}, want: "v1.0.0", wantErr: false}, HighestCase{name: "with invalid", tags: []string{"v1.0.0", "not-semver", "v2.0.0"}, want: "v2.0.0", wantErr: false}, HighestCase{name: "no valid tags", tags: []string{"abc", "def"}, want: "", wantErr: true}, HighestCase{name: "empty list", tags: []string{}, want: "", wantErr: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:200
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:201
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:193
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:202
 			got, err := semver.Highest(tc.tags)
-//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:194
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:203
 			if tc.wantErr {
-//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:204
 				test.AssertError(t, err)
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:206
 				test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/semver/semver_test.kuki:207
 				test.AssertEqual(t, got, tc.want)
 			}
 		})

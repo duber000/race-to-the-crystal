@@ -72,25 +72,25 @@ type Command struct {
 	RestArgName   string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:63
-func (cmd *Command) Flag(name string, desc string, defaultValue string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:64
+func (cmd *Command) Flag(name string, desc string, defaultValue string) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:65
 	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:73
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:75
-func (cmd *Command) StringFlag(name string, desc string, defaultValue string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:76
+func (cmd *Command) StringFlag(name string, desc string, defaultValue string) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:77
 	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:85
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:88
-func (cmd *Command) BoolFlag(name string, desc string, defaultValue bool) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:89
+func (cmd *Command) BoolFlag(name string, desc string, defaultValue bool) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:90
 	dv := func() string {
 		if defaultValue {
 			return "true"
@@ -98,161 +98,161 @@ func (cmd *Command) BoolFlag(name string, desc string, defaultValue bool) *Comma
 			return "false"
 		}
 	}()
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:91
 	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: dv, Required: false, Kind: FlagKindBool, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:99
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:102
-func (cmd *Command) IntFlag(name string, desc string, defaultValue int) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:103
+func (cmd *Command) IntFlag(name string, desc string, defaultValue int) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:104
 	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: fmt.Sprintf("%v", defaultValue), Required: false, Kind: FlagKindInt, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:112
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:117
-func (cmd *Command) Short(alias string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:118
-	if len(cmd.Flags) == 0 {
+func (cmd *Command) Short(alias string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:119
+	if len(cmd.Flags) == 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:120
 		panic(fmt.Sprintf("cli.Short(%v): no flag to attach alias to — call Short after a Flag/StringFlag/BoolFlag/IntFlag/RequiredFlag in the builder chain", alias))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:120
-	last := len(cmd.Flags) - 1
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:121
-	cmd.Flags[last].Aliases = append(cmd.Flags[last].Aliases, alias)
+	last := len(cmd.Flags) - 1
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:122
+	cmd.Flags[last].Aliases = append(cmd.Flags[last].Aliases, alias)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:123
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:125
-func (cmd *Command) RequiredFlag(name string, desc string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:126
+func (cmd *Command) RequiredFlag(name string, desc string) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:127
 	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: "", Required: true, Kind: FlagKindString, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:134
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:135
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:138
-func (cmd *Command) Arg(name string, description string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:139
-	cmd.Args = append(cmd.Args, ArgDef{Name: name, Description: description, Required: false})
+func (cmd *Command) Arg(name string, description string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:140
+	cmd.Args = append(cmd.Args, ArgDef{Name: name, Description: description, Required: false})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:141
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:143
-func (cmd *Command) RequiredArg(name string, description string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:144
-	cmd.Args = append(cmd.Args, ArgDef{Name: name, Description: description, Required: true})
+func (cmd *Command) RequiredArg(name string, description string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:145
+	cmd.Args = append(cmd.Args, ArgDef{Name: name, Description: description, Required: true})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:146
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:150
-func (cmd *Command) RestArg(name string, description string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:151
-	cmd.RestArgName = name
+func (cmd *Command) RestArg(name string, description string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:152
+	cmd.RestArgName = name
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:153
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:156
-func (cmd *Command) Action(handler func(Args)) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:157
-	cmd.ActionFunc = handler
+func (cmd *Command) Action(handler func(Args)) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:158
+	cmd.ActionFunc = handler
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:159
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:162
-func (cmd *Command) WithCommands(subs ...*Command) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:163
-	for _, s := range subs {
+func (cmd *Command) WithCommands(subs ...*Command) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:164
+	for _, s := range subs {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:165
 		cmd.Subcommands = append(cmd.Subcommands, s)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:166
 	return cmd
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:174
-func NewCommand(name string, desc string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:175
+func NewCommand(name string, desc string) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:176
 	return &Command{Name: name, Description: desc, Args: make([]ArgDef, 0), Flags: make([]FlagDef, 0), Subcommands: make([]*Command, 0), ActionFunc: nil, RestArgName: ""}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:187
 type Args struct {
 	values map[string]string
 	rest   map[string][]string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:192
-func NewArgs(values map[string]string) Args {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:193
+func NewArgs(values map[string]string) Args {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:194
 	return Args{values: values, rest: map[string][]string{}}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:199
-func New(name string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:200
+func New(name string) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:201
 	return &Command{Name: name, Args: make([]ArgDef, 0), Flags: make([]FlagDef, 0), GlobalFlags: make([]FlagDef, 0), Subcommands: make([]*Command, 0), ActionFunc: nil, RestArgName: ""}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:212
-func Version(app *Command, version string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:213
-	app.Version = version
+func Version(app *Command, version string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:214
+	app.Version = version
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:215
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:218
-func Description(app *Command, desc string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:219
-	app.Description = desc
+func Description(app *Command, desc string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:220
+	app.Description = desc
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:221
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:224
-func Arg(app *Command, name string, description string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:225
-	app.Args = append(app.Args, ArgDef{Name: name, Description: description, Required: false})
+func Arg(app *Command, name string, description string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:226
+	app.Args = append(app.Args, ArgDef{Name: name, Description: description, Required: false})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:227
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:229
-func RequiredArg(app *Command, name string, description string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:230
-	app.Args = append(app.Args, ArgDef{Name: name, Description: description, Required: true})
+func RequiredArg(app *Command, name string, description string) *Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:231
+	app.Args = append(app.Args, ArgDef{Name: name, Description: description, Required: true})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:232
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:237
 func Flag(app *Command, name string, description string, defaultValue string) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:236
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:238
 	app.Flags = append(app.Flags, FlagDef{Name: name, Description: description, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:244
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:246
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:248
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:250
 func StringFlag(app *Command, name string, desc string, defaultValue string) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:249
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:251
 	app.Flags = append(app.Flags, FlagDef{Name: name, Description: desc, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:257
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:259
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:261
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:263
 func BoolFlag(app *Command, name string, desc string, defaultValue bool) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:262
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:264
 	dv := func() string {
 		if defaultValue {
 			return "true"
@@ -260,89 +260,89 @@ func BoolFlag(app *Command, name string, desc string, defaultValue bool) *Comman
 			return "false"
 		}
 	}()
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:263
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:265
 	app.Flags = append(app.Flags, FlagDef{Name: name, Description: desc, DefaultValue: dv, Required: false, Kind: FlagKindBool, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:271
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:273
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:275
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:277
 func IntFlag(app *Command, name string, desc string, defaultValue int) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:276
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:278
 	app.Flags = append(app.Flags, FlagDef{Name: name, Description: desc, DefaultValue: fmt.Sprintf("%v", defaultValue), Required: false, Kind: FlagKindInt, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:284
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:286
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:290
-func Short(app *Command, alias string) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:291
-	if len(app.Flags) == 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:292
+func Short(app *Command, alias string) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:293
+	if len(app.Flags) == 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:294
 		panic(fmt.Sprintf("cli.Short(%v): no flag to attach alias to — call Short after a Flag/StringFlag/BoolFlag/IntFlag/RequiredFlag in the builder chain", alias))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:293
-	last := len(app.Flags) - 1
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:294
-	app.Flags[last].Aliases = append(app.Flags[last].Aliases, alias)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:295
+	last := len(app.Flags) - 1
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:296
+	app.Flags[last].Aliases = append(app.Flags[last].Aliases, alias)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:297
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:300
-func RestArg(app *Command, name string, description string) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:301
-	app.RestArgName = name
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:302
+func RestArg(app *Command, name string, description string) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:303
+	app.RestArgName = name
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:304
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:305
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:307
 func RequiredFlag(app *Command, name string, description string) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:306
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:308
 	app.Flags = append(app.Flags, FlagDef{Name: name, Description: description, DefaultValue: "", Required: true, Kind: FlagKindString, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:314
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:316
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:318
-func Action(app *Command, handler func(Args)) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:319
-	app.ActionFunc = handler
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:320
+func Action(app *Command, handler func(Args)) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:321
+	app.ActionFunc = handler
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:322
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:323
-func DefaultAction(app *Command, handler func(Args)) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:324
-	app.DefaultAction = handler
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:325
+func DefaultAction(app *Command, handler func(Args)) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:326
+	app.DefaultAction = handler
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:327
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:335
-func WithCommands(app *Command, cmds ...*Command) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:336
-	for _, c := range cmds {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:337
+func WithCommands(app *Command, cmds ...*Command) *Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:338
+	for _, c := range cmds {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:339
 		app.Subcommands = append(app.Subcommands, c)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:338
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:340
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:342
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:344
 func GlobalFlag(app *Command, name string, desc string, defaultValue string) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:343
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:345
 	app.GlobalFlags = append(app.GlobalFlags, FlagDef{Name: name, Description: desc, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:351
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:353
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:355
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:357
 func BoolGlobalFlag(app *Command, name string, desc string, defaultValue bool) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:356
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:358
 	dv := func() string {
 		if defaultValue {
 			return "true"
@@ -350,39 +350,39 @@ func BoolGlobalFlag(app *Command, name string, desc string, defaultValue bool) *
 			return "false"
 		}
 	}()
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:357
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:359
 	app.GlobalFlags = append(app.GlobalFlags, FlagDef{Name: name, Description: desc, DefaultValue: dv, Required: false, Kind: FlagKindBool, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:365
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:367
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:369
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:371
 func IntGlobalFlag(app *Command, name string, desc string, defaultValue int) *Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:370
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:372
 	app.GlobalFlags = append(app.GlobalFlags, FlagDef{Name: name, Description: desc, DefaultValue: fmt.Sprintf("%v", defaultValue), Required: false, Kind: FlagKindInt, Aliases: make([]string, 0)})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:378
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:380
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:381
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:383
 func RunApp(app *Command) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:382
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:384
 	return Run(app)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:385
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:387
 func Error(msg string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:386
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:388
 	fmt.Fprintln(os.Stderr, msg)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:389
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:391
 func Run(app *Command) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:390
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:392
 	return RunWithArgs(app, os.Args)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:396
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:398
 type ParseResult interface{ isParseResult() }
 
 type Execute struct {
@@ -410,1119 +410,1146 @@ type Invalid struct {
 
 func (Invalid) isParseResult() {}
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:416
-func Parse(app *Command, args []string) ParseResult {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:417
-	if len(args) < 2 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:418
-		values := defaultValues(app, nil)
+func Parse(app *Command, args []string) ParseResult {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:419
+	if len(args) < 2 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:420
+		values := defaultValues(app, nil)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:421
 		rootArgs := Args{values: values, rest: map[string][]string{}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:423
-		for _, f := range app.Flags {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:424
-			if f.Required && values[f.Name] == "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:425
+		for _, f := range app.Flags {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:426
+			if f.Required && values[f.Name] == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:427
 				return Invalid{Reason: fmt.Sprintf("flag --%v is required", f.Name)}
 			}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:426
-		for _, a := range app.Args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:427
-			if a.Required && values[a.Name] == "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:428
+		for _, a := range app.Args {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:429
+			if a.Required && values[a.Name] == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:430
 				return Invalid{Reason: fmt.Sprintf("argument %v is required", a.Name)}
 			}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:429
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:431
 		if app.ActionFunc != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:430
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:432
 			return Execute{Handler: app.ActionFunc, Args: rootArgs}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:431
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:433
 		if app.DefaultAction != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:432
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:434
 			return Execute{Handler: app.DefaultAction, Args: rootArgs}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:433
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:435
 		return ShowHelp{Cmd: app, Path: []string{}, Root: true}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:435
-	subIndex := skipGlobalFlags(app, args, 1)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:437
-	if subIndex < len(args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:438
-		sub := args[subIndex]
+	subIndex := skipGlobalFlags(app, args, 1)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:439
-		if sub == "--version" || sub == "-v" {
+	if subIndex < len(args) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:440
+		sub := args[subIndex]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:441
+		if sub == "--version" || sub == "-v" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:442
 			return ShowVersion{}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:441
-		if sub == "help" || sub == "-h" || sub == "--help" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:442
-			helpLeaf, helpLeafArgStart := findLeaf(app, args, subIndex+1)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:443
-			if helpLeaf != nil {
+		if sub == "help" || sub == "-h" || sub == "--help" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:444
+			helpLeaf, helpLeafArgStart := findLeaf(app, args, subIndex+1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:445
+			if helpLeaf != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:446
 				return ShowHelp{Cmd: helpLeaf, Path: args[subIndex+1 : helpLeafArgStart], Root: false}
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:445
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:447
 			return ShowHelp{Cmd: app, Path: []string{}, Root: true}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:448
-		leaf, leafArgStart := findLeaf(app, args, subIndex)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:449
-		if leaf != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:450
+		leaf, leafArgStart := findLeaf(app, args, subIndex)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:451
+		if leaf != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:452
 			return parseLeaf(app, leaf, args, 1, subIndex, leafArgStart)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:454
-	rootAction := app.DefaultAction
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:455
-	if rootAction == nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:456
+	rootAction := app.DefaultAction
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:457
+	if rootAction == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:458
 		rootAction = app.ActionFunc
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:457
-	values := defaultValues(app, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:458
-	positionalNames := []string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:459
-	for _, a := range app.Args {
+	values := defaultValues(app, nil)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:460
+	positionalNames := []string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:461
+	for _, a := range app.Args {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:462
 		positionalNames = append(positionalNames, a.Name)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:461
-	allFlagDefs := []FlagDef{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:462
-	allFlagDefs = append(allFlagDefs, app.GlobalFlags...)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:463
-	allFlagDefs = append(allFlagDefs, app.Flags...)
+	allFlagDefs := []FlagDef{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:464
-	restMap := map[string][]string{}
+	allFlagDefs = append(allFlagDefs, app.GlobalFlags...)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:465
+	allFlagDefs = append(allFlagDefs, app.Flags...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:466
+	restMap := map[string][]string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:467
 	rootUnknown := parseFlagsAndPositionals(args, 1, values, restMap, positionalNames, allFlagDefs, app.RestArgName)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:474
-	if len(rootUnknown) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:475
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:476
+	if len(rootUnknown) != 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:477
 		return Invalid{Reason: fmt.Sprintf("unknown flag: --%v", rootUnknown[0])}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:478
-	if //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:478
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:480
+	if //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:480
 	bad := validateTypedValues(values, allFlagDefs); bad != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:479
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:481
 		return Invalid{Reason: fmt.Sprintf("flag --%v has an invalid value", bad)}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:481
-	for _, f := range app.Flags {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:482
-		if f.Required && values[f.Name] == "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:483
+	for _, f := range app.Flags {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:484
+		if f.Required && values[f.Name] == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:485
 			return Invalid{Reason: fmt.Sprintf("flag --%v is required", f.Name)}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:484
-	for _, a := range app.Args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:485
-		if a.Required && values[a.Name] == "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:486
+	for _, a := range app.Args {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:487
+		if a.Required && values[a.Name] == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:488
 			return Invalid{Reason: fmt.Sprintf("argument %v is required", a.Name)}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:487
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:489
 	if rootAction != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:488
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:490
 		return Execute{Handler: rootAction, Args: Args{values: values, rest: restMap}}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:490
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:492
 	return ShowHelp{Cmd: app, Path: []string{}, Root: true}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:494
-func RunWithArgs(app *Command, args []string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:495
-	outcome := Parse(app, args)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:496
+func RunWithArgs(app *Command, args []string) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:497
+	outcome := Parse(app, args)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:498
 	switch oc := outcome.(type) {
 	case Execute:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:498
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:500
 		oc.Handler(oc.Args)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:499
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:501
 		return nil
 	case ShowHelp:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:501
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:503
 		if oc.Root {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:502
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:504
 			printHelp(app)
 		} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:504
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:506
 			printLeafHelp(app, oc.Cmd, oc.Path)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:505
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:507
 		return nil
 	case ShowVersion:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:507
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:509
 		if app.Version != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:508
-			fmt.Println(fmt.Sprintf("%v %v", app.Name, app.Version))
-		} else {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:510
+			fmt.Printf("%v %v\n", app.Name, app.Version)
+		} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:512
 			fmt.Println(app.Name)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:511
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:513
 		return nil
 	case Invalid:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:513
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:515
 		return errors.New(oc.Reason)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:515
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:517
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:518
-func defaultValues(app *Command, leaf *Command) map[string]string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:519
-	values := map[string]string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:520
-	for _, f := range app.GlobalFlags {
+func defaultValues(app *Command, leaf *Command) map[string]string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:521
+	values := map[string]string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:522
+	for _, f := range app.GlobalFlags {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:523
 		values[f.Name] = f.DefaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:522
-	if leaf == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:523
-		for _, f := range app.Flags {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:524
+	if leaf == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:525
+		for _, f := range app.Flags {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:526
 			values[f.Name] = f.DefaultValue
 		}
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:526
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:528
 		for _, f := range leaf.Flags {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:527
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:529
 			values[f.Name] = f.DefaultValue
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:528
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:530
 	return values
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:539
-func parseFlagsAndPositionals(args []string, start int, values map[string]string, rest map[string][]string, positionalNames []string, flagDefs []FlagDef, restArgName string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:540
-	aliasMap := map[string]string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:541
-	kindMap := map[string]FlagKind{}
+func parseFlagsAndPositionals(args []string, start int, values map[string]string, rest map[string][]string, positionalNames []string, flagDefs []FlagDef, restArgName string) []string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:542
-	known := map[string]bool{}
+	aliasMap := map[string]string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:543
-	for _, f := range flagDefs {
+	kindMap := map[string]FlagKind{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:544
-		known[f.Name] = true
+	known := map[string]bool{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:545
-		kindMap[f.Name] = f.Kind
+	for _, f := range flagDefs {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:546
-		for _, a := range f.Aliases {
+		known[f.Name] = true
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:547
-			aliasMap[a] = f.Name
+		kindMap[f.Name] = f.Kind
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:548
+		for _, a := range f.Aliases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:549
+			aliasMap[a] = f.Name
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:550
 			known[a] = true
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:550
-	unknown := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:551
-	posIndex := 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:552
-	i := start
+	unknown := []string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:553
-	for i < len(args) {
+	posIndex := 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:554
-		arg := args[i]
+	i := start
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:555
-		if kukistring.HasPrefix(arg, "-") && kukistring.Contains(arg, "=") {
+	for i < len(args) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:556
+		arg := args[i]
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:557
-			parts := kukistring.SplitN(arg, "=", 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:558
-			rawName := kukistring.TrimPrefix(parts[0], "--")
+		if kukistring.HasPrefix(arg, "-") && kukistring.Contains(arg, "=") {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:559
-			rawName = kukistring.TrimPrefix(rawName, "-")
+			parts := kukistring.SplitN(arg, "=", 2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:560
-			canonical := func() string {
-				if aliasMap[rawName] != "" {
-					return aliasMap[rawName]
-				} else {
-					return rawName
-				}
-			}()
+			rawName := kukistring.TrimPrefix(parts[0], "--")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:561
-			if !known[canonical] {
+			rawName = kukistring.TrimPrefix(rawName, "-")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:562
+			canonical := kukistring.Or(aliasMap[rawName], rawName)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:563
+			if !known[canonical] {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:564
 				unknown = append(unknown, canonical)
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:563
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:565
 			values[canonical] = parts[1]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:564
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:566
 			i = i + 1
 		} else if kukistring.HasPrefix(arg, "--") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:566
-			name := kukistring.TrimPrefix(arg, "--")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:567
-			canonical := func() string {
-				if aliasMap[name] != "" {
-					return aliasMap[name]
-				} else {
-					return name
-				}
-			}()
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:568
-			if !known[canonical] {
+			name := kukistring.TrimPrefix(arg, "--")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:569
+			canonical := kukistring.Or(aliasMap[name], name)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:570
+			if !known[canonical] {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:571
 				unknown = append(unknown, canonical)
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:570
-			if kindMap[canonical] == FlagKindBool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:571
-				values[canonical] = "true"
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:572
+			if kindMap[canonical] == FlagKindBool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:573
+				values[canonical] = "true"
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:574
 				i = i + 1
 			} else if kindMap[canonical] != FlagKindString && i+1 < len(args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:574
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:576
 				values[canonical] = args[i+1]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:575
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:577
 				i = i + 2
 			} else if kindMap[canonical] != FlagKindString {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:577
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:579
 				i = i + 1
 			} else if i+1 < len(args) && !kukistring.HasPrefix(args[i+1], "-") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:579
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:581
 				values[canonical] = args[i+1]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:580
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:582
 				i = i + 2
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:582
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:584
 				values[canonical] = "true"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:583
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:585
 				i = i + 1
 			}
 		} else if kukistring.HasPrefix(arg, "-") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:585
-			name := kukistring.TrimPrefix(arg, "-")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:586
-			canonical := func() string {
-				if aliasMap[name] != "" {
-					return aliasMap[name]
-				} else {
-					return name
-				}
-			}()
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:587
-			if !known[canonical] {
+			name := kukistring.TrimPrefix(arg, "-")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:588
+			canonical := kukistring.Or(aliasMap[name], name)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:589
+			if !known[canonical] {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:590
 				unknown = append(unknown, canonical)
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:589
-			if kindMap[canonical] == FlagKindBool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:590
-				values[canonical] = "true"
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:591
+			if kindMap[canonical] == FlagKindBool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:592
+				values[canonical] = "true"
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:593
 				i = i + 1
 			} else if kindMap[canonical] != FlagKindString && i+1 < len(args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:593
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:595
 				values[canonical] = args[i+1]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:594
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:596
 				i = i + 2
 			} else if kindMap[canonical] != FlagKindString {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:596
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:598
 				i = i + 1
 			} else if i+1 < len(args) && !kukistring.HasPrefix(args[i+1], "-") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:598
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:600
 				values[canonical] = args[i+1]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:599
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:601
 				i = i + 2
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:601
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:603
 				values[canonical] = "true"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:602
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:604
 				i = i + 1
 			}
 		} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:604
-			if posIndex < len(positionalNames) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:605
-				values[positionalNames[posIndex]] = arg
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:606
+			if posIndex < len(positionalNames) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:607
+				values[positionalNames[posIndex]] = arg
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:608
 				posIndex = posIndex + 1
 			} else if restArgName != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:608
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:610
 				rest[restArgName] = append(rest[restArgName], arg)
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:609
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:611
 			i = i + 1
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:610
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:612
 	return unknown
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:616
-func validateTypedValues(values map[string]string, flagDefs []FlagDef) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:617
-	for _, f := range flagDefs {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:618
-		v := values[f.Name]
+func validateTypedValues(values map[string]string, flagDefs []FlagDef) string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:619
-		if v == "" {
+	for _, f := range flagDefs {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:620
+		v := values[f.Name]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:621
+		if v == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:622
 			continue
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:621
-		if f.Kind == FlagKindBool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:622
-			lower := kukistring.ToLower(v)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:623
-			if lower == "true" || lower == "false" || lower == "1" || lower == "0" || lower == "yes" || lower == "no" || lower == "on" || lower == "off" {
+		if f.Kind == FlagKindBool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:624
+			lower := kukistring.ToLower(v)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:625
+			if lower == "true" || lower == "false" || lower == "1" || lower == "0" || lower == "yes" || lower == "no" || lower == "on" || lower == "off" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:626
 				continue
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:625
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:627
 			return f.Name
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:626
-		if f.Kind == FlagKindInt {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:627
-			_, err := strconv.Atoi(v)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:628
-			if err != nil {
+		if f.Kind == FlagKindInt {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:629
+			_, err := strconv.Atoi(v)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:630
+			if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:631
 				return f.Name
 			}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:630
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:632
 	return ""
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:637
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:639
 func parseLeaf(app *Command, leaf *Command, args []string, leadingStart int, subIndex int, leafArgStart int) ParseResult {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:640
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:642
 	{
 		_iStart, _iEnd := leafArgStart, len(args)
-		_iStep := _iStart - _iStart + 1
+		_iStep := _iStart + 1 - _iStart
 		if _iStart > _iEnd {
 			_iStep = -_iStep
 		}
 		for i := _iStart; i != _iEnd; i += _iStep {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:641
-			a := args[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:642
-			if a == "--help" || a == "-h" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:643
+			a := args[i]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:644
+			if a == "--help" || a == "-h" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:645
 				return ShowHelp{Cmd: leaf, Path: args[subIndex:leafArgStart], Root: false}
 			}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:645
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:647
 	values := defaultValues(app, leaf)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:651
-	if subIndex > leadingStart {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:652
-		headSlice := []string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:653
-		headSlice = append(headSlice, args[0])
+	if subIndex > leadingStart {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:654
-		headSlice = append(headSlice, args[leadingStart:subIndex]...)
+		headSlice := []string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:655
-		globalFlagDefs := []FlagDef{}
+		headSlice = append(headSlice, args[0])
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:656
-		globalFlagDefs = append(globalFlagDefs, app.GlobalFlags...)
+		headSlice = append(headSlice, args[leadingStart:subIndex]...)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:657
-		emptyRestMap := map[string][]string{}
+		globalFlagDefs := []FlagDef{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:658
+		globalFlagDefs = append(globalFlagDefs, app.GlobalFlags...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:659
+		emptyRestMap := map[string][]string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:660
 		leadingUnknown := parseFlagsAndPositionals(headSlice, 1, values, emptyRestMap, []string{}, globalFlagDefs, "")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:667
-		if len(leadingUnknown) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:668
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:669
+		if len(leadingUnknown) != 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:670
 			return Invalid{Reason: fmt.Sprintf("unknown flag: --%v", leadingUnknown[0])}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:670
-	positionalNames := make([]string, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:671
-	for _, a := range leaf.Args {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:672
+	positionalNames := make([]string, 0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:673
+	for _, a := range leaf.Args {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:674
 		positionalNames = append(positionalNames, a.Name)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:673
-	allFlagDefs := []FlagDef{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:674
-	allFlagDefs = append(allFlagDefs, app.GlobalFlags...)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:675
-	allFlagDefs = append(allFlagDefs, leaf.Flags...)
+	allFlagDefs := []FlagDef{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:676
-	restMap := map[string][]string{}
+	allFlagDefs = append(allFlagDefs, app.GlobalFlags...)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:677
+	allFlagDefs = append(allFlagDefs, leaf.Flags...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:678
+	restMap := map[string][]string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:679
 	trailingUnknown := parseFlagsAndPositionals(args, leafArgStart, values, restMap, positionalNames, allFlagDefs, leaf.RestArgName)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:686
-	if len(trailingUnknown) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:687
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:688
+	if len(trailingUnknown) != 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:689
 		return Invalid{Reason: fmt.Sprintf("unknown flag: --%v", trailingUnknown[0])}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:690
-	if //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:690
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:692
+	if //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:692
 	bad := validateTypedValues(values, allFlagDefs); bad != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:691
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:693
 		return Invalid{Reason: fmt.Sprintf("flag --%v has an invalid value", bad)}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:693
-	for _, f := range leaf.Flags {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:694
-		if f.Required && values[f.Name] == "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:695
+	for _, f := range leaf.Flags {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:696
+		if f.Required && values[f.Name] == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:697
 			return Invalid{Reason: fmt.Sprintf("flag --%v is required", f.Name)}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:696
-	for _, a := range leaf.Args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:697
-		if a.Required && values[a.Name] == "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:698
+	for _, a := range leaf.Args {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:699
+		if a.Required && values[a.Name] == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:700
 			return Invalid{Reason: fmt.Sprintf("argument %v is required", a.Name)}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:700
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:702
 	if leaf.ActionFunc == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:701
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:703
 		return Invalid{Reason: fmt.Sprintf("no action defined for command %v", leaf.Name)}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:702
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:704
 	return Execute{Handler: leaf.ActionFunc, Args: Args{values: values, rest: restMap}}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:707
-func findLeaf(app *Command, args []string, subIndex int) (*Command, int) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:708
-	if subIndex >= len(args) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:709
+func findLeaf(app *Command, args []string, subIndex int) (*Command, int) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:710
+	if subIndex >= len(args) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:711
 		return nil, 0
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:710
-	subName := args[subIndex]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:711
-	for _, s := range app.Subcommands {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:712
-		if s.Name == subName {
+	subName := args[subIndex]
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:713
+	for _, s := range app.Subcommands {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:714
+		if s.Name == subName {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:715
 			return matchNested(s, args, subIndex+1)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:714
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:716
 	return nil, 0
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:716
-func matchNested(cmd *Command, args []string, index int) (*Command, int) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:717
-	if index >= len(args) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:718
+func matchNested(cmd *Command, args []string, index int) (*Command, int) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:719
+	if index >= len(args) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:720
 		return cmd, index
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:719
-	nextSub := args[index]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:720
-	for _, s := range cmd.Subcommands {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:721
-		if s.Name == nextSub {
+	nextSub := args[index]
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:722
+	for _, s := range cmd.Subcommands {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:723
+		if s.Name == nextSub {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:724
 			return matchNested(s, args, index+1)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:723
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:725
 	return cmd, index
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:731
-func skipGlobalFlags(app *Command, args []string, start int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:732
-	if len(app.GlobalFlags) == 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:733
+func skipGlobalFlags(app *Command, args []string, start int) int {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:734
+	if len(app.GlobalFlags) == 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:735
 		return start
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:734
-	byName := map[string]FlagDef{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:735
-	byAlias := map[string]FlagDef{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:736
-	for _, f := range app.GlobalFlags {
+	byName := map[string]FlagDef{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:737
-		byName[f.Name] = f
+	byAlias := map[string]FlagDef{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:738
-		for _, a := range f.Aliases {
+	for _, f := range app.GlobalFlags {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:739
+		byName[f.Name] = f
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:740
+		for _, a := range f.Aliases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:741
 			byAlias[a] = f
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:741
-	i := start
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:742
-	for i < len(args) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:743
-		arg := args[i]
+	i := start
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:744
-		if !kukistring.HasPrefix(arg, "-") {
+	for i < len(args) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:745
+		arg := args[i]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:746
+		if !kukistring.HasPrefix(arg, "-") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:747
 			return i
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:747
-		if kukistring.Contains(arg, "=") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:748
-			i = i + 1
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:749
+		if kukistring.Contains(arg, "=") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:750
+			i = i + 1
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:751
 			continue
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:751
-		name := kukistring.TrimPrefix(arg, "--")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:752
-		name = kukistring.TrimPrefix(name, "-")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:753
-		def, ok := lookupGlobal(byName, byAlias, name)
+		name := kukistring.TrimPrefix(arg, "--")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:754
-		if !ok {
+		name = kukistring.TrimPrefix(name, "-")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:755
+		def, ok := lookupGlobal(byName, byAlias, name)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:756
+		if !ok {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:757
 			return i
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:756
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:758
 		if def.Kind == FlagKindBool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:757
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:759
 			i = i + 1
 		} else if i+1 < len(args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:759
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:761
 			i = i + 2
 		} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:761
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:763
 			i = i + 1
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:762
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:764
 	return i
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:765
-func lookupGlobal(byName map[string]FlagDef, byAlias map[string]FlagDef, name string) (FlagDef, bool) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:766
-	def, ok := byName[name]
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:767
-	if ok {
+func lookupGlobal(byName map[string]FlagDef, byAlias map[string]FlagDef, name string) (FlagDef, bool) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:768
-		return def, true
-	}
+	def, ok := byName[name]
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:769
-	def, ok = byAlias[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:770
 	if ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:771
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:770
 		return def, true
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:771
+	def, ok = byAlias[name]
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:772
+	if ok {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:773
+		return def, true
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:774
 	return FlagDef{}, false
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:776
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:778
 func printHelp(app *Command) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:777
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:779
 	s := color.NewStyler(os.Stdout)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:780
-	usageLabel := s.Bold("Usage:")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:781
-	nameStyled := s.Cyan(app.Name)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:782
-	fmt.Println(fmt.Sprintf("%v %v [flags] [subcommand]", usageLabel, nameStyled))
+	usageLabel := s.Bold("Usage:")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:783
+	nameStyled := s.Cyan(app.Name)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:784
-	if app.Description != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:785
-		fmt.Println("")
+	fmt.Printf("%v %v [flags] [subcommand]\n", usageLabel, nameStyled)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:786
+	if app.Description != "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:787
+		fmt.Println("")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:788
 		fmt.Println(app.Description)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:788
-	if len(app.GlobalFlags) > 0 || len(app.Flags) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:789
-		fmt.Println("")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:790
-		fmt.Println(s.Bold("Flags:"))
+	if len(app.GlobalFlags) != 0 || len(app.Flags) != 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:791
-		nameWidth := flagNameWidth(app)
+		fmt.Println("")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:792
-		for _, f := range app.GlobalFlags {
+		fmt.Println(s.Bold("Flags:"))
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:793
-			printFlagRow(s, f, nameWidth)
-		}
+		nameWidth := flagNameWidth(app)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:794
-		for _, f := range app.Flags {
+		for _, f := range app.GlobalFlags {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:795
 			printFlagRow(s, f, nameWidth)
 		}
-	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:796
+		for _, f := range app.Flags {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:797
-	if len(app.Subcommands) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:798
-		fmt.Println("")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:799
-		fmt.Println(s.Bold("Subcommands:"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:800
-		nameWidth := subcommandNameWidth(app)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:801
-		for _, sub := range app.Subcommands {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:802
-			padded := padRight(sub.Name, nameWidth)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:803
-			fmt.Println(fmt.Sprintf("  %v  %v", s.Cyan(padded), s.Dim(sub.Description)))
+			printFlagRow(s, f, nameWidth)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:805
-	if app.Version != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:806
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:799
+	if len(app.Subcommands) != 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:800
 		fmt.Println("")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:801
+		fmt.Println(s.Bold("Subcommands:"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:802
+		nameWidth := subcommandNameWidth(app)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:803
+		for _, sub := range app.Subcommands {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:804
+			padded := padRight(sub.Name, nameWidth)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:805
+			fmt.Printf("  %v  %v\n", s.Cyan(padded), s.Dim(sub.Description))
+		}
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:807
-		versionLabel := s.Dim("Version:")
+	if app.Version != "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:808
-		fmt.Println(fmt.Sprintf("%v %v", versionLabel, app.Version))
+		fmt.Println("")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:809
+		versionLabel := s.Dim("Version:")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:810
+		fmt.Printf("%v %v\n", versionLabel, app.Version)
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:813
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:815
 func printLeafHelp(app *Command, leaf *Command, path []string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:814
-	s := color.NewStyler(os.Stdout)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:816
-	usageLabel := s.Bold("Usage:")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:817
-	nameStyled := s.Cyan(app.Name)
+	s := color.NewStyler(os.Stdout)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:818
-	pathStyled := ""
+	usageLabel := s.Bold("Usage:")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:819
-	for _, p := range path {
+	nameStyled := s.Cyan(app.Name)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:820
+	pathStyled := ""
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:821
+	for _, p := range path {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:822
 		pathStyled = pathStyled + " " + s.Cyan(p)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:821
-	if len(leaf.Subcommands) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:822
-		fmt.Println(fmt.Sprintf("%v %v%v [subcommand] [flags]", usageLabel, nameStyled, pathStyled))
-	} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:823
+	if len(leaf.Subcommands) != 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:824
-		fmt.Println(fmt.Sprintf("%v %v%v [flags]", usageLabel, nameStyled, pathStyled))
-	}
+		fmt.Printf("%v %v%v [subcommand] [flags]\n", usageLabel, nameStyled, pathStyled)
+	} else {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:826
-	if leaf.Description != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:827
-		fmt.Println("")
+		fmt.Printf("%v %v%v [flags]\n", usageLabel, nameStyled, pathStyled)
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:828
+	if leaf.Description != "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:829
+		fmt.Println("")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:830
 		fmt.Println(leaf.Description)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:830
-	if len(leaf.Args) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:831
-		fmt.Println("")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:832
-		fmt.Println(s.Bold("Arguments:"))
+	if len(leaf.Args) != 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:833
-		argWidth := leafArgNameWidth(leaf)
+		fmt.Println("")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:834
-		for _, a := range leaf.Args {
+		fmt.Println(s.Bold("Arguments:"))
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:835
-			padded := padRight(a.Name, argWidth)
+		argWidth := leafArgNameWidth(leaf)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:836
-			suffix := ""
+		for _, a := range leaf.Args {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:837
-			if a.Required {
+			padded := padRight(a.Name, argWidth)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:838
+			suffix := ""
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:839
+			if a.Required {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:840
 				suffix = " (required)"
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:839
-			fmt.Println(fmt.Sprintf("  %v  %v", s.Cyan(padded), s.Dim(a.Description+suffix)))
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:841
+			fmt.Printf("  %v  %v\n", s.Cyan(padded), s.Dim(a.Description+suffix))
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:841
-	if len(app.GlobalFlags) > 0 || len(leaf.Flags) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:842
-		fmt.Println("")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:843
-		fmt.Println(s.Bold("Flags:"))
+	if len(app.GlobalFlags) != 0 || len(leaf.Flags) != 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:844
-		nameWidth := leafFlagNameWidth(app, leaf)
+		fmt.Println("")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:845
-		for _, f := range app.GlobalFlags {
+		fmt.Println(s.Bold("Flags:"))
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:846
-			printFlagRow(s, f, nameWidth)
-		}
+		nameWidth := leafFlagNameWidth(app, leaf)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:847
-		for _, f := range leaf.Flags {
+		for _, f := range app.GlobalFlags {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:848
 			printFlagRow(s, f, nameWidth)
 		}
-	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:849
+		for _, f := range leaf.Flags {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:850
-	if len(leaf.Subcommands) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:851
-		fmt.Println("")
+			printFlagRow(s, f, nameWidth)
+		}
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:852
-		fmt.Println(s.Bold("Subcommands:"))
+	if len(leaf.Subcommands) != 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:853
-		nameWidth := subcommandListNameWidth(leaf.Subcommands)
+		fmt.Println("")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:854
-		for _, sub := range leaf.Subcommands {
+		fmt.Println(s.Bold("Subcommands:"))
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:855
-			padded := padRight(sub.Name, nameWidth)
+		nameWidth := subcommandListNameWidth(leaf.Subcommands)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:856
-			fmt.Println(fmt.Sprintf("  %v  %v", s.Cyan(padded), s.Dim(sub.Description)))
+		for _, sub := range leaf.Subcommands {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:857
+			padded := padRight(sub.Name, nameWidth)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:858
+			fmt.Printf("  %v  %v\n", s.Cyan(padded), s.Dim(sub.Description))
 		}
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:860
-func leafFlagNameWidth(app *Command, leaf *Command) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:861
-	max := 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:862
-	for _, f := range app.GlobalFlags {
+func leafFlagNameWidth(app *Command, leaf *Command) int {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:863
-		n := len(fmt.Sprintf("--%v", f.Name))
+	max := 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:864
-		if n > max {
+	for _, f := range app.GlobalFlags {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:865
-			max = n
-		}
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:866
-	for _, f := range leaf.Flags {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:867
 		n := len(fmt.Sprintf("--%v", f.Name))
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:868
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:866
 		if n > max {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:869
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:867
 			max = n
 		}
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:868
+	for _, f := range leaf.Flags {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:869
+		n := len(fmt.Sprintf("--%v", f.Name))
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:870
-	if max > 24 {
+		if n > max {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:871
-		return 24
+			max = n
+		}
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:872
+	if max > 24 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:873
+		return 24
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:874
 	return max
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:875
-func leafArgNameWidth(leaf *Command) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:876
-	max := 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:877
-	for _, a := range leaf.Args {
+func leafArgNameWidth(leaf *Command) int {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:878
-		if len(a.Name) > max {
+	max := 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:879
+	for _, a := range leaf.Args {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:880
+		if len(a.Name) > max {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:881
 			max = len(a.Name)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:880
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:882
 	if max > 20 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:881
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:883
 		return 20
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:882
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:884
 	return max
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:886
-func printFlagRow(s color.Styler, f FlagDef, width int) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:887
-	flagName := fmt.Sprintf("--%v", f.Name)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:888
-	padded := padRight(flagName, width)
+func printFlagRow(s color.Styler, f FlagDef, width int) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:889
-	suffix := ""
+	flagName := fmt.Sprintf("--%v", f.Name)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:890
-	if f.Required {
+	padded := padRight(flagName, width)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:891
+	suffix := ""
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:892
+	if f.Required {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:893
 		suffix = " (required)"
 	} else if f.DefaultValue != "" && f.DefaultValue != "false" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:893
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:895
 		suffix = fmt.Sprintf(" (default: %v)", f.DefaultValue)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:894
-	fmt.Println(fmt.Sprintf("  %v  %v", s.Cyan(padded), s.Dim(f.Description+suffix)))
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:896
+	fmt.Printf("  %v  %v\n", s.Cyan(padded), s.Dim(f.Description+suffix))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:899
-func flagNameWidth(app *Command) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:900
-	max := 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:901
-	for _, f := range app.GlobalFlags {
+func flagNameWidth(app *Command) int {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:902
-		n := len(fmt.Sprintf("--%v", f.Name))
+	max := 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:903
-		if n > max {
+	for _, f := range app.GlobalFlags {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:904
-			max = n
-		}
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:905
-	for _, f := range app.Flags {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:906
 		n := len(fmt.Sprintf("--%v", f.Name))
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:907
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:905
 		if n > max {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:908
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:906
 			max = n
 		}
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:907
+	for _, f := range app.Flags {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:908
+		n := len(fmt.Sprintf("--%v", f.Name))
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:909
-	if max > 24 {
+		if n > max {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:910
-		return 24
+			max = n
+		}
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:911
+	if max > 24 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:912
+		return 24
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:913
 	return max
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:914
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:916
 func subcommandNameWidth(app *Command) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:915
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:917
 	return subcommandListNameWidth(app.Subcommands)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:919
-func subcommandListNameWidth(subs []*Command) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:920
-	max := 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:921
-	for _, sub := range subs {
+func subcommandListNameWidth(subs []*Command) int {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:922
-		if len(sub.Name) > max {
+	max := 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:923
+	for _, sub := range subs {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:924
+		if len(sub.Name) > max {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:925
 			max = len(sub.Name)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:924
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:926
 	if max > 20 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:925
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:927
 		return 20
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:926
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:928
 	return max
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:930
-func padRight(text string, n int) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:931
-	if len(text) >= n {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:932
+func padRight(text string, n int) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:933
+	if len(text) >= n {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:934
 		return text
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:933
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:935
 	pad := n - len(text)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:934
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:936
 	return text + kukistring.Repeat(" ", pad)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:937
-func IsJSON(args Args) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:938
-	val := args.values["json"]
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:939
-	if val == "true" || val == "1" || val == "yes" {
+func IsJSON(args Args) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:940
+	val := args.values["json"]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:941
+	if val == "true" || val == "1" || val == "yes" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:942
 		return true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:941
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:943
 	val = args.values["output"]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:942
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:944
 	return val == "json"
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:947
-func (args Args) Context() context.Context {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:948
-	ctx, _ := signal.Context(signal.SignalInterrupt, signal.SignalTerminate)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:949
+func (args Args) Context() context.Context {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:950
+	ctx, _ := signal.Context(signal.SignalInterrupt, signal.SignalTerminate)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:951
 	return ctx
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:952
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:954
 func (args Args) Respond(data any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:953
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:955
 	if IsJSON(args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:954
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:954
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:956
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:956
 		err_1 := json.WriteOutput(data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:954
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:956
 		if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:954
-			//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:955
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:956
+			//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:957
 			Fatal(fmt.Sprintf("failed to encode json: %v", err_1))
-			//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:956
+			//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:958
 			return
 		}
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:958
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:960
 		fmt.Println(fmt.Sprint(data))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:961
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:963
 func IsTTY() bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:962
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:964
 	return term.IsTTY(os.Stdout)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:965
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:967
 func Info(msg string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:966
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:968
 	fmt.Fprintln(os.Stderr, msg)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:969
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:971
 func Success(msg string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:970
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:972
 	fmt.Fprintln(os.Stderr, msg)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:973
-func Fatal(msg string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:974
-	fmt.Fprintln(os.Stderr, msg)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:975
+func Fatal(msg string) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:976
+	fmt.Fprintln(os.Stderr, msg)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:977
 	os.Exit(1)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:978
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:980
 func GetString(args Args, name string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:979
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:981
 	return args.values[name]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:982
-func GetStringOr(args Args, name string, defaultVal string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:983
-	val := args.values[name]
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:984
-	if val == "" {
+func GetStringOr(args Args, name string, defaultVal string) string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:985
+	val := args.values[name]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:986
+	if val == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:987
 		return defaultVal
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:986
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:988
 	return val
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:989
-func GetBool(args Args, name string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:990
-	val := args.values[name]
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:991
+func GetBool(args Args, name string) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:992
+	val := args.values[name]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:993
 	return val == "true" || val == "1" || val == "yes"
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:994
-func GetBoolOr(args Args, name string, defaultVal bool) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:995
-	val := args.values[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:996
-	if val == "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:997
+func GetBoolOr(args Args, name string, defaultVal bool) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:998
+	val := args.values[name]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:999
+	if val == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1000
 		return defaultVal
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:998
-	return val == "true" || val == "1" || val == "yes"
-}
-
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1001
-func GetInt(args Args, name string) (int, error) {
+	lower := kukistring.ToLower(val)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1002
-	strVal := args.values[name]
+	if lower == "true" || lower == "1" || lower == "yes" || lower == "on" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1003
-	if strVal == "" {
+		return true
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1004
-		return 0, fmt.Errorf("argument %v not found", name)
+	if lower == "false" || lower == "0" || lower == "no" || lower == "off" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1005
+		return false
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1006
+	return defaultVal
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1009
+func GetInt(args Args, name string) (int, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1010
+	strVal := args.values[name]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1011
+	if strVal == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1012
+		return 0, fmt.Errorf("argument %v not found", name)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1014
 	return strconv.Atoi(strVal)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1011
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1018
 func GetIntOr(args Args, name string, defaultVal int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1012
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1019
 	strVal := args.values[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1013
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1020
 	if strVal == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1014
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1021
 		return defaultVal
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1015
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1022
 	n, err := strconv.Atoi(strVal)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1016
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1023
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1017
-		return 0
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1024
+		return defaultVal
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1018
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1025
 	return n
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1022
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1030
+func GetFloat(args Args, name string) (float64, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1031
+	strVal := args.values[name]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1032
+	if strVal == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1033
+		return 0.0, fmt.Errorf("argument %v not found", name)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1034
+	return strconv.ParseFloat(strVal, 64)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1038
+func GetFloatOr(args Args, name string, defaultVal float64) float64 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1039
+	strVal := args.values[name]
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1040
+	if strVal == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1041
+		return defaultVal
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1042
+	n, err := strconv.ParseFloat(strVal, 64)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1043
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1044
+		return defaultVal
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1045
+	return n
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1049
 func GetRest(args Args, name string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1023
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1050
 	vals := args.rest[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1024
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1051
 	if vals == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1025
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1052
 		return []string{}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1026
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1053
 	return vals
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1032
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1059
 func ParseArgs(app *Command, osArgs []string) Args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1033
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1060
 	values := map[string]string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1034
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1061
 	for _, f := range app.GlobalFlags {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1035
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1062
 		values[f.Name] = f.DefaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1036
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1063
 	for _, f := range app.Flags {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1037
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1064
 		values[f.Name] = f.DefaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1038
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1065
 	positionalNames := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1039
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1066
 	for _, a := range app.Args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1040
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1067
 		positionalNames = append(positionalNames, a.Name)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1041
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1068
 	allFlagDefs := []FlagDef{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1042
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1069
 	allFlagDefs = append(allFlagDefs, app.GlobalFlags...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1043
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1070
 	allFlagDefs = append(allFlagDefs, app.Flags...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1044
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1071
 	restMap := map[string][]string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1045
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1072
 	start := func() int {
-		if len(osArgs) > 0 {
+		if len(osArgs) != 0 {
 			return 1
 		} else {
 			return 0
 		}
 	}()
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1054
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1081
 	parseFlagsAndPositionals(osArgs, start, values, restMap, positionalNames, allFlagDefs, app.RestArgName)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1055
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:1082
 	return Args{values: values, rest: restMap}
 }

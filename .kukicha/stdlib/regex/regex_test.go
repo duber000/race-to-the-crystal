@@ -51,7 +51,7 @@ func TestMatchSafe(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:58
 		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:59
-			got, err := regex.MatchSafe(tc.pattern, tc.text)
+			got, err := regex.MatchSafe(tc.text, tc.pattern)
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:60
 			if tc.expectErr {
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:61
@@ -530,4 +530,142 @@ func TestCompiledSplit(t *testing.T) {
 			test.AssertEqual(t, len(got), 3)
 		})
 	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:501
+func TestQuoteMeta(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:502
+	t.Run("escapes metacharacters so they match literally", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:503
+		literal := regex.QuoteMeta("a.b*c")
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:505
+		test.AssertTrue(t, regex.IsValid(literal))
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:506
+		p := regex.MustCompile(literal)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:507
+		test.AssertTrue(t, p.Match("a.b*c"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:508
+		test.AssertFalse(t, p.Match("axbbc"))
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:513
+	t.Run("plain text unchanged", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:514
+		test.AssertEqual(t, regex.QuoteMeta("hello123"), "hello123")
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:518
+func TestFindNamed(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:519
+	p := regex.MustCompile(`(?P<major>\d+)\.(?P<minor>\d+)`)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:520
+	t.Run("named groups keyed by name", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:521
+		m := p.FindNamed("v1.42")
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:522
+		if v, _isOk := m.(regex.Found[map[string]string]); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:523
+			test.AssertEqual(t, v.Value["major"], "1")
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:524
+			test.AssertEqual(t, v.Value["minor"], "42")
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:525
+			test.AssertEqual(t, len(v.Value), 2)
+		} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:527
+			t.Fatalf("expected Found")
+		}
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:532
+	t.Run("if-init binding stays intact", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:533
+		{
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:533
+			m := p.FindNamed("v1.42")
+			if v, _isOk := m.(regex.Found[map[string]string]); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:534
+				test.AssertEqual(t, v.Value["minor"], "42")
+			} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:536
+				t.Fatalf("expected Found via if-init binding")
+			}
+		}
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:539
+	t.Run("no match yields NotFound", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:540
+		test.AssertTrue(t, func() bool { _, _isOk := p.FindNamed("nope").(regex.NotFound[map[string]string]); return _isOk }())
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:543
+	t.Run("unnamed groups omitted", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:544
+		u := regex.MustCompile(`(\d)-(?P<day>\d)`)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:545
+		m := u.FindNamed("1-2")
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:546
+		if v, _isOk := m.(regex.Found[map[string]string]); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:547
+			test.AssertEqual(t, v.Value["day"], "2")
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:548
+			test.AssertEqual(t, len(v.Value), 1)
+		} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:550
+			t.Fatalf("expected Found")
+		}
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:554
+func TestFindNamedOr(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:555
+	p := regex.MustCompile(`(?P<h>\d+)h`)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:556
+	t.Run("match returns groups", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:557
+		got := p.FindNamedOr("7h", map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:558
+		test.AssertEqual(t, got["h"], "7")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:561
+	t.Run("absence returns default", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:562
+		got := p.FindNamedOr("nope", map[string]string{"h": "0"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:563
+		test.AssertEqual(t, got["h"], "0")
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:567
+func TestCount(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:568
+	p := regex.MustCompile(`,`)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:569
+	test.AssertEqual(t, p.Count("a,b,c,d"), 3)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:570
+	test.AssertEqual(t, p.Count("nocomma"), 0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:571
+	word := regex.MustCompile(`\w+`)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:572
+	test.AssertEqual(t, word.Count("one two three"), 3)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:575
+func TestSplitN(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:576
+	p := regex.MustCompile(`,`)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:577
+	t.Run("splits into at most n parts", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:578
+		got := p.SplitN("a,b,c,d", 2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:579
+		test.AssertEqual(t, len(got), 2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:580
+		test.AssertEqual(t, got[0], "a")
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:582
+		test.AssertEqual(t, got[1], "b,c,d")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:587
+	t.Run("n greater than parts yields all", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex_test.kuki:588
+		test.AssertEqual(t, len(p.SplitN("a,b", 10)), 2)
+	})
 }

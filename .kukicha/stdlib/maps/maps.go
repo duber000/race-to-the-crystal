@@ -128,3 +128,45 @@ func Omit[K comparable, V any](m map[K]V, keys []K) map[K]V {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:90
 	return result
 }
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:100
+func Filter[K comparable, V any](m map[K]V, keep func(K, V) bool) map[K]V {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:101
+	result := map[K]V{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:102
+	for k, v := range m {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:103
+		if keep(k, v) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:104
+			result[k] = v
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:105
+	return result
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:116
+func MapValues[K comparable, V any, R any](m map[K]V, transform func(V) R) map[K]R {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:117
+	result := map[K]R{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:118
+	for k, v := range m {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:119
+		result[k] = transform(v)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:120
+	return result
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:131
+func Invert[K comparable, V comparable](m map[K]V) map[V]K {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:132
+	result := map[V]K{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:133
+	for k, v := range m {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:134
+		result[v] = k
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:135
+	return result
+}

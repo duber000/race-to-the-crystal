@@ -22,10 +22,10 @@ func NewGameSession(game_id: string, lobby: reference GameLobby) reference GameS
         game_id: game_id,
         game_name: dereference lobby.game_name,
         game_state: gs,
-        network_to_game_id: make(map of string to string),
-        game_to_network_id: make(map of string to string),
+        network_to_game_id: empty map of string to string,
+        game_to_network_id: empty map of string to string,
         last_state: empty,
-        api_map: make(map of string to gamepkg.GameAPI),
+        api_map: empty map of string to gamepkg.GameAPI,
     }
     session.initialize_players(lobby)
     session.game_state.StartGame()
@@ -94,8 +94,8 @@ type GameCoordinator
 
 func NewGameCoordinator() GameCoordinator
     return GameCoordinator{
-        active_games: make(map of string to reference GameSession),
-        player_to_game: make(map of string to string),
+        active_games: empty map of string to reference GameSession,
+        player_to_game: empty map of string to string,
     }
 
 func create_session on gc: reference GameCoordinator(lobby: reference GameLobby) reference GameSession

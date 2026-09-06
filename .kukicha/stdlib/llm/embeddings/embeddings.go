@@ -3,10 +3,13 @@
 package embeddings
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
+	"kukicha.org/kukicha/stdlib/encoding"
 	"kukicha.org/kukicha/stdlib/env"
 	"kukicha.org/kukicha/stdlib/fetch"
 	jsonpkg "kukicha.org/kukicha/stdlib/json"
@@ -14,20 +17,20 @@ import (
 	"strings"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:37
 type EmbeddingData struct {
 	Object    string    `json:"object"`
 	Index     int       `json:"index"`
 	Embedding []float32 `json:"embedding"`
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:43
 type Usage struct {
 	PromptTokens int `json:"prompt_tokens"`
 	TotalTokens  int `json:"total_tokens"`
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:48
 type Response struct {
 	Object string          `json:"object"`
 	Model  string          `json:"model"`
@@ -35,7 +38,7 @@ type Response struct {
 	Usage  Usage           `json:"usage"`
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:55
 type Request struct {
 	Model          string `json:"model"`
 	Input          any    `json:"input"`
@@ -45,7 +48,7 @@ type Request struct {
 	InputType      string `json:"input_type,omitzero"`
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:70
 type Encoding string
 
 const (
@@ -78,7 +81,7 @@ func (e Encoding) String() string {
 	return string(e)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:75
 type Client struct {
 	model            string
 	provider         string
@@ -94,345 +97,415 @@ type Client struct {
 	ctx              context.Context
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:91
 func New(model string) Client {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:92
 	c := Client{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:93
 	if strings.Contains(model, ":") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:94
 		parts := kukistring.SplitN(model, ":", 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:95
 		c.provider = parts[0]
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:96
 		c.model = parts[1]
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:98
 		c.model = model
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:99
 	return c
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:96
-func Provider(c Client, provider string) Client {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:97
-	c.provider = provider
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:98
-	return c
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:101
-func Model(c Client, model string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:102
-	c.model = model
+func Provider(c Client, provider string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:103
+	c.provider = provider
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:104
 	return c
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:106
-func BaseURL(c Client, url string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:107
-	c.baseURL = url
+func Model(c Client, model string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:108
+	c.model = model
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:109
 	return c
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:111
-func Path(c Client, path string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:112
-	c.path = path
+func BaseURL(c Client, url string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:113
+	c.baseURL = url
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:114
 	return c
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:116
-func APIKey(c Client, key string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:117
-	c.apiKey = key
+func Path(c Client, path string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:118
+	c.path = path
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:119
 	return c
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:122
-func Dimensions(c Client, dims int) Client {
+func APIKey(c Client, key string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:123
-	c.dimensions = dims
+	c.apiKey = key
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:124
 	return c
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:128
-func EncodingFormat(c Client, format Encoding) Client {
+func Dimensions(c Client, dims int) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:129
-	c.encodingFormat = format
+	c.dimensions = dims
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:130
 	return c
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:133
-func SetUser(c Client, user string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:134
-	c.user = user
+func EncodingFormat(c Client, format Encoding) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:135
+	c.encodingFormat = format
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:136
 	return c
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:139
-func InputType(c Client, kind string) Client {
+func SetUser(c Client, user string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:140
-	c.inputType = kind
+	c.user = user
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:141
 	return c
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:144
-func Retry(c Client, maxAttempts int, delayMs int) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:145
-	c.retryMaxAttempts = maxAttempts
+func InputType(c Client, kind string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:146
-	c.retryDelayMs = delayMs
+	c.inputType = kind
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:147
 	return c
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:150
-func WithContext(c Client, h ctxpkg.Handle) Client {
+func Retry(c Client, maxAttempts int, delayMs int) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:151
-	c.ctx = h.Ctx
+	c.retryMaxAttempts = maxAttempts
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:152
+	c.retryDelayMs = delayMs
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:153
 	return c
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:155
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:156
+func WithContext(c Client, h ctxpkg.Handle) Client {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:157
+	c.ctx = h.Ctx
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:158
+	return c
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:161
 func EmbedOne(c Client, text string) ([]float32, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:162
 	resp, err_1 := executeRaw(c, text)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:162
 	if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:162
 		return []float32{}, err_1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:163
 	if len(resp.Data) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:158
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:164
 		return nil, errors.New("embeddings: empty response data")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:159
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:165
 	return resp.Data[0].Embedding, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:162
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:168
 func EmbedBatch(c Client, texts []string) ([][]float32, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:169
 	resp, err_2 := executeRaw(c, texts)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:169
 	if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:169
 		return [][]float32{}, err_2
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:164
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:170
 	out := [][]float32{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:171
 	for _, d := range resp.Data {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:172
 		out = append(out, d.Embedding)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:173
 	return out, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:176
 func EmbedRaw(c Client, input any) (Response, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:177
 	return executeRaw(c, input)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:180
 func Embed(model string, text string) ([]float32, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:181
 	return EmbedOne(New(model), text)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:177
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:183
 func providerDefaults(provider string) (string, string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:184
 	if provider == "openai" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:185
 		return "OPENAI_API_KEY", "https://api.openai.com"
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:180
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:186
 	if provider == "voyage" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:181
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:187
 		return "VOYAGE_API_KEY", "https://api.voyageai.com"
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:182
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:188
 	if provider == "cohere" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:189
 		return "COHERE_API_KEY", "https://api.cohere.com"
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:190
 	if provider == "mistral" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:191
 		return "MISTRAL_API_KEY", "https://api.mistral.ai"
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:192
 	if provider == "together" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:193
 		return "TOGETHER_API_KEY", "https://api.together.xyz"
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:194
 	if provider == "deepseek" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:195
 		return "DEEPSEEK_API_KEY", "https://api.deepseek.com"
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:190
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:196
 	if provider == "ollama" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:197
 		return "", "http://localhost:11434"
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:198
 	return "", ""
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:194
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:200
 func resolveAPIKey(c Client) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:201
 	if c.apiKey != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:202
 		return c.apiKey
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:203
 	envKey, _ := providerDefaults(c.provider)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:204
 	if envKey != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:205
 		return env.GetOr(envKey, "")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:206
 	return env.GetOr("LLM_API_KEY", "")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:208
 func resolveBaseURL(c Client) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:209
 	if c.baseURL != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:204
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:210
 		return c.baseURL
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:211
 	_, baseURL := providerDefaults(c.provider)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:206
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:212
 	if baseURL != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:207
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:213
 		return baseURL
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:208
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:214
 	envURL := env.GetOr("LLM_BASE_URL", "")
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:209
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:215
 	if envURL != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:210
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:216
 		return envURL
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:211
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:217
 	return "http://localhost:8000"
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:219
 func resolvePath(c Client) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:220
 	if c.path != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:221
 		return c.path
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:222
 	return "/v1/embeddings"
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:218
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:224
 func buildRequest(c Client, input any) Request {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:219
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:225
 	req := Request{Model: c.model, Input: input}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:220
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:226
 	if c.dimensions > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:221
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:227
 		req.Dimensions = c.dimensions
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:228
 	if string(c.encodingFormat) != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:229
 		req.EncodingFormat = c.encodingFormat.String()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:230
 	if c.user != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:231
 		req.User = c.user
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:226
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:232
 	if c.inputType != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:227
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:233
 		req.InputType = c.inputType
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:228
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:234
 	return req
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:230
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:236
 func executeRaw(c Client, input any) (Response, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:237
 	url := fmt.Sprintf("%v%v", resolveBaseURL(c), resolvePath(c))
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:232
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:238
 	apiKey := resolveAPIKey(c)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:234
-	req := fetch.Body(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), buildRequest(c, input))
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:239
-	if c.ctx != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:240
+	req := fetch.Body(fetch.Header(fetch.Method(fetch.New(url), fetch.HTTPMethodPOST), "Content-Type", "application/json"), buildRequest(c, input))
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:245
+	if c.ctx != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:246
 		req = fetch.WithContext(req, ctxpkg.FromContext(c.ctx))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:241
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:247
 	if apiKey != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:248
 		req = fetch.Header(req, "Authorization", fmt.Sprintf("Bearer %v", apiKey))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:249
 	if c.retryMaxAttempts > 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:244
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:250
 		req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:252
 	resp, err_3 := fetch.Do(req)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:252
 	if err_3 != nil {
 		var _zero0 Response
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:252
 		return _zero0, err_3
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:247
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:253
 	rawResp := resp.Raw()
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:248
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:254
 	if rawResp == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:249
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:255
 		return Response{}, errors.New("embeddings: response body unavailable")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:250
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:256
 	defer rawResp.Body.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:252
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:258
 	if resp.StatusCode >= 400 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:253
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:259
 		return Response{}, fmt.Errorf("embeddings: API request failed (%v)", resp.StatusCode)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:261
+	if c.encodingFormat == EncodingBase64 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:262
+		wire := b64Response{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:263
+		werr := jsonpkg.ReadInto(rawResp.Body, &wire)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:264
+		if werr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:265
+			return Response{}, werr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:266
+		out := Response{Object: wire.Object, Model: wire.Model, Usage: wire.Usage}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:267
+		for _, d := range wire.Data {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:268
+			vec, derr := decodeBase64Embedding(d.EmbeddingB64)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:269
+			if derr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:270
+				return Response{}, derr
+			}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:271
+			out.Data = append(out.Data, EmbeddingData{Object: d.Object, Index: d.Index, Embedding: vec})
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:272
+		return out, nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:274
 	out := Response{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:256
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:256
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:275
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:275
 	err_4 := jsonpkg.ReadInto(rawResp.Body, &out)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:256
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:275
 	if err_4 != nil {
 		var _zero0 Response
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:256
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:275
 		return _zero0, err_4
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:257
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:276
+	return out, nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:280
+type b64EmbeddingData struct {
+	Object       string `json:"object"`
+	Index        int    `json:"index"`
+	EmbeddingB64 string `json:"embedding"`
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:286
+type b64Response struct {
+	Object string             `json:"object"`
+	Model  string             `json:"model"`
+	Data   []b64EmbeddingData `json:"data"`
+	Usage  Usage              `json:"usage"`
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:294
+func decodeBase64Embedding(s string) ([]float32, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:295
+	raw, err := encoding.Base64Decode(s)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:296
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:297
+		return nil, fmt.Errorf("embeddings: base64 embedding decode failed: %v", err)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:298
+	if len(raw)%4 != 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:299
+		return nil, fmt.Errorf("embeddings: base64 embedding is not a float32 multiple (%v bytes)", len(raw))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:300
+	out := make([]float32, len(raw)/4)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:301
+	rerr := binary.Read(bytes.NewReader(raw), binary.LittleEndian, &out)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:302
+	if rerr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:303
+		return nil, fmt.Errorf("embeddings: base64 embedding float decode failed: %v", rerr)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/embeddings/embeddings.kuki:304
 	return out, nil
 }

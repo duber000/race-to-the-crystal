@@ -4,6 +4,7 @@ package parse_test
 
 import (
 	"kukicha.org/kukicha/stdlib/parse"
+	kukistring "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/test"
 	"net/url"
 	"os"
@@ -12,324 +13,324 @@ import (
 	"time"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:15
 type User struct {
 	Name string
 	Age  int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:18
-func TestValidateJSON(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:19
-	result := parse.ValidateJSON[User](`{"Name":"ada","Age":36}`)
+func TestValidateJSON(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:20
-	if p, _isOk := result.(parse.Parsed[User]); _isOk {
+	result := parse.ValidateJSON[User](`{"Name":"ada","Age":36}`)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:21
-		test.AssertEqual(t, len(p.Violations), 0)
+	if p, _isOk := result.(parse.Parsed[User]); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:22
-		test.AssertEqual(t, p.Value.Name, "ada")
+		test.AssertEqual(t, len(p.Violations), 0)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:23
+		test.AssertEqual(t, p.Value.Name, "ada")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:24
 		test.AssertEqual(t, p.Value.Age, 36)
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:26
 		t.Fatalf("expected Parsed, got Malformed")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:27
-func TestValidateJSONParseError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:28
-	result := parse.ValidateJSON[User]("not valid json")
+func TestValidateJSONParseError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:29
-	if m, _isOk := result.(parse.Malformed[User]); _isOk {
+	result := parse.ValidateJSON[User]("not valid json")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:30
+	if m, _isOk := result.(parse.Malformed[User]); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:31
 		test.AssertTrue(t, m.Error != nil)
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:33
 		t.Fatalf("expected Malformed, got Parsed")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:35
-func TestJSONLines(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:36
+func TestJSONLines(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:37
 	lines := parse.JSONLines(`{"a":1}
 
  {"b":2}
 `)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:41
-	test.AssertEqual(t, len(lines), 2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:42
-	test.AssertEqual(t, lines[0], `{"a":1}`)
+	test.AssertEqual(t, len(lines), 2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:43
+	test.AssertEqual(t, lines[0], `{"a":1}`)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:44
 	test.AssertEqual(t, lines[1], `{"b":2}`)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:47
 type Config struct {
 	User  string
 	Email string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:50
-func TestValidateYAML(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:51
-	result := parse.ValidateYAML[Config]("user: alice\nemail: test@example.com")
+func TestValidateYAML(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:52
-	if p, _isOk := result.(parse.Parsed[Config]); _isOk {
+	result := parse.ValidateYAML[Config]("user: alice\nemail: test@example.com")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:53
-		test.AssertEqual(t, len(p.Violations), 0)
+	if p, _isOk := result.(parse.Parsed[Config]); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:54
-		test.AssertEqual(t, p.Value.User, "alice")
+		test.AssertEqual(t, len(p.Violations), 0)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:55
+		test.AssertEqual(t, p.Value.User, "alice")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:56
 		test.AssertEqual(t, p.Value.Email, "test@example.com")
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:58
 		t.Fatalf("expected Parsed, got Malformed")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:59
-func TestValidateYAMLParseError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:60
-	result := parse.ValidateYAML[Config]("::: not valid yaml :::")
+func TestValidateYAMLParseError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:61
-	if m, _isOk := result.(parse.Malformed[Config]); _isOk {
+	result := parse.ValidateYAML[Config]("::: not valid yaml :::")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:62
+	if m, _isOk := result.(parse.Malformed[Config]); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:63
 		test.AssertTrue(t, m.Error != nil)
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:65
 		t.Fatalf("expected Malformed, got Parsed")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:68
 type LoginForm struct {
 	Name   string
 	Age    int
 	Active bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:72
-func TestForm(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:73
-	values := url.Values{}
+func TestForm(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:74
-	values.Set("Name", "ada")
+	values := url.Values{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:75
-	values.Set("Age", "36")
+	values.Set("Name", "ada")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:76
-	values.Set("Active", "true")
+	values.Set("Age", "36")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:77
-	result := parse.Form[LoginForm](values)
+	values.Set("Active", "true")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:78
-	if p, _isOk := result.(parse.Parsed[LoginForm]); _isOk {
+	result := parse.Form[LoginForm](values)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:79
-		test.AssertEqual(t, len(p.Violations), 0)
+	if p, _isOk := result.(parse.Parsed[LoginForm]); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:80
-		test.AssertEqual(t, p.Value.Name, "ada")
+		test.AssertEqual(t, len(p.Violations), 0)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:81
-		test.AssertEqual(t, p.Value.Age, 36)
+		test.AssertEqual(t, p.Value.Name, "ada")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:82
+		test.AssertEqual(t, p.Value.Age, 36)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:83
 		test.AssertEqual(t, p.Value.Active, true)
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:85
 		t.Fatalf("expected Parsed, got Malformed")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:86
-func TestFormParseError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:87
-	values := url.Values{}
+func TestFormParseError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:88
-	values.Set("Age", "not a number")
+	values := url.Values{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:89
-	result := parse.Form[LoginForm](values)
+	values.Set("Age", "not a number")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:90
-	if p, _isOk := result.(parse.Parsed[LoginForm]); _isOk {
+	result := parse.Form[LoginForm](values)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:91
-		test.AssertEqual(t, len(p.Violations), 1)
+	if p, _isOk := result.(parse.Parsed[LoginForm]); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:92
-		test.AssertEqual(t, p.Violations[0].Path, "Age")
+		test.AssertEqual(t, len(p.Violations), 1)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:93
+		test.AssertEqual(t, p.Violations[0].Path, "Age")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:94
 		test.AssertEqual(t, p.Violations[0].Rule.String(), "parse")
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:96
 		t.Fatalf("expected Parsed, got Malformed")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:99
 type AppConfig struct {
 	Host  string
 	Port  int
 	Debug bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:103
-func TestEnv(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:104
-	_ = os.Setenv("APP_HOST", "localhost")
+func TestEnv(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:105
-	_ = os.Setenv("APP_PORT", "8080")
+	_ = os.Setenv("APP_HOST", "localhost")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:106
-	_ = os.Setenv("APP_DEBUG", "true")
+	_ = os.Setenv("APP_PORT", "8080")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:107
-	defer os.Unsetenv("APP_HOST")
+	_ = os.Setenv("APP_DEBUG", "true")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:108
-	defer os.Unsetenv("APP_PORT")
+	defer os.Unsetenv("APP_HOST")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:109
+	defer os.Unsetenv("APP_PORT")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:110
 	defer os.Unsetenv("APP_DEBUG")
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:111
-	result := parse.Env[AppConfig]("APP")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:112
-	if p, _isOk := result.(parse.Parsed[AppConfig]); _isOk {
+	result := parse.Env[AppConfig]("APP")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:113
-		test.AssertEqual(t, len(p.Violations), 0)
+	if p, _isOk := result.(parse.Parsed[AppConfig]); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:114
-		test.AssertEqual(t, p.Value.Host, "localhost")
+		test.AssertEqual(t, len(p.Violations), 0)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:115
-		test.AssertEqual(t, p.Value.Port, 8080)
+		test.AssertEqual(t, p.Value.Host, "localhost")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:116
+		test.AssertEqual(t, p.Value.Port, 8080)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:117
 		test.AssertEqual(t, p.Value.Debug, true)
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:119
 		t.Fatalf("expected Parsed, got Malformed")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:120
-func TestEnvParseError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:121
-	_ = os.Setenv("APP_PORT", "notanumber")
+func TestEnvParseError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:122
-	defer os.Unsetenv("APP_PORT")
+	_ = os.Setenv("APP_PORT", "notanumber")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:123
-	result := parse.Env[AppConfig]("APP")
+	defer os.Unsetenv("APP_PORT")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:124
-	if p, _isOk := result.(parse.Parsed[AppConfig]); _isOk {
+	result := parse.Env[AppConfig]("APP")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:125
-		test.AssertEqual(t, len(p.Violations), 1)
+	if p, _isOk := result.(parse.Parsed[AppConfig]); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:126
-		test.AssertEqual(t, p.Violations[0].Path, "Port")
+		test.AssertEqual(t, len(p.Violations), 1)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:127
+		test.AssertEqual(t, p.Violations[0].Path, "Port")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:128
 		test.AssertEqual(t, p.Violations[0].Rule.String(), "parse")
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:130
 		t.Fatalf("expected Parsed, got Malformed")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:132
-func TestCSV(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:133
-	records, err := parse.CSV("name,age\nalice,30\nbob,25")
+func TestCSV(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:134
-	test.AssertNoError(t, err)
+	records, err := parse.CSV("name,age\nalice,30\nbob,25")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:135
-	test.AssertEqual(t, len(records), 3)
+	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:136
-	test.AssertEqual(t, records[0][0], "name")
+	test.AssertEqual(t, len(records), 3)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:137
+	test.AssertEqual(t, records[0][0], "name")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:138
 	test.AssertEqual(t, records[1][0], "alice")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:140
-func TestCSVRecords(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:141
-	rows, err := parse.CSVRecords("name,age\nalice,30\nbob,25")
+func TestCSVRecords(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:142
-	test.AssertNoError(t, err)
+	rows, err := parse.CSVRecords("name,age\nalice,30\nbob,25")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:143
-	test.AssertEqual(t, len(rows), 2)
+	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:144
-	test.AssertEqual(t, rows[0]["name"], "alice")
+	test.AssertEqual(t, len(rows), 2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:145
-	test.AssertEqual(t, rows[0]["age"], "30")
+	test.AssertEqual(t, rows[0]["name"], "alice")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:146
+	test.AssertEqual(t, rows[0]["age"], "30")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:147
 	test.AssertEqual(t, rows[1]["name"], "bob")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:149
-func TestWriteCSV(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:150
-	dir := t.TempDir()
+func TestWriteCSV(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:151
-	path := filepath.Join(dir, "users.csv")
+	dir := t.TempDir()
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:152
+	path := filepath.Join(dir, "users.csv")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:153
 	rows := [][]string{[]string{"name", "age"}, []string{"alice", "30"}, []string{"bob,jr", "25"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:157
-	err := parse.WriteCSV(path, rows)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:158
+	err := parse.WriteCSV(path, rows)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:159
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:160
-	data, readErr := os.ReadFile(path)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:161
-	test.AssertNoError(t, readErr)
+	data, readErr := os.ReadFile(path)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:162
-	roundTrip, err2 := parse.CSV(string(data))
+	test.AssertNoError(t, readErr)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:163
-	test.AssertNoError(t, err2)
+	roundTrip, err2 := parse.CSV(string(data))
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:164
-	test.AssertEqual(t, len(roundTrip), 3)
+	test.AssertNoError(t, err2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:165
+	test.AssertEqual(t, len(roundTrip), 3)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:166
 	test.AssertEqual(t, roundTrip[2][0], "bob,jr")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:168
-func TestWriteCSVRecords(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:169
-	dir := t.TempDir()
+func TestWriteCSVRecords(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:170
-	path := filepath.Join(dir, "records.csv")
+	dir := t.TempDir()
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:171
+	path := filepath.Join(dir, "records.csv")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:172
 	records := []map[string]string{map[string]string{"name": "alice", "age": "30"}, map[string]string{"name": "bob", "age": "25"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:175
-	err := parse.WriteCSVRecords(path, records)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:176
+	err := parse.WriteCSVRecords(path, records)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:177
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:178
-	data, readErr := os.ReadFile(path)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:179
-	test.AssertNoError(t, readErr)
+	data, readErr := os.ReadFile(path)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:180
-	rows, err2 := parse.CSVRecords(string(data))
+	test.AssertNoError(t, readErr)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:181
-	test.AssertNoError(t, err2)
+	rows, err2 := parse.CSVRecords(string(data))
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:182
-	test.AssertEqual(t, len(rows), 2)
+	test.AssertNoError(t, err2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:183
-	test.AssertEqual(t, rows[0]["name"], "alice")
+	test.AssertEqual(t, len(rows), 2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:184
-	test.AssertEqual(t, rows[0]["age"], "30")
+	test.AssertEqual(t, rows[0]["name"], "alice")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:185
+	test.AssertEqual(t, rows[0]["age"], "30")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:186
 	test.AssertEqual(t, rows[1]["name"], "bob")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:187
-func TestWriteCSVError(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:188
+func TestWriteCSVError(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:189
 	err := parse.WriteCSV("/nonexistent-dir-xyz/out.csv", [][]string{[]string{"a"}})
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:192
 	test.AssertEqual(t, err != nil, true)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:194
-func TestNonEmptyLines(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:195
-	lines := parse.NonEmptyLines("foo\n\n  bar  \n\nbaz\n")
+func TestNonEmptyLines(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:196
-	test.AssertEqual(t, len(lines), 3)
+	lines := parse.NonEmptyLines("foo\n\n  bar  \n\nbaz\n")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:197
-	test.AssertEqual(t, lines[0], "foo")
+	test.AssertEqual(t, len(lines), 3)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:198
-	test.AssertEqual(t, lines[1], "bar")
+	test.AssertEqual(t, lines[0], "foo")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:199
+	test.AssertEqual(t, lines[1], "bar")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:200
 	test.AssertEqual(t, lines[2], "baz")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:203
 type IntCase struct {
 	name    string
 	input   string
@@ -337,31 +338,31 @@ type IntCase struct {
 	wantErr bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:208
-func TestInt(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:209
+func TestInt(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:210
 	cases := []IntCase{IntCase{name: "positive", input: "42", want: 42, wantErr: false}, IntCase{name: "negative", input: "-7", want: -7, wantErr: false}, IntCase{name: "zero", input: "0", want: 0, wantErr: false}, IntCase{name: "spaces", input: " 42", want: 0, wantErr: true}, IntCase{name: "float str", input: "3.14", want: 0, wantErr: true}, IntCase{name: "empty", input: "", want: 0, wantErr: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:217
-	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:218
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:219
-			n, err := parse.Int(tc.input)
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:220
-			if tc.wantErr {
+			n, err := parse.Int(tc.input)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:221
+			if tc.wantErr {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:222
 				test.AssertError(t, err)
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:223
-				test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:224
+				test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:225
 				test.AssertEqual(t, n, tc.want)
 			}
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:228
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:229
 type Float64Case struct {
 	name    string
 	input   string
@@ -369,48 +370,148 @@ type Float64Case struct {
 	wantErr bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:234
-func TestFloat64(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:235
+func TestFloat64(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:236
 	cases := []Float64Case{Float64Case{name: "integer str", input: "42", want: 42.0, wantErr: false}, Float64Case{name: "decimal", input: "3.14", want: 3.14, wantErr: false}, Float64Case{name: "negative", input: "-1.5", want: -1.5, wantErr: false}, Float64Case{name: "not a number", input: "abc", want: 0.0, wantErr: true}, Float64Case{name: "empty", input: "", want: 0.0, wantErr: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:242
-	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:243
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:244
-			f, err := parse.Float64(tc.input)
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:245
-			if tc.wantErr {
+			f, err := parse.Float64(tc.input)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:246
+			if tc.wantErr {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:247
 				test.AssertError(t, err)
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:248
-				test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:249
+				test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:250
 				test.AssertEqual(t, f, tc.want)
 			}
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:253
-func TestDuration(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:254
-	d, err := parse.Duration("1h30m")
+func TestDuration(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:255
-	test.AssertNoError(t, err)
+	d, err := parse.Duration("1h30m")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:256
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:257
 	test.AssertEqual(t, d, time.Duration(90)*time.Minute)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:259
-func TestQuery(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:260
-	v, err := parse.Query("name=ada&age=30")
+func TestQuery(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:261
-	test.AssertNoError(t, err)
+	v, err := parse.Query("name=ada&age=30")
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:262
-	test.AssertEqual(t, v["name"][0], "ada")
+	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:263
+	test.AssertEqual(t, v["name"][0], "ada")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:264
 	test.AssertEqual(t, v["age"][0], "30")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:267
+type BoolCase struct {
+	name    string
+	input   string
+	want    bool
+	wantErr bool
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:273
+func TestBool(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:274
+	cases := []BoolCase{BoolCase{name: "true", input: "true", want: true, wantErr: false}, BoolCase{name: "TRUE", input: "TRUE", want: true, wantErr: false}, BoolCase{name: "one", input: "1", want: true, wantErr: false}, BoolCase{name: "yes", input: "yes", want: true, wantErr: false}, BoolCase{name: "On", input: " On ", want: true, wantErr: false}, BoolCase{name: "false", input: "false", want: false, wantErr: false}, BoolCase{name: "zero", input: "0", want: false, wantErr: false}, BoolCase{name: "no", input: "NO", want: false, wantErr: false}, BoolCase{name: "off", input: "off", want: false, wantErr: false}, BoolCase{name: "maybe", input: "maybe", want: false, wantErr: true}, BoolCase{name: "empty", input: "", want: false, wantErr: true}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:287
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:288
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:289
+			b, err := parse.Bool(tc.input)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:290
+			if tc.wantErr {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:291
+				test.AssertError(t, err)
+			} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:293
+				test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:294
+				test.AssertEqual(t, b, tc.want)
+			}
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:298
+func TestBoolOr(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:299
+	test.AssertEqual(t, parse.BoolOr("yes", false), true)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:300
+	test.AssertEqual(t, parse.BoolOr("0", true), false)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:302
+	test.AssertEqual(t, parse.BoolOr("maybe", true), true)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:303
+	test.AssertEqual(t, parse.BoolOr("maybe", false), false)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:306
+func TestYAML(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:307
+	t.Run("parses without validation", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:308
+		cfg, err := parse.YAML[Config]("user: bob\nemail: bob@example.com")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:309
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:310
+		test.AssertEqual(t, cfg.User, "bob")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:311
+		test.AssertEqual(t, cfg.Email, "bob@example.com")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:314
+	t.Run("malformed yaml errors", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:315
+		_, err := parse.YAML[Config]("::: not valid yaml :::")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:316
+		test.AssertError(t, err)
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:320
+func TestWriteYAML(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:321
+	t.Run("encodes struct fields", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:322
+		cfg := Config{User: "bob", Email: "bob@example.com"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:323
+		out, err := parse.WriteYAML(cfg)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:324
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:325
+		test.AssertTrue(t, kukistring.Contains(out, "user: bob"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:326
+		test.AssertTrue(t, kukistring.Contains(out, "email: bob@example.com"))
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:329
+	t.Run("round-trips through YAML of T", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:330
+		cfg := Config{User: "carol", Email: "carol@example.com"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:331
+		out, err := parse.WriteYAML(cfg)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:332
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:333
+		back, err := parse.YAML[Config](out)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:334
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:335
+		test.AssertEqual(t, back.User, "carol")
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:336
+		test.AssertEqual(t, back.Email, "carol@example.com")
+	})
 }

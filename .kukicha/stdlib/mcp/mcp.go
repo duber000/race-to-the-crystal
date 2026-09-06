@@ -13,7 +13,6 @@ import (
 	strpkg "kukicha.org/kukicha/stdlib/string"
 	"net/http"
 	"reflect"
-	"strings"
 )
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:19
@@ -114,42 +113,44 @@ func decodeContent(raw mcp.Content) content.Content {
 		return content.ToolResult{ToolUseID: v.ToolUseID, Items: items}
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:74
-	data, _ := json.Bytes(raw)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:75
-	_ = data
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:76
 	return content.Raw{Type: "mcp_unknown", Data: raw}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:81
 func encodeContent(c content.Content) mcp.Content {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:82
 	switch c := c.(type) {
 	case content.Text:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:84
 		return &mcp.TextContent{Text: c.Body}
 	case content.Thinking:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:86
 		return &mcp.TextContent{Text: c.Body}
 	case content.Image:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:88
 		switch payload := c.Payload.(type) {
 		case content.Inline:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:90
 			return &mcp.ImageContent{MIMEType: payload.MIMEType, Data: payload.Data}
 		case content.Encoded:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:92
 			switch src := payload.Value.(type) {
 			case content.Base64:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:95
 				return &mcp.ImageContent{MIMEType: src.MediaType, Data: []byte(src.Data)}
 			case content.RawSource:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:100
 				rawText := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:101
 				if src.Value != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:104
-					rawBytes, _ := json.Bytes(src.Value)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:102
+					rawBytes, err_1 := json.Bytes(src.Value)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:102
+					if err_1 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:102
+						//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:103
+						rawBytes = nil
+					}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:105
 					rawText = string(rawBytes)
 				}
@@ -188,656 +189,674 @@ func encodeContent(c content.Content) mcp.Content {
 		return &mcp.ToolResultContent{ToolUseID: c.ToolUseID, Content: inner}
 	case content.Reasoning:
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:131
-		data, _ := json.Bytes(c.Summary)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:132
+		data, err_2 := json.Bytes(c.Summary)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:131
+		if err_2 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:131
+			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:132
+			data = nil
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:134
 		return &mcp.TextContent{Text: string(data)}
 	case content.Raw:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:134
-		rawText := c.Type
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:135
-		if c.Data != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:136
-			rawBytes, _ := json.Bytes(c.Data)
+		rawText := c.Type
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:137
+		if c.Data != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:138
+			rawBytes, err_3 := json.Bytes(c.Data)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:138
+			if err_3 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:138
+				//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:139
+				rawBytes = nil
+			}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:141
 			rawText = string(rawBytes)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:138
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:142
 		return &mcp.TextContent{Text: rawText}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:144
 	return &mcp.TextContent{}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:151
 func buildCallResult(res any) (*mcp.CallToolResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:152
 	switch r := res.(type) {
 	case *mcp.CallToolResult:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:154
 		return r, nil
 	case string:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:156
 		return &mcp.CallToolResult{Content: []mcp.Content{encodeContent(content.Text{Body: r})}}, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:160
 	data, err := json.Bytes(res)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:161
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:158
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:162
 		return nil, fmt.Errorf("tool result serialization failed: %v", err)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:159
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:163
 	return &mcp.CallToolResult{Content: []mcp.Content{encodeContent(content.Text{Body: string(data)})}}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:173
 func errorCallResult(msg string) *mcp.CallToolResult {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:174
 	return &mcp.CallToolResult{Content: []mcp.Content{encodeContent(content.Text{Body: msg})}, IsError: true}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:182
 func New(name string, version string) *mcp.Server {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:183
 	return mcp.NewServer(&mcp.Implementation{Name: name, Version: version}, nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:189
 func Serve(server *mcp.Server) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:190
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:191
 	return server.Run(bg.Ctx, &mcp.StdioTransport{})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:194
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:198
 func TextResult(text string) any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:195
-	res, _ := buildCallResult(text)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:199
+	res, err_4 := buildCallResult(text)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:199
+	if err_4 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:199
+		//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:200
+		res = nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:202
 	return res
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:205
 func ErrorResult(msg string) any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:206
 	return errorCallResult(msg)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:209
 func isIntKind(k reflect.Kind) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:204
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:210
 	return k == reflect.Int || k == reflect.Int8 || k == reflect.Int16 || k == reflect.Int32 || k == reflect.Int64 || k == reflect.Uint || k == reflect.Uint8 || k == reflect.Uint16 || k == reflect.Uint32 || k == reflect.Uint64
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:211
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:217
 func kindMatchesSchemaType(k reflect.Kind, schemaType string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:212
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:218
 	if k == reflect.Interface {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:219
 		return true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:220
 	switch schemaType {
 	case "string":
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:222
 		return k == reflect.String
 	case "integer":
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:218
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:224
 		return isIntKind(k)
 	case "number":
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:220
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:226
 		return k == reflect.Float32 || k == reflect.Float64 || isIntKind(k)
 	case "boolean":
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:228
 		return k == reflect.Bool
 	case "array":
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:230
 		return k == reflect.Slice || k == reflect.Array
 	case "object":
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:226
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:232
 		return k == reflect.Struct || k == reflect.Map
 	case "null":
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:228
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:234
 		return true
 	default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:230
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:236
 		return true
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:240
-func validateToolSchema(toolName string, schema any, handler any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:241
-	hType := reflect.TypeOf(handler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:242
-	if hType == nil || hType.Kind() != reflect.Func || hType.NumIn() == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:243
-		return nil
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:245
-	argsType := hType.In(hType.NumIn() - 1)
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:246
-	if argsType.Kind() == reflect.Map {
+func validateToolSchema(toolName string, schema any, handler any) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:247
+	hType := reflect.TypeOf(handler)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:248
+	if hType == nil || hType.Kind() != reflect.Func || hType.NumIn() == 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:249
 		return nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:248
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:251
+	argsType := hType.In(hType.NumIn() - 1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:252
+	if argsType.Kind() == reflect.Map {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:253
+		return nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:254
 	if argsType.Kind() == reflect.Pointer {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:249
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:255
 		argsType = argsType.Elem()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:250
-	if argsType.Kind() != reflect.Struct {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:251
-		return nil
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:253
-	schemaMap, ok := schema.(JSONObject)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:254
-	if !ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:255
-		return nil
-	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:256
-	propsAny, hasProps := schemaMap["properties"]
+	if argsType.Kind() != reflect.Struct {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:257
-	if !hasProps {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:258
 		return nil
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:259
-	props, propsOK := propsAny.(JSONObject)
+	schemaMap, ok := schema.(JSONObject)
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:260
-	if !propsOK {
+	if !ok {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:261
 		return nil
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:262
+	propsAny, hasProps := schemaMap["properties"]
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:263
-	fields := map[string]reflect.StructField{}
+	if !hasProps {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:264
-	hasField := map[string]bool{}
+		return nil
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:265
-	numFields := argsType.NumField()
+	props, propsOK := propsAny.(JSONObject)
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:266
-	for i := range numFields {
+	if !propsOK {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:267
-		f := argsType.Field(i)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:268
-		if !f.IsExported() {
+		return nil
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:269
+	fields := map[string]reflect.StructField{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:270
+	hasField := map[string]bool{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:271
+	numFields := argsType.NumField()
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:272
+	for i := range numFields {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:273
+		f := argsType.Field(i)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:274
+		if !f.IsExported() {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:275
 			continue
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:270
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:276
 		name := f.Name
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:271
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:277
 		tag := f.Tag.Get("json")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:272
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:278
 		if tag != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:273
-			parts := strings.SplitN(tag, ",", 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:274
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:279
+			parts := strpkg.SplitN(tag, ",", 2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:280
 			if parts[0] != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:275
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:281
 				name = parts[0]
 			}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:276
-		key := strings.ToLower(name)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:277
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:282
+		key := strpkg.ToLower(name)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:283
 		fields[key] = f
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:278
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:284
 		hasField[key] = true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:280
-	missing := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:281
-	for propName, propSchema := range props {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:282
-		key := strings.ToLower(propName)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:283
-		if !hasField[key] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:284
-			missing = append(missing, propName)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:285
-			continue
-		}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:286
-		propObj, propIsObj := propSchema.(JSONObject)
+	missing := []string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:287
-		if !propIsObj {
+	for propName, propSchema := range props {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:288
-			continue
-		}
+		key := strpkg.ToLower(propName)
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:289
-		typAny, hasType := propObj["type"]
+		if !hasField[key] {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:290
-		if !hasType {
+			missing = append(missing, propName)
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:291
 			continue
 		}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:292
-		typStr, typOK := typAny.(string)
+		propObj, propIsObj := propSchema.(JSONObject)
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:293
-		if !typOK {
+		if !propIsObj {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:294
 			continue
 		}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:295
-		field := fields[key]
+		typAny, hasType := propObj["type"]
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:296
-		ft := field.Type
+		if !hasType {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:297
-		if ft.Kind() == reflect.Pointer {
+			continue
+		}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:298
+		typStr, typOK := typAny.(string)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:299
+		if !typOK {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:300
+			continue
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:301
+		field := fields[key]
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:302
+		ft := field.Type
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:303
+		if ft.Kind() == reflect.Pointer {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:304
 			ft = ft.Elem()
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:299
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:305
 		if !kindMatchesSchemaType(ft.Kind(), typStr) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:300
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:306
 			return fmt.Errorf("mcp.Tool %v: schema property %v type \"%v\" is incompatible with args struct field %v (%v)", toolName, propName, typStr, field.Name, ft.Kind())
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:301
-	if len(missing) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:302
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:307
+	if len(missing) != 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:308
 		return fmt.Errorf("mcp.Tool %v: schema properties %v have no matching fields on args struct %v", toolName, missing, argsType.Name())
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:304
-	reqAny, hasReq := schemaMap["required"]
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:305
-	if hasReq {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:306
-		reqList, reqOK := reqAny.([]string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:307
-		if reqOK {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:308
-			missingReq := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:309
-			for _, r := range reqList {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:310
-				if !hasField[strings.ToLower(r)] {
+	reqAny, hasReq := schemaMap["required"]
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:311
+	if hasReq {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:312
+		reqList, reqOK := reqAny.([]string)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:313
+		if reqOK {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:314
+			missingReq := []string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:315
+			for _, r := range reqList {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:316
+				if !hasField[strpkg.ToLower(r)] {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:317
 					missingReq = append(missingReq, r)
 				}
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:312
-			if len(missingReq) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:313
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:318
+			if len(missingReq) != 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:319
 				return fmt.Errorf("mcp.Tool %v: required fields %v missing from args struct %v", toolName, missingReq, argsType.Name())
 			}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:315
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:321
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:340
-func Tool[T any, R any](server *mcp.Server, name string, description string, schema any, handler func(T) (R, error)) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:341
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:341
-	err_1 := validateToolSchema(name, schema, handler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:341
-	if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:341
-		panic(fmt.Sprintf("%v", err_1))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:342
-	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:343
-		var args T
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:344
-		if len(req.Params.Arguments) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:345
-			unmarshalErr := json.ParseBytesInto(req.Params.Arguments, &args)
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:346
-			if unmarshalErr != nil {
+func Tool[T any, R any](server *mcp.Server, name string, description string, schema any, handler func(T) (R, error)) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:347
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:347
+	err_5 := validateToolSchema(name, schema, handler)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:347
+	if err_5 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:347
+		panic(fmt.Sprintf("%v", err_5))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:348
+	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:349
+		var args T
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:350
+		if req.Params.Arguments != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:351
+			unmarshalErr := json.ParseBytesInto(req.Params.Arguments, &args)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:352
+			if unmarshalErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:353
 				return nil, unmarshalErr
 			}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:348
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:354
 		res, handlerErr := handler(args)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:349
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:355
 		if handlerErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:350
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:356
 			return errorCallResult(handlerErr.Error()), nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:351
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:357
 		built, buildErr := buildCallResult(res)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:352
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:358
 		if buildErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:353
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:359
 			return nil, buildErr
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:354
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:360
 		return built, nil
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:358
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:364
 type Client struct {
 	inner *mcp.Client
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:362
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:368
 func NewClient(name string, version string) *Client {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:363
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:369
 	inner := mcp.NewClient(&mcp.Implementation{Name: name, Version: version}, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:364
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:370
 	return &Client{inner: inner}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:368
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:374
 func (c *Client) Connect(ctx context.Context, endpoint string) (*ClientSession, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:369
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:375
 	return c.ConnectWith(ctx, endpoint, nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:375
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:381
 func (c *Client) ConnectWith(ctx context.Context, endpoint string, httpClient *http.Client) (*ClientSession, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:376
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:382
 	transport := &mcp.StreamableClientTransport{Endpoint: endpoint, HTTPClient: httpClient}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:377
-	session, err_2 := c.inner.Connect(ctx, transport, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:377
-	if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:377
-		return nil, fmt.Errorf("MCP connect to %v failed: %v", endpoint, err_2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:383
+	session, err_6 := c.inner.Connect(ctx, transport, nil)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:383
+	if err_6 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:383
+		return nil, fmt.Errorf("MCP connect to %v failed: %v", endpoint, err_6)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:378
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:384
 	return &ClientSession{inner: session}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:381
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:388
 type ClientSession struct {
 	inner *mcp.ClientSession
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:385
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:393
 type ClientTool struct {
 	Name        string
 	Description string
 	InputSchema JSONObject
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:396
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:405
 type CallToolResult struct {
 	Text    string
 	IsError bool
 	Content []Content
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:402
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:411
 type bearerTransport struct {
 	token string
 	base  http.RoundTripper
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:406
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:415
 func (t *bearerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:407
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:416
 	cloned := req.Clone(req.Context())
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:408
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:417
 	cloned.Header.Set("Authorization", fmt.Sprintf("Bearer %v", t.token))
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:409
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:418
 	return t.base.RoundTrip(cloned)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:413
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:422
 func Connect(ctx context.Context, endpoint string) (*ClientSession, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:414
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:423
 	return ConnectWithClient(ctx, endpoint, nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:420
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:429
 func BearerConnect(ctx context.Context, endpoint string, token string) (*ClientSession, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:421
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:430
 	httpClient := &http.Client{Transport: &bearerTransport{token: token, base: http.DefaultTransport}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:422
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:431
 	return ConnectWithClient(ctx, endpoint, httpClient)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:428
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:437
 func ConnectWithClient(ctx context.Context, endpoint string, httpClient *http.Client) (*ClientSession, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:429
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:438
 	client := mcp.NewClient(&mcp.Implementation{Name: "kukicha-mcp-client", Version: "1.0.0"}, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:433
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:442
 	transport := &mcp.StreamableClientTransport{Endpoint: endpoint, HTTPClient: httpClient}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:434
-	session, err_3 := client.Connect(ctx, transport, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:434
-	if err_3 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:434
-		return nil, fmt.Errorf("MCP connect to %v failed: %v", endpoint, err_3)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:443
+	session, err_7 := client.Connect(ctx, transport, nil)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:443
+	if err_7 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:443
+		return nil, fmt.Errorf("MCP connect to %v failed: %v", endpoint, err_7)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:435
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:444
 	return &ClientSession{inner: session}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:440
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:449
 func ConnectFromSession(inner *mcp.ClientSession) *ClientSession {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:441
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:450
 	return &ClientSession{inner: inner}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:444
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:453
 func Close(session *ClientSession) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:445
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:454
 	return session.inner.Close()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:448
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:457
 func ListTools(ctx context.Context, session *ClientSession) ([]ClientTool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:449
-	result, err_4 := session.inner.ListTools(ctx, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:449
-	if err_4 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:449
-		err_4 = fmt.Errorf("MCP ListTools failed: %w", err_4)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:449
-		return []ClientTool{}, err_4
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:458
+	result, err_8 := session.inner.ListTools(ctx, nil)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:458
+	if err_8 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:458
+		err_8 = fmt.Errorf("MCP ListTools failed: %w", err_8)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:458
+		return []ClientTool{}, err_8
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:450
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:459
 	tools := make([]ClientTool, len(result.Tools))
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:451
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:460
 	for i, t := range result.Tools {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:452
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:461
 		var schema JSONObject
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:453
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:462
 		switch m := t.InputSchema.(type) {
 		case JSONObject:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:455
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:464
 			schema = m
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:457
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:466
 		tools[i] = ClientTool{Name: t.Name, Description: t.Description, InputSchema: schema}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:458
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:467
 	return tools, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:462
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:472
 func CallTool(ctx context.Context, session *ClientSession, name string, args JSONObject) (CallToolResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:463
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:473
 	params := &mcp.CallToolParams{Name: name, Arguments: args}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:464
-	result, err_5 := session.inner.CallTool(ctx, params)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:464
-	if err_5 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:464
-		return CallToolResult{}, fmt.Errorf("MCP CallTool \"%v\" failed: %v", name, err_5)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:474
+	result, err_9 := session.inner.CallTool(ctx, params)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:474
+	if err_9 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:474
+		return CallToolResult{}, fmt.Errorf("MCP CallTool \"%v\" failed: %v", name, err_9)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:465
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:475
 	items := make([]Content, len(result.Content))
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:466
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:476
 	parts := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:467
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:477
 	for i, c := range result.Content {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:468
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:478
 		decoded := decodeContent(c)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:469
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:479
 		items[i] = decoded
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:470
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:480
 		switch decoded := decoded.(type) {
 		case content.Text:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:472
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:482
 			parts = append(parts, decoded.Body)
 		case content.Thinking:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:474
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:484
 			parts = append(parts, decoded.Body)
 		case content.Image:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:476
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:486
 			switch payload := decoded.Payload.(type) {
 			case content.Inline:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:478
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:488
 				parts = append(parts, fmt.Sprintf("[image: %v]", payload.MIMEType))
 			case content.Encoded:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:480
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:490
 				switch src := payload.Value.(type) {
 				case content.Base64:
 					_ = src
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:482
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:492
 					parts = append(parts, fmt.Sprintf("[image: %v]", src.MediaType))
 				case content.RawSource:
 					_ = src
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:484
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:494
 					parts = append(parts, "[image]")
 				}
 			default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:486
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:496
 				parts = append(parts, "[image]")
 			}
 		case content.Audio:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:488
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:498
 			parts = append(parts, fmt.Sprintf("[audio: %v]", decoded.MIMEType))
 		case content.Link:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:490
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:500
 			parts = append(parts, fmt.Sprintf("[resource: %v]", decoded.URI))
 		case content.Embedded:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:492
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:502
 			if decoded.Text != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:493
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:503
 				parts = append(parts, decoded.Text)
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:495
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:505
 				parts = append(parts, fmt.Sprintf("[embedded: %v]", decoded.URI))
 			}
 		case content.ToolUse:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:497
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:507
 			parts = append(parts, fmt.Sprintf("[tool_use: %v]", decoded.Name))
 		case content.ToolResult:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:499
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:509
 			parts = append(parts, fmt.Sprintf("[tool_result: %v]", decoded.ToolUseID))
 		case content.Reasoning:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:501
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:511
 			parts = append(parts, "[reasoning]")
 		case content.Raw:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:503
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:513
 			parts = append(parts, fmt.Sprintf("[raw: %v]", decoded.Type))
 		default:
 			panic("unreachable")
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:505
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:515
 	text := strpkg.Join(parts, "\n")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:506
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:516
 	return CallToolResult{Text: text, IsError: result.IsError, Content: items}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:513
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:523
 type ResourceHandler = mcp.ResourceHandler
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:518
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:528
 type TextResourceFunc func(string) (string, error)
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:524
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:534
 func Resource(server *mcp.Server, uri string, name string, description string, mimeType string, handler ResourceHandler) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:525
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:535
 	server.AddResource(&mcp.Resource{URI: uri, Name: name, Description: description, MIMEType: mimeType}, handler)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:536
-func TextResource(server *mcp.Server, uri string, name string, description string, fn TextResourceFunc) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:546
+func TextResource(server *mcp.Server, uri string, name string, description string, fn TextResourceFunc) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:556
 	Resource(server, uri, name, description, "text/plain", func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:538
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:548
 		text, err := fn(req.Params.URI)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:539
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:549
 		if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:540
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:550
 			return nil, err
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:541
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:551
 		return &mcp.ReadResourceResult{Contents: []*mcp.ResourceContents{&mcp.ResourceContents{URI: req.Params.URI, MIMEType: "text/plain", Text: text}}}, nil
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:551
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:561
 func ResourceTemplate(server *mcp.Server, uriTemplate string, name string, description string, mimeType string, handler ResourceHandler) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:552
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:562
 	server.AddResourceTemplate(&mcp.ResourceTemplate{URITemplate: uriTemplate, Name: name, Description: description, MIMEType: mimeType}, handler)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:562
-func TextResourceTemplate(server *mcp.Server, uriTemplate string, name string, description string, fn TextResourceFunc) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:572
+func TextResourceTemplate(server *mcp.Server, uriTemplate string, name string, description string, fn TextResourceFunc) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:582
 	ResourceTemplate(server, uriTemplate, name, description, "text/plain", func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:564
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:574
 		text, err := fn(req.Params.URI)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:565
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:575
 		if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:566
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:576
 			return nil, err
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:567
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:577
 		return &mcp.ReadResourceResult{Contents: []*mcp.ResourceContents{&mcp.ResourceContents{URI: req.Params.URI, MIMEType: "text/plain", Text: text}}}, nil
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:577
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:587
 type PromptArg struct {
 	Name        string
 	Description string
 	Required    bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:584
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:594
 type PromptHandler = mcp.PromptHandler
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:588
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:598
 type UserPromptFunc func(PromptArgs) (string, error)
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:594
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:604
 func Prompt(server *mcp.Server, name string, description string, args []PromptArg, handler PromptHandler) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:595
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:605
 	promptArgs := make([]*mcp.PromptArgument, len(args))
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:596
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:606
 	for i, a := range args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:597
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:607
 		promptArgs[i] = &mcp.PromptArgument{Name: a.Name, Description: a.Description, Required: a.Required}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:598
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:608
 	server.AddPrompt(&mcp.Prompt{Name: name, Description: description, Arguments: promptArgs}, handler)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:610
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:620
 func UserPrompt(server *mcp.Server, name string, description string, args []PromptArg, fn UserPromptFunc) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:621
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:631
 	Prompt(server, name, description, args, func(ctx context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:612
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:622
 		text, err := fn(req.Params.Arguments)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:613
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:623
 		if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:614
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:624
 			return nil, err
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:615
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:625
 		return &mcp.GetPromptResult{Description: description, Messages: []*mcp.PromptMessage{&mcp.PromptMessage{Role: "user", Content: encodeContent(content.Text{Body: text})}}}, nil
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:632
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:642
 type ToolOpts struct {
 	ReadOnly      bool
 	Destructive   bool
@@ -847,189 +866,237 @@ type ToolOpts struct {
 	OutputSchema  any
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:646
-func ToolWithOpts[T any, R any](server *mcp.Server, name string, description string, schema any, opts ToolOpts, handler func(T) (R, error)) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:647
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:647
-	err_6 := validateToolSchema(name, schema, handler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:647
-	if err_6 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:647
-		panic(fmt.Sprintf("%v", err_6))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:648
-	tool := &mcp.Tool{Name: name, Description: description, InputSchema: schema, OutputSchema: opts.OutputSchema}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:655
-	if opts.ReadOnly || opts.Destructive || opts.Idempotent || opts.OpenWorldHint || opts.Title != "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:656
-		a := &mcp.ToolAnnotations{}
+func ToolWithOpts[T any, R any](server *mcp.Server, name string, description string, schema any, opts ToolOpts, handler func(T) (R, error)) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:657
-		if opts.ReadOnly {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:657
+	err_10 := validateToolSchema(name, schema, handler)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:657
+	if err_10 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:657
+		panic(fmt.Sprintf("%v", err_10))
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:658
+	tool := &mcp.Tool{Name: name, Description: description, InputSchema: schema, OutputSchema: opts.OutputSchema}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:665
+	if opts.ReadOnly || opts.Destructive || opts.Idempotent || opts.OpenWorldHint || opts.Title != "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:666
+		a := &mcp.ToolAnnotations{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:667
+		if opts.ReadOnly {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:668
 			a.ReadOnlyHint = true
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:659
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:669
 		if opts.Destructive {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:660
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:670
 			v := true
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:661
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:671
 			a.DestructiveHint = &v
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:662
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:672
 		if opts.Idempotent {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:663
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:673
 			a.IdempotentHint = true
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:664
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:674
 		if opts.OpenWorldHint {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:665
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:675
 			v := true
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:666
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:676
 			a.OpenWorldHint = &v
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:667
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:677
 		if opts.Title != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:668
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:678
 			a.Title = opts.Title
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:669
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:679
 		tool.Annotations = a
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:670
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:680
 	server.AddTool(tool, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:671
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:681
 		var args T
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:672
-		if len(req.Params.Arguments) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:673
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:682
+		if req.Params.Arguments != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:683
 			unmarshalErr := json.ParseBytesInto(req.Params.Arguments, &args)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:674
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:684
 			if unmarshalErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:675
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:685
 				return nil, unmarshalErr
 			}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:676
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:686
 		res, handlerErr := handler(args)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:677
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:687
 		if handlerErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:678
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:688
 			return errorCallResult(handlerErr.Error()), nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:679
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:689
 		built, buildErr := buildCallResult(res)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:680
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:690
 		if buildErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:681
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:691
 			return nil, buildErr
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:682
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:692
 		return built, nil
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:689
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:699
 type ToolContext struct {
 	inner         *mcp.ServerSession
 	progressToken any
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:696
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:706
 func (tc *ToolContext) Progress(ctx context.Context, progress float64, total float64, msg string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:697
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:707
 	if tc.progressToken == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:698
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:708
 		return nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:699
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:709
 	return tc.inner.NotifyProgress(ctx, &mcp.ProgressNotificationParams{ProgressToken: tc.progressToken, Progress: progress, Total: total, Message: msg})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:710
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:720
 func (tc *ToolContext) Elicit(ctx context.Context, message string, schema any) (ElicitAction, JSONObject, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:711
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:721
 	result, err := tc.inner.Elicit(ctx, &mcp.ElicitParams{Message: message, RequestedSchema: schema})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:712
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:722
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:713
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:723
 		return ElicitAction(""), nil, err
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:714
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:724
 	return ElicitAction(result.Action), result.Content, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:720
-type ToolRichHandler func(context.Context, *ToolContext, JSONObject) (any, error)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:730
+type ToolWithContextHandler func(context.Context, *ToolContext, JSONObject) (any, error)
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:729
-func ToolRich[T any, R any](server *mcp.Server, name string, description string, schema any, handler func(context.Context, *ToolContext, T) (R, error)) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:730
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:730
-	err_7 := validateToolSchema(name, schema, handler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:730
-	if err_7 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:730
-		panic(fmt.Sprintf("%v", err_7))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:731
-	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:732
-		var args T
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:733
-		if len(req.Params.Arguments) > 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:734
+type ToolRichHandler = ToolWithContextHandler
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:743
+func ToolWithContext[T any, R any](server *mcp.Server, name string, description string, schema any, handler func(context.Context, *ToolContext, T) (R, error)) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:744
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:744
+	err_11 := validateToolSchema(name, schema, handler)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:744
+	if err_11 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:744
+		panic(fmt.Sprintf("%v", err_11))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:745
+	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:746
+		var args T
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:747
+		if req.Params.Arguments != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:748
 			unmarshalErr := json.ParseBytesInto(req.Params.Arguments, &args)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:735
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:749
 			if unmarshalErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:736
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:750
 				return nil, unmarshalErr
 			}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:737
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:751
 		tc := &ToolContext{inner: req.Session, progressToken: req.Params.GetProgressToken()}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:738
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:752
 		res, handlerErr := handler(ctx, tc, args)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:739
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:753
 		if handlerErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:740
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:754
 			return errorCallResult(handlerErr.Error()), nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:741
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:755
 		built, buildErr := buildCallResult(res)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:742
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:756
 		if buildErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:743
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:757
 			return nil, buildErr
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:744
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:758
 		return built, nil
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:757
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:764
+func ToolRich[T any, R any](server *mcp.Server, name string, description string, schema any, handler func(context.Context, *ToolContext, T) (R, error)) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:765
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:765
+	err_12 := validateToolSchema(name, schema, handler)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:765
+	if err_12 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:765
+		panic(fmt.Sprintf("%v", err_12))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:766
+	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:767
+		var args T
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:768
+		if req.Params.Arguments != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:769
+			unmarshalErr := json.ParseBytesInto(req.Params.Arguments, &args)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:770
+			if unmarshalErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:771
+				return nil, unmarshalErr
+			}
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:772
+		tc := &ToolContext{inner: req.Session, progressToken: req.Params.GetProgressToken()}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:773
+		res, handlerErr := handler(ctx, tc, args)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:774
+		if handlerErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:775
+			return errorCallResult(handlerErr.Error()), nil
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:776
+		built, buildErr := buildCallResult(res)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:777
+		if buildErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:778
+			return nil, buildErr
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:779
+		return built, nil
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:792
 type HTTPOptions struct {
 	Stateless bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:772
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:807
 func ServeHTTP(server *mcp.Server, addr string, opts *HTTPOptions) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:773
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:808
 	o := mcp.StreamableHTTPOptions{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:774
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:809
 	if opts != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:775
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:810
 		o.Stateless = opts.Stateless
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:777
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:812
 		o.Stateless = true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:778
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:813
 	handler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return server }, &o)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:779
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:814
 	return httppkg.Serve(addr, handler)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:784
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:819
 type ClientResource struct {
 	URI         string
 	Name        string
@@ -1037,7 +1104,7 @@ type ClientResource struct {
 	MIMEType    string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:791
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:826
 type ClientResourceTemplate struct {
 	URITemplate string
 	Name        string
@@ -1045,222 +1112,226 @@ type ClientResourceTemplate struct {
 	MIMEType    string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:798
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:833
 type ClientPrompt struct {
 	Name        string
 	Description string
 	Arguments   []PromptArg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:804
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:839
 func ListResources(ctx context.Context, session *ClientSession) ([]ClientResource, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:805
-	result, err_8 := session.inner.ListResources(ctx, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:805
-	if err_8 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:805
-		err_8 = fmt.Errorf("MCP ListResources failed: %w", err_8)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:805
-		return []ClientResource{}, err_8
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:840
+	result, err_13 := session.inner.ListResources(ctx, nil)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:840
+	if err_13 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:840
+		err_13 = fmt.Errorf("MCP ListResources failed: %w", err_13)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:840
+		return []ClientResource{}, err_13
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:806
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:841
 	out := make([]ClientResource, len(result.Resources))
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:807
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:842
 	for i, r := range result.Resources {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:808
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:843
 		out[i] = ClientResource{URI: r.URI, Name: r.Name, Description: r.Description, MIMEType: r.MIMEType}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:809
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:844
 	return out, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:812
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:847
 func ListResourceTemplates(ctx context.Context, session *ClientSession) ([]ClientResourceTemplate, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:813
-	result, err_9 := session.inner.ListResourceTemplates(ctx, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:813
-	if err_9 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:813
-		err_9 = fmt.Errorf("MCP ListResourceTemplates failed: %w", err_9)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:813
-		return []ClientResourceTemplate{}, err_9
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:848
+	result, err_14 := session.inner.ListResourceTemplates(ctx, nil)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:848
+	if err_14 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:848
+		err_14 = fmt.Errorf("MCP ListResourceTemplates failed: %w", err_14)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:848
+		return []ClientResourceTemplate{}, err_14
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:814
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:849
 	out := make([]ClientResourceTemplate, len(result.ResourceTemplates))
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:815
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:850
 	for i, r := range result.ResourceTemplates {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:816
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:851
 		out[i] = ClientResourceTemplate{URITemplate: r.URITemplate, Name: r.Name, Description: r.Description, MIMEType: r.MIMEType}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:822
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:857
 	return out, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:827
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:862
 func ReadResource(ctx context.Context, session *ClientSession, uri string) ([]*mcp.ResourceContents, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:828
-	result, err_10 := session.inner.ReadResource(ctx, &mcp.ReadResourceParams{URI: uri})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:828
-	if err_10 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:828
-		return []*mcp.ResourceContents{}, fmt.Errorf("MCP ReadResource \"%v\" failed: %v", uri, err_10)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:863
+	result, err_15 := session.inner.ReadResource(ctx, &mcp.ReadResourceParams{URI: uri})
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:863
+	if err_15 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:863
+		return []*mcp.ResourceContents{}, fmt.Errorf("MCP ReadResource \"%v\" failed: %v", uri, err_15)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:829
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:864
 	return result.Contents, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:832
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:867
 func ListPrompts(ctx context.Context, session *ClientSession) ([]ClientPrompt, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:833
-	result, err_11 := session.inner.ListPrompts(ctx, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:833
-	if err_11 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:833
-		err_11 = fmt.Errorf("MCP ListPrompts failed: %w", err_11)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:833
-		return []ClientPrompt{}, err_11
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:868
+	result, err_16 := session.inner.ListPrompts(ctx, nil)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:868
+	if err_16 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:868
+		err_16 = fmt.Errorf("MCP ListPrompts failed: %w", err_16)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:868
+		return []ClientPrompt{}, err_16
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:834
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:869
 	out := make([]ClientPrompt, len(result.Prompts))
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:835
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:870
 	for i, p := range result.Prompts {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:836
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:871
 		args := make([]PromptArg, len(p.Arguments))
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:837
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:872
 		for j, a := range p.Arguments {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:838
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:873
 			args[j] = PromptArg{Name: a.Name, Description: a.Description, Required: a.Required}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:839
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:874
 		out[i] = ClientPrompt{Name: p.Name, Description: p.Description, Arguments: args}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:840
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:875
 	return out, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:843
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:878
 func GetPrompt(ctx context.Context, session *ClientSession, name string, args PromptArgs) (*mcp.GetPromptResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:844
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:879
 	return session.inner.GetPrompt(ctx, &mcp.GetPromptParams{Name: name, Arguments: args})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:852
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:887
 type CompletionHandler func(context.Context, *mcp.CompleteRequest) (*mcp.CompleteResult, error)
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:861
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:896
 func NewWithCompletion(name string, version string, handler CompletionHandler) *mcp.Server {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:862
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:897
 	opts := &mcp.ServerOptions{CompletionHandler: handler}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:863
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:898
 	return mcp.NewServer(&mcp.Implementation{Name: name, Version: version}, opts)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:869
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:904
 func Completions(values []string) *mcp.CompleteResult {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:870
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:905
 	return &mcp.CompleteResult{Completion: mcp.CompletionResultDetails{Values: values}}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:874
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:909
 func CompletionsPage(values []string, hasMore bool, total int) *mcp.CompleteResult {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:875
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:910
 	return &mcp.CompleteResult{Completion: mcp.CompletionResultDetails{Values: values, HasMore: hasMore, Total: total}}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:882
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:917
 type PromptCompleter func(string, string, PromptArgs) []string
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:886
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:921
 type ResourceCompleter func(string, string, PromptArgs) []string
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:891
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:926
 type CompletionRouter struct {
 	prompts   map[string]PromptCompleter
 	resources map[string]ResourceCompleter
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:896
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:931
 func NewRouter() *CompletionRouter {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:897
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:932
 	return &CompletionRouter{prompts: map[string]PromptCompleter{}, resources: map[string]ResourceCompleter{}}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:903
-func (r *CompletionRouter) AddPrompt(promptName string, completer PromptCompleter) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:904
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:939
+func (r *CompletionRouter) AddPrompt(promptName string, completer PromptCompleter) *CompletionRouter {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:940
 	r.prompts[promptName] = completer
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:941
+	return r
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:909
-func (r *CompletionRouter) AddResource(resourceURI string, completer ResourceCompleter) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:910
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:946
+func (r *CompletionRouter) AddResource(resourceURI string, completer ResourceCompleter) *CompletionRouter {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:947
 	r.resources[resourceURI] = completer
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:948
+	return r
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:916
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:954
 func (r *CompletionRouter) Handler() CompletionHandler {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:917
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:955
 	return func(ctx context.Context, req *mcp.CompleteRequest) (*mcp.CompleteResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:918
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:956
 		if req.Params.Ref == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:919
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:957
 			return Completions([]string{}), nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:920
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:958
 		argName := req.Params.Argument.Name
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:921
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:959
 		partial := req.Params.Argument.Value
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:922
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:960
 		prevArgs := *new(PromptArgs)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:923
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:961
 		if req.Params.Context != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:924
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:962
 			prevArgs = req.Params.Context.Arguments
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:926
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:964
 		switch req.Params.Ref.Type {
 		case "ref/prompt":
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:928
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:966
 			pc, ok1 := r.prompts[req.Params.Ref.Name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:929
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:967
 			if ok1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:930
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:968
 				return Completions(pc(argName, partial, prevArgs)), nil
 			}
 		case "ref/resource":
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:932
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:970
 			rc, ok2 := r.resources[req.Params.Ref.URI]
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:933
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:971
 			if ok2 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:934
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:972
 				return Completions(rc(argName, partial, prevArgs)), nil
 			}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:936
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:974
 		return Completions([]string{}), nil
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:949
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:987
 type Server = mcp.Server
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:953
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:991
 type ReadResourceRequest = mcp.ReadResourceRequest
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:957
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:995
 type ReadResourceResult = mcp.ReadResourceResult
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:961
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:999
 type GetPromptRequest = mcp.GetPromptRequest
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:965
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:1003
 type GetPromptResult = mcp.GetPromptResult
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:968
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:1006
 type PromptMessage = mcp.PromptMessage
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:974
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:1012
 type CompleteRequest = mcp.CompleteRequest
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:978
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:1016
 type CompleteResult = mcp.CompleteResult

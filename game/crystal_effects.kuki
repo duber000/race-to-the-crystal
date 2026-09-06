@@ -61,7 +61,7 @@ type CrystalEffectsManager
 
 func NewCrystalEffectsManager() CrystalEffectsManager
     return CrystalEffectsManager{
-        player_effects: make(map of types.PlayerID to reference PlayerEffects),
+        player_effects: empty map of types.PlayerID to reference PlayerEffects,
         _next_phantom_id: -1,
     }
 
@@ -98,15 +98,9 @@ func generate_phantom_tokens on m: reference CrystalEffectsManager(affected_play
 
             _, occ := occupied[pos]
             if not occ
-                apparent_player := types.PlayerID("")
-                if len(other_player_ids) > 0
-                    idx := random.Int(0, len(other_player_ids))
-                    apparent_player = other_player_ids[idx]
-                else
-                    apparent_player = affected_player_id
+                apparent_player := random.ChoiceOr of types.PlayerID(other_player_ids, affected_player_id)
 
-                hv_idx := random.Int(0, len(constants.TOKEN_HEALTH_VALUES))
-                apparent_health := constants.TOKEN_HEALTH_VALUES[hv_idx]
+                apparent_health := random.Choice of int from constants.TOKEN_HEALTH_VALUES
 
                 phantom := PhantomToken{
                     phantom_id: m._next_phantom_id,

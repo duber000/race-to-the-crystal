@@ -591,3 +591,222 @@ func TestSendRawReasoningField(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:364
 	test.AssertEqual(t, chat.GetReasoning(comp), "because")
 }
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:371
+type RoleParseCase struct {
+	input   string
+	want    string
+	wantErr bool
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:378
+func TestParseMessageRoleContract(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:379
+	cases := []RoleParseCase{RoleParseCase{input: "system", want: "system"}, RoleParseCase{input: "user", want: "user"}, RoleParseCase{input: "assistant", want: "assistant"}, RoleParseCase{input: "tool", want: "tool"}, RoleParseCase{input: "System", want: "system"}, RoleParseCase{input: "Tool", want: "tool"}, RoleParseCase{input: "SYSTEM", wantErr: true}, RoleParseCase{input: "system ", wantErr: true}, RoleParseCase{input: "", wantErr: true}, RoleParseCase{input: "developer", wantErr: true}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:391
+	for _, c := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:392
+		got, err := chat.ParseMessageRole(c.input)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:393
+		if c.wantErr {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:394
+			if err == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:395
+				t.Errorf("ParseMessageRole(%v): expected error, got raw %v", c.input, string(got))
+			}
+		} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:397
+			if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:398
+				t.Errorf("ParseMessageRole(%v): unexpected error %v", c.input, err)
+			}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:399
+			if string(got) != c.want {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:400
+				t.Errorf("ParseMessageRole(%v): got %v, want %v", c.input, string(got), c.want)
+			}
+		}
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:404
+func TestParseFinishReasonContract(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:405
+	cases := []RoleParseCase{RoleParseCase{input: "stop", want: "stop"}, RoleParseCase{input: "length", want: "length"}, RoleParseCase{input: "tool_calls", want: "tool_calls"}, RoleParseCase{input: "content_filter", want: "content_filter"}, RoleParseCase{input: "function_call", want: "function_call"}, RoleParseCase{input: "ToolCalls", want: "tool_calls"}, RoleParseCase{input: "ContentFilter", want: "content_filter"}, RoleParseCase{input: "tool_call", wantErr: true}, RoleParseCase{input: "TOOL_CALLS", wantErr: true}, RoleParseCase{input: "tool_calls ", wantErr: true}, RoleParseCase{input: "", wantErr: true}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:418
+	for _, c := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:419
+		got, err := chat.ParseFinishReason(c.input)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:420
+		if c.wantErr {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:421
+			if err == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:422
+				t.Errorf("ParseFinishReason(%v): expected error, got raw %v", c.input, string(got))
+			}
+		} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:424
+			if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:425
+				t.Errorf("ParseFinishReason(%v): unexpected error %v", c.input, err)
+			}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:426
+			if string(got) != c.want {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:427
+				t.Errorf("ParseFinishReason(%v): got %v, want %v", c.input, string(got), c.want)
+			}
+		}
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:431
+func TestAllChatEnumOrder(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:432
+	roles := chat.AllMessageRole()
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:433
+	wantRoles := []string{"system", "user", "assistant", "tool"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:434
+	if len(roles) != len(wantRoles) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:435
+		t.Fatalf("AllMessageRole has %v entries, want %v", len(roles), len(wantRoles))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:436
+	for i := range len(roles) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:437
+		raw := string(roles[i])
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:438
+		if raw != wantRoles[i] {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:439
+			t.Errorf("AllMessageRole[%v] = %v, want %v", i, raw, wantRoles[i])
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:440
+		got, err := chat.ParseMessageRole(raw)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:441
+		if err != nil || got != roles[i] {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:442
+			t.Errorf("ParseMessageRole(%v) round-trip failed", raw)
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:444
+	reasons := chat.AllFinishReason()
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:445
+	wantReasons := []string{"stop", "length", "tool_calls", "content_filter", "function_call"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:446
+	if len(reasons) != len(wantReasons) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:447
+		t.Fatalf("AllFinishReason has %v entries, want %v", len(reasons), len(wantReasons))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:448
+	for i := range len(reasons) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:449
+		raw := string(reasons[i])
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:450
+		if raw != wantReasons[i] {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:451
+			t.Errorf("AllFinishReason[%v] = %v, want %v", i, raw, wantReasons[i])
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:452
+		got, err := chat.ParseFinishReason(raw)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:453
+		if err != nil || got != reasons[i] {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:454
+			t.Errorf("ParseFinishReason(%v) round-trip failed", raw)
+		}
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:460
+func TestAskStreamRejectsMalformedFrame(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:461
+	frames := []string{`not json`, `{"id":"1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"hello"}}]}`}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:465
+	server := fakeStreamServer(frames)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:466
+	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:468
+	events, collect := chat.AskStream(newTestClient(server.URL), "hi")
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:469
+	sawError := false
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:470
+	for evt := range events {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:471
+		switch e := evt.(type) {
+		case llm.Error:
+			_ = e
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:473
+			sawError = true
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:475
+	if !sawError {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:476
+		t.Errorf("expected llm.Error event for malformed frame")
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:478
+	_, err := collect()
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:479
+	test.AssertTrue(t, err != nil)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:483
+func TestAskStreamRejectsTruncatedNoDone(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:484
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:485
+		w.Header().Set("Content-Type", "text/event-stream")
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:486
+		w.WriteHeader(http.StatusOK)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:487
+		frame := "data: " + `{"id":"1","choices":[{"index":0,"delta":{"content":"hi"}}]}` + "\n\n"
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:488
+		_, _ = w.Write([]byte(frame))
+	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:491
+	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:493
+	events, collect := chat.AskStream(newTestClient(server.URL), "hi")
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:496
+	sawError := false
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:497
+	for evt := range events {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:498
+		switch e := evt.(type) {
+		case llm.Error:
+			_ = e
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:500
+			sawError = true
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:502
+	test.AssertEqual(t, sawError, true)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:504
+	_, err := collect()
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:505
+	test.AssertTrue(t, err != nil)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:509
+func TestAskStreamRejectsEmptyStream(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:510
+	frames := []string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:511
+	server := fakeStreamServer(frames)
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:512
+	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:514
+	events, collect := chat.AskStream(newTestClient(server.URL), "hi")
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:515
+	for evt := range events {
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:516
+		switch e := evt.(type) {
+		case llm.Completed:
+			_ = e
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:518
+			t.Errorf("Completed must not fire for an empty stream")
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:520
+	_, err := collect()
+//line /var/home/tluker/repos/go/kukicha/stdlib/llm/chat/chat_test.kuki:521
+	test.AssertTrue(t, err != nil)
+}

@@ -103,9 +103,10 @@ func GeneratePublisherJWT on mp: reference MercurePublisher string
     }
     payload_bytes := jsonpkg.Bytes(payload_data) onerr return ""
 
-    header_b64 := encpkg.Base64URLEncode(header_bytes)
-    payload_b64 := encpkg.Base64URLEncode(payload_bytes)
+    # JWS for the mercure hub requires UNPadded base64url.
+    header_b64 := encpkg.Base64URLNoPadEncode(header_bytes)
+    payload_b64 := encpkg.Base64URLNoPadEncode(payload_bytes)
     signing_input := "{header_b64}.{payload_b64}"
     sig := crypto.HMAC(mp.config.publisher_jwt, signing_input)
-    sig_b64 := encpkg.Base64URLEncode(sig as list of byte)
+    sig_b64 := encpkg.Base64URLNoPadEncode(sig as list of byte)
     return "{header_b64}.{payload_b64}.{sig_b64}"

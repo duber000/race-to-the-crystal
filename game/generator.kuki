@@ -87,7 +87,7 @@ func get_generator_at_position(generators: list of Generator, pos: types.Positio
 
 func update_all_generators(generators: list of Generator, tokens_by_pos: map of types.Position to list of TokenAtPos) (list of int, map of int to types.PlayerID)
     newly_disabled := empty list of int
-    capturing_players := make(map of int to types.PlayerID)
+    capturing_players := empty map of int to types.PlayerID
 
     for i from 0 to len(generators)
         taps := tokens_by_pos[generators[i].position]

@@ -19,7 +19,7 @@ func handler(args cli.Args) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:13
 func TestCLI(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:14
-	app := cli.Action(cli.Flag(cli.Description(cli.New("myapp"), "A great tool"), "verbose", "Enable verbose output", "false"), handler)
+	app := cli.Action(cli.StringFlag(cli.Description(cli.New("myapp"), "A great tool"), "verbose", "Enable verbose output", "false"), handler)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:19
 	test.AssertEqual(t, app.Name, "myapp")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:20
@@ -31,7 +31,7 @@ func TestCLI(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:23
 func TestSubcommands(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:25
-	listCmd := cli.NewCommand("list", "List items").Flag("csv", "CSV output", "false").Action(handler)
+	listCmd := cli.NewCommand("list", "List items").StringFlag("csv", "CSV output", "false").Action(handler)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:29
 	addCmd := cli.NewCommand("add", "Add an item")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:31
@@ -55,7 +55,7 @@ func TestAgenticOutput(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:45
 func TestTTYDetection(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:46
-	_ = cli.IsTTY()
+	cli.IsTTY()
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:48
@@ -236,604 +236,666 @@ func TestGetIntOrPresent(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:162
 	args := cli.ParseArgs(app, []string{"myapp", "--limit", "42"})
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:163
-	test.AssertEqual(t, cli.GetIntOr(args, "limit", 10), 42)
+	v := cli.GetIntOr(args, "limit", 10)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:164
+	test.AssertEqual(t, v, 42)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:165
-func TestGetIntOrAbsent(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:166
-	app := cli.IntFlag(cli.New("myapp"), "limit", "Limit", 10)
+func TestGetIntOrAbsent(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:167
-	args := cli.ParseArgs(app, []string{"myapp"})
+	app := cli.IntFlag(cli.New("myapp"), "limit", "Limit", 10)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:168
-	test.AssertEqual(t, cli.GetIntOr(args, "limit", 10), 10)
+	args := cli.ParseArgs(app, []string{"myapp"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:169
+	v := cli.GetIntOr(args, "limit", 10)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:170
+	test.AssertEqual(t, v, 10)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:170
-func TestGetStringOrPresent(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:171
-	app := cli.StringFlag(cli.New("myapp"), "format", "Output format", "")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:172
-	args := cli.ParseArgs(app, []string{"myapp", "--format", "json"})
+func TestGetStringOrPresent(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:173
+	app := cli.StringFlag(cli.New("myapp"), "format", "Output format", "")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:174
+	args := cli.ParseArgs(app, []string{"myapp", "--format", "json"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:175
 	test.AssertEqual(t, cli.GetStringOr(args, "format", "text"), "json")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:175
-func TestGetStringOrAbsent(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:176
-	app := cli.StringFlag(cli.New("myapp"), "format", "Output format", "")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:177
-	args := cli.ParseArgs(app, []string{"myapp"})
+func TestGetStringOrAbsent(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:178
+	app := cli.StringFlag(cli.New("myapp"), "format", "Output format", "")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:179
+	args := cli.ParseArgs(app, []string{"myapp"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:180
 	test.AssertEqual(t, cli.GetStringOr(args, "format", "text"), "text")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:180
-func TestGetBoolOrPresent(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:181
-	app := cli.BoolFlag(cli.New("myapp"), "verbose", "Verbose", false)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:182
-	args := cli.ParseArgs(app, []string{"myapp", "--verbose=true"})
+func TestGetBoolOrPresent(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:183
-	test.AssertEqual(t, cli.GetBoolOr(args, "verbose", false), true)
-}
-
+	app := cli.BoolFlag(cli.New("myapp"), "verbose", "Verbose", false)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:184
+	args := cli.ParseArgs(app, []string{"myapp", "--verbose=true"})
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:185
-func TestGetBoolOrAbsent(t *testing.T) {
+	v := cli.GetBoolOr(args, "verbose", false)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:186
-	args := cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:187
-	test.AssertEqual(t, cli.GetBoolOr(args, "verbose", true), true)
+	test.AssertEqual(t, v, true)
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:188
+func TestGetBoolOrAbsent(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:189
-func TestVersionBuilder(t *testing.T) {
+	args := cli.NewArgs(map[string]string{})
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:190
-	app := cli.Version(cli.New("myapp"), "1.2.3")
+	v := cli.GetBoolOr(args, "verbose", true)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:191
+	test.AssertEqual(t, v, true)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:193
+func TestVersionBuilder(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:194
+	app := cli.Version(cli.New("myapp"), "1.2.3")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:195
 	test.AssertEqual(t, app.Version, "1.2.3")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:201
 var capture cli.Args
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:203
 func remember(args cli.Args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:204
 	capture = args
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:202
-func TestLeadingGlobalStringFlagReachesSubcommand(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:203
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:204
-	listCmd := cli.NewCommand("list", "List items").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:206
-	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:209
-	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "list"})
+func TestLeadingGlobalStringFlagReachesSubcommand(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:207
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:208
+	listCmd := cli.NewCommand("list", "List items").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:210
+	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:213
+	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "list"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:214
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:211
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:215
 	test.AssertEqual(t, cli.GetString(capture, "db"), "/tmp/x.db")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:213
-func TestLeadingGlobalBoolFlagReachesSubcommand(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:214
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:215
-	listCmd := cli.NewCommand("list", "List items").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:217
-	app := cli.WithCommands(cli.BoolGlobalFlag(cli.New("myapp"), "json", "JSON output", false), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:220
-	err := cli.RunWithArgs(app, []string{"myapp", "--json", "list"})
+func TestLeadingGlobalBoolFlagReachesSubcommand(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:218
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:219
+	listCmd := cli.NewCommand("list", "List items").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:221
+	app := cli.WithCommands(cli.BoolGlobalFlag(cli.New("myapp"), "json", "JSON output", false), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:224
+	err := cli.RunWithArgs(app, []string{"myapp", "--json", "list"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:225
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:226
 	test.AssertTrue(t, cli.GetBool(capture, "json"))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:224
-func TestLeadingGlobalFlagEqFormReachesSubcommand(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:225
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:226
-	listCmd := cli.NewCommand("list", "List items").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:228
-	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:231
-	err := cli.RunWithArgs(app, []string{"myapp", "--db=/tmp/x.db", "list"})
+func TestLeadingGlobalFlagEqFormReachesSubcommand(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:229
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:230
+	listCmd := cli.NewCommand("list", "List items").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:232
+	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:235
+	err := cli.RunWithArgs(app, []string{"myapp", "--db=/tmp/x.db", "list"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:236
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:237
 	test.AssertEqual(t, cli.GetString(capture, "db"), "/tmp/x.db")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:239
 func TestLeadingGlobalFlagPlusLeafFlag(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:236
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:237
-	listCmd := cli.NewCommand("list", "List items").Flag("csv", "CSV output", "false").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:240
-	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:243
-	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "list", "--csv", "true"})
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:241
+	listCmd := cli.NewCommand("list", "List items").StringFlag("csv", "CSV output", "false").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:244
+	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:247
+	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "list", "--csv", "true"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:248
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:249
 	test.AssertEqual(t, cli.GetString(capture, "db"), "/tmp/x.db")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:250
 	test.AssertTrue(t, cli.GetBool(capture, "csv"))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:248
-func TestTrailingGlobalFlagStillWorks(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:249
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:250
-	listCmd := cli.NewCommand("list", "List items").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:252
-	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:255
-	err := cli.RunWithArgs(app, []string{"myapp", "list", "--db", "/tmp/x.db"})
+func TestTrailingGlobalFlagStillWorks(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:253
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:254
+	listCmd := cli.NewCommand("list", "List items").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:256
+	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:259
+	err := cli.RunWithArgs(app, []string{"myapp", "list", "--db", "/tmp/x.db"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:260
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:257
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:261
 	test.AssertEqual(t, cli.GetString(capture, "db"), "/tmp/x.db")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:259
-func TestLeadingGlobalFlagMissingValueConsumesSubcommandToken(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:260
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:261
-	listCmd := cli.NewCommand("list", "List items").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:263
+func TestLeadingGlobalFlagMissingValueConsumesSubcommandToken(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:264
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:265
+	listCmd := cli.NewCommand("list", "List items").Action(remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:267
 	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ".beads/beads.db"), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:271
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:275
 	err := cli.RunWithArgs(app, []string{"myapp", "--db", "list"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:272
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:276
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:274
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:278
 	test.AssertEqual(t, cli.GetString(capture, "db"), "")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:276
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:280
 func TestLeadingGlobalFlagsBeforeHelp(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:277
-	app := cli.Version(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), "1.0.0")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:281
-	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "--version"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:282
-	test.AssertNoError(t, err)
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:284
-func TestLeadingGlobalFlagsBeforeHelpFlag(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:285
 	app := cli.Version(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), "1.0.0")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:285
+	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "--version"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:286
+	test.AssertNoError(t, err)
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:288
-	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "--help"})
+func TestLeadingGlobalFlagsBeforeHelpFlag(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:289
-	test.AssertNoError(t, err)
-}
-
+	app := cli.Version(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), "1.0.0")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:292
+	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "--help"})
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:293
-func TestUnknownLeafFlagRejected(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:294
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:295
-	listCmd := cli.NewCommand("list", "List items").Flag("csv", "CSV output", "false").Action(remember)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:298
-	app := cli.WithCommands(cli.New("myapp"), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:299
-	err := cli.RunWithArgs(app, []string{"myapp", "list", "--descr", "foo"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:300
-	test.AssertError(t, err)
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:302
-func TestUnknownGlobalFlagRejected(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:303
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:304
-	listCmd := cli.NewCommand("list", "List items").Action(remember)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:306
-	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:309
-	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "list", "--frce", "true"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:310
-	test.AssertError(t, err)
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:312
-func TestUnknownLeadingGlobalFlagRejected(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:313
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:314
-	listCmd := cli.NewCommand("list", "List items").Action(remember)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:316
-	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:319
-	err := cli.RunWithArgs(app, []string{"myapp", "--dbx", "/tmp/x.db", "list"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:320
-	test.AssertError(t, err)
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:322
-func TestUnknownRootFlagRejected(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:323
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:324
-	app := cli.Action(cli.Flag(cli.New("myapp"), "verbose", "Verbose", "false"), remember)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:327
-	err := cli.RunWithArgs(app, []string{"myapp", "--verbos", "true"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:328
-	test.AssertError(t, err)
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:330
-func TestKnownFlagAliasAccepted(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:331
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:332
-	listCmd := cli.NewCommand("list", "List items").StringFlag("format", "Output format", "").Short("f").Action(remember)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:336
-	app := cli.WithCommands(cli.New("myapp"), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:337
-	err := cli.RunWithArgs(app, []string{"myapp", "list", "-f", "json"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:338
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:339
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:297
+func TestUnknownLeafFlagRejected(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:298
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:299
+	listCmd := cli.NewCommand("list", "List items").StringFlag("csv", "CSV output", "false").Action(remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:302
+	app := cli.WithCommands(cli.New("myapp"), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:303
+	err := cli.RunWithArgs(app, []string{"myapp", "list", "--descr", "foo"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:304
+	test.AssertError(t, err)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:306
+func TestUnknownGlobalFlagRejected(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:307
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:308
+	listCmd := cli.NewCommand("list", "List items").Action(remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:310
+	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:313
+	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "list", "--frce", "true"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:314
+	test.AssertError(t, err)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:316
+func TestUnknownLeadingGlobalFlagRejected(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:317
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:318
+	listCmd := cli.NewCommand("list", "List items").Action(remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:320
+	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:323
+	err := cli.RunWithArgs(app, []string{"myapp", "--dbx", "/tmp/x.db", "list"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:324
+	test.AssertError(t, err)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:326
+func TestUnknownRootFlagRejected(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:327
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:328
+	app := cli.Action(cli.StringFlag(cli.New("myapp"), "verbose", "Verbose", "false"), remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:331
+	err := cli.RunWithArgs(app, []string{"myapp", "--verbos", "true"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:332
+	test.AssertError(t, err)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:334
+func TestKnownFlagAliasAccepted(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:335
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:336
+	listCmd := cli.NewCommand("list", "List items").StringFlag("format", "Output format", "").Short("f").Action(remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:340
+	app := cli.WithCommands(cli.New("myapp"), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:341
+	err := cli.RunWithArgs(app, []string{"myapp", "list", "-f", "json"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:342
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:343
 	test.AssertEqual(t, cli.GetString(capture, "format"), "json")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:343
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:347
 func TestLeafHelpFlag(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:344
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:345
-	listCmd := cli.NewCommand("list", "List items").Flag("csv", "CSV output", "false").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:348
-	app := cli.WithCommands(cli.New("myapp"), listCmd)
+	capture = cli.NewArgs(map[string]string{})
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:349
-	err := cli.RunWithArgs(app, []string{"myapp", "list", "--help"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:350
-	test.AssertNoError(t, err)
+	listCmd := cli.NewCommand("list", "List items").StringFlag("csv", "CSV output", "false").Action(remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:352
-	test.AssertEqual(t, cli.GetString(capture, "csv"), "")
-}
-
+	app := cli.WithCommands(cli.New("myapp"), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:353
+	err := cli.RunWithArgs(app, []string{"myapp", "list", "--help"})
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:354
-func TestLeafHelpShortFlag(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:355
-	capture = cli.NewArgs(map[string]string{})
+	test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:356
-	listCmd := cli.NewCommand("list", "List items").Flag("csv", "CSV output", "false").Action(remember)
+	test.AssertEqual(t, cli.GetString(capture, "csv"), "")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:358
+func TestLeafHelpShortFlag(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:359
-	app := cli.WithCommands(cli.New("myapp"), listCmd)
+	capture = cli.NewArgs(map[string]string{})
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:360
-	err := cli.RunWithArgs(app, []string{"myapp", "list", "-h"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:361
-	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:362
-	test.AssertEqual(t, cli.GetString(capture, "csv"), "")
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:364
-func TestHelpCommandLeaf(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:365
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:366
-	listCmd := cli.NewCommand("list", "List items").Flag("csv", "CSV output", "false").Action(remember)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:369
+	listCmd := cli.NewCommand("list", "List items").StringFlag("csv", "CSV output", "false").Action(remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:363
 	app := cli.WithCommands(cli.New("myapp"), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:370
-	err := cli.RunWithArgs(app, []string{"myapp", "help", "list"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:371
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:364
+	err := cli.RunWithArgs(app, []string{"myapp", "list", "-h"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:365
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:372
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:366
 	test.AssertEqual(t, cli.GetString(capture, "csv"), "")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:374
-func TestHelpCommandNestedLeaf(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:375
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:368
+func TestHelpCommandLeaf(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:369
 	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:376
-	addCmd := cli.NewCommand("add", "Add an item").Flag("name", "Item name", "").Action(remember)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:379
-	depCmd := cli.NewCommand("dep", "Manage deps").WithCommands(addCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:381
-	app := cli.WithCommands(cli.New("myapp"), depCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:382
-	err := cli.RunWithArgs(app, []string{"myapp", "help", "dep", "add"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:383
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:370
+	listCmd := cli.NewCommand("list", "List items").StringFlag("csv", "CSV output", "false").Action(remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:373
+	app := cli.WithCommands(cli.New("myapp"), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:374
+	err := cli.RunWithArgs(app, []string{"myapp", "help", "list"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:375
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:384
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:376
+	test.AssertEqual(t, cli.GetString(capture, "csv"), "")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:378
+func TestHelpCommandNestedLeaf(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:379
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:380
+	addCmd := cli.NewCommand("add", "Add an item").StringFlag("name", "Item name", "").Action(remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:383
+	depCmd := cli.NewCommand("dep", "Manage deps").WithCommands(addCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:385
+	app := cli.WithCommands(cli.New("myapp"), depCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:386
+	err := cli.RunWithArgs(app, []string{"myapp", "help", "dep", "add"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:387
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:388
 	test.AssertEqual(t, cli.GetString(capture, "name"), "")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:386
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:390
 func TestHelpCommandNoPathPrintsRoot(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:387
-	app := cli.Version(cli.New("myapp"), "1.0.0")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:388
-	err := cli.RunWithArgs(app, []string{"myapp", "help"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:389
-	test.AssertNoError(t, err)
-}
-
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:391
-func TestLeafHelpDoesNotTripUnknownFlag(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:394
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:395
-	listCmd := cli.NewCommand("list", "List items").Action(remember)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:397
-	app := cli.WithCommands(cli.New("myapp"), listCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:398
-	err := cli.RunWithArgs(app, []string{"myapp", "list", "--help"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:399
+	app := cli.Version(cli.New("myapp"), "1.0.0")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:392
+	err := cli.RunWithArgs(app, []string{"myapp", "help"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:393
 	test.AssertNoError(t, err)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:404
-func TestParseResult(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:405
-	t.Run("version token yields ShowVersion", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:406
-		app := cli.Version(cli.New("myapp"), "1.2.3")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:407
-		outcome := cli.Parse(app, []string{"myapp", "--version"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:395
+func TestLeafHelpDoesNotTripUnknownFlag(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:398
+	capture = cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:399
+	listCmd := cli.NewCommand("list", "List items").Action(remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:401
+	app := cli.WithCommands(cli.New("myapp"), listCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:402
+	err := cli.RunWithArgs(app, []string{"myapp", "list", "--help"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:403
+	test.AssertNoError(t, err)
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:408
-		if func() bool { _, _isOk := outcome.(cli.ShowVersion); return _isOk }() {
+func TestParseResult(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:409
+	t.Run("version token yields ShowVersion", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:410
+		app := cli.Version(cli.New("myapp"), "1.2.3")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:411
+		outcome := cli.Parse(app, []string{"myapp", "--version"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:412
+		if func() bool { _, _isOk := outcome.(cli.ShowVersion); return _isOk }() {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:413
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:410
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:414
 		t.Error("expected ShowVersion")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:413
-	t.Run("bare help yields root help", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:414
-		app := cli.New("myapp")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:415
-		outcome := cli.Parse(app, []string{"myapp", "help"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:416
-		if h, _isOk := outcome.(cli.ShowHelp); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:417
-			test.AssertTrue(t, h.Root)
+	t.Run("bare help yields root help", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:418
+		app := cli.New("myapp")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:419
+		outcome := cli.Parse(app, []string{"myapp", "help"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:420
+		if h, _isOk := outcome.(cli.ShowHelp); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:421
+			test.AssertTrue(t, h.Root)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:422
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:419
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:423
 		t.Error("expected ShowHelp")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:422
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:426
 	t.Run("leaf dispatch yields Execute with populated args", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:423
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:427
 		handler := func(args cli.Args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:424
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:428
 			fmt.Println("")
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:425
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:429
 		deployCmd := cli.NewCommand("deploy", "Deploy the service").RequiredArg("env", "Target environment").Action(handler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:428
-		app := cli.WithCommands(cli.New("myapp"), deployCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:430
-		outcome := cli.Parse(app, []string{"myapp", "deploy", "prod"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:431
-		if ex, _isOk := outcome.(cli.Execute); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:432
+		app := cli.WithCommands(cli.New("myapp"), deployCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:434
+		outcome := cli.Parse(app, []string{"myapp", "deploy", "prod"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:435
+		if ex, _isOk := outcome.(cli.Execute); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:436
 			test.AssertEqual(t, cli.GetString(ex.Args, "env"), "prod")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:433
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:437
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:434
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:438
 		t.Error("expected Execute")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:437
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:441
 	t.Run("missing required leaf arg yields Invalid", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:438
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:442
 		handler := func(args cli.Args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:439
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:443
 			fmt.Println("")
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:440
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:444
 		deployCmd := cli.NewCommand("deploy", "Deploy the service").RequiredArg("env", "Target environment").Action(handler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:443
-		app := cli.WithCommands(cli.New("myapp"), deployCmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:445
-		outcome := cli.Parse(app, []string{"myapp", "deploy"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:446
-		if bad, _isOk := outcome.(cli.Invalid); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:447
+		app := cli.WithCommands(cli.New("myapp"), deployCmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:449
+		outcome := cli.Parse(app, []string{"myapp", "deploy"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:450
+		if bad, _isOk := outcome.(cli.Invalid); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:451
 			if kukistring.Contains(bad.Reason, "env") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:448
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:452
 				return
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:449
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:453
 			t.Errorf("unexpected reason: %v", bad.Reason)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:450
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:454
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:451
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:455
 		t.Error("expected Invalid")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:454
-	t.Run("unknown root flag yields Invalid", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:455
-		app := cli.New("myapp")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:456
-		outcome := cli.Parse(app, []string{"myapp", "--frce"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:457
-		if bad, _isOk := outcome.(cli.Invalid); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:458
-			if kukistring.Contains(bad.Reason, "frce") {
+	t.Run("unknown root flag yields Invalid", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:459
+		app := cli.New("myapp")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:460
+		outcome := cli.Parse(app, []string{"myapp", "--frce"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:461
+		if bad, _isOk := outcome.(cli.Invalid); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:462
+			if kukistring.Contains(bad.Reason, "frce") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:463
 				return
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:460
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:464
 			t.Errorf("unexpected reason: %v", bad.Reason)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:461
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:465
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:462
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:466
 		t.Error("expected Invalid")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:467
-func TestParseBareProgramNameWithRequiredFlag(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:468
-	app := cli.RequiredFlag(cli.New("myapp"), "config", "Config file path")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:469
-	outcome := cli.Parse(app, []string{"myapp"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:470
-	if bad, _isOk := outcome.(cli.Invalid); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:471
-		if kukistring.Contains(bad.Reason, "config") {
+func TestParseBareProgramNameWithRequiredFlag(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:472
+	app := cli.RequiredFlag(cli.New("myapp"), "config", "Config file path")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:473
+	outcome := cli.Parse(app, []string{"myapp"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:474
+	if bad, _isOk := outcome.(cli.Invalid); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:475
+		if kukistring.Contains(bad.Reason, "config") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:476
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:473
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:477
 		t.Errorf("unexpected reason: %v", bad.Reason)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:474
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:478
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:475
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:479
 	t.Error("expected Invalid for missing required flag")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:477
-func TestParseBareProgramNameWithRequiredArg(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:478
-	app := cli.RequiredArg(cli.New("myapp"), "input", "Input file")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:479
-	outcome := cli.Parse(app, []string{"myapp"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:480
-	if bad, _isOk := outcome.(cli.Invalid); _isOk {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:481
-		if kukistring.Contains(bad.Reason, "input") {
+func TestParseBareProgramNameWithRequiredArg(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:482
+	app := cli.RequiredArg(cli.New("myapp"), "input", "Input file")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:483
+	outcome := cli.Parse(app, []string{"myapp"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:484
+	if bad, _isOk := outcome.(cli.Invalid); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:485
+		if kukistring.Contains(bad.Reason, "input") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:486
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:483
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:487
 		t.Errorf("unexpected reason: %v", bad.Reason)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:484
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:488
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:485
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:489
 	t.Error("expected Invalid for missing required argument")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:487
-func TestParseMalformedBoolValue(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:488
-	app := cli.Action(cli.BoolFlag(cli.New("myapp"), "verbose", "Verbose", false), handler)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:491
-	outcome := cli.Parse(app, []string{"myapp", "--verbose=maybe"})
+func TestParseMalformedBoolValue(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:492
+	app := cli.Action(cli.BoolFlag(cli.New("myapp"), "verbose", "Verbose", false), handler)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:495
+	outcome := cli.Parse(app, []string{"myapp", "--verbose=maybe"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:496
 	if bad, _isOk := outcome.(cli.Invalid); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:493
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:497
 		if kukistring.Contains(bad.Reason, "verbose") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:494
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:498
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:495
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:499
 		t.Errorf("unexpected reason: %v", bad.Reason)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:496
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:500
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:497
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:501
 	t.Error("expected Invalid for malformed bool value")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:499
-func TestParseMalformedIntValueEqForm(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:500
-	app := cli.Action(cli.IntFlag(cli.New("myapp"), "count", "Count", 0), handler)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:503
-	outcome := cli.Parse(app, []string{"myapp", "--count=abc"})
+func TestParseMalformedIntValueEqForm(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:504
-	if bad, _isOk := outcome.(cli.Invalid); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:505
-		if kukistring.Contains(bad.Reason, "count") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:506
-			return
-		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:507
-		t.Errorf("unexpected reason: %v", bad.Reason)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:508
-		return
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:509
-	t.Error("expected Invalid for malformed int value")
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:511
-func TestParseMalformedIntValueSpaceForm(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:512
 	app := cli.Action(cli.IntFlag(cli.New("myapp"), "count", "Count", 0), handler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:515
-	outcome := cli.Parse(app, []string{"myapp", "--count", "abc"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:516
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:507
+	outcome := cli.Parse(app, []string{"myapp", "--count=abc"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:508
 	if bad, _isOk := outcome.(cli.Invalid); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:517
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:509
 		if kukistring.Contains(bad.Reason, "count") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:518
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:510
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:519
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:511
 		t.Errorf("unexpected reason: %v", bad.Reason)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:520
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:512
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:521
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:513
 	t.Error("expected Invalid for malformed int value")
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:515
+func TestParseMalformedIntValueSpaceForm(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:516
+	app := cli.Action(cli.IntFlag(cli.New("myapp"), "count", "Count", 0), handler)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:519
+	outcome := cli.Parse(app, []string{"myapp", "--count", "abc"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:520
+	if bad, _isOk := outcome.(cli.Invalid); _isOk {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:521
+		if kukistring.Contains(bad.Reason, "count") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:522
+			return
+		}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:523
-func TestGetIntOrMalformedReturnsZeroNotDefault(t *testing.T) {
+		t.Errorf("unexpected reason: %v", bad.Reason)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:524
+		return
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:525
-	args := cli.NewArgs(map[string]string{"count": "abc"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:526
-	test.AssertEqual(t, cli.GetIntOr(args, "count", 99), 0)
+	t.Error("expected Invalid for malformed int value")
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:527
+func TestGetIntOrMalformedReturnsDefault(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:528
-func TestParseValidBoolFalseAccepted(t *testing.T) {
+	args := cli.NewArgs(map[string]string{"count": "abc"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:529
+	v := cli.GetIntOr(args, "count", 99)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:530
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:531
-	app := cli.Action(cli.BoolFlag(cli.New("myapp"), "verbose", "Verbose", false), remember)
+	test.AssertEqual(t, v, 99)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:532
+func TestParseValidBoolFalseAccepted(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:534
-	err := cli.RunWithArgs(app, []string{"myapp", "--verbose=false"})
+	capture = cli.NewArgs(map[string]string{})
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:535
+	app := cli.Action(cli.BoolFlag(cli.New("myapp"), "verbose", "Verbose", false), remember)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:538
+	err := cli.RunWithArgs(app, []string{"myapp", "--verbose=false"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:539
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:536
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:540
 	test.AssertEqual(t, cli.GetBool(capture, "verbose"), false)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:538
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:542
 func TestParseValidIntNegativeAccepted(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:540
-	capture = cli.NewArgs(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:541
-	app := cli.Action(cli.IntFlag(cli.New("myapp"), "offset", "Offset", 0), remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:544
-	err := cli.RunWithArgs(app, []string{"myapp", "--offset", "-5"})
+	capture = cli.NewArgs(map[string]string{})
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:545
-	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:546
-	n, err := cli.GetInt(capture, "offset")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:547
-	test.AssertNoError(t, err)
+	app := cli.Action(cli.IntFlag(cli.New("myapp"), "offset", "Offset", 0), remember)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:548
+	err := cli.RunWithArgs(app, []string{"myapp", "--offset", "-5"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:549
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:550
+	n, err := cli.GetInt(capture, "offset")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:551
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:552
 	test.AssertEqual(t, n, -5)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:554
+func TestGetFloat(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:555
+	args := cli.NewArgs(map[string]string{"rate": "3.14"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:556
+	v, err := cli.GetFloat(args, "rate")
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:557
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:558
+	test.AssertEqual(t, v, 3.14)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:560
+func TestGetFloatOrPresent(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:561
+	args := cli.NewArgs(map[string]string{"rate": "2.5"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:562
+	v := cli.GetFloatOr(args, "rate", 1.0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:563
+	test.AssertEqual(t, v, 2.5)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:565
+func TestGetFloatOrAbsent(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:566
+	args := cli.NewArgs(map[string]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:567
+	v := cli.GetFloatOr(args, "rate", 1.0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:568
+	test.AssertEqual(t, v, 1.0)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:570
+func TestGetFloatOrMalformedReturnsDefault(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:571
+	args := cli.NewArgs(map[string]string{"rate": "abc"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:572
+	v := cli.GetFloatOr(args, "rate", 1.0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:573
+	test.AssertEqual(t, v, 1.0)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:575
+func TestGetBoolOrMalformedReturnsDefault(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:576
+	args := cli.NewArgs(map[string]string{"verbose": "maybe"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:577
+	v := cli.GetBoolOr(args, "verbose", false)
+//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:578
+	test.AssertEqual(t, v, false)
 }

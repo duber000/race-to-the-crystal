@@ -12,7 +12,7 @@ func String(length int) string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:25
 	b := make([]byte, length)
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:26
-	for i := range length - 1 {
+	for i := range length {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:27
 		b[i] = charset[rand.Intn(len(charset))]
 	}
@@ -20,130 +20,226 @@ func String(length int) string {
 	return string(b)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:41
+func StringWith(length int, alphabet string) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:42
+	if len(alphabet) == 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:43
+		panic("random: StringWith of empty alphabet")
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:44
+	b := make([]byte, length)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:45
+	for i := range length {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:46
+		b[i] = alphabet[rand.Intn(len(alphabet))]
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:47
+	return string(b)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:53
 func Int(min int, max int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:54
 	if min >= max {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:55
 		return min
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:56
 	return min + rand.Intn(max-min)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:60
 func Float(min float64, max float64) float64 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:61
 	if min >= max {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:62
 		return min
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:63
 	return min + rand.Float64()*(max-min)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:69
 func Choice[T any](items []T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:70
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:71
 		panic("random: Choice of empty list")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:72
 	return items[rand.Intn(len(items))]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:77
+func ChoiceOr[T any](items []T, defaultValue T) T {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:78
+	if len(items) == 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:79
+		return defaultValue
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:80
+	return items[rand.Intn(len(items))]
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:83
 func Shuffle[T any](items []T) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:84
 	out := append([]T{}, items...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:54
-	for i := range len(out) - 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:85
+	for i := range len(out) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:86
 		j := rand.Intn(i + 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:87
 		tmp := out[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:88
 		out[i] = out[j]
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:89
 		out[j] = tmp
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:90
 	return out
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:97
+func Sample[T any](items []T, n int) []T {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:98
+	pool := append([]T{}, items...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:99
+	if n > len(pool) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:100
+		n = len(pool)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:101
+	out := []T{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:102
+	for i := range n {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:103
+		j := i + rand.Intn(len(pool)-i)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:104
+		tmp := pool[i]
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:105
+		pool[i] = pool[j]
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:106
+		pool[j] = tmp
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:107
+		out = append(out, pool[i])
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:108
+	return out
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:114
 type Generator struct {
 	rng *rand.Rand
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:119
 func NewGenerator(seed int64) *Generator {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:120
 	return &Generator{rng: rand.New(rand.NewSource(seed))}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:125
 func (g *Generator) Int(min int, max int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:126
 	if min >= max {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:127
 		return min
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:128
 	return min + g.rng.Intn(max-min)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:131
 func (g *Generator) Float(min float64, max float64) float64 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:132
 	if min >= max {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:133
 		return min
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:134
 	return min + g.rng.Float64()*(max-min)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:88
-func (g *Generator) Text(length int) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:138
+func (g *Generator) String(length int) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:139
 	b := make([]byte, length)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:90
-	for i := range length - 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:140
+	for i := range length {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:141
 		b[i] = charset[g.rng.Intn(len(charset))]
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:142
 	return string(b)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:146
 func (g *Generator) Choice[T any](items []T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:147
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:148
 		panic("random: Choice of empty list")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:149
 	return items[g.rng.Intn(len(items))]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:153
+func (g *Generator) ChoiceOr[T any](items []T, defaultValue T) T {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:154
+	if len(items) == 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:155
+		return defaultValue
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:156
+	return items[g.rng.Intn(len(items))]
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:160
 func (g *Generator) Shuffle[T any](items []T) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:161
 	out := append([]T{}, items...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:104
-	for i := range len(out) - 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:162
+	for i := range len(out) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:163
 		j := g.rng.Intn(i + 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:164
 		tmp := out[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:165
 		out[i] = out[j]
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:166
 		out[j] = tmp
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:167
+	return out
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:172
+func (g *Generator) Sample[T any](items []T, n int) []T {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:173
+	pool := append([]T{}, items...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:174
+	if n > len(pool) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:175
+		n = len(pool)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:176
+	out := []T{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:177
+	for i := range n {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:178
+		j := i + g.rng.Intn(len(pool)-i)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:179
+		tmp := pool[i]
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:180
+		pool[i] = pool[j]
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:181
+		pool[j] = tmp
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:182
+		out = append(out, pool[i])
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:183
 	return out
 }

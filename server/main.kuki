@@ -16,11 +16,13 @@ type ServerConfig
     debug: bool
 
 func ServerConfigFromEnv() ServerConfig
+    httpPort := env.GetIntOr("HTTP_PORT", 8080) onerr panic "invalid HTTP_PORT: {error}"
+    debug := env.GetBoolOr("DEBUG", false) onerr panic "invalid DEBUG: {error}"
     return ServerConfig{
-        http_port: env.GetIntOr("HTTP_PORT", 8080),
+        http_port: httpPort,
         static_dir: env.GetOr("STATIC_DIR", ""),
         jwt_secret: env.GetOr("JWT_SECRET_KEY", ""),
-        debug: env.GetBoolOr("DEBUG", false),
+        debug: debug,
     }
 
 type GameServer
@@ -135,7 +137,7 @@ func handleCreateGameRoute on gs: reference GameServer(response: httphelper.Resp
     )
     auth_header := request.GetHeader("Authorization")
 
-    body := make(map of string to any)
+    body := empty map of string to any
     request.ReadJSON(reference of body) onerr
         response.JSONBadRequest("invalid JSON body")
         return
@@ -156,7 +158,7 @@ func handleJoinGameRoute on gs: reference GameServer(response: httphelper.Respon
         request.GetHeader("X-Real-IP"),
     )
 
-    body := make(map of string to any)
+    body := empty map of string to any
     request.ReadJSON(reference of body) onerr
         body = empty map of string to any
 
@@ -172,7 +174,7 @@ func handleActionRoute on gs: reference GameServer(response: httphelper.Response
     game_id := request.PathValue("game_id")
     auth_header := request.GetHeader("Authorization")
 
-    body := make(map of string to any)
+    body := empty map of string to any
     request.ReadJSON(reference of body) onerr
         response.JSONBadRequest("invalid JSON body")
         return
@@ -225,7 +227,7 @@ func handleReadyRoute on gs: reference GameServer(response: httphelper.Response,
     game_id := request.PathValue("game_id")
     auth_header := request.GetHeader("Authorization")
 
-    body := make(map of string to any)
+    body := empty map of string to any
     request.ReadJSON(reference of body) onerr
         log.Debug("Ready endpoint: empty or invalid body, using defaults")
 
@@ -254,9 +256,9 @@ func handleListGamesRoute on gs: reference GameServer(response: httphelper.Respo
     gs.writeAPIResponse(response, result)
 
 func writeAPIResponse on gs: reference GameServer(response: httphelper.Response, result: APIResponse)
-    status := 200
+    status := httphelper.StatusOK
     if not result.success
-        status = 400
+        status = httphelper.StatusBadRequest
 
     response_data := map of string to any{
         "success": result.success,

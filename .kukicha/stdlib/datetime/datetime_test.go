@@ -351,4 +351,113 @@ func TestTimeAgo(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:242
 		test.AssertEqual(t, datetime.TimeAgo(now.Add(-800*24*time.Hour)), "2y ago")
 	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:245
+	t.Run("future renders as in", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:246
+		test.AssertEqual(t, datetime.TimeAgo(now.Add(5*time.Minute+30*time.Second)), "in 5m")
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:247
+		test.AssertEqual(t, datetime.TimeAgo(now.Add(3*time.Hour+time.Minute)), "in 3h")
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:248
+		test.AssertEqual(t, datetime.TimeAgo(now.Add(48*time.Hour+time.Minute)), "in 2d")
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:255
+func TestTimeUntil(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:256
+	now := time.Now()
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:258
+	t.Run("in minutes", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:259
+		test.AssertEqual(t, datetime.TimeUntil(now.Add(5*time.Minute+30*time.Second)), "in 5m")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:266
+	t.Run("in hours", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:267
+		test.AssertEqual(t, datetime.TimeUntil(now.Add(3*time.Hour+time.Minute)), "in 3h")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:270
+	t.Run("just now near either side of now", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:271
+		test.AssertEqual(t, datetime.TimeUntil(now.Add(30*time.Second)), "just now")
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:272
+		test.AssertEqual(t, datetime.TimeUntil(now.Add(-30*time.Second)), "just now")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:275
+	t.Run("past mirrors TimeAgo", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:276
+		test.AssertEqual(t, datetime.TimeUntil(now.Add(-5*time.Minute)), "5m ago")
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:277
+		test.AssertEqual(t, datetime.TimeUntil(now.Add(-3*time.Hour)), "3h ago")
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:281
+func TestStartEndOfDay(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:282
+	t.Run("StartOfDay zeroes time-of-day", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:283
+		t2 := time.Date(2024, 6, 15, 14, 30, 45, 123, time.UTC)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:284
+		start := datetime.StartOfDay(t2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:285
+		test.AssertEqual(t, start.Year(), 2024)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:286
+		test.AssertEqual(t, start.Month(), time.June)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:287
+		test.AssertEqual(t, start.Day(), 15)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:288
+		test.AssertEqual(t, start.Hour(), 0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:289
+		test.AssertEqual(t, start.Minute(), 0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:290
+		test.AssertEqual(t, start.Second(), 0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:291
+		test.AssertEqual(t, start.Nanosecond(), 0)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:294
+	t.Run("EndOfDay is the last nanosecond", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:295
+		t2 := time.Date(2024, 6, 15, 3, 0, 0, 0, time.UTC)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:296
+		end := datetime.EndOfDay(t2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:297
+		test.AssertEqual(t, end.Hour(), 23)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:298
+		test.AssertEqual(t, end.Minute(), 59)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:299
+		test.AssertEqual(t, end.Second(), 59)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:300
+		test.AssertEqual(t, end.Nanosecond(), 999999999)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:303
+	t.Run("bounds bracket the day", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:304
+		t2 := time.Date(2024, 6, 15, 12, 0, 0, 0, time.UTC)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:305
+		start := datetime.StartOfDay(t2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:306
+		end := datetime.EndOfDay(t2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:307
+		test.AssertTrue(t, start.Before(t2))
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:308
+		test.AssertTrue(t, t2.Before(end))
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:311
+	t.Run("location is preserved", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:312
+		loc := time.FixedZone("testzone", 3600)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:313
+		t2 := time.Date(2024, 6, 15, 14, 0, 0, 0, loc)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:314
+		start := datetime.StartOfDay(t2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:315
+		end := datetime.EndOfDay(t2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:316
+		test.AssertTrue(t, start.Location() == loc)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:317
+		test.AssertTrue(t, end.Location() == loc)
+//line /var/home/tluker/repos/go/kukicha/stdlib/datetime/datetime_test.kuki:318
+		test.AssertEqual(t, start.Day(), 15)
+	})
 }

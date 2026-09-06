@@ -2,6 +2,7 @@ petiole main
 
 import "bufio"
 import "race-to-the-crystal/game" as gamepkg
+import "stdlib/cast"
 import "stdlib/fetch"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
@@ -242,15 +243,11 @@ func TryAutoStart on s: reference Session bool
     cur_any, has_c := lobby["current_players"]
     if not has_c
         return false
-    cur := 0
-    if cur_any is int as cv
-        cur = cv
+    cur := cast.ToIntOr(cur_any, 0)
     min_any, has_m := lobby["min_players"]
     if not has_m
         return false
-    min_p := 0
-    if min_any is int as mv
-        min_p = mv
+    min_p := cast.ToIntOr(min_any, 0)
     if cur < min_p
         return false
 

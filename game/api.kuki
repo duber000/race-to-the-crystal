@@ -87,5 +87,5 @@ func GetPhase on api: reference GameAPI string
 
 func GetReserveCounts on api: reference GameAPI map of int to int
     if api.game_state equals empty
-        return make(map of int to int)
+        return empty map of int to int
     return dereference api.game_state.GetReserveTokenCounts(api.player_id)

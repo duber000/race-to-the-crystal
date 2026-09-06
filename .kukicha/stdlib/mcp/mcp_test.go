@@ -169,7 +169,7 @@ func TestServerRegistration(t *testing.T) {
 		return "ok", nil
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:146
-	mcppkg.ToolRich[mcppkg.JSONObject](server, "rich", "Tool with context", schema, richFn)
+	mcppkg.ToolWithContext[mcppkg.JSONObject](server, "rich", "Tool with context", schema, richFn)
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:148
 	test.AssertNotNil(t, server)
 }

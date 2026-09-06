@@ -4,89 +4,90 @@ package crypto_test
 
 import (
 	"kukicha.org/kukicha/stdlib/crypto"
+	kukistring "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:11
 type SHA256Case struct {
 	name  string
 	input string
 	want  string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:15
-func TestSHA256(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:16
+func TestSHA256(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:17
 	cases := []SHA256Case{SHA256Case{name: "empty string", input: "", want: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}, SHA256Case{name: "hello", input: "hello", want: "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:29
-	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:30
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:31
-			got := crypto.SHA256(tc.input)
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:32
+			got := crypto.SHA256(tc.input)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:33
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:37
 type HMACCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:39
-func TestHMAC(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:40
+func TestHMAC(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:41
 	cases := []HMACCase{HMACCase{name: "basic hmac"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:42
-	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:43
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:44
-			mac1 := crypto.HMAC("message", "key")
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:45
-			mac2 := crypto.HMAC("message", "key")
+			mac1 := crypto.HMAC("message", "key")
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:46
-			test.AssertEqual(t, mac1, mac2)
+			mac2 := crypto.HMAC("message", "key")
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:47
+			test.AssertEqual(t, mac1, mac2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:48
 			test.AssertEqual(t, len(mac1), 64)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:49
-			mac3 := crypto.HMAC("message", "other-key")
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:50
+			mac3 := crypto.HMAC("message", "other-key")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:51
 			test.AssertTrue(t, mac1 != mac3)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:55
 type RandomTokenCase struct {
 	name   string
 	length int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:58
-func TestRandomToken(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:59
+func TestRandomToken(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:60
 	cases := []RandomTokenCase{RandomTokenCase{name: "16 bytes", length: 16}, RandomTokenCase{name: "32 bytes", length: 32}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:64
-	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:65
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:66
-			token, err := crypto.RandomToken(tc.length)
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:67
-			test.AssertNoError(t, err)
+			token, err := crypto.RandomToken(tc.length)
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:68
 			test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:69
+			test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:70
 			test.AssertEqual(t, len(token), tc.length*2)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:74
 type EqualCase struct {
 	name  string
 	a     string
@@ -94,18 +95,119 @@ type EqualCase struct {
 	equal bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:79
-func TestEqual(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:80
+func TestEqual(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:81
 	cases := []EqualCase{EqualCase{name: "same", a: "hello", b: "hello", equal: true}, EqualCase{name: "different", a: "hello", b: "world", equal: false}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:85
-	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:86
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:87
-			got := crypto.Equal([]byte(tc.a), []byte(tc.b))
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:88
+			got := crypto.Equal([]byte(tc.a), []byte(tc.b))
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:89
 			test.AssertEqual(t, got, tc.equal)
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:93
+func TestSHA256Hex(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:94
+	got := crypto.SHA256Hex([]byte("hello"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:95
+	test.AssertEqual(t, got, crypto.SHA256("hello"))
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:98
+func TestHashPasswordRoundTrip(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:99
+	stored, err := crypto.HashPassword("correct horse battery staple")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:100
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:101
+	test.AssertTrue(t, crypto.VerifyPassword("correct horse battery staple", stored))
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:102
+	test.AssertTrue(t, !crypto.VerifyPassword("Tr0ub4dor&3", stored))
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:105
+func TestHashPasswordFormat(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:106
+	stored, err := crypto.HashPassword("hunter2")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:107
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:108
+	parts := kukistring.Split(stored, "$")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:109
+	test.AssertEqual(t, len(parts), 5)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:110
+	test.AssertEqual(t, parts[0], "")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:111
+	test.AssertEqual(t, parts[1], "pbkdf2-sha256")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:112
+	test.AssertEqual(t, parts[2], "600000")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:113
+	test.AssertEqual(t, len(parts[3]), 32)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:114
+	test.AssertEqual(t, len(parts[4]), 64)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:117
+func TestHashPasswordSaltUnique(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:118
+	a, err := crypto.HashPassword("same-password")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:119
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:120
+	b, err := crypto.HashPassword("same-password")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:121
+	test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:122
+	test.AssertTrue(t, a != b)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:123
+	test.AssertTrue(t, crypto.VerifyPassword("same-password", a))
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:124
+	test.AssertTrue(t, crypto.VerifyPassword("same-password", b))
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:127
+func TestVerifyPasswordMalformed(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:128
+	bad := []string{"", "not a hash", "$pbkdf2-sha256$600000$", "$bcrypt$600000$abcd1234abcd1234$ef567890ef567890ef567890ef567890", "$pbkdf2-sha256$notanumber$abcd1234abcd1234$ef567890ef567890ef567890ef567890", "$pbkdf2-sha256$0$abcd1234abcd1234$ef567890ef567890ef567890ef567890", "$pbkdf2-sha256$-5$abcd1234abcd1234$ef567890ef567890ef567890ef567890", "$pbkdf2-sha256$600000$zzzz$ef567890ef567890ef567890ef567890", "$pbkdf2-sha256$600000$abcd1234abcd1234$not-hex"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:139
+	for _, hash := range bad {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:140
+		test.AssertTrue(t, !crypto.VerifyPassword("pw", hash))
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:143
+func TestVerifyPasswordForgedDigest(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:146
+	forged := "$pbkdf2-sha256$600000$abcd1234abcd1234abcd1234abcd1234$" + crypto.SHA256("not-the-password")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:147
+	test.AssertTrue(t, !crypto.VerifyPassword("hunter2", forged))
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:150
+type EqualHexCase struct {
+	name string
+	a    string
+	b    string
+	want bool
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:156
+func TestEqualHex(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:157
+	cases := []EqualHexCase{EqualHexCase{name: "same digest", a: "aabbcc", b: "aabbcc", want: true}, EqualHexCase{name: "case-insensitive", a: "AABBCC", b: "aabbcc", want: true}, EqualHexCase{name: "different digest", a: "aabbcc", b: "aabbcd", want: false}, EqualHexCase{name: "different length", a: "aabbcc", b: "aabb", want: false}, EqualHexCase{name: "invalid hex", a: "zzzz", b: "aabbcc", want: false}, EqualHexCase{name: "odd length", a: "aabbc", b: "aabbcc", want: false}, EqualHexCase{name: "both empty", a: "", b: "", want: true}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:167
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:168
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto_test.kuki:169
+			test.AssertEqual(t, crypto.EqualHex(tc.a, tc.b), tc.want)
 		})
 	}
 }

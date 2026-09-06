@@ -422,3 +422,130 @@ func TestMustParse(t *testing.T) {
 		url.MustParseMulti("://not a url")
 	})
 }
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:332
+func TestJoinPath(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:333
+	t.Run("appends segments", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:334
+		joined, err := url.JoinPath("https://api.test/v1", "tasks", "42")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:335
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:336
+		test.AssertEqual(t, joined, "https://api.test/v1/tasks/42")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:339
+	t.Run("collapses slashes across the seam", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:340
+		joined, err := url.JoinPath("https://api.test/v1/", "/tasks")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:341
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:342
+		test.AssertEqual(t, joined, "https://api.test/v1/tasks")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:345
+	t.Run("query-holding segment is escaped, not rejected", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:346
+		joined, err := url.JoinPath("https://api.test", "a?b")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:347
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:348
+		test.AssertEqual(t, joined, "https://api.test/a%3Fb")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:351
+	t.Run("invalid percent-escape segment is silently dropped", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:352
+		joined, err := url.JoinPath("https://api.test", "100%")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:353
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:354
+		test.AssertEqual(t, joined, "https://api.test")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:360
+	t.Run("invalid base errors", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:361
+		_, err := url.JoinPath("://nope", "x")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:362
+		test.AssertError(t, err)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:365
+	t.Run("variadic call forms", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:366
+		bare, err := url.JoinPath("https://api.test/v1/")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:367
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:368
+		test.AssertEqual(t, bare, "https://api.test/v1/")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:370
+		segs := []string{"a", "b"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:371
+		spread, err := url.JoinPath("https://api.test", segs...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:372
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:373
+		test.AssertEqual(t, spread, "https://api.test/a/b")
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:382
+func TestHostnamePort(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:383
+	t.Run("host with explicit port splits", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:384
+		u := url.MustParse("https://example.com:8080/p")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:385
+		test.AssertEqual(t, u.Host, "example.com:8080")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:386
+		test.AssertEqual(t, url.Hostname(u), "example.com")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:387
+		test.AssertEqual(t, url.Port(u), "8080")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:390
+	t.Run("no port yields empty Port", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:391
+		u := url.MustParse("https://example.com/p")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:392
+		test.AssertEqual(t, url.Hostname(u), "example.com")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:393
+		test.AssertEqual(t, url.Port(u), "")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:396
+	t.Run("IPv6 brackets are unwrapped", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:397
+		u := url.MustParse("http://[::1]:9000/x")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:398
+		test.AssertEqual(t, url.Hostname(u), "::1")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:399
+		test.AssertEqual(t, url.Port(u), "9000")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:402
+	t.Run("pipe form", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:403
+		u := url.MustParse("https://example.com:8080/p")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:404
+		test.AssertEqual(t, url.Hostname(u), "example.com")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:405
+		test.AssertEqual(t, url.Port(u), "8080")
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:409
+func TestParamOr(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:410
+	u := url.MustParse("https://x.test/p?page=3")
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:411
+	t.Run("present returns value", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:412
+		test.AssertEqual(t, url.ParamOr(u, "page", "1"), "3")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:415
+	t.Run("absent returns default", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:416
+		test.AssertEqual(t, url.ParamOr(u, "missing", "1"), "1")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:419
+	t.Run("pipe form", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:420
+		test.AssertEqual(t, url.ParamOr(u, "page", "1"), "3")
+	})
+}

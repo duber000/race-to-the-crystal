@@ -4,38 +4,38 @@ package must
 
 import "fmt"
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:25
 func True(condition bool, message string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:26
 	if !condition {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:27
 		panic(fmt.Sprintf("assertion failed: %v", message))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:32
 func False(condition bool, message string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:33
 	if condition {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:34
 		panic(fmt.Sprintf("assertion failed: %v", message))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:39
 func NotEmpty(s string, name string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:40
 	if s == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:41
 		panic(fmt.Sprintf("%v cannot be empty", name))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:49
 func NotNil(value any, name string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:50
 	if value == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:51
 		panic(fmt.Sprintf("%v cannot be nil", name))
 	}
 }

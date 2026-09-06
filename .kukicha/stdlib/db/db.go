@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
+	strpkg "kukicha.org/kukicha/stdlib/string"
 	"reflect"
-	strpkg "strings"
 	"sync"
 	"unicode"
 )

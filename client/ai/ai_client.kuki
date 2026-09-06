@@ -1,11 +1,12 @@
 petiole main
 
 import "race-to-the-crystal/game" as gamepkg
+import "stdlib/cast"
 import "stdlib/cli"
-import "stdlib/datetime"
 import "stdlib/log"
 import "stdlib/random"
 import "stdlib/signal"
+import "time"
 
 const DEFAULT_BASE_URL = "http://localhost:8080"
 
@@ -90,8 +91,8 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
     if cur_str isnt my_game_id
         return
 
-    log.Info("Our turn (turn {castInt(state, "turn_number")})")
-    datetime.SleepMilliseconds(DEFAULT_THINK_MS)
+    log.Info("Our turn (turn {cast.ToIntOr(state["turn_number"], 0)})")
+    time.Sleep((DEFAULT_THINK_MS * 1000000) as time.Duration)
 
     payload := sess.FetchActions()
     if len(payload) equals 0
@@ -121,14 +122,6 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
         return
     return
 
-func castInt(m: map of string to any, key: string) int
-    v, has := m[key]
-    if not has
-        return 0
-    if v is int as v_int
-        return v_int
-    return 0
-
 func runPoll(args: cli.Args)
     sess := openSession(args)
     strategy := parseStrategy(cli.GetStringOr(args, "strategy", "random"))
@@ -150,7 +143,7 @@ func runPoll(args: cli.Args)
                 takeTurn(reference of sess, strategy)
                 if not sess.active
                     return
-                datetime.SleepMilliseconds(poll_ms as int64)
+                time.Sleep((poll_ms * 1000000) as time.Duration)
 
 func runSSE(args: cli.Args)
     sess := openSession(args)
@@ -198,8 +191,8 @@ func runSSE(args: cli.Args)
         if not IsGameActive(state)
             return true
 
-        log.Info("Our turn (turn {castInt(state, "turn_number")})")
-        datetime.SleepMilliseconds(DEFAULT_THINK_MS)
+        log.Info("Our turn (turn {cast.ToIntOr(state["turn_number"], 0)})")
+        time.Sleep((DEFAULT_THINK_MS * 1000000) as time.Duration)
 
         payload := sess.FetchActions()
         if len(payload) equals 0

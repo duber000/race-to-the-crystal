@@ -3,6 +3,7 @@ petiole game
 import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
+import "stdlib/slice"
 
 type Token
     id: types.TokenID
@@ -20,12 +21,7 @@ func NewToken(id: types.TokenID, player_id: types.PlayerID, health: int, max_hea
         return Token{}, error "max_health must be >= 0"
     if health > max_health
         return Token{}, error "health cannot exceed max_health"
-    valid_health := false
-    for hv in constants.TOKEN_HEALTH_VALUES
-        if health equals hv
-            valid_health = true
-            break
-    if not valid_health
+    if not slice.Contains(constants.TOKEN_HEALTH_VALUES, health)
         return Token{}, error "health must be one of {constants.TOKEN_HEALTH_VALUES}"
     return Token{
         id: id,

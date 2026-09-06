@@ -5,136 +5,185 @@ package shellguard
 import (
 	"fmt"
 	"kukicha.org/kukicha/stdlib/shell"
+	kukistring "kukicha.org/kukicha/stdlib/string"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:22
 type Rule struct {
 	subcommands   map[string]bool
 	anySubcommand bool
 	argValidator  func([]string) error
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:29
 type Guard struct {
 	rules map[string]Rule
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:33
-func New() Guard {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:34
+func New() Guard {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:35
 	return Guard{rules: map[string]Rule{}}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:38
-func Allow(g Guard, binary string, subcommands []string) Guard {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:39
-	rule, ok := g.rules[binary]
+func Allow(g Guard, binary string, subcommands []string) Guard {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:40
-	if !ok {
+	rule, ok := g.rules[binary]
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:41
+	if !ok {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:42
 		rule = Rule{subcommands: map[string]bool{}}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:42
-	for _, sub := range subcommands {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:43
+	for _, sub := range subcommands {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:44
 		rule.subcommands[sub] = true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:44
-	g.rules[binary] = rule
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:45
+	g.rules[binary] = rule
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:46
 	return g
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:49
-func AllowAny(g Guard, binary string) Guard {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:50
-	rule, ok := g.rules[binary]
+func AllowAny(g Guard, binary string) Guard {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:51
-	if !ok {
+	rule, ok := g.rules[binary]
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:52
+	if !ok {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:53
 		rule = Rule{subcommands: map[string]bool{}, anySubcommand: true}
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:55
 		rule.anySubcommand = true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:55
-	g.rules[binary] = rule
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:56
+	g.rules[binary] = rule
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:57
 	return g
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:61
-func WithArgValidator(g Guard, binary string, validator func([]string) error) Guard {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:62
-	rule, ok := g.rules[binary]
+func WithArgValidator(g Guard, binary string, validator func([]string) error) Guard {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:63
-	if !ok {
+	rule, ok := g.rules[binary]
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:64
+	if !ok {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:65
 		rule = Rule{subcommands: map[string]bool{}, argValidator: validator}
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:67
 		rule.argValidator = validator
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:67
-	g.rules[binary] = rule
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:68
+	g.rules[binary] = rule
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:69
 	return g
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:77
 type AuthorizedCommand struct {
 	binary string
 	args   []string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:82
-func (cmd AuthorizedCommand) Output() (string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:83
+func (cmd AuthorizedCommand) Output() (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:84
 	return shell.Output(cmd.binary, cmd.args...)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:97
 func Check(g Guard, name string, args ...string) (AuthorizedCommand, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:98
 	rule, ok := g.rules[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:99
 	if !ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:100
 		return AuthorizedCommand{}, fmt.Errorf("shellguard: binary not in allowlist: %v", name)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:101
 	if !rule.anySubcommand {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:95
-		if len(args) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:102
+		subIdx := -1
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:103
+		for i, arg := range args {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:104
+			if !kukistring.HasPrefix(arg, "-") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:105
+				subIdx = i
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:106
+				break
+			}
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:107
+		if subIdx == -1 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:108
 			return AuthorizedCommand{}, fmt.Errorf("shellguard: missing subcommand for %v", name)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:97
-		sub := args[0]
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:109
+		sub := args[subIdx]
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:110
 		if !rule.subcommands[sub] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:111
 			return AuthorizedCommand{}, fmt.Errorf("shellguard: subcommand not allowed: %v %v", name, sub)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:112
 	if rule.argValidator != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:113
 		err := rule.argValidator(args)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:114
 		if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:115
 			return AuthorizedCommand{}, fmt.Errorf("shellguard: arg validation failed for %v: %v", name, err)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:116
 	return AuthorizedCommand{binary: name, args: args}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:122
 func Allowed(g Guard, name string, args ...string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:123
 	_, err := Check(g, name, args...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:124
 	return err == nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:128
+func IsAllowed(g Guard, name string, args ...string) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:129
+	_, err := Check(g, name, args...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:130
+	return err == nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:135
+func (cmd AuthorizedCommand) Run() (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:136
+	return shell.Output(cmd.binary, cmd.args...)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:143
+func (cmd AuthorizedCommand) Lines() ([]string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:144
+	return shell.Lines(cmd.binary, cmd.args...)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:151
+func (cmd AuthorizedCommand) Capture() (string, string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:152
+	return shell.Capture(cmd.binary, cmd.args...)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:160
+func (cmd AuthorizedCommand) Preview() string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:161
+	parts := []string{cmd.binary}
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:162
+	parts = append(parts, cmd.args...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/shellguard/shellguard.kuki:163
+	return kukistring.Join(parts, " ")
 }

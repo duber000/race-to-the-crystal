@@ -10,7 +10,7 @@ const MAX_PLAYER_NAME_LENGTH = 30
 
 const ALLOWED_NAME_PATTERN = `^[a-zA-Z0-9_\- \.]+$`
 
-var NAME_REGEX = regex.MustCompile(`^[a-zA-Z0-9_\- \.]+$`)
+var NAME_REGEX = regex.MustCompile('^[a-zA-Z0-9_\- \.]+$')
 
 enum ClientType: string
     HUMAN = "HUMAN"
@@ -56,7 +56,7 @@ func ValidateGameName(game_name: string) error
         return error "Game name cannot be empty"
     if len(game_name) > MAX_GAME_NAME_LENGTH
         return error "Game name too long (max {MAX_GAME_NAME_LENGTH} characters)"
-    if not regex.MatchCompiled(NAME_REGEX, game_name)
+    if not NAME_REGEX.Match(game_name)
         return error "Game name contains invalid characters"
     if strpkg.Contains(game_name, "..")
         return error "Game name cannot contain '..' sequence"
@@ -69,7 +69,7 @@ func ValidatePlayerName(player_name: string) error
         return error "Player name cannot be empty"
     if len(player_name) > MAX_PLAYER_NAME_LENGTH
         return error "Player name too long (max {MAX_PLAYER_NAME_LENGTH} characters)"
-    if not regex.MatchCompiled(NAME_REGEX, player_name)
+    if not NAME_REGEX.Match(player_name)
         return error "Player name contains invalid characters"
     if strpkg.TrimSpace(player_name) isnt player_name
         return error "Player name cannot have leading or trailing whitespace"
@@ -91,7 +91,7 @@ func NewGameLobby(game_id: string, game_name: string, host_player_id: string, ma
         host_player_id: host_player_id,
         max_players: max_players,
         min_players: 2,
-        players: make(map of string to PlayerInfo),
+        players: empty map of string to PlayerInfo,
         status: GameStatus.WAITING,
     }
 
@@ -181,7 +181,7 @@ type LobbyManager
     lobbies: map of string to reference GameLobby
 
 func NewLobbyManager() LobbyManager
-    return LobbyManager{lobbies: make(map of string to reference GameLobby)}
+    return LobbyManager{lobbies: empty map of string to reference GameLobby}
 
 func create_lobby on lm: reference LobbyManager(player_id: string, player_name: string, game_name: string, client_type: ClientType, max_players: int) optional reference GameLobby
     err := ValidateGameName(game_name)

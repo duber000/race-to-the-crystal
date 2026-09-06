@@ -38,14 +38,14 @@ func (e CommandError) Error() string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:36
 	msg := e.Name
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:37
-	if len(e.Args) > 0 {
+	if len(e.Args) != 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:38
 		msg = msg + " " + kukistring.Join(e.Args, " ")
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:39
 	msg = msg + fmt.Sprintf(": exit status %v", e.ExitCode)
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:40
-	if len(e.Stderr) > 0 {
+	if len(e.Stderr) != 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:41
 		msg = msg + fmt.Sprintf(": %v", string(e.Stderr))
 	}
@@ -114,7 +114,7 @@ func Lines(name string, args ...string) ([]string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:94
 	lines := kukistring.Lines(out)
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:95
-	if len(lines) > 0 && lines[len(lines)-1] == "" {
+	if len(lines) != 0 && lines[len(lines)-1] == "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:96
 		lines = lines[:len(lines)-1]
 	}
@@ -141,7 +141,7 @@ func Fatal(msg string) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:129
 func RequireCommand(name string) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:130
-	if !Which(name) {
+	if !IsInstalled(name) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:131
 		return fmt.Errorf("missing command: %v (install it, then run again)", name)
 	}
@@ -245,7 +245,7 @@ func (cmd Command) Execute() Result {
 		execCmd.Dir = cmd.dir
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:216
-	if len(cmd.env) > 0 {
+	if len(cmd.env) != 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:217
 		env := os.Environ()
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:218
@@ -257,7 +257,7 @@ func (cmd Command) Execute() Result {
 		execCmd.Env = env
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:223
-	if len(cmd.stdin) > 0 {
+	if len(cmd.stdin) != 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:224
 		execCmd.Stdin = bytes.NewReader(cmd.stdin)
 	}
@@ -360,10 +360,18 @@ func Require(result Result) (string, error) {
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:318
-func Which(name string) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:319
-	_, err := exec.LookPath(name)
+func Which(name string) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:320
+	_, err := exec.LookPath(name)
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:321
+	return err == nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:326
+func IsInstalled(name string) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:327
+	_, err := exec.LookPath(name)
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:328
 	return err == nil
 }

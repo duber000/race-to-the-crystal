@@ -5,10 +5,13 @@ package retry
 import (
 	"fmt"
 	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
+	"kukicha.org/kukicha/stdlib/datetime"
+	"kukicha.org/kukicha/stdlib/math"
+	"kukicha.org/kukicha/stdlib/random"
 	"time"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:30
 type Strategy string
 
 const (
@@ -48,118 +51,157 @@ func (e Strategy) String() string {
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:37
 type Config struct {
-	MaxAttempts  int
-	InitialDelay int
-	Strategy     Strategy
+	MaxAttempts    int
+	InitialDelay   datetime.Duration
+	MaxDelay       datetime.Duration
+	JitterFraction float64
+	Strategy       Strategy
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:46
 func New() Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:39
-	return Config{MaxAttempts: 3, InitialDelay: 1000, Strategy: StrategyExponential}
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:47
+	return Config{MaxAttempts: 3, InitialDelay: time.Second, Strategy: StrategyExponential}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:43
-func Attempts(cfg Config, maxAttempts int) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:44
-	cfg.MaxAttempts = maxAttempts
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:45
-	return cfg
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:49
-func Delay(cfg Config, delayMs int) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:50
-	cfg.InitialDelay = delayMs
 //line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:51
+func Attempts(cfg Config, maxAttempts int) Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:52
+	cfg.MaxAttempts = maxAttempts
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:53
 	return cfg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:55
-func Linear(cfg Config) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:56
-	cfg.Strategy = StrategyLinear
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:58
+func Delay(cfg Config, d datetime.Duration) Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:59
+	cfg.InitialDelay = d
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:60
 	return cfg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:61
-func Exponential(cfg Config) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:62
-	cfg.Strategy = StrategyExponential
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:63
-	return cfg
-}
-
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:67
+func MaxDelay(cfg Config, d datetime.Duration) Config {
 //line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:68
-func Do(cfg Config, fn func() error) error {
+	cfg.MaxDelay = d
 //line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:69
+	return cfg
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:76
+func Jitter(cfg Config, fraction float64) Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:77
+	cfg.JitterFraction = math.Clamp(fraction, 0.0, 1.0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:78
+	return cfg
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:82
+func Linear(cfg Config) Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:83
+	cfg.Strategy = StrategyLinear
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:84
+	return cfg
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:88
+func Exponential(cfg Config) Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:89
+	cfg.Strategy = StrategyExponential
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:90
+	return cfg
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:95
+func Do(cfg Config, fn func() error) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:96
 	attempts := max(cfg.MaxAttempts, 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:97
 	for attempt := range attempts - 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:98
 		err := fn()
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:99
 		if err == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:100
 			return nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:101
 		Sleep(cfg, attempt)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:102
 	return fn()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:111
 func DoCtx(h ctxpkg.Handle, cfg Config, fn func(ctxpkg.Handle) error) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:112
 	attempts := max(cfg.MaxAttempts, 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:113
 	for attempt := range attempts - 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:114
 		if h.Ctx.Err() != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:115
 			return h.Ctx.Err()
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:116
 		err := fn(h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:117
 		if err == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:118
 			return nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:119
 		Sleep(cfg, attempt)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:120
 	return fn(h)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:126
 func Sleep(cfg Config, attempt int) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:98
-	delay := calculateDelay(cfg, attempt)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:99
-	time.Sleep(time.Duration(delay) * time.Millisecond)
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:127
+	time.Sleep(calculateDelay(cfg, attempt))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:102
-func calculateDelay(cfg Config, attempt int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:103
-	if cfg.Strategy == StrategyLinear {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:104
-		return cfg.InitialDelay
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:131
+const maxDuration datetime.Duration = 9223372036854775807
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:134
+const halfMaxDuration datetime.Duration = 4611686018427387903
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:140
+func calculateDelay(cfg Config, attempt int) datetime.Duration {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:141
+	delay := cfg.InitialDelay
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:142
+	if cfg.Strategy == StrategyExponential {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:143
+		for range attempt {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:144
+			if delay > halfMaxDuration {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:145
+				delay = maxDuration
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:146
+				break
+			}
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:147
+			delay = delay * datetime.Duration(2)
+		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:107
-	multiplier := 1
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:108
-	for range attempt {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:109
-		multiplier = multiplier * 2
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:148
+	if cfg.MaxDelay > 0 && delay > cfg.MaxDelay {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:149
+		delay = cfg.MaxDelay
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:111
-	return cfg.InitialDelay * multiplier
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:150
+	if cfg.JitterFraction > 0.0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:151
+		offset := random.Float(-cfg.JitterFraction, cfg.JitterFraction)
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:152
+		delay = datetime.Duration(float64(delay) * (1 + offset))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:153
+	return delay
 }

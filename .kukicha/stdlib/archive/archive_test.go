@@ -3,8 +3,8 @@
 package archive_test
 
 import (
-	"fmt"
 	"kukicha.org/kukicha/stdlib/archive"
+	errs "kukicha.org/kukicha/stdlib/errors"
 	"kukicha.org/kukicha/stdlib/files"
 	strpkg "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/test"
@@ -13,563 +13,831 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:13
-func writeFixture(t *testing.T, dir string, name string, body string) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:14
+func writeFixture(t *testing.T, dir string, name string, body string) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:15
 	full := filepath.Join(dir, name)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:15
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:16
 	err_1 := files.MkDirAll(filepath.Dir(full))
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:16
 	if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:15
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:16
-		t.Fatal(fmt.Sprintf("mkdir %v: %v", filepath.Dir(full), err_1))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:16
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:17
+		t.Fatalf("mkdir %v: %v", filepath.Dir(full), err_1)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:18
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:19
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:20
 	err_2 := os.WriteFile(full, []byte(body), 0o644)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:20
 	if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:19
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:20
-		t.Fatal(fmt.Sprintf("write %v: %v", full, err_2))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:20
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:21
+		t.Fatalf("write %v: %v", full, err_2)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:22
 		return
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:23
-func TestZipRoundTrip(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:24
-	tmp := t.TempDir()
+func TestZipRoundTrip(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:25
+	tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:26
 	src := filepath.Join(tmp, "src")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:26
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:27
 	err_3 := files.MkDirAll(src)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:27
 	if err_3 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:26
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:27
-		t.Fatal(fmt.Sprintf("mkdir src: %v", err_3))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:27
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:28
+		t.Fatalf("mkdir src: %v", err_3)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:29
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:30
-	writeFixture(t, src, "hello.txt", "hello world")
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:31
+	writeFixture(t, src, "hello.txt", "hello world")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:32
 	writeFixture(t, src, "data.json", `{"ok":true}`)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:35
 	cwd, err_4 := os.Getwd()
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:35
 	if err_4 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:34
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:35
-		t.Fatal(fmt.Sprintf("getwd: %v", err_4))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:35
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:36
+		t.Fatalf("getwd: %v", err_4)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:37
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:38
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:39
 	err_5 := os.Chdir(tmp)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:39
 	if err_5 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:38
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:39
-		t.Fatal(fmt.Sprintf("chdir: %v", err_5))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:39
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:40
+		t.Fatalf("chdir: %v", err_5)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:41
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:43
 	defer os.Chdir(cwd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:45
 	rel := []string{filepath.Join("src", "hello.txt"), filepath.Join("src", "data.json")}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:48
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:49
 	err_6 := archive.WriteZip("out.zip", rel)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:49
 	if err_6 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:48
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:49
-		t.Fatal(fmt.Sprintf("WriteZip: %v", err_6))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:49
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:50
+		t.Fatalf("WriteZip: %v", err_6)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:51
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:53
 	entries, err_7 := archive.List("out.zip")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:53
 	if err_7 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:52
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:53
-		t.Fatal(fmt.Sprintf("List: %v", err_7))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:53
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:54
+		t.Fatalf("List: %v", err_7)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:55
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:57
 	test.AssertEqual(t, len(entries), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:59
 	body, err_8 := archive.ReadEntry("out.zip", "src/hello.txt")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:59
 	if err_8 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:58
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:59
-		t.Fatal(fmt.Sprintf("ReadEntry: %v", err_8))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:59
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:60
+		t.Fatalf("ReadEntry: %v", err_8)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:61
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:63
 	test.AssertEqual(t, string(body), "hello world")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:64
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:65
 	err_9 := archive.Extract("out.zip", "extracted")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:65
 	if err_9 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:64
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:65
-		t.Fatal(fmt.Sprintf("Extract: %v", err_9))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:65
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:66
+		t.Fatalf("Extract: %v", err_9)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:67
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:69
 	extracted, err_10 := files.ReadString(filepath.Join("extracted", "src", "hello.txt"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:69
 	if err_10 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:68
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:69
-		t.Fatal(fmt.Sprintf("read extracted: %v", err_10))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:69
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:70
+		t.Fatalf("read extracted: %v", err_10)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:71
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:73
 	test.AssertEqual(t, extracted, "hello world")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:74
-func TestTarGzRoundTrip(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:75
-	tmp := t.TempDir()
+func TestTarGzRoundTrip(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:76
+	tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:77
 	src := filepath.Join(tmp, "src")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:77
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:78
 	err_11 := files.MkDirAll(filepath.Join(src, "sub"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:78
 	if err_11 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:77
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:78
-		t.Fatal(fmt.Sprintf("mkdir src: %v", err_11))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:78
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:79
+		t.Fatalf("mkdir src: %v", err_11)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:80
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:81
-	writeFixture(t, src, "top.txt", "top-level")
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:82
+	writeFixture(t, src, "top.txt", "top-level")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:83
 	writeFixture(t, src, filepath.Join("sub", "nested.txt"), "nested")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:85
 	archivePath := filepath.Join(tmp, "out.tar.gz")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:85
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:86
 	err_12 := archive.WriteTarGz(archivePath, src)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:86
 	if err_12 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:85
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:86
-		t.Fatal(fmt.Sprintf("WriteTarGz: %v", err_12))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:86
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:87
+		t.Fatalf("WriteTarGz: %v", err_12)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:88
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:90
 	entries, err_13 := archive.List(archivePath)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:90
 	if err_13 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:89
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:90
-		t.Fatal(fmt.Sprintf("List: %v", err_13))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:90
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:91
+		t.Fatalf("List: %v", err_13)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:92
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:94
 	test.AssertTrue(t, len(entries) >= 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:96
 	body, err_14 := archive.ReadEntry(archivePath, "sub/nested.txt")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:96
 	if err_14 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:95
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:96
-		t.Fatal(fmt.Sprintf("ReadEntry: %v", err_14))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:96
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:97
+		t.Fatalf("ReadEntry: %v", err_14)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:98
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:100
 	test.AssertEqual(t, string(body), "nested")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:102
 	dest := filepath.Join(tmp, "extracted")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:102
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:103
 	err_15 := archive.Extract(archivePath, dest)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:103
 	if err_15 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:102
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:103
-		t.Fatal(fmt.Sprintf("Extract: %v", err_15))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:103
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:104
+		t.Fatalf("Extract: %v", err_15)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:105
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:107
 	top, err_16 := files.ReadString(filepath.Join(dest, "top.txt"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:107
 	if err_16 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:106
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:107
-		t.Fatal(fmt.Sprintf("read top: %v", err_16))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:107
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:108
+		t.Fatalf("read top: %v", err_16)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:109
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:111
 	test.AssertEqual(t, top, "top-level")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:112
 	nested, err_17 := files.ReadString(filepath.Join(dest, "sub", "nested.txt"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:112
 	if err_17 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:111
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:112
-		t.Fatal(fmt.Sprintf("read nested: %v", err_17))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:112
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:113
+		t.Fatalf("read nested: %v", err_17)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:114
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:116
 	test.AssertEqual(t, nested, "nested")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:117
-func TestExtractRejectsUnknownFormat(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:118
-	err := archive.Extract("file.rar", "/tmp/dest")
+func TestExtractRejectsUnknownFormat(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:119
+	err := archive.Extract("file.rar", "/tmp/dest")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:120
 	test.AssertNotNil(t, err)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:121
-func TestWriteZipRejectsAbsolutePath(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:122
-	tmp := t.TempDir()
+func TestWriteZipRejectsAbsolutePath(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:123
-	err := archive.WriteZip(filepath.Join(tmp, "out.zip"), []string{"/etc/passwd"})
+	tmp := t.TempDir()
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:124
+	err := archive.WriteZip(filepath.Join(tmp, "out.zip"), []string{"/etc/passwd"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:125
 	test.AssertNotNil(t, err)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:126
-func TestExtractLimitRejectsOversizedZip(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:127
-	tmp := t.TempDir()
+func TestExtractLimitRejectsOversizedZip(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:128
+	tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:129
 	cwd, err_18 := os.Getwd()
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:129
 	if err_18 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:128
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:129
-		t.Fatal(fmt.Sprintf("getwd: %v", err_18))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:129
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:130
+		t.Fatalf("getwd: %v", err_18)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:131
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:132
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:133
 	err_19 := os.Chdir(tmp)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:133
 	if err_19 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:132
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:133
-		t.Fatal(fmt.Sprintf("chdir: %v", err_19))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:133
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:134
+		t.Fatalf("chdir: %v", err_19)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:135
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:137
 	defer os.Chdir(cwd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:138
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:139
 	writeFixture(t, "src", "big.txt", strpkg.Repeat("x", 500))
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:139
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:140
 	err_20 := archive.WriteZip("out.zip", []string{filepath.Join("src", "big.txt")})
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:140
 	if err_20 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:139
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:140
-		t.Fatal(fmt.Sprintf("WriteZip: %v", err_20))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:140
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:141
+		t.Fatalf("WriteZip: %v", err_20)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:142
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:144
-	err := archive.ExtractLimit("out.zip", "extracted", 100)
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:145
+	err := archive.ExtractLimit("out.zip", "extracted", 100)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:146
 	test.AssertNotNil(t, err)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:147
-func TestExtractLimitRejectsOversizedTarGz(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:148
-	tmp := t.TempDir()
+func TestExtractLimitRejectsOversizedTarGz(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:149
+	tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:150
 	src := filepath.Join(tmp, "src")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:150
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:151
 	err_21 := files.MkDirAll(src)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:151
 	if err_21 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:150
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:151
-		t.Fatal(fmt.Sprintf("mkdir src: %v", err_21))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:151
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:152
+		t.Fatalf("mkdir src: %v", err_21)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:153
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:154
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:155
 	writeFixture(t, src, "big.txt", strpkg.Repeat("x", 500))
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:157
 	archivePath := filepath.Join(tmp, "out.tar.gz")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:157
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:158
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:158
 	err_22 := archive.WriteTarGz(archivePath, src)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:158
 	if err_22 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:157
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:158
-		t.Fatal(fmt.Sprintf("WriteTarGz: %v", err_22))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:158
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:159
+		t.Fatalf("WriteTarGz: %v", err_22)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:160
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:161
-	dest := filepath.Join(tmp, "extracted")
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:162
-	err := archive.ExtractLimit(archivePath, dest, 100)
+	dest := filepath.Join(tmp, "extracted")
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:163
+	err := archive.ExtractLimit(archivePath, dest, 100)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:164
 	test.AssertNotNil(t, err)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:165
-func TestExtractLimitAllowsWithinBudget(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:166
-	tmp := t.TempDir()
+func TestExtractLimitAllowsWithinBudget(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:167
+	tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:168
 	src := filepath.Join(tmp, "src")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:168
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:169
 	err_23 := files.MkDirAll(src)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:169
 	if err_23 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:168
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:169
-		t.Fatal(fmt.Sprintf("mkdir src: %v", err_23))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:169
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:170
+		t.Fatalf("mkdir src: %v", err_23)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:171
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:173
 	writeFixture(t, src, "ok.txt", "small payload")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:175
 	archivePath := filepath.Join(tmp, "out.tar.gz")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:175
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:176
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:176
 	err_24 := archive.WriteTarGz(archivePath, src)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:176
 	if err_24 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:175
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:176
-		t.Fatal(fmt.Sprintf("WriteTarGz: %v", err_24))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:176
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:177
+		t.Fatalf("WriteTarGz: %v", err_24)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:178
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:180
 	dest := filepath.Join(tmp, "extracted")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:180
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:180
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:181
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:181
 	err_25 := archive.ExtractLimit(archivePath, dest, 1048576)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:180
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:181
 	if err_25 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:180
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:181
-		t.Fatal(fmt.Sprintf("ExtractLimit: %v", err_25))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:181
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:182
+		t.Fatalf("ExtractLimit: %v", err_25)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:183
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:185
 	body, err_26 := files.ReadString(filepath.Join(dest, "ok.txt"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:185
 	if err_26 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:184
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:185
-		t.Fatal(fmt.Sprintf("read extracted: %v", err_26))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:185
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:186
+		t.Fatalf("read extracted: %v", err_26)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:187
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:189
 	test.AssertEqual(t, body, "small payload")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:193
-func TestZipExtractRejectsDirSymlinkTraversal(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:194
-	tmp := t.TempDir()
+func TestZipExtractRejectsDirSymlinkTraversal(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:195
-	dest := filepath.Join(tmp, "dest")
+	tmp := t.TempDir()
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:196
+	dest := filepath.Join(tmp, "dest")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:197
 	outside := filepath.Join(tmp, "outside")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:197
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:198
 	err_27 := files.MkDirAll(dest)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:198
 	if err_27 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:197
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:198
-		t.Fatal(fmt.Sprintf("mkdir dest: %v", err_27))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:198
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:199
+		t.Fatalf("mkdir dest: %v", err_27)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:200
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:201
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:202
 	err_28 := files.MkDirAll(outside)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:202
 	if err_28 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:201
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:202
-		t.Fatal(fmt.Sprintf("mkdir outside: %v", err_28))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:202
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:203
+		t.Fatalf("mkdir outside: %v", err_28)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:204
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:206
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:206
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:207
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:207
 	err_29 := os.Symlink(outside, filepath.Join(dest, "link"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:206
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:207
 	if err_29 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:206
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:207
-		t.Fatal(fmt.Sprintf("symlink: %v", err_29))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:207
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:208
+		t.Fatalf("symlink: %v", err_29)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:209
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:211
-	stage := filepath.Join(tmp, "stage")
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:212
+	stage := filepath.Join(tmp, "stage")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:213
 	writeFixture(t, stage, filepath.Join("link", "evil.txt"), "pwned")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:215
 	cwd, err_30 := os.Getwd()
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:215
 	if err_30 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:214
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:215
-		t.Fatal(fmt.Sprintf("getwd: %v", err_30))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:215
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:216
+		t.Fatalf("getwd: %v", err_30)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:217
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:218
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:218
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:219
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:219
 	err_31 := os.Chdir(stage)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:218
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:219
 	if err_31 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:218
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:219
-		t.Fatal(fmt.Sprintf("chdir: %v", err_31))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:219
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:220
+		t.Fatalf("chdir: %v", err_31)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:221
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:223
 	defer os.Chdir(cwd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:225
 	archivePath := filepath.Join(tmp, "out.zip")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:225
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:226
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:226
 	err_32 := archive.WriteZip(archivePath, []string{filepath.Join("link", "evil.txt")})
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:226
 	if err_32 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:225
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:226
-		t.Fatal(fmt.Sprintf("WriteZip: %v", err_32))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:226
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:227
+		t.Fatalf("WriteZip: %v", err_32)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:228
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:229
-	err := archive.Extract(archivePath, dest)
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:230
+	err := archive.Extract(archivePath, dest)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:231
 	test.AssertNotNil(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:234
 	leaked, err_33 := os.ReadDir(outside)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:234
 	if err_33 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:233
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:234
-		t.Fatal(fmt.Sprintf("readdir outside: %v", err_33))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:234
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:235
+		t.Fatalf("readdir outside: %v", err_33)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:236
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:237
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:238
 	test.AssertEqual(t, len(leaked), 0)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:241
-func TestTarGzExtractRejectsTargetSymlink(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:242
-	tmp := t.TempDir()
+func TestTarGzExtractRejectsTargetSymlink(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:243
-	dest := filepath.Join(tmp, "dest")
+	tmp := t.TempDir()
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:244
+	dest := filepath.Join(tmp, "dest")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:245
 	outside := filepath.Join(tmp, "outside")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:245
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:246
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:246
 	err_34 := files.MkDirAll(dest)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:246
 	if err_34 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:245
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:246
-		t.Fatal(fmt.Sprintf("mkdir dest: %v", err_34))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:246
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:247
+		t.Fatalf("mkdir dest: %v", err_34)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:248
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:249
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:249
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:250
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:250
 	err_35 := files.MkDirAll(outside)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:249
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:250
 	if err_35 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:249
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:250
-		t.Fatal(fmt.Sprintf("mkdir outside: %v", err_35))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:250
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:251
+		t.Fatalf("mkdir outside: %v", err_35)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:252
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:254
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:254
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:255
 	err_36 := os.Symlink(filepath.Join(outside, "captured.txt"), filepath.Join(dest, "link"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:254
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:255
 	if err_36 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:254
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:255
-		t.Fatal(fmt.Sprintf("symlink: %v", err_36))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:255
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:256
+		t.Fatalf("symlink: %v", err_36)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:257
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:259
-	stage := filepath.Join(tmp, "stage")
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:260
+	stage := filepath.Join(tmp, "stage")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:261
 	writeFixture(t, stage, "link", "pwned")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:262
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:263
 	archivePath := filepath.Join(tmp, "out.tar.gz")
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:263
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:263
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:264
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:264
 	err_37 := archive.WriteTarGz(archivePath, stage)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:263
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:264
 	if err_37 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:263
-		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:264
-		t.Fatal(fmt.Sprintf("WriteTarGz: %v", err_37))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:264
 		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:265
+		t.Fatalf("WriteTarGz: %v", err_37)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:266
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:267
-	err := archive.Extract(archivePath, dest)
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:268
+	err := archive.Extract(archivePath, dest)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:269
 	test.AssertNotNil(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:271
-	_, statErr := os.Stat(filepath.Join(outside, "captured.txt"))
 //line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:272
+	_, statErr := os.Stat(filepath.Join(outside, "captured.txt"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:273
 	test.AssertTrue(t, statErr != nil)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:277
+func buildArchiveSrc(t *testing.T, tmp string) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:278
+	src := filepath.Join(tmp, "src")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:279
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:279
+	err_38 := files.MkDirAll(filepath.Join(src, "sub"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:279
+	if err_38 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:279
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:280
+		t.Fatalf("mkdir src: %v", err_38)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:281
+		return ""
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:283
+	writeFixture(t, src, "top.txt", "top-level")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:284
+	writeFixture(t, src, filepath.Join("sub", "nested.txt"), "nested")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:285
+	return src
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:287
+func makeZipFixture(t *testing.T, tmp string) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:288
+	src := buildArchiveSrc(t, tmp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:289
+	archivePath := filepath.Join(tmp, "out.zip")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:290
+	cwd, err_39 := os.Getwd()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:290
+	if err_39 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:290
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:291
+		t.Fatalf("getwd: %v", err_39)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:292
+		return ""
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:294
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:294
+	err_40 := os.Chdir(src)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:294
+	if err_40 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:294
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:295
+		t.Fatalf("chdir: %v", err_40)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:296
+		return ""
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:298
+	defer os.Chdir(cwd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:299
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:299
+	err_41 := archive.WriteZip(archivePath, []string{"top.txt", filepath.Join("sub", "nested.txt")})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:299
+	if err_41 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:299
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:300
+		t.Fatalf("WriteZip: %v", err_41)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:301
+		return ""
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:303
+	return archivePath
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:305
+func makeTarGzFixture(t *testing.T, tmp string) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:306
+	src := buildArchiveSrc(t, tmp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:307
+	archivePath := filepath.Join(tmp, "out.tar.gz")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:308
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:308
+	err_42 := archive.WriteTarGz(archivePath, src)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:308
+	if err_42 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:308
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:309
+		t.Fatalf("WriteTarGz: %v", err_42)
+		//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:310
+		return ""
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:312
+	return archivePath
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:315
+func TestEntryExists(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:316
+	t.Run("zip", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:317
+		tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:318
+		p := makeZipFixture(t, tmp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:319
+		test.AssertTrue(t, archive.EntryExists(p, "top.txt"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:320
+		test.AssertTrue(t, archive.EntryExists(p, "sub/nested.txt"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:321
+		test.AssertFalse(t, archive.EntryExists(p, "missing.txt"))
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:324
+	t.Run("targz", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:325
+		tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:326
+		p := makeTarGzFixture(t, tmp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:327
+		test.AssertTrue(t, archive.EntryExists(p, "top.txt"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:328
+		test.AssertTrue(t, archive.EntryExists(p, "sub/nested.txt"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:329
+		test.AssertFalse(t, archive.EntryExists(p, "missing.txt"))
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:332
+	t.Run("missing archive or unknown format is false", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:333
+		test.AssertFalse(t, archive.EntryExists("nope.zip", "x"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:334
+		test.AssertFalse(t, archive.EntryExists("release.rar", "bin/app"))
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:338
+func TestExtractEntry(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:339
+	t.Run("zip writes only the named member", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:340
+		tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:341
+		p := makeZipFixture(t, tmp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:342
+		out := filepath.Join(tmp, "one")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:343
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:343
+		err_43 := archive.ExtractEntry(p, "sub/nested.txt", out)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:343
+		if err_43 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:343
+			//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:344
+			t.Fatalf("ExtractEntry: %v", err_43)
+			//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:345
+			return
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:347
+		body, err_44 := files.ReadString(filepath.Join(out, "sub", "nested.txt"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:347
+		if err_44 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:347
+			//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:348
+			t.Fatalf("read: %v", err_44)
+			//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:349
+			return
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:351
+		test.AssertEqual(t, body, "nested")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:353
+		_, statErr := os.Stat(filepath.Join(out, "top.txt"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:354
+		test.AssertTrue(t, statErr != nil)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:359
+	t.Run("targz", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:360
+		tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:361
+		p := makeTarGzFixture(t, tmp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:362
+		out := filepath.Join(tmp, "one")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:363
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:363
+		err_45 := archive.ExtractEntry(p, "top.txt", out)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:363
+		if err_45 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:363
+			//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:364
+			t.Fatalf("ExtractEntry: %v", err_45)
+			//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:365
+			return
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:367
+		body, err_46 := files.ReadString(filepath.Join(out, "top.txt"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:367
+		if err_46 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:367
+			//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:368
+			t.Fatalf("read: %v", err_46)
+			//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:369
+			return
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:371
+		test.AssertEqual(t, body, "top-level")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:374
+	t.Run("missing member wraps the sentinel", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:375
+		tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:376
+		p := makeZipFixture(t, tmp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:377
+		err := archive.ExtractEntry(p, "missing.txt", filepath.Join(tmp, "one"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:378
+		test.AssertError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:379
+		test.AssertTrue(t, errs.Is(err, archive.ErrEntryNotFound))
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:382
+	t.Run("rejects a name that escapes dest", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:383
+		tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:384
+		p := makeZipFixture(t, tmp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:385
+		err := archive.ExtractEntry(p, "../escape.txt", filepath.Join(tmp, "one"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:386
+		test.AssertError(t, err)
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:390
+func TestReadEntryOr(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:391
+	tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:392
+	p := makeZipFixture(t, tmp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:393
+	t.Run("present returns contents", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:394
+		got, err := archive.ReadEntryOr(p, "top.txt", []byte{0})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:395
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:396
+		test.AssertEqual(t, string(got), "top-level")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:399
+	t.Run("absence returns default", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:400
+		got, err := archive.ReadEntryOr(p, "missing.txt", []byte("fallback"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:401
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:402
+		test.AssertEqual(t, string(got), "fallback")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:405
+	t.Run("real errors propagate", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:406
+		_, err := archive.ReadEntryOr(filepath.Join(tmp, "nope.zip"), "x", []byte{0})
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:407
+		test.AssertError(t, err)
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:413
+func TestErrEntryNotFound(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:414
+	tmp := t.TempDir()
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:415
+	p := makeZipFixture(t, tmp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:416
+	_, err := archive.ReadEntry(p, "missing.txt")
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:417
+	test.AssertErrorIs(t, err, archive.ErrEntryNotFound)
+//line /var/home/tluker/repos/go/kukicha/stdlib/archive/archive_test.kuki:418
+	test.AssertTrue(t, strpkg.Contains(err.Error(), "missing.txt"))
 }

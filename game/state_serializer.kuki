@@ -104,7 +104,7 @@ func active_effect_to_dict(e: ActiveEffect) StateDict
     }
 
 func effects_to_dict on m: reference CrystalEffectsManager(map_of_players: map of types.PlayerID to reference Player) StateDict
-    player_effects := make(map of string to StateDict)
+    player_effects := empty map of string to StateDict
     for pid, _ in map_of_players
         pe := m.get_player_effects(pid)
         active := empty list of StateDict
@@ -116,13 +116,13 @@ func effects_to_dict on m: reference CrystalEffectsManager(map_of_players: map o
 # Full client-facing state dict. `perspective` is the game player id
 # ("player_0") to annotate the state with; pass "" to omit.
 func ClientStateDict on gs: reference GameState(perspective: string) StateDict
-    players_map := make(map of string to StateDict)
+    players_map := empty map of string to StateDict
     idx := 0
     for pid, p in gs.players
         players_map[pid as string] = player_to_dict(p, idx)
         idx = idx + 1
 
-    tokens_map := make(map of string to StateDict)
+    tokens_map := empty map of string to StateDict
     for tid, t in gs.tokens
         tokens_map["{tid}"] = token_to_dict(t)
 

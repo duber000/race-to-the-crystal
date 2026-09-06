@@ -80,8 +80,7 @@ func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs:
             return reference of r
 
 func choose_random(actions: list of ActionResponse) ChosenAction
-    idx := random.Int(0, len(actions))
-    return resolve_action(actions[idx])
+    return resolve_action(random.Choice of ActionResponse from actions)
 
 func choose_aggressive(actions: list of ActionResponse, gs: reference GameState, player_id: types.PlayerID) ChosenAction
     attacks := filter_attacks(actions)
@@ -206,7 +205,7 @@ func resolve_action(action: ActionResponse) ChosenAction
         when AttackAction
             return ChosenAttack{AttackerID: action.AttackerID, DefenderID: action.DefenderID}
         when DeployAction
-            pos := action.Positions[random.Int(0, len(action.Positions))]
+            pos := random.Choice of list of int from action.Positions
             return ChosenDeploy{HealthValue: action.HealthValue, Position: pos}
         default
             return ChosenEndTurn{}

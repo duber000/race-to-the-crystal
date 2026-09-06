@@ -3,6 +3,7 @@ petiole main
 import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/constants" as constants
 import "stdlib/json" as jsonpkg
+import "stdlib/slice"
 import "stdlib/string" as strpkg
 
 type ValidationResult
@@ -115,11 +116,7 @@ func ValidateDeploy(data: map of string to any) optional reference ValidationRes
         }
 
     if hv_val is int as hv_int
-        valid_hv := false
-        for v in constants.TOKEN_HEALTH_VALUES
-            if v equals hv_int
-                valid_hv = true
-        if not valid_hv
+        if not slice.Contains(constants.TOKEN_HEALTH_VALUES, hv_int)
             return reference of ValidationResult{
                 field: "health_value",
                 error_code: "INVALID_VALUE",
@@ -148,7 +145,7 @@ func is_position_value(val: any) bool
     return len(pos) equals 2
 
 func NormalizeActionData(data: map of string to any) map of string to any
-    result := make(map of string to any)
+    result := empty map of string to any
     for key, val in data
         lower_key := strpkg.ToLower(key)
         if lower_key equals "type"

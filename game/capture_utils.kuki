@@ -8,7 +8,7 @@ type TokenAtPos
     player_id: types.PlayerID
 
 func count_tokens_by_player(tokens: list of TokenAtPos) map of types.PlayerID to list of types.TokenID
-    result := make(map of types.PlayerID to list of types.TokenID)
+    result := empty map of types.PlayerID to list of types.TokenID
     for tap in tokens
         if not maps.Contains(result, tap.player_id)
             result[tap.player_id] = empty list of types.TokenID

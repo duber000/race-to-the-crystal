@@ -17,7 +17,7 @@ type AISpawner
 
 func NewAISpawner() AISpawner
     return AISpawner{
-        processes: make(map of int to reference exec.Cmd),
+        processes: empty map of int to reference exec.Cmd,
         ai_counter: 0,
         strategies: list of string{"random", "aggressive", "defensive"},
     }
@@ -87,5 +87,5 @@ func CleanupAll on sp: reference AISpawner
             log.Error("Failed to kill AI process {pid}: {err}")
         else
             log.Info("Killed AI process {pid}")
-    sp.processes = make(map of int to reference exec.Cmd)
+    sp.processes = empty map of int to reference exec.Cmd
     sp.ai_counter = 0

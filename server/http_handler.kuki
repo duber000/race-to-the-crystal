@@ -3,6 +3,7 @@ petiole main
 import "net"
 import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/types" as typespkg
+import "stdlib/cast"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/random"
@@ -475,7 +476,7 @@ func getIntField on h: reference HTTPHandler(data: map of string to any, key: st
     val, has := data[key]
     if not has
         return default_val
-    result, err := any_to_int(val)
+    result, err := cast.ToInt(val)
     if err isnt empty
         return default_val
     return result
@@ -496,18 +497,9 @@ func getPositionField on h: reference HTTPHandler(data: map of string to any, ke
 
     if len(pos) < 2
         return typespkg.Position{X: 0, Y: 0}
-    x := any_to_int(pos[0]) onerr 0
-    y := any_to_int(pos[1]) onerr 0
+    x := cast.ToIntOr(pos[0], 0)
+    y := cast.ToIntOr(pos[1], 0)
     return typespkg.Position{X: x, Y: y}
-
-func any_to_int(v: any) (int, error)
-    switch v as val
-        when int
-            return val, empty
-        when float64
-            return val as int, empty
-
-    return 0, error "cannot convert to int"
 
 func actionResultDataToMap(data: gamepkg.ActionResultData) map of string to any
     return gamepkg.ActionDataToDict(data)

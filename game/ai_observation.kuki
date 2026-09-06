@@ -64,7 +64,7 @@ func generator_status(gen: reference Generator, gs: reference GameState) string
     return "Uncontested"
 
 func crystal_holders(crys: reference Crystal, gs: reference GameState) map of types.PlayerID to int
-    result := make(map of types.PlayerID to int)
+    result := empty map of types.PlayerID to int
     tokens_at := gs.GetTokensAtPosition(crys.position)
     for t in tokens_at
         _, exists := result[t.player_id]
@@ -153,7 +153,7 @@ func append_player_tokens(lines: list of string, gs: reference GameState, player
 
     lines = append(lines, "YOUR TOKENS ({len(deployed)} deployed, {len(reserve)} in reserve):")
     if len(deployed) > 0
-        sorted := sort.By(deployed, (a: Token, b: Token) => a.id < b.id)
+        sorted := sort.ByKey(deployed, (t: Token) => t.id)
         for t in sorted
             lines = append(
                 lines,
@@ -184,7 +184,7 @@ func append_enemy_tokens(lines: list of string, gs: reference GameState, perspec
                     enemy_deployed = append(enemy_deployed, t)
         cn := color_name(p_ref.color)
         lines = append(lines, "{p_ref.name} ({cn}): {len(enemy_deployed)} deployed")
-        sorted := sort.By(enemy_deployed, (a: Token, b: Token) => a.id < b.id)
+        sorted := sort.ByKey(enemy_deployed, (t: Token) => t.id)
         for t in sorted
             lines = append(
                 lines,

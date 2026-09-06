@@ -2,6 +2,7 @@ petiole game
 
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
+import "stdlib/slice"
 
 type DirOffset
     dx: int
@@ -34,7 +35,7 @@ func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int,
     start := tok.position
     player_id := tok.player_id
 
-    visited := make(map of types.Position to bool)
+    visited := empty map of types.Position to bool
     visited[start] = true
 
     queue := empty list of BfsItem
@@ -84,16 +85,13 @@ func is_valid_move(tok: reference Token, dest: types.Position, brd: reference Bo
     if not tok.is_alive
         return false
     moves := get_valid_moves(tok, brd, tok.movement_range(), tokens_map)
-    for m in moves
-        if m equals dest
-            return true
-    return false
+    return slice.Contains(moves, dest)
 
 func find_path(start: types.Position, end: types.Position, brd: reference Board, max_distance: int) (list of types.Position, bool)
     if start equals end
         return list of types.Position{start}, true
 
-    visited := make(map of types.Position to bool)
+    visited := empty map of types.Position to bool
     visited[start] = true
 
     queue := empty list of PathItem

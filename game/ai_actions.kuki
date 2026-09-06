@@ -3,6 +3,7 @@ petiole game
 import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
+import "stdlib/slice"
 
 type JSONMap = map of string to any
 
@@ -154,12 +155,7 @@ func ValidateMove(TokenID: types.TokenID, dest: types.Position, gs: reference Ga
 
     effective_range := gs.GetTokenMovementRange(tok_ref)
     valid_moves := get_valid_moves(tok_ref, reference of gs.board, effective_range, gs.tokens)
-    found := false
-    for m in valid_moves
-        if m equals dest
-            found = true
-            break
-    if not found
+    if not slice.Contains(valid_moves, dest)
         return InvalidResult(
             "MOVE_FAILED: invalid_destination | dest=({dest.X},{dest.Y}) | token_pos=({tok_ref.position.X},{tok_ref.position.Y}) | range={effective_range} | valid_count={len(valid_moves)}",
         )
@@ -214,12 +210,7 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
     if tp_result isnt empty
         return dereference tp_result
 
-    valid_hv := false
-    for hv in constants.TOKEN_HEALTH_VALUES
-        if hv equals HealthValue
-            valid_hv = true
-            break
-    if not valid_hv
+    if not slice.Contains(constants.TOKEN_HEALTH_VALUES, HealthValue)
         return InvalidResult(
             "DEPLOY_FAILED: invalid_health | value={HealthValue} | valid={constants.TOKEN_HEALTH_VALUES}",
         )
@@ -242,12 +233,7 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
     p := dereference p_ref
 
     valid_positions := gs.board.get_deployable_positions(enums.PlayerIndex(p.color))
-    in_zone := false
-    for vp in valid_positions
-        if vp equals pos
-            in_zone = true
-            break
-    if not in_zone
+    if not slice.Contains(valid_positions, pos)
         return InvalidResult("DEPLOY_FAILED: invalid_position | pos=({pos.X},{pos.Y})")
     return ValidResult("Deployment is valid")
 

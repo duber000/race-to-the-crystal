@@ -315,3 +315,105 @@ func TestTimerStopAndFail(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:210
 	test.AssertTrue(t, kukistring.Contains(got, "table=events"))
 }
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:214
+func TestWithCarriesFieldsAcrossRecords(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:215
+	f, path := captureToFile(t)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:216
+	defer os.Remove(path)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:218
+	l := log.New(f)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:219
+	rl := log.With(l, "request_id", "r-42")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:220
+	rl.Info("served", "status", 200)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:221
+	rl.Warn("again")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:222
+	_ = f.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:224
+	got := readAll(t, path)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:225
+	test.AssertTrue(t, kukistring.Contains(got, "served request_id=r-42 status=200"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:226
+	test.AssertTrue(t, kukistring.Contains(got, "again request_id=r-42"))
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:230
+func TestWithStacksAndLeavesParentUnaffected(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:231
+	f, path := captureToFile(t)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:232
+	defer os.Remove(path)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:234
+	l := log.New(f)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:235
+	base := log.With(l, "trace", "t1")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:236
+	deep := log.With(base, "span", "s1")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:238
+	deep.Info("both")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:239
+	base.Info("only trace")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:240
+	l.Info("clean")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:241
+	_ = f.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:243
+	got := readAll(t, path)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:244
+	lines := kukistring.Split(got, "\n")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:245
+	test.AssertTrue(t, kukistring.Contains(lines[0], "trace=t1 span=s1"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:246
+	test.AssertTrue(t, kukistring.Contains(lines[1], "trace=t1"))
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:247
+	test.AssertTrue(t, !kukistring.Contains(lines[1], "span="))
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:248
+	test.AssertTrue(t, !kukistring.Contains(lines[2], "trace="))
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:250
+func TestWithFieldsOrder(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:252
+	f, path := captureToFile(t)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:253
+	defer os.Remove(path)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:255
+	l := log.New(f)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:256
+	l.Component = "api"
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:257
+	rl := log.With(l, "user", "ann")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:258
+	rl.Info("hi", "ms", 5)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:259
+	_ = f.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:261
+	got := readAll(t, path)
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:262
+	test.AssertTrue(t, kukistring.Contains(got, "hi component=api user=ann ms=5"))
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:267
+func TestDefaultLoggerMetadataSetters(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:268
+	log.SetService("svc")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:269
+	log.SetEnvironment("test")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:270
+	log.SetComponent("api")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:271
+	log.SetCorrelationID("cid")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:272
+	log.Info("setters applied without panic")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:274
+	log.SetService("")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:275
+	log.SetEnvironment("")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:276
+	log.SetComponent("")
+//line /var/home/tluker/repos/go/kukicha/stdlib/log/log_test.kuki:277
+	log.SetCorrelationID("")
+}

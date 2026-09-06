@@ -86,10 +86,10 @@ type RateLimiter
 
 func NewRateLimiter() RateLimiter
     return RateLimiter{
-        ip_connections: make(map of string to reference SlidingWindowCounter),
-        player_actions: make(map of string to reference TokenBucket),
-        player_game_creation: make(map of string to reference SlidingWindowCounter),
-        active_connections: make(map of string to int),
+        ip_connections: empty map of string to reference SlidingWindowCounter,
+        player_actions: empty map of string to reference TokenBucket,
+        player_game_creation: empty map of string to reference SlidingWindowCounter,
+        active_connections: empty map of string to int,
     }
 
 func get_ip_counter on rl: reference RateLimiter(ip: string) reference SlidingWindowCounter

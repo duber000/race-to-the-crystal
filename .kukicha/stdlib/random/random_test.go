@@ -3,161 +3,522 @@
 package random_test
 
 import (
+	"fmt"
 	"kukicha.org/kukicha/stdlib/random"
+	kukistring "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/test"
+	"math"
 	"slices"
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:12
 type LengthCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:15
 func TestRandomStringLength(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:14
-	cases := []LengthCase{LengthCase{name: "lengths"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:16
-	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:17
-		t.Run(tc.name, func(t *testing.T) {
+	cases := []LengthCase{LengthCase{name: "lengths"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:18
-			s := random.String(10)
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:19
-			test.AssertEqual(t, len(s), 10)
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:20
+			s := random.String(10)
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:21
+			test.AssertEqual(t, len(s), 10)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:23
 			zero := random.String(0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:24
 			test.AssertEqual(t, zero, "")
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:26
-func TestRandomInt(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:27
-	for range 100 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:28
-		v := random.Int(5, 10)
+func TestRandomInt(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:29
-		if v < 5 || v >= 10 {
+	for range 100 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:30
+		v := random.Int(5, 10)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:31
+		if v < 5 || v >= 10 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:32
 			t.Errorf("random.Int(5, 10) = %d, out of range", v)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:35
 	test.AssertEqual(t, random.Int(7, 7), 7)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:38
 	test.AssertEqual(t, random.Int(10, 5), 10)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:39
-func TestRandomFloat(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:40
-	for range 100 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:41
-		v := random.Float(1.0, 2.0)
+func TestRandomFloat(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:42
-		if v < 1.0 || v >= 2.0 {
+	for range 100 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:43
+		v := random.Float(1.0, 2.0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:44
+		if v < 1.0 || v >= 2.0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:45
 			t.Errorf("random.Float(1.0, 2.0) = %f, out of range", v)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:48
 	test.AssertEqual(t, random.Float(3.5, 3.5), 3.5)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:51
 	test.AssertEqual(t, random.Float(2.0, 1.0), 2.0)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:52
-func TestChoice(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:53
-	items := []string{"a", "b", "c"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:54
-	for range 50 {
+func TestChoice(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:55
-		pick := random.Choice(items)
+	items := []string{"a", "b", "c"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:56
-		if !(slices.Contains(items, pick)) {
+	for range 50 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:57
+		pick := random.Choice(items)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:58
+		if !(slices.Contains(items, pick)) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:59
 			t.Errorf("random.Choice returned %v, not in items", pick)
 		}
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:60
-func TestShuffleIsPermutation(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:61
-	items := []int{1, 2, 3, 4, 5, 6, 7, 8}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:62
-	shuffled := random.Shuffle(items)
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:63
-	test.AssertEqual(t, len(shuffled), len(items))
+func TestChoicePanicsOnEmpty(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:64
-	for _, x := range items {
+	defer func() {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:65
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:65
+		r := recover(); r != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:66
+			return
+		}
+	}()
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:68
+	random.Choice([]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:69
+	t.Errorf("expected panic on empty items")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:74
+func TestIntPanicsOnRangeOverflow(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:75
+	defer func() {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:76
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:76
+		r := recover(); r != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:77
+			return
+		}
+	}()
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:79
+	random.Int(math.MinInt, math.MaxInt)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:80
+	t.Errorf("expected panic when max - min overflows int")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:83
+func TestGeneratorChoicePanicsOnEmpty(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:84
+	defer func() {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:85
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:85
+		r := recover(); r != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:86
+			return
+		}
+	}()
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:88
+	g := random.NewGenerator(1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:89
+	g.Choice([]string{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:90
+	t.Errorf("expected panic on empty items")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:92
+func TestGeneratorIntPanicsOnRangeOverflow(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:93
+	defer func() {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:94
+		if //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:94
+		r := recover(); r != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:95
+			return
+		}
+	}()
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:97
+	g := random.NewGenerator(1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:98
+	g.Int(math.MinInt, math.MaxInt)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:99
+	t.Errorf("expected panic when max - min overflows int")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:102
+func TestShuffleIsPermutation(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:103
+	items := []int{1, 2, 3, 4, 5, 6, 7, 8}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:104
+	shuffled := random.Shuffle(items)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:105
+	test.AssertEqual(t, len(shuffled), len(items))
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:106
+	for _, x := range items {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:107
 		test.AssertTrue(t, slices.Contains(shuffled, x))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:109
 	test.AssertEqual(t, items[0], 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:110
 	test.AssertEqual(t, items[7], 8)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:113
 func TestGeneratorDeterministic(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:114
 	a := random.NewGenerator(42)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:115
 	b := random.NewGenerator(42)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:116
 	for range 20 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:117
 		test.AssertEqual(t, a.Int(0, 1000), b.Int(0, 1000))
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:118
 		test.AssertEqual(t, a.Float(0.0, 1.0), b.Float(0.0, 1.0))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:120
 	a = random.NewGenerator(7)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:121
 	b = random.NewGenerator(7)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:80
-	test.AssertEqual(t, a.Text(12), b.Text(12))
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:122
+	test.AssertEqual(t, a.String(12), b.String(12))
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:123
 	test.AssertEqual(t, a.Shuffle([]int{1, 2, 3}), b.Shuffle([]int{1, 2, 3}))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:126
 func TestGeneratorDifferentSeedsDiffer(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:127
 	a := random.NewGenerator(1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:128
 	b := random.NewGenerator(2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:129
 	same := true
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:130
 	for range 9 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:131
 		if a.Int(0, 1000000000) != b.Int(0, 1000000000) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:132
 			same = false
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:133
 	test.AssertFalse(t, same)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:136
 func TestGeneratorRangeContracts(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:137
 	g := random.NewGenerator(99)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:138
 	test.AssertEqual(t, g.Int(7, 7), 7)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:139
 	test.AssertEqual(t, g.Int(10, 5), 10)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:140
 	test.AssertEqual(t, g.Float(3.5, 3.5), 3.5)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:99
-	test.AssertEqual(t, g.Text(0), "")
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:141
+	test.AssertEqual(t, g.String(0), "")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:147
+func TestStringHasNoNul(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:148
+	for _, n := range []int{0, 1, 2, 3, 10, 32, 64, 257} {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:149
+		s := random.String(n)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:150
+		test.AssertEqual(t, len(s), n, fmt.Sprintf("String(%v) length", n))
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:151
+		test.AssertFalse(t, kukistring.Contains(s, "\x00"), fmt.Sprintf("String(%v) contains NUL", n))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:153
+	g := random.NewGenerator(1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:154
+	for _, n := range []int{0, 1, 2, 10, 32, 64} {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:155
+		s := g.String(n)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:156
+		test.AssertEqual(t, len(s), n, fmt.Sprintf("Generator.String(%v) length", n))
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:157
+		test.AssertFalse(t, kukistring.Contains(s, "\x00"), fmt.Sprintf("Generator.String(%v) contains NUL", n))
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:165
+func TestShuffleUsesLastIndex(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:166
+	g := random.NewGenerator(1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:167
+	sawSwap := false
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:168
+	for range 200 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:169
+		shuffled := g.Shuffle([]int{1, 2})
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:170
+		if shuffled[0] == 2 && shuffled[1] == 1 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:171
+			sawSwap = true
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:172
+	test.AssertTrue(t, sawSwap, "200 shuffles of a 2-element list never swapped")
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:174
+	lastMoved := false
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:175
+	for range 200 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:176
+		shuffled := g.Shuffle([]int{1, 2, 3, 4, 5})
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:177
+		if shuffled[4] != 5 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:178
+			lastMoved = true
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:179
+	test.AssertTrue(t, lastMoved, "original last element never left the final position")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:185
+const charset62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:189
+func TestStringCharsetMembership(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:190
+	sample := random.String(5000)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:191
+	for i := range len(sample) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:192
+		ch := sample[i : i+1]
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:193
+		if !kukistring.Contains(charset62, ch) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:194
+			t.Errorf("String produced out-of-charset character %v at %v", ch, i)
+		}
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:200
+func TestStringDistributionIsRoughlyUniform(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:201
+	sample := random.String(12400)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:202
+	counts := map[string]int{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:203
+	total := 0
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:204
+	for i := range len(sample) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:205
+		ch := sample[i : i+1]
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:206
+		counts[ch] = counts[ch] + 1
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:207
+		total = total + 1
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:209
+	chi := 0.0
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:210
+	for i := range len(charset62) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:211
+		c := charset62[i : i+1]
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:212
+		obs := counts[c]
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:213
+		if obs <= 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:214
+			t.Fatalf("charset character %v never appeared in %v samples", c, total)
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:215
+		expected := float64(total) / 62.0
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:216
+		diff := float64(obs) - expected
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:217
+		chi = chi + diff*diff/expected
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:219
+	if chi > 244.0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:220
+		t.Errorf("charset distribution not uniform: chi-square %v over %v samples (61 df, ceiling 244)", chi, total)
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:226
+func TestChoiceSpread(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:227
+	items := []string{"a", "b", "c", "d", "e", "f"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:228
+	seen := map[string]bool{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:229
+	for range 3000 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:230
+		seen[random.Choice(items)] = true
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:231
+	test.AssertEqual(t, len(seen), 6)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:234
+func TestSampleDistinctAndFromSource(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:235
+	items := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:236
+	for range 20 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:237
+		picked := random.Sample(items, 4)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:238
+		test.AssertEqual(t, len(picked), 4)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:239
+		seen := map[int]bool{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:240
+		for _, p := range picked {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:241
+			if seen[p] {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:242
+				t.Errorf("Sample returned duplicate %v", p)
+			}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:243
+			seen[p] = true
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:244
+			if !(slices.Contains(items, p)) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:245
+				t.Errorf("Sample returned %v, not in items", p)
+			}
+		}
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:247
+func TestSampleBoundaries(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:248
+	items := []string{"a", "b", "c"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:249
+	t.Run("n clamps to length", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:250
+		picked := random.Sample(items, 10)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:251
+		test.AssertEqual(t, len(picked), 3)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:252
+		seen := map[string]bool{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:253
+		for _, p := range picked {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:254
+			seen[p] = true
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:255
+		test.AssertEqual(t, len(seen), 3, "clamped sample should stay distinct")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:258
+	t.Run("n zero and negative yield empty", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:259
+		test.AssertEqual(t, len(random.Sample(items, 0)), 0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:260
+		test.AssertEqual(t, len(random.Sample(items, -5)), 0)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:263
+	t.Run("empty input yields empty", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:264
+		none := []string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:265
+		test.AssertEqual(t, len(random.Sample(none, 3)), 0)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:268
+	t.Run("input untouched", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:269
+		random.Sample(items, 2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:270
+		test.AssertEqual(t, items, []string{"a", "b", "c"})
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:274
+func TestGeneratorSample(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:275
+	items := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:276
+	t.Run("same seed same picks", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:277
+		a := random.NewGenerator(42)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:278
+		b := random.NewGenerator(42)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:279
+		test.AssertEqual(t, a.Sample(items, 4), b.Sample(items, 4))
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:282
+	t.Run("clamps n", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:283
+		g := random.NewGenerator(1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:284
+		test.AssertEqual(t, len(g.Sample(items, 100)), 10)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:285
+		test.AssertEqual(t, len(g.Sample(items, -1)), 0)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:288
+	t.Run("distinct elements", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:289
+		g := random.NewGenerator(7)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:290
+		picked := g.Sample(items, 10)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:291
+		seen := map[int]bool{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:292
+		for _, p := range picked {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:293
+			seen[p] = true
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:294
+		test.AssertEqual(t, len(seen), 10)
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:298
+func TestStringWithCharsetAndLength(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:299
+	alphabet := "ABC234"
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:300
+	sample := random.StringWith(2000, alphabet)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:301
+	test.AssertEqual(t, len(sample), 2000)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:302
+	seen := map[string]bool{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:303
+	for i := range len(sample) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:304
+		ch := sample[i : i+1]
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:305
+		if !kukistring.Contains(alphabet, ch) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:306
+			t.Errorf("StringWith produced out-of-alphabet character %v at %v", ch, i)
+		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:307
+		seen[ch] = true
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:308
+	test.AssertEqual(t, len(seen), 6, "every alphabet character should appear")
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:310
+	test.AssertEqual(t, random.StringWith(0, alphabet), "")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:312
+func TestStringWithPanicsOnEmptyAlphabet(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:313
+	test.AssertPanics(t, "empty alphabet", func() {
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:314
+		random.StringWith(8, "")
+	})
 }

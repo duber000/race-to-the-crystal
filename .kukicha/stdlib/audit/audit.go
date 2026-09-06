@@ -353,7 +353,7 @@ func VerifySchema(log Log) error {
 		delete(expectedIdx, idx.Name)
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/audit/audit.kuki:234
-	if len(expectedIdx) > 0 {
+	if len(expectedIdx) != 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/audit/audit.kuki:235
 		missing := []string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/audit/audit.kuki:236

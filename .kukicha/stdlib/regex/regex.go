@@ -25,145 +25,207 @@ type NotFound[T any] struct{}
 
 func (NotFound[T]) isFindResult(*T) {}
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:41
-func MatchSafe(pattern string, text string) (bool, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:42
-	re, err := regexp.Compile(pattern)
+func MatchSafe(text string, pattern string) (bool, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:43
-	if err != nil {
+	re, err := regexp.Compile(pattern)
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:44
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:45
 		return false, fmt.Errorf("invalid pattern: %v", err)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:46
 	return re.MatchString(text), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:49
-func IsValid(pattern string) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:50
-	_, err := regexp.Compile(pattern)
+func IsValid(pattern string) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:51
+	_, err := regexp.Compile(pattern)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:52
 	return err == nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:59
+func QuoteMeta(s string) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:60
+	return regexp.QuoteMeta(s)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:66
 func Compile(pattern string) (Pattern, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:67
 	re, err_1 := regexp.Compile(pattern)
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:67
 	if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:67
 		err_1 = fmt.Errorf("invalid pattern: %w", err_1)
 		var _zero0 Pattern
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:67
 		return _zero0, err_1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:68
 	return Pattern{re: re}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:74
 func MustCompile(pattern string) Pattern {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:75
 	re := regexp.MustCompile(pattern)
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:76
 	return Pattern{re: re}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:80
 func (p Pattern) Match(text string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:81
 	return p.re.MatchString(text)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:88
 func (p Pattern) Find(text string) FindResult[string] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:89
 	if p.re.FindStringIndex(text) == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:90
 		return NotFound[string]{}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:91
 	return Found[string]{Value: p.re.FindString(text)}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:98
 func (p Pattern) FindOr(text string, defaultValue string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:99
 	if p.re.FindStringIndex(text) == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:100
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:101
 	return p.re.FindString(text)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:105
 func (p Pattern) FindAll(text string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:106
 	matches := p.re.FindAllString(text, -1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:107
 	if matches == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:108
 		return []string{}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:109
 	return matches
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:117
 func (p Pattern) FindGroups(text string) FindResult[[]string] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:118
 	matches := p.re.FindStringSubmatch(text)
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:119
 	if matches == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:120
 		return NotFound[[]string]{}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:121
 	return Found[[]string]{Value: matches}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:128
 func (p Pattern) FindGroupsOr(text string, defaultValue []string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:120
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:129
 	matches := p.re.FindStringSubmatch(text)
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:130
 	if matches == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:131
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:123
-	return matches
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:127
-func (p Pattern) FindAllGroups(text string) [][]string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:128
-	matches := p.re.FindAllStringSubmatch(text, -1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:129
-	if matches == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:130
-		return [][]string{}
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:132
 	return matches
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:136
-func (p Pattern) Replace(text string, replacement string) string {
+func namedGroups(p Pattern, matches []string) map[string]string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:137
+	names := p.re.SubexpNames()
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:138
+	result := map[string]string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:139
+	for i, name := range names {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:140
+		if i > 0 && len(name) != 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:141
+			result[name] = matches[i]
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:142
+	return result
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:151
+func (p Pattern) FindNamed(text string) FindResult[map[string]string] {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:152
+	matches := p.re.FindStringSubmatch(text)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:153
+	if matches == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:154
+		return NotFound[map[string]string]{}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:155
+	return Found[map[string]string]{Value: namedGroups(p, matches)}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:160
+func (p Pattern) FindNamedOr(text string, defaultValue map[string]string) map[string]string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:161
+	matches := p.re.FindStringSubmatch(text)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:162
+	if matches == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:163
+		return defaultValue
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:164
+	return namedGroups(p, matches)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:168
+func (p Pattern) FindAllGroups(text string) [][]string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:169
+	matches := p.re.FindAllStringSubmatch(text, -1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:170
+	if matches == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:171
+		return [][]string{}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:172
+	return matches
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:177
+func (p Pattern) Replace(text string, replacement string) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:178
 	return p.re.ReplaceAllString(text, replacement)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:142
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:183
 func (p Pattern) ReplaceFunc(text string, replacer func(string) string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:184
 	return p.re.ReplaceAllStringFunc(text, replacer)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:188
 func (p Pattern) Split(text string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:189
 	return p.re.Split(text, -1)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:195
+func (p Pattern) SplitN(text string, n int) []string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:196
+	return p.re.Split(text, n)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:200
+func (p Pattern) Count(text string) int {
+//line /var/home/tluker/repos/go/kukicha/stdlib/regex/regex.kuki:201
+	return len(p.re.FindAllStringIndex(text, -1))
 }

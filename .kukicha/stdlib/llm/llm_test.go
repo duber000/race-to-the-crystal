@@ -6,7 +6,7 @@ import (
 	"kukicha.org/kukicha/stdlib/content"
 	"kukicha.org/kukicha/stdlib/llm/anthropic"
 	"kukicha.org/kukicha/stdlib/llm/chat"
-	"kukicha.org/kukicha/stdlib/llm/responses"
+	"kukicha.org/kukicha/stdlib/llm/llmresponses"
 	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
@@ -116,23 +116,23 @@ func TestResponsesGetText(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:98
 	t.Run("extracts text from Text variant", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:99
-		resp := responses.Response{Output: []content.Content{content.Text{Body: "hello world"}}}
+		resp := llmresponses.Response{Output: []content.Content{content.Text{Body: "hello world"}}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:101
-		test.AssertEqual(t, responses.GetText(resp), "hello world")
+		test.AssertEqual(t, llmresponses.GetText(resp), "hello world")
 	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:104
 	t.Run("returns empty string when no text variants", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:105
-		resp := responses.Response{}
+		resp := llmresponses.Response{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:106
-		test.AssertEqual(t, responses.GetText(resp), "")
+		test.AssertEqual(t, llmresponses.GetText(resp), "")
 	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:109
 	t.Run("skips non-text output items", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:110
-		resp := responses.Response{Output: []content.Content{content.ToolUse{Name: "get_weather"}}}
+		resp := llmresponses.Response{Output: []content.Content{content.ToolUse{Name: "get_weather"}}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:112
-		test.AssertEqual(t, responses.GetText(resp), "")
+		test.AssertEqual(t, llmresponses.GetText(resp), "")
 	})
 }
 
@@ -141,9 +141,9 @@ func TestResponsesGetFunctionCalls(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:117
 	t.Run("returns only ToolUse variants", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:118
-		resp := responses.Response{Output: []content.Content{content.Text{Body: "thinking..."}, content.ToolUse{ID: "call-1", Name: "get_weather"}}}
+		resp := llmresponses.Response{Output: []content.Content{content.Text{Body: "thinking..."}, content.ToolUse{ID: "call-1", Name: "get_weather"}}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:125
-		calls := responses.GetFunctionCalls(resp)
+		calls := llmresponses.GetFunctionCalls(resp)
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:126
 		test.AssertEqual(t, len(calls), 1)
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:127
@@ -152,9 +152,9 @@ func TestResponsesGetFunctionCalls(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:130
 	t.Run("returns empty list when no function calls", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:131
-		resp := responses.Response{Output: []content.Content{content.Text{Body: ""}}}
+		resp := llmresponses.Response{Output: []content.Content{content.Text{Body: ""}}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:133
-		test.AssertEqual(t, len(responses.GetFunctionCalls(resp)), 0)
+		test.AssertEqual(t, len(llmresponses.GetFunctionCalls(resp)), 0)
 	})
 }
 
@@ -163,16 +163,16 @@ func TestResponsesHasFunctionCalls(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:138
 	t.Run("true when at least one ToolUse", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:139
-		resp := responses.Response{Output: []content.Content{content.ToolUse{Name: "f"}}}
+		resp := llmresponses.Response{Output: []content.Content{content.ToolUse{Name: "f"}}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:140
-		test.AssertTrue(t, responses.HasFunctionCalls(resp))
+		test.AssertTrue(t, llmresponses.HasFunctionCalls(resp))
 	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:143
 	t.Run("false when no function calls", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:144
-		resp := responses.Response{}
+		resp := llmresponses.Response{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:145
-		test.AssertFalse(t, responses.HasFunctionCalls(resp))
+		test.AssertFalse(t, llmresponses.HasFunctionCalls(resp))
 	})
 }
 
@@ -181,16 +181,16 @@ func TestResponsesFromResponse(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:150
 	t.Run("sets previous response ID", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:151
-		resp := responses.Response{ID: "resp_abc123"}
+		resp := llmresponses.Response{ID: "resp_abc123"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:152
-		c := responses.FromResponse(responses.New("openai:gpt-4o"), resp)
+		c := llmresponses.FromResponse(llmresponses.New("openai:gpt-4o"), resp)
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:153
 		_ = c
 	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:156
 	t.Run("empty ID is a no-op on previous_response_id", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:157
-		c := responses.FromResponse(responses.New("openai:gpt-4o"), responses.Response{})
+		c := llmresponses.FromResponse(llmresponses.New("openai:gpt-4o"), llmresponses.Response{})
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:158
 		_ = c
 	})
@@ -201,35 +201,35 @@ func TestResponsesExecuteFunctionCalls(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:163
 	t.Run("calls handler for matching function", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:164
-		resp := responses.Response{ID: "resp_xyz", Output: []content.Content{content.ToolUse{ID: "call-1", Name: "get_weather", Input: content.ArgsJSON{Value: `{"city":"Paris"}`}}}}
+		resp := llmresponses.Response{ID: "resp_xyz", Output: []content.Content{content.ToolUse{ID: "call-1", Name: "get_weather", Input: content.ArgsJSON{Value: `{"city":"Paris"}`}}}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:175
 		handlers := map[string]func(string) string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:176
 		handlers["get_weather"] = func(args string) string { return "sunny" }
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:177
-		_, err := responses.ExecuteFunctionCalls(responses.New("openai:gpt-4o"), resp, handlers)
+		_, err := llmresponses.ExecuteFunctionCalls(llmresponses.New("openai:gpt-4o"), resp, handlers)
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:178
 		test.AssertEqual(t, err, nil)
 	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:181
 	t.Run("returns error for unknown function", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:182
-		resp := responses.Response{ID: "resp_xyz", Output: []content.Content{content.ToolUse{ID: "call-1", Name: "unknown_fn", Input: content.ArgsJSON{Value: "{}"}}}}
+		resp := llmresponses.Response{ID: "resp_xyz", Output: []content.Content{content.ToolUse{ID: "call-1", Name: "unknown_fn", Input: content.ArgsJSON{Value: "{}"}}}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:193
 		handlers := map[string]func(string) string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:194
-		_, err := responses.ExecuteFunctionCalls(responses.New("openai:gpt-4o"), resp, handlers)
+		_, err := llmresponses.ExecuteFunctionCalls(llmresponses.New("openai:gpt-4o"), resp, handlers)
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:195
 		test.AssertTrue(t, err != nil)
 	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:198
 	t.Run("no-op when response has no function calls", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:199
-		resp := responses.Response{ID: "resp_xyz", Output: []content.Content{content.Text{Body: "no calls"}}}
+		resp := llmresponses.Response{ID: "resp_xyz", Output: []content.Content{content.Text{Body: "no calls"}}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:203
 		handlers := map[string]func(string) string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:204
-		_, err := responses.ExecuteFunctionCalls(responses.New("openai:gpt-4o"), resp, handlers)
+		_, err := llmresponses.ExecuteFunctionCalls(llmresponses.New("openai:gpt-4o"), resp, handlers)
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:205
 		test.AssertEqual(t, err, nil)
 	})

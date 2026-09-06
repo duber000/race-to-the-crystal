@@ -34,8 +34,8 @@ type GameState
 func NewGameState() GameState
     return GameState{
         board: NewBoard(),
-        players: make(map of types.PlayerID to reference Player),
-        tokens: make(map of types.TokenID to reference Token),
+        players: empty map of types.PlayerID to reference Player,
+        tokens: empty map of types.TokenID to reference Token,
         generators: empty list of Generator,
         crystal_effects: NewCrystalEffectsManager(),
         phase: enums.SETUP,
@@ -130,7 +130,7 @@ func GetReserveTokens on gs: reference GameState(player_id: types.PlayerID) list
     return result
 
 func GetReserveTokenCounts on gs: reference GameState(player_id: types.PlayerID) map of int to int
-    counts := make(map of int to int)
+    counts := empty map of int to int
     for hv in constants.TOKEN_HEALTH_VALUES
         counts[hv] = 0
     reserve := gs.GetReserveTokens(player_id)
@@ -254,7 +254,7 @@ func _auto_deploy_starting_tokens on gs: reference GameState(player_id: types.Pl
                 deployed = deployed + 1
 
 func sort_slice(tokens: list of Token)
-    sort.By(tokens, (a: Token, b: Token) => a.max_health > b.max_health)
+    sort.ByKeyDesc of Token(tokens, (t: Token) => t.max_health)
 
 func StartGame on gs: reference GameState
     if gs.phase isnt enums.SETUP
@@ -324,7 +324,7 @@ func trigger_random_crystal_effect on gs: reference GameState() (types.PlayerID,
         enums.DAMAGE_BOOST,
         enums.SPEED_BOOST,
     }
-    effect := effects[random.Int(0, len(effects))]
+    effect := random.Choice of enums.CrystalEffect from effects
     target_player := types.PlayerID("")
 
     for pid, _ in gs.players
@@ -341,7 +341,7 @@ func trigger_random_crystal_effect on gs: reference GameState() (types.PlayerID,
     return target_player, effect, true
 
 func update_generators_and_crystal on gs: reference GameState() (list of int, bool)
-    tokens_by_pos := make(map of types.Position to list of TokenAtPos)
+    tokens_by_pos := empty map of types.Position to list of TokenAtPos
 
     for _, t in gs.tokens
         if t.is_alive and t.is_deployed
@@ -393,7 +393,7 @@ func TurnPhase on gs: GameState enums.TurnPhase
     return gs.turn_phase
 
 func ToDict on gs: reference GameState map of string to any
-    result := make(map of string to any)
+    result := empty map of string to any
     result["phase"] = enums.GamePhaseName(gs.phase)
     result["turn_number"] = gs.turn_number
     result["current_turn_player_id"] = gs.current_turn_player_id as string

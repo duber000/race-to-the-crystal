@@ -50,8 +50,8 @@ type WebSocketHandler
 
 func NewWebSocketHandler() WebSocketHandler
     return WebSocketHandler{
-        clients: make(map of string to reference WSClient),
-        game_sessions: make(map of string to string),
+        clients: empty map of string to reference WSClient,
+        game_sessions: empty map of string to string,
     }
 
 func SetOnConnect on wh: reference WebSocketHandler(handler: reference func(string, string, string))
@@ -114,7 +114,7 @@ func BroadcastToGame on wh: reference WebSocketHandler(game_id: string, data: JS
                 log.Debug("WebSocket broadcast failed: {err}")
 
 func ProcessMessage on wh: reference WebSocketHandler(client_id: string, raw_data: string) map of string to any
-    data := make(map of string to any)
+    data := empty map of string to any
     jsonpkg.ParseInto(raw_data, reference of data) onerr return data
 
     msg_type_val, has := data["type"]

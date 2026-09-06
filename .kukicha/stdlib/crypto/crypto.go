@@ -5,116 +5,240 @@ package crypto
 import (
 	"crypto/hmac"
 	"crypto/mldsa"
+	"crypto/pbkdf2"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	kukistring "kukicha.org/kukicha/stdlib/string"
+	"strconv"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:33
 func SHA256(data string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:34
 	h := sha256.New()
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:35
 	h.Write([]byte(data))
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:36
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:40
 func SHA256Bytes(data []byte) []byte {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:41
 	h := sha256.New()
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:42
 	h.Write(data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:43
 	return h.Sum(nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:49
+func SHA256Hex(data []byte) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:50
+	return hex.EncodeToString(SHA256Bytes(data))
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:56
 func HMAC(data string, key string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:57
 	mac := hmac.New(sha256.New, []byte(key))
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:58
 	mac.Write([]byte(data))
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:59
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:64
 func HMACBytes(data []byte, key []byte) []byte {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:65
 	mac := hmac.New(sha256.New, key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:66
 	mac.Write(data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:67
 	return mac.Sum(nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:61
-func RandomToken(length int) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:62
-	b := make([]byte, length)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:63
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:63
-	_, err_1 := rand.Read(b)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:74
+const DefaultPBKDF2Iterations int = 600000
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:91
+func HashPassword(password string) (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:92
+	salt, err_1 := RandomBytes(16)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:92
 	if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:63
-		err_1 = fmt.Errorf("crypto.RandomToken: %w", err_1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:92
+		err_1 = fmt.Errorf("crypto.HashPassword: salt: %w", err_1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:92
 		return "", err_1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:93
+	digest, err_2 := pbkdf2.Key(sha256.New, password, salt, DefaultPBKDF2Iterations, 32)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:93
+	if err_2 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:93
+		err_2 = fmt.Errorf("crypto.HashPassword: derive: %w", err_2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:93
+		return "", err_2
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:94
+	saltHex := hex.EncodeToString(salt)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:95
+	digestHex := hex.EncodeToString(digest)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:96
+	return fmt.Sprintf("$pbkdf2-sha256$%v$%v$%v", DefaultPBKDF2Iterations, saltHex, digestHex), nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:108
+func VerifyPassword(password string, hash string) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:109
+	salt, iter, want, ok := decodeHash(hash)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:110
+	if !ok {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:111
+		return false
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:112
+	got, err := pbkdf2.Key(sha256.New, password, salt, iter, len(want))
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:113
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:114
+		return false
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:115
+	return Equal(got, want)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:120
+func decodeHash(encoded string) ([]byte, int, []byte, bool) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:121
+	parts := kukistring.Split(encoded, "$")
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:122
+	if len(parts) != 5 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:123
+		return nil, 0, nil, false
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:124
+	if parts[0] != "" || parts[1] != "pbkdf2-sha256" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:125
+		return nil, 0, nil, false
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:126
+	iter, err := strconv.Atoi(parts[2])
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:127
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:128
+		return nil, 0, nil, false
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:129
+	if iter < 1 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:130
+		return nil, 0, nil, false
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:131
+	salt, err := hex.DecodeString(parts[3])
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:132
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:133
+		return nil, 0, nil, false
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:134
+	digest, err := hex.DecodeString(parts[4])
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:135
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:136
+		return nil, 0, nil, false
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:137
+	return salt, iter, digest, true
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:142
+func RandomToken(length int) (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:143
+	b := make([]byte, length)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:144
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:144
+	_, err_3 := rand.Read(b)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:144
+	if err_3 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:144
+		err_3 = fmt.Errorf("crypto.RandomToken: %w", err_3)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:144
+		return "", err_3
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:145
 	return hex.EncodeToString(b), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:149
 func RandomBytes(n int) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:150
 	b := make([]byte, n)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:70
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:70
-	_, err_2 := rand.Read(b)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:70
-	if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:70
-		err_2 = fmt.Errorf("crypto.RandomBytes: %w", err_2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:70
-		return []byte{}, err_2
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:151
+	_, err_4 := rand.Read(b)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:151
+	if err_4 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:151
+		err_4 = fmt.Errorf("crypto.RandomBytes: %w", err_4)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:151
+		return []byte{}, err_4
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:152
 	return b, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:157
 func Equal(a []byte, b []byte) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:158
 	return hmac.Equal(a, b)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:80
-func SignMLDSA(message []byte, seed []byte) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:81
-	sk, err := mldsa.NewPrivateKey(mldsa.MLDSA65(), seed)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:166
+func EqualHex(a string, b string) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:167
+	aBytes, err := hex.DecodeString(a)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:168
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:169
+		return false
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:170
+	bBytes, err := hex.DecodeString(b)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:171
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:172
+		return false
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:173
+	return Equal(aBytes, bBytes)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:176
+func SignMLDSA(message []byte, seed []byte) ([]byte, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:177
+	sk, err := mldsa.NewPrivateKey(mldsa.MLDSA65(), seed)
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:178
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:179
 		return nil, err
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:180
 	return sk.SignDeterministic(message, nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:183
 func VerifyMLDSA(message []byte, signature []byte, pubKey []byte) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:184
 	pk, err := mldsa.NewPublicKey(mldsa.MLDSA65(), pubKey)
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:185
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:186
 		return err
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/crypto/crypto.kuki:187
 	return mldsa.Verify(pk, message, signature, nil)
 }

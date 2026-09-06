@@ -41,7 +41,7 @@ func NewLearnerAPI(gs: reference gamepkg.GameState, player_id: types.PlayerID) L
         game: gs,
         player_id: player_id,
         history: empty list of string,
-        memo: make(map of string to string),
+        memo: empty map of string to string,
     }
 
 # Say prints a message to the terminal and records it in your history.

@@ -96,7 +96,7 @@ func VisibleWidth(s string) int {
 //line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:88
 				i = i + 1
 //line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:89
-				if func() bool { _cmp_2 := 0x40; _cmp_3 := b; _cmp_4 := 0x7e; return _cmp_2 <= _cmp_3 && _cmp_3 <= _cmp_4 }() {
+				if func() bool { _cmp_2 := 0x40; _cmp_3 := b; return _cmp_2 <= _cmp_3 && _cmp_3 <= 0x7e }() {
 //line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:90
 					break
 				}
@@ -148,26 +148,52 @@ func PadRightVisible(s string, n int) string {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:119
-func Width() int {
+func PadLeftVisible(s string, n int) string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:120
-	cols := os.Getenv("COLUMNS")
+	w := VisibleWidth(s)
 //line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:121
-	if cols == "" {
+	if w >= n {
 //line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:122
-		return 80
+		return s
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:123
-	n, err_5 := strconv.Atoi(cols)
-//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:123
-	if err_5 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:123
-		return 80
-	}
+	pad := n - w
 //line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:124
-	if n <= 0 {
+	out := ""
 //line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:125
+	j := 0
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:126
+	for j < pad {
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:127
+		out = out + " "
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:128
+		j = j + 1
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:129
+	return out + s
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:135
+func Width() int {
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:136
+	cols := os.Getenv("COLUMNS")
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:137
+	if cols == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:138
 		return 80
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:139
+	n, err_4 := strconv.Atoi(cols)
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:139
+	if err_4 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:139
+		return 80
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:140
+	if n <= 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:141
+		return 80
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/term/term.kuki:142
 	return n
 }

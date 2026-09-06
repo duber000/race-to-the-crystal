@@ -19,15 +19,18 @@ type WebServerConfig
     sse_primary_mode: bool
 
 func WebServerConfigFromEnv() WebServerConfig
+    port := env.GetIntOr("WEB_PORT", 8000) onerr panic "invalid WEB_PORT: {error}"
+    mercureEnabled := env.GetBoolOr("MERCURE_ENABLED", false) onerr panic "invalid MERCURE_ENABLED: {error}"
+    ssePrimaryMode := env.GetBoolOr("SSE_PRIMARY_MODE", false) onerr panic "invalid SSE_PRIMARY_MODE: {error}"
     return WebServerConfig{
-        port: env.GetIntOr("WEB_PORT", 8000),
+        port: port,
         static_dir: env.GetOr("STATIC_DIR", "web_server/static"),
         index_path: env.GetOr("INDEX_PATH", "web_server/templates/index.html"),
         game_server_url: env.GetOr("GAME_SERVER_URL", "http://localhost:8080"),
         mercure_hub_url: env.GetOr("MERCURE_HUB_URL", "http://localhost:3000/.well-known/mercure"),
         mercure_topic_prefix: env.GetOr("MERCURE_TOPIC_PREFIX", "https://api.game.com/game"),
-        mercure_enabled: env.GetOr("MERCURE_ENABLED", "") equals "true" or env.GetOr("MERCURE_PUBLISHER_JWT", "") isnt "",
-        sse_primary_mode: env.GetOr("SSE_PRIMARY_MODE", "false") equals "true",
+        mercure_enabled: mercureEnabled or env.GetOr("MERCURE_PUBLISHER_JWT", "") isnt "",
+        sse_primary_mode: ssePrimaryMode,
     }
 
 type WebServer
