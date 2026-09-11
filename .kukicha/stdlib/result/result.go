@@ -2,7 +2,6 @@
 
 package result
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:18
 type Result[T any, E any] interface{ isResult(*T, *E) }
 
 type Ok[T any, E any] struct {
@@ -17,16 +16,12 @@ type Err[T any, E any] struct {
 
 func (Err[T, E]) isResult(*T, *E) {}
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:30
 func Map[T any, E any, R any](r Result[T, E], transform func(T) R) Result[R, E] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:31
 	return func() Result[R, E] {
 		switch r := r.(type) {
 		case Ok[T, E]:
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:33
 			return Ok[R, E]{Value: transform(r.Value)}
 		case Err[T, E]:
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:35
 			return Err[R, E]{Err: r.Err}
 		default:
 			panic("unreachable")
@@ -34,16 +29,12 @@ func Map[T any, E any, R any](r Result[T, E], transform func(T) R) Result[R, E] 
 	}()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:37
 func FlatMap[T any, E any, R any](r Result[T, E], transform func(T) Result[R, E]) Result[R, E] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:38
 	return func() Result[R, E] {
 		switch r := r.(type) {
 		case Ok[T, E]:
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:40
 			return transform(r.Value)
 		case Err[T, E]:
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:42
 			return Err[R, E]{Err: r.Err}
 		default:
 			panic("unreachable")

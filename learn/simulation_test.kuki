@@ -10,8 +10,8 @@ func TestSimulationRunsToCompletion(t: reference testing.T)
     result := sim.Run((api: reference LearnerAPI) =>
         reserve := api.Reserve()
         if reserve[10] > 0
-            _ = api.Place(10, 2, 2)
-        _ = api.Done()
+            api.Place(10, 2, 2)
+        api.Done()
     )
 
     test.AssertTrue(t, result.TurnsPlayed > 0)
@@ -22,7 +22,7 @@ func TestSimulationWithAggressiveAI(t: reference testing.T)
     cfg.AIStrategy = gamepkg.AIStrategyNameAGGRESSIVE
     sim := NewSimulation(cfg)
     result := sim.Run((api: reference LearnerAPI) =>
-        _ = api.Done()
+        api.Done()
     )
 
     test.AssertTrue(t, result.TurnsPlayed > 0)

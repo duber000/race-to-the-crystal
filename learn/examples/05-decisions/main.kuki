@@ -18,8 +18,8 @@ func PlayTurn(api: reference learn.LearnerAPI)
 
     mine := api.MyTokens()
     if len(mine) equals 0
-        _ = api.Place(10, 2, 2)
-        _ = api.Done()
+        api.Place(10, 2, 2)
+        api.Done()
         return
 
     tid := mine[0]
@@ -28,13 +28,13 @@ func PlayTurn(api: reference learn.LearnerAPI)
     api.Say("token {tid} is {dist} steps from the crystal")
 
     if dist > 3
-        _ = api.Move(tid, pos.X + 1, pos.Y)
+        api.Move(tid, pos.X + 1, pos.Y)
     else if dist equals 0
         api.Say("on the crystal — holding position")
     else
         api.Say("close — holding position")
 
-    _ = api.Done()
+    api.Done()
 
 func main()
     sim := learn.NewSimulation(learn.NewConfig())

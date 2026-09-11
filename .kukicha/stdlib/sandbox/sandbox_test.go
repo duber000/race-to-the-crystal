@@ -10,236 +10,130 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:11
 type SandboxCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:14
 func TestSandboxFileOperations(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:15
 	cases := []SandboxCase{SandboxCase{name: "file operations"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:17
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:18
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:19
 			dir, cleanup, err := files.TempDirAuto("sandbox-test")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:20
 			test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:21
 			defer cleanup()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:23
 			box, err2 := sandbox.New(dir)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:24
 			test.AssertNoError(t, err2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:25
 			defer box.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:27
 			writeErr := box.WriteString("data", "notes.txt")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:28
 			test.AssertNoError(t, writeErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:29
 			test.AssertTrue(t, box.Exists("notes.txt"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:31
 			content, readErr := box.ReadString("notes.txt")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:32
 			test.AssertNoError(t, readErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:33
 			test.AssertEqual(t, content, "data")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:35
 			test.AssertTrue(t, box.IsFile("notes.txt"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:37
 			mkdirErr := box.MkDir("subdir")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:38
 			test.AssertNoError(t, mkdirErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:39
 			test.AssertTrue(t, box.IsDir("subdir"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:41
 			names, listErr := box.List(".")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:42
 			test.AssertNoError(t, listErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:43
 			if len(names) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:44
 				t.Errorf("List should return at least one entry")
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:46
 			delErr := box.Delete("notes.txt")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:47
 			test.AssertNoError(t, delErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:48
 			test.AssertFalse(t, box.Exists("notes.txt"))
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:52
 func TestReadStringOrAbsent(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:53
 	dir, cleanup, err := files.TempDirAuto("sandbox-test")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:54
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:55
 	defer cleanup()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:57
 	box, err2 := sandbox.New(dir)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:58
 	test.AssertNoError(t, err2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:59
 	defer box.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:61
 	got, readErr := box.ReadStringOr("missing.txt", "fallback")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:62
 	test.AssertNoError(t, readErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:63
 	test.AssertEqual(t, got, "fallback")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:66
 func TestReadStringOrPropagatesErrors(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:67
 	dir, cleanup, err := files.TempDirAuto("sandbox-test")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:68
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:69
 	defer cleanup()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:71
 	box, err2 := sandbox.New(dir)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:72
 	test.AssertNoError(t, err2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:73
 	defer box.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:76
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:76
 	err_1 := box.WriteString("hello", "present.txt")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:76
 	if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:76
 		panic(fmt.Sprintf("%v", err_1))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:78
 	got, readErr := box.ReadStringOr("present.txt", "fallback")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:79
 	test.AssertNoError(t, readErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:80
 	test.AssertEqual(t, got, "hello")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:83
 type BoxConfig struct {
 	Name    string
 	Retries int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:87
 func TestSandboxJSONRoundTrip(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:88
 	dir, cleanup, err := files.TempDirAuto("sandbox-test")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:89
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:90
 	defer cleanup()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:92
 	box, err2 := sandbox.New(dir)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:93
 	test.AssertNoError(t, err2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:94
 	defer box.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:96
 	want := BoxConfig{Name: "edge", Retries: 3}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:97
 	test.AssertNoError(t, box.WriteJSON(want, "cfg.json"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:99
 	got, readErr := box.ReadJSON[BoxConfig]("cfg.json")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:100
 	test.AssertNoError(t, readErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:101
 	test.AssertEqual(t, got.Name, "edge")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:102
 	test.AssertEqual(t, got.Retries, 3)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:105
 func TestSandboxWriteBytes(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:106
 	dir, cleanup, err := files.TempDirAuto("sandbox-test")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:107
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:108
 	defer cleanup()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:110
 	box, err2 := sandbox.New(dir)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:111
 	test.AssertNoError(t, err2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:112
 	defer box.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:115
 	payload := []byte{0x89, 0x50, 0x4E, 0x47, 0x00, 0xFF}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:116
 	test.AssertNoError(t, box.WriteBytes(payload, "img.bin"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:118
 	data, readErr := box.Read("img.bin")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:119
 	test.AssertNoError(t, readErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:120
 	test.AssertEqual(t, data, payload)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:123
 func TestSandboxListRecursive(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:124
 	dir, cleanup, err := files.TempDirAuto("sandbox-test")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:125
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:126
 	defer cleanup()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:128
 	box, err2 := sandbox.New(dir)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:129
 	test.AssertNoError(t, err2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:130
 	defer box.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:132
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:132
 	err_2 := box.MkDirAll("assets/img")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:132
 	if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:132
 		panic(fmt.Sprintf("%v", err_2))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:133
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:133
 	err_3 := box.WriteString("logo", "assets/logo.txt")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:133
 	if err_3 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:133
 		panic(fmt.Sprintf("%v", err_3))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:134
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:134
 	err_4 := box.WriteString("icon", "assets/img/icon.txt")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:134
 	if err_4 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:134
 		panic(fmt.Sprintf("%v", err_4))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:135
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:135
 	err_5 := box.WriteString("root", "root.txt")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:135
 	if err_5 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:135
 		panic(fmt.Sprintf("%v", err_5))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:138
 	names, listErr := box.ListRecursive(".")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:139
 	test.AssertNoError(t, listErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:140
 	test.AssertEqual(t, names, []string{"assets/img/icon.txt", "assets/logo.txt", "root.txt"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:143
 	_, missingErr := box.ListRecursive("nope/")
-//line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox_test.kuki:144
 	test.AssertError(t, missingErr)
 }

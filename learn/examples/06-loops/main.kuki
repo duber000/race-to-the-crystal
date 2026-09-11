@@ -34,7 +34,7 @@ func MarchAll(api: reference learn.LearnerAPI)
         else if pos.Y > 12
             dy = -1
         if dx isnt 0 or dy isnt 0
-            _ = api.Move(tid, pos.X + dx, pos.Y + dy)
+            api.Move(tid, pos.X + dx, pos.Y + dy)
             moved = moved + 1
     api.Say("moved {moved} token(s)")
 
@@ -42,7 +42,7 @@ func PlayTurn(api: reference learn.LearnerAPI)
     api.Say("--- Turn {api.TurnNumber()} ---")
     DeployIfRoom(api)
     MarchAll(api)
-    _ = api.Done()
+    api.Done()
 
 func main()
     sim := learn.NewSimulation(learn.NewConfig())

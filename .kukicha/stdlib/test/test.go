@@ -10,267 +10,218 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:16
 func formatMessage(defaultMsg string, msgAndArgs []any) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:17
 	if len(msgAndArgs) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:18
 		return defaultMsg
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:19
 	if len(msgAndArgs) == 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:20
 		return fmt.Sprintf("%v", msgAndArgs[0])
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:21
 	if format, _isOk := msgAndArgs[0].(string); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:22
 		return fmt.Sprintf(format, msgAndArgs[1:]...)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:23
 	return fmt.Sprintf("%v", msgAndArgs[0])
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:26
+func diffDetail(got any, want any) string {
+	gotType := fmt.Sprintf("%T", got)
+	wantType := fmt.Sprintf("%T", want)
+	if gotType != wantType {
+		return fmt.Sprintf(" (type %v vs %v)", gotType, wantType)
+	}
+	if gs, _isOk := got.(string); _isOk {
+		if ws, _isOk := want.(string); _isOk {
+			if len(gs) == len(ws) {
+				for i := range len(gs) {
+					if gs[i] != ws[i] {
+						return fmt.Sprintf(" (first differing byte at index %v, got %v)", i, fmt.Sprintf("%q", gs))
+					}
+				}
+			}
+			return fmt.Sprintf(" (length %v vs %v, got %v want %v)", len(gs), len(ws), fmt.Sprintf("%q", gs), fmt.Sprintf("%q", ws))
+		}
+	}
+	gr := reflect.ValueOf(got)
+	wr := reflect.ValueOf(want)
+	if gr.Kind() == reflect.Slice || gr.Kind() == reflect.Array {
+		if gr.Len() != wr.Len() {
+			return fmt.Sprintf(" (length %v vs %v)", gr.Len(), wr.Len())
+		}
+		for i := range gr.Len() {
+			if !reflect.DeepEqual(gr.Index(i).Interface(), wr.Index(i).Interface()) {
+				return fmt.Sprintf(" (first differing element at index %v)", i)
+			}
+		}
+	}
+	return ""
+}
+
 func AssertEqual(t testing.TB, got any, want any, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:27
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:28
 	if !reflect.DeepEqual(got, want) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:29
 		msg := formatMessage("", msgAndArgs)
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:30
+		detail := diffDetail(got, want)
 		if msg != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:31
-			t.Errorf("%s: expected %v, got %v", msg, want, got)
+			t.Errorf("%s: expected %v, got %v%s", msg, want, got, detail)
 		} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:33
-			t.Errorf("expected %v, got %v", want, got)
+			t.Errorf("expected %v, got %v%s", want, got, detail)
 		}
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:36
 func AssertNotEqual(t testing.TB, got any, want any, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:37
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:38
 	if reflect.DeepEqual(got, want) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:39
 		msg := formatMessage("", msgAndArgs)
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:40
 		if msg != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:41
 			t.Errorf("%s: expected values to differ, but both are %v", msg, got)
 		} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:43
 			t.Errorf("expected values to differ, but both are %v", got)
 		}
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:46
 func AssertTrue(t testing.TB, condition bool, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:47
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:48
 	if !condition {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:49
 		t.Errorf("%s", formatMessage("expected true", msgAndArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:52
 func AssertFalse(t testing.TB, condition bool, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:53
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:54
 	if condition {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:55
 		t.Errorf("%s", formatMessage("expected false", msgAndArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:58
 func AssertNoError(t testing.TB, err error, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:59
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:60
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:61
 		msg := formatMessage("", msgAndArgs)
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:62
 		if msg != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:63
 			t.Errorf("%s: unexpected error: %v", msg, err)
 		} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:65
 			t.Errorf("unexpected error: %v", err)
 		}
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:68
 func AssertError(t testing.TB, err error, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:69
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:70
 	if err == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:71
 		t.Errorf("%s", formatMessage("expected an error, got nil", msgAndArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:78
 func AssertNotEmpty(t testing.TB, val any, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:79
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:80
 	if val == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:81
 		t.Errorf("%s", formatMessage("expected non-empty value, got nil", msgAndArgs))
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:82
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:83
 	v := reflect.ValueOf(val)
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:84
 	if v.IsZero() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:85
 		t.Errorf("%s", formatMessage("expected non-empty value, got zero value", msgAndArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:91
 func isNil(val any) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:92
 	if val == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:93
 		return true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:94
 	rv := reflect.ValueOf(val)
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:95
 	kind := rv.Kind()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:96
 	if kind == reflect.Pointer || kind == reflect.Map || kind == reflect.Slice || kind == reflect.Chan || kind == reflect.Func || kind == reflect.Interface {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:97
 		return rv.IsNil()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:98
 	return false
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:101
 func AssertNil(t testing.TB, val any, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:102
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:103
 	if !isNil(val) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:104
 		t.Errorf("%s: got %v", formatMessage("expected nil", msgAndArgs), val)
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:107
 func AssertNotNil(t testing.TB, val any, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:108
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:109
 	if isNil(val) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:110
 		t.Errorf("%s", formatMessage("expected non-nil value", msgAndArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:119
 func AssertContains(t testing.TB, container any, item any, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:120
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:121
 	found := false
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:122
 	applicable := true
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:123
 	if s, _isOk := container.(string); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:124
 		if needle, _isOk := item.(string); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:125
 			found = kukistring.Contains(s, needle)
 		} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:127
 			applicable = false
 		}
 	} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:129
 		rv := reflect.ValueOf(container)
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:130
 		kind := rv.Kind()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:131
 		if kind == reflect.Slice || kind == reflect.Array {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:132
 			for i := range rv.Len() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:133
 				if reflect.DeepEqual(rv.Index(i).Interface(), item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:134
 					found = true
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:135
 					break
 				}
 			}
 		} else if kind == reflect.Map {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:137
 			itemType := reflect.TypeOf(item)
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:138
 			if itemType != nil && itemType.AssignableTo(rv.Type().Key()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:139
 				found = rv.MapIndex(reflect.ValueOf(item)).IsValid()
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:141
 				applicable = false
 			}
 		} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:143
 			applicable = false
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:144
 	if !applicable {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:145
 		t.Errorf("unsupported container/item combination: container %T, item %T", container, item)
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:146
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:147
 	if !found {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:148
 		t.Errorf("%s", formatMessage(fmt.Sprintf("expected %v to contain %v", container, item), msgAndArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:154
 func AssertErrorIs(t testing.TB, err error, target error, msgAndArgs ...any) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:155
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:156
 	if !errors.Is(err, target) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:157
 		t.Errorf("%s", formatMessage(fmt.Sprintf("expected error %v to match target %v", err, target), msgAndArgs))
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:165
 func AssertPanics(t testing.TB, name string, f func()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:166
 	t.Helper()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:167
 	defer func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:168
 		if recover() == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:169
 			t.Errorf("%s: expected panic, got none", name)
 		}
 	}()
-//line /var/home/tluker/repos/go/kukicha/stdlib/test/test.kuki:171
+	f()
+}
+
+func AssertPanicsMessage(t testing.TB, name string, want string, f func()) {
+	t.Helper()
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Errorf("%s: expected panic, got none", name)
+		} else if msg, _isOk := r.(string); _isOk {
+			if !kukistring.Contains(msg, want) {
+				t.Errorf("%s: panic message mismatch: expected substring %q, got %q", name, want, msg)
+			}
+		} else {
+			t.Errorf("%s: expected panic message containing %q, got non-string panic value %v", name, want, r)
+		}
+	}()
 	f()
 }

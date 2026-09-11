@@ -9,36 +9,25 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:11
 type AssertionCase struct {
 	name      string
 	condition bool
 	wantPanic bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:16
 func TestAssertionHelpers(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:17
 	cases := []AssertionCase{AssertionCase{name: "True succeeds on true", condition: true, wantPanic: false}, AssertionCase{name: "False succeeds on false", condition: false, wantPanic: false}, AssertionCase{name: "NotEmpty succeeds on non-empty", condition: true, wantPanic: false}, AssertionCase{name: "NotNil succeeds on non-nil", condition: true, wantPanic: false}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:24
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:25
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:26
 			if kukistring.Contains(tc.name, "True") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:27
 				must.True(tc.condition, "message")
 			} else if kukistring.Contains(tc.name, "False") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:29
 				must.False(tc.condition, "message")
 			} else if kukistring.Contains(tc.name, "Empty") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:31
 				must.NotEmpty("x", "name")
 			} else if kukistring.Contains(tc.name, "Nil") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:33
 				must.NotNil("value", "value")
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:34
 			test.AssertNoError(t, nil)
 		})
 	}

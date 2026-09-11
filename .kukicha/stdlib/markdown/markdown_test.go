@@ -9,116 +9,68 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:10
 func TestToHTMLBasic(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:11
 	out := markdown.ToHTML("# Hello\n\nWorld")
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:12
 	test.AssertTrue(t, kukistring.Contains(out, "<h1>Hello</h1>"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:13
 	test.AssertTrue(t, kukistring.Contains(out, "<p>World</p>"))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:15
 func TestToHTMLEscapesRawHTML(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:16
 	out := markdown.ToHTML("Hello <script>alert(1)</script>")
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:17
 	test.AssertFalse(t, kukistring.Contains(out, "<script>"))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:19
 func TestToHTMLWithTables(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:20
 	src := "| a | b |\n|---|---|\n| 1 | 2 |"
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:21
 	out := markdown.ToHTMLWith(src, markdown.Options{Tables: true})
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:22
 	test.AssertTrue(t, kukistring.Contains(out, "<table>"))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:24
 func TestToHTMLWithHardWrap(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:25
 	out := markdown.ToHTMLWith("line one\nline two", markdown.Options{HardWrap: true})
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:26
 	test.AssertTrue(t, kukistring.Contains(out, "<br"))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:28
 func TestToHTMLAutoLink(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:29
 	out := markdown.ToHTML("Visit https://example.com today")
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:30
 	test.AssertTrue(t, kukistring.Contains(out, "<a href=\"https://example.com\""))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:32
 func TestCompileRender(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:33
 	conv := markdown.Compile(markdown.GFM())
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:34
 	out, err := conv.Render("# Hello\n\nWorld")
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:35
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:36
 	test.AssertContains(t, out, "<h1>Hello</h1>")
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:37
 	test.AssertContains(t, out, "<p>World</p>")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:39
 func TestCompileRenderMany(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:40
 	conv := markdown.Compile(markdown.GFM())
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:41
 	one, err := conv.Render("# One")
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:42
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:43
 	two, err := conv.Render("## Two")
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:44
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:45
 	test.AssertContains(t, one, "<h1>One</h1>")
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:46
 	test.AssertContains(t, two, "<h2>Two</h2>")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:48
 func TestGFMPresetFlags(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:49
 	opts := markdown.GFM()
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:50
 	test.AssertTrue(t, opts.Tables)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:51
 	test.AssertTrue(t, opts.Strikethrough)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:52
 	test.AssertTrue(t, opts.TaskList)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:53
 	test.AssertTrue(t, opts.AutoLink)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:54
 	test.AssertFalse(t, opts.Footnotes)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:55
 	test.AssertFalse(t, opts.DefinitionList)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:56
 	test.AssertFalse(t, opts.HardWrap)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:57
 	test.AssertFalse(t, opts.AutoHeadingID)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:58
 	test.AssertFalse(t, opts.AllowRawHTML)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:60
 func TestGFMPresetMatchesTryToHTML(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:61
 	src := "| a | b |\n|---|---|\n| 1 | 2 |\n\n~~gone~~\n\n- [x] done\n\nVisit https://example.com today"
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:62
 	conv := markdown.Compile(markdown.GFM())
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:63
 	got, err := conv.Render(src)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:64
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/markdown/markdown_test.kuki:65
 	test.AssertEqual(t, got, markdown.ToHTML(src))
 }

@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:33
 type Decision interface{ isDecision() }
 
 type Allowed struct{}
@@ -29,68 +28,45 @@ type Denied struct {
 
 func (Denied) isDecision() {}
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:44
 type Rule = func(context.Context, map[string]string) Decision
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:48
 type registryState struct {
 	mu    sync.Mutex
 	rules map[string]Rule
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:54
 type Registry struct {
 	state *registryState
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:60
 func New() Registry {
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:61
 	s := registryState{rules: map[string]Rule{}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:62
 	return Registry{state: &s}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:66
 func Register(r Registry, action string, rule Rule) Registry {
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:67
 	r.state.mu.Lock()
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:68
 	defer r.state.mu.Unlock()
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:69
 	r.state.rules[action] = rule
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:70
 	return r
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:74
 func Check(r Registry, ctx context.Context, action string, attrs map[string]string) Decision {
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:75
 	r.state.mu.Lock()
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:76
 	rule, ok := r.state.rules[action]
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:77
 	r.state.mu.Unlock()
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:78
 	if !ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:79
 		return Denied{Reason: fmt.Sprintf("no policy registered for %v", action)}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:80
 	return rule(ctx, attrs)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:84
 func AllowAll(ctx context.Context, attrs map[string]string) Decision {
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:85
 	return Allowed{}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:89
 func DenyAll(reason string) Rule {
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:90
 	return func(ctx context.Context, attrs map[string]string) Decision {
-//line /var/home/tluker/repos/go/kukicha/stdlib/policy/policy.kuki:91
 		return Denied{Reason: reason}
 	}
 }

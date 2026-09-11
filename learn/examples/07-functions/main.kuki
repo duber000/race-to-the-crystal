@@ -23,7 +23,7 @@ func StepTowardCrystal(api: reference learn.LearnerAPI, tid: int) bool
         dy = -1
     if dx equals 0 and dy equals 0
         return false
-    _ = api.Move(tid, pos.X + dx, pos.Y + dy)
+    api.Move(tid, pos.X + dx, pos.Y + dy)
     return true
 
 func DeployOne(api: reference learn.LearnerAPI) bool
@@ -48,7 +48,7 @@ func PlayTurn(api: reference learn.LearnerAPI)
             moved = moved + 1
     api.Say("moved {moved} token(s) toward the crystal")
 
-    _ = api.Done()
+    api.Done()
 
 func main()
     sim := learn.NewSimulation(learn.NewConfig())

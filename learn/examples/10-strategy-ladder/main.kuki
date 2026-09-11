@@ -30,7 +30,7 @@ func BestAttack(api: reference learn.LearnerAPI, actions: list of gamepkg.Action
                 continue
 
     if found
-        _ = api.Attack(best_attacker, best_defender)
+        api.Attack(best_attacker, best_defender)
     return found
 
 func StepOne(api: reference learn.LearnerAPI, tid: int) bool
@@ -47,7 +47,7 @@ func StepOne(api: reference learn.LearnerAPI, tid: int) bool
         dy = -1
     if dx equals 0 and dy equals 0
         return false
-    _ = api.Move(tid, pos.X + dx, pos.Y + dy)
+    api.Move(tid, pos.X + dx, pos.Y + dy)
     return true
 
 func PlayTurn(api: reference learn.LearnerAPI)
@@ -63,9 +63,9 @@ func PlayTurn(api: reference learn.LearnerAPI)
             moved = true
     if not moved
         if api.Reserve()[10] > 0
-            _ = api.Place(10, 2, 2)
+            api.Place(10, 2, 2)
 
-    _ = api.Done()
+    api.Done()
 
 func main()
     sim := learn.NewSimulation(learn.NewConfig())

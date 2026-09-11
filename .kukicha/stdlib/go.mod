@@ -4,16 +4,16 @@ go 1.27.0
 
 require (
 	github.com/modelcontextprotocol/go-sdk v1.7.0
-	github.com/ncruces/go-sqlite3 v0.35.3
+	github.com/ncruces/go-sqlite3 v0.35.4
 	github.com/yuin/goldmark/v2 v2.0.0
 	golang.org/x/term v0.45.0
-	golang.org/x/text v0.40.0
+	golang.org/x/text v0.41.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/google/jsonschema-go v0.4.3 // indirect
-	github.com/ncruces/go-sqlite3-wasm/v3 v3.2.35304 // indirect
+	github.com/ncruces/go-sqlite3-wasm/v5 v5.0.35304 // indirect
 	github.com/ncruces/julianday v1.0.0 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect

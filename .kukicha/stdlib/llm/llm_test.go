@@ -4,41 +4,33 @@ package llm_test
 
 import (
 	"kukicha.org/kukicha/stdlib/content"
+	"kukicha.org/kukicha/stdlib/llm"
 	"kukicha.org/kukicha/stdlib/llm/anthropic"
 	"kukicha.org/kukicha/stdlib/llm/chat"
 	"kukicha.org/kukicha/stdlib/llm/llmresponses"
 	"kukicha.org/kukicha/stdlib/test"
+	"os"
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:13
 type GetTextCase struct {
 	name    string
 	content string
 	want    string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:18
 func TestChatGetText(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:19
 	cases := []GetTextCase{GetTextCase{name: "basic content", content: "response text", want: "response text"}, GetTextCase{name: "empty content", content: "", want: ""}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:24
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:25
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:26
 			msg := chat.ResponseMessage{Role: chat.MessageRoleAssistant, Content: tc.content}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:28
 			choice := chat.Choice{Message: msg}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:30
 			comp := chat.Completion{Choices: []chat.Choice{choice}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:32
 			test.AssertEqual(t, chat.GetText(comp), tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:36
 type GetToolCallsCase struct {
 	name      string
 	callID    string
@@ -46,392 +38,304 @@ type GetToolCallsCase struct {
 	wantCount int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:42
 func TestChatGetToolCalls(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:43
 	cases := []GetToolCallsCase{GetToolCallsCase{name: "one tool call", callID: "call-1", funcName: "do_thing", wantCount: 1}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:52
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:53
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:54
 			toolFunc := chat.ToolCallFunction{Name: tc.funcName, Arguments: "{}"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:56
 			toolCall := chat.ToolCall{ID: tc.callID, Type: "function", Function: toolFunc}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:58
 			msg := chat.ResponseMessage{Role: chat.MessageRoleAssistant, ToolCalls: []chat.ToolCall{toolCall}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:63
 			choice := chat.Choice{Message: msg}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:64
 			comp := chat.Completion{Choices: []chat.Choice{choice}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:66
 			calls := chat.GetToolCalls(comp)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:67
 			test.AssertEqual(t, len(calls), tc.wantCount)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:68
 			if len(calls) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:69
 				test.AssertEqual(t, calls[0].Function.Name, tc.funcName)
 			}
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:73
 type HasToolCallsCase struct {
 	name     string
 	hasCalls bool
 	want     bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:78
 func TestChatHasToolCalls(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:79
 	cases := []HasToolCallsCase{HasToolCallsCase{name: "no calls", hasCalls: false, want: false}, HasToolCallsCase{name: "has calls", hasCalls: true, want: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:84
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:85
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:86
 			comp := chat.Completion{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:87
 			if tc.hasCalls {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:88
 				toolCall := chat.ToolCall{ID: "call-1"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:89
 				msg := chat.ResponseMessage{ToolCalls: []chat.ToolCall{toolCall}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:90
 				choice := chat.Choice{Message: msg}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:91
 				comp.Choices = []chat.Choice{choice}
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:93
 			test.AssertEqual(t, chat.HasToolCalls(comp), tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:97
 func TestResponsesGetText(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:98
 	t.Run("extracts text from Text variant", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:99
 		resp := llmresponses.Response{Output: []content.Content{content.Text{Body: "hello world"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:101
 		test.AssertEqual(t, llmresponses.GetText(resp), "hello world")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:104
 	t.Run("returns empty string when no text variants", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:105
 		resp := llmresponses.Response{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:106
 		test.AssertEqual(t, llmresponses.GetText(resp), "")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:109
 	t.Run("skips non-text output items", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:110
 		resp := llmresponses.Response{Output: []content.Content{content.ToolUse{Name: "get_weather"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:112
 		test.AssertEqual(t, llmresponses.GetText(resp), "")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:116
 func TestResponsesGetFunctionCalls(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:117
 	t.Run("returns only ToolUse variants", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:118
 		resp := llmresponses.Response{Output: []content.Content{content.Text{Body: "thinking..."}, content.ToolUse{ID: "call-1", Name: "get_weather"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:125
 		calls := llmresponses.GetFunctionCalls(resp)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:126
 		test.AssertEqual(t, len(calls), 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:127
 		test.AssertEqual(t, calls[0].Name, "get_weather")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:130
 	t.Run("returns empty list when no function calls", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:131
 		resp := llmresponses.Response{Output: []content.Content{content.Text{Body: ""}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:133
 		test.AssertEqual(t, len(llmresponses.GetFunctionCalls(resp)), 0)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:137
 func TestResponsesHasFunctionCalls(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:138
 	t.Run("true when at least one ToolUse", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:139
 		resp := llmresponses.Response{Output: []content.Content{content.ToolUse{Name: "f"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:140
 		test.AssertTrue(t, llmresponses.HasFunctionCalls(resp))
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:143
 	t.Run("false when no function calls", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:144
 		resp := llmresponses.Response{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:145
 		test.AssertFalse(t, llmresponses.HasFunctionCalls(resp))
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:149
 func TestResponsesFromResponse(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:150
 	t.Run("sets previous response ID", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:151
 		resp := llmresponses.Response{ID: "resp_abc123"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:152
 		c := llmresponses.FromResponse(llmresponses.New("openai:gpt-4o"), resp)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:153
 		_ = c
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:156
 	t.Run("empty ID is a no-op on previous_response_id", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:157
 		c := llmresponses.FromResponse(llmresponses.New("openai:gpt-4o"), llmresponses.Response{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:158
 		_ = c
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:162
 func TestResponsesExecuteFunctionCalls(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:163
 	t.Run("calls handler for matching function", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:164
 		resp := llmresponses.Response{ID: "resp_xyz", Output: []content.Content{content.ToolUse{ID: "call-1", Name: "get_weather", Input: content.ArgsJSON{Value: `{"city":"Paris"}`}}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:175
 		handlers := map[string]func(string) string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:176
 		handlers["get_weather"] = func(args string) string { return "sunny" }
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:177
 		_, err := llmresponses.ExecuteFunctionCalls(llmresponses.New("openai:gpt-4o"), resp, handlers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:178
 		test.AssertEqual(t, err, nil)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:181
 	t.Run("returns error for unknown function", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:182
 		resp := llmresponses.Response{ID: "resp_xyz", Output: []content.Content{content.ToolUse{ID: "call-1", Name: "unknown_fn", Input: content.ArgsJSON{Value: "{}"}}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:193
 		handlers := map[string]func(string) string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:194
 		_, err := llmresponses.ExecuteFunctionCalls(llmresponses.New("openai:gpt-4o"), resp, handlers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:195
 		test.AssertTrue(t, err != nil)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:198
 	t.Run("no-op when response has no function calls", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:199
 		resp := llmresponses.Response{ID: "resp_xyz", Output: []content.Content{content.Text{Body: "no calls"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:203
 		handlers := map[string]func(string) string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:204
 		_, err := llmresponses.ExecuteFunctionCalls(llmresponses.New("openai:gpt-4o"), resp, handlers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:205
 		test.AssertEqual(t, err, nil)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:209
 func TestAnthropicGetText(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:210
 	t.Run("concatenates text blocks", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:211
 		resp := anthropic.Response{Content: []content.Content{content.Text{Body: "Hello "}, content.Thinking{Body: "ignored"}, content.Text{Body: "world"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:219
 		test.AssertEqual(t, anthropic.GetText(resp), "Hello world")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:222
 	t.Run("returns empty when no text blocks", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:223
 		resp := anthropic.Response{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:224
 		test.AssertEqual(t, anthropic.GetText(resp), "")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:228
 func TestAnthropicGetThinking(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:229
 	t.Run("concatenates thinking blocks only", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:230
 		resp := anthropic.Response{Content: []content.Content{content.Thinking{Body: "step 1. "}, content.Text{Body: "ignored"}, content.Thinking{Body: "step 2."}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:238
 		test.AssertEqual(t, anthropic.GetThinking(resp), "step 1. step 2.")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:242
 func TestAnthropicGetToolUses(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:243
 	t.Run("returns only tool_use blocks", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:244
 		resp := anthropic.Response{Content: []content.Content{content.Text{Body: "using tool..."}, content.ToolUse{ID: "toolu_1", Name: "get_weather"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:251
 		uses := anthropic.GetToolUses(resp)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:252
 		test.AssertEqual(t, len(uses), 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:253
 		test.AssertEqual(t, uses[0].Name, "get_weather")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:257
 func TestAnthropicHasToolUses(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:258
 	t.Run("true when stop_reason is tool_use", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:259
 		resp := anthropic.Response{StopReason: "tool_use"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:260
 		test.AssertTrue(t, anthropic.HasToolUses(resp))
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:263
 	t.Run("false when stop_reason is end_turn", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:264
 		resp := anthropic.Response{StopReason: "end_turn"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:265
 		test.AssertFalse(t, anthropic.HasToolUses(resp))
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:269
 func TestChatFromCompletion(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:270
 	t.Run("no choices returns unchanged client", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:271
 		c := chat.FromCompletion(chat.New("openai:gpt-4o-mini"), chat.Completion{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:272
 		_ = c
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:275
 	t.Run("appends assistant message from completion", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:276
 		msg := chat.ResponseMessage{Role: "assistant", Content: "Paris"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:277
 		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:278
 		c := chat.FromCompletion(chat.User(chat.New("openai:gpt-4o-mini"), "Capital of France?"), comp)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:281
 		_ = c
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:284
 	t.Run("preserves tool calls in assistant message", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:285
 		toolCall := chat.ToolCall{ID: "call-1", Type: "function", Function: chat.ToolCallFunction{Name: "get_capital", Arguments: "{}"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:290
 		msg := chat.ResponseMessage{Role: "assistant", ToolCalls: []chat.ToolCall{toolCall}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:291
 		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:292
 		c := chat.FromCompletion(chat.New("openai:gpt-4o-mini"), comp)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:293
 		_ = c
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:297
 func TestChatExecuteToolCalls(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:298
 	t.Run("calls handler for matching tool", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:299
 		toolCall := chat.ToolCall{ID: "call-1", Type: "function", Function: chat.ToolCallFunction{Name: "get_weather", Arguments: "{}"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:304
 		msg := chat.ResponseMessage{Role: "assistant", ToolCalls: []chat.ToolCall{toolCall}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:305
 		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:307
 		handlers := map[string]func(string) string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:308
 		handlers["get_weather"] = func(args string) string { return "sunny" }
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:309
 		_, err := chat.ExecuteToolCalls(chat.New("openai:gpt-4o-mini"), comp, handlers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:310
 		test.AssertEqual(t, err, nil)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:313
 	t.Run("returns error for unknown tool", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:314
 		toolCall := chat.ToolCall{ID: "call-1", Type: "function", Function: chat.ToolCallFunction{Name: "unknown_tool", Arguments: "{}"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:319
 		msg := chat.ResponseMessage{Role: "assistant", ToolCalls: []chat.ToolCall{toolCall}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:320
 		comp := chat.Completion{Choices: []chat.Choice{chat.Choice{Message: msg}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:322
 		handlers := map[string]func(string) string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:323
 		_, err := chat.ExecuteToolCalls(chat.New("openai:gpt-4o-mini"), comp, handlers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:324
 		test.AssertTrue(t, err != nil)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:327
 	t.Run("no-op when completion has no choices", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:328
 		handlers := map[string]func(string) string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:329
 		_, err := chat.ExecuteToolCalls(chat.New("openai:gpt-4o-mini"), chat.Completion{}, handlers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:330
 		test.AssertEqual(t, err, nil)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:334
 func TestAnthropicFromResponse(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:335
 	t.Run("appends assistant message from response", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:336
 		resp := anthropic.Response{Content: []content.Content{content.Text{Body: "Hello"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:337
 		c := anthropic.FromResponse(anthropic.New("claude-opus-4-6"), resp)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:338
 		_ = c
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:341
 	t.Run("empty response still appends an assistant message", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:342
 		c := anthropic.FromResponse(anthropic.New("claude-opus-4-6"), anthropic.Response{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:343
 		_ = c
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:347
 func TestAnthropicExecuteToolUses(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:348
 	t.Run("calls handler for matching tool use", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:349
 		resp := anthropic.Response{StopReason: "tool_use", Content: []content.Content{content.ToolUse{ID: "toolu_1", Name: "get_weather", Input: content.ArgsJSON{Value: `{"city":"Paris"}`}}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:360
 		handlers := map[string]func(string) string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:361
 		handlers["get_weather"] = func(args string) string { return "sunny" }
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:362
 		_, err := anthropic.ExecuteToolUses(anthropic.New("claude-opus-4-6"), resp, handlers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:363
 		test.AssertEqual(t, err, nil)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:366
 	t.Run("returns error for unknown tool", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:367
 		resp := anthropic.Response{StopReason: "tool_use", Content: []content.Content{content.ToolUse{ID: "toolu_1", Name: "unknown_tool", Input: content.ArgsJSON{Value: "{}"}}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:378
 		handlers := map[string]func(string) string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:379
 		_, err := anthropic.ExecuteToolUses(anthropic.New("claude-opus-4-6"), resp, handlers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:380
 		test.AssertTrue(t, err != nil)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:383
 	t.Run("no-op when response has no tool uses", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:384
 		resp := anthropic.Response{Content: []content.Content{content.Text{Body: "no tools here"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:387
 		handlers := map[string]func(string) string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:388
 		_, err := anthropic.ExecuteToolUses(anthropic.New("claude-opus-4-6"), resp, handlers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:389
 		test.AssertEqual(t, err, nil)
+	})
+}
+
+type ProviderDefaultsCase struct {
+	name        string
+	provider    string
+	wantEnvKey  string
+	wantBaseURL string
+}
+
+func TestProviderDefaults(t *testing.T) {
+	cases := []ProviderDefaultsCase{ProviderDefaultsCase{name: "openai", provider: "openai", wantEnvKey: "OPENAI_API_KEY", wantBaseURL: "https://api.openai.com"}, ProviderDefaultsCase{name: "anthropic", provider: "anthropic", wantEnvKey: "ANTHROPIC_API_KEY", wantBaseURL: "https://api.anthropic.com"}, ProviderDefaultsCase{name: "mistral", provider: "mistral", wantEnvKey: "MISTRAL_API_KEY", wantBaseURL: "https://api.mistral.ai"}, ProviderDefaultsCase{name: "groq", provider: "groq", wantEnvKey: "GROQ_API_KEY", wantBaseURL: "https://api.groq.com/openai"}, ProviderDefaultsCase{name: "together", provider: "together", wantEnvKey: "TOGETHER_API_KEY", wantBaseURL: "https://api.together.xyz"}, ProviderDefaultsCase{name: "deepseek", provider: "deepseek", wantEnvKey: "DEEPSEEK_API_KEY", wantBaseURL: "https://api.deepseek.com"}, ProviderDefaultsCase{name: "xai", provider: "xai", wantEnvKey: "XAI_API_KEY", wantBaseURL: "https://api.x.ai"}, ProviderDefaultsCase{name: "voyage", provider: "voyage", wantEnvKey: "VOYAGE_API_KEY", wantBaseURL: "https://api.voyageai.com"}, ProviderDefaultsCase{name: "cohere", provider: "cohere", wantEnvKey: "COHERE_API_KEY", wantBaseURL: "https://api.cohere.com"}, ProviderDefaultsCase{name: "ollama", provider: "ollama", wantEnvKey: "", wantBaseURL: "http://localhost:11434"}, ProviderDefaultsCase{name: "fastflowlm", provider: "fastflowlm", wantEnvKey: "", wantBaseURL: "http://localhost:52625"}, ProviderDefaultsCase{name: "flm alias", provider: "flm", wantEnvKey: "", wantBaseURL: "http://localhost:52625"}, ProviderDefaultsCase{name: "unknown", provider: "unknown", wantEnvKey: "", wantBaseURL: ""}}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			envKey, baseURL := llm.ProviderDefaults(tc.provider)
+			test.AssertEqual(t, envKey, tc.wantEnvKey)
+			test.AssertEqual(t, baseURL, tc.wantBaseURL)
+		})
+	}
+}
+
+func TestKnownProvider(t *testing.T) {
+	t.Run("known providers", func(t *testing.T) {
+		test.AssertTrue(t, llm.KnownProvider("openai"))
+		test.AssertTrue(t, llm.KnownProvider("anthropic"))
+		test.AssertTrue(t, llm.KnownProvider("voyage"))
+		test.AssertTrue(t, llm.KnownProvider("ollama"))
+		test.AssertTrue(t, llm.KnownProvider("flm"))
+	})
+	t.Run("unknown providers", func(t *testing.T) {
+		test.AssertTrue(t, !llm.KnownProvider("unknown"))
+		test.AssertTrue(t, !llm.KnownProvider(""))
+	})
+}
+
+func TestResolveAPIKey(t *testing.T) {
+	t.Run("explicit override wins", func(t *testing.T) {
+		_ = os.Setenv("OPENAI_API_KEY", "sk-env")
+		test.AssertEqual(t, llm.ResolveAPIKey("openai", "sk-explicit"), "sk-explicit")
+	})
+	t.Run("provider env var used when no override", func(t *testing.T) {
+		_ = os.Setenv("GROQ_API_KEY", "gsk-env")
+		test.AssertEqual(t, llm.ResolveAPIKey("groq", ""), "gsk-env")
+	})
+	t.Run("LLM_API_KEY fallback for local-only providers", func(t *testing.T) {
+		_ = os.Setenv("LLM_API_KEY", "llm-env")
+		test.AssertEqual(t, llm.ResolveAPIKey("ollama", ""), "llm-env")
+	})
+	t.Run("LLM_API_KEY fallback for unknown providers", func(t *testing.T) {
+		_ = os.Setenv("LLM_API_KEY", "llm-env")
+		test.AssertEqual(t, llm.ResolveAPIKey("unknown", ""), "llm-env")
+	})
+	t.Run("empty when nothing is set", func(t *testing.T) {
+		_ = os.Unsetenv("LLM_API_KEY")
+		test.AssertEqual(t, llm.ResolveAPIKey("unknown", ""), "")
+	})
+}
+
+func TestResolveBaseURL(t *testing.T) {
+	t.Run("explicit override wins", func(t *testing.T) {
+		test.AssertEqual(t, llm.ResolveBaseURL("openai", "https://proxy.example.com"), "https://proxy.example.com")
+	})
+	t.Run("provider default used when no override", func(t *testing.T) {
+		test.AssertEqual(t, llm.ResolveBaseURL("mistral", ""), "https://api.mistral.ai")
+	})
+	t.Run("LLM_BASE_URL used for unknown providers", func(t *testing.T) {
+		_ = os.Setenv("LLM_BASE_URL", "https://gateway.example.com")
+		test.AssertEqual(t, llm.ResolveBaseURL("unknown", ""), "https://gateway.example.com")
+	})
+	t.Run("localhost:8000 fallback when nothing matches", func(t *testing.T) {
+		_ = os.Unsetenv("LLM_BASE_URL")
+		test.AssertEqual(t, llm.ResolveBaseURL("unknown", ""), "http://localhost:8000")
 	})
 }

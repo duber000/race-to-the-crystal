@@ -21,8 +21,8 @@ func PlayTurn(api: reference learn.LearnerAPI)
 
     # (0,0), (1,0), (2,0) are already taken by your starting tokens,
     # so deploy at the free corner cell (2,2).
-    _ = api.Place(10, 2, 2)
-    _ = api.Done()
+    api.Place(10, 2, 2)
+    api.Done()
 
 func main()
     sim := learn.NewSimulation(learn.NewConfig())

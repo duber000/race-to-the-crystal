@@ -5,7 +5,7 @@ go 1.27.0
 require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hajimehoshi/ebiten/v2 v2.9.9
-	kukicha.org/kukicha/stdlib v0.84.1
+	kukicha.org/kukicha/stdlib v0.84.7
 )
 
 require (
@@ -15,7 +15,7 @@ require (
 	github.com/jezek/xgb v1.1.1 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

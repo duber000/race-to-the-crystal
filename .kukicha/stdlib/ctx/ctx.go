@@ -7,62 +7,42 @@ import (
 	"time"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:21
 type Handle struct {
 	Ctx    context.Context
 	Cancel func()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:27
 func noop() {
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:31
 func Background() Handle {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:32
 	return Handle{Ctx: context.Background(), Cancel: noop}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:38
 func FromContext(c context.Context) Handle {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:39
 	return Handle{Ctx: c, Cancel: noop}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:45
 func WithTimeout(parent Handle, timeout time.Duration) Handle {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:46
 	child, cancel := context.WithTimeout(parent.Ctx, timeout)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:47
 	return Handle{Ctx: child, Cancel: cancel}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:51
 func WithDeadline(parent Handle, deadline time.Time) Handle {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:52
 	child, cancel := context.WithDeadline(parent.Ctx, deadline)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:53
 	return Handle{Ctx: child, Cancel: cancel}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:59
 func WithCancel(parent Handle) Handle {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:60
 	child, cancel := context.WithCancel(parent.Ctx)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:61
 	return Handle{Ctx: child, Cancel: cancel}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:69
 func WithValue(parent Handle, key any, value any) Handle {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:70
 	child := context.WithValue(parent.Ctx, key, value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:71
 	return Handle{Ctx: child, Cancel: noop}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:77
 func GetValue(h Handle, key any) any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx.kuki:78
 	return h.Ctx.Value(key)
 }

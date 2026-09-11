@@ -9,157 +9,100 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:11
 type ParseCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:14
 func TestParse(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:15
 	cases := []ParseCase{ParseCase{name: "basic"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:17
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:18
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:19
 			u, err := url.Parse("https://example.com/p?q=hi&page=2")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:20
 			test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:21
 			test.AssertEqual(t, u.Scheme, "https")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:22
 			test.AssertEqual(t, u.Host, "example.com")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:23
 			test.AssertEqual(t, u.Path, "/p")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:24
 			test.AssertEqual(t, u.Params["q"], "hi")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:25
 			test.AssertEqual(t, u.Params["page"], "2")
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:29
 type ParseRepeatedCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:32
 func TestParseRepeatedKey(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:33
 	cases := []ParseRepeatedCase{ParseRepeatedCase{name: "last wins for flat, both for multi"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:35
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:36
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:37
 			flat, err := url.Parse("https://x.com?tag=a&tag=b")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:38
 			test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:39
 			test.AssertEqual(t, flat.Params["tag"], "b")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:41
 			multi, mErr := url.ParseMulti("https://x.com?tag=a&tag=b")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:42
 			test.AssertNoError(t, mErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:43
 			test.AssertEqual(t, len(multi.Params["tag"]), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:44
 			test.AssertEqual(t, multi.Params["tag"][0], "a")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:45
 			test.AssertEqual(t, multi.Params["tag"][1], "b")
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:49
 type BuilderCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:52
 func TestBuilder(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:53
 	cases := []BuilderCase{BuilderCase{name: "fluent build"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:55
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:56
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:57
 			out := url.String(url.Param(url.Param(url.Param(url.New("https://api.example.com/users"), "page", 2), "active", true), "q", "hello world"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:63
 			expected := "https://api.example.com/users?page=2&active=true&q=hello+world"
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:64
 			test.AssertEqual(t, out, expected)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:70
 type BuilderQueryCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:73
 func TestBuilderWithExistingQuery(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:74
 	cases := []BuilderQueryCase{BuilderQueryCase{name: "appends with & when base already has ?"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:76
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:77
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:78
 			out := url.String(url.Param(url.New("https://x.com/path?a=1"), "b", 2))
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:79
 			test.AssertEqual(t, out, "https://x.com/path?a=1&b=2")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:81
 			bare := url.String(url.New("https://x.com"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:82
 			test.AssertEqual(t, bare, "https://x.com")
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:86
 type QueryEscapeCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:89
 func TestQueryEscape(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:90
 	cases := []QueryEscapeCase{QueryEscapeCase{name: "round trip"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:92
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:93
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:94
 			escaped := url.QueryEscape("hello world & friends")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:95
 			test.AssertEqual(t, escaped, "hello+world+%26+friends")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:96
 			roundtrip, err := url.Unescape(escaped)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:97
 			test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:98
 			test.AssertEqual(t, roundtrip, "hello world & friends")
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:102
 func TestPathEscape(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:103
 	t.Run("escapes separators", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:104
 		got := url.PathEscape("acme/dev team")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:105
 		test.AssertEqual(t, got, "acme%2Fdev%20team")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:109
 type URLTemplateCase struct {
 	name    string
 	tmpl    string
@@ -168,33 +111,22 @@ type URLTemplateCase struct {
 	wantErr bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:116
 func TestURLTemplate(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:117
 	tmpl := "https://api.example.com/users/{username}/repos/{repo}"
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:119
 	cases := []URLTemplateCase{URLTemplateCase{name: "success with encoding", tmpl: tmpl, args: map[string]string{"username": "acme/dev team", "repo": "hello world"}, want: "https://api.example.com/users/acme%2Fdev%20team/repos/hello%20world", wantErr: false}, URLTemplateCase{name: "missing placeholder", tmpl: tmpl, args: map[string]string{"username": "golang"}, want: "", wantErr: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:136
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:137
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:138
 			builtURL, err := url.URLTemplate(tc.tmpl, tc.args)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:139
 			if tc.wantErr {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:140
 				test.AssertError(t, err)
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:142
 				test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:143
 				test.AssertEqual(t, builtURL, tc.want)
 			}
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:147
 type URLWithQueryCase struct {
 	name  string
 	base  string
@@ -203,93 +135,61 @@ type URLWithQueryCase struct {
 	want2 string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:154
 func TestURLWithQuery(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:155
 	cases := []URLWithQueryCase{URLWithQueryCase{name: "encode multiple params", base: "https://api.example.com/search", query: map[string]string{"q": "go lang", "sort": "stars desc"}, want1: "https://api.example.com/search?q=go+lang&sort=stars+desc", want2: "https://api.example.com/search?sort=stars+desc&q=go+lang"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:165
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:166
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:167
 			builtURL, err := url.URLWithQuery(tc.base, tc.query)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:168
 			test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:169
 			if builtURL != tc.want1 && builtURL != tc.want2 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:170
 				t.Errorf("Unexpected query URL: %v", builtURL)
 			}
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:174
 func TestSafeURL(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:175
 	t.Run("path and query escaping", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:176
 		got, err := url.SafeURL("/users/{name}", map[string]string{"name": "acme/dev team"}, map[string]string{"tab": "repos sort"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:181
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:182
 		if got != "/users/acme%2Fdev%20team?tab=repos+sort" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:183
 			t.Errorf("unexpected SafeURL result: %v", got)
 		}
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:187
 type FormCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:190
 func TestEncodeForm(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:191
 	cases := []FormCase{FormCase{name: "deterministic ordering"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:193
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:194
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:195
 			body := url.EncodeForm(map[string]string{"email": "a@b.com", "name": "Al"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:200
 			test.AssertEqual(t, body, "email=a%40b.com&name=Al")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:202
 			blank := url.EncodeForm(map[string]string{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:203
 			test.AssertEqual(t, blank, "")
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:209
 type ParseErrorCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:212
 func TestParseError(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:213
 	cases := []ParseErrorCase{ParseErrorCase{name: "malformed url errors"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:215
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:216
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:217
 			_, err := url.Parse("://not a url")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:218
 			if err == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:219
 				t.Error("Expected error for malformed url")
 			}
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:223
 type CleanPathCase struct {
 	name    string
 	input   string
@@ -297,31 +197,21 @@ type CleanPathCase struct {
 	wantErr bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:229
 func TestCleanPath(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:230
 	cases := []CleanPathCase{CleanPathCase{name: "simple", input: "/a/b", want: "/a/b", wantErr: false}, CleanPathCase{name: "leading slash added", input: "a/b", want: "/a/b", wantErr: false}, CleanPathCase{name: "double slash collapsed", input: "/a//b", want: "/a/b", wantErr: false}, CleanPathCase{name: "dot resolved", input: "/a/./b", want: "/a/b", wantErr: false}, CleanPathCase{name: "dotdot rejected", input: "/a/../b", want: "", wantErr: true}, CleanPathCase{name: "leading dotdot rejected", input: "../etc", want: "", wantErr: true}, CleanPathCase{name: "percent-encoded traversal rejected", input: "/a/%2e%2e/b", want: "", wantErr: true}, CleanPathCase{name: "percent-encoded slash rejected", input: "/a%2fb", want: "", wantErr: true}, CleanPathCase{name: "backslash rejected", input: "/a\\b", want: "", wantErr: true}, CleanPathCase{name: "empty rejected", input: "", want: "", wantErr: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:242
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:243
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:244
 			got, err := url.CleanPath(tc.input)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:245
 			if tc.wantErr {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:246
 				test.AssertError(t, err)
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:248
 				test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:249
 				test.AssertEqual(t, got, tc.want)
 			}
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:253
 type IsSubpathCase struct {
 	name      string
 	base      string
@@ -329,223 +219,132 @@ type IsSubpathCase struct {
 	want      bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:259
 func TestIsSubpath(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:260
 	cases := []IsSubpathCase{IsSubpathCase{name: "same path", base: "/static", candidate: "/static", want: true}, IsSubpathCase{name: "child path", base: "/static", candidate: "/static/css/app.css", want: true}, IsSubpathCase{name: "sibling rejected", base: "/static", candidate: "/staticx/app.css", want: false}, IsSubpathCase{name: "parent rejected", base: "/static/sub", candidate: "/static", want: false}, IsSubpathCase{name: "root base accepts anything valid", base: "/", candidate: "/anything/here", want: true}, IsSubpathCase{name: "traversal candidate rejected", base: "/static", candidate: "/static/../etc/passwd", want: false}, IsSubpathCase{name: "trailing slash base", base: "/static/", candidate: "/static/x", want: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:279
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:280
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:281
 			got := url.IsSubpath(tc.base, tc.candidate)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:282
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:286
 func TestMustParse(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:287
 	t.Run("MustParse success", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:288
 		u := url.MustParse("https://example.com/p?q=hi")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:289
 		test.AssertEqual(t, u.Scheme, "https")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:290
 		test.AssertEqual(t, u.Host, "example.com")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:291
 		test.AssertEqual(t, u.Path, "/p")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:292
 		test.AssertEqual(t, u.Params["q"], "hi")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:295
 	t.Run("MustParse panic", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:296
 		defer func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:297
 			r := recover()
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:298
 			if r == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:299
 				t.Error("expected panic")
 			} else if s, _isOk := r.(string); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:301
 				if !kukistring.HasPrefix(s, "url: invalid URL") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:302
 					t.Errorf("unexpected panic message: %s", s)
 				}
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:304
 				t.Errorf("expected panic value to be string, got: %T", r)
 			}
 		}()
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:306
 		url.MustParse("://not a url")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:309
 	t.Run("MustParseMulti success", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:310
 		u := url.MustParseMulti("https://example.com/p?tag=a&tag=b")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:311
 		test.AssertEqual(t, u.Scheme, "https")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:312
 		test.AssertEqual(t, u.Host, "example.com")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:313
 		test.AssertEqual(t, u.Path, "/p")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:314
 		test.AssertEqual(t, len(u.Params["tag"]), 2)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:317
 	t.Run("MustParseMulti panic", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:318
 		defer func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:319
 			r := recover()
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:320
 			if r == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:321
 				t.Error("expected panic")
 			} else if s, _isOk := r.(string); _isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:323
 				if !kukistring.HasPrefix(s, "url: invalid URL") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:324
 					t.Errorf("unexpected panic message: %s", s)
 				}
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:326
 				t.Errorf("expected panic value to be string, got: %T", r)
 			}
 		}()
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:328
 		url.MustParseMulti("://not a url")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:332
 func TestJoinPath(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:333
 	t.Run("appends segments", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:334
 		joined, err := url.JoinPath("https://api.test/v1", "tasks", "42")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:335
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:336
 		test.AssertEqual(t, joined, "https://api.test/v1/tasks/42")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:339
 	t.Run("collapses slashes across the seam", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:340
 		joined, err := url.JoinPath("https://api.test/v1/", "/tasks")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:341
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:342
 		test.AssertEqual(t, joined, "https://api.test/v1/tasks")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:345
 	t.Run("query-holding segment is escaped, not rejected", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:346
 		joined, err := url.JoinPath("https://api.test", "a?b")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:347
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:348
 		test.AssertEqual(t, joined, "https://api.test/a%3Fb")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:351
 	t.Run("invalid percent-escape segment is silently dropped", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:352
 		joined, err := url.JoinPath("https://api.test", "100%")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:353
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:354
 		test.AssertEqual(t, joined, "https://api.test")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:360
 	t.Run("invalid base errors", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:361
 		_, err := url.JoinPath("://nope", "x")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:362
 		test.AssertError(t, err)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:365
 	t.Run("variadic call forms", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:366
 		bare, err := url.JoinPath("https://api.test/v1/")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:367
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:368
 		test.AssertEqual(t, bare, "https://api.test/v1/")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:370
 		segs := []string{"a", "b"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:371
 		spread, err := url.JoinPath("https://api.test", segs...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:372
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:373
 		test.AssertEqual(t, spread, "https://api.test/a/b")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:382
 func TestHostnamePort(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:383
 	t.Run("host with explicit port splits", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:384
 		u := url.MustParse("https://example.com:8080/p")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:385
 		test.AssertEqual(t, u.Host, "example.com:8080")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:386
 		test.AssertEqual(t, url.Hostname(u), "example.com")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:387
 		test.AssertEqual(t, url.Port(u), "8080")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:390
 	t.Run("no port yields empty Port", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:391
 		u := url.MustParse("https://example.com/p")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:392
 		test.AssertEqual(t, url.Hostname(u), "example.com")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:393
 		test.AssertEqual(t, url.Port(u), "")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:396
 	t.Run("IPv6 brackets are unwrapped", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:397
 		u := url.MustParse("http://[::1]:9000/x")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:398
 		test.AssertEqual(t, url.Hostname(u), "::1")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:399
 		test.AssertEqual(t, url.Port(u), "9000")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:402
 	t.Run("pipe form", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:403
 		u := url.MustParse("https://example.com:8080/p")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:404
 		test.AssertEqual(t, url.Hostname(u), "example.com")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:405
 		test.AssertEqual(t, url.Port(u), "8080")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:409
 func TestParamOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:410
 	u := url.MustParse("https://x.test/p?page=3")
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:411
 	t.Run("present returns value", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:412
 		test.AssertEqual(t, url.ParamOr(u, "page", "1"), "3")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:415
 	t.Run("absent returns default", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:416
 		test.AssertEqual(t, url.ParamOr(u, "missing", "1"), "1")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:419
 	t.Run("pipe form", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/url/url_test.kuki:420
 		test.AssertEqual(t, url.ParamOr(u, "page", "1"), "3")
 	})
 }

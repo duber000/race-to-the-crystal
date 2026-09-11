@@ -16,7 +16,7 @@ func DoAttack(api: reference learn.LearnerAPI, actions: list of gamepkg.ActionRe
     for a in actions
         switch a as v
             when gamepkg.AttackAction
-                _ = api.Attack(v.AttackerID as int, v.DefenderID as int)
+                api.Attack(v.AttackerID as int, v.DefenderID as int)
                 return true
             default
                 continue
@@ -28,7 +28,7 @@ func DoMove(api: reference learn.LearnerAPI, actions: list of gamepkg.ActionResp
         switch a as v
             when gamepkg.MoveAction
                 dest := v.ValidDestinations[0]
-                _ = api.Move(v.TokenID as int, dest[0], dest[1])
+                api.Move(v.TokenID as int, dest[0], dest[1])
                 return true
             default
                 continue
@@ -40,7 +40,7 @@ func DoDeploy(api: reference learn.LearnerAPI, actions: list of gamepkg.ActionRe
         switch a as v
             when gamepkg.DeployAction
                 pos := v.Positions[0]
-                _ = api.Place(v.HealthValue, pos[0], pos[1])
+                api.Place(v.HealthValue, pos[0], pos[1])
                 return true
             default
                 continue
@@ -56,7 +56,7 @@ func PlayTurn(api: reference learn.LearnerAPI)
         return
     if DoDeploy(api, actions)
         return
-    _ = api.Done()
+    api.Done()
 
 func main()
     sim := learn.NewSimulation(learn.NewConfig())

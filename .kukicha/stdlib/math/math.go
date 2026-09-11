@@ -7,60 +7,39 @@ import (
 	gomath "math"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:23
 func AbsInt(x int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:24
 	if x < 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:25
 		return -x
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:26
 	return x
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:32
 func Round(x float64) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:33
 	return int(gomath.Round(x))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:38
 func RoundTo(x float64, digits int) float64 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:39
 	if digits < 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:40
 		digits = 0
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:41
 	factor := gomath.Pow(10.0, float64(digits))
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:42
 	return gomath.Round(x*factor) / factor
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:46
 func Ceil(x float64) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:47
 	return int(gomath.Ceil(x))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:51
 func Floor(x float64) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:52
 	return int(gomath.Floor(x))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:56
 func Clamp[T cmp.Ordered](x T, lo T, hi T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:57
 	if x < lo {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:58
 		return lo
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:59
 	if x > hi {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:60
 		return hi
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:61
 	return x
 }

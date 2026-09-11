@@ -9,483 +9,306 @@ import (
 	"slices"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:16
 func Take[T any](items []T, n int) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:17
 	if n <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:18
 		return []T{}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:19
 	if n >= len(items) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:20
 		return items
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:21
 	return items[:n]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:26
 func TakeLast[T any](items []T, n int) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:27
 	length := len(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:28
 	if n <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:29
 		return []T{}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:30
 	if n >= length {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:31
 		return items
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:32
 	return items[length-n:]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:37
 func Skip[T any](items []T, n int) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:38
 	if n <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:39
 		return items
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:40
 	if n >= len(items) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:41
 		return []T{}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:42
 	return items[n:]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:49
 func SkipLast[T any](items []T, n int) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:50
 	length := len(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:51
 	if n <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:52
 		return items
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:53
 	if n >= length {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:54
 		return []T{}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:55
 	return items[:length-n]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:59
+func Clone[T any](items []T) []T {
+	return slices.Clone(items)
+}
+
 func Reverse[T any](items []T) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:60
 	result := slices.Clone(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:61
 	slices.Reverse(result)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:62
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:67
 func Unique[T comparable](items []T) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:68
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:69
 		return items
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:71
 	seen := map[T]bool{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:72
 	result := []T{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:74
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:75
 		if !seen[item] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:76
 			seen[item] = true
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:77
 			result = append(result, item)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:79
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:84
 func Chunk[T any](items []T, size int) [][]T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:85
 	if size <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:86
 		return [][]T{}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:88
 	result := [][]T{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:89
 	length := len(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:90
 	i := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:92
 	for i < length {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:93
 		end := min(i+size, length)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:94
 		chunk := items[i:end]
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:95
 		result = append(result, chunk)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:96
 		i = i + size
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:98
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:102
 func Contains[T comparable](items []T, value T) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:103
 	return slices.Contains(items, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:108
 func IndexOf[T comparable](items []T, value T) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:109
 	return slices.Index(items, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:113
 func Concat[T any](slices [][]T) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:114
 	totalLength := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:115
 	for _, slice := range slices {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:116
 		totalLength = totalLength + len(slice)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:118
 	result := make([]T, 0, totalLength)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:119
 	for _, slice := range slices {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:120
 		for _, item := range slice {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:121
 			result = append(result, item)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:123
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:127
 func Filter[T any](items []T, predicate func(T) bool) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:128
 	result := []T{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:129
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:130
 		if predicate(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:131
 			result = append(result, item)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:132
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:137
 func Reject[T any](items []T, predicate func(T) bool) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:138
 	result := []T{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:139
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:140
 		if !predicate(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:141
 			result = append(result, item)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:142
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:147
 func Partition[T any](items []T, predicate func(T) bool) ([]T, []T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:148
 	matches := []T{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:149
 	rest := []T{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:150
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:151
 		if predicate(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:152
 			matches = append(matches, item)
 		} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:154
 			rest = append(rest, item)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:155
 	return matches, rest
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:159
 func Map[T any, R any](items []T, transform func(T) R) []R {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:160
 	out := make([]R, len(items))
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:161
 	for i, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:162
 		out[i] = transform(item)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:163
 	return out
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:166
 func FlatMap[T any, R any](items []T, transform func(T) []R) []R {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:167
 	out := make([]R, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:168
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:169
 		for _, subItem := range transform(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:170
 			out = append(out, subItem)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:171
 	return out
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:175
 func Reduce[T any, R any](items []T, initial R, reducer func(R, T) R) R {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:176
 	acc := initial
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:177
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:178
 		acc = reducer(acc, item)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:179
 	return acc
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:184
 func GroupBy[T any, K comparable](items []T, keyFunc func(T) K) map[K][]T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:185
 	result := map[K][]T{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:186
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:187
 		k := keyFunc(item)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:188
 		result[k] = append(result[k], item)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:189
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:200
 func ToMap[T any, K comparable, V any](items []T, keyFunc func(T) K, valueFunc func(T) V) map[K]V {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:201
 	result := map[K]V{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:202
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:203
 		result[keyFunc(item)] = valueFunc(item)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:204
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:212
 func Get[T any](items []T, index int) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:213
 	length := len(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:214
 	if length == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:215
 		var _zero0 T
 		return _zero0, errors.New("slice is empty")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:218
 	actualIndex := index
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:219
 	if index < 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:220
 		actualIndex = length + index
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:222
 	if actualIndex < 0 || actualIndex >= length {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:223
 		var _zero0 T
 		return _zero0, fmt.Errorf("index %v out of bounds for slice of length %v", index, length)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:225
 	return items[actualIndex], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:231
 func GetOr[T any](items []T, index int, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:232
 	length := len(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:233
 	if length == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:234
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:237
 	actualIndex := index
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:238
 	if index < 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:239
 		actualIndex = length + index
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:241
 	if actualIndex < 0 || actualIndex >= length {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:242
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:244
 	return items[actualIndex]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:248
 func First[T any](items []T) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:249
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:250
 		var _zero0 T
 		return _zero0, errors.New("slice is empty")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:251
 	return items[0], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:256
 func FirstOr[T any](items []T, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:257
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:258
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:259
 	return items[0]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:263
 func Last[T any](items []T) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:264
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:265
 		var _zero0 T
 		return _zero0, errors.New("slice is empty")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:266
 	return items[len(items)-1], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:271
 func LastOr[T any](items []T, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:272
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:273
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:274
 	return items[len(items)-1]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:278
 func Find[T any](items []T, predicate func(T) bool) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:279
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:280
 		if predicate(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:281
 			return item, nil
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:282
 	var _zero0 T
 	return _zero0, errors.New("no matching element found")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:287
 func FindOr[T any](items []T, predicate func(T) bool, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:288
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:289
 		if predicate(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:290
 			return item
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:291
 	return defaultValue
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:296
 func FindIndex[T any](items []T, predicate func(T) bool) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:297
 	for i, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:298
 		if predicate(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:299
 			return i
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:300
 	return -1
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:306
 func FindIndexOr[T any](items []T, predicate func(T) bool, defaultValue int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:307
 	idx := FindIndex(items, predicate)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:308
 	if idx == -1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:309
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:310
 	return idx
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:316
 func Index[T comparable](items []T, value T) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:317
 	return IndexOf(items, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:322
 func IndexOr[T comparable](items []T, value T, defaultValue int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:323
 	idx := IndexOf(items, value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:324
 	if idx == -1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:325
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:326
 	return idx
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:331
 func Flatten[T any](slices [][]T) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:332
 	return Concat(slices)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:336
 func FindLast[T any](items []T, predicate func(T) bool) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:337
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:338
 		var _zero0 T
 		return _zero0, errors.New("no matching element found")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:339
 	{
 		_iStart, _iEnd := len(items)-1, 0
 		_iStep := _iStart + 1 - _iStart
@@ -493,26 +316,19 @@ func FindLast[T any](items []T, predicate func(T) bool) (T, error) {
 			_iStep = -_iStep
 		}
 		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:340
 			if predicate(items[i]) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:341
 				return items[i], nil
 			}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:342
 	var _zero0 T
 	return _zero0, errors.New("no matching element found")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:346
 func FindLastOr[T any](items []T, predicate func(T) bool, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:347
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:348
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:349
 	{
 		_iStart, _iEnd := len(items)-1, 0
 		_iStep := _iStart + 1 - _iStart
@@ -520,172 +336,110 @@ func FindLastOr[T any](items []T, predicate func(T) bool, defaultValue T) T {
 			_iStep = -_iStep
 		}
 		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:350
 			if predicate(items[i]) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:351
 				return items[i]
 			}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:352
 	return defaultValue
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:358
 func PopLast[T any](items []T) (T, []T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:359
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:360
 		var _zero0 T
 		return _zero0, items, errors.New("cannot pop from empty slice")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:361
 	return items[len(items)-1], items[:len(items)-1], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:367
 func PopFirst[T any](items []T) (T, []T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:368
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:369
 		var _zero0 T
 		return _zero0, items, errors.New("cannot pop from empty slice")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:370
 	return items[0], items[1:], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:379
 func Sum[T cmp.Ordered](items []T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:380
 	var total T
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:381
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:382
 		total = total + item
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:383
 	return total
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:387
 func Min[T cmp.Ordered](items []T) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:388
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:389
 		var _zero0 T
 		return _zero0, errors.New("cannot take min of empty slice")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:390
 	best := items[0]
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:391
 	for _, item := range items[1:] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:392
 		if item < best {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:393
 			best = item
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:394
 	return best, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:398
 func Max[T cmp.Ordered](items []T) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:399
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:400
 		var _zero0 T
 		return _zero0, errors.New("cannot take max of empty slice")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:401
 	best := items[0]
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:402
 	for _, item := range items[1:] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:403
 		if item > best {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:404
 			best = item
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:405
 	return best, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:410
 func Average(items []float64) (float64, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:411
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:412
 		return 0.0, errors.New("cannot take average of empty slice")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:413
 	total := 0.0
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:414
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:415
 		total = total + item
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:416
 	return total / float64(len(items)), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:422
 func MinOr[T cmp.Ordered](items []T, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:423
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:424
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:425
 	best := items[0]
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:426
 	for _, item := range items[1:] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:427
 		if item < best {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:428
 			best = item
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:429
 	return best
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:435
 func MaxOr[T cmp.Ordered](items []T, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:436
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:437
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:438
 	best := items[0]
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:439
 	for _, item := range items[1:] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:440
 		if item > best {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:441
 			best = item
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:442
 	return best
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:448
 func AverageOr(items []float64, defaultValue float64) float64 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:449
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:450
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:451
 	total := 0.0
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:452
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:453
 		total = total + item
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:454
 	return total / float64(len(items))
 }

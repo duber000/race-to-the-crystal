@@ -9,72 +9,43 @@ import (
 	"time"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:11
 func TestBackground(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:12
 	h := ctx.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:13
 	test.AssertEqual(t, h.Ctx.Err(), nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:15
 	h.Cancel()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:16
 	test.AssertEqual(t, h.Ctx.Err(), nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:19
 func TestWithTimeoutCancel(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:20
 	h := ctx.WithTimeout(ctx.Background(), 60*time.Second)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:21
 	test.AssertEqual(t, h.Ctx.Err(), nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:22
 	h.Cancel()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:23
 	test.AssertNotEqual(t, h.Ctx.Err(), nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:27
 type authKey struct {
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:30
 func TestWithValue(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:31
 	h := ctx.WithValue(ctx.Background(), authKey{}, "user-42")
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:32
 	v := ctx.GetValue(h, authKey{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:33
 	test.AssertEqual(t, v, "user-42")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:36
 func TestWithValueCancelDoesNotCancelParent(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:37
 	parent := ctx.WithCancel(ctx.Background())
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:38
 	child := ctx.WithValue(parent, authKey{}, "user-42")
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:39
 	test.AssertEqual(t, parent.Ctx.Err(), nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:40
 	test.AssertEqual(t, child.Ctx.Err(), nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:42
 	child.Cancel()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:43
 	test.AssertEqual(t, parent.Ctx.Err(), nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:44
 	test.AssertEqual(t, child.Ctx.Err(), nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:46
 	parent.Cancel()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:47
 	test.AssertNotEqual(t, parent.Ctx.Err(), nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:48
 	test.AssertNotEqual(t, child.Ctx.Err(), nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:51
 func TestGetValueMissing(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:52
 	h := ctx.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:53
 	test.AssertEqual(t, ctx.GetValue(h, authKey{}), nil)
 }

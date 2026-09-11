@@ -26,11 +26,11 @@ func PlayTurn(api: reference learn.LearnerAPI)
         else
             api.Say("could not place: {result.Message}")
     else if has_4
-        _ = api.Place(4, 2, 2)
+        api.Place(4, 2, 2)
     else
         api.Say("reserve is empty")
 
-    _ = api.Done()
+    api.Done()
 
 func main()
     sim := learn.NewSimulation(learn.NewConfig())

@@ -15,541 +15,307 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:15
 func TestResultHelpers(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:16
 	text := mcppkg.TextResult("hello")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:17
 	test.AssertNotNil(t, text)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:19
 	errRes := mcppkg.ErrorResult("boom")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:20
 	test.AssertNotNil(t, errRes)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:29
 func TestCallToolRichContent(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:30
 	ctx := context.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:31
 	cTransport, sTransport := gomcp.NewInMemoryTransports()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:33
 	richContent := []gomcp.Content{&gomcp.TextContent{Text: "hello"}, &gomcp.ImageContent{MIMEType: "image/png"}, &gomcp.AudioContent{MIMEType: "audio/wav"}, &gomcp.ResourceLink{URI: "file:///doc.txt"}, &gomcp.EmbeddedResource{Resource: &gomcp.ResourceContents{Text: "embedded text"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:40
 	richResult := &gomcp.CallToolResult{Content: richContent}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:41
 	emptySchema := map[string]any{"type": "object", "properties": map[string]any{}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:43
 	server := gomcp.NewServer(&gomcp.Implementation{Name: "test", Version: "1.0"}, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:44
 	server.AddTool(&gomcp.Tool{Name: "rich", InputSchema: emptySchema}, func(ctx context.Context, req *gomcp.CallToolRequest) (*gomcp.CallToolResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:45
 		return richResult, nil
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:48
 	ss, err_1 := server.Connect(ctx, sTransport, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:48
 	if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:48
-		//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:49
 		t.Fatalf("server connect failed: %v", err_1)
-		//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:50
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:52
 	defer ss.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:54
 	client := gomcp.NewClient(&gomcp.Implementation{Name: "test-client", Version: "1.0"}, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:55
 	rawSession, err_2 := client.Connect(ctx, cTransport, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:55
 	if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:55
-		//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:56
 		t.Fatalf("client connect failed: %v", err_2)
-		//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:57
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:59
 	defer rawSession.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:61
 	session := mcppkg.ConnectFromSession(rawSession)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:62
 	result, err_3 := mcppkg.CallTool(ctx, session, "rich", map[string]any{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:62
 	if err_3 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:62
-		//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:63
 		t.Fatalf("CallTool failed: %v", err_3)
-		//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:64
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:66
 	test.AssertEqual(t, result.Text, "hello\n[image: image/png]\n[audio: audio/wav]\n[resource: file:///doc.txt]\nembedded text")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:71
 	test.AssertEqual(t, len(result.Content), 5)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:72
 	test.AssertFalse(t, result.IsError)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:75
 func TestPromptArgStruct(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:76
 	a := mcppkg.PromptArg{Name: "text", Description: "Input text", Required: true}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:77
 	test.AssertEqual(t, a.Name, "text")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:78
 	test.AssertEqual(t, a.Description, "Input text")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:79
 	test.AssertTrue(t, a.Required)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:82
 func TestToolOptsZeroValue(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:83
 	opts := mcppkg.ToolOpts{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:84
 	test.AssertFalse(t, opts.ReadOnly)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:85
 	test.AssertFalse(t, opts.Destructive)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:86
 	test.AssertFalse(t, opts.Idempotent)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:87
 	test.AssertNil(t, opts.OutputSchema)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:90
 func TestClientResourceStruct(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:91
 	r := mcppkg.ClientResource{URI: "config://app", Name: "App", Description: "Config", MIMEType: "text/plain"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:97
 	test.AssertEqual(t, r.URI, "config://app")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:98
 	test.AssertEqual(t, r.Name, "App")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:99
 	test.AssertEqual(t, r.MIMEType, "text/plain")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:104
 func TestServerRegistration(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:105
 	server := mcppkg.New("test", "1.0")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:106
 	schema := jsonschema.Required(jsonschema.Schema([]jsonschema.Property{jsonschema.Prop("text", jsonschema.KindString, "Text input")}), []string{"text"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:111
 	textFn := func(uri string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:112
 		return "version=1.0", nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:114
 	mcppkg.TextResource(server, "config://app", "App config", "Configuration", textFn)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:116
 	uriTemplate := "users://" + "{" + "id}/profile"
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:117
 	mcppkg.TextResourceTemplate(server, uriTemplate, "User profile", "Per-user profile", textFn)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:119
 	promptFn := func(args map[string]string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:120
 		txt := args["text"]
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:121
 		return fmt.Sprintf("Summarize: %v", txt), nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:123
 	mcppkg.UserPrompt(server, "summarize", "Summarize text", []mcppkg.PromptArg{mcppkg.PromptArg{Name: "text", Required: true}}, promptFn)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:131
 	toolFn := func(args map[string]any) (any, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:132
 		return "ok", nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:134
 	mcppkg.ToolWithOpts[mcppkg.JSONObject](server, "read", "Read-only tool", schema, mcppkg.ToolOpts{ReadOnly: true}, toolFn)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:143
 	richFn := func(ctx context.Context, tc *mcppkg.ToolContext, args map[string]any) (any, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:144
 		return "ok", nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:146
 	mcppkg.ToolWithContext[mcppkg.JSONObject](server, "rich", "Tool with context", schema, richFn)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:148
 	test.AssertNotNil(t, server)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:153
 type _WriteArgs struct {
 	Path    string
 	Content string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:157
 func okHandler(args _WriteArgs) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:158
 	return "ok", nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:160
 func registerUnknownProperty() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:161
 	server := mcppkg.New("test", "1.0")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:162
 	schema := jsonschema.Schema([]jsonschema.Property{jsonschema.Prop("path", jsonschema.KindString, "Path"), jsonschema.Prop("unknown_field", jsonschema.KindString, "Not on struct")})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:166
 	mcppkg.Tool[_WriteArgs](server, "write", "Write a file", schema, okHandler)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:168
 func registerMissingRequired() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:169
 	server := mcppkg.New("test", "1.0")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:170
 	schema := jsonschema.Required(jsonschema.Schema([]jsonschema.Property{jsonschema.Prop("path", jsonschema.KindString, "Path")}), []string{"path", "absent"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:174
 	mcppkg.Tool[_WriteArgs](server, "write", "Write", schema, okHandler)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:176
 func registerWrongType() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:177
 	server := mcppkg.New("test", "1.0")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:178
 	schema := jsonschema.Schema([]jsonschema.Property{jsonschema.Prop("path", jsonschema.KindInteger, "Path declared as integer"), jsonschema.Prop("content", jsonschema.KindString, "Content")})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:182
 	mcppkg.Tool[_WriteArgs](server, "write", "Write", schema, okHandler)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:184
 func assertPanics(t *testing.T, label string, fn func()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:185
 	defer recoverPanic(t, label)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:186
 	fn()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:188
 func recoverPanic(t *testing.T, label string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:189
 	if recover() == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:190
 		t.Errorf("expected panic for %v, got none", label)
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:192
 func TestTypedToolRegistration(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:193
 	server := mcppkg.New("test", "1.0")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:194
 	schema := jsonschema.Required(jsonschema.Schema([]jsonschema.Property{jsonschema.Prop("path", jsonschema.KindString, "Path"), jsonschema.Prop("content", jsonschema.KindString, "Content")}), []string{"path"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:199
 	mcppkg.Tool[_WriteArgs](server, "write", "Write a file", schema, okHandler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:200
 	test.AssertNotNil(t, server)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:202
 	assertPanics(t, "schema property missing from struct", registerUnknownProperty)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:203
 	assertPanics(t, "required field missing from struct", registerMissingRequired)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:204
 	assertPanics(t, "schema property type incompatible with struct field", registerWrongType)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:208
 func TestCompletionRouter(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:209
 	ctx := context.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:210
 	router := mcppkg.NewRouter()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:212
 	router.AddPrompt("summarize", func(argName string, partial string, prevArgs map[string]string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:213
 		if argName == "text" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:214
 			return []string{"hello world", "hello there"}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:215
 		return []string{}
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:218
 	router.AddResource("config://app", func(argName string, partial string, prevArgs map[string]string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:219
 		return []string{"version=1.0", "version=2.0"}
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:222
 	handler := router.Handler()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:225
 	promptReq := &gomcp.CompleteRequest{Params: &gomcp.CompleteParams{Ref: &gomcp.CompleteReference{Type: "ref/prompt", Name: "summarize"}, Argument: gomcp.CompleteParamsArgument{Name: "text", Value: "he"}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:232
 	res, err := handler(ctx, promptReq)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:233
 	test.AssertNil(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:234
 	test.AssertEqual(t, len(res.Completion.Values), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:235
 	test.AssertEqual(t, res.Completion.Values[0], "hello world")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:238
 	resReq := &gomcp.CompleteRequest{Params: &gomcp.CompleteParams{Ref: &gomcp.CompleteReference{Type: "ref/resource", URI: "config://app"}, Argument: gomcp.CompleteParamsArgument{Name: "key", Value: ""}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:245
 	res2, err2 := handler(ctx, resReq)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:246
 	test.AssertNil(t, err2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:247
 	test.AssertEqual(t, len(res2.Completion.Values), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:250
 	unknownReq := &gomcp.CompleteRequest{Params: &gomcp.CompleteParams{Ref: &gomcp.CompleteReference{Type: "ref/prompt", Name: "unknown"}, Argument: gomcp.CompleteParamsArgument{Name: "x", Value: ""}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:257
 	res3, _ := handler(ctx, unknownReq)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:258
 	test.AssertEqual(t, len(res3.Completion.Values), 0)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:261
 type _TypedFailArgs struct {
 	Path    string
 	Content string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:265
 type _TypedFailResult struct {
 	Output string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:268
 type _UnencodableResult struct {
 	Ch chan int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:271
 type _CountArgs struct {
 	Count int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:274
 type _CountResult struct {
 	Output int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:277
 func TestTypedToolFailures(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:278
 	ctx := context.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:280
 	t.Run("malformed arguments are protocol errors", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:281
 		cTrans, sTrans := gomcp.NewInMemoryTransports()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:282
 		server := mcppkg.New("test-fail", "1.0")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:283
 		schema := jsonschema.Required(jsonschema.Schema([]jsonschema.Property{jsonschema.Prop("count", jsonschema.KindInteger, "Count")}), []string{"count"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:287
 		handler := func(args _CountArgs) (_CountResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:288
 			if args.Count == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:289
 				return _CountResult{}, errors.New("invalid count")
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:290
 			return _CountResult{Output: args.Count}, nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:291
 		mcppkg.Tool[_CountArgs](server, "count_tool", "count", schema, handler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:292
 		ss, err_4 := server.Connect(ctx, sTrans, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:292
 		if err_4 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:292
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:293
 			t.Fatalf("server connect: %v", err_4)
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:294
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:296
 		defer ss.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:297
 		client := gomcp.NewClient(&gomcp.Implementation{Name: "c", Version: "1.0"}, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:298
 		raw, err_5 := client.Connect(ctx, cTrans, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:298
 		if err_5 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:298
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:299
 			t.Fatalf("client connect: %v", err_5)
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:300
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:302
 		defer raw.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:303
 		session := mcppkg.ConnectFromSession(raw)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:305
 		result, err := mcppkg.CallTool(ctx, session, "count_tool", map[string]any{"count": any([]int{1, 2})})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:311
 		if (err == nil) && !result.IsError {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:312
 			t.Errorf("expected protocol or tool error for malformed arguments")
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:314
 		var direct _CountArgs
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:315
 		directErr := json.ParseBytesInto([]byte(`{"count": }`), &direct)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:316
 		if directErr == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:317
 			t.Errorf("direct unmarshal should have failed for invalid JSON")
 		}
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:327
 	t.Run("handler error surfaces as tool error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:328
 		cTrans, sTrans := gomcp.NewInMemoryTransports()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:329
 		server := mcppkg.New("test-fail", "1.0")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:330
 		schema := jsonschema.Required(jsonschema.Schema([]jsonschema.Property{jsonschema.Prop("path", jsonschema.KindString, "Path"), jsonschema.Prop("content", jsonschema.KindString, "Content")}), []string{"path"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:335
 		handler := func(args _TypedFailArgs) (_TypedFailResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:336
 			return _TypedFailResult{}, errors.New("handler boom")
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:337
 		mcppkg.Tool[_TypedFailArgs](server, "fail_tool", "fail", schema, handler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:338
 		ss, err_6 := server.Connect(ctx, sTrans, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:338
 		if err_6 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:338
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:339
 			t.Fatalf("server connect: %v", err_6)
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:340
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:342
 		defer ss.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:343
 		client := gomcp.NewClient(&gomcp.Implementation{Name: "c", Version: "1.0"}, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:344
 		raw, err_7 := client.Connect(ctx, cTrans, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:344
 		if err_7 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:344
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:345
 			t.Fatalf("client connect: %v", err_7)
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:346
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:348
 		defer raw.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:349
 		session := mcppkg.ConnectFromSession(raw)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:350
 		result, err := mcppkg.CallTool(ctx, session, "fail_tool", map[string]any{"path": "a"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:351
 		test.AssertNil(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:352
 		test.AssertTrue(t, result.IsError)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:353
 		test.AssertTrue(t, strings.Contains(result.Text, "boom"))
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:356
 	t.Run("unencodable result is protocol error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:357
 		cTrans, sTrans := gomcp.NewInMemoryTransports()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:358
 		server := mcppkg.New("test-bad", "1.0")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:359
 		schema := jsonschema.Schema([]jsonschema.Property{jsonschema.Prop("path", jsonschema.KindString, "Path")})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:362
 		badHandler := func(args _TypedFailArgs) (_UnencodableResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:363
 			return _UnencodableResult{Ch: make(chan int)}, nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:364
 		mcppkg.Tool[_TypedFailArgs](server, "bad_tool", "bad", schema, badHandler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:365
 		ss, err_8 := server.Connect(ctx, sTrans, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:365
 		if err_8 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:365
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:366
 			t.Fatalf("server connect: %v", err_8)
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:367
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:369
 		defer ss.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:370
 		client := gomcp.NewClient(&gomcp.Implementation{Name: "c", Version: "1.0"}, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:371
 		raw, err_9 := client.Connect(ctx, cTrans, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:371
 		if err_9 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:371
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:372
 			t.Fatalf("client connect: %v", err_9)
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:373
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:375
 		defer raw.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:376
 		session := mcppkg.ConnectFromSession(raw)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:377
 		_, err := mcppkg.CallTool(ctx, session, "bad_tool", map[string]any{"path": "a"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:378
 		test.AssertTrue(t, err != nil)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:381
 	t.Run("missing required field handled by handler", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:382
 		cTrans, sTrans := gomcp.NewInMemoryTransports()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:383
 		server := mcppkg.New("test-fail", "1.0")
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:384
 		schema := jsonschema.Required(jsonschema.Schema([]jsonschema.Property{jsonschema.Prop("path", jsonschema.KindString, "Path"), jsonschema.Prop("content", jsonschema.KindString, "Content")}), []string{"path"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:389
 		handler := func(args _TypedFailArgs) (_TypedFailResult, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:390
 			if args.Path == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:391
 				return _TypedFailResult{}, errors.New("missing path")
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:392
 			return _TypedFailResult{Output: args.Path}, nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:393
 		mcppkg.Tool[_TypedFailArgs](server, "fail_tool", "fail", schema, handler)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:394
 		ss, err_10 := server.Connect(ctx, sTrans, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:394
 		if err_10 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:394
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:395
 			t.Fatalf("server connect: %v", err_10)
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:396
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:398
 		defer ss.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:399
 		client := gomcp.NewClient(&gomcp.Implementation{Name: "c", Version: "1.0"}, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:400
 		raw, err_11 := client.Connect(ctx, cTrans, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:400
 		if err_11 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:400
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:401
 			t.Fatalf("client connect: %v", err_11)
-			//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:402
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:404
 		defer raw.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:405
 		session := mcppkg.ConnectFromSession(raw)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:406
 		result, err := mcppkg.CallTool(ctx, session, "fail_tool", map[string]any{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:407
 		test.AssertNil(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:408
 		test.AssertTrue(t, result.IsError)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:409
 		test.AssertTrue(t, strings.Contains(result.Text, "missing path"))
 	})
 }

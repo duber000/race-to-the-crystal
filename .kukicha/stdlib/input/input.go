@@ -7,193 +7,119 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/term"
+	"kukicha.org/kukicha/stdlib/parse"
 	kukistring "kukicha.org/kukicha/stdlib/string"
 	termpkg "kukicha.org/kukicha/stdlib/term"
 	"os"
-	"strconv"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:18
 var ErrCanceled = errors.New("input: selection canceled")
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:22
 func ReadPasswordAllowEcho(prompt string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:23
 	if prompt != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:24
 		fmt.Print(prompt)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:25
 	if !termpkg.IsTTY(os.Stdin) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:26
 		reader := bufio.NewReader(os.Stdin)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:27
 		text, err_1 := reader.ReadString('\n')
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:27
 		if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:27
 			return "", err_1
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:28
 		return kukistring.TrimSpace(text), nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:29
 	fd := int(os.Stdin.Fd())
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:30
 	bytes, err_2 := term.ReadPassword(fd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:30
 	if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:30
 		return "", err_2
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:31
 	fmt.Println()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:32
 	return string(bytes), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:40
 func ReadLine(prompt string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:41
 	if prompt != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:42
 		fmt.Print(prompt)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:44
 	reader := bufio.NewReader(os.Stdin)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:45
 	text, err_3 := reader.ReadString('\n')
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:45
 	if err_3 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:45
 		return "", err_3
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:46
 	return kukistring.TrimSpace(text), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:52
 func ReadPassword(prompt string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:53
 	if prompt != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:54
 		fmt.Print(prompt)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:56
 	if !termpkg.IsTTY(os.Stdin) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:57
 		return "", errors.New("input: stdin is not a TTY; password input requires a terminal (use ReadPasswordAllowEcho for non-interactive use)")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:59
 	fd := int(os.Stdin.Fd())
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:60
 	bytes, err_4 := term.ReadPassword(fd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:60
 	if err_4 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:60
 		return "", err_4
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:61
 	fmt.Println()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:62
 	return string(bytes), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:67
 func Confirm(prompt string) (bool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:68
 	answer, err_5 := ReadLine(fmt.Sprintf("%v [y/N]: ", prompt))
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:68
 	if err_5 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:68
 		err_5 = fmt.Errorf("confirm prompt: %w", err_5)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:68
 		return false, err_5
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:69
 	lower := kukistring.ToLower(kukistring.TrimSpace(answer))
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:70
 	return lower == "y" || lower == "yes", nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:79
 func Choose(prompt string, options []string) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:80
 	return chooseIndex(prompt, options)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:83
 func chooseIndex(prompt string, display []string) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:84
 	if len(display) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:85
 		return -1, errors.New("no options provided")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:87
 	fmt.Println(prompt)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:88
 	fmt.Println("")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:89
 	for i, opt := range display {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:90
 		fmt.Printf("  %v) %v\n", i+1, opt)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:91
 	fmt.Println("")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:93
 	raw, err_6 := ReadLine("Enter number (or q to quit): ")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:93
 	if err_6 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:93
 		err_6 = fmt.Errorf("choose prompt: %w", err_6)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:93
 		return 0, err_6
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:94
 	trimmed := kukistring.TrimSpace(raw)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:96
 	if trimmed == "" || trimmed == "q" || trimmed == "Q" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:97
 		return -1, ErrCanceled
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:99
-	val, err_7 := strconv.Atoi(trimmed)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:99
+	val, err_7 := parse.Int(trimmed)
 	if err_7 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:99
 		return -1, fmt.Errorf("invalid selection: %v", trimmed)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:100
 	if val < 1 || val > len(display) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:101
 		return -1, fmt.Errorf("selection out of range: %v", val)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:103
 	return val - 1, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:112
 func ChooseValue[T any](prompt string, options []T) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:113
 	display := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:114
 	for _, opt := range options {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:115
 		display = append(display, fmt.Sprintf("%v", opt))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:117
 	i, err := chooseIndex(prompt, display)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:118
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:119
 		var _zero0 T
 		return _zero0, err
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:120
 	return options[i], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:143
 type FieldKind int
 
 const (
@@ -219,7 +145,6 @@ func (e FieldKind) String() string {
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:151
 type FormField struct {
 	Key       string
 	Prompt    string
@@ -229,7 +154,6 @@ type FormField struct {
 	Validator func(string) error
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:161
 type Form struct {
 	Fields []FormField
 	Values map[string]string
@@ -237,227 +161,139 @@ type Form struct {
 	R      *os.File
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:168
 func NewForm() *Form {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:169
 	return &Form{Fields: []FormField{}, Values: map[string]string{}, W: os.Stdout, R: os.Stdin}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:177
 func (f *Form) Text(key string, prompt string) *Form {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:178
 	f.Fields = append(f.Fields, FormField{Key: key, Prompt: prompt, Kind: FieldKindText})
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:179
 	return f
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:182
 func (f *Form) Confirm(key string, prompt string) *Form {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:183
 	f.Fields = append(f.Fields, FormField{Key: key, Prompt: prompt, Kind: FieldKindConfirm})
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:184
 	return f
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:188
 func (f *Form) Choose(key string, prompt string, options []string) *Form {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:189
 	f.Fields = append(f.Fields, FormField{Key: key, Prompt: prompt, Kind: FieldKindChoose, Options: options})
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:190
 	return f
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:195
 func (f *Form) Validate(key string, validator func(string) error) *Form {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:196
 	i := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:197
 	for i < len(f.Fields) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:198
 		if f.Fields[i].Key == key {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:199
 			f.Fields[i].Validator = validator
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:200
 			return f
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:201
 		i = i + 1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:202
 	return f
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:209
 func (f *Form) Default(key string, value string) *Form {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:210
 	i := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:211
 	for i < len(f.Fields) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:212
 		if f.Fields[i].Key == key {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:213
 			f.Fields[i].Default = value
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:214
 			return f
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:215
 		i = i + 1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:216
 	return f
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:220
 func (f *Form) Run() error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:221
 	reader := bufio.NewReader(f.R)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:222
 	for _, field := range f.Fields {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:223
 		for {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:224
 			value, err := promptField(f.W, reader, field)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:225
 			if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:226
 				return err
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:227
 			if field.Validator != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:228
 				vErr := field.Validator(value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:229
 				if vErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:230
 					fmt.Fprintf(f.W, "  %v\n", vErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:231
 					continue
 				}
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:232
 			f.Values[field.Key] = value
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:233
 			break
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:234
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:237
 func (f *Form) String(key string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:238
 	return f.Values[key]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:242
 func (f *Form) Bool(key string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:243
 	return f.Values[key] == "true"
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:249
 func promptField(w *os.File, reader *bufio.Reader, field FormField) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:250
 	switch field.Kind {
 	case FieldKindText:
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:252
 		line, err_8 := readLineFrom(w, reader, field.Prompt)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:252
 		if err_8 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:252
 			return "", err_8
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:253
 		if line == "" && field.Default != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:254
 			return field.Default, nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:255
 		return line, nil
 	case FieldKindConfirm:
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:257
 		line, err_9 := readLineFrom(w, reader, fmt.Sprintf("%v[y/N]: ", field.Prompt))
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:257
 		if err_9 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:257
 			return "", err_9
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:258
 		lower := kukistring.ToLower(kukistring.TrimSpace(line))
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:259
 		if lower == "y" || lower == "yes" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:260
 			return "true", nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:261
 		return "false", nil
 	case FieldKindChoose:
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:263
 		return promptChoose(w, reader, field)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:264
 	return "", fmt.Errorf("unknown field kind: %v", field.Kind)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:267
 func promptChoose(w *os.File, reader *bufio.Reader, field FormField) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:268
 	if len(field.Options) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:269
 		return "", fmt.Errorf("no options for %v", field.Key)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:270
 	fmt.Fprintln(w, field.Prompt)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:271
 	for i, opt := range field.Options {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:272
 		fmt.Fprintf(w, "  %v) %v\n", i+1, opt)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:273
 	raw, err_10 := readLineFrom(w, reader, "Enter number (or q to quit): ")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:273
 	if err_10 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:273
 		return "", err_10
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:274
 	trimmed := kukistring.TrimSpace(raw)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:275
 	if trimmed == "" || trimmed == "q" || trimmed == "Q" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:276
 		return "", errors.New("cancelled")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:277
-	val, err_11 := strconv.Atoi(trimmed)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:277
+	val, err_11 := parse.Int(trimmed)
 	if err_11 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:277
 		return "", fmt.Errorf("invalid selection: %v", trimmed)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:278
 	if val < 1 || val > len(field.Options) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:279
 		return "", fmt.Errorf("selection out of range: %v", val)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:280
 	return field.Options[val-1], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:284
 func readLineFrom(w *os.File, reader *bufio.Reader, prompt string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:285
 	if prompt != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:286
 		fmt.Fprint(w, prompt)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:287
 	text, err_12 := reader.ReadString('\n')
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:287
 	if err_12 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:287
 		return "", err_12
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:288
 	return kukistring.TrimSpace(text), nil
 }

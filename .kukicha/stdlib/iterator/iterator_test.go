@@ -3,528 +3,355 @@
 package iterator_test
 
 import (
+	"fmt"
 	"iter"
 	"kukicha.org/kukicha/stdlib/iterator"
+	strpkg "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/test"
+	"strings"
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:11
 func TestValues(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:12
 	items := []int{10, 20, 30}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:13
 	result := iterator.Collect(iterator.Values(items))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:14
 	test.AssertEqual(t, len(result), 3)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:17
 func TestFilter(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:18
 	items := []int{1, 2, 3, 4, 5, 6}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:19
 	t.Run("keep even", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:20
 		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return n%2 == 0 }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:24
 		test.AssertEqual(t, len(result), 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:27
 	t.Run("keep none", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:28
 		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return n > 100 }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:29
 		test.AssertEqual(t, len(result), 0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:32
 	t.Run("keep all", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:33
 		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return n > 0 }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:34
 		test.AssertEqual(t, len(result), 6)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:38
-func TestReject(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:39
-	items := []int{1, 2, 3, 4, 5, 6}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:40
-	t.Run("drop even", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:41
-		result := iterator.Collect(iterator.Reject(iterator.Values(items), func(n int) bool { return n%2 == 0 }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:42
-		test.AssertEqual(t, len(result), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:43
-		test.AssertEqual(t, result[0], 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:44
-		test.AssertEqual(t, result[1], 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:45
-		test.AssertEqual(t, result[2], 5)
-	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:48
-	t.Run("drop none yields all", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:49
-		result := iterator.Collect(iterator.Reject(iterator.Values(items), func(n int) bool { return n > 100 }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:50
-		test.AssertEqual(t, len(result), 6)
-	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:53
-	t.Run("drop all yields none", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:54
-		result := iterator.Collect(iterator.Reject(iterator.Values(items), func(n int) bool { return n > 0 }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:55
-		test.AssertEqual(t, len(result), 0)
-	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:58
-	t.Run("is the complement of Filter", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:59
-		isEven := func(n int) bool { return n%2 == 0 }
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:60
-		kept := iterator.Collect(iterator.Filter(iterator.Values(items), isEven))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:61
-		dropped := iterator.Collect(iterator.Reject(iterator.Values(items), isEven))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:62
-		test.AssertEqual(t, len(kept)+len(dropped), len(items))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:63
-		test.AssertEqual(t, len(kept), 3)
-	})
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:67
 func TestTake(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:68
 	items := []int{1, 2, 3, 4, 5}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:69
 	t.Run("take 3", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:70
 		result := iterator.Collect(iterator.Take(iterator.Values(items), 3))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:71
 		test.AssertEqual(t, len(result), 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:74
 	t.Run("take more than available", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:75
 		result := iterator.Collect(iterator.Take(iterator.Values(items), 10))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:76
 		test.AssertEqual(t, len(result), 5)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:79
 	t.Run("take 0", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:80
 		result := iterator.Collect(iterator.Take(iterator.Values(items), 0))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:81
 		test.AssertEqual(t, len(result), 0)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:85
 func TestSkip(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:86
 	items := []int{1, 2, 3, 4, 5}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:87
 	t.Run("skip 2", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:88
 		result := iterator.Collect(iterator.Skip(iterator.Values(items), 2))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:89
 		test.AssertEqual(t, len(result), 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:92
 	t.Run("skip all", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:93
 		result := iterator.Collect(iterator.Skip(iterator.Values(items), 10))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:94
 		test.AssertEqual(t, len(result), 0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:97
 	t.Run("skip 0", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:98
 		result := iterator.Collect(iterator.Skip(iterator.Values(items), 0))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:99
 		test.AssertEqual(t, len(result), 5)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:103
 func addInts(acc int, n int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:104
 	return acc + n
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:106
 func TestReduce(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:107
 	items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:108
 	t.Run("sum", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:109
 		result := iterator.Reduce(iterator.Values(items), 0, addInts)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:110
 		test.AssertEqual(t, result, 10)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:113
 	t.Run("empty with initial", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:114
 		emptyList := []int{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:115
 		result := iterator.Reduce(iterator.Values(emptyList), 42, addInts)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:116
 		test.AssertEqual(t, result, 42)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:120
 func TestAny(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:121
 	items := []int{1, 2, 3, 4, 5}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:122
 	t.Run("has match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:123
 		result := iterator.Any(iterator.Values(items), func(n int) bool { return n == 3 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:124
 		test.AssertTrue(t, result)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:127
 	t.Run("no match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:128
 		result := iterator.Any(iterator.Values(items), func(n int) bool { return n > 100 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:129
 		test.AssertFalse(t, result)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:133
 func TestAll(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:134
 	items := []int{2, 4, 6, 8}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:135
 	t.Run("all match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:136
 		result := iterator.All(iterator.Values(items), func(n int) bool { return n%2 == 0 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:137
 		test.AssertTrue(t, result)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:140
 	t.Run("not all match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:141
 		mixed := []int{2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:142
 		result := iterator.All(iterator.Values(mixed), func(n int) bool { return n%2 == 0 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:143
 		test.AssertFalse(t, result)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:147
-func TestContains(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:148
-	items := []string{"a", "b", "c"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:149
-	t.Run("present", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:150
-		test.AssertTrue(t, iterator.Contains(iterator.Values(items), "b"))
-	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:153
-	t.Run("absent", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:154
-		test.AssertFalse(t, iterator.Contains(iterator.Values(items), "z"))
-	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:157
-	t.Run("empty sequence", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:158
-		none := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:159
-		test.AssertFalse(t, iterator.Contains(iterator.Values(none), "a"))
-	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:162
-	t.Run("stops consuming at the match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:163
-		test.AssertTrue(t, iterator.Contains(infiniteCounter(), 3))
-	})
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:169
 func TestUnique(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:170
 	t.Run("dedups keeping first-occurrence order", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:171
 		items := []int{1, 2, 1, 3, 2, 1}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:172
 		result := iterator.Collect(iterator.Unique(iterator.Values(items)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:173
 		test.AssertEqual(t, len(result), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:174
 		test.AssertEqual(t, result[0], 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:175
 		test.AssertEqual(t, result[1], 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:176
 		test.AssertEqual(t, result[2], 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:179
 	t.Run("empty sequence", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:180
 		none := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:181
 		result := iterator.Collect(iterator.Unique(iterator.Values(none)))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:182
 		test.AssertEqual(t, len(result), 0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:185
 	t.Run("streaming: bounded by Take on an infinite source", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:186
 		result := iterator.Collect(iterator.Take(iterator.Unique(infiniteCounter()), 4))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:187
 		test.AssertEqual(t, len(result), 4)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:190
 	t.Run("early exit stops the source", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:191
 		seen := []int{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:192
 		for v := range iterator.Unique(infiniteCounter()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:193
 			seen = append(seen, v)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:194
 			if len(seen) >= 3 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:195
 				break
 			}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:196
 		test.AssertEqual(t, len(seen), 3)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:200
 func TestFind(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:201
 	items := []int{10, 20, 30, 40}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:202
 	t.Run("found", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:203
 		val, err := iterator.Find(iterator.Values(items), func(n int) bool { return n > 15 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:204
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:205
 		test.AssertEqual(t, val, 20)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:208
 	t.Run("not found", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:209
 		_, err := iterator.Find(iterator.Values(items), func(n int) bool { return n > 100 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:210
 		test.AssertError(t, err)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:214
 func TestChain(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:215
 	items := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:216
 	t.Run("filter then take", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:217
 		result := iterator.Collect(iterator.Take(iterator.Filter(iterator.Values(items), func(n int) bool { return n%2 == 0 }), 2))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:222
 		test.AssertEqual(t, len(result), 2)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:225
 	t.Run("skip then filter", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:226
 		result := iterator.Collect(iterator.Filter(iterator.Skip(iterator.Values(items), 5), func(n int) bool { return n%2 == 0 }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:231
 		test.AssertEqual(t, len(result), 3)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:235
 func TestZip(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:236
 	left := []any{"a", "b", "c"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:237
 	right := []any{10, 20, 30}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:238
 	seconds := []any{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:239
 	for _, r := range iterator.Zip(iterator.Values(left), iterator.Values(right)) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:240
 		seconds = append(seconds, r)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:242
 	test.AssertEqual(t, len(seconds), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:243
 	test.AssertEqual(t, seconds[0], 10)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:244
 	test.AssertEqual(t, seconds[1], 20)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:245
 	test.AssertEqual(t, seconds[2], 30)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:247
 	t.Run("stops at shorter iterator", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:248
 		a := []any{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:249
 		b := []any{"x", "y"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:250
 		got := []any{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:251
 		for first := range iterator.Zip(iterator.Values(a), iterator.Values(b)) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:252
 			got = append(got, first)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:253
 		test.AssertEqual(t, len(got), 2)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:257
 func TestFindOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:258
 	items := []int{10, 20, 30}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:259
 	t.Run("found returns match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:260
 		val := iterator.FindOr(iterator.Values(items), func(n int) bool { return n > 15 }, -1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:261
 		test.AssertEqual(t, val, 20)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:264
 	t.Run("absent returns default", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:265
 		val := iterator.FindOr(iterator.Values(items), func(n int) bool { return n > 100 }, -1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:266
 		test.AssertEqual(t, val, -1)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:270
 func expandInt(n int) iter.Seq[int] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:271
 	return iterator.Values([]int{n, n * 10})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:273
 func TestFlatMap(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:274
 	items := []int{1, 2, 3}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:276
 	result := iterator.Collect(iterator.FlatMap(iterator.Values(items), expandInt))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:280
 	test.AssertEqual(t, len(result), 6)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:281
 	test.AssertEqual(t, result[0], 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:282
 	test.AssertEqual(t, result[1], 10)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:283
 	test.AssertEqual(t, result[2], 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:284
 	test.AssertEqual(t, result[3], 20)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:288
 func infiniteCounter() iter.Seq[int] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:289
 	return func(yield func(int) bool) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:290
 		n := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:291
 		for {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:292
 			if !yield(n) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:293
 				return
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:294
 			n++
 		}
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:296
 func TestInfiniteIteratorBoundedByTake(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:297
 	first5 := iterator.Collect(iterator.Take(infiniteCounter(), 5))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:300
 	test.AssertEqual(t, len(first5), 5)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:301
 	test.AssertEqual(t, first5[0], 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:302
 	test.AssertEqual(t, first5[4], 4)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:305
+func TestLines(t *testing.T) {
+	rd := strings.NewReader("alpha\nbeta\ngamma\n")
+	lines := iterator.Collect(iterator.Lines(rd))
+	test.AssertEqual(t, lines, []string{"alpha", "beta", "gamma"})
+	t.Run("last line without trailing newline", func(t *testing.T) {
+		rd2 := strings.NewReader("one\ntwo")
+		got := iterator.Collect(iterator.Lines(rd2))
+		test.AssertEqual(t, got, []string{"one", "two"})
+	})
+	t.Run("empty input", func(t *testing.T) {
+		rd3 := strings.NewReader("")
+		got := iterator.Collect(iterator.Lines(rd3))
+		test.AssertEqual(t, len(got), 0)
+	})
+	t.Run("lazy: early exit stops reading", func(t *testing.T) {
+		rd4 := strings.NewReader("first\nsecond\nthird\n")
+		first, err := iterator.Nth(iterator.Lines(rd4), 0)
+		test.AssertNoError(t, err)
+		test.AssertEqual(t, first, "first")
+	})
+	t.Run("drops the trailing \\r of CRLF input", func(t *testing.T) {
+		rd5 := strings.NewReader("win\r\nlines\r\n")
+		got := iterator.Collect(iterator.Lines(rd5))
+		test.AssertEqual(t, got, []string{"win", "lines"})
+	})
+	t.Run("long lines pass the default scanner limit", func(t *testing.T) {
+		long := strpkg.Repeat("x", 200*1024)
+		rd6 := strings.NewReader(fmt.Sprintf("%v\nshort\n", long))
+		got := iterator.Collect(iterator.Lines(rd6))
+		test.AssertEqual(t, len(got), 2)
+		test.AssertEqual(t, len(got[0]), 200*1024)
+	})
+}
+
 func TestChunk(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:306
 	items := []int{1, 2, 3, 4, 5, 6, 7}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:307
 	chunks := iterator.Collect(iterator.Chunk(iterator.Values(items), 3))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:311
 	test.AssertEqual(t, len(chunks), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:312
 	test.AssertEqual(t, len(chunks[0]), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:313
 	test.AssertEqual(t, len(chunks[1]), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:314
 	test.AssertEqual(t, len(chunks[2]), 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:315
 	test.AssertEqual(t, chunks[2][0], 7)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:320
 func TestZipLazyInfinite(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:321
 	t.Run("infinite seq1 and finite seq2", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:322
 		finite := []string{"a", "b", "c"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:323
 		pairs := []int{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:324
 		for n := range iterator.Zip(infiniteCounter(), iterator.Values(finite)) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:325
 			pairs = append(pairs, n)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:326
 		test.AssertEqual(t, len(pairs), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:327
 		test.AssertEqual(t, pairs[0], 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:328
 		test.AssertEqual(t, pairs[2], 2)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:331
 	t.Run("finite seq1 and infinite seq2", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:332
 		finite := []string{"x", "y"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:333
 		pairs := []int{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:334
 		for _, n := range iterator.Zip(iterator.Values(finite), infiniteCounter()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:335
 			pairs = append(pairs, n)
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:336
 		test.AssertEqual(t, len(pairs), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:337
 		test.AssertEqual(t, pairs[0], 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:338
 		test.AssertEqual(t, pairs[1], 1)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:341
 	t.Run("infinite seq1 and infinite seq2 with early break", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:342
 		count := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:343
 		for n1, n2 := range iterator.Zip(infiniteCounter(), infiniteCounter()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:344
 			if count >= 4 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:345
 				break
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:346
 			test.AssertEqual(t, n1, n2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:347
 			count++
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:348
 		test.AssertEqual(t, count, 4)
 	})
+}
+
+func TestNth(t *testing.T) {
+	items := []int{10, 20, 30}
+	t.Run("first", func(t *testing.T) {
+		got, err := iterator.Nth(iterator.Values(items), 0)
+		test.AssertNoError(t, err)
+		test.AssertEqual(t, got, 10)
+	})
+	t.Run("middle", func(t *testing.T) {
+		got, err := iterator.Nth(iterator.Values(items), 1)
+		test.AssertNoError(t, err)
+		test.AssertEqual(t, got, 20)
+	})
+	t.Run("out of range", func(t *testing.T) {
+		_, err := iterator.Nth(iterator.Values(items), 5)
+		test.AssertError(t, err)
+	})
+	t.Run("negative n", func(t *testing.T) {
+		_, err := iterator.Nth(iterator.Values(items), -1)
+		test.AssertError(t, err)
+	})
+	t.Run("empty sequence", func(t *testing.T) {
+		_, err := iterator.Nth(iterator.Values([]int{}), 0)
+		test.AssertError(t, err)
+	})
+}
+
+func TestNthOr(t *testing.T) {
+	items := []int{10, 20, 30}
+	t.Run("in range", func(t *testing.T) {
+		got := iterator.NthOr(iterator.Values(items), 2, -1)
+		test.AssertEqual(t, got, 30)
+	})
+	t.Run("out of range falls back", func(t *testing.T) {
+		got := iterator.NthOr(iterator.Values(items), 5, -1)
+		test.AssertEqual(t, got, -1)
+	})
+	t.Run("negative n falls back", func(t *testing.T) {
+		got := iterator.NthOr(iterator.Values(items), -1, -1)
+		test.AssertEqual(t, got, -1)
+	})
+}
+
+func TestNthLazyInfinite(t *testing.T) {
+	got, err := iterator.Nth(infiniteCounter(), 4)
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, got, 4)
 }

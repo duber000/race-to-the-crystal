@@ -8,269 +8,173 @@ import (
 	"slices"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:35
 type Set[T comparable] struct {
 	items map[T]bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:39
 func New[T comparable]() *Set[T] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:40
 	return &Set[T]{items: map[T]bool{}}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:45
 func From[T comparable](items []T) *Set[T] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:46
 	s := New[T]()
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:47
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:48
 		Add(s, item)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:49
 	return s
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:52
 func Add[T comparable](s *Set[T], item T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:53
 	s.items[item] = true
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:58
 func InsertAll[T comparable](s *Set[T], items []T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:59
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:60
 		s.items[item] = true
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:63
 func Remove[T comparable](s *Set[T], item T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:64
 	delete(s.items, item)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:67
 func Contains[T comparable](s *Set[T], item T) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:68
 	_, present := s.items[item]
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:69
 	return present
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:73
 func ContainsAll[T comparable](s *Set[T], items []T) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:74
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:75
 		if !Contains(s, item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:76
 			return false
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:77
 	return true
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:80
 func Len[T comparable](s *Set[T]) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:81
 	return len(s.items)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:84
 func IsEmpty[T comparable](s *Set[T]) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:85
 	return len(s.items) == 0
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:90
 func ToList[T comparable](s *Set[T]) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:91
 	result := make([]T, 0, len(s.items))
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:92
 	for k := range s.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:93
 		result = append(result, k)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:94
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:98
 func ToSlice[T comparable](s *Set[T]) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:99
 	return ToList(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:105
 func ToSortedList[T cmp.Ordered](s *Set[T]) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:106
 	result := ToList(s)
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:107
 	slices.Sort(result)
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:108
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:114
 func All[T comparable](s *Set[T]) iter.Seq[T] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:115
 	return func(yield func(T) bool) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:116
 		for k := range s.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:117
 			if !yield(k) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:118
 				return
 			}
 		}
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:124
 func Has[T comparable](s *Set[T], item T) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:125
 	return Contains(s, item)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:129
 func Size[T comparable](s *Set[T]) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:130
 	return Len(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:133
 func Union[T comparable](s *Set[T], other *Set[T]) *Set[T] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:134
 	result := New[T]()
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:135
 	for k := range s.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:136
 		result.items[k] = true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:137
 	for k := range other.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:138
 		result.items[k] = true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:139
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:144
 func Intersection[T comparable](s *Set[T], other *Set[T]) *Set[T] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:145
 	result := New[T]()
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:146
 	for k := range s.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:147
 		if Contains(other, k) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:148
 			result.items[k] = true
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:149
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:153
 func Difference[T comparable](s *Set[T], other *Set[T]) *Set[T] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:154
 	result := New[T]()
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:155
 	for k := range s.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:156
 		if !Contains(other, k) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:157
 			result.items[k] = true
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:158
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:162
 func SymmetricDifference[T comparable](s *Set[T], other *Set[T]) *Set[T] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:163
 	result := New[T]()
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:164
 	for k := range s.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:165
 		if !Contains(other, k) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:166
 			result.items[k] = true
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:167
 	for k := range other.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:168
 		if !Contains(s, k) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:169
 			result.items[k] = true
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:170
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:175
 func Clone[T comparable](s *Set[T]) *Set[T] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:176
 	result := New[T]()
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:177
 	for k := range s.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:178
 		result.items[k] = true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:179
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:183
 func Subset[T comparable](s *Set[T], super *Set[T]) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:184
 	for k := range s.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:185
 		if !Contains(super, k) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:186
 			return false
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:187
 	return true
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:191
 func Superset[T comparable](s *Set[T], sub *Set[T]) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:192
 	return Subset(sub, s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:195
 func Equal[T comparable](s *Set[T], other *Set[T]) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:196
 	if len(s.items) != len(other.items) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:197
 		return false
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:198
 	return Subset(s, other)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:202
 func Intersects[T comparable](s *Set[T], other *Set[T]) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:203
 	for k := range s.items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:204
 		if Contains(other, k) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:205
 			return true
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/set/set.kuki:206
 	return false
 }

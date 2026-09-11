@@ -70,7 +70,7 @@ func Run on s: reference Simulation(play: func(reference LearnerAPI)) Result
             play(reference of api)
             if s.game.Phase() isnt enums.ENDED
                 if s.game.CurrentTurnPlayerID() equals s.learner_id
-                    _ = api.Done()
+                    api.Done()
         else
             ai_pid := s.game.CurrentTurnPlayerID()
             s.run_ai_turn(ai_pid, reference of api)
@@ -78,7 +78,7 @@ func Run on s: reference Simulation(play: func(reference LearnerAPI)) Result
             # Safety: if the AI failed to advance the turn, force it to end.
             if s.game.Phase() equals enums.PLAYING
                 if s.game.CurrentTurnPlayerID() equals ai_pid
-                    _ = gamepkg.ExecuteAction(gamepkg.NewEndTurnAction(), s.game, ai_pid)
+                    gamepkg.ExecuteAction(gamepkg.NewEndTurnAction(), s.game, ai_pid)
 
     return s.finish(reference of api, turn)
 

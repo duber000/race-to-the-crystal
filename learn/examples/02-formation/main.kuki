@@ -46,7 +46,7 @@ func MarchToCrystal(api: reference learn.LearnerAPI)
         else if pos.Y > 12
             dy = -1
         if dx isnt 0 or dy isnt 0
-            _ = api.Move(tid, pos.X + dx, pos.Y + dy)
+            api.Move(tid, pos.X + dx, pos.Y + dy)
 
 func PlayTurn(api: reference learn.LearnerAPI)
     api.Say("--- Turn {api.TurnNumber()} ---")

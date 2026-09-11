@@ -12,101 +12,57 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:15
 func writeTempFile(t *testing.T, content string) (*os.File, string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:16
 	f, err_1 := os.CreateTemp("", "kuki-input-test-*.txt")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:16
 	if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:16
 		panic("CreateTemp failed")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:17
 	_, _ = fmt.Fprint(f, content)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:18
 	_ = f.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:19
 	g, err_2 := os.Open(f.Name())
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:19
 	if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:19
 		panic("Open failed")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:20
 	return g, f.Name()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:25
 func discardWriter(t *testing.T) *os.File {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:26
 	f, err_3 := os.OpenFile("/dev/null", os.O_WRONLY, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:26
 	if err_3 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:26
-		//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:27
 		return os.Stdout
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:29
 	return f
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:33
 func TestFormHappyPath(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:34
 	r, path := writeTempFile(t, "alice\ny\n2\n")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:35
 	defer os.Remove(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:36
 	defer r.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:37
 	w := discardWriter(t)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:39
 	f := input.NewForm()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:40
 	f.R = r
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:41
 	f.W = w
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:42
 	f.Text("name", "name? ")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:43
 	f.Confirm("ok", "ok? ")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:44
 	f.Choose("repo", "repo?", []string{"api", "web", "infra"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:46
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:46
 	err_4 := f.Run()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:46
 	if err_4 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:46
 		panic("Run failed")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:48
 	test.AssertEqual(t, f.String("name"), "alice")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:49
 	test.AssertTrue(t, f.Bool("ok"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:50
 	test.AssertEqual(t, f.String("repo"), "web")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:54
 func TestFormValidatorRetries(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:56
 	r, path := writeTempFile(t, "\nbob\n")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:57
 	defer os.Remove(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:58
 	defer r.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:59
 	w := discardWriter(t)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:61
 	f := input.NewForm()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:62
 	f.R = r
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:63
 	f.W = w
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:64
 	f.Text("name", "name? ")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:65
 	f.Validate("name", func(s string) error {
 		return func() error {
 			if s == "" {
@@ -116,221 +72,132 @@ func TestFormValidatorRetries(t *testing.T) {
 			}
 		}()
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:67
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:67
 	err_5 := f.Run()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:67
 	if err_5 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:67
 		panic("Run failed")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:68
 	test.AssertEqual(t, f.String("name"), "bob")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:72
 func TestFormConfirmFalse(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:73
 	r, path := writeTempFile(t, "n\n")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:74
 	defer os.Remove(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:75
 	defer r.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:76
 	w := discardWriter(t)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:78
 	f := input.NewForm()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:79
 	f.R = r
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:80
 	f.W = w
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:81
 	f.Confirm("agree", "ok? ")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:82
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:82
 	err_6 := f.Run()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:82
 	if err_6 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:82
 		panic("Run failed")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:83
 	test.AssertFalse(t, f.Bool("agree"))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:87
 func TestFormDefault(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:89
 	r, path := writeTempFile(t, "\noverride\n")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:90
 	defer os.Remove(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:91
 	defer r.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:92
 	w := discardWriter(t)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:94
 	f := input.NewForm()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:95
 	f.R = r
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:96
 	f.W = w
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:97
 	f.Text("host", "host: ")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:98
 	f.Default("host", "localhost")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:99
 	f.Text("port", "port: ")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:100
 	f.Default("port", "8080")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:102
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:102
 	err_7 := f.Run()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:102
 	if err_7 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:102
 		panic("Run failed")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:103
 	test.AssertEqual(t, f.String("host"), "localhost")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:104
 	test.AssertEqual(t, f.String("port"), "override")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:108
 func TestFormChooseCancel(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:109
 	r, path := writeTempFile(t, "q\n")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:110
 	defer os.Remove(path)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:111
 	defer r.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:112
 	w := discardWriter(t)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:114
 	f := input.NewForm()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:115
 	f.R = r
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:116
 	f.W = w
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:117
 	f.Choose("repo", "repo?", []string{"a", "b"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:119
 	err := f.Run()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:120
 	test.AssertNotEmpty(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:121
 	test.AssertTrue(t, kukistring.Contains(fmt.Sprintf("%v", err), "cancel"))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:124
 type ReadLineCase struct {
 	name string
 	want bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:128
 func TestReadLine(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:129
 	cases := []ReadLineCase{ReadLineCase{name: "function exists", want: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:131
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:132
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:133
 			test.AssertNoError(t, nil)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:140
 type ConfirmCase struct {
 	name string
 	want bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:144
 func TestConfirm(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:145
 	cases := []ConfirmCase{ConfirmCase{name: "function exists", want: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:147
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:148
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:149
 			test.AssertNoError(t, nil)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:156
 type ChooseCase struct {
 	name string
 	want bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:160
 func TestChoose(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:161
 	cases := []ChooseCase{ChooseCase{name: "function exists", want: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:163
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:164
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:165
 			test.AssertNoError(t, nil)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:171
 func withStdin(t *testing.T, content string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:172
 	r, path := writeTempFile(t, content)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:173
 	saved := os.Stdin
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:174
 	t.Cleanup(func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:175
 		os.Stdin = saved
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:176
 		_ = r.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:177
 		_ = os.Remove(path)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:180
 	os.Stdin = r
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:182
 func TestChooseValueReturnsTheOptionNotTheIndex(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:183
 	withStdin(t, "2\n")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:184
 	picked, err := input.ChooseValue("pick:", []string{"first", "second", "third"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:185
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:186
 	test.AssertEqual(t, picked, "second")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:188
 func TestChooseValueGenericOverInts(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:189
 	withStdin(t, "1\n")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:190
 	picked, err := input.ChooseValue("port?", []int{8080, 9090})
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:191
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:192
 	test.AssertEqual(t, picked, 8080)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:194
 func TestChooseValueCancel(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:195
 	withStdin(t, "q\n")
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:196
 	_, err := input.ChooseValue("pick:", []string{"a", "b"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:197
 	test.AssertErrorIs(t, err, input.ErrCanceled)
 }

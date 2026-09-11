@@ -2,9 +2,18 @@
 
 package llm
 
-import "kukicha.org/kukicha/stdlib/content"
+import (
+	"kukicha.org/kukicha/stdlib/content"
+	"kukicha.org/kukicha/stdlib/env"
+)
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:32
+var providerTable map[string]Provider = map[string]Provider{"openai": Provider{EnvKey: "OPENAI_API_KEY", BaseURL: "https://api.openai.com"}, "anthropic": Provider{EnvKey: "ANTHROPIC_API_KEY", BaseURL: "https://api.anthropic.com"}, "mistral": Provider{EnvKey: "MISTRAL_API_KEY", BaseURL: "https://api.mistral.ai"}, "groq": Provider{EnvKey: "GROQ_API_KEY", BaseURL: "https://api.groq.com/openai"}, "together": Provider{EnvKey: "TOGETHER_API_KEY", BaseURL: "https://api.together.xyz"}, "deepseek": Provider{EnvKey: "DEEPSEEK_API_KEY", BaseURL: "https://api.deepseek.com"}, "xai": Provider{EnvKey: "XAI_API_KEY", BaseURL: "https://api.x.ai"}, "voyage": Provider{EnvKey: "VOYAGE_API_KEY", BaseURL: "https://api.voyageai.com"}, "cohere": Provider{EnvKey: "COHERE_API_KEY", BaseURL: "https://api.cohere.com"}, "ollama": Provider{EnvKey: "", BaseURL: "http://localhost:11434"}, "fastflowlm": Provider{EnvKey: "", BaseURL: "http://localhost:52625"}, "flm": Provider{EnvKey: "", BaseURL: "http://localhost:52625"}}
+
+type Provider struct {
+	EnvKey  string
+	BaseURL string
+}
+
 type StreamEvent interface{ isStreamEvent() }
 
 type Delta struct {
@@ -44,5 +53,42 @@ type Error struct {
 
 func (Error) isStreamEvent() {}
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:53
 type Content = content.Content
+
+func ProviderDefaults(provider string) (string, string) {
+	p, ok := providerTable[provider]
+	if !ok {
+		return "", ""
+	}
+	return p.EnvKey, p.BaseURL
+}
+
+func KnownProvider(provider string) bool {
+	return func() bool { _, _ok := providerTable[provider]; return _ok }()
+}
+
+func ResolveAPIKey(provider string, apiKey string) string {
+	if apiKey != "" {
+		return apiKey
+	}
+	envKey, _ := ProviderDefaults(provider)
+	if envKey != "" {
+		return env.GetOr(envKey, "")
+	}
+	return env.GetOr("LLM_API_KEY", "")
+}
+
+func ResolveBaseURL(provider string, baseURL string) string {
+	if baseURL != "" {
+		return baseURL
+	}
+	_, defaultURL := ProviderDefaults(provider)
+	if defaultURL != "" {
+		return defaultURL
+	}
+	envURL := env.GetOr("LLM_BASE_URL", "")
+	if envURL != "" {
+		return envURL
+	}
+	return "http://localhost:8000"
+}

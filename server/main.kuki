@@ -4,6 +4,7 @@ import "net/http"
 import "os"
 import "path/filepath"
 import "stdlib/env"
+import "stdlib/errors" as errs
 import "stdlib/http" as httphelper
 import "stdlib/log"
 import "stdlib/signal"
@@ -39,7 +40,7 @@ func NewGameServer(config: ServerConfig) (GameServer, error)
     if config.jwt_secret equals ""
         sk, err := GenerateSecretKey()
         if err isnt empty
-            return GameServer{}, error "failed to generate secret key: {err}"
+            return GameServer{}, errs.Wrap(err, "failed to generate secret key")
         config.jwt_secret = sk
 
     gs := GameServer{

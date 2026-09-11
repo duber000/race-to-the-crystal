@@ -37,7 +37,7 @@ func Step on s: reference Strategist(api: reference learn.LearnerAPI, tid: int)
     else if pos.Y > s.target_y
         dy = -1
     if dx isnt 0 or dy isnt 0
-        _ = api.Move(tid, pos.X + dx, pos.Y + dy)
+        api.Move(tid, pos.X + dx, pos.Y + dy)
         s.move_count = s.move_count + 1
 
 func PlayTurn(api: reference learn.LearnerAPI)
@@ -50,13 +50,13 @@ func PlayTurn(api: reference learn.LearnerAPI)
     api.Say(bot.Describe())
 
     if len(api.MyTokens()) equals 0
-        _ = api.Place(10, 2, 2)
+        api.Place(10, 2, 2)
     for tid in api.MyTokens()
         bot.Step(api, tid)
 
     api.Memo("bot_name", bot.name)
     api.Memo("bot_moves", "{bot.move_count}")
-    _ = api.Done()
+    api.Done()
 
 func main()
     sim := learn.NewSimulation(learn.NewConfig())

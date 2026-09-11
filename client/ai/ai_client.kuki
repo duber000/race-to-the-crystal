@@ -246,5 +246,4 @@ func main()
         |> cli.Version("1.0.0")
         |> cli.WithCommands(poll_cmd, sse_cmd)
 
-    cli.Run(app) onerr
-        cli.Fatal("race-ai-client: {error}")
+    cli.Run(app)

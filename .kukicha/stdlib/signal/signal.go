@@ -12,7 +12,6 @@ import (
 	"syscall"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:26
 type Signal string
 
 const (
@@ -60,122 +59,75 @@ func (e Signal) String() string {
 	return string(e)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:34
 func toOSSignal(s Signal) os.Signal {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:35
 	if s == SignalTerminate {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:36
 		return syscall.SIGTERM
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:37
 	if s == SignalHangup {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:38
 		return syscall.SIGHUP
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:39
 	if s == SignalUserDefined1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:40
 		return syscall.SIGUSR1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:41
 	if s == SignalUserDefined2 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:42
 		return syscall.SIGUSR2
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:43
 	return os.Interrupt
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:48
 func WaitFor(sigs ...Signal) (Signal, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:49
 	if len(sigs) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:50
 		return SignalInterrupt, errors.New("signal.WaitFor needs at least one signal")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:51
 	osSigs := []os.Signal{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:52
 	for _, s := range sigs {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:53
 		osSigs = append(osSigs, toOSSignal(s))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:54
 	ch := make(chan os.Signal, 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:55
 	gosignal.Notify(ch, osSigs...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:56
 	defer gosignal.Stop(ch)
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:57
 	received := <-ch
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:58
 	return fromOSSignal(received, sigs), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:63
 func fromOSSignal(osSig os.Signal, candidates []Signal) Signal {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:64
 	for _, c := range candidates {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:65
 		if toOSSignal(c) == osSig {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:66
 			return c
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:67
 	return SignalInterrupt
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:74
 func OnSignal(sig Signal, handler func()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:75
 	if handler == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:76
 		return
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:77
 	ch := make(chan os.Signal, 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:78
 	gosignal.Notify(ch, toOSSignal(sig))
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:79
 	go func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:80
 		<-ch
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:81
 		gosignal.Stop(ch)
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:82
 		handler()
 	}()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:88
 func OnInterrupt(handler func()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:89
 	OnSignal(SignalInterrupt, handler)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:98
 func Context(sigs ...Signal) (context.Context, func()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:99
 	if len(sigs) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:100
 		sigs = []Signal{SignalInterrupt, SignalTerminate}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:101
 	osSigs := []os.Signal{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:102
 	for _, s := range sigs {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:103
 		osSigs = append(osSigs, toOSSignal(s))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:104
 	return gosignal.NotifyContext(context.Background(), osSigs...)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:115
 func Handle(sigs ...Signal) ctxpkg.Handle {
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:116
 	c, stop := Context(sigs...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/signal/signal.kuki:117
 	return ctxpkg.Handle{Ctx: c, Cancel: stop}
 }

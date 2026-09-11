@@ -11,1284 +11,784 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:12
 type SliceNCase struct {
 	name    string
 	n       int
 	wantLen int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:18
 func TestTake(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:19
 	items := []string{"a", "b", "c", "d", "e"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:20
 	cases := []SliceNCase{SliceNCase{name: "3 elements", n: 3, wantLen: 3}, SliceNCase{name: "n > length", n: 10, wantLen: 5}, SliceNCase{name: "n=0", n: 0, wantLen: 0}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:26
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:27
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:28
 			result := slice.Take(items, tc.n)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:29
 			test.AssertEqual(t, len(result), tc.wantLen)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:32
 	t.Run("correct order", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:33
 		result := slice.Take(items, 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:34
 		test.AssertEqual(t, result[0], "a")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:35
 		test.AssertEqual(t, result[2], "c")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:39
 func TestTakeLast(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:40
 	items := []string{"a", "b", "c", "d", "e"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:41
 	cases := []SliceNCase{SliceNCase{name: "2 elements", n: 2, wantLen: 2}, SliceNCase{name: "n > length", n: 10, wantLen: 5}, SliceNCase{name: "n=0", n: 0, wantLen: 0}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:47
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:48
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:49
 			result := slice.TakeLast(items, tc.n)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:50
 			test.AssertEqual(t, len(result), tc.wantLen)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:53
 	t.Run("correct elements", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:54
 		result := slice.TakeLast(items, 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:55
 		test.AssertEqual(t, result[0], "d")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:56
 		test.AssertEqual(t, result[1], "e")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:60
+func TestClone(t *testing.T) {
+	items := []string{"a", "b", "c"}
+	t.Run("same elements", func(t *testing.T) {
+		result := slice.Clone(items)
+		test.AssertEqual(t, len(result), 3)
+		test.AssertEqual(t, result[0], "a")
+		test.AssertEqual(t, result[2], "c")
+	})
+	t.Run("independent backing array", func(t *testing.T) {
+		result := slice.Clone(items)
+		result[0] = "x"
+		test.AssertEqual(t, items[0], "a")
+		test.AssertEqual(t, result[0], "x")
+	})
+	t.Run("appends do not disturb the input", func(t *testing.T) {
+		view := slice.Take(items, 2)
+		grown := slice.Clone(view)
+		grown = append(grown, "z")
+		test.AssertEqual(t, len(items), 3)
+		test.AssertEqual(t, items[2], "c")
+	})
+	t.Run("empty input yields empty", func(t *testing.T) {
+		source := []string{}
+		result := slice.Clone(source)
+		test.AssertEqual(t, len(result), 0)
+	})
+}
+
 func TestSkip(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:61
 	items := []string{"a", "b", "c", "d", "e"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:62
 	cases := []SliceNCase{SliceNCase{name: "skip 2", n: 2, wantLen: 3}, SliceNCase{name: "n >= length", n: 10, wantLen: 0}, SliceNCase{name: "n=0", n: 0, wantLen: 5}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:68
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:69
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:70
 			result := slice.Skip(items, tc.n)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:71
 			test.AssertEqual(t, len(result), tc.wantLen)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:74
 	t.Run("first element after skip 2", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:75
 		result := slice.Skip(items, 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:76
 		test.AssertEqual(t, result[0], "c")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:80
 func TestSkipLast(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:81
 	items := []string{"a", "b", "c", "d", "e"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:82
 	cases := []SliceNCase{SliceNCase{name: "skip last 2", n: 2, wantLen: 3}, SliceNCase{name: "n >= length", n: 10, wantLen: 0}, SliceNCase{name: "n=0", n: 0, wantLen: 5}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:88
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:89
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:90
 			result := slice.SkipLast(items, tc.n)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:91
 			test.AssertEqual(t, len(result), tc.wantLen)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:94
 	t.Run("last element after skip last 2", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:95
 		result := slice.SkipLast(items, 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:96
 		test.AssertEqual(t, result[2], "c")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:105
 func TestViewFamilyAliasPins(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:106
 	t.Run("index writes through Skip are visible in the original", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:107
 		items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:108
 		view := slice.Skip(items, 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:109
 		view[0] = 99
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:110
 		test.AssertEqual(t, items[2], 99)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:113
 	t.Run("index writes through TakeLast are visible in the original", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:114
 		items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:115
 		view := slice.TakeLast(items, 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:116
 		view[0] = 99
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:117
 		test.AssertEqual(t, items[2], 99)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:120
 	t.Run("index writes through SkipLast are visible in the original", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:121
 		items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:122
 		view := slice.SkipLast(items, 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:123
 		view[0] = 99
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:124
 		test.AssertEqual(t, items[0], 99)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:127
 	t.Run("Chunk shares storage with the input", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:128
 		items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:129
 		chunks := slice.Chunk(items, 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:130
 		chunks[0][0] = 99
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:131
 		test.AssertEqual(t, items[0], 99)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:134
 	t.Run("index writes through PopFirst's rest are visible in the original", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:135
 		items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:136
 		_, rest, err_1 := slice.PopFirst(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:136
 		if err_1 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:136
-			//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:137
 			t.Errorf("%v", err_1)
-			//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:138
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:140
 		rest[0] = 99
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:141
 		test.AssertEqual(t, items[1], 99)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:144
 	t.Run("append to Take's view clobbers the original", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:145
 		items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:146
 		head := slice.Take(items, 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:147
 		head = append(head, 99)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:148
 		test.AssertEqual(t, items[1], 99)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:151
 	t.Run("append to PopLast's rest clobbers the original", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:152
 		items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:153
 		last, rest, err_2 := slice.PopLast(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:153
 		if err_2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:153
-			//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:154
 			t.Errorf("%v", err_2)
-			//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:155
 			return
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:157
 		test.AssertEqual(t, last, 4)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:158
 		rest = append(rest, 99)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:159
 		test.AssertEqual(t, items[3], 99)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:162
 	t.Run("items = Take(items, 1) overlap — append is visible through another view", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:163
 		items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:164
 		alias := slice.Skip(items, 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:165
 		items = slice.Take(items, 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:166
 		items = append(items, 99)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:167
 		test.AssertEqual(t, alias[0], 99)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:170
 	t.Run("full Take returns the input itself", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:171
 		items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:172
 		full := slice.Take(items, 10)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:173
 		full[0] = 99
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:174
 		test.AssertEqual(t, items[0], 99)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:177
 	t.Run("empty Take result is fresh — appending leaves the original alone", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:178
 		items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:179
 		none := slice.Take(items, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:180
 		none = append(none, 42)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:181
 		test.AssertEqual(t, len(none), 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:182
 		test.AssertEqual(t, len(items), 4)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:186
 func TestReverse(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:187
 	items := []string{"a", "b", "c"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:188
 	result := slice.Reverse(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:190
 	t.Run("length preserved", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:191
 		test.AssertEqual(t, len(result), 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:194
 	t.Run("reversed order", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:195
 		test.AssertEqual(t, result[0], "c")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:196
 		test.AssertEqual(t, result[1], "b")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:197
 		test.AssertEqual(t, result[2], "a")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:200
 	t.Run("original unchanged", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:201
 		test.AssertEqual(t, items[0], "a")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:205
 func TestUnique(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:206
 	items := []string{"a", "b", "a", "c", "b", "d"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:207
 	result := slice.Unique(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:209
 	t.Run("removes duplicates", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:210
 		test.AssertEqual(t, len(result), 4)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:213
 	t.Run("preserves order", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:214
 		test.AssertEqual(t, result[0], "a")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:215
 		test.AssertEqual(t, result[1], "b")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:216
 		test.AssertEqual(t, result[2], "c")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:217
 		test.AssertEqual(t, result[3], "d")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:221
 type ContainsCase struct {
 	name   string
 	needle string
 	want   bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:227
 func TestContains(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:228
 	items := []string{"apple", "banana", "cherry"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:229
 	cases := []ContainsCase{ContainsCase{name: "banana present", needle: "banana", want: true}, ContainsCase{name: "grape absent", needle: "grape", want: false}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:234
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:235
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:236
 			test.AssertEqual(t, slice.Contains(items, tc.needle), tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:240
 type IndexOfCase struct {
 	name   string
 	needle string
 	want   int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:246
 func TestIndexOf(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:247
 	items := []string{"a", "b", "c"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:248
 	cases := []IndexOfCase{IndexOfCase{name: "b at 1", needle: "b", want: 1}, IndexOfCase{name: "a at 0", needle: "a", want: 0}, IndexOfCase{name: "z not found", needle: "z", want: -1}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:254
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:255
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:256
 			test.AssertEqual(t, slice.IndexOf(items, tc.needle), tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:260
 func TestGet(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:261
 	items := []string{"a", "b", "c"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:263
 	t.Run("valid index", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:264
 		val, err := slice.Get(items, 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:265
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:266
 		test.AssertEqual(t, val, "b")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:269
 	t.Run("negative index -1", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:270
 		last, err := slice.Get(items, -1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:271
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:272
 		test.AssertEqual(t, last, "c")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:275
 	t.Run("out of bounds returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:276
 		_, outErr := slice.Get(items, 10)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:277
 		test.AssertError(t, outErr)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:280
 	t.Run("empty slice returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:281
 		emptySlice := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:282
 		_, emptyErr := slice.Get(emptySlice, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:283
 		test.AssertError(t, emptyErr)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:287
 func TestGetOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:288
 	items := []string{"a", "b", "c"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:290
 	t.Run("valid index", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:291
 		test.AssertEqual(t, slice.GetOr(items, 1, "default"), "b")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:294
 	t.Run("out of bounds returns default", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:295
 		test.AssertEqual(t, slice.GetOr(items, 10, "default"), "default")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:298
 	t.Run("negative index -1", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:299
 		test.AssertEqual(t, slice.GetOr(items, -1, "default"), "c")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:302
 	t.Run("empty slice returns default", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:303
 		emptySlice := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:304
 		test.AssertEqual(t, slice.GetOr(emptySlice, 0, "default"), "default")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:308
 func TestFirstOrLastOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:309
 	items := []string{"x", "y", "z"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:310
 	emptySlice := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:312
 	t.Run("FirstOr/non-empty", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:313
 		test.AssertEqual(t, slice.FirstOr(items, "default"), "x")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:316
 	t.Run("FirstOr/empty uses default", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:317
 		test.AssertEqual(t, slice.FirstOr(emptySlice, "default"), "default")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:320
 	t.Run("LastOr/non-empty", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:321
 		test.AssertEqual(t, slice.LastOr(items, "default"), "z")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:324
 	t.Run("LastOr/empty uses default", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:325
 		test.AssertEqual(t, slice.LastOr(emptySlice, "default"), "default")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:329
 func TestFirstLast(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:330
 	items := []string{"x", "y", "z"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:331
 	emptySlice := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:333
 	t.Run("First/non-empty", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:334
 		first, err := slice.First(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:335
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:336
 		test.AssertEqual(t, first, "x")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:339
 	t.Run("First/empty returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:340
 		_, err := slice.First(emptySlice)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:341
 		test.AssertError(t, err)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:344
 	t.Run("Last/non-empty", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:345
 		last, err := slice.Last(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:346
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:347
 		test.AssertEqual(t, last, "z")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:350
 	t.Run("Last/empty returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:351
 		_, err := slice.Last(emptySlice)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:352
 		test.AssertError(t, err)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:356
 func TestFilter(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:357
 	items := []string{"apple", "banana", "avocado", "cherry"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:359
 	t.Run("keeps 6-char strings", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:360
 		result := slice.Filter(items, func(s string) bool { return len(s) == 6 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:361
 		test.AssertEqual(t, len(result), 2)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:364
 	t.Run("all filtered out", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:365
 		none := slice.Filter(items, func(s string) bool { return len(s) > 100 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:366
 		test.AssertEqual(t, len(none), 0)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:370
 func TestPartition(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:371
 	nums := []int{1, 2, 3, 4, 5, 6}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:373
 	t.Run("splits by predicate", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:374
 		evens, odds := slice.Partition(nums, func(n int) bool { return n%2 == 0 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:375
 		test.AssertEqual(t, len(evens), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:376
 		test.AssertEqual(t, len(odds), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:377
 		test.AssertEqual(t, evens[0], 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:378
 		test.AssertEqual(t, odds[0], 1)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:381
 	t.Run("all match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:382
 		yes, no := slice.Partition(nums, func(n int) bool { return n > 0 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:383
 		test.AssertEqual(t, len(yes), 6)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:384
 		test.AssertEqual(t, len(no), 0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:387
 	t.Run("none match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:388
 		yes, no := slice.Partition(nums, func(n int) bool { return n > 100 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:389
 		test.AssertEqual(t, len(yes), 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:390
 		test.AssertEqual(t, len(no), 6)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:393
 	t.Run("preserves order", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:394
 		evens, odds := slice.Partition(nums, func(n int) bool { return n%2 == 0 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:395
 		test.AssertEqual(t, evens[0], 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:396
 		test.AssertEqual(t, evens[1], 4)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:397
 		test.AssertEqual(t, evens[2], 6)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:398
 		test.AssertEqual(t, odds[0], 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:399
 		test.AssertEqual(t, odds[1], 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:400
 		test.AssertEqual(t, odds[2], 5)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:404
 func TestMap(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:405
 	items := []int{1, 2, 3}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:406
 	result := slice.Map(items, func(n int) int { return n * 2 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:408
 	t.Run("length preserved", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:409
 		test.AssertEqual(t, len(result), 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:412
 	t.Run("values doubled", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:413
 		test.AssertEqual(t, result[0], 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:414
 		test.AssertEqual(t, result[1], 4)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:415
 		test.AssertEqual(t, result[2], 6)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:419
 func TestFlatMap(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:420
 	items := []int{1, 2, 3}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:421
 	result := slice.FlatMap(items, func(n int) []any { return []any{fmt.Sprintf("%va", n), fmt.Sprintf("%vb", n)} })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:423
 	t.Run("flattens mapped slices", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:424
 		test.AssertEqual(t, len(result), 6)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:425
 		test.AssertEqual(t, result[0], "1a")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:426
 		test.AssertEqual(t, result[1], "1b")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:427
 		test.AssertEqual(t, result[2], "2a")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:428
 		test.AssertEqual(t, result[5], "3b")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:432
 func TestReduce(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:433
 	items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:435
 	t.Run("sums values", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:436
 		sum := slice.Reduce(items, 0, func(acc int, val int) int { return acc + val })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:437
 		test.AssertEqual(t, sum, 10)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:440
 	t.Run("with string initial", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:441
 		str := slice.Reduce(items, "", func(acc string, val int) string { return acc + fmt.Sprintf("%v", val) })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:442
 		test.AssertEqual(t, str, "1234")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:448
 func TestToMap(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:449
 	words := []string{"apple", "avocado", "banana"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:451
 	t.Run("builds a map by key", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:452
 		byFirst := slice.ToMap(words, func(w string) string { return w[0:1] }, func(w string) int { return len(w) })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:453
 		test.AssertEqual(t, len(byFirst), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:454
 		test.AssertEqual(t, byFirst["a"], 7)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:455
 		test.AssertEqual(t, byFirst["b"], 6)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:458
 	t.Run("duplicate keys are last-wins", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:459
 		byFirst := slice.ToMap(words, func(w string) string { return w[0:1] }, func(w string) string { return w })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:460
 		test.AssertEqual(t, len(byFirst), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:462
 		test.AssertEqual(t, byFirst["a"], "avocado")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:467
 	t.Run("empty input builds an empty map", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:468
 		got := slice.ToMap([]string{}, func(w string) string { return w[0:1] }, func(w string) string { return w })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:469
 		test.AssertEqual(t, len(got), 0)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:474
 func TestGroupBy(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:475
 	words := []string{"apple", "avocado", "banana"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:477
 	t.Run("collects all elements per key", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:478
 		byFirst := slice.GroupBy(words, func(w string) string { return w[0:1] })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:479
 		test.AssertEqual(t, len(byFirst), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:480
 		test.AssertEqual(t, len(byFirst["a"]), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:481
 		test.AssertEqual(t, len(byFirst["b"]), 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:483
 		test.AssertEqual(t, byFirst["a"][0], "apple")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:484
 		test.AssertEqual(t, byFirst["a"][1], "avocado")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:489
 	t.Run("empty input builds an empty map", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:490
 		got := slice.GroupBy([]string{}, func(w string) string { return w[0:1] })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:491
 		test.AssertEqual(t, len(got), 0)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:495
 func TestFindIndex(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:496
 	items := []int{10, 20, 30, 40}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:498
 	t.Run("first match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:499
 		idx := slice.FindIndex(items, func(n int) bool { return n > 25 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:500
 		test.AssertEqual(t, idx, 2)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:503
 	t.Run("no match returns -1", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:504
 		notFound := slice.FindIndex(items, func(n int) bool { return n > 100 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:505
 		test.AssertEqual(t, notFound, -1)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:508
 	t.Run("FindIndexOr matches", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:509
 		idx := slice.FindIndexOr(items, func(n int) bool { return n > 25 }, -99)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:510
 		test.AssertEqual(t, idx, 2)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:513
 	t.Run("FindIndexOr falls back to default", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:514
 		idx := slice.FindIndexOr(items, func(n int) bool { return n > 100 }, 42)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:515
 		test.AssertEqual(t, idx, 42)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:518
 	t.Run("Index alias and IndexOr", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:519
 		test.AssertEqual(t, slice.Index(items, 30), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:520
 		test.AssertEqual(t, slice.Index(items, 999), -1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:521
 		test.AssertEqual(t, slice.IndexOr(items, 30, 0), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:522
 		test.AssertEqual(t, slice.IndexOr(items, 999, -10), -10)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:525
 	t.Run("Flatten alias for Concat", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:526
 		matrix := [][]int{[]int{1, 2}, []int{3, 4}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:527
 		flat := slice.Flatten(matrix)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:528
 		test.AssertEqual(t, len(flat), 4)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:529
 		test.AssertEqual(t, flat[2], 3)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:533
 func TestFind(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:534
 	items := []string{"apple", "banana", "cherry"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:536
 	t.Run("found element", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:537
 		val, err := slice.Find(items, func(v string) bool { return v == "banana" })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:538
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:539
 		test.AssertEqual(t, val, "banana")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:542
 	t.Run("not found returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:543
 		_, err := slice.Find(items, func(v string) bool { return v == "grape" })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:544
 		test.AssertError(t, err)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:548
 func TestFindOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:549
 	items := []string{"apple", "banana", "cherry"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:551
 	t.Run("match found", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:552
 		val := slice.FindOr(items, func(s string) bool { return len(s) == 6 }, "none")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:553
 		test.AssertEqual(t, val, "banana")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:556
 	t.Run("no match uses default", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:557
 		def := slice.FindOr(items, func(s string) bool { return len(s) > 100 }, "none")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:558
 		test.AssertEqual(t, def, "none")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:562
 func TestPopLast(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:563
 	items := []string{"a", "b", "c"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:565
 	t.Run("pops last element", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:566
 		last, rest, err := slice.PopLast(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:567
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:568
 		test.AssertEqual(t, last, "c")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:569
 		test.AssertEqual(t, len(rest), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:570
 		test.AssertEqual(t, rest[0], "a")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:573
 	t.Run("empty slice returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:574
 		emptySlice := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:575
 		_, _, err := slice.PopLast(emptySlice)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:576
 		test.AssertError(t, err)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:580
 func TestPopFirst(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:581
 	items := []string{"a", "b", "c"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:583
 	t.Run("pops first element", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:584
 		first, rest, err := slice.PopFirst(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:585
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:586
 		test.AssertEqual(t, first, "a")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:587
 		test.AssertEqual(t, len(rest), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:588
 		test.AssertEqual(t, rest[0], "b")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:591
 	t.Run("empty slice returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:592
 		emptySlice := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:593
 		_, _, err := slice.PopFirst(emptySlice)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:594
 		test.AssertError(t, err)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:598
 func TestConcat(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:599
 	a := []string{"a", "b"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:600
 	b := []string{"c", "d"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:601
 	c := []string{"e"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:603
 	allSlices := [][]string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:604
 	allSlices = append(allSlices, a)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:605
 	allSlices = append(allSlices, b)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:606
 	allSlices = append(allSlices, c)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:608
 	result := slice.Concat(allSlices)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:609
 	t.Run("combined length", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:610
 		test.AssertEqual(t, len(result), 5)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:613
 	t.Run("first and last elements", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:614
 		test.AssertEqual(t, result[0], "a")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:615
 		test.AssertEqual(t, result[4], "e")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:619
 func TestChunk(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:620
 	items := []int{1, 2, 3, 4, 5}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:622
 	t.Run("chunks of 2", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:623
 		chunks := slice.Chunk(items, 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:624
 		test.AssertEqual(t, len(chunks), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:625
 		test.AssertEqual(t, len(chunks[0]), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:626
 		test.AssertEqual(t, len(chunks[1]), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:627
 		test.AssertEqual(t, len(chunks[2]), 1)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:630
 	t.Run("size=0 returns empty", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:631
 		none := slice.Chunk(items, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:632
 		test.AssertEqual(t, len(none), 0)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:636
 func TestFindLast(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:637
 	items := []string{"apple", "banana", "cherry", "banana", "date"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:639
 	t.Run("found last element", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:640
 		val, err := slice.FindLast(items, func(v string) bool { return v == "banana" })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:641
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:642
 		test.AssertEqual(t, val, "banana")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:649
 	t.Run("found last with condition", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:650
 		itemsWithIds := []Item{Item{Id: 1, Name: "a"}, Item{Id: 2, Name: "b"}, Item{Id: 3, Name: "a"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:652
 		val, err := slice.FindLast(itemsWithIds, func(v Item) bool { return v.Name == "a" })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:653
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:654
 		test.AssertEqual(t, Item(val).Id, 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:657
 	t.Run("not found returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:658
 		_, err := slice.FindLast(items, func(v string) bool { return v == "grape" })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:659
 		test.AssertError(t, err)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:663
 func TestFindLastOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:664
 	items := []string{"apple", "banana", "cherry", "banana", "date"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:666
 	t.Run("match found", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:667
 		val := slice.FindLastOr(items, func(s string) bool { return s == "banana" }, "none")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:668
 		test.AssertEqual(t, val, "banana")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:671
 	t.Run("match last item", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:672
 		itemsWithIds := []Item{Item{Id: 1, Name: "a"}, Item{Id: 2, Name: "b"}, Item{Id: 3, Name: "a"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:674
 		val := slice.FindLastOr(itemsWithIds, func(v Item) bool { return v.Name == "a" }, Item{Id: 0, Name: ""})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:675
 		test.AssertEqual(t, Item(val).Id, 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:678
 	t.Run("no match uses default", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:679
 		def := slice.FindLastOr(items, func(s string) bool { return s == "grape" }, "none")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:680
 		test.AssertEqual(t, def, "none")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:684
 func TestReject(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:685
 	nums := []int{1, 2, 3, 4, 5, 6}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:687
 	t.Run("drops matching items", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:688
 		result := slice.Reject(nums, func(n int) bool { return n%2 == 0 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:689
 		test.AssertEqual(t, len(result), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:690
 		test.AssertEqual(t, result[0], 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:691
 		test.AssertEqual(t, result[1], 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:692
 		test.AssertEqual(t, result[2], 5)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:695
 	t.Run("all rejected", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:696
 		none := slice.Reject(nums, func(n int) bool { return n > 0 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:697
 		test.AssertEqual(t, len(none), 0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:700
 	t.Run("none rejected", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:701
 		all := slice.Reject(nums, func(n int) bool { return n > 100 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:702
 		test.AssertEqual(t, len(all), 6)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:705
 	t.Run("empty input", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:706
 		result := slice.Reject([]int{}, func(n int) bool { return n > 0 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:707
 		test.AssertEqual(t, len(result), 0)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:711
 func TestSum(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:712
 	t.Run("ints", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:713
 		result := slice.Sum([]int{1, 2, 3, 4})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:714
 		test.AssertEqual(t, result, 10)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:717
 	t.Run("floats", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:718
 		result := slice.Sum([]float64{1.5, 2.5, 3.0})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:719
 		test.AssertEqual(t, result, 7.0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:722
 	t.Run("empty list returns zero", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:723
 		result := slice.Sum([]int{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:724
 		test.AssertEqual(t, result, 0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:727
 	t.Run("single element", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:728
 		result := slice.Sum([]int{42})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:729
 		test.AssertEqual(t, result, 42)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:733
 func TestMin(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:734
 	t.Run("returns smallest", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:735
 		result, err := slice.Min([]int{3, 1, 4, 1, 5, 9, 2, 6})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:736
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:737
 		test.AssertEqual(t, result, 1)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:740
 	t.Run("strings", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:741
 		result, err := slice.Min([]string{"banana", "apple", "cherry"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:742
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:743
 		test.AssertEqual(t, result, "apple")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:746
 	t.Run("empty list returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:747
 		_, err := slice.Min([]int{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:748
 		test.AssertError(t, err)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:752
 func TestMax(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:753
 	t.Run("returns largest", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:754
 		result, err := slice.Max([]int{3, 1, 4, 1, 5, 9, 2, 6})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:755
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:756
 		test.AssertEqual(t, result, 9)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:759
 	t.Run("strings", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:760
 		result, err := slice.Max([]string{"banana", "apple", "cherry"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:761
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:762
 		test.AssertEqual(t, result, "cherry")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:765
 	t.Run("empty list returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:766
 		_, err := slice.Max([]int{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:767
 		test.AssertError(t, err)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:771
 func TestAverage(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:772
 	t.Run("computes mean", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:773
 		result, err := slice.Average([]float64{2.0, 4.0, 6.0})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:774
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:775
 		test.AssertEqual(t, result, 4.0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:778
 	t.Run("single element", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:779
 		result, err := slice.Average([]float64{7.5})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:780
 		test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:781
 		test.AssertEqual(t, result, 7.5)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:784
 	t.Run("empty list returns error", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:785
 		_, err := slice.Average([]float64{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:786
 		test.AssertError(t, err)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:790
 func TestMinOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:791
 	t.Run("returns smallest", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:792
 		test.AssertEqual(t, slice.MinOr([]int{3, 1, 4, 1, 5}, 0), 1)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:795
 	t.Run("empty returns defaultValue", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:796
 		test.AssertEqual(t, slice.MinOr([]int{}, 99), 99)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:800
 func TestMaxOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:801
 	t.Run("returns largest", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:802
 		test.AssertEqual(t, slice.MaxOr([]int{3, 1, 4, 1, 5}, 0), 5)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:805
 	t.Run("empty returns defaultValue", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:806
 		test.AssertEqual(t, slice.MaxOr([]int{}, 99), 99)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:810
 func TestAverageOr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:811
 	t.Run("computes mean", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:812
 		test.AssertEqual(t, slice.AverageOr([]float64{2.0, 4.0, 6.0}, 0.0), 4.0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:815
 	t.Run("empty returns defaultValue", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:816
 		test.AssertEqual(t, slice.AverageOr([]float64{}, -1.0), -1.0)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:819
 type Item struct {
 	Id   int
 	Name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:825
 var nilIntReducer func(int, int) int
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:827
 func expectNilReducerPanics(t *testing.T, label string, fn func()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:828
 	defer recoverNilReducerPanic(t, label)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:829
 	fn()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:831
 func recoverNilReducerPanic(t *testing.T, label string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:832
 	if recover() == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:833
 		t.Errorf("expected panic for %v, got none", label)
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:837
 func TestViewFamilyNegativeN(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:838
 	items := []int{1, 2, 3, 4, 5}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:839
 	test.AssertEqual(t, len(slice.Take(items, -1)), 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:840
 	test.AssertEqual(t, len(slice.TakeLast(items, -1)), 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:841
 	test.AssertEqual(t, len(slice.Skip(items, -1)), 5)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:842
 	test.AssertEqual(t, len(slice.SkipLast(items, -1)), 5)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:843
 	test.AssertEqual(t, len(slice.Chunk(items, -1)), 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:844
 	test.AssertEqual(t, len(slice.Chunk(items, 0)), 0)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:848
 func TestGetBoundaries(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:849
 	items := []string{"a", "b", "c"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:851
 	first, err := slice.Get(items, -3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:852
 	test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:853
 	test.AssertEqual(t, first, "a")
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:855
 	_, lowErr := slice.Get(items, -4)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:856
 	test.AssertError(t, lowErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:858
 	_, highErr := slice.Get(items, 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:859
 	test.AssertError(t, highErr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:861
 	_, emptyErr := slice.Get([]string{}, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:862
 	test.AssertError(t, emptyErr)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:867
 func TestUniqueNaNDuplicatesSurvive(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:868
 	nan := math.NaN()
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:869
 	result := slice.Unique([]float64{1, nan, nan, 2})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:870
 	test.AssertEqual(t, len(result), 4)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:871
 	test.AssertEqual(t, result[0], 1.0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:872
 	test.AssertEqual(t, result[3], 2.0)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:876
 func TestSumIntOverflowWraps(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:877
 	total := slice.Sum([]int{math.MaxInt, 1})
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:878
 	test.AssertEqual(t, total, math.MinInt)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:883
 func TestReduceNilReducerPanics(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:886
 	expectNilReducerPanics(t, "nil reducer", func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:885
 		slice.Reduce([]int{1, 2, 3}, 0, nilIntReducer)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:891
 func TestConcurrentReadSmoke(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:892
 	shared := []int{1, 2, 3, 4, 5}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:893
 	wg := sync.WaitGroup{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:894
 	for worker := range 8 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:895
 		wg.Go(func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:896
 			total := slice.Sum(shared)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:897
 			doubled := slice.Map(shared, func(x int) int { return x * 2 })
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:898
 			if total != 15 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:899
 				t.Errorf("worker %v: bad sum %v", worker, total)
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:900
 			if len(doubled) != 5 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:901
 				t.Errorf("worker %v: bad map result length %v", worker, len(doubled))
 			}
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:904
 	wg.Wait()
 }
