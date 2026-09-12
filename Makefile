@@ -1,9 +1,5 @@
 .PHONY: help check build desktop desktop-run web-server web-server-run test test-verbose test-specific clean lint format learn learn-run learn-check learn-test
 
-PKG_CONFIG_LIBS = x11 xrandr xcursor xinerama xi xrender gl xxf86vm
-CGO_CFLAGS ?= $(shell pkg-config --cflags $(PKG_CONFIG_LIBS) 2>/dev/null)
-CGO_LDFLAGS ?= $(shell pkg-config --libs $(PKG_CONFIG_LIBS) 2>/dev/null)
-
 help: ## Show this help message
 	@echo "Race to the Crystal - Available Commands:"
 	@echo ""
@@ -14,9 +10,9 @@ check: ## Validate all Kukicha syntax
 build: ## Transpile and build all Kukicha packages
 	kukicha build ./...
 
-desktop: ## Build the desktop client
+desktop: ## Build the desktop client (pure Go; Ebitengine 2.10 needs no C toolchain)
 	kukicha build ./client/desktop/
-	CGO_CFLAGS="$(CGO_CFLAGS)" CGO_LDFLAGS="$(CGO_LDFLAGS)" go build -o race-desktop ./client/desktop/
+	go build -o race-desktop ./client/desktop/
 
 desktop-run: ## Build and run the desktop client
 	$(MAKE) desktop

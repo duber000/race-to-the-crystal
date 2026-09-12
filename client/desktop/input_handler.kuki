@@ -37,11 +37,11 @@ func HandleGameInput()
     if inpututil.IsKeyJustPressed(ebiten.KeyEscape)
         SetScreen(ScreenKind.Victory)
 
-    mx, my := ebiten.CursorPosition()
+    mx, my := ebiten.CursorPositionF()
     if app.game_state isnt empty
         gs := dereference app.game_state
-        cell_x := (mx - app.view_offset_x as int) / CELL_SIZE
-        cell_y := (my - app.view_offset_y as int) / CELL_SIZE
+        cell_x := (mx - app.view_offset_x) as int / CELL_SIZE
+        cell_y := (my - app.view_offset_y) as int / CELL_SIZE
         app.hover_cell = DPos(cell_x, cell_y)
 
         if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)

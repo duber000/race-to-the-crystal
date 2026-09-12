@@ -3,9 +3,13 @@ petiole main
 import "image/color"
 import "math"
 
+import "github.com/hajimehoshi/bitmapfont/v4"
 import "github.com/hajimehoshi/ebiten/v2"
-import "github.com/hajimehoshi/ebiten/v2/ebitenutil"
+import "github.com/hajimehoshi/ebiten/v2/text/v2" as textpkg
 import "github.com/hajimehoshi/ebiten/v2/vector"
+
+# defaultFace is the built-in bitmap font used for all on-screen text.
+variable defaultFace: textpkg.Face = textpkg.NewGoXFace(bitmapfont.Face)
 
 func DrawMainMenu(screen: reference ebiten.Image)
     title := "RACE TO THE CRYSTAL"
@@ -197,7 +201,11 @@ func DrawGrid(screen: reference ebiten.Image, w: int, h: int, ox: int, oy: int)
         )
 
 func DrawText(screen: reference ebiten.Image, text: string, x: int, y: int, c: color.RGBA)
-    ebitenutil.DebugPrintAt(screen, text, x, y)
+    opts := textpkg.DrawOptions{}
+    opts.GeoM.Translate(x as float64, y as float64)
+    opts.ColorScale.SetWithColor(c)
+    textpkg.Draw(screen, text, defaultFace, reference of opts)
 
 func DrawTextCentered(screen: reference ebiten.Image, text: string, x: int, y: int, c: color.RGBA)
-    ebitenutil.DebugPrintAt(screen, text, x - len(text) * 4, y)
+    width, _ := textpkg.Measure(text, defaultFace, 0.0)
+    DrawText(screen, text, x - (width / 2.0) as int, y, c)
