@@ -126,7 +126,7 @@ func Read[T any](reader io.Reader) (T, error) {
 		var _zero0 T
 		return _zero0, err_4
 	}
-	_ = reader
+	_ = err_4
 	return data, nil
 }
 
@@ -246,7 +246,7 @@ func ReadValue(reader io.Reader) (JSONValue, error) {
 		var _zero0 JSONValue
 		return _zero0, err_9
 	}
-	_ = reader
+	_ = err_9
 	return decodeJSON(raw), nil
 }
 
@@ -260,7 +260,6 @@ func ParseBytesFrozen(data []byte) (Frozen, error) {
 		return Frozen{}, errors.New("invalid json")
 	}
 	cp := v.Clone()
-	// kukicha: could not infer return count; use explicit capture if incorrect
 	err_10 := cp.Canonicalize()
 	if err_10 != nil {
 		return Frozen{}, err_10
@@ -728,7 +727,7 @@ func walkArrayIndex(dec *jsontext.Decoder, idx int, rest []PathSegment) (jsontex
 	for {
 		kind := dec.PeekKind()
 		if kind == jsontext.KindEndArray {
-			dec.ReadToken()
+			_, _ = dec.ReadToken()
 			return nil, wrapNotFound(fmt.Sprintf("array index %v out of bounds", idx))
 		}
 		if i == idx {

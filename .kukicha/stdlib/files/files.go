@@ -62,7 +62,7 @@ func WriteJSON(data any, path string) error {
 	if err_6 != nil {
 		return err_6
 	}
-	_ = pipe_4
+	_ = err_6
 	return nil
 }
 
