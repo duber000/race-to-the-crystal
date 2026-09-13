@@ -29,6 +29,7 @@ caddy
 game/game
 server/server
 web_server/web_server
+/desktop
 race-desktop
 race-ai-client
 learn/learn

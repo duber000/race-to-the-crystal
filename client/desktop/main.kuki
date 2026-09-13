@@ -1,6 +1,9 @@
 petiole main
 
 import "image/color"
+import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as typespkg
 import "stdlib/log"
 
 import "github.com/hajimehoshi/ebiten/v2"
@@ -62,8 +65,13 @@ type DesktopGameState
 type DesktopApp
     current_screen: ScreenKind
     game_state: optional reference DesktopGameState
+    real_game: optional reference gamepkg.GameState
+    real_api: optional reference gamepkg.GameAPI
+    human_player: typespkg.PlayerID
+    ai_strategy: gamepkg.AIStrategyName
     selected_token_id: int
     valid_moves: list of DesktopPos
+    valid_attacks: list of DesktopPos
     hover_cell: DesktopPos
     menu_selection: int
     view_offset_x: float64
@@ -78,11 +86,15 @@ var app: DesktopApp
 func init()
     app = DesktopApp{
         current_screen: ScreenKind.MainMenu,
+        human_player: typespkg.PlayerID("player_0"),
+        ai_strategy: gamepkg.AIStrategyNameRANDOM,
         view_offset_x: 0.0,
         view_offset_y: 0.0,
         menu_selection: 0,
         frame_count: 0,
         selected_token_id: -1,
+        valid_moves: empty list of DesktopPos,
+        valid_attacks: empty list of DesktopPos,
     }
 
 func RGBA(r: int, g: int, b: int, a: int) color.RGBA
@@ -141,7 +153,11 @@ func Update on a: reference DesktopAdapter error
         when ScreenKind.Lobby
             HandleLobbyInput()
         when ScreenKind.Game
+            RunAiTurns()
+            SyncDesktopState()
             HandleGameInput()
+            SyncDesktopState()
+            CheckVictory()
         when ScreenKind.Victory
             HandleVictoryInput()
     return empty
@@ -165,3 +181,128 @@ func SetScreen(s: ScreenKind)
     app.current_screen = s
     app.menu_selection = 0
     app.message = ""
+
+func StartLocalGame()
+    gs := gamepkg.CreateGame(2)
+    gs.StartGame()
+    app.real_game = reference of gs
+    api := gamepkg.NewGameAPI(reference of gs, app.human_player)
+    app.real_api = reference of api
+    deselect()
+    app.message = ""
+    SyncDesktopState()
+    SetScreen(ScreenKind.Game)
+
+func SyncDesktopState()
+    gs := app.real_game
+    if gs equals empty
+        app.game_state = empty
+        return
+    ds := DesktopGameState{
+        players: empty list of DesktopPlayer,
+        tokens: empty list of DesktopToken,
+        generators: empty list of DesktopGenerator,
+        board_width: gs.BoardWidth(),
+        board_height: gs.BoardHeight(),
+        crystal_pos: DPos(0, 0),
+        crystal_holder: "",
+        current_turn_player: gs.CurrentTurnPlayerID() as string,
+        phase: enums.GamePhaseName(gs.Phase()),
+        turn_phase: enums.TurnPhaseName(gs.TurnPhase()),
+        winner: gs.WinnerID() as string,
+    }
+    for pid, p in gs.Players()
+        dp := DesktopPlayer{
+            id: pid as string,
+            name: p.Name(),
+            color_name: p.Color() as string,
+            color_idx: enums.PlayerIndex(p.Color()),
+            is_active: p.IsActive(),
+        }
+        ds.players = append(ds.players, dp)
+    winner_id := ds.winner
+    if len(winner_id) > 0
+        for p in ds.players
+            if p.id equals winner_id
+                ds.winner = p.name
+    for tid, t in gs.Tokens()
+        dt := DesktopToken{
+            id: tid as int,
+            player_id: t.PlayerID() as string,
+            health: t.Health(),
+            max_health: t.MaxHealth(),
+            position: DPos(t.Position().X, t.Position().Y),
+            is_alive: t.IsAlive(),
+            is_deployed: t.IsDeployed(),
+        }
+        ds.tokens = append(ds.tokens, dt)
+    for g in gs.Generators()
+        dg := DesktopGenerator{
+            position: DPos(g.Position().X, g.Position().Y),
+            capturing_player: g.CapturingPlayer() as string,
+            turns_held: g.TurnsHeld(),
+            is_disabled: g.IsDisabled(),
+        }
+        ds.generators = append(ds.generators, dg)
+    crystal_ref := gs.CrystalInstance()
+    if crystal_ref isnt empty
+        c := dereference crystal_ref
+        ds.crystal_pos = DPos(c.Position().X, c.Position().Y)
+        ds.crystal_holder = c.HoldingPlayer() as string
+    app.game_state = reference of ds
+
+func RunAiTurns()
+    gs := app.real_game
+    if gs equals empty
+        return
+    guard := 0
+    for guard < 2000
+        if gs.Phase() isnt enums.PLAYING
+            return
+        if gs.CurrentTurnPlayerID() equals app.human_player
+            return
+        ai_pid := gs.CurrentTurnPlayerID()
+        run_ai_turn(gs, ai_pid)
+        if gs.Phase() equals enums.PLAYING
+            if gs.CurrentTurnPlayerID() equals ai_pid
+                gamepkg.ExecuteAction(gamepkg.NewEndTurnAction(), gs, ai_pid)
+        guard = guard + 1
+
+func run_ai_turn(gs: reference gamepkg.GameState, ai_pid: typespkg.PlayerID)
+    ai_api := gamepkg.NewGameAPI(gs, ai_pid)
+    guard := 0
+    for guard < 30
+        if gs.Phase() isnt enums.PLAYING
+            return
+        if gs.CurrentTurnPlayerID() isnt ai_pid
+            return
+        actions := ai_api.Actions()
+        if len(actions) equals 0
+            return
+        chosen_ref := gamepkg.ChooseAction(app.ai_strategy, actions, gs, ai_pid)
+        if chosen_ref equals empty
+            return
+        result := gamepkg.ExecuteAction(chosen_to_action(dereference chosen_ref), gs, ai_pid)
+        if not result.Success
+            return
+        guard = guard + 1
+
+func chosen_to_action(c: gamepkg.ChosenAction) gamepkg.AIAction
+    switch c as v
+        when gamepkg.ChosenMove
+            dest := typespkg.Pos(v.Destination[0], v.Destination[1])
+            return gamepkg.NewMoveAction(v.TokenID, dest)
+        when gamepkg.ChosenAttack
+            return gamepkg.NewAttackAction(v.AttackerID, v.DefenderID)
+        when gamepkg.ChosenDeploy
+            pos := typespkg.Pos(v.Position[0], v.Position[1])
+            return gamepkg.NewDeployAction(v.HealthValue, pos)
+        default
+            return gamepkg.NewEndTurnAction()
+
+func CheckVictory()
+    gs := app.real_game
+    if gs equals empty
+        return
+    if gs.Phase() equals enums.ENDED
+        SetScreen(ScreenKind.Victory)

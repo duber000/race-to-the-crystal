@@ -1,5 +1,8 @@
 petiole main
 
+import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/shared/types" as typespkg
+
 import "github.com/hajimehoshi/ebiten/v2"
 import "github.com/hajimehoshi/ebiten/v2/inpututil"
 
@@ -11,7 +14,7 @@ func HandleMainMenuInput()
     if inpututil.IsKeyJustPressed(ebiten.KeyEnter)
         switch app.menu_selection
             when 0
-                SetScreen(ScreenKind.Game)
+                StartLocalGame()
             when 1
                 SetScreen(ScreenKind.Lobby)
             when 2
@@ -35,54 +38,127 @@ func HandleGameInput()
         app.view_offset_y = app.view_offset_y - pan_speed as float64
 
     if inpututil.IsKeyJustPressed(ebiten.KeyEscape)
-        SetScreen(ScreenKind.Victory)
+        SetScreen(ScreenKind.MainMenu)
+        return
+
+    gs := app.real_game
+    if gs equals empty
+        return
+
+    if inpututil.IsKeyJustPressed(ebiten.KeySpace) or inpututil.IsKeyJustPressed(ebiten.KeyEnter)
+        EndHumanTurn()
+        return
+
+    if gs.CurrentTurnPlayerID() isnt app.human_player
+        return
 
     mx, my := ebiten.CursorPositionF()
-    if app.game_state isnt empty
-        gs := dereference app.game_state
-        cell_x := (mx - app.view_offset_x) as int / CELL_SIZE
-        cell_y := (my - app.view_offset_y) as int / CELL_SIZE
-        app.hover_cell = DPos(cell_x, cell_y)
+    cell_x := (mx - app.view_offset_x) as int / CELL_SIZE
+    cell_y := (my - app.view_offset_y) as int / CELL_SIZE
+    app.hover_cell = DPos(cell_x, cell_y)
 
-        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-            for t in gs.tokens
-                if t.is_alive and t.is_deployed and t.position.X equals cell_x and t.position.Y equals cell_y
-                    if app.selected_token_id equals t.id
-                        app.selected_token_id = -1
-                        app.valid_moves = empty list of DesktopPos
-                    else
-                        app.selected_token_id = t.id
-                        app.valid_moves = generate_valid_moves(t)
-                    return
-            if app.selected_token_id >= 0
-                for mv in app.valid_moves
-                    if mv.X equals cell_x and mv.Y equals cell_y
-                        app.selected_token_id = -1
-                        app.valid_moves = empty list of DesktopPos
-                        app.message = "Moved!"
-                        return
-                app.selected_token_id = -1
-                app.valid_moves = empty list of DesktopPos
+    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+        HandleBoardClick(gs, cell_x, cell_y)
+
+func HandleBoardClick(gs: reference gamepkg.GameState, cell_x: int, cell_y: int)
+    if app.selected_token_id >= 0
+        if TryMove(cell_x, cell_y)
+            return
+        if TryAttack(cell_x, cell_y)
+            return
+    clicked := FindTokenAt(gs, cell_x, cell_y)
+    if clicked >= 0
+        tok_ref := gs.GetToken(typespkg.TokenID(clicked))
+        if tok_ref isnt empty
+            tok := dereference tok_ref
+            if tok.PlayerID() equals app.human_player
+                if app.selected_token_id equals clicked
+                    deselect()
+                else
+                    app.selected_token_id = clicked
+                    app.valid_moves = ComputeValidMoves(clicked)
+                    app.valid_attacks = ComputeValidAttacks(clicked)
+                return
+    if app.selected_token_id >= 0
+        deselect()
+
+func FindTokenAt(gs: reference gamepkg.GameState, x: int, y: int) int
+    for tid, t in gs.Tokens()
+        if t.IsAlive() and t.IsDeployed()
+            pos := t.Position()
+            if pos.X equals x and pos.Y equals y
+                return tid as int
+    return -1
+
+func ComputeValidMoves(token_id: int) list of DesktopPos
+    result := empty list of DesktopPos
+    if app.real_api equals empty
+        return result
+    api := dereference app.real_api
+    for a in api.Actions()
+        switch a as v
+            when gamepkg.MoveAction
+                if v.TokenID as int equals token_id
+                    for d in v.ValidDestinations
+                        result = append(result, DPos(d[0], d[1]))
+    return result
+
+func ComputeValidAttacks(token_id: int) list of DesktopPos
+    result := empty list of DesktopPos
+    if app.real_api equals empty
+        return result
+    api := dereference app.real_api
+    for a in api.Actions()
+        switch a as v
+            when gamepkg.AttackAction
+                if v.AttackerID as int equals token_id
+                    result = append(result, DPos(v.DefenderPosition[0], v.DefenderPosition[1]))
+    return result
+
+func TryMove(cell_x: int, cell_y: int) bool
+    for mv in app.valid_moves
+        if mv.X equals cell_x and mv.Y equals cell_y
+            if app.real_api equals empty
+                return false
+            api := dereference app.real_api
+            result := api.Move(typespkg.TokenID(app.selected_token_id), cell_x, cell_y)
+            app.message = result.Message
+            deselect()
+            return true
+    return false
+
+func TryAttack(cell_x: int, cell_y: int) bool
+    if app.real_api equals empty
+        return false
+    api := dereference app.real_api
+    for a in api.Actions()
+        switch a as v
+            when gamepkg.AttackAction
+                if v.AttackerID as int equals app.selected_token_id
+                    if v.DefenderPosition[0] equals cell_x and v.DefenderPosition[1] equals cell_y
+                        result := api.Attack(typespkg.TokenID(app.selected_token_id), v.DefenderID)
+                        app.message = result.Message
+                        deselect()
+                        return true
+    return false
+
+func EndHumanTurn()
+    if app.real_api equals empty
+        return
+    api := dereference app.real_api
+    result := api.EndTurn()
+    if not result.Success
+        app.message = result.Message
+    deselect()
+
+func deselect()
+    app.selected_token_id = -1
+    app.valid_moves = empty list of DesktopPos
+    app.valid_attacks = empty list of DesktopPos
 
 func HandleVictoryInput()
     if inpututil.IsKeyJustPressed(ebiten.KeyEnter)
         SetScreen(ScreenKind.MainMenu)
-
-func generate_valid_moves(tok: DesktopToken) list of DesktopPos
-    result := empty list of DesktopPos
-    for dx from -2 to 3
-        for dy from -2 to 3
-            if dx equals 0 and dy equals 0
-                continue
-            dist := abs(dx) + abs(dy)
-            if dist > 0 and dist <= 2
-                result = append(result, DPos(tok.position.X + dx, tok.position.Y + dy))
-    return result
-
-func abs(x: int) int
-    if x < 0
-        return -x
-    return x
 
 func max_int(a: int, b: int) int
     if a > b

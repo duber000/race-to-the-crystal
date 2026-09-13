@@ -62,11 +62,11 @@ test-specific: ## Run specific test (usage: make test-specific PKG=./game/...)
 clean: ## Remove build artifacts and empty dirs
 	find client/desktop client/ai -name '*.go' -delete
 	find . -type f -name '*.go' ! -path './.kukicha/*' ! -path './client/desktop/*' ! -path './client/ai/*' -delete
-	rm -f race-desktop race-ai-client web_server/web_server
+	rm -f desktop race-desktop race-ai-client web_server/web_server
 	find . -type d -empty -delete 2>/dev/null; true
 
 lint: ## Check formatting
-	kukicha fmt -w --check .
+	kukicha fmt --check .
 
 format: ## Auto-format all Kukicha files
 	kukicha fmt -w .

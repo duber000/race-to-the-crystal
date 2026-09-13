@@ -170,12 +170,11 @@ func MoveToken on gs: reference GameState(token_id: types.TokenID, new_pos: type
     t_ref := gs.GetToken(token_id)
     if t_ref equals empty
         return false
-    t := dereference t_ref
-    if not t.is_alive
+    if not t_ref.is_alive
         return false
 
-    gs.board.clear_occupant(t.position, token_id)
-    t.move_to(new_pos)
+    gs.board.clear_occupant(t_ref.position, token_id)
+    t_ref.move_to(new_pos)
     gs.board.set_occupant(new_pos, token_id)
     return true
 
@@ -183,15 +182,13 @@ func remove_token on gs: reference GameState(token_id: types.TokenID)
     t_ref := gs.GetToken(token_id)
     if t_ref equals empty
         return
-    t := dereference t_ref
+    gs.board.clear_occupant(t_ref.position, token_id)
 
-    gs.board.clear_occupant(t.position, token_id)
-
-    p_ref := gs.GetPlayer(t.player_id)
+    p_ref := gs.GetPlayer(t_ref.player_id)
     if p_ref isnt empty
         p_ref.remove_token(token_id)
 
-    t.is_alive = false
+    t_ref.is_alive = false
 
 func AttackToken on gs: reference GameState(attacker_id: types.TokenID, defender_id: types.TokenID) optional reference CombatOutcome
     a_ref := gs.GetToken(attacker_id)
@@ -391,6 +388,24 @@ func TurnNumber on gs: GameState int
 
 func TurnPhase on gs: GameState enums.TurnPhase
     return gs.turn_phase
+
+func Players on gs: reference GameState map of types.PlayerID to reference Player
+    return gs.players
+
+func Tokens on gs: reference GameState map of types.TokenID to reference Token
+    return gs.tokens
+
+func Generators on gs: reference GameState list of Generator
+    return gs.generators
+
+func CrystalInstance on gs: reference GameState optional reference Crystal
+    return gs.crystal_instance
+
+func BoardWidth on gs: reference GameState int
+    return gs.board.width
+
+func BoardHeight on gs: reference GameState int
+    return gs.board.height
 
 func ToDict on gs: reference GameState map of string to any
     result := empty map of string to any

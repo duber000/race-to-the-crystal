@@ -27,6 +27,15 @@ func NewCrystal(position: types.Position) Crystal
 func turns_required on c: reference Crystal int
     return constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
 
+func Position on c: reference Crystal types.Position
+    return c.position
+
+func HoldingPlayer on c: reference Crystal types.PlayerID
+    return c.holding_player_id
+
+func TurnsHeld on c: reference Crystal int
+    return c.turns_held
+
 func get_tokens_required on c: reference Crystal(disabled_generators: int) int
     reduction := disabled_generators * constants.GENERATOR_TOKEN_REDUCTION
     required := c.base_tokens_required - reduction

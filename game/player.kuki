@@ -29,6 +29,15 @@ func token_count on p: reference Player int
 func Name on p: reference Player string
     return p.name
 
+func ID on p: reference Player types.PlayerID
+    return p.id
+
+func Color on p: reference Player enums.PlayerColor
+    return p.color
+
+func IsActive on p: reference Player bool
+    return p.is_active
+
 func add_token on p: reference Player(token_id: types.TokenID)
     if not slice.Contains(p.token_ids, token_id)
         p.token_ids = append(p.token_ids, token_id)

@@ -44,6 +44,21 @@ func Position on t: reference Token types.Position
 func ID on t: reference Token types.TokenID
     return t.id
 
+func PlayerID on t: reference Token types.PlayerID
+    return t.player_id
+
+func Health on t: reference Token int
+    return t.health
+
+func MaxHealth on t: reference Token int
+    return t.max_health
+
+func IsAlive on t: reference Token bool
+    return t.is_alive
+
+func IsDeployed on t: reference Token bool
+    return t.is_deployed
+
 func attack_power on t: reference Token int
     return t.health / 2
 

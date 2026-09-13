@@ -1,5 +1,6 @@
 petiole game
 
+import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 import "stdlib/test"
 import "testing"
@@ -55,3 +56,38 @@ func TestGetAdjacentPositions(t: reference testing.T)
     b := NewBoard()
     adjacent := get_adjacent_positions(types.Pos(5, 5), reference of b)
     test.AssertEqual(t, len(adjacent), 8)
+
+func TestMoveTokenUpdatesPosition(t: reference testing.T)
+    gs := NewGameState()
+    tok, _ := NewToken(types.TokenID(0), types.PlayerID("p0"), 6, 6, types.Pos(5, 5))
+    tok.is_deployed = true
+    gs.tokens[types.TokenID(0)] = reference of tok
+    gs.board.set_occupant(types.Pos(5, 5), types.TokenID(0))
+
+    moved := gs.MoveToken(types.TokenID(0), types.Pos(6, 5))
+    test.AssertTrue(t, moved, "MoveToken should succeed")
+
+    got := gs.GetToken(types.TokenID(0))
+    if got isnt empty
+        pos := got.Position()
+        test.AssertEqual(t, pos.X, 6)
+        test.AssertEqual(t, pos.Y, 5)
+    else
+        t.Fatal("token missing after move")
+
+func TestCanStackOnFriendlyGenerator(t: reference testing.T)
+    b := NewBoard()
+    b.grid[6][6].cell_type = enums.GENERATOR
+
+    mover, _ := NewToken(types.TokenID(1), types.PlayerID("p0"), 6, 6, types.Pos(5, 6))
+    mover.is_deployed = true
+    ally, _ := NewToken(types.TokenID(2), types.PlayerID("p0"), 6, 6, types.Pos(6, 6))
+    ally.is_deployed = true
+    tokens_map := map of types.TokenID to reference Token{1: reference of mover, 2: reference of ally}
+
+    moves := get_valid_moves(reference of mover, reference of b, 2, tokens_map)
+    found := false
+    for m in moves
+        if m equals types.Pos(6, 6)
+            found = true
+    test.AssertTrue(t, found, "generator occupied by a friendly token should be stackable")

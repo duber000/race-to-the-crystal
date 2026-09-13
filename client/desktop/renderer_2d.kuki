@@ -153,7 +153,20 @@ func DrawGame(screen: reference ebiten.Image)
                 false,
             )
 
-        hud := "Turn: {gs.current_turn_player} | Phase: {gs.turn_phase} | Arrow keys to pan"
+        for av in app.valid_attacks
+            ax := av.X * CELL_SIZE + offset_x
+            ay := av.Y * CELL_SIZE + offset_y
+            vector.StrokeCircle(
+                screen,
+                (ax + CELL_SIZE / 2) as float32,
+                (ay + CELL_SIZE / 2) as float32,
+                (CELL_SIZE / 2 - 2) as float32,
+                3,
+                ColorRed,
+                false,
+            )
+
+        hud := "Turn: {gs.current_turn_player} | Phase: {gs.turn_phase} | Click token, click move | SPACE: end turn | ESC: menu | Arrows: pan"
         DrawText(screen, hud, 10, WINDOW_HEIGHT - 20, ColorGray)
 
         if len(app.message) > 0
