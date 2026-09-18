@@ -336,8 +336,9 @@ func encodeContentBlock(c content.Content) rawContentBlock {
 			rawStr = string(rawBytes)
 		}
 		return rawContentBlock{Type: c.Type, Text: rawStr}
+	default:
+		return rawContentBlock{}
 	}
-	return rawContentBlock{}
 }
 
 func decodeResponse(r rawResponse) Response {

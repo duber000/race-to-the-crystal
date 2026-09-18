@@ -3,6 +3,7 @@
 package cli_test
 
 import (
+	"errors"
 	"fmt"
 	"kukicha.org/kukicha/stdlib/cli"
 	kukistring "kukicha.org/kukicha/stdlib/string"
@@ -564,4 +565,113 @@ func TestRunApp_VoidSignature(t *testing.T) {
 	app := cli.Action(cli.Arg(cli.New("myapp"), "name", "who to greet"), remember)
 	cli.RunApp(app)
 	test.AssertEqual(t, exited, 2)
+}
+
+func failingAction(args cli.Args) error {
+	return errors.New("db open failed")
+}
+
+var plainRan bool
+
+var fallibleRan bool
+
+func plainAction(args cli.Args) {
+	plainRan = true
+}
+
+func fallibleAction(args cli.Args) error {
+	fallibleRan = true
+	return nil
+}
+
+func TestActionE_HandlerErrorReturnsFromRunWithArgs(t *testing.T) {
+	cli.SetExitFunc(func(code int) {
+		t.Errorf("RunWithArgs must not exit (exit %v requested)", code)
+	})
+	t.Cleanup(func() {
+		cli.SetExitFunc(nil)
+	})
+	workCmd := cli.NewCommand("work", "fails at runtime").ActionE(failingAction)
+	app := cli.WithCommands(cli.New("demo"), workCmd)
+	err := cli.RunWithArgs(app, []string{"demo", "work"})
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "db open failed")
+}
+
+func TestActionE_SuccessRunsNormally(t *testing.T) {
+	fallibleRan = false
+	cli.SetExitFunc(func(code int) {
+		t.Errorf("success must not exit (exit %v requested)", code)
+	})
+	t.Cleanup(func() {
+		cli.SetExitFunc(nil)
+	})
+	workCmd := cli.NewCommand("work", "succeeds").ActionE(fallibleAction)
+	app := cli.WithCommands(cli.New("demo"), workCmd)
+	err := cli.RunWithArgs(app, []string{"demo", "work"})
+	test.AssertNoError(t, err)
+	test.AssertTrue(t, fallibleRan)
+}
+
+func TestActionE_WinsOverActionWhenBothSet(t *testing.T) {
+	plainRan = false
+	fallibleRan = false
+	cli.SetExitFunc(func(code int) {
+		t.Errorf("must not exit (exit %v requested)", code)
+	})
+	t.Cleanup(func() {
+		cli.SetExitFunc(nil)
+	})
+	app := cli.ActionE(cli.Action(cli.New("demo"), plainAction), fallibleAction)
+	err := cli.RunWithArgs(app, []string{"demo"})
+	test.AssertNoError(t, err)
+	test.AssertTrue(t, fallibleRan)
+	test.AssertFalse(t, plainRan)
+}
+
+func TestDefaultActionE_Dispatches(t *testing.T) {
+	fallibleRan = false
+	cli.SetExitFunc(func(code int) {
+		t.Errorf("must not exit (exit %v requested)", code)
+	})
+	t.Cleanup(func() {
+		cli.SetExitFunc(nil)
+	})
+	app := cli.DefaultActionE(cli.New("demo"), fallibleAction)
+	err := cli.RunWithArgs(app, []string{"demo"})
+	test.AssertNoError(t, err)
+	test.AssertTrue(t, fallibleRan)
+}
+
+func TestFailExitsOneThroughSeam(t *testing.T) {
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	t.Cleanup(func() {
+		cli.SetExitFunc(nil)
+	})
+	cli.Fail("db open failed")
+	test.AssertEqual(t, exited, 1)
+}
+
+func TestExitCodeThroughSeam(t *testing.T) {
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	t.Cleanup(func() {
+		cli.SetExitFunc(nil)
+	})
+	cli.ExitCode(3)
+	test.AssertEqual(t, exited, 3)
+}
+
+func TestFatalRoutesThroughSeam(t *testing.T) {
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	t.Cleanup(func() {
+		cli.SetExitFunc(nil)
+	})
+	cli.Fatal("boom")
+	test.AssertEqual(t, exited, 1)
 }

@@ -380,8 +380,10 @@ func TestParseStringValueNull(t *testing.T) {
 	case json.Null:
 		_ = x
 		return
+	default:
+		_ = x
+		t.Error("expected Null variant")
 	}
-	t.Error("expected Null variant")
 }
 
 func TestParseStringValueBool(t *testing.T) {
@@ -391,8 +393,9 @@ func TestParseStringValueBool(t *testing.T) {
 	case json.Bool:
 		test.AssertTrue(t, b.Value)
 		return
+	default:
+		t.Error("expected Bool variant")
 	}
-	t.Error("expected Bool variant")
 }
 
 func TestParseStringValueNum(t *testing.T) {
@@ -402,8 +405,9 @@ func TestParseStringValueNum(t *testing.T) {
 	case json.Num:
 		test.AssertEqual(t, n.Value, 42.5)
 		return
+	default:
+		t.Error("expected Num variant")
 	}
-	t.Error("expected Num variant")
 }
 
 func TestParseStringValueStr(t *testing.T) {
@@ -413,8 +417,9 @@ func TestParseStringValueStr(t *testing.T) {
 	case json.Str:
 		test.AssertEqual(t, s.Value, "hello")
 		return
+	default:
+		t.Error("expected Str variant")
 	}
-	t.Error("expected Str variant")
 }
 
 func TestParseStringValueNested(t *testing.T) {
@@ -455,8 +460,9 @@ func TestParseValueBytes(t *testing.T) {
 	case json.Object:
 		test.AssertEqual(t, len(o.Fields), 1)
 		return
+	default:
+		t.Error("expected Object variant")
 	}
-	t.Error("expected Object variant")
 }
 
 func TestReadValueFromReader(t *testing.T) {
@@ -467,8 +473,9 @@ func TestReadValueFromReader(t *testing.T) {
 	case json.Array:
 		test.AssertEqual(t, len(a.Items), 3)
 		return
+	default:
+		t.Error("expected Array variant")
 	}
-	t.Error("expected Array variant")
 }
 
 func TestParseStringValueInvalid(t *testing.T) {
@@ -522,8 +529,9 @@ func TestFrozenThawObject(t *testing.T) {
 	case json.Object:
 		test.AssertEqual(t, len(o.Fields), 2)
 		return
+	default:
+		t.Error("expected Object variant after Thaw")
 	}
-	t.Error("expected Object variant after Thaw")
 }
 
 func TestFrozenInvalid(t *testing.T) {

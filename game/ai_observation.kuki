@@ -89,7 +89,7 @@ func describe_game_state(gs: reference GameState, perspective: types.PlayerID) s
         winner_ref := gs.GetPlayer(gs.winner_id)
         winner_name := "Unknown"
         if winner_ref isnt empty
-            winner_name = dereference winner_ref.name
+            winner_name = winner_ref.name
         lines = append(lines, "GAME OVER - Winner: {winner_name}")
     else if gs.phase equals enums.SETUP
         lines = append(lines, "GAME SETUP - Waiting for players")

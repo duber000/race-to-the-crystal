@@ -3,7 +3,7 @@ module kukicha.org/kukicha/stdlib
 go 1.27.0
 
 require (
-	github.com/modelcontextprotocol/go-sdk v1.7.0
+	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/ncruces/go-sqlite3 v0.35.4
 	github.com/yuin/goldmark/v2 v2.0.0
 	golang.org/x/term v0.45.0

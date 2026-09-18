@@ -260,14 +260,13 @@ func finish_game on lm: reference LobbyManager(game_id: string) bool
 func list_available_lobbies on lm: reference LobbyManager list of map of string to any
     result := empty list of map of string to any
     for _, lobby in lm.lobbies
-        if dereference lobby.status equals GameStatus.WAITING and len(dereference lobby.players) < dereference lobby.max_players
-            result = append(result, dereference lobby.to_dict())
+        if lobby.status equals GameStatus.WAITING and len(lobby.players) < lobby.max_players
+            result = append(result, lobby.to_dict())
     return result
 
 func get_player_lobby on lm: reference LobbyManager(player_id: string) optional reference GameLobby
     for _, lobby in lm.lobbies
-        lb := dereference lobby
-        _, exists := lb.players[player_id]
+        _, exists := lobby.players[player_id]
         if exists
             return lobby
     return empty
@@ -275,4 +274,4 @@ func get_player_lobby on lm: reference LobbyManager(player_id: string) optional 
 func remove_player_from_all on lm: reference LobbyManager(player_id: string)
     lobby := lm.get_player_lobby(player_id)
     if lobby isnt empty
-        lm.leave_lobby(dereference lobby.game_id, player_id)
+        lm.leave_lobby(lobby.game_id, player_id)

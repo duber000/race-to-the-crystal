@@ -56,16 +56,18 @@ type FlagDef struct {
 }
 
 type Command struct {
-	Name          string
-	Description   string
-	Version       string
-	Args          []ArgDef
-	Flags         []FlagDef
-	GlobalFlags   []FlagDef
-	Subcommands   []*Command
-	ActionFunc    func(Args)
-	DefaultAction func(Args)
-	RestArgName   string
+	Name           string
+	Description    string
+	Version        string
+	Args           []ArgDef
+	Flags          []FlagDef
+	GlobalFlags    []FlagDef
+	Subcommands    []*Command
+	ActionFunc     func(Args)
+	ActionFuncE    func(Args) error
+	DefaultAction  func(Args)
+	DefaultActionE func(Args) error
+	RestArgName    string
 }
 
 func (cmd *Command) Flag(name string, desc string, defaultValue string) *Command {
@@ -129,6 +131,11 @@ func (cmd *Command) Action(handler func(Args)) *Command {
 	return cmd
 }
 
+func (cmd *Command) ActionE(handler func(Args) error) *Command {
+	cmd.ActionFuncE = handler
+	return cmd
+}
+
 func (cmd *Command) WithCommands(subs ...*Command) *Command {
 	for _, s := range subs {
 		cmd.Subcommands = append(cmd.Subcommands, s)
@@ -137,7 +144,7 @@ func (cmd *Command) WithCommands(subs ...*Command) *Command {
 }
 
 func NewCommand(name string, desc string) *Command {
-	return &Command{Name: name, Description: desc, Args: make([]ArgDef, 0), Flags: make([]FlagDef, 0), Subcommands: make([]*Command, 0), ActionFunc: nil, RestArgName: ""}
+	return &Command{Name: name, Description: desc, Args: make([]ArgDef, 0), Flags: make([]FlagDef, 0), Subcommands: make([]*Command, 0), ActionFunc: nil, ActionFuncE: nil, RestArgName: ""}
 }
 
 type Args struct {
@@ -150,7 +157,7 @@ func NewArgs(values map[string]string) Args {
 }
 
 func New(name string) *Command {
-	return &Command{Name: name, Args: make([]ArgDef, 0), Flags: make([]FlagDef, 0), GlobalFlags: make([]FlagDef, 0), Subcommands: make([]*Command, 0), ActionFunc: nil, RestArgName: ""}
+	return &Command{Name: name, Args: make([]ArgDef, 0), Flags: make([]FlagDef, 0), GlobalFlags: make([]FlagDef, 0), Subcommands: make([]*Command, 0), ActionFunc: nil, ActionFuncE: nil, RestArgName: ""}
 }
 
 func Version(app *Command, version string) *Command {
@@ -224,8 +231,18 @@ func Action(app *Command, handler func(Args)) *Command {
 	return app
 }
 
+func ActionE(app *Command, handler func(Args) error) *Command {
+	app.ActionFuncE = handler
+	return app
+}
+
 func DefaultAction(app *Command, handler func(Args)) *Command {
 	app.DefaultAction = handler
+	return app
+}
+
+func DefaultActionE(app *Command, handler func(Args) error) *Command {
+	app.DefaultActionE = handler
 	return app
 }
 
@@ -276,6 +293,14 @@ func exitWithCode(code int) {
 	os.Exit(code)
 }
 
+type handlerError struct {
+	inner error
+}
+
+func (e handlerError) Error() string {
+	return e.inner.Error()
+}
+
 func UsageError(app *Command, reason string) {
 	fmt.Fprintf(os.Stderr, "Error: %v\n", reason)
 	fmt.Fprintln(os.Stderr, "")
@@ -289,6 +314,11 @@ func Error(msg string) {
 
 func Run(app *Command) {
 	err := RunWithArgs(app, os.Args)
+	if he, _isOk := err.(handlerError); _isOk {
+		fmt.Fprintf(os.Stderr, "error: %v\n", he.inner)
+		exitWithCode(1)
+		return
+	}
 	if err != nil {
 		UsageError(app, fmt.Sprintf("%v", err))
 	}
@@ -297,8 +327,9 @@ func Run(app *Command) {
 type ParseResult interface{ isParseResult() }
 
 type Execute struct {
-	Handler func(Args)
-	Args    Args
+	Handler  func(Args)
+	HandlerE func(Args) error
+	Args     Args
 }
 
 func (Execute) isParseResult() {}
@@ -335,8 +366,14 @@ func Parse(app *Command, args []string) ParseResult {
 				return Invalid{Reason: fmt.Sprintf("argument %v is required", a.Name)}
 			}
 		}
+		if app.ActionFuncE != nil {
+			return Execute{Handler: nil, HandlerE: app.ActionFuncE, Args: rootArgs}
+		}
 		if app.ActionFunc != nil {
 			return Execute{Handler: app.ActionFunc, Args: rootArgs}
+		}
+		if app.DefaultActionE != nil {
+			return Execute{Handler: nil, HandlerE: app.DefaultActionE, Args: rootArgs}
 		}
 		if app.DefaultAction != nil {
 			return Execute{Handler: app.DefaultAction, Args: rootArgs}
@@ -361,8 +398,10 @@ func Parse(app *Command, args []string) ParseResult {
 			return parseLeaf(app, leaf, args, 1, subIndex, leafArgStart)
 		}
 	}
+	rootActionE := app.DefaultActionE
 	rootAction := app.DefaultAction
-	if rootAction == nil {
+	if (rootActionE == nil) && (rootAction == nil) {
+		rootActionE = app.ActionFuncE
 		rootAction = app.ActionFunc
 	}
 	values := defaultValues(app, nil)
@@ -391,6 +430,9 @@ func Parse(app *Command, args []string) ParseResult {
 			return Invalid{Reason: fmt.Sprintf("argument %v is required", a.Name)}
 		}
 	}
+	if rootActionE != nil {
+		return Execute{Handler: nil, HandlerE: rootActionE, Args: Args{values: values, rest: restMap}}
+	}
 	if rootAction != nil {
 		return Execute{Handler: rootAction, Args: Args{values: values, rest: restMap}}
 	}
@@ -401,6 +443,13 @@ func RunWithArgs(app *Command, args []string) error {
 	outcome := Parse(app, args)
 	switch oc := outcome.(type) {
 	case Execute:
+		if oc.HandlerE != nil {
+			herr := oc.HandlerE(oc.Args)
+			if herr != nil {
+				return handlerError{inner: herr}
+			}
+			return nil
+		}
 		oc.Handler(oc.Args)
 		return nil
 	case ShowHelp:
@@ -596,6 +645,9 @@ func parseLeaf(app *Command, leaf *Command, args []string, leadingStart int, sub
 		if a.Required && values[a.Name] == "" {
 			return Invalid{Reason: fmt.Sprintf("argument %v is required", a.Name)}
 		}
+	}
+	if leaf.ActionFuncE != nil {
+		return Execute{Handler: nil, HandlerE: leaf.ActionFuncE, Args: Args{values: values, rest: restMap}}
 	}
 	if leaf.ActionFunc == nil {
 		return Invalid{Reason: fmt.Sprintf("no action defined for command %v", leaf.Name)}
@@ -909,7 +961,16 @@ func Success(msg string) {
 
 func Fatal(msg string) {
 	fmt.Fprintln(os.Stderr, msg)
-	os.Exit(1)
+	exitWithCode(1)
+}
+
+func Fail(msg string) {
+	fmt.Fprintln(os.Stderr, msg)
+	exitWithCode(1)
+}
+
+func ExitCode(code int) {
+	exitWithCode(code)
 }
 
 func GetString(args Args, name string) string {

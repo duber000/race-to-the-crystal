@@ -403,3 +403,57 @@ func TestBoolScan(t *testing.T) {
 	test.AssertEqual(t, rows[0].Active, true)
 	test.AssertEqual(t, rows[1].Active, false)
 }
+
+type IntStringRow struct {
+	Value string `json:"value"`
+}
+
+func TestNumericIntoStringScan(t *testing.T) {
+	pool, err_39 := db.Open("sqlite3", ":memory:")
+	if err_39 != nil {
+		panic(fmt.Sprintf("open: %v", err_39))
+	}
+	defer db.Close(pool)
+	_, err_40 := db.Exec(pool, "CREATE TABLE nums (n INTEGER, r REAL)")
+	if err_40 != nil {
+		panic(fmt.Sprintf("create: %v", err_40))
+	}
+	_, err_41 := db.Exec(pool, "INSERT INTO nums (n, r) VALUES (123, 2.5)")
+	if err_41 != nil {
+		panic(fmt.Sprintf("insert: %v", err_41))
+	}
+	_, err_42 := db.Exec(pool, "INSERT INTO nums (n, r) VALUES (65, NULL)")
+	if err_42 != nil {
+		panic(fmt.Sprintf("insert: %v", err_42))
+	}
+	_, err_43 := db.Exec(pool, "INSERT INTO nums (n, r) VALUES (300, NULL)")
+	if err_43 != nil {
+		panic(fmt.Sprintf("insert: %v", err_43))
+	}
+	// pipe step 1: db.Query(...)
+	pipe_44, err_45 := db.Query(pool, "SELECT n AS value FROM nums ORDER BY n")
+	if err_45 != nil {
+		panic(fmt.Sprintf("scan: %v", err_45))
+	}
+	// pipe step 2: db.ScanAll(...)
+	rows, err_47 := db.ScanAll[IntStringRow](pipe_44)
+	if err_47 != nil {
+		panic(fmt.Sprintf("scan: %v", err_47))
+	}
+	test.AssertEqual(t, len(rows), 3)
+	test.AssertEqual(t, rows[0].Value, "65")
+	test.AssertEqual(t, rows[1].Value, "123")
+	test.AssertEqual(t, rows[2].Value, "300")
+	row := db.QueryRow(pool, "SELECT COUNT(*) AS value FROM nums")
+	result, err_48 := db.ScanRow[IntStringRow](row)
+	if err_48 != nil {
+		panic(fmt.Sprintf("scan: %v", err_48))
+	}
+	test.AssertEqual(t, result.Value, "3")
+	frow := db.QueryRow(pool, "SELECT r AS value FROM nums WHERE n = 123")
+	fresult, err_49 := db.ScanRow[IntStringRow](frow)
+	if err_49 != nil {
+		panic(fmt.Sprintf("scan: %v", err_49))
+	}
+	test.AssertEqual(t, fresult.Value, "2.5")
+}

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"kukicha.org/kukicha/stdlib/cast"
 	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
 	strpkg "kukicha.org/kukicha/stdlib/string"
 	"reflect"
@@ -492,6 +493,10 @@ func (s *nullSafeField) Scan(value any) error {
 			s.target.SetBool(v != 0)
 			return nil
 		}
+	}
+	if s.target.Kind() == reflect.String {
+		s.target.SetString(cast.ToString(value))
+		return nil
 	}
 	src := reflect.ValueOf(value)
 	if src.Type().ConvertibleTo(s.target.Type()) {

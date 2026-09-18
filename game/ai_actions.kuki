@@ -323,7 +323,7 @@ func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: ref
     def_player := gs.GetPlayer(defn.player_id)
     def_owner := "Unknown"
     if def_player isnt empty
-        def_owner = dereference def_player.name
+        def_owner = def_player.name
 
     outcome := gs.AttackToken(AttackerID, DefenderID)
     if outcome equals empty
@@ -337,7 +337,7 @@ func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: ref
     else
         current_hp := defn.health
         if def_ref isnt empty
-            current_hp = dereference def_ref.health
+            current_hp = def_ref.health
         message = message + "\n  Token #{DefenderID} now has {current_hp}hp"
 
     return SuccessResult(message, AttackData{
@@ -375,7 +375,7 @@ func ExecuteEndTurn(gs: reference GameState) ActionResult
     new_player := gs.GetCurrentPlayer()
     new_player_name := "Unknown"
     if new_player isnt empty
-        new_player_name = dereference new_player.name
+        new_player_name = new_player.name
 
     message := "Turn ended\n  Turn {gs.turn_number} begins\n  Current player: {new_player_name}"
 

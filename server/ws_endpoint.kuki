@@ -299,7 +299,7 @@ func handleGameAction on ep: reference WebSocketEndpoint(client_id: string, msg_
         ep.sendInvalidAction(
             client_id,
             msg_type,
-            "validation failed: {dereference validation_err.message}",
+            "validation failed: {validation_err.message}",
         )
         return
     action := ep.http_handler.buildGameAction(client.player_id, action_type, normalized)

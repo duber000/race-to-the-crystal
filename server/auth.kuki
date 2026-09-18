@@ -88,4 +88,4 @@ func ExtractTokenFromHeader(authorization_header: string) string
 func ValidateTokenForGame(payload: optional reference TokenPayload, game_id: string) bool
     if payload equals empty
         return false
-    return dereference payload.game_id equals game_id
+    return payload.game_id equals game_id
