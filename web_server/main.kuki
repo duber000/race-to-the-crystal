@@ -10,13 +10,13 @@ import "stdlib/signal"
 
 type WebServerConfig
     port: int
-    static_dir: string
-    index_path: string
-    game_server_url: string
-    mercure_hub_url: string
-    mercure_topic_prefix: string
-    mercure_enabled: bool
-    sse_primary_mode: bool
+    staticDir: string
+    indexPath: string
+    gameServerUrl: string
+    mercureHubUrl: string
+    mercureTopicPrefix: string
+    mercureEnabled: bool
+    ssePrimaryMode: bool
 
 func WebServerConfigFromEnv() WebServerConfig
     port := env.GetIntOr("WEB_PORT", 8000) onerr panic "invalid WEB_PORT: {error}"
@@ -24,13 +24,13 @@ func WebServerConfigFromEnv() WebServerConfig
     ssePrimaryMode := env.GetBoolOr("SSE_PRIMARY_MODE", false) onerr panic "invalid SSE_PRIMARY_MODE: {error}"
     return WebServerConfig{
         port: port,
-        static_dir: env.GetOr("STATIC_DIR", "web_server/static"),
-        index_path: env.GetOr("INDEX_PATH", "web_server/templates/index.html"),
-        game_server_url: env.GetOr("GAME_SERVER_URL", "http://localhost:8080"),
-        mercure_hub_url: env.GetOr("MERCURE_HUB_URL", "http://localhost:3000/.well-known/mercure"),
-        mercure_topic_prefix: env.GetOr("MERCURE_TOPIC_PREFIX", "https://api.game.com/game"),
-        mercure_enabled: mercureEnabled or env.GetOr("MERCURE_PUBLISHER_JWT", "") isnt "",
-        sse_primary_mode: ssePrimaryMode,
+        staticDir: env.GetOr("STATIC_DIR", "web_server/static"),
+        indexPath: env.GetOr("INDEX_PATH", "web_server/templates/index.html"),
+        gameServerUrl: env.GetOr("GAME_SERVER_URL", "http://localhost:8080"),
+        mercureHubUrl: env.GetOr("MERCURE_HUB_URL", "http://localhost:3000/.well-known/mercure"),
+        mercureTopicPrefix: env.GetOr("MERCURE_TOPIC_PREFIX", "https://api.game.com/game"),
+        mercureEnabled: mercureEnabled or env.GetOr("MERCURE_PUBLISHER_JWT", "") isnt "",
+        ssePrimaryMode: ssePrimaryMode,
     }
 
 type WebServer
@@ -38,7 +38,7 @@ type WebServer
     proxy: optional reference httputil.ReverseProxy
 
 func NewWebServer(config: WebServerConfig) (WebServer, error)
-    target := url.Parse(config.game_server_url) onerr return WebServer{}, error "invalid GAME_SERVER_URL"
+    target := url.Parse(config.gameServerUrl) onerr return WebServer{}, error "invalid GAME_SERVER_URL"
     proxy := httputil.NewSingleHostReverseProxy(target)
     return WebServer{config: config, proxy: proxy}, empty
 
@@ -48,15 +48,15 @@ func Start on ws: reference WebServer
     mux.Handle("GET /api/config", httphelper.Handler(ws.handleConfig))
     mux.Handle(
         "GET /static/",
-        http.StripPrefix("/static/", http.FileServer(http.Dir(ws.config.static_dir))),
+        http.StripPrefix("/static/", http.FileServer(http.Dir(ws.config.staticDir))),
     )
     mux.Handle("/api/", ws.proxy)
     mux.Handle("/ws", ws.proxy)
 
     addr := ":{ws.config.port}"
     log.Info("Web server starting on {addr}")
-    log.Info("Serving static files from {ws.config.static_dir}")
-    log.Info("Proxying API to {ws.config.game_server_url}")
+    log.Info("Serving static files from {ws.config.staticDir}")
+    log.Info("Proxying API to {ws.config.gameServerUrl}")
 
     go
         err := http.ListenAndServe(addr, mux)
@@ -72,18 +72,18 @@ func Start on ws: reference WebServer
     receive from ch
 
 func handleRoot on ws: reference WebServer(w: http.ResponseWriter, r: reference http.Request)
-    http.ServeFile(w, r, ws.config.index_path)
+    http.ServeFile(w, r, ws.config.indexPath)
 
 func handleConfig on ws: reference WebServer(response: httphelper.Response, request: httphelper.Request)
-    config_data := map of string to any{
-        "mercure_hub_url": ws.config.mercure_hub_url,
-        "mercure_topic": ws.config.mercure_topic_prefix,
-        "mercure_enabled": ws.config.mercure_enabled,
-        "sse_primary_mode": ws.config.sse_primary_mode,
+    configData := map of string to any{
+        "mercure_hub_url": ws.config.mercureHubUrl,
+        "mercure_topic": ws.config.mercureTopicPrefix,
+        "mercure_enabled": ws.config.mercureEnabled,
+        "sse_primary_mode": ws.config.ssePrimaryMode,
         "api_version": "1.0.0",
         "features": list of string{"mercure"},
     }
-    response.JSON(config_data) onerr
+    response.JSON(configData) onerr
         log.Error("Failed to encode config JSON")
 
 func main()

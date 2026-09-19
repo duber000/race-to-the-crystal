@@ -1,9 +1,12 @@
 # Modernization TODO — Race to the Crystal (Kukicha v0.85.1)
 
 Scan date: 2026-09-19  
-Compiler version: v0.85.1  
-Pin status: `kukicha.org/kukicha/stdlib v0.85.1` (`go.mod` current)  
+Compiler version: v0.85.2  
+Pin status: `kukicha.org/kukicha/stdlib v0.85.2` (`go.mod` current)  
 Status: `[ ]` pending · `[~]` in progress · `[x]` done · `[/]` blocked
+
+> **Completed 2026-09-19:** Phases 1–6 verified with `kukicha fmt --check .`, `kukicha check ./...` (0 errors, 0 warnings), `kukicha build ./...`, `go test ./...`, binary builds, and clean git state.
+> Phase 3.2 note: `p.String()` on enum values from other packages is not resolved by the semantic pass — use `"{p}"` interpolation at call sites.
 
 This plan outlines modernization steps to update `race-to-the-crystal` to modern Kukicha idioms and conventions.
 
@@ -17,21 +20,21 @@ Mechanical replacements that eliminate legacy Go-isms, improve code readability,
 
 Replace `len(collection) equals 0` / `len(collection) == 0` with `collection is empty`, and `len(collection) > 0` with `collection isnt empty`. In Kukicha, `is empty` and `isnt empty` work directly on strings, lists, maps, and channels.
 
-- [ ] **`game/board.kuki:18`**:
+- [x] `game/board.kuki:18`**:
   ```kukicha
   // Before
   return len(c.occupants) > 0
   // After
   return c.occupants isnt empty
   ```
-- [ ] **`game/crystal.kuki:78`**:
+- [x] `game/crystal.kuki:78`**:
   ```kukicha
   // Before
   return c.holding_player_id equals "" and len(c.holding_token_ids) > 0
   // After
   return c.holding_player_id is empty and c.holding_token_ids isnt empty
   ```
-- [ ] **`game/ai_observation.kuki`**:
+- [x] `game/ai_observation.kuki`**:
   - Line 77: `if len(lines) equals 0` -> `if lines is empty`
   - Line 126: `if len(gs.generators) > 0` -> `if gs.generators isnt empty`
   - Line 155: `if len(deployed) > 0` -> `if deployed isnt empty`
@@ -40,28 +43,28 @@ Replace `len(collection) equals 0` / `len(collection) == 0` with `collection is 
   - Line 407: `if len(available) > 0` -> `if available isnt empty`
   - Line 487: `if len(holders) > 0` -> `if holders isnt empty`
   - Line 538: `if len(actions_data.Actions) > 0` -> `if actions_data.Actions isnt empty`
-- [ ] **`game/ai_strategy.kuki`**:
+- [x] `game/ai_strategy.kuki`**:
   - Line 68: `if len(actions) equals 0` -> `if actions is empty`
   - Lines 87, 91, 95, 102, 106, 110: `len(attacks) > 0` / `len(moves) > 0` / `len(deploys) > 0` -> `... isnt empty`
   - Line 194: `if len(chosen.Positions) equals 0` -> `if chosen.Positions is empty`
-- [ ] **`game/game_state.kuki`**:
+- [x] `game/game_state.kuki`**:
   - Line 288: `if len(active) equals 0` -> `if active is empty`
   - Line 315: `if len(gs.players) equals 0` -> `if gs.players is empty`
-- [ ] **`game/movement.kuki`**:
+- [x] `game/movement.kuki`**:
   - Lines 44 & 100: `for len(queue) > 0` -> `for queue isnt empty`
-- [ ] **`server/` packages**:
+- [x] `server/` packages**:
   - `server/ai_spawner.kuki:27`: `if len(strategies) equals 0` -> `if strategies is empty`
   - `server/http_handler.kuki:449`: `if len(parts) > 0` -> `if parts isnt empty`
   - `server/lobby.kuki:121`: `len(l.players) > 0` -> `l.players isnt empty`
   - `server/lobby.kuki:227`: `len(dereference lobby.players) equals 0` -> `lobby.players is empty`
-- [ ] **`client/` packages**:
+- [x] `client/` packages**:
   - `client/desktop/renderer_2d.kuki:172, 179`: `len(app.message) > 0` -> `app.message isnt empty`; `len(gs.winner) > 0` -> `gs.winner isnt empty`
   - `client/desktop/main.kuki:224, 280`: `len(winner_id) > 0` -> `winner_id isnt empty`; `len(actions) equals 0` -> `actions is empty`
   - `client/ai/http_ai_client.kuki:401`: `if len(actions_typed) equals 0` -> `if actions_typed is empty`
   - `client/ai/ai_client.kuki:63, 98, 112, 116, 165, 198, 210, 214`: Update `len(...)` checks on `state`, `payload`, `actions`, `result`
-- [ ] **`shared/errs/errors.kuki`**:
+- [x] `shared/errs/errors.kuki`**:
   - Lines 96, 108, 120, 132: `if len(e.context) > 0` / `len(e.details) > 0` -> `... isnt empty`
-- [ ] **`learn/` packages**:
+- [x] `learn/` packages**:
   - `learn/examples/05-decisions/main.kuki:20`: `if len(mine) equals 0` -> `if mine is empty`
   - `learn/examples/09-strategist/main.kuki:52`: `if len(api.MyTokens()) equals 0` -> `if api.MyTokens() is empty`
   - `learn/simulation.kuki:113`: `if len(actions) equals 0` -> `if actions is empty`
@@ -70,29 +73,29 @@ Replace `len(collection) equals 0` / `len(collection) == 0` with `collection is 
 
 Replace `if x equals empty` with `if x is empty`. In Kukicha, `is empty` is the idiomatic syntax for checking optional/reference emptiness.
 
-- [ ] **`game/api.kuki`**:
+- [x] `game/api.kuki`**:
   - Lines 14, 19, 25, 30, 35, 40, 45, 52, 58, 65, 71, 76, 81, 89: `if api.game_state equals empty` -> `if api.game_state is empty`
-- [ ] **`game/game_state.kuki`**:
+- [x] `game/game_state.kuki`**:
   - Lines 89, 107, 121: `if p_ref equals empty` -> `if p_ref is empty`
   - Lines 146, 171, 183: `if t_ref equals empty` -> `if t_ref is empty`
   - Lines 195, 198: `if a_ref equals empty` / `if d_ref equals empty` -> `... is empty`
-- [ ] **`server/ws_endpoint.kuki`**:
+- [x] `server/ws_endpoint.kuki`**:
   - Lines 95, 124, 170, 210, 231, 255, 282, 317, 337: `if client equals empty` -> `if client is empty`
   - Lines 152, 185, 262: `if lobby equals empty` -> `if lobby is empty`
   - Lines 269: `if start_result equals empty` -> `if start_result is empty`
   - Lines 289, 322: `if session equals empty` -> `if session is empty`
-- [ ] **`server/auth.kuki:89`**:
+- [x] `server/auth.kuki:89`**:
   - `if payload equals empty` -> `if payload is empty`
-- [ ] **`server/game_coordinator.kuki:128`**:
+- [x] `server/game_coordinator.kuki:128`**:
   - `if session equals empty` -> `if session is empty`
-- [ ] **`server/http_handler.kuki`**:
+- [x] `server/http_handler.kuki`**:
   - Lines 75, 323, 402: `if lobby equals empty` -> `if lobby is empty`
   - Lines 86, 420: `if join_result equals empty` / `if start_result equals empty` -> `... is empty`
   - Lines 117, 220, 245, 349, 363, 396: `if payload equals empty` -> `if payload is empty`
   - Lines 180, 224, 249: `if session equals empty` -> `if session is empty`
-- [ ] **`server/lobby.kuki`**:
+- [x] `server/lobby.kuki`**:
   - Lines 213, 224, 233, 239, 248, 255: `if lobby equals empty` -> `if lobby is empty`
-- [ ] **`client/` & `learn/`**:
+- [x] `client/` & `learn/`**:
   - `client/desktop/main.kuki:198, 256, 283, 305`: `if gs equals empty` / `if chosen_ref equals empty` -> `... is empty`
   - `client/desktop/input_handler.kuki:45, 95, 108, 121, 131, 146`: `if gs equals empty` / `if app.real_api equals empty` -> `... is empty`
   - `client/ai/http_ai_client.kuki:222, 367, 378, 389, 404`: `... equals empty` -> `... is empty`
@@ -102,18 +105,18 @@ Replace `if x equals empty` with `if x is empty`. In Kukicha, `is empty` is the 
 
 Kukicha automatically dereferences reference types (`reference T`) for field access and method calls. `dereference` is only needed when copying value semantics or obtaining a non-pointer value.
 
-- [ ] **Method calls on references**:
+- [x] Method calls on references**:
   - `game/mystery_square.kuki:39`: `if not dereference cell.is_occupied()` -> `if not cell.is_occupied()`
   - `game/ai_observation.kuki:405`: `if not dereference cell.is_occupied()` -> `if not cell.is_occupied()`
   - `server/lobby.kuki:241`: `if not dereference lobby.can_start()` -> `if not lobby.can_start()`
   - `server/websocket_handler.kuki:99, 111`: `dereference client.conn.WriteMessage(...)` -> `client.conn.WriteMessage(...)`
   - `game/ai_strategy.kuki:244`: `if dereference tok.movement_range() >= 2` -> `if tok.movement_range() >= 2`
   - `learn/simulation.kuki:101`: `return dereference p_ref.Name()` -> `return p_ref.Name()`
-- [ ] **Field access on references**:
+- [x] Field access on references**:
   - `server/lobby.kuki:215`: `if dereference lobby.status isnt GameStatus.WAITING` -> `if lobby.status isnt GameStatus.WAITING`
   - `game/api.kuki:78`: `return dereference api.game_state.current_turn_player_id equals api.player_id` -> `return api.game_state.current_turn_player_id equals api.player_id`
   - `game/board.kuki:23`: `dereference tok.player_id` -> `tok.player_id`
-- [ ] **Assertions in tests**:
+- [x] Assertions in tests**:
   - `game/board_test.kuki:57`: `test.AssertEqual(t, dereference cell.position, types.Pos(5, 7))` -> `test.AssertEqual(t, cell.position, types.Pos(5, 7))`
   - `game/game_state_test.kuki:63-64`: `test.AssertTrue(t, dereference tok.is_deployed)` -> `test.AssertTrue(t, tok.is_deployed)`
 
@@ -129,7 +132,7 @@ Kukicha automatically dereferences reference types (`reference T`) for field acc
 
 In Kukicha, indexing a map whose value is a reference type (`map of K to reference T`) evaluates to `empty` (Go `nil`) when the key is absent. The 5-line comma-ok pattern is unnecessary boilerplate.
 
-- [ ] **`game/game_state.kuki:72-76` (`GetPlayer`)**:
+- [x] `game/game_state.kuki:72-76` (`GetPlayer`)**:
   ```kukicha
   // Before
   func GetPlayer on gs: reference GameState(player_id: types.PlayerID) optional reference Player
@@ -142,7 +145,7 @@ In Kukicha, indexing a map whose value is a reference type (`map of K to referen
   func GetPlayer on gs: reference GameState(player_id: types.PlayerID) optional reference Player
       return gs.players[player_id]
   ```
-- [ ] **`game/game_state.kuki:81-85` (`GetToken`)**:
+- [x] `game/game_state.kuki:81-85` (`GetToken`)**:
   ```kukicha
   // Before
   func GetToken on gs: reference GameState(token_id: types.TokenID) optional reference Token
@@ -155,7 +158,7 @@ In Kukicha, indexing a map whose value is a reference type (`map of K to referen
   func GetToken on gs: reference GameState(token_id: types.TokenID) optional reference Token
       return gs.tokens[token_id]
   ```
-- [ ] **`server/game_coordinator.kuki:114-118` (`get_session`)**:
+- [x] `server/game_coordinator.kuki:114-118` (`get_session`)**:
   ```kukicha
   // Before
   func get_session on gc: reference GameCoordinator(game_id: string) optional reference GameSession
@@ -168,7 +171,7 @@ In Kukicha, indexing a map whose value is a reference type (`map of K to referen
   func get_session on gc: reference GameCoordinator(game_id: string) optional reference GameSession
       return gc.active_games[game_id]
   ```
-- [ ] **`server/lobby.kuki:205-209` (`get_lobby`)**:
+- [x] `server/lobby.kuki:205-209` (`get_lobby`)**:
   ```kukicha
   // Before
   func get_lobby on lm: reference LobbyManager(game_id: string) optional reference GameLobby
@@ -234,7 +237,7 @@ In Kukicha, indexing a map whose value is a reference type (`map of K to referen
 
 ### 2.3 Map Membership (`in` / `not in`)
 
-- [ ] **`game/crystal_effects.kuki:99-100`**:
+- [x] `game/crystal_effects.kuki:99-100`**:
   ```kukicha
   // Before
   _, occ := occupied[pos]
@@ -243,7 +246,7 @@ In Kukicha, indexing a map whose value is a reference type (`map of K to referen
   // After
   if pos not in occupied
   ```
-- [ ] **`server/rate_limiter.kuki:95-118`**:
+- [x] `server/rate_limiter.kuki:95-118`**:
   Simplify `get_ip_counter`, `get_action_bucket`, and `get_game_creation_counter`:
   ```kukicha
   // Before
@@ -271,11 +274,11 @@ In Kukicha, indexing a map whose value is a reference type (`map of K to referen
 
 In `shared/enums/enums.kuki`, the compiler automatically generates a `.String() string` method on enums. The hand-rolled `GamePhaseName`, `TurnPhaseName`, and `MysteryEffectName` switch functions duplicate compiler-generated behavior.
 
-- [ ] **`shared/enums/enums.kuki`**:
+- [x] `shared/enums/enums.kuki`**:
   - Remove `GamePhaseName(p: GamePhase) string` (lines 15-24)
   - Remove `TurnPhaseName(p: TurnPhase) string` (lines 31-40)
   - Remove `MysteryEffectName(e: MysteryEffect) string` (lines 65-72)
-- [ ] **Update Callers**:
+- [x] Update Callers**:
   Replace `enums.GamePhaseName(p)` with `p.String()` or `{p}`, and `enums.TurnPhaseName(p)` with `p.String()` or `{p}`:
   - `game/ai_actions.kuki:287, 414`
   - `game/ai_observation.kuki:352`
@@ -286,10 +289,10 @@ In `shared/enums/enums.kuki`, the compiler automatically generates a `.String() 
 
 ### 3.2 Enum Case Names & Dot Syntax
 
-- [ ] **Dot syntax in tests and code**:
+- [x] Dot syntax in tests and code**:
   In `game/board_test.kuki:11`, `game/game_state_test.kuki:14, 16, 69`, the tests reference Go constant names `enums.CellTypeNORMAL`, `enums.GamePhaseSETUP`, `enums.GamePhasePLAYING`.
   Update to Kukicha enum variant syntax: `enums.CellType.NORMAL`, `enums.GamePhase.SETUP`, `enums.GamePhase.PLAYING`.
-- [ ] **Consider PascalCase for enum variants**:
+- [/] **Consider PascalCase for enum variants** (deferred — would change the compiler-generated `.String()` output and serialized wire values; coordinate with the web frontend first):
   Modern Kukicha style uses PascalCase for enum cases (e.g. `GamePhase.Setup`, `GamePhase.Playing`, `GamePhase.Ended`). If updating case names, coordinate across `shared/enums/enums.kuki` and callers.
 
 ---
@@ -315,7 +318,7 @@ Running `kukicha check ./...` reports 4 warnings:
 96 │             y := random.Int(0, bh)
 ```
 
-- [ ] **`game/board.kuki:117-118`**:
+- [x] **`game/board.kuki:117-118`**:
   `q.x_max + 1` and `q.y_max + 1` are dynamically computed. Validate `q.x_max >= q.x_min` before calling or extract a small local helper:
   ```kukicha
   func safeRandomRange(min_val: int, max_val: int) int
@@ -323,7 +326,7 @@ Running `kukicha check ./...` reports 4 warnings:
           return min_val
       return random.Int(min_val, max_val)
   ```
-- [ ] **`game/crystal_effects.kuki:95-96`**:
+- [x] `game/crystal_effects.kuki:95-96`**:
   Ensure `bw > 0` and `bh > 0` before the loop, or use the checked random helper.
 
 ---
@@ -336,9 +339,9 @@ Running `kukicha check ./...` reports 4 warnings:
 
 Modern Kukicha follows Go conventions: camelCase for unexported identifiers, PascalCase for exported identifiers.
 
-- [ ] **Package-internal unexported methods in `game/`**:
+- [x] Package-internal unexported methods in `game/`**:
   Gradually migrate unexported methods to camelCase (e.g. `addPlayer`, `removePlayer`, `createGenerators`, `isValidPosition`).
-- [ ] **Exported APIs**:
+- [x] Exported APIs**:
   Maintain consistency with existing exported public APIs (`GetPlayer`, `GetToken`, `NewBoard`) while updating any internal callers.
 
 ---

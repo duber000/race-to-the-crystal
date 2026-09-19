@@ -7,28 +7,28 @@ import "race-to-the-crystal/shared/types" as types
 type Generator
     id: int
     position: types.Position
-    capturing_player_id: types.PlayerID
-    capture_token_ids: list of types.TokenID
-    turns_held: int
-    is_disabled: bool
+    capturingPlayerId: types.PlayerID
+    captureTokenIds: list of types.TokenID
+    turnsHeld: int
+    isDisabled: bool
 
 func NewGenerator(id: int, position: types.Position) Generator
     return Generator{
         id: id,
         position: position,
-        capturing_player_id: "",
-        capture_token_ids: empty list of types.TokenID,
-        turns_held: 0,
-        is_disabled: false,
+        capturingPlayerId: "",
+        captureTokenIds: empty list of types.TokenID,
+        turnsHeld: 0,
+        isDisabled: false,
     }
 
-func required_tokens on g: reference Generator int
+func requiredTokens on g: reference Generator int
     return constants.GENERATOR_CAPTURE_TOKENS_REQUIRED
 
-func required_turns on g: reference Generator int
+func requiredTurns on g: reference Generator int
     return constants.GENERATOR_CAPTURE_TURNS_REQUIRED
 
-func token_reduction_value on g: reference Generator int
+func tokenReductionValue on g: reference Generator int
     return constants.GENERATOR_TOKEN_REDUCTION
 
 func Position on g: reference Generator types.Position
@@ -38,79 +38,79 @@ func ID on g: reference Generator int
     return g.id
 
 func CapturingPlayer on g: reference Generator types.PlayerID
-    return g.capturing_player_id
+    return g.capturingPlayerId
 
 func TurnsHeld on g: reference Generator int
-    return g.turns_held
+    return g.turnsHeld
 
 func IsDisabled on g: reference Generator bool
-    return g.is_disabled
+    return g.isDisabled
 
-func update_capture_status on g: reference Generator(tokens_at_pos: list of TokenAtPos) bool
-    if g.is_disabled
+func updateCaptureStatus on g: reference Generator(tokensAtPos: list of TokenAtPos) bool
+    if g.isDisabled
         return false
 
-    g.capture_token_ids = empty list of types.TokenID
+    g.captureTokenIds = empty list of types.TokenID
 
-    counts := count_tokens_by_player(tokens_at_pos)
-    dominant_player, dominant_count, found := find_dominant_player(counts)
+    counts := countTokensByPlayer(tokensAtPos)
+    dominantPlayer, dominantCount, found := findDominantPlayer(counts)
 
-    if found and dominant_count >= constants.GENERATOR_CAPTURE_TOKENS_REQUIRED
-        if dominant_player equals g.capturing_player_id
-            g.turns_held = g.turns_held + 1
-            g.capture_token_ids = counts[dominant_player]
-            if g.turns_held >= constants.GENERATOR_CAPTURE_TURNS_REQUIRED
-                g.is_disabled = true
+    if found and dominantCount >= constants.GENERATOR_CAPTURE_TOKENS_REQUIRED
+        if dominantPlayer equals g.capturingPlayerId
+            g.turnsHeld = g.turnsHeld + 1
+            g.captureTokenIds = counts[dominantPlayer]
+            if g.turnsHeld >= constants.GENERATOR_CAPTURE_TURNS_REQUIRED
+                g.isDisabled = true
                 return true
         else
-            g.capturing_player_id = dominant_player
-            g.turns_held = 1
-            g.capture_token_ids = counts[dominant_player]
+            g.capturingPlayerId = dominantPlayer
+            g.turnsHeld = 1
+            g.captureTokenIds = counts[dominantPlayer]
     else
-        g.capturing_player_id = ""
-        g.turns_held = 0
+        g.capturingPlayerId = ""
+        g.turnsHeld = 0
 
     return false
 
-func reset_capture on g: reference Generator
-    if not g.is_disabled
-        g.capturing_player_id = ""
-        g.turns_held = 0
-        g.capture_token_ids = empty list of types.TokenID
+func resetCapture on g: reference Generator
+    if not g.isDisabled
+        g.capturingPlayerId = ""
+        g.turnsHeld = 0
+        g.captureTokenIds = empty list of types.TokenID
 
-func get_capture_progress on g: reference Generator() (int, int)
-    return g.turns_held, constants.GENERATOR_CAPTURE_TURNS_REQUIRED
+func getCaptureProgress on g: reference Generator() (int, int)
+    return g.turnsHeld, constants.GENERATOR_CAPTURE_TURNS_REQUIRED
 
-func create_generators(positions: list of types.Position) list of Generator
+func createGenerators(positions: list of types.Position) list of Generator
     result := empty list of Generator
     for i, pos in positions
         result = append(result, NewGenerator(i, pos))
     return result
 
-func count_disabled_generators(generators: list of Generator) int
+func countDisabledGenerators(generators: list of Generator) int
     count := 0
     for gen in generators
-        if gen.is_disabled
+        if gen.isDisabled
             count = count + 1
     return count
 
-func get_generator_at_position(generators: list of Generator, pos: types.Position) optional reference Generator
+func getGeneratorAtPosition(generators: list of Generator, pos: types.Position) optional reference Generator
     for i from 0 to len(generators)
         if generators[i].position equals pos
             return reference of generators[i]
     return empty
 
-func update_all_generators(generators: list of Generator, tokens_by_pos: map of types.Position to list of TokenAtPos) (list of int, map of int to types.PlayerID)
-    newly_disabled := empty list of int
-    capturing_players := empty map of int to types.PlayerID
+func updateAllGenerators(generators: list of Generator, tokensByPos: map of types.Position to list of TokenAtPos) (list of int, map of int to types.PlayerID)
+    newlyDisabled := empty list of int
+    capturingPlayers := empty map of int to types.PlayerID
 
     for i from 0 to len(generators)
-        taps := tokens_by_pos[generators[i].position]
-        gen_ref := reference of generators[i]
-        was_disabled := gen_ref.update_capture_status(taps)
+        taps := tokensByPos[generators[i].position]
+        genRef := reference of generators[i]
+        wasDisabled := genRef.updateCaptureStatus(taps)
 
-        if was_disabled
-            newly_disabled = append(newly_disabled, generators[i].id)
-            capturing_players[generators[i].id] = generators[i].capturing_player_id
+        if wasDisabled
+            newlyDisabled = append(newlyDisabled, generators[i].id)
+            capturingPlayers[generators[i].id] = generators[i].capturingPlayerId
 
-    return newly_disabled, capturing_players
+    return newlyDisabled, capturingPlayers

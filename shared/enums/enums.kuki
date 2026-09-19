@@ -12,32 +12,10 @@ enum GamePhase
     PLAYING = 1
     ENDED = 2
 
-func GamePhaseName(p: GamePhase) string
-    switch p
-        when GamePhase.SETUP
-            return "SETUP"
-        when GamePhase.PLAYING
-            return "PLAYING"
-        when GamePhase.ENDED
-            return "ENDED"
-        default
-            return "UNKNOWN"
-
 enum TurnPhase
     MOVEMENT = 0
     ACTION = 1
     END_TURN = 2
-
-func TurnPhaseName(p: TurnPhase) string
-    switch p
-        when TurnPhase.MOVEMENT
-            return "MOVEMENT"
-        when TurnPhase.ACTION
-            return "ACTION"
-        when TurnPhase.END_TURN
-            return "END_TURN"
-        default
-            return "UNKNOWN"
 
 enum PlayerColor: string
     CYAN = "cyan"
@@ -61,15 +39,6 @@ func PlayerIndex(c: PlayerColor) int
 enum MysteryEffect
     HEAL = 0
     TELEPORT = 1
-
-func MysteryEffectName(e: MysteryEffect) string
-    switch e
-        when MysteryEffect.HEAL
-            return "HEAL"
-        when MysteryEffect.TELEPORT
-            return "TELEPORT"
-        default
-            return "UNKNOWN"
 
 enum CombatResult
     HIT = 0

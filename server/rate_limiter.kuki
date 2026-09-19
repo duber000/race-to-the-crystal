@@ -12,17 +12,17 @@ const CONNECTION_WINDOW_SECONDS = 60
 
 type TokenBucket
     capacity: int
-    refill_rate: float64
+    refillRate: float64
     tokens: float64
-    last_refill: float64
+    lastRefill: float64
 
-func NewTokenBucket(capacity: int, refill_rate: float64) TokenBucket
+func NewTokenBucket(capacity: int, refillRate: float64) TokenBucket
     now := time.Now().UnixNano() as float64 / 1e9
     return TokenBucket{
         capacity: capacity,
-        refill_rate: refill_rate,
+        refillRate: refillRate,
         tokens: capacity as float64,
-        last_refill: now,
+        lastRefill: now,
     }
 
 func Consume on tb: reference TokenBucket(count: int) bool
@@ -34,44 +34,44 @@ func Consume on tb: reference TokenBucket(count: int) bool
 
 func refill on tb: reference TokenBucket
     now := time.Now().UnixNano() as float64 / 1e9
-    elapsed := now - tb.last_refill
+    elapsed := now - tb.lastRefill
     if elapsed > 0.0
-        tb.tokens = tb.tokens + elapsed * tb.refill_rate
+        tb.tokens = tb.tokens + elapsed * tb.refillRate
         if tb.tokens > tb.capacity as float64
             tb.tokens = tb.capacity as float64
-        tb.last_refill = now
+        tb.lastRefill = now
 
 type TimedEvent
     timestamp: float64
 
 type SlidingWindowCounter
-    max_events: int
-    window_seconds: int
+    maxEvents: int
+    windowSeconds: int
     events: list of TimedEvent
 
-func NewSlidingWindowCounter(max_events: int, window_seconds: int) SlidingWindowCounter
+func NewSlidingWindowCounter(maxEvents: int, windowSeconds: int) SlidingWindowCounter
     return SlidingWindowCounter{
-        max_events: max_events,
-        window_seconds: window_seconds,
+        maxEvents: maxEvents,
+        windowSeconds: windowSeconds,
         events: empty list of TimedEvent,
     }
 
 func TryEvent on sw: reference SlidingWindowCounter bool
     now := time.Now().UnixNano() as float64 / 1e9
-    cutoff := now - sw.window_seconds as float64
+    cutoff := now - sw.windowSeconds as float64
     filtered := empty list of TimedEvent
     for evt in sw.events
         if evt.timestamp >= cutoff
             filtered = append(filtered, evt)
     sw.events = filtered
-    if len(sw.events) >= sw.max_events
+    if len(sw.events) >= sw.maxEvents
         return false
     sw.events = append(sw.events, TimedEvent{timestamp: now})
     return true
 
 func GetCount on sw: reference SlidingWindowCounter int
     now := time.Now().UnixNano() as float64 / 1e9
-    cutoff := now - sw.window_seconds as float64
+    cutoff := now - sw.windowSeconds as float64
     count := 0
     for evt in sw.events
         if evt.timestamp >= cutoff
@@ -79,85 +79,85 @@ func GetCount on sw: reference SlidingWindowCounter int
     return count
 
 type RateLimiter
-    ip_connections: map of string to reference SlidingWindowCounter
-    player_actions: map of string to reference TokenBucket
-    player_game_creation: map of string to reference SlidingWindowCounter
-    active_connections: map of string to int
+    ipConnections: map of string to reference SlidingWindowCounter
+    playerActions: map of string to reference TokenBucket
+    playerGameCreation: map of string to reference SlidingWindowCounter
+    activeConnections: map of string to int
 
 func NewRateLimiter() RateLimiter
     return RateLimiter{
-        ip_connections: empty map of string to reference SlidingWindowCounter,
-        player_actions: empty map of string to reference TokenBucket,
-        player_game_creation: empty map of string to reference SlidingWindowCounter,
-        active_connections: empty map of string to int,
+        ipConnections: empty map of string to reference SlidingWindowCounter,
+        playerActions: empty map of string to reference TokenBucket,
+        playerGameCreation: empty map of string to reference SlidingWindowCounter,
+        activeConnections: empty map of string to int,
     }
 
-func get_ip_counter on rl: reference RateLimiter(ip: string) reference SlidingWindowCounter
-    counter, ok := rl.ip_connections[ip]
-    if ok
+func getIpCounter on rl: reference RateLimiter(ip: string) reference SlidingWindowCounter
+    counter := rl.ipConnections[ip]
+    if counter isnt empty
         return counter
-    new_counter := NewSlidingWindowCounter(MAX_CONNECTIONS_PER_IP, CONNECTION_WINDOW_SECONDS)
-    rl.ip_connections[ip] = reference of new_counter
-    return rl.ip_connections[ip]
+    newCounter := reference of NewSlidingWindowCounter(MAX_CONNECTIONS_PER_IP, CONNECTION_WINDOW_SECONDS)
+    rl.ipConnections[ip] = newCounter
+    return newCounter
 
-func get_action_bucket on rl: reference RateLimiter(player_id: string) reference TokenBucket
-    bucket, ok := rl.player_actions[player_id]
-    if ok
+func getActionBucket on rl: reference RateLimiter(playerId: string) reference TokenBucket
+    bucket := rl.playerActions[playerId]
+    if bucket isnt empty
         return bucket
-    new_bucket := NewTokenBucket(10, MAX_ACTIONS_PER_SECOND as float64)
-    rl.player_actions[player_id] = reference of new_bucket
-    return rl.player_actions[player_id]
+    newBucket := reference of NewTokenBucket(10, MAX_ACTIONS_PER_SECOND as float64)
+    rl.playerActions[playerId] = newBucket
+    return newBucket
 
-func get_game_creation_counter on rl: reference RateLimiter(player_id: string) reference SlidingWindowCounter
-    counter, ok := rl.player_game_creation[player_id]
-    if ok
+func getGameCreationCounter on rl: reference RateLimiter(playerId: string) reference SlidingWindowCounter
+    counter := rl.playerGameCreation[playerId]
+    if counter isnt empty
         return counter
-    new_counter := NewSlidingWindowCounter(MAX_GAMES_CREATED_PER_HOUR, 3600)
-    rl.player_game_creation[player_id] = reference of new_counter
-    return rl.player_game_creation[player_id]
+    newCounter := reference of NewSlidingWindowCounter(MAX_GAMES_CREATED_PER_HOUR, 3600)
+    rl.playerGameCreation[playerId] = newCounter
+    return newCounter
 
-func CheckConnection on rl: reference RateLimiter(ip_address: string) bool
-    counter := rl.get_ip_counter(ip_address)
+func CheckConnection on rl: reference RateLimiter(ipAddress: string) bool
+    counter := rl.getIpCounter(ipAddress)
     if not counter.TryEvent()
         return false
     current := 0
-    count, has := rl.active_connections[ip_address]
+    count, has := rl.activeConnections[ipAddress]
     if has
         current = count
     if current >= MAX_CONNECTIONS_PER_IP
         return false
     return true
 
-func ReleaseConnection on rl: reference RateLimiter(ip_address: string)
-    count, has := rl.active_connections[ip_address]
+func ReleaseConnection on rl: reference RateLimiter(ipAddress: string)
+    count, has := rl.activeConnections[ipAddress]
     if has and count > 0
-        rl.active_connections[ip_address] = count - 1
+        rl.activeConnections[ipAddress] = count - 1
 
-func RecordConnection on rl: reference RateLimiter(ip_address: string)
-    count, has := rl.active_connections[ip_address]
+func RecordConnection on rl: reference RateLimiter(ipAddress: string)
+    count, has := rl.activeConnections[ipAddress]
     if has
-        rl.active_connections[ip_address] = count + 1
+        rl.activeConnections[ipAddress] = count + 1
     else
-        rl.active_connections[ip_address] = 1
+        rl.activeConnections[ipAddress] = 1
 
-func CheckAction on rl: reference RateLimiter(player_id: string) bool
-    bucket := rl.get_action_bucket(player_id)
+func CheckAction on rl: reference RateLimiter(playerId: string) bool
+    bucket := rl.getActionBucket(playerId)
     if not bucket.Consume(1)
         return false
     return true
 
-func CheckGameCreation on rl: reference RateLimiter(player_id: string) bool
-    counter := rl.get_game_creation_counter(player_id)
+func CheckGameCreation on rl: reference RateLimiter(playerId: string) bool
+    counter := rl.getGameCreationCounter(playerId)
     if not counter.TryEvent()
         return false
     return true
 
-func CleanupPlayer on rl: reference RateLimiter(player_id: string)
-    delete rl.player_actions[player_id]
-    delete rl.player_game_creation[player_id]
+func CleanupPlayer on rl: reference RateLimiter(playerId: string)
+    delete rl.playerActions[playerId]
+    delete rl.playerGameCreation[playerId]
 
 func GetStats on rl: reference RateLimiter map of string to any
     return map of string to any{
-        "active_ips": len(rl.ip_connections),
-        "tracked_players": len(rl.player_actions),
+        "active_ips": len(rl.ipConnections),
+        "tracked_players": len(rl.playerActions),
     }

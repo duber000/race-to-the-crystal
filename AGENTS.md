@@ -84,7 +84,7 @@ All numeric game constants live in `shared/constants/`. All enums live in `share
 ### Testing
 - Tests use Go's `testing` package with `func Test...` functions
 - `*_test.kuki` files are co-located with the modules they test
-- `GameState.create_game(num_players)` followed by `game_state.start_game()` is the standard setup for integration-level tests
+- `GameState.createGame(numPlayers)` followed by `gameState.startGame()` is the standard setup for integration-level tests
 
 ### Go version
 Requires Go 1.26+. See `go.mod` for the current version.

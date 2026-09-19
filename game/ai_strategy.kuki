@@ -64,55 +64,55 @@ func ChosenToActionMap(action: ChosenAction) map of string to any
                 "data": empty map of string to any,
             }
 
-func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs: reference GameState, player_id: types.PlayerID) optional reference ChosenAction
-    if len(actions) equals 0
+func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs: reference GameState, playerId: types.PlayerID) optional reference ChosenAction
+    if actions is empty
         return empty
 
     switch strategy
         when AIStrategyName.AGGRESSIVE
-            r := choose_aggressive(actions, gs, player_id)
+            r := chooseAggressive(actions, gs, playerId)
             return reference of r
         when AIStrategyName.DEFENSIVE
-            r := choose_defensive(actions, gs, player_id)
+            r := chooseDefensive(actions, gs, playerId)
             return reference of r
         default
-            r := choose_random(actions)
+            r := chooseRandom(actions)
             return reference of r
 
-func choose_random(actions: list of ActionResponse) ChosenAction
-    return resolve_action(random.Choice of ActionResponse from actions)
+func chooseRandom(actions: list of ActionResponse) ChosenAction
+    return resolveAction(random.Choice of ActionResponse from actions)
 
-func choose_aggressive(actions: list of ActionResponse, gs: reference GameState, player_id: types.PlayerID) ChosenAction
-    attacks := filter_attacks(actions)
-    if len(attacks) > 0
-        return best_attack(attacks)
+func chooseAggressive(actions: list of ActionResponse, gs: reference GameState, playerId: types.PlayerID) ChosenAction
+    attacks := filterAttacks(actions)
+    if attacks isnt empty
+        return bestAttack(attacks)
 
-    moves := filter_moves(actions)
-    if len(moves) > 0
-        return best_move(moves, gs, player_id, false)
+    moves := filterMoves(actions)
+    if moves isnt empty
+        return bestMove(moves, gs, playerId, false)
 
-    deploys := filter_deploys(actions)
-    if len(deploys) > 0
-        return best_deploy(deploys)
-
-    return ChosenEndTurn{}
-
-func choose_defensive(actions: list of ActionResponse, gs: reference GameState, player_id: types.PlayerID) ChosenAction
-    deploys := filter_deploys(actions)
-    if len(deploys) > 0 and random.Int(0, 2) equals 1
-        return best_deploy(deploys)
-
-    moves := filter_moves(actions)
-    if len(moves) > 0
-        return best_move(moves, gs, player_id, true)
-
-    attacks := filter_attacks(actions)
-    if len(attacks) > 0 and random.Int(0, 10) > 7
-        return best_attack(attacks)
+    deploys := filterDeploys(actions)
+    if deploys isnt empty
+        return bestDeploy(deploys)
 
     return ChosenEndTurn{}
 
-func filter_attacks(actions: list of ActionResponse) list of AttackAction
+func chooseDefensive(actions: list of ActionResponse, gs: reference GameState, playerId: types.PlayerID) ChosenAction
+    deploys := filterDeploys(actions)
+    if deploys isnt empty and random.Int(0, 2) equals 1
+        return bestDeploy(deploys)
+
+    moves := filterMoves(actions)
+    if moves isnt empty
+        return bestMove(moves, gs, playerId, true)
+
+    attacks := filterAttacks(actions)
+    if attacks isnt empty and random.Int(0, 10) > 7
+        return bestAttack(attacks)
+
+    return ChosenEndTurn{}
+
+func filterAttacks(actions: list of ActionResponse) list of AttackAction
     result := empty list of AttackAction
     for a in actions
         switch a
@@ -122,7 +122,7 @@ func filter_attacks(actions: list of ActionResponse) list of AttackAction
                 continue
     return result
 
-func filter_moves(actions: list of ActionResponse) list of MoveAction
+func filterMoves(actions: list of ActionResponse) list of MoveAction
     result := empty list of MoveAction
     for a in actions
         switch a
@@ -132,7 +132,7 @@ func filter_moves(actions: list of ActionResponse) list of MoveAction
                 continue
     return result
 
-func filter_deploys(actions: list of ActionResponse) list of DeployAction
+func filterDeploys(actions: list of ActionResponse) list of DeployAction
     result := empty list of DeployAction
     for a in actions
         switch a
@@ -142,62 +142,62 @@ func filter_deploys(actions: list of ActionResponse) list of DeployAction
                 continue
     return result
 
-func best_attack(attacks: list of AttackAction) ChosenAction
-    best_dmg := 0
+func bestAttack(attacks: list of AttackAction) ChosenAction
+    bestDmg := 0
     var best: AttackAction
 
     for atk in attacks
-        if atk.WillKill and atk.Damage > best_dmg
-            best_dmg = atk.Damage
+        if atk.WillKill and atk.Damage > bestDmg
+            bestDmg = atk.Damage
             best = atk
 
-    if best_dmg > 0
+    if bestDmg > 0
         return ChosenAttack{AttackerID: best.AttackerID, DefenderID: best.DefenderID}
 
     for atk in attacks
-        if atk.Damage > best_dmg
-            best_dmg = atk.Damage
+        if atk.Damage > bestDmg
+            bestDmg = atk.Damage
             best = atk
 
     return ChosenAttack{AttackerID: best.AttackerID, DefenderID: best.DefenderID}
 
-func best_move(moves: list of MoveAction, gs: reference GameState, player_id: types.PlayerID, prioritize_crystal: bool) ChosenAction
-    objectives := get_objectives(gs, player_id, prioritize_crystal)
+func bestMove(moves: list of MoveAction, gs: reference GameState, playerId: types.PlayerID, prioritizeCrystal: bool) ChosenAction
+    objectives := getObjectives(gs, playerId, prioritizeCrystal)
 
-    best_tid := types.TokenID(0)
-    best_dest := list of int{0, 0}
-    best_score := 999999.0
+    bestTid := types.TokenID(0)
+    bestDest := list of int{0, 0}
+    bestScore := 999999.0
 
     for mv in moves
-        for dest_list in mv.ValidDestinations
-            if len(dest_list) < 2
+        for destList in mv.ValidDestinations
+            if len(destList) < 2
                 continue
-            dest := types.Pos(dest_list[0], dest_list[1])
-            tok_ref := gs.GetToken(mv.TokenID)
-            score := score_destination(dest, objectives, tok_ref)
-            if score < best_score
-                best_score = score
-                best_tid = mv.TokenID
-                best_dest = dest_list
+            dest := types.Pos(destList[0], destList[1])
+            tokRef := gs.GetToken(mv.TokenID)
+            score := scoreDestination(dest, objectives, tokRef)
+            if score < bestScore
+                bestScore = score
+                bestTid = mv.TokenID
+                bestDest = destList
 
-    return ChosenMove{TokenID: best_tid, Destination: best_dest}
+    return ChosenMove{TokenID: bestTid, Destination: bestDest}
 
-func best_deploy(deploys: list of DeployAction) ChosenAction
-    best_hv := 0
+func bestDeploy(deploys: list of DeployAction) ChosenAction
+    bestHv := 0
     var chosen: DeployAction
 
     for dp in deploys
-        if dp.HealthValue > best_hv
-            best_hv = dp.HealthValue
+        if dp.HealthValue > bestHv
+            bestHv = dp.HealthValue
             chosen = dp
 
-    if len(chosen.Positions) equals 0
+    if chosen.Positions is empty
         return ChosenEndTurn{}
 
     pos := chosen.Positions[0]
     return ChosenDeploy{HealthValue: chosen.HealthValue, Position: pos}
 
-func resolve_action(action: ActionResponse) ChosenAction
+func resolveAction(action: ActionResponse) ChosenAction
     switch action
         when MoveAction
             dest := action.ValidDestinations[0]
@@ -210,25 +210,25 @@ func resolve_action(action: ActionResponse) ChosenAction
         default
             return ChosenEndTurn{}
 
-func get_objectives(gs: reference GameState, player_id: types.PlayerID, crystal_only: bool) list of types.Position
-    crystal_pos := types.Pos(constants.BOARD_WIDTH / 2, constants.BOARD_HEIGHT / 2)
-    objectives := list of types.Position{crystal_pos}
+func getObjectives(gs: reference GameState, playerId: types.PlayerID, crystalOnly: bool) list of types.Position
+    crystalPos := types.Pos(constants.BOARD_WIDTH / 2, constants.BOARD_HEIGHT / 2)
+    objectives := list of types.Position{crystalPos}
 
-    if crystal_only
+    if crystalOnly
         return objectives
 
     for gen in gs.generators
-        if gen.is_disabled
+        if gen.isDisabled
             continue
-        if gen.capturing_player_id equals player_id
+        if gen.capturingPlayerId equals playerId
             objectives = append(list of types.Position{gen.position}, many objectives)
         else
             objectives = append(objectives, gen.position)
 
     return objectives
 
-func score_destination(dest: types.Position, objectives: list of types.Position, tok: optional reference Token) float64
-    min_dist := 999999.0
+func scoreDestination(dest: types.Position, objectives: list of types.Position, tok: optional reference Token) float64
+    minDist := 999999.0
     for obj in objectives
         dx := dest.X - obj.X
         if dx < 0
@@ -237,14 +237,14 @@ func score_destination(dest: types.Position, objectives: list of types.Position,
         if dy < 0
             dy = -dy
         dist := (dx + dy) as float64
-        if dist < min_dist
-            min_dist = dist
+        if dist < minDist
+            minDist = dist
 
     if tok isnt empty
-        if dereference tok.movement_range() >= 2
-            min_dist = min_dist - 0.5
+        if tok.movementRange() >= 2
+            minDist = minDist - 0.5
 
-    return min_dist
+    return minDist
 
 func ActionResponseToDict(a: ActionResponse) map of string to any
     switch a
@@ -290,26 +290,26 @@ func ActionsToDicts(actions: list of ActionResponse) list of map of string to an
     return result
 
 func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
-    type_any, has := d["type"]
+    typeAny, has := d["type"]
     if not has
         return EndTurnAction{Description: "unknown"}, false
-    type_str := ""
-    if type_any is string as ts
-        type_str = ts
-    if type_str equals ""
+    typeStr := ""
+    if typeAny is string as ts
+        typeStr = ts
+    if typeStr equals ""
         return EndTurnAction{Description: "unknown"}, false
-    switch type_str
+    switch typeStr
         when "MOVE"
-            tok_id := 0
-            tid_any, has_tid := d["token_id"]
-            if has_tid
-                if tid_any is int as tid_val
-                    tok_id = tid_val
+            tokId := 0
+            tidAny, hasTid := d["token_id"]
+            if hasTid
+                if tidAny is int as tidVal
+                    tokId = tidVal
             dests := empty list of list of int
-            dests_any, has_d := d["valid_destinations"]
-            if has_d
-                if dests_any is list of list of int as dests_val
-                    dests = dests_val
+            destsAny, hasD := d["valid_destinations"]
+            if hasD
+                if destsAny is list of list of int as destsVal
+                    dests = destsVal
             health := ""
             if d["token_health"] is string as h
                 health = h
@@ -320,7 +320,7 @@ func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
             if d["description"] is string as ds
                 desc = ds
             return MoveAction{
-                TokenID: types.TokenID(tok_id),
+                TokenID: types.TokenID(tokId),
                 TokenPosition: tpos,
                 TokenHealth: health,
                 ValidDestinations: dests,
@@ -328,34 +328,34 @@ func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
             }, true
         when "ATTACK"
             aid := 0
-            if d["attacker_id"] is int as aid_val
-                aid = aid_val
+            if d["attacker_id"] is int as aidVal
+                aid = aidVal
             did := 0
-            if d["defender_id"] is int as did_val
-                did = did_val
-            atk_pos := empty list of int
+            if d["defender_id"] is int as didVal
+                did = didVal
+            atkPos := empty list of int
             if d["attacker_position"] is list of int as ap
-                atk_pos = ap
-            def_pos := empty list of int
+                atkPos = ap
+            defPos := empty list of int
             if d["defender_position"] is list of int as dp
-                def_pos = dp
+                defPos = dp
             owner := ""
             if d["defender_owner"] is string as ow
                 owner = ow
             dmg := 0
-            if d["damage"] is int as dmg_val
-                dmg = dmg_val
+            if d["damage"] is int as dmgVal
+                dmg = dmgVal
             wk := false
-            if d["will_kill"] is bool as wk_val
-                wk = wk_val
+            if d["will_kill"] is bool as wkVal
+                wk = wkVal
             desc := ""
             if d["description"] is string as ds
                 desc = ds
             return AttackAction{
                 AttackerID: types.TokenID(aid),
-                AttackerPosition: atk_pos,
+                AttackerPosition: atkPos,
                 DefenderID: types.TokenID(did),
-                DefenderPosition: def_pos,
+                DefenderPosition: defPos,
                 DefenderOwner: owner,
                 Damage: dmg,
                 WillKill: wk,
@@ -363,14 +363,14 @@ func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
             }, true
         when "DEPLOY"
             hv := 0
-            if d["health_value"] is int as hv_val
-                hv = hv_val
+            if d["health_value"] is int as hvVal
+                hv = hvVal
             positions := empty list of list of int
             if d["positions"] is list of list of int as ps
                 positions = ps
             rem := 0
-            if d["remaining"] is int as rem_val
-                rem = rem_val
+            if d["remaining"] is int as remVal
+                rem = remVal
             desc := ""
             if d["description"] is string as ds
                 desc = ds

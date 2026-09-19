@@ -14,18 +14,18 @@ func PlayTurn(api: reference learn.LearnerAPI)
     api.Say("--- Turn {turn} ---")
 
     reserve := api.Reserve()
-    has_10 := reserve[10] > 0
-    has_4 := reserve[4] > 0
+    has10 := reserve[10] > 0
+    has4 := reserve[4] > 0
 
-    api.Say("10hp in reserve: {has_10}, 4hp in reserve: {has_4}")
+    api.Say("10hp in reserve: {has10}, 4hp in reserve: {has4}")
 
-    if has_10
+    if has10
         result := api.Place(10, 2, 2)
         if result.Success
             api.Say("placed a 10hp token")
         else
             api.Say("could not place: {result.Message}")
-    else if has_4
+    else if has4
         api.Place(4, 2, 2)
     else
         api.Say("reserve is empty")

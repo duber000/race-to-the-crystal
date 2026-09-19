@@ -93,7 +93,7 @@ type GameError
 
 func FormatGameError(e: GameError) string
     result := "CANNOT {e.action}: {e.reason}"
-    if len(e.context) > 0
+    if e.context isnt empty
         for k, v in e.context
             result = result + " | {k}={v}"
     return result
@@ -105,7 +105,7 @@ type ValidationError
 
 func FormatValidationError(e: ValidationError) string
     result := "Invalid {e.field}: {e.reason}"
-    if len(e.context) > 0
+    if e.context isnt empty
         for k, v in e.context
             result = result + " | {k}={v}"
     return result
@@ -117,7 +117,7 @@ type ActionError
 
 func FormatActionError(e: ActionError) string
     result := "Action {e.action} failed: {e.reason}"
-    if len(e.context) > 0
+    if e.context isnt empty
         for k, v in e.context
             result = result + " | {k}={v}"
     return result
@@ -129,7 +129,7 @@ type ServerError
 
 func FormatServerError(e: ServerError) string
     result := "Server error: {e.code} | {e.message}"
-    if len(e.details) > 0
+    if e.details isnt empty
         for k, v in e.details
             result = result + " | {k}={v}"
     return result

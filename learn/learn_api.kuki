@@ -31,15 +31,15 @@ import "race-to-the-crystal/shared/types" as types
 type LearnerAPI
     api: gamepkg.GameAPI
     game: reference gamepkg.GameState
-    player_id: types.PlayerID
+    playerId: types.PlayerID
     history: list of string
     memo: map of string to string
 
-func NewLearnerAPI(gs: reference gamepkg.GameState, player_id: types.PlayerID) LearnerAPI
+func NewLearnerAPI(gs: reference gamepkg.GameState, playerId: types.PlayerID) LearnerAPI
     return LearnerAPI{
-        api: gamepkg.NewGameAPI(gs, player_id),
+        api: gamepkg.NewGameAPI(gs, playerId),
         game: gs,
-        player_id: player_id,
+        playerId: playerId,
         history: empty list of string,
         memo: empty map of string to string,
     }
@@ -93,16 +93,16 @@ func Actions on api: reference LearnerAPI list of gamepkg.ActionResponse
 
 # TokenPosition returns the board position of one of your tokens.
 # Returns (-1, -1) if the token does not exist.
-func TokenPosition on api: reference LearnerAPI(token_id: int) types.Position
-    t_ref := api.game.GetToken(types.TokenID(token_id))
-    if t_ref equals empty
+func TokenPosition on api: reference LearnerAPI(tokenId: int) types.Position
+    tRef := api.game.GetToken(types.TokenID(tokenId))
+    if tRef is empty
         return types.Pos(-1, -1)
-    return t_ref.Position()
+    return tRef.Position()
 
 # MyTokens returns the ids of all your deployed, alive tokens.
 func MyTokens on api: reference LearnerAPI list of int
     result := empty list of int
-    tokens := api.game.GetPlayerTokens(api.player_id)
+    tokens := api.game.GetPlayerTokens(api.playerId)
     for t in tokens
         result = append(result, t.ID() as int)
     return result
@@ -113,12 +113,12 @@ func Place on api: reference LearnerAPI(health: int, x: int, y: int) gamepkg.Act
     return api.narrate(api.api.Deploy(health, x, y))
 
 # Move moves your token to (x, y). Valid during MOVEMENT.
-func Move on api: reference LearnerAPI(token_id: int, x: int, y: int) gamepkg.ActionResult
-    return api.narrate(api.api.Move(types.TokenID(token_id), x, y))
+func Move on api: reference LearnerAPI(tokenId: int, x: int, y: int) gamepkg.ActionResult
+    return api.narrate(api.api.Move(types.TokenID(tokenId), x, y))
 
 # Attack hits the defender token with your attacker token. Valid during ACTION.
-func Attack on api: reference LearnerAPI(attacker_id: int, defender_id: int) gamepkg.ActionResult
-    return api.narrate(api.api.Attack(types.TokenID(attacker_id), types.TokenID(defender_id)))
+func Attack on api: reference LearnerAPI(attackerId: int, defenderId: int) gamepkg.ActionResult
+    return api.narrate(api.api.Attack(types.TokenID(attackerId), types.TokenID(defenderId)))
 
 # Done ends your turn (generators and crystal are checked at this point).
 # You do not need to call it: the simulation ends your turn automatically

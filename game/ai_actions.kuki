@@ -73,293 +73,293 @@ func ValidateGamePhase on gs: reference GameState optional reference ValidationR
         return reference of r
     return empty
 
-func ValidatePlayerTurn on gs: reference GameState(player_id: types.PlayerID) optional reference ValidationResult
-    if gs.current_turn_player_id isnt player_id
+func ValidatePlayerTurn on gs: reference GameState(playerId: types.PlayerID) optional reference ValidationResult
+    if gs.currentTurnPlayerId isnt playerId
         r := InvalidResult(
-            "ACTION_FAILED: not_your_turn | current_player={gs.current_turn_player_id} | you={player_id}",
+            "ACTION_FAILED: not_your_turn | current_player={gs.currentTurnPlayerId} | you={playerId}",
         )
         return reference of r
     return empty
 
-func ValidateTurnPhase on gs: reference GameState(required: enums.TurnPhase, action_name: string) optional reference ValidationResult
-    if gs.turn_phase isnt required
+func ValidateTurnPhase on gs: reference GameState(required: enums.TurnPhase, actionName: string) optional reference ValidationResult
+    if gs.turnPhase isnt required
         r := InvalidResult(
-            "{action_name}_FAILED: wrong_phase | current={gs.turn_phase} | required={required}",
+            "{actionName}_FAILED: wrong_phase | current={gs.turnPhase} | required={required}",
         )
         return reference of r
     return empty
 
-func ValidateTokenExists on gs: reference GameState(TokenID: types.TokenID, action_name: string) (ValidationResult, optional reference Token)
+func ValidateTokenExists on gs: reference GameState(TokenID: types.TokenID, actionName: string) (ValidationResult, optional reference Token)
     tok := gs.GetToken(TokenID)
-    if tok equals empty
-        r := InvalidResult("{action_name}_FAILED: token_not_found | token_id={TokenID}")
+    if tok is empty
+        r := InvalidResult("{actionName}_FAILED: token_not_found | token_id={TokenID}")
         return r, empty
     return ValidResult(""), tok
 
-func ValidateTokenOwnership(tok: reference Token, player_id: types.PlayerID, action_name: string) ValidationResult
-    if tok.player_id isnt player_id
-        return InvalidResult("{action_name}_FAILED: not_owner | token_id={tok.id} | owner={tok.player_id}")
+func ValidateTokenOwnership(tok: reference Token, playerId: types.PlayerID, actionName: string) ValidationResult
+    if tok.playerId isnt playerId
+        return InvalidResult("{actionName}_FAILED: not_owner | token_id={tok.id} | owner={tok.playerId}")
     return ValidResult("")
 
-func ValidateTokenDeployed(tok: reference Token, action_name: string) ValidationResult
-    if not tok.is_deployed
+func ValidateTokenDeployed(tok: reference Token, actionName: string) ValidationResult
+    if not tok.isDeployed
         return InvalidResult(
-            "{action_name}_FAILED: not_deployed | token_id={tok.id} | hint=Use DEPLOY action first",
+            "{actionName}_FAILED: not_deployed | token_id={tok.id} | hint=Use DEPLOY action first",
         )
     return ValidResult("")
 
-func ValidateTokenAlive(tok: reference Token, action_name: string) ValidationResult
-    if not tok.is_alive
-        return InvalidResult("{action_name}_FAILED: token_dead | token_id={tok.id}")
+func ValidateTokenAlive(tok: reference Token, actionName: string) ValidationResult
+    if not tok.isAlive
+        return InvalidResult("{actionName}_FAILED: token_dead | token_id={tok.id}")
     return ValidResult("")
 
-func ValidateAction(action: AIAction, gs: reference GameState, player_id: types.PlayerID) ValidationResult
-    phase_result := gs.ValidateGamePhase()
-    if phase_result isnt empty
-        return dereference phase_result
+func ValidateAction(action: AIAction, gs: reference GameState, playerId: types.PlayerID) ValidationResult
+    phaseResult := gs.ValidateGamePhase()
+    if phaseResult isnt empty
+        return dereference phaseResult
 
-    turn_result := gs.ValidatePlayerTurn(player_id)
-    if turn_result isnt empty
-        return dereference turn_result
+    turnResult := gs.ValidatePlayerTurn(playerId)
+    if turnResult isnt empty
+        return dereference turnResult
 
     switch action
         when Move
-            return ValidateMove(action.TokenID, action.Destination, gs, player_id)
+            return ValidateMove(action.TokenID, action.Destination, gs, playerId)
         when Attack
-            return ValidateAttack(action.AttackerID, action.DefenderID, gs, player_id)
+            return ValidateAttack(action.AttackerID, action.DefenderID, gs, playerId)
         when Deploy
-            return ValidateDeploy(action.HealthValue, action.Position, gs, player_id)
+            return ValidateDeploy(action.HealthValue, action.Position, gs, playerId)
         when EndTurn
             return ValidateEndTurn(gs)
 
-func ValidateMove(TokenID: types.TokenID, dest: types.Position, gs: reference GameState, player_id: types.PlayerID) ValidationResult
-    tp_result := gs.ValidateTurnPhase(enums.MOVEMENT, "MOVE")
-    if tp_result isnt empty
-        return dereference tp_result
+func ValidateMove(TokenID: types.TokenID, dest: types.Position, gs: reference GameState, playerId: types.PlayerID) ValidationResult
+    tpResult := gs.ValidateTurnPhase(enums.MOVEMENT, "MOVE")
+    if tpResult isnt empty
+        return dereference tpResult
 
-    tok_result, tok_ref := gs.ValidateTokenExists(TokenID, "MOVE")
-    if tok_ref equals empty
-        return tok_result
+    tokResult, tokRef := gs.ValidateTokenExists(TokenID, "MOVE")
+    if tokRef is empty
+        return tokResult
 
-    own_result := ValidateTokenOwnership(tok_ref, player_id, "MOVE")
-    if not own_result.IsValid
-        return own_result
+    ownResult := ValidateTokenOwnership(tokRef, playerId, "MOVE")
+    if not ownResult.IsValid
+        return ownResult
 
-    dep_result := ValidateTokenDeployed(tok_ref, "MOVE")
-    if not dep_result.IsValid
-        return dep_result
+    depResult := ValidateTokenDeployed(tokRef, "MOVE")
+    if not depResult.IsValid
+        return depResult
 
-    alive_result := ValidateTokenAlive(tok_ref, "MOVE")
-    if not alive_result.IsValid
-        return alive_result
+    aliveResult := ValidateTokenAlive(tokRef, "MOVE")
+    if not aliveResult.IsValid
+        return aliveResult
 
-    effective_range := gs.GetTokenMovementRange(tok_ref)
-    valid_moves := get_valid_moves(tok_ref, reference of gs.board, effective_range, gs.tokens)
-    if not slice.Contains(valid_moves, dest)
+    effectiveRange := gs.GetTokenMovementRange(tokRef)
+    validMoves := getValidMoves(tokRef, reference of gs.board, effectiveRange, gs.tokens)
+    if not slice.Contains(validMoves, dest)
         return InvalidResult(
-            "MOVE_FAILED: invalid_destination | dest=({dest.X},{dest.Y}) | token_pos=({tok_ref.position.X},{tok_ref.position.Y}) | range={effective_range} | valid_count={len(valid_moves)}",
+            "MOVE_FAILED: invalid_destination | dest=({dest.X},{dest.Y}) | token_pos=({tokRef.position.X},{tokRef.position.Y}) | range={effectiveRange} | valid_count={len(validMoves)}",
         )
     return ValidResult("Move is valid")
 
-func ValidateAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: reference GameState, player_id: types.PlayerID) ValidationResult
-    tp_result := gs.ValidateTurnPhase(enums.ACTION, "ATTACK")
-    if tp_result isnt empty
-        return dereference tp_result
+func ValidateAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: reference GameState, playerId: types.PlayerID) ValidationResult
+    tpResult := gs.ValidateTurnPhase(enums.ACTION, "ATTACK")
+    if tpResult isnt empty
+        return dereference tpResult
 
-    att_result, att_ref := gs.ValidateTokenExists(AttackerID, "ATTACK")
-    if att_ref equals empty
-        return att_result
+    attResult, attRef := gs.ValidateTokenExists(AttackerID, "ATTACK")
+    if attRef is empty
+        return attResult
 
-    own_result := ValidateTokenOwnership(att_ref, player_id, "ATTACK")
-    if not own_result.IsValid
-        return own_result
+    ownResult := ValidateTokenOwnership(attRef, playerId, "ATTACK")
+    if not ownResult.IsValid
+        return ownResult
 
-    dep_result := ValidateTokenDeployed(att_ref, "ATTACK")
-    if not dep_result.IsValid
-        return dep_result
+    depResult := ValidateTokenDeployed(attRef, "ATTACK")
+    if not depResult.IsValid
+        return depResult
 
-    alive_result := ValidateTokenAlive(att_ref, "ATTACK")
-    if not alive_result.IsValid
-        return alive_result
+    aliveResult := ValidateTokenAlive(attRef, "ATTACK")
+    if not aliveResult.IsValid
+        return aliveResult
 
-    def_result, def_ref := gs.ValidateTokenExists(DefenderID, "ATTACK")
-    if def_ref equals empty
-        return def_result
+    defResult, defRef := gs.ValidateTokenExists(DefenderID, "ATTACK")
+    if defRef is empty
+        return defResult
 
-    if def_ref.player_id equals player_id
+    if defRef.playerId equals playerId
         return InvalidResult(
             "ATTACK_FAILED: friendly_fire | defender_id={DefenderID} | hint=Cannot attack own tokens",
         )
 
-    def_dep := ValidateTokenDeployed(def_ref, "ATTACK")
-    if not def_dep.IsValid
-        return def_dep
+    defDep := ValidateTokenDeployed(defRef, "ATTACK")
+    if not defDep.IsValid
+        return defDep
 
-    def_alive := ValidateTokenAlive(def_ref, "ATTACK")
-    if not def_alive.IsValid
-        return def_alive
+    defAlive := ValidateTokenAlive(defRef, "ATTACK")
+    if not defAlive.IsValid
+        return defAlive
 
-    if not can_attack(att_ref, def_ref)
+    if not canAttack(attRef, defRef)
         return InvalidResult(
-            "ATTACK_FAILED: not_adjacent | attacker_pos=({att_ref.position.X},{att_ref.position.Y}) | defender_pos=({def_ref.position.X},{def_ref.position.Y})",
+            "ATTACK_FAILED: not_adjacent | attacker_pos=({attRef.position.X},{attRef.position.Y}) | defender_pos=({defRef.position.X},{defRef.position.Y})",
         )
     return ValidResult("Attack is valid")
 
-func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameState, player_id: types.PlayerID) ValidationResult
-    tp_result := gs.ValidateTurnPhase(enums.MOVEMENT, "DEPLOY")
-    if tp_result isnt empty
-        return dereference tp_result
+func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameState, playerId: types.PlayerID) ValidationResult
+    tpResult := gs.ValidateTurnPhase(enums.MOVEMENT, "DEPLOY")
+    if tpResult isnt empty
+        return dereference tpResult
 
     if not slice.Contains(constants.TOKEN_HEALTH_VALUES, HealthValue)
         return InvalidResult(
             "DEPLOY_FAILED: invalid_health | value={HealthValue} | valid={constants.TOKEN_HEALTH_VALUES}",
         )
 
-    reserve_counts := gs.GetReserveTokenCounts(player_id)
-    if reserve_counts[HealthValue] <= 0
+    reserveCounts := gs.GetReserveTokenCounts(playerId)
+    if reserveCounts[HealthValue] <= 0
         return InvalidResult("DEPLOY_FAILED: no_reserve | health={HealthValue}")
 
-    if not gs.board.is_valid_position(pos.X, pos.Y)
+    if not gs.board.isValidPosition(pos.X, pos.Y)
         return InvalidResult("DEPLOY_FAILED: out_of_bounds | pos=({pos.X},{pos.Y}) | board_size=24x24")
 
-    cell := gs.board.get_cell_at(pos)
+    cell := gs.board.getCellAt(pos)
     if cell isnt empty
-        if dereference cell.is_occupied()
+        if cell.isOccupied()
             return InvalidResult("DEPLOY_FAILED: cell_occupied | pos=({pos.X},{pos.Y})")
 
-    p_ref := gs.GetPlayer(player_id)
-    if p_ref equals empty
-        return InvalidResult("DEPLOY_FAILED: player_not_found | player_id={player_id}")
-    p := dereference p_ref
+    pRef := gs.GetPlayer(playerId)
+    if pRef is empty
+        return InvalidResult("DEPLOY_FAILED: player_not_found | player_id={playerId}")
+    p := dereference pRef
 
-    valid_positions := gs.board.get_deployable_positions(enums.PlayerIndex(p.color))
-    if not slice.Contains(valid_positions, pos)
+    validPositions := gs.board.getDeployablePositions(enums.PlayerIndex(p.color))
+    if not slice.Contains(validPositions, pos)
         return InvalidResult("DEPLOY_FAILED: invalid_position | pos=({pos.X},{pos.Y})")
     return ValidResult("Deployment is valid")
 
 func ValidateEndTurn(gs: reference GameState) ValidationResult
-    if gs.turn_phase isnt enums.MOVEMENT and gs.turn_phase isnt enums.ACTION
-        return InvalidResult("Cannot end turn: Invalid phase ({gs.turn_phase})")
+    if gs.turnPhase isnt enums.MOVEMENT and gs.turnPhase isnt enums.ACTION
+        return InvalidResult("Cannot end turn: Invalid phase ({gs.turnPhase})")
     return ValidResult("Can end turn")
 
-func ExecuteAction(action: AIAction, gs: reference GameState, player_id: types.PlayerID) ActionResult
-    validation := ValidateAction(action, gs, player_id)
+func ExecuteAction(action: AIAction, gs: reference GameState, playerId: types.PlayerID) ActionResult
+    validation := ValidateAction(action, gs, playerId)
     if not validation.IsValid
         return FailureResult(validation.Message)
 
     switch action
         when Move
-            return ExecuteMove(action.TokenID, action.Destination, gs, player_id)
+            return ExecuteMove(action.TokenID, action.Destination, gs, playerId)
         when Attack
-            return ExecuteAttack(action.AttackerID, action.DefenderID, gs, player_id)
+            return ExecuteAttack(action.AttackerID, action.DefenderID, gs, playerId)
         when Deploy
-            return ExecuteDeploy(action.HealthValue, action.Position, gs, player_id)
+            return ExecuteDeploy(action.HealthValue, action.Position, gs, playerId)
         when EndTurn
             return ExecuteEndTurn(gs)
 
-func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference GameState, player_id: types.PlayerID) ActionResult
-    tok_ref := gs.GetToken(TokenID)
-    if tok_ref equals empty
+func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference GameState, playerId: types.PlayerID) ActionResult
+    tokRef := gs.GetToken(TokenID)
+    if tokRef is empty
         return FailureResult("Token {TokenID} not found")
-    tok := dereference tok_ref
-    old_pos := tok.position
+    tok := dereference tokRef
+    oldPos := tok.position
 
     success := gs.MoveToken(TokenID, dest)
     if not success
         return FailureResult("Move failed unexpectedly")
 
-    message := "Token #{TokenID} moved from ({old_pos.X},{old_pos.Y}) to ({dest.X},{dest.Y})"
-    mystery_triggered := false
-    var mystery_eff: enums.MysteryEffect
+    message := "Token #{TokenID} moved from ({oldPos.X},{oldPos.Y}) to ({dest.X},{dest.Y})"
+    mysteryTriggered := false
+    var mysteryEff: enums.MysteryEffect
 
-    cell := gs.board.get_cell_at(dest)
+    cell := gs.board.getCellAt(dest)
     if cell isnt empty
-        if dereference cell.cell_type equals enums.MYSTERY
-            p_ref := gs.GetPlayer(player_id)
-            if p_ref isnt empty
-                p := dereference p_ref
-                player_index := enums.PlayerIndex(p.color)
-                mystery_result := trigger_mystery_event(tok_ref, reference of gs.board, player_index)
+        if cell.cellType equals enums.MYSTERY
+            pRef := gs.GetPlayer(playerId)
+            if pRef isnt empty
+                p := dereference pRef
+                playerIndex := enums.PlayerIndex(p.color)
+                mysteryResult := triggerMysteryEvent(tokRef, reference of gs.board, playerIndex)
 
-                gs.last_triggered_mystery_event = reference of MysteryEvent{
+                gs.lastTriggeredMysteryEvent = reference of MysteryEvent{
                     TokenID: TokenID,
                     Position: dest,
-                    effect: enums.MysteryEffectName(mystery_result.effect),
+                    effect: "{mysteryResult.effect}",
                 }
 
                 message = message + "\n  Token landed on a MYSTERY square!"
-                mystery_triggered = true
-                mystery_eff = mystery_result.effect
+                mysteryTriggered = true
+                mysteryEff = mysteryResult.effect
 
-                if mystery_result.effect equals enums.HEAL
-                    message = message + "\n  HEADS! Token healed from {mystery_result.old_health} to {mystery_result.new_health} HP!"
+                if mysteryResult.effect equals enums.HEAL
+                    message = message + "\n  HEADS! Token healed from {mysteryResult.oldHealth} to {mysteryResult.newHealth} HP!"
                 else
-                    gs.board.clear_occupant(dest, TokenID)
-                    gs.board.set_occupant(mystery_result.new_position, TokenID)
-                    message = message + "\n  TAILS! Token teleported back to deployment area ({mystery_result.new_position.X},{mystery_result.new_position.Y})!"
+                    gs.board.clearOccupant(dest, TokenID)
+                    gs.board.setOccupant(mysteryResult.newPosition, TokenID)
+                    message = message + "\n  TAILS! Token teleported back to deployment area ({mysteryResult.newPosition.X},{mysteryResult.newPosition.Y})!"
 
-    gs.turn_phase = enums.ACTION
+    gs.turnPhase = enums.ACTION
     message = message + "\n  Phase changed to ACTION (you can attack or end turn)"
 
-    if mystery_triggered
+    if mysteryTriggered
         return SuccessResult(message, MoveData{
             TokenID: TokenID,
-            OldPosition: list of int{old_pos.X, old_pos.Y},
+            OldPosition: list of int{oldPos.X, oldPos.Y},
             NewPosition: list of int{dest.X, dest.Y},
             MysteryTriggered: true,
-            MysteryEffect: mystery_eff,
+            MysteryEffect: mysteryEff,
         })
     return SuccessResult(message, MoveData{
         TokenID: TokenID,
-        OldPosition: list of int{old_pos.X, old_pos.Y},
+        OldPosition: list of int{oldPos.X, oldPos.Y},
         NewPosition: list of int{dest.X, dest.Y},
     })
 
-func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: reference GameState, player_id: types.PlayerID) ActionResult
-    def_ref := gs.GetToken(DefenderID)
-    if def_ref equals empty
+func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: reference GameState, playerId: types.PlayerID) ActionResult
+    defRef := gs.GetToken(DefenderID)
+    if defRef is empty
         return FailureResult("Defender token {DefenderID} not found")
-    defn := dereference def_ref
-    def_player := gs.GetPlayer(defn.player_id)
-    def_owner := "Unknown"
-    if def_player isnt empty
-        def_owner = def_player.name
+    defn := dereference defRef
+    defPlayer := gs.GetPlayer(defn.playerId)
+    defOwner := "Unknown"
+    if defPlayer isnt empty
+        defOwner = defPlayer.name
 
     outcome := gs.AttackToken(AttackerID, DefenderID)
-    if outcome equals empty
+    if outcome is empty
         return FailureResult("Attack failed (invalid attacker or defender)")
     o := dereference outcome
 
-    message := "Token #{AttackerID} attacked token #{DefenderID} ({def_owner})\n  Dealt {o.damage_dealt} damage"
+    message := "Token #{AttackerID} attacked token #{DefenderID} ({defOwner})\n  Dealt {o.damageDealt} damage"
 
-    if o.defender_killed
+    if o.defenderKilled
         message = message + "\n  Token #{DefenderID} was KILLED!"
     else
-        current_hp := defn.health
-        if def_ref isnt empty
-            current_hp = def_ref.health
-        message = message + "\n  Token #{DefenderID} now has {current_hp}hp"
+        currentHp := defn.health
+        if defRef isnt empty
+            currentHp = defRef.health
+        message = message + "\n  Token #{DefenderID} now has {currentHp}hp"
 
     return SuccessResult(message, AttackData{
         AttackerID: AttackerID,
         DefenderID: DefenderID,
-        DamageDealt: o.damage_dealt,
-        DefenderKilled: o.defender_killed,
+        DamageDealt: o.damageDealt,
+        DefenderKilled: o.defenderKilled,
     })
 
-func ExecuteDeploy(HealthValue: int, pos: types.Position, gs: reference GameState, player_id: types.PlayerID) ActionResult
-    new_tok := gs.DeployToken(player_id, HealthValue, pos)
-    if new_tok equals empty
+func ExecuteDeploy(HealthValue: int, pos: types.Position, gs: reference GameState, playerId: types.PlayerID) ActionResult
+    newTok := gs.DeployToken(playerId, HealthValue, pos)
+    if newTok is empty
         return FailureResult("Deployment failed unexpectedly")
 
-    t := dereference new_tok
+    t := dereference newTok
     message := "Deployed {HealthValue}hp token #{t.id} at ({pos.X},{pos.Y})"
 
-    reserve_counts := gs.GetReserveTokenCounts(player_id)
-    remaining := reserve_counts[HealthValue]
+    reserveCounts := gs.GetReserveTokenCounts(playerId)
+    remaining := reserveCounts[HealthValue]
     message = message + "\n  {remaining} x {HealthValue}hp tokens remaining in reserve"
 
-    gs.turn_phase = enums.ACTION
+    gs.turnPhase = enums.ACTION
     message = message + "\n  Phase changed to ACTION (you can attack or end turn)"
 
     return SuccessResult(message, DeployData{
@@ -370,30 +370,30 @@ func ExecuteDeploy(HealthValue: int, pos: types.Position, gs: reference GameStat
     })
 
 func ExecuteEndTurn(gs: reference GameState) ActionResult
-    newly_disabled, crystal_captured, _ := gs.EndTurnWithObjectiveUpdate()
+    newlyDisabled, crystalCaptured, _ := gs.EndTurnWithObjectiveUpdate()
 
-    new_player := gs.GetCurrentPlayer()
-    new_player_name := "Unknown"
-    if new_player isnt empty
-        new_player_name = new_player.name
+    newPlayer := gs.GetCurrentPlayer()
+    newPlayerName := "Unknown"
+    if newPlayer isnt empty
+        newPlayerName = newPlayer.name
 
-    message := "Turn ended\n  Turn {gs.turn_number} begins\n  Current player: {new_player_name}"
+    message := "Turn ended\n  Turn {gs.turnNumber} begins\n  Current player: {newPlayerName}"
 
     return SuccessResult(message, TurnEndData{
-        TurnNumber: gs.turn_number,
-        NextPlayerID: gs.current_turn_player_id,
-        GeneratorsDisabled: newly_disabled,
-        CrystalCaptured: crystal_captured,
+        TurnNumber: gs.turnNumber,
+        NextPlayerID: gs.currentTurnPlayerId,
+        GeneratorsDisabled: newlyDisabled,
+        CrystalCaptured: crystalCaptured,
     })
 
-func NewMoveAction(token_id: types.TokenID, dest: types.Position) AIAction
-    return Move{TokenID: token_id, Destination: dest}
+func NewMoveAction(tokenId: types.TokenID, dest: types.Position) AIAction
+    return Move{TokenID: tokenId, Destination: dest}
 
-func NewAttackAction(attacker_id: types.TokenID, defender_id: types.TokenID) AIAction
-    return Attack{AttackerID: attacker_id, DefenderID: defender_id}
+func NewAttackAction(attackerId: types.TokenID, defenderId: types.TokenID) AIAction
+    return Attack{AttackerID: attackerId, DefenderID: defenderId}
 
-func NewDeployAction(health_value: int, pos: types.Position) AIAction
-    return Deploy{HealthValue: health_value, Position: pos}
+func NewDeployAction(healthValue: int, pos: types.Position) AIAction
+    return Deploy{HealthValue: healthValue, Position: pos}
 
 func NewEndTurnAction() AIAction
     return EndTurn{}
@@ -411,7 +411,7 @@ func ActionDataToDict(d: ActionResultData) map of string to any
                 "mystery_triggered": d.MysteryTriggered,
             }
             if d.MysteryTriggered
-                m["mystery_effect"] = enums.MysteryEffectName(d.MysteryEffect)
+                m["mystery_effect"] = "{d.MysteryEffect}"
             return m
         when AttackData
             return map of string to any{

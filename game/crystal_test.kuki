@@ -7,69 +7,69 @@ import "testing"
 func TestNewCrystal(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
     test.AssertEqual(t, c.position, types.Pos(12, 12))
-    test.AssertEqual(t, c.holding_player_id, types.PlayerID(""))
-    test.AssertEqual(t, len(c.holding_token_ids), 0)
-    test.AssertEqual(t, c.turns_held, 0)
-    test.AssertEqual(t, c.base_tokens_required, 12)
-    test.AssertFalse(t, c.is_contested())
+    test.AssertEqual(t, c.holdingPlayerId, types.PlayerID(""))
+    test.AssertEqual(t, len(c.holdingTokenIds), 0)
+    test.AssertEqual(t, c.turnsHeld, 0)
+    test.AssertEqual(t, c.baseTokensRequired, 12)
+    test.AssertFalse(t, c.isContested())
 
 func TestCrystalTurnsRequired(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
-    test.AssertEqual(t, c.turns_required(), 3)
+    test.AssertEqual(t, c.turnsRequired(), 3)
 
 func TestCrystalTokensRequiredNoGenerators(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
-    test.AssertEqual(t, c.get_tokens_required(0), 12)
+    test.AssertEqual(t, c.getTokensRequired(0), 12)
 
 func TestCrystalTokensRequiredWithGenerators(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
-    test.AssertEqual(t, c.get_tokens_required(1), 10)
-    test.AssertEqual(t, c.get_tokens_required(2), 8)
-    test.AssertEqual(t, c.get_tokens_required(3), 6)
-    test.AssertEqual(t, c.get_tokens_required(4), 4)
+    test.AssertEqual(t, c.getTokensRequired(1), 10)
+    test.AssertEqual(t, c.getTokensRequired(2), 8)
+    test.AssertEqual(t, c.getTokensRequired(3), 6)
+    test.AssertEqual(t, c.getTokensRequired(4), 4)
 
 func TestCrystalTokensRequiredMinimum(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
-    test.AssertEqual(t, c.get_tokens_required(10), 1)
-    test.AssertEqual(t, c.get_tokens_required(100), 1)
+    test.AssertEqual(t, c.getTokensRequired(10), 1)
+    test.AssertEqual(t, c.getTokensRequired(100), 1)
 
 func TestCrystalCaptureNoTokens(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
-    outcome := c.update_capture_status(empty list of TokenAtPos, 0)
-    test.AssertFalse(t, outcome.is_winner)
-    test.AssertEqual(t, outcome.winner_id, types.PlayerID(""))
+    outcome := c.updateCaptureStatus(empty list of TokenAtPos, 0)
+    test.AssertFalse(t, outcome.isWinner)
+    test.AssertEqual(t, outcome.winnerId, types.PlayerID(""))
 
 func TestCrystalCaptureInsufficientTokens(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
     tokens := list of TokenAtPos{
-        {token_id: types.TokenID(1), player_id: types.PlayerID("p1")},
+        {tokenId: types.TokenID(1), playerId: types.PlayerID("p1")},
     }
-    outcome := c.update_capture_status(tokens, 0)
-    test.AssertFalse(t, outcome.is_winner)
+    outcome := c.updateCaptureStatus(tokens, 0)
+    test.AssertFalse(t, outcome.isWinner)
 
 func TestCrystalCaptureStart(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
-    tokens := make_12_tokens("p1")
-    outcome := c.update_capture_status(tokens, 0)
-    test.AssertFalse(t, outcome.is_winner)
-    test.AssertEqual(t, c.holding_player_id, types.PlayerID("p1"))
-    test.AssertEqual(t, c.turns_held, 1)
+    tokens := make12Tokens("p1")
+    outcome := c.updateCaptureStatus(tokens, 0)
+    test.AssertFalse(t, outcome.isWinner)
+    test.AssertEqual(t, c.holdingPlayerId, types.PlayerID("p1"))
+    test.AssertEqual(t, c.turnsHeld, 1)
 
 func TestCrystalCaptureWin(t: reference testing.T)
     c := NewCrystal(types.Pos(12, 12))
-    tokens := make_12_tokens("p1")
-    c.update_capture_status(tokens, 0)
-    outcome := c.update_capture_status(tokens, 0)
-    test.AssertFalse(t, outcome.is_winner)
-    outcome = c.update_capture_status(tokens, 0)
-    test.AssertTrue(t, outcome.is_winner)
-    test.AssertEqual(t, outcome.winner_id, types.PlayerID("p1"))
+    tokens := make12Tokens("p1")
+    c.updateCaptureStatus(tokens, 0)
+    outcome := c.updateCaptureStatus(tokens, 0)
+    test.AssertFalse(t, outcome.isWinner)
+    outcome = c.updateCaptureStatus(tokens, 0)
+    test.AssertTrue(t, outcome.isWinner)
+    test.AssertEqual(t, outcome.winnerId, types.PlayerID("p1"))
 
-func make_12_tokens(pid_str: string) list of TokenAtPos
+func make12Tokens(pidStr: string) list of TokenAtPos
     result := make(list of TokenAtPos, 0, 12)
     for i from 0 to 12
         result = append(result, TokenAtPos{
-            token_id: types.TokenID(i),
-            player_id: types.PlayerID(pid_str),
+            tokenId: types.TokenID(i),
+            playerId: types.PlayerID(pidStr),
         })
     return result

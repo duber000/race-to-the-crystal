@@ -10,122 +10,122 @@ import "github.com/gorilla/websocket"
 const MAX_MESSAGE_SIZE = 1024
 
 type WSClient
-    client_id: string
-    player_id: string
-    player_name: string
-    client_type: ClientType
-    game_id: string
-    connected_at: float64
-    ip_address: string
+    clientId: string
+    playerId: string
+    playerName: string
+    clientType: ClientType
+    gameId: string
+    connectedAt: float64
+    ipAddress: string
     conn: optional reference websocket.Conn
-    write_mu: sync.Mutex
+    writeMu: sync.Mutex
 
-func NewWSClient(client_id: string) WSClient
+func NewWSClient(clientId: string) WSClient
     return WSClient{
-        client_id: client_id,
-        player_id: "",
-        player_name: "Unknown",
-        client_type: ClientType.WEB_BROWSER,
-        game_id: "",
-        connected_at: 0.0,
-        ip_address: "",
+        clientId: clientId,
+        playerId: "",
+        playerName: "Unknown",
+        clientType: ClientType.WEB_BROWSER,
+        gameId: "",
+        connectedAt: 0.0,
+        ipAddress: "",
     }
 
 func IsInGame on c: WSClient bool
-    return c.game_id isnt ""
+    return c.gameId isnt ""
 
 type WSMessage
-    game_id: string
+    gameId: string
     data: map of string to any
 
-func NewWSMessage(game_id: string, data: map of string to any) WSMessage
-    return WSMessage{game_id: game_id, data: data}
+func NewWSMessage(gameId: string, data: map of string to any) WSMessage
+    return WSMessage{gameId: gameId, data: data}
 
 type WebSocketHandler
     clients: map of string to reference WSClient
-    game_sessions: map of string to string
-    on_connect: optional reference func(string, string, string)
-    on_disconnect: optional reference func(string)
-    on_message: optional reference func(string, string, map of string to any)
+    gameSessions: map of string to string
+    onConnect: optional reference func(string, string, string)
+    onDisconnect: optional reference func(string)
+    onMessage: optional reference func(string, string, map of string to any)
 
 func NewWebSocketHandler() WebSocketHandler
     return WebSocketHandler{
         clients: empty map of string to reference WSClient,
-        game_sessions: empty map of string to string,
+        gameSessions: empty map of string to string,
     }
 
 func SetOnConnect on wh: reference WebSocketHandler(handler: reference func(string, string, string))
-    wh.on_connect = handler
+    wh.onConnect = handler
 
 func SetOnDisconnect on wh: reference WebSocketHandler(handler: reference func(string))
-    wh.on_disconnect = handler
+    wh.onDisconnect = handler
 
 func SetOnMessage on wh: reference WebSocketHandler(handler: reference func(string, string, map of string to any))
-    wh.on_message = handler
+    wh.onMessage = handler
 
 func RegisterClient on wh: reference WebSocketHandler(client: reference WSClient)
-    wh.clients[client.client_id] = client
-    wh.game_sessions[client.client_id] = client.game_id
-    if wh.on_connect isnt empty
-        wh.on_connect(client.client_id, client.player_id, client.game_id)
+    wh.clients[client.clientId] = client
+    wh.gameSessions[client.clientId] = client.gameId
+    if wh.onConnect isnt empty
+        wh.onConnect(client.clientId, client.playerId, client.gameId)
 
-func UnregisterClient on wh: reference WebSocketHandler(client_id: string)
-    delete wh.clients[client_id]
-    delete wh.game_sessions[client_id]
-    if wh.on_disconnect isnt empty
-        wh.on_disconnect(client_id)
+func UnregisterClient on wh: reference WebSocketHandler(clientId: string)
+    delete wh.clients[clientId]
+    delete wh.gameSessions[clientId]
+    if wh.onDisconnect isnt empty
+        wh.onDisconnect(clientId)
 
-func UpdateClientGameID on wh: reference WebSocketHandler(client_id: string, game_id: string)
-    client, ok := wh.clients[client_id]
+func UpdateClientGameID on wh: reference WebSocketHandler(clientId: string, gameId: string)
+    client, ok := wh.clients[clientId]
     if ok
-        client.game_id = game_id
-        wh.game_sessions[client_id] = game_id
+        client.gameId = gameId
+        wh.gameSessions[clientId] = gameId
 
-func UpdateClientPlayerID on wh: reference WebSocketHandler(client_id: string, player_id: string, player_name: string)
-    client, ok := wh.clients[client_id]
+func UpdateClientPlayerID on wh: reference WebSocketHandler(clientId: string, playerId: string, playerName: string)
+    client, ok := wh.clients[clientId]
     if ok
-        client.player_id = player_id
-        client.player_name = player_name
+        client.playerId = playerId
+        client.playerName = playerName
 
-func SendToClient on wh: reference WebSocketHandler(client_id: string, data: map of string to any) bool
-    client, ok := wh.clients[client_id]
+func SendToClient on wh: reference WebSocketHandler(clientId: string, data: map of string to any) bool
+    client, ok := wh.clients[clientId]
     if not ok
         return false
     if client.conn is empty
         return false
-    json_bytes := jsonpkg.Bytes(data) onerr return false
-    client.write_mu.Lock()
-    defer client.write_mu.Unlock()
-    err := dereference client.conn.WriteMessage(websocket.TextMessage, json_bytes)
+    jsonBytes := jsonpkg.Bytes(data) onerr return false
+    client.writeMu.Lock()
+    defer client.writeMu.Unlock()
+    err := client.conn.WriteMessage(websocket.TextMessage, jsonBytes)
     if err isnt empty
-        log.Debug("WebSocket send to {client_id} failed: {err}")
+        log.Debug("WebSocket send to {clientId} failed: {err}")
         return false
     return true
 
-func BroadcastToGame on wh: reference WebSocketHandler(game_id: string, data: JSONMap)
-    json_bytes := jsonpkg.Bytes(data) onerr return
-    log.Debug("Broadcasting to game {game_id}: {json_bytes as string}")
+func BroadcastToGame on wh: reference WebSocketHandler(gameId: string, data: JSONMap)
+    jsonBytes := jsonpkg.Bytes(data) onerr return
+    log.Debug("Broadcasting to game {gameId}: {jsonBytes as string}")
     for _client_id, client in wh.clients
-        if client.game_id equals game_id and client.conn isnt empty
-            client.write_mu.Lock()
-            err := dereference client.conn.WriteMessage(websocket.TextMessage, json_bytes)
-            client.write_mu.Unlock()
+        if client.gameId equals gameId and client.conn isnt empty
+            client.writeMu.Lock()
+            err := client.conn.WriteMessage(websocket.TextMessage, jsonBytes)
+            client.writeMu.Unlock()
             if err isnt empty
                 log.Debug("WebSocket broadcast failed: {err}")
 
-func ProcessMessage on wh: reference WebSocketHandler(client_id: string, raw_data: string) map of string to any
+func ProcessMessage on wh: reference WebSocketHandler(clientId: string, rawData: string) map of string to any
     data := empty map of string to any
-    jsonpkg.ParseInto(raw_data, reference of data) onerr return data
+    jsonpkg.ParseInto(rawData, reference of data) onerr return data
 
-    msg_type_val, has := data["type"]
+    msgTypeVal, has := data["type"]
     if not has
         return data
-    msg_type := ""
-    if msg_type_val is string as s
-        msg_type = s
-    msg_type = strpkg.ToLower(msg_type)
-    data["type"] = msg_type
-    data["player_id"] = client_id
+    msgType := ""
+    if msgTypeVal is string as s
+        msgType = s
+    msgType = strpkg.ToLower(msgType)
+    data["type"] = msgType
+    data["player_id"] = clientId
 
     normalized := NormalizeActionData(data)
     return normalized
@@ -133,15 +133,15 @@ func ProcessMessage on wh: reference WebSocketHandler(client_id: string, raw_dat
 func GetClientCount on wh: reference WebSocketHandler int
     return len(wh.clients)
 
-func GetClientsInGame on wh: reference WebSocketHandler(game_id: string) list of string
+func GetClientsInGame on wh: reference WebSocketHandler(gameId: string) list of string
     result := empty list of string
     for _client_id, client in wh.clients
-        if client.game_id equals game_id and client.player_id isnt ""
-            result = append(result, client.player_id)
+        if client.gameId equals gameId and client.playerId isnt ""
+            result = append(result, client.playerId)
     return result
 
-func GetClientByID on wh: reference WebSocketHandler(client_id: string) optional reference WSClient
-    client, ok := wh.clients[client_id]
+func GetClientByID on wh: reference WebSocketHandler(clientId: string) optional reference WSClient
+    client, ok := wh.clients[clientId]
     if ok
         return client
     return empty

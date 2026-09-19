@@ -19,7 +19,7 @@ func DrawMainMenu(screen: reference ebiten.Image)
     for i, text in items
         y := 280 + i * 60
         c := ColorLightGray
-        if app.menu_selection equals i
+        if app.menuSelection equals i
             c = ColorCyan
         DrawTextCentered(screen, text, WINDOW_WIDTH / 2, y, c)
 
@@ -34,15 +34,15 @@ func DrawMainMenu(screen: reference ebiten.Image)
 func DrawLobby(screen: reference ebiten.Image)
     DrawTextCentered(screen, "GAME LOBBY", WINDOW_WIDTH / 2, 40, ColorWhite)
 
-    if app.game_state isnt empty
-        gs := dereference app.game_state
+    if app.gameState isnt empty
+        gs := dereference app.gameState
         for i, p in gs.players
             y := 120 + i * 40
-            pc := PlayerColorByName(p.color_name)
+            pc := PlayerColorByName(p.colorName)
             status := "Ready"
-            if p.is_active
+            if p.isActive
                 status = "Waiting"
-            msg := "{p.name} ({p.color_name}) - {status}"
+            msg := "{p.name} ({p.colorName}) - {status}"
             DrawText(screen, msg, 200, y, pc)
 
     DrawTextCentered(
@@ -54,18 +54,18 @@ func DrawLobby(screen: reference ebiten.Image)
     )
 
 func DrawGame(screen: reference ebiten.Image)
-    if app.game_state isnt empty
-        gs := dereference app.game_state
-        offset_x := app.view_offset_x as int
-        offset_y := app.view_offset_y as int
+    if app.gameState isnt empty
+        gs := dereference app.gameState
+        offsetX := app.viewOffsetX as int
+        offsetY := app.viewOffsetY as int
 
-        DrawGrid(screen, gs.board_width, gs.board_height, offset_x, offset_y)
+        DrawGrid(screen, gs.boardWidth, gs.boardHeight, offsetX, offsetY)
 
         for g in gs.generators
-            sx := g.position.X * CELL_SIZE + offset_x
-            sy := g.position.Y * CELL_SIZE + offset_y
+            sx := g.position.X * CELL_SIZE + offsetX
+            sy := g.position.Y * CELL_SIZE + offsetY
             gc := ColorOrange
-            if g.is_disabled
+            if g.isDisabled
                 gc = ColorGray
             vector.DrawFilledRect(
                 screen,
@@ -97,28 +97,28 @@ func DrawGame(screen: reference ebiten.Image)
                 false,
             )
 
-        cx := gs.crystal_pos.X * CELL_SIZE + offset_x
-        cy := gs.crystal_pos.Y * CELL_SIZE + offset_y
-        pulse := math.Sin(app.frame_count as float64 * 0.05) * 0.3 + 0.7
-        crystal_color := RGBA(200, 100, 255, (pulse * 255) as int)
+        cx := gs.crystalPos.X * CELL_SIZE + offsetX
+        cy := gs.crystalPos.Y * CELL_SIZE + offsetY
+        pulse := math.Sin(app.frameCount as float64 * 0.05) * 0.3 + 0.7
+        crystalColor := RGBA(200, 100, 255, (pulse * 255) as int)
         vector.DrawFilledRect(
             screen,
             cx as float32,
             cy as float32,
             CELL_SIZE as float32,
             CELL_SIZE as float32,
-            crystal_color,
+            crystalColor,
             false,
         )
         DrawTextCentered(screen, "C", cx + CELL_SIZE / 2, cy + 8, ColorWhite)
 
         for t in gs.tokens
-            if t.is_alive and t.is_deployed
-                tx := t.position.X * CELL_SIZE + offset_x
-                ty := t.position.Y * CELL_SIZE + offset_y
-                tc := PlayerColorByName(t.player_id)
+            if t.isAlive and t.isDeployed
+                tx := t.position.X * CELL_SIZE + offsetX
+                ty := t.position.Y * CELL_SIZE + offsetY
+                tc := PlayerColorByName(t.playerId)
 
-                if t.id equals app.selected_token_id
+                if t.id equals app.selectedTokenId
                     vector.StrokeCircle(
                         screen,
                         (tx + CELL_SIZE / 2) as float32,
@@ -137,12 +137,12 @@ func DrawGame(screen: reference ebiten.Image)
                     tc,
                     false,
                 )
-                hp_text := "{t.health}"
-                DrawTextCentered(screen, hp_text, tx + CELL_SIZE / 2, ty + 8, ColorBlack)
+                hpText := "{t.health}"
+                DrawTextCentered(screen, hpText, tx + CELL_SIZE / 2, ty + 8, ColorBlack)
 
-        for mv in app.valid_moves
-            mx := mv.X * CELL_SIZE + offset_x
-            my := mv.Y * CELL_SIZE + offset_y
+        for mv in app.validMoves
+            mx := mv.X * CELL_SIZE + offsetX
+            my := mv.Y * CELL_SIZE + offsetY
             vector.StrokeCircle(
                 screen,
                 (mx + CELL_SIZE / 2) as float32,
@@ -153,9 +153,9 @@ func DrawGame(screen: reference ebiten.Image)
                 false,
             )
 
-        for av in app.valid_attacks
-            ax := av.X * CELL_SIZE + offset_x
-            ay := av.Y * CELL_SIZE + offset_y
+        for av in app.validAttacks
+            ax := av.X * CELL_SIZE + offsetX
+            ay := av.Y * CELL_SIZE + offsetY
             vector.StrokeCircle(
                 screen,
                 (ax + CELL_SIZE / 2) as float32,
@@ -166,17 +166,17 @@ func DrawGame(screen: reference ebiten.Image)
                 false,
             )
 
-        hud := "Turn: {gs.current_turn_player} | Phase: {gs.turn_phase} | Click token, click move | SPACE: end turn | ESC: menu | Arrows: pan"
+        hud := "Turn: {gs.currentTurnPlayer} | Phase: {gs.turnPhase} | Click token, click move | SPACE: end turn | ESC: menu | Arrows: pan"
         DrawText(screen, hud, 10, WINDOW_HEIGHT - 20, ColorGray)
 
-        if len(app.message) > 0
+        if app.message isnt empty
             DrawTextCentered(screen, app.message, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, ColorYellow)
 
 func DrawVictory(screen: reference ebiten.Image)
     DrawTextCentered(screen, "VICTORY!", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 40, ColorYellow)
-    if app.game_state isnt empty
-        gs := dereference app.game_state
-        if len(gs.winner) > 0
+    if app.gameState isnt empty
+        gs := dereference app.gameState
+        if gs.winner isnt empty
             msg := "{gs.winner} wins!"
             DrawTextCentered(screen, msg, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 20, ColorWhite)
     DrawTextCentered(

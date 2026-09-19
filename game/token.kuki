@@ -7,33 +7,33 @@ import "stdlib/slice"
 
 type Token
     id: types.TokenID
-    player_id: types.PlayerID
+    playerId: types.PlayerID
     health: int
-    max_health: int
+    maxHealth: int
     position: types.Position
-    is_alive: bool
-    is_deployed: bool
+    isAlive: bool
+    isDeployed: bool
 
-func NewToken(id: types.TokenID, player_id: types.PlayerID, health: int, max_health: int, position: types.Position) (Token, error)
+func NewToken(id: types.TokenID, playerId: types.PlayerID, health: int, maxHealth: int, position: types.Position) (Token, error)
     if health < 0
         return Token{}, error "health must be >= 0"
-    if max_health < 0
+    if maxHealth < 0
         return Token{}, error "max_health must be >= 0"
-    if health > max_health
+    if health > maxHealth
         return Token{}, error "health cannot exceed max_health"
     if not slice.Contains(constants.TOKEN_HEALTH_VALUES, health)
         return Token{}, error "health must be one of {constants.TOKEN_HEALTH_VALUES}"
     return Token{
         id: id,
-        player_id: player_id,
+        playerId: playerId,
         health: health,
-        max_health: max_health,
+        maxHealth: maxHealth,
         position: position,
-        is_alive: true,
-        is_deployed: false,
+        isAlive: true,
+        isDeployed: false,
     }, empty
 
-func movement_range on t: reference Token int
+func movementRange on t: reference Token int
     if t.health <= 6
         return 2
     return 1
@@ -45,53 +45,53 @@ func ID on t: reference Token types.TokenID
     return t.id
 
 func PlayerID on t: reference Token types.PlayerID
-    return t.player_id
+    return t.playerId
 
 func Health on t: reference Token int
     return t.health
 
 func MaxHealth on t: reference Token int
-    return t.max_health
+    return t.maxHealth
 
 func IsAlive on t: reference Token bool
-    return t.is_alive
+    return t.isAlive
 
 func IsDeployed on t: reference Token bool
-    return t.is_deployed
+    return t.isDeployed
 
-func attack_power on t: reference Token int
+func attackPower on t: reference Token int
     return t.health / 2
 
-func take_damage on t: reference Token(damage: int) bool
+func takeDamage on t: reference Token(damage: int) bool
     t.health = t.health - damage
     if t.health <= 0
         t.health = 0
-        t.is_alive = false
+        t.isAlive = false
         return true
-    valid_health := 0
+    validHealth := 0
     for hv in constants.TOKEN_HEALTH_VALUES
         if t.health >= hv
-            valid_health = hv
+            validHealth = hv
             break
-    if valid_health equals 0
+    if validHealth equals 0
         t.health = 0
-        t.is_alive = false
+        t.isAlive = false
         return true
-    t.health = valid_health
+    t.health = validHealth
     return false
 
-func heal_to_full on t: reference Token
-    t.health = t.max_health
+func healToFull on t: reference Token
+    t.health = t.maxHealth
 
 func heal on t: reference Token(amount: int)
     t.health = t.health + amount
-    if t.health > t.max_health
-        t.health = t.max_health
+    if t.health > t.maxHealth
+        t.health = t.maxHealth
 
-func move_to on t: reference Token(new_position: types.Position)
-    t.position = new_position
+func moveTo on t: reference Token(newPosition: types.Position)
+    t.position = newPosition
 
-func distance_to on t: Token(other: types.Position) int
+func distanceTo on t: Token(other: types.Position) int
     dx := t.position.X - other.X
     if dx < 0
         dx = -dx
@@ -100,7 +100,7 @@ func distance_to on t: Token(other: types.Position) int
         dy = -dy
     return dx + dy
 
-func is_adjacent_to on t: Token(other: types.Position) bool
+func isAdjacentTo on t: Token(other: types.Position) bool
     dx := t.position.X - other.X
     if dx < 0
         dx = -dx

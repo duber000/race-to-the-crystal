@@ -8,11 +8,11 @@ import "stdlib/string" as strpkg
 
 type ValidationResult
     field: string
-    error_code: string
+    errorCode: string
     message: string
 
-func ValidateActionFields(action_type: gamepkg.ActionType, data: map of string to any) optional reference ValidationResult
-    switch action_type
+func ValidateActionFields(actionType: gamepkg.ActionType, data: map of string to any) optional reference ValidationResult
+    switch actionType
         when gamepkg.MOVE
             return ValidateMove(data)
         when gamepkg.ATTACK
@@ -24,34 +24,34 @@ func ValidateActionFields(action_type: gamepkg.ActionType, data: map of string t
         default
             return reference of ValidationResult{
                 field: "type",
-                error_code: "UNKNOWN_ACTION",
-                message: "Unknown action type: {action_type}",
+                errorCode: "UNKNOWN_ACTION",
+                message: "Unknown action type: {actionType}",
             }
 
 func ValidateMove(data: map of string to any) optional reference ValidationResult
-    _, has_tid := data["token_id"]
-    if not has_tid
+    _, hasTid := data["token_id"]
+    if not hasTid
         return reference of ValidationResult{
             field: "token_id",
-            error_code: "MISSING_FIELD",
+            errorCode: "MISSING_FIELD",
             message: "MOVE requires token_id",
         }
 
-    dest_val, has_dest := data["destination"]
-    if not has_dest
-        dest_val, has_dest = data["position"]
-    if not has_dest
+    destVal, hasDest := data["destination"]
+    if not hasDest
+        destVal, hasDest = data["position"]
+    if not hasDest
         return reference of ValidationResult{
             field: "destination",
-            error_code: "MISSING_FIELD",
+            errorCode: "MISSING_FIELD",
             message: "MOVE requires destination",
         }
 
     if data["token_id"] is int
-        if not is_position_value(dest_val)
+        if not isPositionValue(destVal)
             return reference of ValidationResult{
                 field: "destination",
-                error_code: "INVALID_TYPE",
+                errorCode: "INVALID_TYPE",
                 message: "destination must be [x, y]",
             }
 
@@ -59,74 +59,74 @@ func ValidateMove(data: map of string to any) optional reference ValidationResul
     else
         return reference of ValidationResult{
             field: "token_id",
-            error_code: "INVALID_TYPE",
+            errorCode: "INVALID_TYPE",
             message: "token_id must be an integer",
         }
 
 func ValidateAttack(data: map of string to any) optional reference ValidationResult
-    _, has_atk := data["attacker_id"]
-    if not has_atk
+    _, hasAtk := data["attacker_id"]
+    if not hasAtk
         return reference of ValidationResult{
             field: "attacker_id",
-            error_code: "MISSING_FIELD",
+            errorCode: "MISSING_FIELD",
             message: "ATTACK requires attacker_id",
         }
 
-    def_val, has_def := data["defender_id"]
-    if not has_def
-        def_val, has_def = data["target_id"]
-    if not has_def
+    defVal, hasDef := data["defender_id"]
+    if not hasDef
+        defVal, hasDef = data["target_id"]
+    if not hasDef
         return reference of ValidationResult{
             field: "defender_id",
-            error_code: "MISSING_FIELD",
+            errorCode: "MISSING_FIELD",
             message: "ATTACK requires defender_id",
         }
 
     if data["attacker_id"] is int
-        if def_val is int
+        if defVal is int
             return empty
         else
             return reference of ValidationResult{
                 field: "defender_id",
-                error_code: "INVALID_TYPE",
+                errorCode: "INVALID_TYPE",
                 message: "defender_id must be an integer",
             }
     else
         return reference of ValidationResult{
             field: "attacker_id",
-            error_code: "INVALID_TYPE",
+            errorCode: "INVALID_TYPE",
             message: "attacker_id must be an integer",
         }
 
 func ValidateDeploy(data: map of string to any) optional reference ValidationResult
-    hv_val, has_hv := data["health_value"]
-    if not has_hv
+    hvVal, hasHv := data["health_value"]
+    if not hasHv
         return reference of ValidationResult{
             field: "health_value",
-            error_code: "MISSING_FIELD",
+            errorCode: "MISSING_FIELD",
             message: "DEPLOY requires health_value",
         }
 
-    pos_val, has_pos := data["position"]
-    if not has_pos
+    posVal, hasPos := data["position"]
+    if not hasPos
         return reference of ValidationResult{
             field: "position",
-            error_code: "MISSING_FIELD",
+            errorCode: "MISSING_FIELD",
             message: "DEPLOY requires position",
         }
 
-    if hv_val is int as hv_int
-        if not slice.Contains(constants.TOKEN_HEALTH_VALUES, hv_int)
+    if hvVal is int as hvInt
+        if not slice.Contains(constants.TOKEN_HEALTH_VALUES, hvInt)
             return reference of ValidationResult{
                 field: "health_value",
-                error_code: "INVALID_VALUE",
+                errorCode: "INVALID_VALUE",
                 message: "health_value must be one of {constants.TOKEN_HEALTH_VALUES}",
             }
 
-        if not is_position_value(pos_val)
+        if not isPositionValue(posVal)
             return reference of ValidationResult{
                 field: "position",
-                error_code: "INVALID_TYPE",
+                errorCode: "INVALID_TYPE",
                 message: "position must be [x, y]",
             }
 
@@ -134,11 +134,11 @@ func ValidateDeploy(data: map of string to any) optional reference ValidationRes
     else
         return reference of ValidationResult{
             field: "health_value",
-            error_code: "INVALID_TYPE",
+            errorCode: "INVALID_TYPE",
             message: "health_value must be an integer",
         }
 
-func is_position_value(val: any) bool
+func isPositionValue(val: any) bool
     pos := empty list of int
     bytes := jsonpkg.Bytes(val) onerr return false
     jsonpkg.ParseBytesInto(bytes, reference of pos) onerr return false
@@ -147,14 +147,14 @@ func is_position_value(val: any) bool
 func NormalizeActionData(data: map of string to any) map of string to any
     result := empty map of string to any
     for key, val in data
-        lower_key := strpkg.ToLower(key)
-        if lower_key equals "type"
-            if val is string as type_str
-                result["type"] = strpkg.ToLower(type_str)
+        lowerKey := strpkg.ToLower(key)
+        if lowerKey equals "type"
+            if val is string as typeStr
+                result["type"] = strpkg.ToLower(typeStr)
             else
                 result["type"] = ""
-        else if lower_key equals "target_id"
+        else if lowerKey equals "target_id"
             result["defender_id"] = val
         else
-            result[lower_key] = val
+            result[lowerKey] = val
     return result

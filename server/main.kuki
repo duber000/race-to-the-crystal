@@ -11,67 +11,67 @@ import "stdlib/signal"
 import "strings"
 
 type ServerConfig
-    http_port: int
-    static_dir: string
-    jwt_secret: string
+    httpPort: int
+    staticDir: string
+    jwtSecret: string
     debug: bool
 
 func ServerConfigFromEnv() ServerConfig
     httpPort := env.GetIntOr("HTTP_PORT", 8080) onerr panic "invalid HTTP_PORT: {error}"
     debug := env.GetBoolOr("DEBUG", false) onerr panic "invalid DEBUG: {error}"
     return ServerConfig{
-        http_port: httpPort,
-        static_dir: env.GetOr("STATIC_DIR", ""),
-        jwt_secret: env.GetOr("JWT_SECRET_KEY", ""),
+        httpPort: httpPort,
+        staticDir: env.GetOr("STATIC_DIR", ""),
+        jwtSecret: env.GetOr("JWT_SECRET_KEY", ""),
         debug: debug,
     }
 
 type GameServer
     config: ServerConfig
     coordinator: GameCoordinator
-    lobby_mgr: LobbyManager
-    ws_handler: WebSocketHandler
+    lobbyMgr: LobbyManager
+    wsHandler: WebSocketHandler
     mercure: MercurePublisher
-    http_handler: HTTPHandler
-    ws_endpoint: WebSocketEndpoint
+    httpHandler: HTTPHandler
+    wsEndpoint: WebSocketEndpoint
 
 func NewGameServer(config: ServerConfig) (GameServer, error)
-    mercure_cfg := MercureConfigFromEnv()
-    if config.jwt_secret equals ""
+    mercureCfg := MercureConfigFromEnv()
+    if config.jwtSecret equals ""
         sk, err := GenerateSecretKey()
         if err isnt empty
             return GameServer{}, errs.Wrap(err, "failed to generate secret key")
-        config.jwt_secret = sk
+        config.jwtSecret = sk
 
     gs := GameServer{
         config: config,
-        lobby_mgr: NewLobbyManager(),
-        ws_handler: NewWebSocketHandler(),
-        mercure: NewMercurePublisher(mercure_cfg),
+        lobbyMgr: NewLobbyManager(),
+        wsHandler: NewWebSocketHandler(),
+        mercure: NewMercurePublisher(mercureCfg),
     }
     gs.coordinator = NewGameCoordinator()
-    gs.http_handler = NewHTTPHandler(
+    gs.httpHandler = NewHTTPHandler(
         reference of gs.coordinator,
-        reference of gs.lobby_mgr,
-        reference of gs.ws_handler,
-        mercure_cfg,
-        config.jwt_secret,
-        config.static_dir,
+        reference of gs.lobbyMgr,
+        reference of gs.wsHandler,
+        mercureCfg,
+        config.jwtSecret,
+        config.staticDir,
     )
     return gs, empty
 
 func Start on gs: reference GameServer
-    gs.ws_endpoint = NewWebSocketEndpoint(
+    gs.wsEndpoint = NewWebSocketEndpoint(
         reference of gs.coordinator,
-        reference of gs.lobby_mgr,
-        reference of gs.ws_handler,
+        reference of gs.lobbyMgr,
+        reference of gs.wsHandler,
         reference of gs.mercure,
-        reference of gs.http_handler,
+        reference of gs.httpHandler,
     )
     mux := http.NewServeMux()
     gs.registerRoutes(mux)
 
-    addr := ":{gs.config.http_port}"
+    addr := ":{gs.config.httpPort}"
     log.Info("Starting HTTP server on {addr}")
 
     go
@@ -103,11 +103,11 @@ func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
     mux.Handle("/api/games", httphelper.Handler(gs.handleListGamesRoute))
 
 func handleWebSocketRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
-    gs.ws_endpoint.HandleWebSocket(response, request)
+    gs.wsEndpoint.HandleWebSocket(response, request)
 
 func handleHTTP on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
     response.SetSecureHeaders()
-    if gs.config.static_dir equals ""
+    if gs.config.staticDir equals ""
         response.JSONNotFound("no static files configured") onerr discard
         return
 
@@ -115,15 +115,15 @@ func handleHTTP on gs: reference GameServer(response: httphelper.Response, reque
     if path equals "/"
         path = "/index.html"
 
-    file_path := filepath.Join(gs.config.static_dir, path)
-    file_path = filepath.Clean(file_path)
+    filePath := filepath.Join(gs.config.staticDir, path)
+    filePath = filepath.Clean(filePath)
 
-    prefix := filepath.Clean(gs.config.static_dir)
-    if not strings.HasPrefix(file_path, prefix)
+    prefix := filepath.Clean(gs.config.staticDir)
+    if not strings.HasPrefix(filePath, prefix)
         response.JSONNotFound("not found") onerr discard
         return
 
-    response.ServeFile(request, file_path)
+    response.ServeFile(request, filePath)
 
 func handleCreateGameRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
     response.SetSecureHeaders()
@@ -131,19 +131,19 @@ func handleCreateGameRoute on gs: reference GameServer(response: httphelper.Resp
         response.MethodNotAllowed("POST")
         return
 
-    ip := gs.http_handler.GetClientIP(
+    ip := gs.httpHandler.GetClientIP(
         request.RemoteAddr(),
         request.GetHeader("X-Forwarded-For"),
         request.GetHeader("X-Real-IP"),
     )
-    auth_header := request.GetHeader("Authorization")
+    authHeader := request.GetHeader("Authorization")
 
     body := empty map of string to any
     request.Decode(reference of body) onerr
         response.JSONBadRequest("invalid JSON body")
         return
 
-    result := gs.http_handler.HandleCreateGame(auth_header, body, ip)
+    result := gs.httpHandler.HandleCreateGame(authHeader, body, ip)
     gs.writeAPIResponse(response, result)
 
 func handleJoinGameRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
@@ -152,8 +152,8 @@ func handleJoinGameRoute on gs: reference GameServer(response: httphelper.Respon
         response.MethodNotAllowed("POST")
         return
 
-    game_id := request.PathValue("game_id")
-    ip := gs.http_handler.GetClientIP(
+    gameId := request.PathValue("game_id")
+    ip := gs.httpHandler.GetClientIP(
         request.RemoteAddr(),
         request.GetHeader("X-Forwarded-For"),
         request.GetHeader("X-Real-IP"),
@@ -163,7 +163,7 @@ func handleJoinGameRoute on gs: reference GameServer(response: httphelper.Respon
     request.Decode(reference of body) onerr
         body = empty map of string to any
 
-    result := gs.http_handler.HandleJoinGame(game_id, body, ip)
+    result := gs.httpHandler.HandleJoinGame(gameId, body, ip)
     gs.writeAPIResponse(response, result)
 
 func handleActionRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
@@ -172,15 +172,15 @@ func handleActionRoute on gs: reference GameServer(response: httphelper.Response
         response.MethodNotAllowed("POST")
         return
 
-    game_id := request.PathValue("game_id")
-    auth_header := request.GetHeader("Authorization")
+    gameId := request.PathValue("game_id")
+    authHeader := request.GetHeader("Authorization")
 
     body := empty map of string to any
     request.Decode(reference of body) onerr
         response.JSONBadRequest("invalid JSON body")
         return
 
-    result := gs.http_handler.HandleAction(game_id, auth_header, body)
+    result := gs.httpHandler.HandleAction(gameId, authHeader, body)
     gs.writeAPIResponse(response, result)
 
 func handleGetStateRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
@@ -189,10 +189,10 @@ func handleGetStateRoute on gs: reference GameServer(response: httphelper.Respon
         response.MethodNotAllowed("GET")
         return
 
-    game_id := request.PathValue("game_id")
-    auth_header := request.GetHeader("Authorization")
+    gameId := request.PathValue("game_id")
+    authHeader := request.GetHeader("Authorization")
 
-    result := gs.http_handler.HandleGetState(game_id, auth_header)
+    result := gs.httpHandler.HandleGetState(gameId, authHeader)
     gs.writeAPIResponse(response, result)
 
 func handleGetActionsRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
@@ -201,10 +201,10 @@ func handleGetActionsRoute on gs: reference GameServer(response: httphelper.Resp
         response.MethodNotAllowed("GET")
         return
 
-    game_id := request.PathValue("game_id")
-    auth_header := request.GetHeader("Authorization")
+    gameId := request.PathValue("game_id")
+    authHeader := request.GetHeader("Authorization")
 
-    result := gs.http_handler.HandleGetActions(game_id, auth_header)
+    result := gs.httpHandler.HandleGetActions(gameId, authHeader)
     gs.writeAPIResponse(response, result)
 
 func handleLeaveGameRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
@@ -213,10 +213,10 @@ func handleLeaveGameRoute on gs: reference GameServer(response: httphelper.Respo
         response.MethodNotAllowed("POST")
         return
 
-    game_id := request.PathValue("game_id")
-    auth_header := request.GetHeader("Authorization")
+    gameId := request.PathValue("game_id")
+    authHeader := request.GetHeader("Authorization")
 
-    result := gs.http_handler.HandleLeaveGame(game_id, auth_header)
+    result := gs.httpHandler.HandleLeaveGame(gameId, authHeader)
     gs.writeAPIResponse(response, result)
 
 func handleReadyRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
@@ -225,14 +225,14 @@ func handleReadyRoute on gs: reference GameServer(response: httphelper.Response,
         response.MethodNotAllowed("POST")
         return
 
-    game_id := request.PathValue("game_id")
-    auth_header := request.GetHeader("Authorization")
+    gameId := request.PathValue("game_id")
+    authHeader := request.GetHeader("Authorization")
 
     body := empty map of string to any
     request.Decode(reference of body) onerr
         log.Debug("Ready endpoint: empty or invalid body, using defaults")
 
-    result := gs.http_handler.HandleReady(game_id, auth_header, body)
+    result := gs.httpHandler.HandleReady(gameId, authHeader, body)
     gs.writeAPIResponse(response, result)
 
 func handleStartGameRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
@@ -241,10 +241,10 @@ func handleStartGameRoute on gs: reference GameServer(response: httphelper.Respo
         response.MethodNotAllowed("POST")
         return
 
-    game_id := request.PathValue("game_id")
-    auth_header := request.GetHeader("Authorization")
+    gameId := request.PathValue("game_id")
+    authHeader := request.GetHeader("Authorization")
 
-    result := gs.http_handler.HandleStartGame(game_id, auth_header)
+    result := gs.httpHandler.HandleStartGame(gameId, authHeader)
     gs.writeAPIResponse(response, result)
 
 func handleListGamesRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
@@ -253,7 +253,7 @@ func handleListGamesRoute on gs: reference GameServer(response: httphelper.Respo
         response.MethodNotAllowed("GET")
         return
 
-    result := gs.http_handler.HandleListGames()
+    result := gs.httpHandler.HandleListGames()
     gs.writeAPIResponse(response, result)
 
 func writeAPIResponse on gs: reference GameServer(response: httphelper.Response, result: APIResponse)
@@ -261,14 +261,14 @@ func writeAPIResponse on gs: reference GameServer(response: httphelper.Response,
     if not result.success
         status = httphelper.StatusBadRequest
 
-    response_data := map of string to any{
+    responseData := map of string to any{
         "success": result.success,
         "message": result.message,
         "data": result.data,
     }
 
     if result.success
-        response.JSON(response_data) onerr
+        response.JSON(responseData) onerr
             log.Error("Failed to write JSON response")
     else
         response.JSONError(result.message, status) onerr

@@ -7,114 +7,113 @@ import "stdlib/random"
 import "stdlib/slice"
 
 type ActiveEffect
-    effect_type: enums.CrystalEffect
-    turns_remaining: int
-    applied_turn: int
+    effectType: enums.CrystalEffect
+    turnsRemaining: int
+    appliedTurn: int
 
-func reduce_duration on e: reference ActiveEffect(amount: int)
-    e.turns_remaining = e.turns_remaining - amount
-    if e.turns_remaining < 0
-        e.turns_remaining = 0
+func reduceDuration on e: reference ActiveEffect(amount: int)
+    e.turnsRemaining = e.turnsRemaining - amount
+    if e.turnsRemaining < 0
+        e.turnsRemaining = 0
 
-func is_active on e: ActiveEffect bool
-    return e.turns_remaining > 0
+func isActive on e: ActiveEffect bool
+    return e.turnsRemaining > 0
 
 type PhantomToken
-    phantom_id: int
-    apparent_player_id: types.PlayerID
+    phantomId: int
+    apparentPlayerId: types.PlayerID
     position: types.Position
-    apparent_health: int
+    apparentHealth: int
 
 type PlayerEffects
-    player_id: types.PlayerID
-    active_effects: list of ActiveEffect
-    phantom_tokens: list of PhantomToken
+    playerId: types.PlayerID
+    activeEffects: list of ActiveEffect
+    phantomTokens: list of PhantomToken
 
-func has_effect on e: reference PlayerEffects(et: enums.CrystalEffect) bool
-    for eff in e.active_effects
-        if eff.effect_type equals et and eff.is_active()
+func hasEffect on e: reference PlayerEffects(et: enums.CrystalEffect) bool
+    for eff in e.activeEffects
+        if eff.effectType equals et and eff.isActive()
             return true
     return false
 
-func get_effect on e: reference PlayerEffects(et: enums.CrystalEffect) optional reference ActiveEffect
-    for i from 0 to len(e.active_effects)
-        if e.active_effects[i].effect_type equals et and e.active_effects[i].is_active()
-            return reference of e.active_effects[i]
+func getEffect on e: reference PlayerEffects(et: enums.CrystalEffect) optional reference ActiveEffect
+    for i from 0 to len(e.activeEffects)
+        if e.activeEffects[i].effectType equals et and e.activeEffects[i].isActive()
+            return reference of e.activeEffects[i]
     return empty
 
-func add_effect on e: reference PlayerEffects(et: enums.CrystalEffect, duration: int, turn_number: int) reference ActiveEffect
-    e.active_effects = slice.Filter(e.active_effects, eff => eff.effect_type isnt et)
-    eff := ActiveEffect{effect_type: et, turns_remaining: duration, applied_turn: turn_number}
-    e.active_effects = append(e.active_effects, eff)
-    return reference of e.active_effects[len(e.active_effects) - 1]
+func addEffect on e: reference PlayerEffects(et: enums.CrystalEffect, duration: int, turnNumber: int) reference ActiveEffect
+    e.activeEffects = slice.Filter(e.activeEffects, eff => eff.effectType isnt et)
+    eff := ActiveEffect{effectType: et, turnsRemaining: duration, appliedTurn: turnNumber}
+    e.activeEffects = append(e.activeEffects, eff)
+    return reference of e.activeEffects[len(e.activeEffects) - 1]
 
-func reduce_all_durations on e: reference PlayerEffects(amount: int)
-    for i from 0 to len(e.active_effects)
-        e.active_effects[i].reduce_duration(amount)
-    e.active_effects = slice.Filter(e.active_effects, eff => eff.is_active())
-    if not e.has_effect(enums.PHANTOM_ENEMIES)
-        e.phantom_tokens = empty list of PhantomToken
+func reduceAllDurations on e: reference PlayerEffects(amount: int)
+    for i from 0 to len(e.activeEffects)
+        e.activeEffects[i].reduceDuration(amount)
+    e.activeEffects = slice.Filter(e.activeEffects, eff => eff.isActive())
+    if not e.hasEffect(enums.PHANTOM_ENEMIES)
+        e.phantomTokens = empty list of PhantomToken
 
 type CrystalEffectsManager
-    player_effects: map of types.PlayerID to reference PlayerEffects
+    playerEffects: map of types.PlayerID to reference PlayerEffects
     _next_phantom_id: int
 
 func NewCrystalEffectsManager() CrystalEffectsManager
     return CrystalEffectsManager{
-        player_effects: empty map of types.PlayerID to reference PlayerEffects,
+        playerEffects: empty map of types.PlayerID to reference PlayerEffects,
         _next_phantom_id: -1,
     }
 
-func get_player_effects on m: reference CrystalEffectsManager(player_id: types.PlayerID) reference PlayerEffects
-    pe, ok := m.player_effects[player_id]
+func getPlayerEffects on m: reference CrystalEffectsManager(playerId: types.PlayerID) reference PlayerEffects
+    pe, ok := m.playerEffects[playerId]
     if ok
         return pe
-    new_pe := PlayerEffects{player_id: player_id}
-    m.player_effects[player_id] = reference of new_pe
-    return m.player_effects[player_id]
+    newPe := PlayerEffects{playerId: playerId}
+    m.playerEffects[playerId] = reference of newPe
+    return m.playerEffects[playerId]
 
-func apply_effect on m: reference CrystalEffectsManager(player_id: types.PlayerID, et: enums.CrystalEffect, turn_number: int, duration: int)
+func applyEffect on m: reference CrystalEffectsManager(playerId: types.PlayerID, et: enums.CrystalEffect, turnNumber: int, duration: int)
     if duration equals 0
         duration = constants.CRYSTAL_EFFECT_INITIAL_DURATION
-    pe := m.get_player_effects(player_id)
-    pe.add_effect(et, duration, turn_number)
+    pe := m.getPlayerEffects(playerId)
+    pe.addEffect(et, duration, turnNumber)
 
-func end_turn_update on m: reference CrystalEffectsManager
-    for _, pe_ref in m.player_effects
-        pe_ref.reduce_all_durations(1)
+func endTurnUpdate on m: reference CrystalEffectsManager
+    for _, peRef in m.playerEffects
+        peRef.reduceAllDurations(1)
 
-func generate_phantom_tokens on m: reference CrystalEffectsManager(affected_player_id: types.PlayerID, other_player_ids: list of types.PlayerID, bw: int, bh: int, occupied: map of types.Position to bool) list of PhantomToken
-    pe := m.get_player_effects(affected_player_id)
-    pe.phantom_tokens = empty list of PhantomToken
+func generatePhantomTokens on m: reference CrystalEffectsManager(affectedPlayerId: types.PlayerID, otherPlayerIds: list of types.PlayerID, bw: int, bh: int, occupied: map of types.Position to bool) list of PhantomToken
+    pe := m.getPlayerEffects(affectedPlayerId)
+    pe.phantomTokens = empty list of PhantomToken
 
-    if not pe.has_effect(enums.PHANTOM_ENEMIES)
+    if not pe.hasEffect(enums.PHANTOM_ENEMIES)
         return empty list of PhantomToken
 
     for _ from 0 to constants.PHANTOM_ENEMIES_COUNT
         for _ from 0 to 50
-            x := random.Int(0, bw)
-            y := random.Int(0, bh)
+            x := safeRandomInt(0, bw)
+            y := safeRandomInt(0, bh)
             pos := types.Pos(x, y)
 
-            _, occ := occupied[pos]
-            if not occ
-                apparent_player := random.ChoiceOr of types.PlayerID(other_player_ids, affected_player_id)
+            if pos not in occupied
+                apparentPlayer := random.ChoiceOr of types.PlayerID(otherPlayerIds, affectedPlayerId)
 
-                apparent_health := random.Choice of int from constants.TOKEN_HEALTH_VALUES
+                apparentHealth := random.Choice of int from constants.TOKEN_HEALTH_VALUES
 
                 phantom := PhantomToken{
-                    phantom_id: m._next_phantom_id,
-                    apparent_player_id: apparent_player,
+                    phantomId: m._next_phantom_id,
+                    apparentPlayerId: apparentPlayer,
                     position: pos,
-                    apparent_health: apparent_health,
+                    apparentHealth: apparentHealth,
                 }
 
-                pe.phantom_tokens = append(pe.phantom_tokens, phantom)
+                pe.phantomTokens = append(pe.phantomTokens, phantom)
                 m._next_phantom_id = m._next_phantom_id - 1
                 break
 
-    return pe.phantom_tokens
+    return pe.phantomTokens
 
-func has_fog_of_war on m: reference CrystalEffectsManager(player_id: types.PlayerID) bool
-    pe := m.get_player_effects(player_id)
-    return pe.has_effect(enums.FOG_OF_WAR)
+func hasFogOfWar on m: reference CrystalEffectsManager(playerId: types.PlayerID) bool
+    pe := m.getPlayerEffects(playerId)
+    return pe.hasEffect(enums.FOG_OF_WAR)

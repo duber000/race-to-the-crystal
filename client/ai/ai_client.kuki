@@ -29,28 +29,28 @@ func defaultPlayerName() string
     return "AI_{random.Int(1000, 9999)}"
 
 func openSession(args: cli.Args) Session
-    base_url := cli.GetStringOr(args, "server", DEFAULT_BASE_URL)
+    baseUrl := cli.GetStringOr(args, "server", DEFAULT_BASE_URL)
     if cli.GetBool(args, "debug")
         log.SetLevel(log.LevelDebug)
 
-    sess := NewSession(base_url)
-    sess.player_name = cli.GetStringOr(args, "name", defaultPlayerName())
+    sess := NewSession(baseUrl)
+    sess.playerName = cli.GetStringOr(args, "name", defaultPlayerName())
 
-    join_id := cli.GetStringOr(args, "join", "")
-    create_name := cli.GetStringOr(args, "create", "")
+    joinId := cli.GetStringOr(args, "join", "")
+    createName := cli.GetStringOr(args, "create", "")
 
-    if join_id isnt ""
-        log.Info("Joining game {join_id} as {sess.player_name}")
-        ok := sess.JoinGame(join_id, sess.player_name)
+    if joinId isnt ""
+        log.Info("Joining game {joinId} as {sess.playerName}")
+        ok := sess.JoinGame(joinId, sess.playerName)
         if not ok
-            log.Fatal("failed to join game {join_id}")
+            log.Fatal("failed to join game {joinId}")
         log.Info("Marking as ready")
         sess.SetReady(true)
-    else if create_name isnt ""
-        log.Info("Creating game {create_name} as {sess.player_name}")
-        ok := sess.CreateGame(create_name, sess.player_name)
+    else if createName isnt ""
+        log.Info("Creating game {createName} as {sess.playerName}")
+        ok := sess.CreateGame(createName, sess.playerName)
         if not ok
-            log.Fatal("failed to create game {create_name}")
+            log.Fatal("failed to create game {createName}")
         log.Info("Marking as ready")
         sess.SetReady(true)
     else
@@ -60,7 +60,7 @@ func openSession(args: cli.Args) Session
 
 func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
     state := sess.FetchState()
-    if len(state) equals 0
+    if state is empty
         sess.TryAutoStart()
         return
 
@@ -69,65 +69,65 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
         sess.active = false
         return
 
-    perspective, has_p := state["perspective_player_id"]
-    var my_game_id: string
-    if has_p
+    perspective, hasP := state["perspective_player_id"]
+    var myGameId: string
+    if hasP
         if perspective is string as p
-            my_game_id = p
+            myGameId = p
 
     log.Debug(
-        "takeTurn: state size={len(state)}, perspective={my_game_id}, my_net_id={sess.player_id}",
+        "takeTurn: state size={len(state)}, perspective={myGameId}, my_net_id={sess.playerId}",
     )
-    if my_game_id equals ""
+    if myGameId equals ""
         return
 
     cur, has := state["current_turn_player_id"]
     if not has
         return
-    var cur_str: string
+    var curStr: string
     if cur is string as s
-        cur_str = s
-    log.Debug("takeTurn: current={cur_str}, my={my_game_id}")
-    if cur_str isnt my_game_id
+        curStr = s
+    log.Debug("takeTurn: current={curStr}, my={myGameId}")
+    if curStr isnt myGameId
         return
 
-    log.Info("Our turn (turn {cast.ToIntOr(state["turn_number"], 0)})")
+    log.Info("Our turn (turn {cast.ToIntOr(state["turnNumber"], 0)})")
     time.Sleep((DEFAULT_THINK_MS * 1000000) as time.Duration)
 
     payload := sess.FetchActions()
-    if len(payload) equals 0
+    if payload is empty
         log.Warn("empty actions response")
         return
 
-    actions_any, has_actions := payload["actions"]
-    if not has_actions
+    actionsAny, hasActions := payload["actions"]
+    if not hasActions
         return
 
-    if actions_any is list of any as actions_raw
+    if actionsAny is list of any as actionsRaw
         actions := empty list of map of string to any
-        for item in actions_raw
+        for item in actionsRaw
             if item is map of string to any as m
                 actions = append(actions, m)
         log.Info("Available actions: {len(actions)}")
-        if len(actions) > 0
+        if actions isnt empty
             chosen := PickAction(actions, strategy)
             log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
             result := sess.SendAction(chosen)
-            if len(result) > 0
+            if result isnt empty
                 if msg, has := result["message"]; has
-                    var msg_str: string
+                    var msgStr: string
                     if msg is string as ms
-                        msg_str = ms
-                    log.Debug("Server: {msg_str}")
+                        msgStr = ms
+                    log.Debug("Server: {msgStr}")
         return
     return
 
 func runPoll(args: cli.Args)
     sess := openSession(args)
     strategy := parseStrategy(cli.GetStringOr(args, "strategy", "random"))
-    poll_ms := cli.GetIntOr(args, "poll-interval", DEFAULT_POLL_MS)
+    pollMs := cli.GetIntOr(args, "poll-interval", DEFAULT_POLL_MS)
 
-    log.Info("Polling every {poll_ms}ms with strategy {strategy}")
+    log.Info("Polling every {pollMs}ms with strategy {strategy}")
 
     ch := make(channel of bool)
     signal.OnInterrupt(() =>
@@ -143,7 +143,7 @@ func runPoll(args: cli.Args)
                 takeTurn(reference of sess, strategy)
                 if not sess.active
                     return
-                time.Sleep((poll_ms * 1000000) as time.Duration)
+                time.Sleep((pollMs * 1000000) as time.Duration)
 
 func runSSE(args: cli.Args)
     sess := openSession(args)
@@ -152,17 +152,17 @@ func runSSE(args: cli.Args)
     log.Info("Subscribing to SSE stream with strategy {strategy}")
 
     sess.ConnectSSE((ev: SSEEvent) =>
-        evt_type := ev.event_type
-        if evt_type equals "" or evt_type equals "message"
-            evt_type = "message"
+        evtType := ev.eventType
+        if evtType equals "" or evtType equals "message"
+            evtType = "message"
 
-        if evt_type equals "GAME_WON" or evt_type equals "GAME_OVER"
+        if evtType equals "GAME_WON" or evtType equals "GAME_OVER"
             log.Info("Game over event received")
             sess.active = false
             return false
 
         state := ExtractStateFromSSE(ev)
-        if len(state) equals 0
+        if state is empty
             return true
 
         if IsGameOver(state)
@@ -170,59 +170,59 @@ func runSSE(args: cli.Args)
             sess.active = false
             return false
 
-        perspective, has_p := state["perspective_player_id"]
-        var my_game_id: string
-        if has_p
+        perspective, hasP := state["perspective_player_id"]
+        var myGameId: string
+        if hasP
             if perspective is string as p
-                my_game_id = p
+                myGameId = p
 
-        if my_game_id equals ""
+        if myGameId equals ""
             return true
 
         cur, has := state["current_turn_player_id"]
         if not has
             return true
-        var cur_str: string
+        var curStr: string
         if cur is string as s
-            cur_str = s
-        if cur_str isnt my_game_id
+            curStr = s
+        if curStr isnt myGameId
             return true
 
         if not IsGameActive(state)
             return true
 
-        log.Info("Our turn (turn {cast.ToIntOr(state["turn_number"], 0)})")
+        log.Info("Our turn (turn {cast.ToIntOr(state["turnNumber"], 0)})")
         time.Sleep((DEFAULT_THINK_MS * 1000000) as time.Duration)
 
         payload := sess.FetchActions()
-        if len(payload) equals 0
+        if payload is empty
             return true
 
-        actions_any, has_actions := payload["actions"]
-        if not has_actions
+        actionsAny, hasActions := payload["actions"]
+        if not hasActions
             return true
 
-        if actions_any is list of any as actions_raw
+        if actionsAny is list of any as actionsRaw
             actions := empty list of map of string to any
-            for item in actions_raw
+            for item in actionsRaw
                 if item is map of string to any as m
                     actions = append(actions, m)
-            if len(actions) > 0
+            if actions isnt empty
                 chosen := PickAction(actions, strategy)
                 log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
                 result := sess.SendAction(chosen)
-                if len(result) > 0
+                if result isnt empty
                     if msg, has := result["message"]; has
-                        var msg_str: string
+                        var msgStr: string
                         if msg is string as s
-                            msg_str = s
-                        log.Debug("Server: {msg_str}")
+                            msgStr = s
+                        log.Debug("Server: {msgStr}")
 
         return true
     )
 
 func main()
-    poll_cmd := cli.NewCommand(POLL, "Polling-based AI client (GET /state on timer)")
+    pollCmd := cli.NewCommand(POLL, "Polling-based AI client (GET /state on timer)")
         |> .StringFlag("server", "Game server URL", DEFAULT_BASE_URL)
         |> .StringFlag("join", "Game ID to join", "")
         |> .StringFlag("create", "Game name to create", "")
@@ -232,7 +232,7 @@ func main()
         |> .BoolFlag("debug", "Enable debug logging", false)
         |> .Action(runPoll)
 
-    sse_cmd := cli.NewCommand(SSE, "SSE-based AI client (subscribe to Mercure stream)")
+    sseCmd := cli.NewCommand(SSE, "SSE-based AI client (subscribe to Mercure stream)")
         |> .StringFlag("server", "Game server URL", DEFAULT_BASE_URL)
         |> .StringFlag("join", "Game ID to join", "")
         |> .StringFlag("create", "Game name to create", "")
@@ -244,6 +244,6 @@ func main()
     app := cli.New("race-ai-client")
         |> cli.Description("AI player for Race to the Crystal")
         |> cli.Version("1.0.0")
-        |> cli.WithCommands(poll_cmd, sse_cmd)
+        |> cli.WithCommands(pollCmd, sseCmd)
 
     cli.Run(app)

@@ -17,7 +17,7 @@ func PlayTurn(api: reference learn.LearnerAPI)
     api.Say("--- Turn {api.TurnNumber()} ---")
 
     mine := api.MyTokens()
-    if len(mine) equals 0
+    if mine is empty
         api.Place(10, 2, 2)
         api.Done()
         return

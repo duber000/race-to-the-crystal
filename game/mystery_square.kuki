@@ -6,50 +6,50 @@ import "stdlib/random"
 
 type MysteryEventResult
     effect: enums.MysteryEffect
-    token_id: types.TokenID
-    old_position: types.Position
-    new_position: types.Position
-    old_health: int
-    new_health: int
+    tokenId: types.TokenID
+    oldPosition: types.Position
+    newPosition: types.Position
+    oldHealth: int
+    newHealth: int
 
-func trigger_mystery_event(tok: reference Token, brd: reference Board, player_index: int) MysteryEventResult
-    old_pos := tok.position
-    old_hp := tok.health
+func triggerMysteryEvent(tok: reference Token, brd: reference Board, playerIndex: int) MysteryEventResult
+    oldPos := tok.position
+    oldHp := tok.health
 
-    is_heads := random.Int(0, 2) equals 0
+    isHeads := random.Int(0, 2) equals 0
 
-    if is_heads
-        tok.heal_to_full()
+    if isHeads
+        tok.healToFull()
         return MysteryEventResult{
             effect: enums.HEAL,
-            token_id: tok.id,
-            old_position: old_pos,
-            new_position: tok.position,
-            old_health: old_hp,
-            new_health: tok.health,
+            tokenId: tok.id,
+            oldPosition: oldPos,
+            newPosition: tok.position,
+            oldHealth: oldHp,
+            newHealth: tok.health,
         }
 
-    deploy_positions := brd.get_deployable_positions(player_index)
-    teleport_pos := types.Pos(-1, -1)
+    deployPositions := brd.getDeployablePositions(playerIndex)
+    teleportPos := types.Pos(-1, -1)
     found := false
 
-    for pos in deploy_positions
-        cell := brd.get_cell_at(pos)
+    for pos in deployPositions
+        cell := brd.getCellAt(pos)
         if cell isnt empty
-            if not dereference cell.is_occupied()
-                teleport_pos = pos
+            if not cell.isOccupied()
+                teleportPos = pos
                 found = true
                 break
 
     if not found
-        teleport_pos = brd.get_starting_position(player_index)
+        teleportPos = brd.getStartingPosition(playerIndex)
 
-    tok.move_to(teleport_pos)
+    tok.moveTo(teleportPos)
     return MysteryEventResult{
         effect: enums.TELEPORT,
-        token_id: tok.id,
-        old_position: old_pos,
-        new_position: tok.position,
-        old_health: old_hp,
-        new_health: tok.health,
+        tokenId: tok.id,
+        oldPosition: oldPos,
+        newPosition: tok.position,
+        oldHealth: oldHp,
+        newHealth: tok.health,
     }

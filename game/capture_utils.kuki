@@ -4,31 +4,31 @@ import "race-to-the-crystal/shared/types" as types
 import "stdlib/maps"
 
 type TokenAtPos
-    token_id: types.TokenID
-    player_id: types.PlayerID
+    tokenId: types.TokenID
+    playerId: types.PlayerID
 
-func count_tokens_by_player(tokens: list of TokenAtPos) map of types.PlayerID to list of types.TokenID
+func countTokensByPlayer(tokens: list of TokenAtPos) map of types.PlayerID to list of types.TokenID
     result := empty map of types.PlayerID to list of types.TokenID
     for tap in tokens
-        if not maps.Contains(result, tap.player_id)
-            result[tap.player_id] = empty list of types.TokenID
-        result[tap.player_id] = append(result[tap.player_id], tap.token_id)
+        if not maps.Contains(result, tap.playerId)
+            result[tap.playerId] = empty list of types.TokenID
+        result[tap.playerId] = append(result[tap.playerId], tap.tokenId)
     return result
 
-func find_dominant_player(counts: map of types.PlayerID to list of types.TokenID) (types.PlayerID, int, bool)
-    dominant_player := types.PlayerID("")
-    dominant_count := 0
+func findDominantPlayer(counts: map of types.PlayerID to list of types.TokenID) (types.PlayerID, int, bool)
+    dominantPlayer := types.PlayerID("")
+    dominantCount := 0
     contested := false
-    for player_id, token_ids in counts
-        n := len(token_ids)
-        if n > dominant_count
-            dominant_player = player_id
-            dominant_count = n
+    for playerId, tokenIds in counts
+        n := len(tokenIds)
+        if n > dominantCount
+            dominantPlayer = playerId
+            dominantCount = n
             contested = false
-        else if n equals dominant_count and dominant_count > 0
+        else if n equals dominantCount and dominantCount > 0
             contested = true
     if contested
-        return types.PlayerID(""), dominant_count, false
-    if dominant_count > 0
-        return dominant_player, dominant_count, true
+        return types.PlayerID(""), dominantCount, false
+    if dominantCount > 0
+        return dominantPlayer, dominantCount, true
     return types.PlayerID(""), 0, false

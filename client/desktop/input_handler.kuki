@@ -8,11 +8,11 @@ import "github.com/hajimehoshi/ebiten/v2/inpututil"
 
 func HandleMainMenuInput()
     if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp)
-        app.menu_selection = max_int(app.menu_selection - 1, 0)
+        app.menuSelection = maxInt(app.menuSelection - 1, 0)
     if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown)
-        app.menu_selection = min_int(app.menu_selection + 1, 2)
+        app.menuSelection = minInt(app.menuSelection + 1, 2)
     if inpututil.IsKeyJustPressed(ebiten.KeyEnter)
-        switch app.menu_selection
+        switch app.menuSelection
             when 0
                 StartLocalGame()
             when 1
@@ -27,59 +27,59 @@ func HandleLobbyInput()
         SetScreen(ScreenKind.Game)
 
 func HandleGameInput()
-    pan_speed := 8
+    panSpeed := 8
     if ebiten.IsKeyPressed(ebiten.KeyArrowLeft)
-        app.view_offset_x = app.view_offset_x + pan_speed as float64
+        app.viewOffsetX = app.viewOffsetX + panSpeed as float64
     if ebiten.IsKeyPressed(ebiten.KeyArrowRight)
-        app.view_offset_x = app.view_offset_x - pan_speed as float64
+        app.viewOffsetX = app.viewOffsetX - panSpeed as float64
     if ebiten.IsKeyPressed(ebiten.KeyArrowUp)
-        app.view_offset_y = app.view_offset_y + pan_speed as float64
+        app.viewOffsetY = app.viewOffsetY + panSpeed as float64
     if ebiten.IsKeyPressed(ebiten.KeyArrowDown)
-        app.view_offset_y = app.view_offset_y - pan_speed as float64
+        app.viewOffsetY = app.viewOffsetY - panSpeed as float64
 
     if inpututil.IsKeyJustPressed(ebiten.KeyEscape)
         SetScreen(ScreenKind.MainMenu)
         return
 
-    gs := app.real_game
-    if gs equals empty
+    gs := app.realGame
+    if gs is empty
         return
 
     if inpututil.IsKeyJustPressed(ebiten.KeySpace) or inpututil.IsKeyJustPressed(ebiten.KeyEnter)
         EndHumanTurn()
         return
 
-    if gs.CurrentTurnPlayerID() isnt app.human_player
+    if gs.CurrentTurnPlayerID() isnt app.humanPlayer
         return
 
     mx, my := ebiten.CursorPositionF()
-    cell_x := (mx - app.view_offset_x) as int / CELL_SIZE
-    cell_y := (my - app.view_offset_y) as int / CELL_SIZE
-    app.hover_cell = DPos(cell_x, cell_y)
+    cellX := (mx - app.viewOffsetX) as int / CELL_SIZE
+    cellY := (my - app.viewOffsetY) as int / CELL_SIZE
+    app.hoverCell = DPos(cellX, cellY)
 
     if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-        HandleBoardClick(gs, cell_x, cell_y)
+        HandleBoardClick(gs, cellX, cellY)
 
-func HandleBoardClick(gs: reference gamepkg.GameState, cell_x: int, cell_y: int)
-    if app.selected_token_id >= 0
-        if TryMove(cell_x, cell_y)
+func HandleBoardClick(gs: reference gamepkg.GameState, cellX: int, cellY: int)
+    if app.selectedTokenId >= 0
+        if TryMove(cellX, cellY)
             return
-        if TryAttack(cell_x, cell_y)
+        if TryAttack(cellX, cellY)
             return
-    clicked := FindTokenAt(gs, cell_x, cell_y)
+    clicked := FindTokenAt(gs, cellX, cellY)
     if clicked >= 0
-        tok_ref := gs.GetToken(typespkg.TokenID(clicked))
-        if tok_ref isnt empty
-            tok := dereference tok_ref
-            if tok.PlayerID() equals app.human_player
-                if app.selected_token_id equals clicked
+        tokRef := gs.GetToken(typespkg.TokenID(clicked))
+        if tokRef isnt empty
+            tok := dereference tokRef
+            if tok.PlayerID() equals app.humanPlayer
+                if app.selectedTokenId equals clicked
                     deselect()
                 else
-                    app.selected_token_id = clicked
-                    app.valid_moves = ComputeValidMoves(clicked)
-                    app.valid_attacks = ComputeValidAttacks(clicked)
+                    app.selectedTokenId = clicked
+                    app.validMoves = ComputeValidMoves(clicked)
+                    app.validAttacks = ComputeValidAttacks(clicked)
                 return
-    if app.selected_token_id >= 0
+    if app.selectedTokenId >= 0
         deselect()
 
 func FindTokenAt(gs: reference gamepkg.GameState, x: int, y: int) int
@@ -90,82 +90,82 @@ func FindTokenAt(gs: reference gamepkg.GameState, x: int, y: int) int
                 return tid as int
     return -1
 
-func ComputeValidMoves(token_id: int) list of DesktopPos
+func ComputeValidMoves(tokenId: int) list of DesktopPos
     result := empty list of DesktopPos
-    if app.real_api equals empty
+    if app.realApi is empty
         return result
-    api := dereference app.real_api
+    api := dereference app.realApi
     for a in api.Actions()
         switch a as v
             when gamepkg.MoveAction
-                if v.TokenID as int equals token_id
+                if v.TokenID as int equals tokenId
                     for d in v.ValidDestinations
                         result = append(result, DPos(d[0], d[1]))
     return result
 
-func ComputeValidAttacks(token_id: int) list of DesktopPos
+func ComputeValidAttacks(tokenId: int) list of DesktopPos
     result := empty list of DesktopPos
-    if app.real_api equals empty
+    if app.realApi is empty
         return result
-    api := dereference app.real_api
+    api := dereference app.realApi
     for a in api.Actions()
         switch a as v
             when gamepkg.AttackAction
-                if v.AttackerID as int equals token_id
+                if v.AttackerID as int equals tokenId
                     result = append(result, DPos(v.DefenderPosition[0], v.DefenderPosition[1]))
     return result
 
-func TryMove(cell_x: int, cell_y: int) bool
-    for mv in app.valid_moves
-        if mv.X equals cell_x and mv.Y equals cell_y
-            if app.real_api equals empty
+func TryMove(cellX: int, cellY: int) bool
+    for mv in app.validMoves
+        if mv.X equals cellX and mv.Y equals cellY
+            if app.realApi is empty
                 return false
-            api := dereference app.real_api
-            result := api.Move(typespkg.TokenID(app.selected_token_id), cell_x, cell_y)
+            api := dereference app.realApi
+            result := api.Move(typespkg.TokenID(app.selectedTokenId), cellX, cellY)
             app.message = result.Message
             deselect()
             return true
     return false
 
-func TryAttack(cell_x: int, cell_y: int) bool
-    if app.real_api equals empty
+func TryAttack(cellX: int, cellY: int) bool
+    if app.realApi is empty
         return false
-    api := dereference app.real_api
+    api := dereference app.realApi
     for a in api.Actions()
         switch a as v
             when gamepkg.AttackAction
-                if v.AttackerID as int equals app.selected_token_id
-                    if v.DefenderPosition[0] equals cell_x and v.DefenderPosition[1] equals cell_y
-                        result := api.Attack(typespkg.TokenID(app.selected_token_id), v.DefenderID)
+                if v.AttackerID as int equals app.selectedTokenId
+                    if v.DefenderPosition[0] equals cellX and v.DefenderPosition[1] equals cellY
+                        result := api.Attack(typespkg.TokenID(app.selectedTokenId), v.DefenderID)
                         app.message = result.Message
                         deselect()
                         return true
     return false
 
 func EndHumanTurn()
-    if app.real_api equals empty
+    if app.realApi is empty
         return
-    api := dereference app.real_api
+    api := dereference app.realApi
     result := api.EndTurn()
     if not result.Success
         app.message = result.Message
     deselect()
 
 func deselect()
-    app.selected_token_id = -1
-    app.valid_moves = empty list of DesktopPos
-    app.valid_attacks = empty list of DesktopPos
+    app.selectedTokenId = -1
+    app.validMoves = empty list of DesktopPos
+    app.validAttacks = empty list of DesktopPos
 
 func HandleVictoryInput()
     if inpututil.IsKeyJustPressed(ebiten.KeyEnter)
         SetScreen(ScreenKind.MainMenu)
 
-func max_int(a: int, b: int) int
+func maxInt(a: int, b: int) int
     if a > b
         return a
     return b
 
-func min_int(a: int, b: int) int
+func minInt(a: int, b: int) int
     if a < b
         return a
     return b

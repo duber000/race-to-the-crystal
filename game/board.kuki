@@ -1,5 +1,6 @@
 petiole game
 
+import "math"
 import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
@@ -8,55 +9,63 @@ import "stdlib/slice"
 
 type Cell
     position: types.Position
-    cell_type: enums.CellType
+    cellType: enums.CellType
     occupants: list of types.TokenID
 
 func NewCell(x: int, y: int) Cell
-    return Cell{position: types.Pos(x, y), cell_type: enums.NORMAL, occupants: empty list of types.TokenID}
+    return Cell{position: types.Pos(x, y), cellType: enums.NORMAL, occupants: empty list of types.TokenID}
 
-func is_occupied on c: Cell bool
-    return len(c.occupants) > 0
+func isOccupied on c: Cell bool
+    return c.occupants isnt empty
 
-func has_enemy_tokens on c: Cell(player_id: types.PlayerID, tokens_map: map of types.TokenID to reference Token) bool
+func hasEnemyTokens on c: Cell(playerId: types.PlayerID, tokensMap: map of types.TokenID to reference Token) bool
     for tid in c.occupants
-        tok, ok := tokens_map[tid]
-        if ok and dereference tok.player_id isnt player_id
+        tok, ok := tokensMap[tid]
+        if ok and tok.playerId isnt playerId
             return true
     return false
 
-func add_occupant on c: reference Cell(token_id: types.TokenID)
-    if not slice.Contains(c.occupants, token_id)
-        c.occupants = append(c.occupants, token_id)
+func addOccupant on c: reference Cell(tokenId: types.TokenID)
+    if not slice.Contains(c.occupants, tokenId)
+        c.occupants = append(c.occupants, tokenId)
 
-func remove_occupant on c: reference Cell(token_id: types.TokenID)
-    if slice.Contains(c.occupants, token_id)
-        c.occupants = slice.Filter(c.occupants, (tid: types.TokenID) => tid isnt token_id)
+func removeOccupant on c: reference Cell(tokenId: types.TokenID)
+    if slice.Contains(c.occupants, tokenId)
+        c.occupants = slice.Filter(c.occupants, (tid: types.TokenID) => tid isnt tokenId)
 
-func clear_occupants on c: reference Cell
+func clearOccupants on c: reference Cell
     c.occupants = empty list of types.TokenID
 
 type Quadrant
-    x_min: int
-    x_max: int
-    y_min: int
-    y_max: int
+    xMin: int
+    xMax: int
+    yMin: int
+    yMax: int
+
+# Guarded random.Int: random.Int panics when max - min overflows int, which the
+# checker cannot rule out for computed bounds; keep spans provably safe.
+# kuki:suppress "panic" "bounds guarded above: min>=0, span <= MaxInt/2, overflow impossible"
+func safeRandomInt(minVal: int, maxVal: int) int
+    if minVal < 0 or maxVal < minVal or maxVal > math.MaxInt / 2
+        return minVal
+    return random.Int(minVal, maxVal)
 
 type Board
     width: int
     height: int
     grid: list of list of Cell
-    _gen_positions: list of types.Position
-    _mystery_positions: list of types.Position
+    genPositions: list of types.Position
+    mysteryPositions: list of types.Position
 
 func NewBoard() Board
     b := Board{
         width: constants.BOARD_WIDTH,
         height: constants.BOARD_HEIGHT,
     }
-    b.initialize_grid()
+    b.initializeGrid()
     return b
 
-func initialize_grid on b: reference Board
+func initializeGrid on b: reference Board
     h := b.height
     w := b.width
     b.grid = make(list of list of Cell, h)
@@ -65,101 +74,101 @@ func initialize_grid on b: reference Board
         for x from 0 to w
             row[x] = NewCell(x, y)
         b.grid[y] = row
-    b.place_crystal()
-    b.place_generators()
-    b.place_mystery_squares()
+    b.placeCrystal()
+    b.placeGenerators()
+    b.placeMysterySquares()
 
-func place_crystal on b: reference Board
+func placeCrystal on b: reference Board
     cx := b.width / 2
     cy := b.height / 2
-    b.grid[cy][cx].cell_type = enums.CRYSTAL
+    b.grid[cy][cx].cellType = enums.CRYSTAL
 
-func place_generators on b: reference Board
-    mid_x := b.width / 2
-    mid_y := b.height / 2
+func placeGenerators on b: reference Board
+    midX := b.width / 2
+    midY := b.height / 2
     qx := b.width / 4
     qy := b.height / 4
 
     gens := list of types.Position{
         types.Pos(qx, qy),
-        types.Pos(mid_x + qx, qy),
-        types.Pos(qx, mid_y + qy),
-        types.Pos(mid_x + qx, mid_y + qy),
+        types.Pos(midX + qx, qy),
+        types.Pos(qx, midY + qy),
+        types.Pos(midX + qx, midY + qy),
     }
 
     for pos in gens
-        b.grid[pos.Y][pos.X].cell_type = enums.GENERATOR
-    b._gen_positions = gens
+        b.grid[pos.Y][pos.X].cellType = enums.GENERATOR
+    b.genPositions = gens
 
-func place_mystery_squares on b: reference Board
+func placeMysterySquares on b: reference Board
     if b.width < 10 or b.height < 10
         return
 
-    mid_x := b.width / 2
-    mid_y := b.height / 2
+    midX := b.width / 2
+    midY := b.height / 2
     m := 2
 
     quads := list of Quadrant{
-        {x_min: m, x_max: mid_x - m, y_min: m, y_max: mid_y - m},
-        {x_min: mid_x + m, x_max: b.width - m, y_min: m, y_max: mid_y - m},
-        {x_min: m, x_max: mid_x - m, y_min: mid_y + m, y_max: b.height - m},
-        {x_min: mid_x + m, x_max: b.width - m, y_min: mid_y + m, y_max: b.height - m},
+        {xMin: m, xMax: midX - m, yMin: m, yMax: midY - m},
+        {xMin: midX + m, xMax: b.width - m, yMin: m, yMax: midY - m},
+        {xMin: m, xMax: midX - m, yMin: midY + m, yMax: b.height - m},
+        {xMin: midX + m, xMax: b.width - m, yMin: midY + m, yMax: b.height - m},
     }
 
     for q in quads
-        if q.x_max < q.x_min or q.y_max < q.y_min
+        if q.xMax < q.xMin or q.yMax < q.yMin
             continue
 
         placed := 0
         for _ from 0 to constants.MYSTERY_PLACEMENT_MAX_ATTEMPTS
             if placed >= constants.MYSTERY_SQUARES_PER_QUADRANT
                 break
-            x := random.Int(q.x_min, q.x_max + 1)
-            y := random.Int(q.y_min, q.y_max + 1)
+            x := safeRandomInt(q.xMin, q.xMax + 1)
+            y := safeRandomInt(q.yMin, q.yMax + 1)
 
-            if b.grid[y][x].cell_type equals enums.NORMAL
-                b.grid[y][x].cell_type = enums.MYSTERY
-                b._mystery_positions = append(b._mystery_positions, types.Pos(x, y))
+            if b.grid[y][x].cellType equals enums.NORMAL
+                b.grid[y][x].cellType = enums.MYSTERY
+                b.mysteryPositions = append(b.mysteryPositions, types.Pos(x, y))
                 placed = placed + 1
 
-func get_cell on b: reference Board(x: int, y: int) optional reference Cell
-    if not b.is_valid_position(x, y)
+func getCell on b: reference Board(x: int, y: int) optional reference Cell
+    if not b.isValidPosition(x, y)
         return empty
     return reference of b.grid[y][x]
 
-func get_cell_at on b: reference Board(pos: types.Position) optional reference Cell
-    return b.get_cell(pos.X, pos.Y)
+func getCellAt on b: reference Board(pos: types.Position) optional reference Cell
+    return b.getCell(pos.X, pos.Y)
 
-func is_valid_position on b: Board(x: int, y: int) bool
+func isValidPosition on b: Board(x: int, y: int) bool
     return x >= 0 and x < b.width and y >= 0 and y < b.height
 
-func set_occupant on b: reference Board(pos: types.Position, token_id: types.TokenID)
-    cell := b.get_cell_at(pos)
+func setOccupant on b: reference Board(pos: types.Position, tokenId: types.TokenID)
+    cell := b.getCellAt(pos)
     if cell isnt empty
-        cell.add_occupant(token_id)
+        cell.addOccupant(tokenId)
 
-func clear_occupant on b: reference Board(pos: types.Position, token_id: types.TokenID)
-    cell := b.get_cell_at(pos)
+func clearOccupant on b: reference Board(pos: types.Position, tokenId: types.TokenID)
+    cell := b.getCellAt(pos)
     if cell isnt empty
-        cell.remove_occupant(token_id)
+        cell.removeOccupant(tokenId)
 
-func clear_all_occupants on b: reference Board(pos: types.Position)
-    cell := b.get_cell_at(pos)
+func clearAllOccupants on b: reference Board(pos: types.Position)
+    cell := b.getCellAt(pos)
     if cell isnt empty
-        cell.clear_occupants()
+        cell.clearOccupants()
 
-func get_starting_position on b: Board(player_index: int) types.Position
-    if player_index equals 0
+func getStartingPosition on b: Board(playerIndex: int) types.Position
+    if playerIndex equals 0
         return types.Pos(0, 0)
-    else if player_index equals 1
+    else if playerIndex equals 1
         return types.Pos(b.width - 1, 0)
-    else if player_index equals 2
+    else if playerIndex equals 2
         return types.Pos(0, b.height - 1)
     else
         return types.Pos(b.width - 1, b.height - 1)
 
-func get_deployable_positions on b: Board(player_index: int) list of types.Position
-    if player_index equals 0
+func getDeployablePositions on b: Board(playerIndex: int) list of types.Position
+    if playerIndex equals 0
         return list of types.Position{
             types.Pos(0, 0),
             types.Pos(1, 0),
@@ -171,7 +180,7 @@ func get_deployable_positions on b: Board(player_index: int) list of types.Posit
             types.Pos(1, 2),
             types.Pos(2, 2),
         }
-    else if player_index equals 1
+    else if playerIndex equals 1
         return list of types.Position{
             types.Pos(21, 0),
             types.Pos(22, 0),
@@ -183,7 +192,7 @@ func get_deployable_positions on b: Board(player_index: int) list of types.Posit
             types.Pos(22, 2),
             types.Pos(23, 2),
         }
-    else if player_index equals 2
+    else if playerIndex equals 2
         return list of types.Position{
             types.Pos(0, 21),
             types.Pos(1, 21),
@@ -208,11 +217,11 @@ func get_deployable_positions on b: Board(player_index: int) list of types.Posit
             types.Pos(23, 23),
         }
 
-func get_crystal_position on b: Board types.Position
+func getCrystalPosition on b: Board types.Position
     return types.Pos(b.width / 2, b.height / 2)
 
-func get_generator_positions on b: Board list of types.Position
-    return b._gen_positions
+func getGeneratorPositions on b: Board list of types.Position
+    return b.genPositions
 
-func get_mystery_positions on b: Board list of types.Position
-    return b._mystery_positions
+func getMysteryPositions on b: Board list of types.Position
+    return b.mysteryPositions

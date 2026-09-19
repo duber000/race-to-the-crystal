@@ -7,37 +7,37 @@ import "stdlib/string" as strpkg
 import "time"
 
 type TokenPayload
-    player_id: string
-    game_id: string
-    issued_at: int64
-    expires_at: int64
+    playerId: string
+    gameId: string
+    issuedAt: int64
+    expiresAt: int64
 
 func GenerateSecretKey() (string, error)
     return crypto.RandomToken(32)
 
-func CreatePlayerToken(player_id: string, game_id: string, secret_key: string, expiration_hours: int) string
-    if expiration_hours equals 0
-        expiration_hours = 24
+func CreatePlayerToken(playerId: string, gameId: string, secretKey: string, expirationHours: int) string
+    if expirationHours equals 0
+        expirationHours = 24
     now := time.Now().Unix()
-    header_json := map of string to string{"alg": "HS256", "typ": "JWT"}
-    header_bytes := jsonpkg.Bytes(header_json) onerr return ""
-    payload_data := JWTClaims{
-        PlayerID: player_id,
-        GameID: game_id,
+    headerJson := map of string to string{"alg": "HS256", "typ": "JWT"}
+    headerBytes := jsonpkg.Bytes(headerJson) onerr return ""
+    payloadData := JWTClaims{
+        PlayerID: playerId,
+        GameID: gameId,
         Iat: now,
-        Exp: now + (expiration_hours * 3600) as int64,
+        Exp: now + (expirationHours * 3600) as int64,
     }
-    payload_bytes := jsonpkg.Bytes(payload_data) onerr return ""
+    payloadBytes := jsonpkg.Bytes(payloadData) onerr return ""
 
     # JWT requires UNPadded base64url (RawURLEncoding semantics); the
     # padded encoder silently broke strict JWT consumers.
-    header_b64 := encpkg.Base64URLNoPadEncode(header_bytes)
-    payload_b64 := encpkg.Base64URLNoPadEncode(payload_bytes)
-    signing_input := "{header_b64}.{payload_b64}"
-    signature := crypto.HMAC(secret_key, signing_input)
-    sig_bytes := signature as list of byte
-    signature_b64 := encpkg.Base64URLNoPadEncode(sig_bytes)
-    return "{header_b64}.{payload_b64}.{signature_b64}"
+    headerB64 := encpkg.Base64URLNoPadEncode(headerBytes)
+    payloadB64 := encpkg.Base64URLNoPadEncode(payloadBytes)
+    signingInput := "{headerB64}.{payloadB64}"
+    signature := crypto.HMAC(secretKey, signingInput)
+    sigBytes := signature as list of byte
+    signatureB64 := encpkg.Base64URLNoPadEncode(sigBytes)
+    return "{headerB64}.{payloadB64}.{signatureB64}"
 
 type JWTClaims
     PlayerID: string as "player_id"
@@ -45,47 +45,47 @@ type JWTClaims
     Iat: int64 as "iat"
     Exp: int64 as "exp"
 
-func VerifyPlayerToken(token_str: string, secret_key: string) optional reference TokenPayload
-    parts := strpkg.Split(token_str, ".")
+func VerifyPlayerToken(tokenStr: string, secretKey: string) optional reference TokenPayload
+    parts := strpkg.Split(tokenStr, ".")
     if len(parts) isnt 3
         return empty
 
-    header_b64 := parts[0]
-    payload_b64 := parts[1]
-    signature_b64 := parts[2]
+    headerB64 := parts[0]
+    payloadB64 := parts[1]
+    signatureB64 := parts[2]
 
-    signing_input := "{header_b64}.{payload_b64}"
-    expected_sig := crypto.HMAC(secret_key, signing_input)
-    expected_sig_b64 := encpkg.Base64URLNoPadEncode(expected_sig as list of byte)
+    signingInput := "{headerB64}.{payloadB64}"
+    expectedSig := crypto.HMAC(secretKey, signingInput)
+    expectedSigB64 := encpkg.Base64URLNoPadEncode(expectedSig as list of byte)
 
-    if signature_b64 isnt expected_sig_b64
+    if signatureB64 isnt expectedSigB64
         return empty
 
-    payload_bytes := encpkg.Base64URLNoPadDecodeOr(payload_b64, empty list of byte)
+    payloadBytes := encpkg.Base64URLNoPadDecodeOr(payloadB64, empty list of byte)
     claims := JWTClaims{}
-    jsonpkg.ParseBytesInto(payload_bytes, reference of claims) onerr return empty
+    jsonpkg.ParseBytesInto(payloadBytes, reference of claims) onerr return empty
 
     now := time.Now().Unix()
     if now > claims.Exp
         return empty
 
     result := TokenPayload{
-        player_id: claims.PlayerID,
-        game_id: claims.GameID,
-        issued_at: claims.Iat,
-        expires_at: claims.Exp,
+        playerId: claims.PlayerID,
+        gameId: claims.GameID,
+        issuedAt: claims.Iat,
+        expiresAt: claims.Exp,
     }
     return reference of result
 
-func ExtractTokenFromHeader(authorization_header: string) string
-    if authorization_header equals ""
+func ExtractTokenFromHeader(authorizationHeader: string) string
+    if authorizationHeader equals ""
         return ""
     prefix := "Bearer "
-    if strpkg.HasPrefix(authorization_header, prefix)
-        return strpkg.TrimPrefix(authorization_header, prefix)
+    if strpkg.HasPrefix(authorizationHeader, prefix)
+        return strpkg.TrimPrefix(authorizationHeader, prefix)
     return ""
 
-func ValidateTokenForGame(payload: optional reference TokenPayload, game_id: string) bool
-    if payload equals empty
+func ValidateTokenForGame(payload: optional reference TokenPayload, gameId: string) bool
+    if payload is empty
         return false
-    return payload.game_id equals game_id
+    return payload.gameId equals gameId

@@ -10,22 +10,22 @@ enum ActionType: string
     END_TURN = "END_TURN"
 
 type MoveActionSchema
-    action_type: ActionType
-    token_id: types.TokenID
+    actionType: ActionType
+    tokenId: types.TokenID
     destination: types.Position
 
 type AttackActionSchema
-    action_type: ActionType
-    attacker_id: types.TokenID
-    defender_id: types.TokenID
+    actionType: ActionType
+    attackerId: types.TokenID
+    defenderId: types.TokenID
 
 type DeployActionSchema
-    action_type: ActionType
-    health_value: int
+    actionType: ActionType
+    healthValue: int
     position: types.Position
 
 type EndTurnActionSchema
-    action_type: ActionType
+    actionType: ActionType
 
 enum ActionResponse
     MoveAction
@@ -56,23 +56,23 @@ type AvailableActionsResponse
     Actions: list of ActionResponse
 
 type MoveResultData
-    token_id: types.TokenID
-    old_position: list of int
-    new_position: list of int
+    tokenId: types.TokenID
+    oldPosition: list of int
+    newPosition: list of int
 
 type MoveResultDataWithMystery
-    move_data: MoveResultData
-    mystery_triggered: bool
-    mystery_effect: string
+    moveData: MoveResultData
+    mysteryTriggered: bool
+    mysteryEffect: string
 
 type AttackResultData
-    attacker_id: types.TokenID
-    defender_id: types.TokenID
-    damage_dealt: int
-    defender_killed: bool
+    attackerId: types.TokenID
+    defenderId: types.TokenID
+    damageDealt: int
+    defenderKilled: bool
 
 type DeployResultData
-    new_token_id: types.TokenID
-    health_value: int
+    newTokenId: types.TokenID
+    healthValue: int
     position: list of int
-    tokens_remaining: int
+    tokensRemaining: int

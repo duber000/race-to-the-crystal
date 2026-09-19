@@ -14,23 +14,23 @@ import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/learn" as learn
 
 func BestAttack(api: reference learn.LearnerAPI, actions: list of gamepkg.ActionResponse) bool
-    best_damage := 0
-    best_attacker := 0
-    best_defender := 0
+    bestDamage := 0
+    bestAttacker := 0
+    bestDefender := 0
     found := false
     for a in actions
         switch a as v
             when gamepkg.AttackAction
-                if not found or v.WillKill or v.Damage > best_damage
-                    best_damage = v.Damage
-                    best_attacker = v.AttackerID as int
-                    best_defender = v.DefenderID as int
+                if not found or v.WillKill or v.Damage > bestDamage
+                    bestDamage = v.Damage
+                    bestAttacker = v.AttackerID as int
+                    bestDefender = v.DefenderID as int
                     found = true
             default
                 continue
 
     if found
-        api.Attack(best_attacker, best_defender)
+        api.Attack(bestAttacker, bestDefender)
     return found
 
 func StepOne(api: reference learn.LearnerAPI, tid: int) bool

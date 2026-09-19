@@ -11,30 +11,30 @@ import "strings"
 type Payload = map of string to any
 
 type Session
-    base_url: string
-    player_id: string
-    player_name: string
+    baseUrl: string
+    playerId: string
+    playerName: string
     token: string
-    game_id: string
-    sse_url: string
+    gameId: string
+    sseUrl: string
     active: bool
 
-func NewSession(base_url: string) Session
-    return Session{base_url: strings.TrimRight(base_url, "/"), active: true}
+func NewSession(baseUrl: string) Session
+    return Session{baseUrl: strings.TrimRight(baseUrl, "/"), active: true}
 
 type createRequest
-    game_name: string
-    player_name: string
+    gameName: string
+    playerName: string
 
 type joinRequest
-    player_name: string
+    playerName: string
 
 type playerSessionData
-    player_id: string
-    player_name: string
+    playerId: string
+    playerName: string
     token: string
-    game_id: string
-    sse_url: string
+    gameId: string
+    sseUrl: string
 
 type createJoinAPIResponse
     success: bool
@@ -42,26 +42,26 @@ type createJoinAPIResponse
     data: playerSessionData
 
 func fillSessionFromData on s: reference Session(d: playerSessionData)
-    if d.player_id isnt ""
-        s.player_id = d.player_id
-    if d.player_name isnt ""
-        s.player_name = d.player_name
+    if d.playerId isnt ""
+        s.playerId = d.playerId
+    if d.playerName isnt ""
+        s.playerName = d.playerName
     if d.token isnt ""
         s.token = d.token
-    if d.game_id isnt ""
-        s.game_id = d.game_id
-    if d.sse_url isnt ""
-        s.sse_url = d.sse_url
+    if d.gameId isnt ""
+        s.gameId = d.gameId
+    if d.sseUrl isnt ""
+        s.sseUrl = d.sseUrl
 
-    log.Info("Authenticated as {s.player_name} (player_id={s.player_id}, game_id={s.game_id})")
-    if s.sse_url isnt ""
-        log.Info("SSE URL: {s.sse_url}")
+    log.Info("Authenticated as {s.playerName} (player_id={s.playerId}, game_id={s.gameId})")
+    if s.sseUrl isnt ""
+        log.Info("SSE URL: {s.sseUrl}")
 
-func CreateGame on s: reference Session(game_name: string, player_name: string) bool
-    url := "{s.base_url}/api/game/create"
+func CreateGame on s: reference Session(gameName: string, playerName: string) bool
+    url := "{s.baseUrl}/api/game/create"
     body := createRequest{
-        game_name: game_name,
-        player_name: player_name,
+        gameName: gameName,
+        playerName: playerName,
     }
     resp := fetch.New(url)
         |> fetch.Method("POST")
@@ -91,9 +91,9 @@ func CreateGame on s: reference Session(game_name: string, player_name: string) 
     s.fillSessionFromData(data.data)
     return true
 
-func JoinGame on s: reference Session(game_id: string, player_name: string) bool
-    url := "{s.base_url}/api/game/{game_id}/join"
-    body := joinRequest{player_name: player_name}
+func JoinGame on s: reference Session(gameId: string, playerName: string) bool
+    url := "{s.baseUrl}/api/game/{gameId}/join"
+    body := joinRequest{playerName: playerName}
 
     resp := fetch.New(url)
         |> fetch.Method("POST")
@@ -124,7 +124,7 @@ func JoinGame on s: reference Session(game_id: string, player_name: string) bool
     return true
 
 func FetchState on s: reference Session Payload
-    url := "{s.base_url}/api/game/{s.game_id}/state"
+    url := "{s.baseUrl}/api/game/{s.gameId}/state"
     resp := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Header("Authorization", "Bearer {s.token}")
@@ -166,7 +166,7 @@ type actionsAPIResponse
     data: actionsData
 
 func FetchActions on s: reference Session Payload
-    url := "{s.base_url}/api/game/{s.game_id}/actions"
+    url := "{s.baseUrl}/api/game/{s.gameId}/actions"
     resp := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Header("Authorization", "Bearer {s.token}")
@@ -195,7 +195,7 @@ func FetchActions on s: reference Session Payload
     return result
 
 func SendAction on s: reference Session(action: gamepkg.ChosenAction) Payload
-    url := "{s.base_url}/api/game/{s.game_id}/action"
+    url := "{s.baseUrl}/api/game/{s.gameId}/action"
     body := gamepkg.ChosenToActionMap(action)
 
     resp := fetch.New(url)
@@ -219,49 +219,49 @@ func SendAction on s: reference Session(action: gamepkg.ChosenAction) Payload
 
 func TryAutoStart on s: reference Session bool
     lobby := s.GetLobby()
-    if lobby equals empty
+    if lobby is empty
         return false
 
-    host_id_any, has := lobby["host_player_id"]
+    hostIdAny, has := lobby["host_player_id"]
     if not has
         return false
-    host_id := ""
-    if host_id_any is string as hv
-        host_id = hv
-    if host_id isnt s.player_id
+    hostId := ""
+    if hostIdAny is string as hv
+        hostId = hv
+    if hostId isnt s.playerId
         return false
 
-    status_any, has_s := lobby["status"]
-    if not has_s
+    statusAny, hasS := lobby["status"]
+    if not hasS
         return false
     status := ""
-    if status_any is string as sv
+    if statusAny is string as sv
         status = sv
     if status isnt "WAITING"
         return true
 
-    cur_any, has_c := lobby["current_players"]
-    if not has_c
+    curAny, hasC := lobby["current_players"]
+    if not hasC
         return false
-    cur := cast.ToIntOr(cur_any, 0)
-    min_any, has_m := lobby["min_players"]
-    if not has_m
+    cur := cast.ToIntOr(curAny, 0)
+    minAny, hasM := lobby["min_players"]
+    if not hasM
         return false
-    min_p := cast.ToIntOr(min_any, 0)
-    if cur < min_p
+    minP := cast.ToIntOr(minAny, 0)
+    if cur < minP
         return false
 
-    players_any, has_p := lobby["players"]
-    if not has_p
+    playersAny, hasP := lobby["players"]
+    if not hasP
         return false
-    if players_any is list of any as players
+    if playersAny is list of any as players
         for p in players
-            if p is Payload as p_map
-                ready_any, has_r := p_map["is_ready"]
-                if not has_r
+            if p is Payload as pMap
+                readyAny, hasR := pMap["is_ready"]
+                if not hasR
                     return false
                 ready := false
-                if ready_any is bool as bv
+                if readyAny is bool as bv
                     ready = bv
                 if not ready
                     return false
@@ -277,7 +277,7 @@ type readyRequest
     ready: bool
 
 func SetReady on s: reference Session(ready: bool) bool
-    url := "{s.base_url}/api/game/{s.game_id}/ready"
+    url := "{s.baseUrl}/api/game/{s.gameId}/ready"
     body := readyRequest{ready: ready}
 
     resp := fetch.New(url)
@@ -299,7 +299,7 @@ func SetReady on s: reference Session(ready: bool) bool
     return true
 
 func StartGame on s: reference Session bool
-    url := "{s.base_url}/api/game/{s.game_id}/start"
+    url := "{s.baseUrl}/api/game/{s.gameId}/start"
 
     resp := fetch.New(url)
         |> fetch.Method("POST")
@@ -326,7 +326,7 @@ type lobbiesAPIResponse
     data: lobbiesData
 
 func ListLobbies on s: reference Session list of Payload
-    url := "{s.base_url}/api/games"
+    url := "{s.baseUrl}/api/games"
     resp := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Retry(3, 500)
@@ -353,68 +353,68 @@ func ListLobbies on s: reference Session list of Payload
 func GetLobby on s: reference Session Payload
     lobbies := s.ListLobbies()
     for lobby in lobbies
-        gid_any, has := lobby["game_id"]
+        gidAny, has := lobby["game_id"]
         if not has
             continue
         gid := ""
-        if gid_any is string as gv
+        if gidAny is string as gv
             gid = gv
-        if gid equals s.game_id
+        if gid equals s.gameId
             return lobby
     return empty Payload
 
-func IsMyTurn(state: Payload, player_id: string) bool
-    if state equals empty
+func IsMyTurn(state: Payload, playerId: string) bool
+    if state is empty
         return false
     cur, has := state["current_turn_player_id"]
     if not has
         return false
-    cur_str := ""
+    curStr := ""
     if cur is string as cv
-        cur_str = cv
-    return cur_str equals player_id
+        curStr = cv
+    return curStr equals playerId
 
 func IsGameOver(state: Payload) bool
-    if state equals empty
+    if state is empty
         return false
     phase, has := state["phase"]
     if not has
         return false
-    phase_str := ""
+    phaseStr := ""
     if phase is string as pv
-        phase_str = pv
-    return phase_str equals "ENDED"
+        phaseStr = pv
+    return phaseStr equals "ENDED"
 
 func IsGameActive(state: Payload) bool
-    if state equals empty
+    if state is empty
         return false
     phase, has := state["phase"]
     if not has
         return false
-    phase_str := ""
+    phaseStr := ""
     if phase is string as pv
-        phase_str = pv
-    return phase_str equals "PLAYING"
+        phaseStr = pv
+    return phaseStr equals "PLAYING"
 
 func PickAction(actions: list of Payload, strategy: gamepkg.AIStrategyName) gamepkg.ChosenAction
-    actions_typed := gamepkg.ActionsFromDicts(actions)
-    if len(actions_typed) equals 0
+    actionsTyped := gamepkg.ActionsFromDicts(actions)
+    if actionsTyped is empty
         return gamepkg.ChosenEndTurn
-    chosen_ref := gamepkg.ChooseAction(strategy, actions_typed, empty, "")
-    if chosen_ref equals empty
+    chosenRef := gamepkg.ChooseAction(strategy, actionsTyped, empty, "")
+    if chosenRef is empty
         return gamepkg.ChosenEndTurn
-    return dereference chosen_ref
+    return dereference chosenRef
 
 type SSEEvent
-    event_type: string
+    eventType: string
     data: string
 
 func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
-    if s.sse_url equals ""
+    if s.sseUrl equals ""
         log.Warn("ConnectSSE: no SSE URL configured")
         return
 
-    resp := fetch.New(s.sse_url)
+    resp := fetch.New(s.sseUrl)
         |> fetch.Method("GET")
         |> fetch.Header("Authorization", "Bearer {s.token}")
         |> fetch.Header("Accept", "text/event-stream")
@@ -432,27 +432,27 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
     scanner := bufio.NewScanner(body)
     scanner.Buffer(make(list of byte, 0, 64 * 1024), 1024 * 1024)
 
-    current_event := "message"
-    data_buf := strings.Builder{}
+    currentEvent := "message"
+    dataBuf := strings.Builder{}
 
     for scanner.Scan()
         line := scanner.Text()
 
         if line equals ""
-            if data_buf.Len() > 0
-                ev := SSEEvent{event_type: current_event, data: data_buf.String()}
-                keep_going := handler(ev)
-                data_buf.Reset()
-                current_event = "message"
-                if not keep_going
+            if dataBuf.Len() > 0
+                ev := SSEEvent{eventType: currentEvent, data: dataBuf.String()}
+                keepGoing := handler(ev)
+                dataBuf.Reset()
+                currentEvent = "message"
+                if not keepGoing
                     return
         else if strings.HasPrefix(line, "event:")
-            current_event = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
+            currentEvent = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
         else if strings.HasPrefix(line, "data:")
             chunk := strings.TrimPrefix(line, "data:")
-            if data_buf.Len() > 0
-                data_buf.WriteString("\n") onerr discard
-            data_buf.WriteString(strings.TrimLeft(chunk, " ")) onerr discard
+            if dataBuf.Len() > 0
+                dataBuf.WriteString("\n") onerr discard
+            dataBuf.WriteString(strings.TrimLeft(chunk, " ")) onerr discard
 
     err := scanner.Err()
     if err isnt empty
@@ -462,14 +462,14 @@ func ExtractStateFromSSE(ev: SSEEvent) Payload
     parsed := make(Payload)
     jsonpkg.ParseInto(ev.data, reference of parsed) onerr return empty Payload
 
-    state_any, has_state := parsed["state"]
-    if has_state
-        if state_any is Payload as state
+    stateAny, hasState := parsed["state"]
+    if hasState
+        if stateAny is Payload as state
             return state
 
-    gs_any, has_gs := parsed["game_state"]
-    if has_gs
-        if gs_any is Payload as gs
+    gsAny, hasGs := parsed["game_state"]
+    if hasGs
+        if gsAny is Payload as gs
             return gs
 
     return parsed

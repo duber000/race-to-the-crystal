@@ -8,25 +8,25 @@ import "testing"
 func TestGetValidMovesFromCenter(t: reference testing.T)
     b := NewBoard()
     tok, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 6, 6, types.Pos(5, 5))
-    tokens_map := map of types.TokenID to reference Token{1: reference of tok}
-    moves := get_valid_moves(reference of tok, reference of b, 2, tokens_map)
-    test.AssertTrue(t, len(moves) > 0)
-    found_start := false
+    tokensMap := map of types.TokenID to reference Token{1: reference of tok}
+    moves := getValidMoves(reference of tok, reference of b, 2, tokensMap)
+    test.AssertTrue(t, moves isnt empty)
+    foundStart := false
     for m in moves
         if m equals types.Pos(5, 5)
-            found_start = true
-    test.AssertFalse(t, found_start, "should NOT include current position")
-    found_valid := false
+            foundStart = true
+    test.AssertFalse(t, foundStart, "should NOT include current position")
+    foundValid := false
     for m in moves
         if m equals types.Pos(6, 5) or m equals types.Pos(7, 5) or m equals types.Pos(5, 6)
-            found_valid = true
-    test.AssertTrue(t, found_valid, "should include valid move positions")
+            foundValid = true
+    test.AssertTrue(t, foundValid, "should include valid move positions")
 
 func TestGetValidMovesRespectsRange(t: reference testing.T)
     b := NewBoard()
     tok, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
-    tokens_map := map of types.TokenID to reference Token{1: reference of tok}
-    moves := get_valid_moves(reference of tok, reference of b, 1, tokens_map)
+    tokensMap := map of types.TokenID to reference Token{1: reference of tok}
+    moves := getValidMoves(reference of tok, reference of b, 1, tokensMap)
     far := false
     for m in moves
         if m equals types.Pos(8, 5) or m equals types.Pos(5, 8)
@@ -36,33 +36,30 @@ func TestGetValidMovesRespectsRange(t: reference testing.T)
 func TestIsValidMove(t: reference testing.T)
     b := NewBoard()
     tok, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 6, 6, types.Pos(5, 5))
-    tokens_map := map of types.TokenID to reference Token{1: reference of tok}
-    test.AssertTrue(t, is_valid_move(reference of tok, types.Pos(7, 5), reference of b, tokens_map))
-    test.AssertFalse(
-        t,
-        is_valid_move(reference of tok, types.Pos(10, 10), reference of b, tokens_map),
-    )
+    tokensMap := map of types.TokenID to reference Token{1: reference of tok}
+    test.AssertTrue(t, isValidMove(reference of tok, types.Pos(7, 5), reference of b, tokensMap))
+    test.AssertFalse(t, isValidMove(reference of tok, types.Pos(10, 10), reference of b, tokensMap))
 
 func TestGetDistance(t: reference testing.T)
-    test.AssertEqual(t, get_distance(types.Pos(0, 0), types.Pos(3, 4)), 7)
-    test.AssertEqual(t, get_distance(types.Pos(5, 5), types.Pos(5, 5)), 0)
+    test.AssertEqual(t, getDistance(types.Pos(0, 0), types.Pos(3, 4)), 7)
+    test.AssertEqual(t, getDistance(types.Pos(5, 5), types.Pos(5, 5)), 0)
 
 func TestIsAdjacent(t: reference testing.T)
-    test.AssertTrue(t, is_adjacent(types.Pos(5, 5), types.Pos(6, 5)))
-    test.AssertTrue(t, is_adjacent(types.Pos(5, 5), types.Pos(6, 6)))
-    test.AssertFalse(t, is_adjacent(types.Pos(5, 5), types.Pos(7, 5)))
+    test.AssertTrue(t, isAdjacent(types.Pos(5, 5), types.Pos(6, 5)))
+    test.AssertTrue(t, isAdjacent(types.Pos(5, 5), types.Pos(6, 6)))
+    test.AssertFalse(t, isAdjacent(types.Pos(5, 5), types.Pos(7, 5)))
 
 func TestGetAdjacentPositions(t: reference testing.T)
     b := NewBoard()
-    adjacent := get_adjacent_positions(types.Pos(5, 5), reference of b)
+    adjacent := getAdjacentPositions(types.Pos(5, 5), reference of b)
     test.AssertEqual(t, len(adjacent), 8)
 
 func TestMoveTokenUpdatesPosition(t: reference testing.T)
     gs := NewGameState()
     tok, _ := NewToken(types.TokenID(0), types.PlayerID("p0"), 6, 6, types.Pos(5, 5))
-    tok.is_deployed = true
+    tok.isDeployed = true
     gs.tokens[types.TokenID(0)] = reference of tok
-    gs.board.set_occupant(types.Pos(5, 5), types.TokenID(0))
+    gs.board.setOccupant(types.Pos(5, 5), types.TokenID(0))
 
     moved := gs.MoveToken(types.TokenID(0), types.Pos(6, 5))
     test.AssertTrue(t, moved, "MoveToken should succeed")
@@ -77,15 +74,15 @@ func TestMoveTokenUpdatesPosition(t: reference testing.T)
 
 func TestCanStackOnFriendlyGenerator(t: reference testing.T)
     b := NewBoard()
-    b.grid[6][6].cell_type = enums.GENERATOR
+    b.grid[6][6].cellType = enums.GENERATOR
 
     mover, _ := NewToken(types.TokenID(1), types.PlayerID("p0"), 6, 6, types.Pos(5, 6))
-    mover.is_deployed = true
+    mover.isDeployed = true
     ally, _ := NewToken(types.TokenID(2), types.PlayerID("p0"), 6, 6, types.Pos(6, 6))
-    ally.is_deployed = true
-    tokens_map := map of types.TokenID to reference Token{1: reference of mover, 2: reference of ally}
+    ally.isDeployed = true
+    tokensMap := map of types.TokenID to reference Token{1: reference of mover, 2: reference of ally}
 
-    moves := get_valid_moves(reference of mover, reference of b, 2, tokens_map)
+    moves := getValidMoves(reference of mover, reference of b, 2, tokensMap)
     found := false
     for m in moves
         if m equals types.Pos(6, 6)

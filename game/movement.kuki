@@ -27,13 +27,13 @@ type PathItem
     pos: types.Position
     path: list of types.Position
 
-func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int, tokens_map: map of types.TokenID to reference Token) list of types.Position
+func getValidMoves(tok: reference Token, brd: reference Board, maxRange: int, tokensMap: map of types.TokenID to reference Token) list of types.Position
     result := empty list of types.Position
-    if not tok.is_alive
+    if not tok.isAlive
         return result
 
     start := tok.position
-    player_id := tok.player_id
+    playerId := tok.playerId
 
     visited := empty map of types.Position to bool
     visited[start] = true
@@ -41,14 +41,14 @@ func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int,
     queue := empty list of BfsItem
     queue = append(queue, BfsItem{pos: start, dist: 0})
 
-    for len(queue) > 0
+    for queue isnt empty
         item := queue[0]
         queue = queue[1:]
         x := item.pos.X
         y := item.pos.Y
         distance := item.dist
 
-        if distance >= max_range
+        if distance >= maxRange
             continue
 
         for dir in DIRECTIONS
@@ -60,16 +60,16 @@ func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int,
             if seen
                 continue
 
-            if not brd.is_valid_position(nx, ny)
+            if not brd.isValidPosition(nx, ny)
                 continue
 
-            cell := brd.get_cell(nx, ny)
+            cell := brd.getCell(nx, ny)
             if cell isnt empty
                 dc := dereference cell
-                if dc.is_occupied() and tokens_map isnt empty
-                    if dc.has_enemy_tokens(player_id, tokens_map)
+                if dc.isOccupied() and tokensMap isnt empty
+                    if dc.hasEnemyTokens(playerId, tokensMap)
                         continue
-                    if dc.cell_type isnt enums.GENERATOR and dc.cell_type isnt enums.CRYSTAL
+                    if dc.cellType isnt enums.GENERATOR and dc.cellType isnt enums.CRYSTAL
                         continue
 
                 visited[npos] = true
@@ -81,13 +81,13 @@ func get_valid_moves(tok: reference Token, brd: reference Board, max_range: int,
 
     return result
 
-func is_valid_move(tok: reference Token, dest: types.Position, brd: reference Board, tokens_map: map of types.TokenID to reference Token) bool
-    if not tok.is_alive
+func isValidMove(tok: reference Token, dest: types.Position, brd: reference Board, tokensMap: map of types.TokenID to reference Token) bool
+    if not tok.isAlive
         return false
-    moves := get_valid_moves(tok, brd, tok.movement_range(), tokens_map)
+    moves := getValidMoves(tok, brd, tok.movementRange(), tokensMap)
     return slice.Contains(moves, dest)
 
-func find_path(start: types.Position, end: types.Position, brd: reference Board, max_distance: int) (list of types.Position, bool)
+func findPath(start: types.Position, end: types.Position, brd: reference Board, maxDistance: int) (list of types.Position, bool)
     if start equals end
         return list of types.Position{start}, true
 
@@ -97,13 +97,13 @@ func find_path(start: types.Position, end: types.Position, brd: reference Board,
     queue := empty list of PathItem
     queue = append(queue, PathItem{pos: start, path: list of types.Position{start}})
 
-    for len(queue) > 0
+    for queue isnt empty
         item := queue[0]
         queue = queue[1:]
         x := item.pos.X
         y := item.pos.Y
 
-        if len(item.path) > max_distance
+        if len(item.path) > maxDistance
             continue
 
         for dir in DIRECTIONS
@@ -115,25 +115,25 @@ func find_path(start: types.Position, end: types.Position, brd: reference Board,
             if seen
                 continue
 
-            if not brd.is_valid_position(nx, ny)
+            if not brd.isValidPosition(nx, ny)
                 continue
 
             if npos equals end
-                new_path := append(item.path, npos)
-                return new_path, true
+                newPath := append(item.path, npos)
+                return newPath, true
 
-            cell := brd.get_cell(nx, ny)
+            cell := brd.getCell(nx, ny)
             if cell isnt empty
-                if cell.is_occupied()
+                if cell.isOccupied()
                     continue
 
                 visited[npos] = true
-                new_path := append(item.path, npos)
-                queue = append(queue, PathItem{pos: npos, path: new_path})
+                newPath := append(item.path, npos)
+                queue = append(queue, PathItem{pos: npos, path: newPath})
 
     return empty list of types.Position, false
 
-func get_distance(pos1: types.Position, pos2: types.Position) int
+func getDistance(pos1: types.Position, pos2: types.Position) int
     dx := pos1.X - pos2.X
     if dx < 0
         dx = -dx
@@ -142,7 +142,7 @@ func get_distance(pos1: types.Position, pos2: types.Position) int
         dy = -dy
     return dx + dy
 
-func is_adjacent(pos1: types.Position, pos2: types.Position) bool
+func isAdjacent(pos1: types.Position, pos2: types.Position) bool
     dx := pos1.X - pos2.X
     if dx < 0
         dx = -dx
@@ -151,11 +151,11 @@ func is_adjacent(pos1: types.Position, pos2: types.Position) bool
         dy = -dy
     return dx <= 1 and dy <= 1 and dx + dy > 0
 
-func get_adjacent_positions(pos: types.Position, brd: reference Board) list of types.Position
+func getAdjacentPositions(pos: types.Position, brd: reference Board) list of types.Position
     result := empty list of types.Position
     for dir in DIRECTIONS
         nx := pos.X + dir.dx
         ny := pos.Y + dir.dy
-        if brd.is_valid_position(nx, ny)
+        if brd.isValidPosition(nx, ny)
             result = append(result, types.Pos(nx, ny))
     return result
