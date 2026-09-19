@@ -6,7 +6,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hajimehoshi/bitmapfont/v4 v4.2.0
 	github.com/hajimehoshi/ebiten/v2 v2.10.1
-	kukicha.org/kukicha/stdlib v0.85.1
+	kukicha.org/kukicha/stdlib v0.85.2
 )
 
 require (

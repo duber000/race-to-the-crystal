@@ -1173,3 +1173,25 @@ func TestParse_ExactCaseStillWorks(t *testing.T) {
 	test.AssertEqual(t, cfg.Name, "exact")
 	test.AssertEqual(t, cfg.Port, 1)
 }
+
+func TestParseStrict_RejectsUnknown(t *testing.T) {
+	rawValid := `{"Name": "exact", "Port": 1}`
+	cfg, err := json.ParseStrict[Untagged](rawValid)
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cfg.Name, "exact")
+	rawUnknown := `{"Name": "exact", "Port": 1, "Extra": "bogus"}`
+	_, uerr := json.ParseStrict[Untagged](rawUnknown)
+	test.AssertError(t, uerr)
+}
+
+func TestParseBytesStrict_RejectsUnknown(t *testing.T) {
+	rawUnknown := []byte(`{"Name": "exact", "Port": 1, "Bogus": 42}`)
+	_, err := json.ParseBytesStrict[Untagged](rawUnknown)
+	test.AssertError(t, err)
+}
+
+func TestReadStrict_RejectsUnknown(t *testing.T) {
+	reader := bytes.NewBufferString(`{"Name": "exact", "Port": 1, "Spam": true}`)
+	_, err := json.ReadStrict[Untagged](reader)
+	test.AssertError(t, err)
+}

@@ -379,3 +379,132 @@ func TestValidatorMutationDoesNotLeak(t *testing.T) {
 		t.Error("expected non-empty preview for owned args")
 	}
 }
+
+func TestOutputLimitSuccess(t *testing.T) {
+	// pipe step 1: Output(...)
+	out, err_2 := shell.New("echo", "hello").OutputLimit(100).Output()
+	if err_2 != nil {
+		t.Fatalf("expected success, got error: %v", err_2)
+		return
+	}
+	test.AssertEqual(t, out, "hello\n")
+}
+
+func TestOutputLimitExceeded(t *testing.T) {
+	result := shell.New("sh", "-c", "echo line1; echo line2; echo line3").OutputLimit(8).Execute()
+	if failed, _isOk := result.(shell.Failed); _isOk {
+		test.AssertTrue(t, failed.Error.Truncated)
+		test.AssertTrue(t, len(failed.Error.Stdout) <= 8)
+		test.AssertTrue(t, kukistring.Contains(failed.Error.Error(), "output limit"))
+	} else {
+		t.Fatalf("expected output limit failure, got success")
+	}
+}
+
+func TestOutputLimitInfiniteStream(t *testing.T) {
+	result := shell.New("sh", "-c", "while true; do echo chunk; done").OutputLimit(20).Execute()
+	if failed, _isOk := result.(shell.Failed); _isOk {
+		test.AssertTrue(t, failed.Error.Truncated)
+		test.AssertTrue(t, len(failed.Error.Stdout) <= 20)
+	} else {
+		t.Fatalf("expected failure on infinite stream, got success")
+	}
+}
+
+func TestStderrLimitExceeded(t *testing.T) {
+	result := shell.New("sh", "-c", "echo err1 >&2; echo err2 >&2; echo err3 >&2").StderrLimit(6).Execute()
+	if failed, _isOk := result.(shell.Failed); _isOk {
+		test.AssertTrue(t, failed.Error.Truncated)
+		test.AssertTrue(t, len(failed.Error.Stderr) <= 6)
+		test.AssertTrue(t, kukistring.Contains(failed.Error.Error(), "stderr limit"))
+	} else {
+		t.Fatalf("expected stderr limit failure, got success")
+	}
+}
+
+func TestLimitSetsBoth(t *testing.T) {
+	cmd := shell.New("echo", "test").Limit(50)
+	result := cmd.OutputLimit(50).Execute()
+	test.AssertTrue(t, shell.Success(result))
+}
+
+func TestStream(t *testing.T) {
+	lines := []string{}
+	err := shell.New("sh", "-c", "echo line1; echo line2; echo line3").Stream(func(line string) {
+		lines = append(lines, line)
+	})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, len(lines), 3)
+	test.AssertEqual(t, lines[0], "line1")
+	test.AssertEqual(t, lines[1], "line2")
+	test.AssertEqual(t, lines[2], "line3")
+}
+
+func TestStreamFailed(t *testing.T) {
+	lines := []string{}
+	err := shell.New("sh", "-c", "echo start; echo fail >&2; exit 2").Stream(func(line string) {
+		lines = append(lines, line)
+	})
+	test.AssertError(t, err)
+	test.AssertEqual(t, len(lines), 1)
+	test.AssertEqual(t, lines[0], "start")
+}
+
+func TestStreamOutputLimit(t *testing.T) {
+	lines := []string{}
+	err := shell.New("sh", "-c", "echo first; echo second; echo third").OutputLimit(8).Stream(func(line string) {
+		lines = append(lines, line)
+	})
+	test.AssertError(t, err)
+	test.AssertTrue(t, kukistring.Contains(err.Error(), "output limit"))
+}
+
+func TestStreamCapture(t *testing.T) {
+	outLines := []string{}
+	errLines := []string{}
+	onOut := func(line string) {
+		outLines = append(outLines, line)
+	}
+	onErr := func(line string) {
+		errLines = append(errLines, line)
+	}
+	err := shell.New("sh", "-c", "echo out1; echo err1 >&2; echo out2; echo err2 >&2").StreamCapture(onOut, onErr)
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, len(outLines), 2)
+	test.AssertEqual(t, len(errLines), 2)
+	test.AssertEqual(t, outLines[0], "out1")
+	test.AssertEqual(t, errLines[0], "err1")
+}
+
+func TestLinesIterator(t *testing.T) {
+	lines := []string{}
+	for line := range shell.New("sh", "-c", "echo alpha; echo beta; echo gamma").Lines() {
+		lines = append(lines, line)
+	}
+	test.AssertEqual(t, len(lines), 3)
+	test.AssertEqual(t, lines[0], "alpha")
+	test.AssertEqual(t, lines[1], "beta")
+	test.AssertEqual(t, lines[2], "gamma")
+}
+
+func TestLinesIteratorEarlyBreak(t *testing.T) {
+	lines := []string{}
+	for line := range shell.New("sh", "-c", "while true; do echo looping; done").Lines() {
+		lines = append(lines, line)
+		if len(lines) == 3 {
+			break
+		}
+	}
+	test.AssertEqual(t, len(lines), 3)
+}
+
+func TestStreamTopLevel(t *testing.T) {
+	lines := []string{}
+	onLine := func(line string) {
+		lines = append(lines, line)
+	}
+	err := shell.Stream(onLine, "echo", "top-level stream")
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, len(lines), 1)
+	test.AssertEqual(t, lines[0], "top-level stream")
+}

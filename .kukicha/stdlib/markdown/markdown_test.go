@@ -65,6 +65,33 @@ func TestGFMPresetFlags(t *testing.T) {
 	test.AssertFalse(t, opts.HardWrap)
 	test.AssertFalse(t, opts.AutoHeadingID)
 	test.AssertFalse(t, opts.AllowRawHTML)
+	test.AssertFalse(t, opts.Typographer)
+	test.AssertFalse(t, opts.SimpleDelimiters)
+	test.AssertFalse(t, opts.XHTML)
+}
+
+func TestToHTMLWithTypographer(t *testing.T) {
+	src := "\"Hello\" -- world..."
+	out := markdown.ToHTMLWith(src, markdown.Options{Typographer: true})
+	test.AssertTrue(t, kukistring.Contains(out, "“Hello”"))
+	test.AssertTrue(t, kukistring.Contains(out, "–"))
+	test.AssertTrue(t, kukistring.Contains(out, "…"))
+}
+
+func TestToHTMLWithSimpleDelimiters(t *testing.T) {
+	src := "a*\"foo\"*"
+	stdOut := markdown.ToHTMLWith(src, markdown.Options{})
+	test.AssertFalse(t, kukistring.Contains(stdOut, "<em>"))
+	simpleOut := markdown.ToHTMLWith(src, markdown.Options{SimpleDelimiters: true})
+	test.AssertTrue(t, kukistring.Contains(simpleOut, "<em>&quot;foo&quot;</em>"))
+}
+
+func TestToHTMLWithXHTML(t *testing.T) {
+	src := "line one\nline two"
+	html5Out := markdown.ToHTMLWith(src, markdown.Options{HardWrap: true})
+	test.AssertTrue(t, kukistring.Contains(html5Out, "<br>\n"))
+	xhtmlOut := markdown.ToHTMLWith(src, markdown.Options{HardWrap: true, XHTML: true})
+	test.AssertTrue(t, kukistring.Contains(xhtmlOut, "<br />\n"))
 }
 
 func TestGFMPresetMatchesTryToHTML(t *testing.T) {

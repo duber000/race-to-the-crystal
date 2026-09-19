@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -445,6 +446,75 @@ func Join(parts ...string) string {
 
 func Abs(path string) (string, error) {
 	return filepath.Abs(path)
+}
+
+func UserHomeDir() (string, error) {
+	return os.UserHomeDir()
+}
+
+func UserConfigDir() (string, error) {
+	return os.UserConfigDir()
+}
+
+func UserCacheDir() (string, error) {
+	return os.UserCacheDir()
+}
+
+func UserDataDir() (string, error) {
+	if runtime.GOOS == "windows" {
+		if local := os.Getenv("LOCALAPPDATA"); local != "" {
+			return local, nil
+		}
+		return os.UserConfigDir()
+	}
+	if runtime.GOOS == "darwin" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(home, "Library", "Application Support"), nil
+	}
+	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
+		return xdg, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".local", "share"), nil
+}
+
+func UserConfigPath(app string, filename string) (string, error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	if filename == "" {
+		return filepath.Join(dir, app), nil
+	}
+	return filepath.Join(dir, app, filename), nil
+}
+
+func UserDataPath(app string, filename string) (string, error) {
+	dir, err := UserDataDir()
+	if err != nil {
+		return "", err
+	}
+	if filename == "" {
+		return filepath.Join(dir, app), nil
+	}
+	return filepath.Join(dir, app, filename), nil
+}
+
+func UserCachePath(app string, filename string) (string, error) {
+	dir, err := os.UserCacheDir()
+	if err != nil {
+		return "", err
+	}
+	if filename == "" {
+		return filepath.Join(dir, app), nil
+	}
+	return filepath.Join(dir, app, filename), nil
 }
 
 func UseWith(path string, action func(string)) {

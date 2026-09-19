@@ -1140,3 +1140,85 @@ func TestOpenWithExtensions_Regexp(t *testing.T) {
 		test.AssertEqual(t, n, int64(0))
 	})
 }
+
+func TestColumnExists(t *testing.T) {
+	pool := setupTestDB(t)
+	defer db.Close(pool)
+	t.Run("column exists exact case", func(t *testing.T) {
+		exists, err_122 := sqlite.ColumnExists(pool, "users", "name")
+		if err_122 != nil {
+			panic(fmt.Sprintf("ColumnExists: %v", err_122))
+		}
+		test.AssertEqual(t, exists, true)
+	})
+	t.Run("column exists case insensitive", func(t *testing.T) {
+		exists, err_123 := sqlite.ColumnExists(pool, "users", "EMAIL")
+		if err_123 != nil {
+			panic(fmt.Sprintf("ColumnExists: %v", err_123))
+		}
+		test.AssertEqual(t, exists, true)
+	})
+	t.Run("column does not exist", func(t *testing.T) {
+		exists, err_124 := sqlite.ColumnExists(pool, "users", "missing_col")
+		if err_124 != nil {
+			panic(fmt.Sprintf("ColumnExists: %v", err_124))
+		}
+		test.AssertEqual(t, exists, false)
+	})
+	t.Run("table does not exist returns false", func(t *testing.T) {
+		exists, err_125 := sqlite.ColumnExists(pool, "nonexistent_table", "id")
+		if err_125 != nil {
+			panic(fmt.Sprintf("ColumnExists: %v", err_125))
+		}
+		test.AssertEqual(t, exists, false)
+	})
+}
+
+func TestVectorPackUnpack(t *testing.T) {
+	t.Run("float32 round-trip", func(t *testing.T) {
+		original := []float32{1.5, -2.25, 0.0, 42.125}
+		blob := sqlite.PackVector(original)
+		test.AssertEqual(t, len(blob), 16)
+		unpacked, err_126 := sqlite.UnpackVector(blob)
+		if err_126 != nil {
+			panic(fmt.Sprintf("unpack: %v", err_126))
+		}
+		test.AssertEqual(t, len(unpacked), 4)
+		test.AssertEqual(t, unpacked[0], float32(1.5))
+		test.AssertEqual(t, unpacked[1], -float32(2.25))
+		test.AssertEqual(t, unpacked[2], float32(0.0))
+		test.AssertEqual(t, unpacked[3], float32(42.125))
+	})
+	t.Run("empty vector", func(t *testing.T) {
+		original := []float32{}
+		blob := sqlite.PackVector(original)
+		test.AssertEqual(t, len(blob), 0)
+		unpacked, err_127 := sqlite.UnpackVector(blob)
+		if err_127 != nil {
+			panic(fmt.Sprintf("unpack: %v", err_127))
+		}
+		test.AssertEqual(t, len(unpacked), 0)
+	})
+	t.Run("invalid byte length error", func(t *testing.T) {
+		_, err := sqlite.UnpackVector([]byte{1, 2, 3})
+		test.AssertNotEqual(t, err, nil)
+	})
+	t.Run("float64 round-trip", func(t *testing.T) {
+		original := []float64{1.5, -2.25, 0.0, 42.125}
+		blob := sqlite.PackVector64(original)
+		test.AssertEqual(t, len(blob), 16)
+		unpacked, err_128 := sqlite.UnpackVector64(blob)
+		if err_128 != nil {
+			panic(fmt.Sprintf("unpack64: %v", err_128))
+		}
+		test.AssertEqual(t, len(unpacked), 4)
+		test.AssertEqual(t, unpacked[0], 1.5)
+		test.AssertEqual(t, unpacked[1], -2.25)
+		test.AssertEqual(t, unpacked[2], 0.0)
+		test.AssertEqual(t, unpacked[3], 42.125)
+	})
+	t.Run("invalid byte length error float64", func(t *testing.T) {
+		_, err := sqlite.UnpackVector64([]byte{1, 2, 3, 4, 5})
+		test.AssertNotEqual(t, err, nil)
+	})
+}

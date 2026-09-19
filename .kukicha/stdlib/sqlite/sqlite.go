@@ -5,6 +5,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"encoding/binary"
 	goerrors "errors"
 	"fmt"
 	sqlite3 "github.com/ncruces/go-sqlite3"
@@ -14,6 +15,7 @@ import (
 	"kukicha.org/kukicha/stdlib/errors"
 	"kukicha.org/kukicha/stdlib/files"
 	strpkg "kukicha.org/kukicha/stdlib/string"
+	"math"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -270,6 +272,19 @@ func Columns(pool db.Pool, table string) ([]Column, error) {
 	return cols, nil
 }
 
+func ColumnExists(pool db.Pool, table string, column string) (bool, error) {
+	cols, err := Columns(pool, table)
+	if err != nil {
+		return false, err
+	}
+	for _, col := range cols {
+		if strpkg.EqualFold(col.Name, column) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func Indexes(pool db.Pool, table string) ([]Index, error) {
 	if !isValidPragmaName(table) {
 		return []Index{}, fmt.Errorf("sqlite.Indexes: invalid table name: %v", table)
@@ -468,6 +483,48 @@ func CreateBlobFunction(pool db.Pool, name string, nArgs int, fn func([][]byte) 
 
 func CreateBlobFunctionFloat(pool db.Pool, name string, nArgs int, fn func([][]byte) float64) error {
 	return registerScalarFunction(pool, name, nArgs, makeScalarFuncBlobFloat(fn))
+}
+
+func PackVector(v []float32) []byte {
+	buf := make([]byte, len(v)*4)
+	for i := range len(v) {
+		binary.LittleEndian.PutUint32(buf[i*4:], math.Float32bits(v[i]))
+	}
+	return buf
+}
+
+func PackVector64(v []float64) []byte {
+	buf := make([]byte, len(v)*4)
+	for i := range len(v) {
+		binary.LittleEndian.PutUint32(buf[i*4:], math.Float32bits(float32(v[i])))
+	}
+	return buf
+}
+
+func UnpackVector(b []byte) ([]float32, error) {
+	if len(b)%4 != 0 {
+		return []float32{}, fmt.Errorf("sqlite.UnpackVector: byte slice length %v is not a multiple of 4", len(b))
+	}
+	count := len(b) / 4
+	vec := make([]float32, count)
+	for i := range count {
+		bits := binary.LittleEndian.Uint32(b[i*4:])
+		vec[i] = math.Float32frombits(bits)
+	}
+	return vec, nil
+}
+
+func UnpackVector64(b []byte) ([]float64, error) {
+	if len(b)%4 != 0 {
+		return []float64{}, fmt.Errorf("sqlite.UnpackVector64: byte slice length %v is not a multiple of 4", len(b))
+	}
+	count := len(b) / 4
+	vec := make([]float64, count)
+	for i := range count {
+		bits := binary.LittleEndian.Uint32(b[i*4:])
+		vec[i] = float64(math.Float32frombits(bits))
+	}
+	return vec, nil
 }
 
 func registerScalarFunction(pool db.Pool, name string, nArgs int, sfn sqlite3.ScalarFunction) error {

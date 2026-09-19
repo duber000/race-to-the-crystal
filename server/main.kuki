@@ -139,7 +139,7 @@ func handleCreateGameRoute on gs: reference GameServer(response: httphelper.Resp
     auth_header := request.GetHeader("Authorization")
 
     body := empty map of string to any
-    request.ReadJSON(reference of body) onerr
+    request.Decode(reference of body) onerr
         response.JSONBadRequest("invalid JSON body")
         return
 
@@ -160,7 +160,7 @@ func handleJoinGameRoute on gs: reference GameServer(response: httphelper.Respon
     )
 
     body := empty map of string to any
-    request.ReadJSON(reference of body) onerr
+    request.Decode(reference of body) onerr
         body = empty map of string to any
 
     result := gs.http_handler.HandleJoinGame(game_id, body, ip)
@@ -176,7 +176,7 @@ func handleActionRoute on gs: reference GameServer(response: httphelper.Response
     auth_header := request.GetHeader("Authorization")
 
     body := empty map of string to any
-    request.ReadJSON(reference of body) onerr
+    request.Decode(reference of body) onerr
         response.JSONBadRequest("invalid JSON body")
         return
 
@@ -229,7 +229,7 @@ func handleReadyRoute on gs: reference GameServer(response: httphelper.Response,
     auth_header := request.GetHeader("Authorization")
 
     body := empty map of string to any
-    request.ReadJSON(reference of body) onerr
+    request.Decode(reference of body) onerr
         log.Debug("Ready endpoint: empty or invalid body, using defaults")
 
     result := gs.http_handler.HandleReady(game_id, auth_header, body)

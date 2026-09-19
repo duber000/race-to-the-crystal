@@ -232,3 +232,149 @@ func TestSetOperationsDoNotMutateInputs(t *testing.T) {
 	_, debugStillThere := config["debug"]
 	test.AssertEqual(t, debugStillThere, true)
 }
+
+func TestAsMapAndAsList(t *testing.T) {
+	t.Run("AsMap converts map of string to any", func(t *testing.T) {
+		m := map[string]any{"a": 1, "b": "hello"}
+		res, err := maps.AsMap(m)
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, res["a"], 1)
+		test.AssertEqual(t, res["b"], "hello")
+	})
+	t.Run("AsMap converts map of any to any", func(t *testing.T) {
+		m := map[any]any{any("a"): any(1), any("b"): any(2)}
+		res, err := maps.AsMap(m)
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, res["a"], any(1))
+	})
+	t.Run("AsMap converts typed map", func(t *testing.T) {
+		m := map[string]int{"x": 10, "y": 20}
+		res, err := maps.AsMap(m)
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, res["x"], 10)
+	})
+	t.Run("AsMap error on nil or invalid", func(t *testing.T) {
+		_, err1 := maps.AsMap(nil)
+		if err1 == nil {
+			t.Errorf("expected error for nil")
+		}
+		_, err2 := maps.AsMap("not a map")
+		if err2 == nil {
+			t.Errorf("expected error for string")
+		}
+	})
+	t.Run("AsMapOr fallback", func(t *testing.T) {
+		fallbackVal := map[string]any{"def": true}
+		got := maps.AsMapOr("invalid", fallbackVal)
+		test.AssertEqual(t, got["def"], true)
+	})
+	t.Run("AsList converts list of any", func(t *testing.T) {
+		arr := []any{1, 2, "three"}
+		res, err := maps.AsList(arr)
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, len(res), 3)
+		test.AssertEqual(t, res[2], "three")
+	})
+	t.Run("AsList converts typed slice", func(t *testing.T) {
+		arr := []int{10, 20, 30}
+		res, err := maps.AsList(arr)
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, len(res), 3)
+		test.AssertEqual(t, res[0], 10)
+		test.AssertEqual(t, res[1], 20)
+	})
+	t.Run("AsList error on nil or invalid", func(t *testing.T) {
+		_, err1 := maps.AsList(nil)
+		if err1 == nil {
+			t.Errorf("expected error for nil")
+		}
+		_, err2 := maps.AsList(123)
+		if err2 == nil {
+			t.Errorf("expected error for int")
+		}
+	})
+	t.Run("AsListOr fallback", func(t *testing.T) {
+		fallbackVal := []any{"fallback"}
+		got := maps.AsListOr("invalid", fallbackVal)
+		test.AssertEqual(t, len(got), 1)
+		test.AssertEqual(t, got[0], "fallback")
+	})
+}
+
+func TestMapUntypedAccessors(t *testing.T) {
+	data := map[string]any{"str": "kukicha", "numStr": "42", "int": 100, "float": 3.14, "boolTrue": true, "boolFalse": false, "boolStr": "true", "subMap": map[string]any{"child": "val"}, "subList": []any{1, 2, 3}}
+	t.Run("String and StringOr", func(t *testing.T) {
+		s, err := maps.String(data, "str")
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, s, "kukicha")
+		sInt, errInt := maps.String(data, "int")
+		test.AssertEqual(t, errInt, nil)
+		test.AssertEqual(t, sInt, "100")
+		test.AssertEqual(t, maps.StringOr(data, "str", "def"), "kukicha")
+		test.AssertEqual(t, maps.StringOr(data, "missing", "def"), "def")
+		test.AssertEqual(t, maps.StringOr(data, "subMap", "def"), "def")
+	})
+	t.Run("Int and IntOr", func(t *testing.T) {
+		n, err := maps.Int(data, "int")
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, n, 100)
+		nFromStr, errStr := maps.Int(data, "numStr")
+		test.AssertEqual(t, errStr, nil)
+		test.AssertEqual(t, nFromStr, 42)
+		test.AssertEqual(t, maps.IntOr(data, "int", 0), 100)
+		test.AssertEqual(t, maps.IntOr(data, "missing", 99), 99)
+		test.AssertEqual(t, maps.IntOr(data, "str", 99), 99)
+	})
+	t.Run("Float, FloatOr, Float64, Float64Or", func(t *testing.T) {
+		f, err := maps.Float(data, "float")
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, f, 3.14)
+		fFromInt, errInt := maps.Float(data, "int")
+		test.AssertEqual(t, errInt, nil)
+		test.AssertEqual(t, fFromInt, 100.0)
+		f64, err64 := maps.Float64(data, "float")
+		test.AssertEqual(t, err64, nil)
+		test.AssertEqual(t, f64, 3.14)
+		test.AssertEqual(t, maps.FloatOr(data, "float", 0.0), 3.14)
+		test.AssertEqual(t, maps.FloatOr(data, "missing", 1.5), 1.5)
+		test.AssertEqual(t, maps.Float64Or(data, "missing", 2.5), 2.5)
+	})
+	t.Run("Bool and BoolOr", func(t *testing.T) {
+		b, err := maps.Bool(data, "boolTrue")
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, b, true)
+		bFalse, errFalse := maps.Bool(data, "boolFalse")
+		test.AssertEqual(t, errFalse, nil)
+		test.AssertEqual(t, bFalse, false)
+		bStr, errStr := maps.Bool(data, "boolStr")
+		test.AssertEqual(t, errStr, nil)
+		test.AssertEqual(t, bStr, true)
+		test.AssertEqual(t, maps.BoolOr(data, "boolTrue", false), true)
+		test.AssertEqual(t, maps.BoolOr(data, "missing", true), true)
+		test.AssertEqual(t, maps.BoolOr(data, "str", true), true)
+	})
+	t.Run("Map and MapOr", func(t *testing.T) {
+		sub, err := maps.Map(data, "subMap")
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, sub["child"], "val")
+		_, errMissing := maps.Map(data, "missing")
+		if errMissing == nil {
+			t.Errorf("expected error for missing key")
+		}
+		test.AssertEqual(t, len(maps.MapOr(data, "missing", nil)), 0)
+		test.AssertEqual(t, len(maps.MapOr(data, "str", nil)), 0)
+		fallbackMap := map[string]any{"fallback": true}
+		test.AssertEqual(t, maps.MapOr(data, "missing", fallbackMap)["fallback"], true)
+	})
+	t.Run("List and ListOr", func(t *testing.T) {
+		listVal, err := maps.List(data, "subList")
+		test.AssertEqual(t, err, nil)
+		test.AssertEqual(t, len(listVal), 3)
+		_, errMissing := maps.List(data, "missing")
+		if errMissing == nil {
+			t.Errorf("expected error for missing key")
+		}
+		test.AssertEqual(t, len(maps.ListOr(data, "missing", []any{})), 0)
+		test.AssertEqual(t, len(maps.ListOr(data, "str", []any{})), 0)
+	})
+}

@@ -10,15 +10,18 @@ import (
 )
 
 type Options struct {
-	Tables         bool
-	Strikethrough  bool
-	TaskList       bool
-	Footnotes      bool
-	DefinitionList bool
-	AutoLink       bool
-	HardWrap       bool
-	AutoHeadingID  bool
-	AllowRawHTML   bool
+	Tables           bool
+	Strikethrough    bool
+	TaskList         bool
+	Footnotes        bool
+	DefinitionList   bool
+	AutoLink         bool
+	HardWrap         bool
+	AutoHeadingID    bool
+	AllowRawHTML     bool
+	Typographer      bool
+	SimpleDelimiters bool
+	XHTML            bool
 }
 
 func GFM() Options {
@@ -56,10 +59,16 @@ func Compile(opts Options) Converter {
 	if opts.AutoLink {
 		pExts = append(pExts, extension.LinkifyParser)
 	}
+	if opts.Typographer {
+		pExts = append(pExts, extension.TypographerParser)
+	}
 	pOpts := []parser.Option{}
 	pOpts = append(pOpts, parser.WithExtensions(pExts...))
 	if opts.AutoHeadingID {
 		pOpts = append(pOpts, parser.WithAutoHeadingID())
+	}
+	if opts.SimpleDelimiters {
+		pOpts = append(pOpts, parser.WithParseDelimiterFunc(parser.ParseDelimiterSimple))
 	}
 	rOpts := []gmhtml.Option{}
 	rOpts = append(rOpts, gmhtml.WithExtensions(rExts...))
@@ -68,6 +77,9 @@ func Compile(opts Options) Converter {
 	}
 	if opts.AllowRawHTML {
 		rOpts = append(rOpts, gmhtml.WithUnsafe())
+	}
+	if opts.XHTML {
+		rOpts = append(rOpts, gmhtml.WithXHTML())
 	}
 	return Converter{p: parser.New(pOpts...), r: gmhtml.New(rOpts...)}
 }

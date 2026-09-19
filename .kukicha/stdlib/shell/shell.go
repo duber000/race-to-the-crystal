@@ -3,32 +3,39 @@
 package shell
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"iter"
 	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
 	kukistring "kukicha.org/kukicha/stdlib/string"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 )
 
 type Command struct {
-	name    string
-	args    []string
-	dir     string
-	timeout time.Duration
-	env     map[string]string
-	stdin   []byte
+	name        string
+	args        []string
+	dir         string
+	timeout     time.Duration
+	env         map[string]string
+	stdin       []byte
+	outputLimit int
+	stderrLimit int
 }
 
 type CommandError struct {
-	Name     string
-	Args     []string
-	ExitCode int
-	Stdout   []byte
-	Stderr   []byte
-	Cause    error
+	Name      string
+	Args      []string
+	ExitCode  int
+	Stdout    []byte
+	Stderr    []byte
+	Cause     error
+	Truncated bool
 }
 
 func (e CommandError) Error() string {
@@ -36,7 +43,15 @@ func (e CommandError) Error() string {
 	if len(e.Args) != 0 {
 		msg = msg + " " + kukistring.Join(e.Args, " ")
 	}
-	msg = msg + fmt.Sprintf(": exit status %v", e.ExitCode)
+	if e.Truncated {
+		if e.Cause != nil && kukistring.Contains(e.Cause.Error(), "stderr limit") {
+			msg = msg + ": stderr limit exceeded"
+		} else {
+			msg = msg + ": output limit exceeded"
+		}
+	} else {
+		msg = msg + fmt.Sprintf(": exit status %v", e.ExitCode)
+	}
 	if len(e.Stderr) != 0 {
 		msg = msg + fmt.Sprintf(": %v", string(e.Stderr))
 	}
@@ -91,9 +106,13 @@ func Lines(name string, args ...string) ([]string, error) {
 	return lines, nil
 }
 
+func Stream(onLine func(string), name string, args ...string) error {
+	return New(name, args...).Stream(onLine)
+}
+
 func New(name string, args ...string) Command {
 	ownedArgs := append([]string{}, args...)
-	return Command{name: name, args: ownedArgs, dir: "", timeout: 0, env: map[string]string{}, stdin: []byte{}}
+	return Command{name: name, args: ownedArgs, dir: "", timeout: 0, env: map[string]string{}, stdin: []byte{}, outputLimit: 0, stderrLimit: 0}
 }
 
 func Fatal(msg string) {
@@ -150,19 +169,69 @@ func (cmd Command) StdinBytes(data []byte) Command {
 	return cmd
 }
 
+func (cmd Command) OutputLimit(bytes int) Command {
+	cmd.outputLimit = bytes
+	return cmd
+}
+
+func (cmd Command) StderrLimit(bytes int) Command {
+	cmd.stderrLimit = bytes
+	return cmd
+}
+
+func (cmd Command) Limit(bytes int) Command {
+	cmd.outputLimit = bytes
+	cmd.stderrLimit = bytes
+	return cmd
+}
+
 func (cmd Command) Preview() string {
 	parts := []string{cmd.name}
 	parts = append(parts, cmd.args...)
 	return kukistring.Join(parts, " ")
 }
 
-func (cmd Command) Execute() Result {
-	execCmd := exec.Command(cmd.name, cmd.args...)
-	if cmd.timeout > 0 {
-		h := ctxpkg.WithTimeout(ctxpkg.Background(), cmd.timeout)
-		defer h.Cancel()
-		execCmd = exec.CommandContext(h.Ctx, cmd.name, cmd.args...)
+type boundedWriter struct {
+	buf      *bytes.Buffer
+	limit    int
+	written  int
+	onExceed func()
+	exceeded bool
+}
+
+func (w *boundedWriter) Write(p []byte) (int, error) {
+	if w.limit <= 0 {
+		return w.buf.Write(p)
 	}
+	if w.written >= w.limit {
+		if !w.exceeded {
+			w.exceeded = true
+			if w.onExceed != nil {
+				w.onExceed()
+			}
+		}
+		return len(p), nil
+	}
+	remaining := w.limit - w.written
+	if len(p) <= remaining {
+		n, err := w.buf.Write(p)
+		w.written = w.written + n
+		return n, err
+	}
+	n, err := w.buf.Write(p[:remaining])
+	w.written = w.written + n
+	w.exceeded = true
+	if w.onExceed != nil {
+		w.onExceed()
+	}
+	if err != nil {
+		return n, err
+	}
+	return len(p), nil
+}
+
+func prepareCmd(cmd Command, ctx context.Context) *exec.Cmd {
+	execCmd := exec.CommandContext(ctx, cmd.name, cmd.args...)
 	if cmd.dir != "" {
 		execCmd.Dir = cmd.dir
 	}
@@ -176,17 +245,45 @@ func (cmd Command) Execute() Result {
 	if len(cmd.stdin) != 0 {
 		execCmd.Stdin = bytes.NewReader(cmd.stdin)
 	}
+	return execCmd
+}
+
+func (cmd Command) Execute() Result {
+	h := ctxpkg.Background()
+	if cmd.timeout > 0 {
+		h = ctxpkg.WithTimeout(h, cmd.timeout)
+	}
+	hCancel := ctxpkg.WithCancel(h)
+	defer hCancel.Cancel()
+	defer h.Cancel()
+	execCmd := prepareCmd(cmd, hCancel.Ctx)
 	stdoutBuf := bytes.Buffer{}
 	stderrBuf := bytes.Buffer{}
-	execCmd.Stdout = &stdoutBuf
-	execCmd.Stderr = &stderrBuf
+	stdoutBW := &boundedWriter{buf: &stdoutBuf, limit: cmd.outputLimit, written: 0, onExceed: func() { hCancel.Cancel() }, exceeded: false}
+	stderrBW := &boundedWriter{buf: &stderrBuf, limit: cmd.stderrLimit, written: 0, onExceed: func() { hCancel.Cancel() }, exceeded: false}
+	if cmd.outputLimit > 0 {
+		execCmd.Stdout = stdoutBW
+	} else {
+		execCmd.Stdout = &stdoutBuf
+	}
+	if cmd.stderrLimit > 0 {
+		execCmd.Stderr = stderrBW
+	} else {
+		execCmd.Stderr = &stderrBuf
+	}
 	err := execCmd.Run()
 	stdout := stdoutBuf.Bytes()
 	stderr := stderrBuf.Bytes()
+	if stdoutBW.exceeded {
+		return Failed{Error: CommandError{Name: cmd.name, Args: cmd.args, ExitCode: getExitCode(err), Stdout: stdout, Stderr: stderr, Cause: fmt.Errorf("output limit of %v bytes exceeded", cmd.outputLimit), Truncated: true}}
+	}
+	if stderrBW.exceeded {
+		return Failed{Error: CommandError{Name: cmd.name, Args: cmd.args, ExitCode: getExitCode(err), Stdout: stdout, Stderr: stderr, Cause: fmt.Errorf("stderr limit of %v bytes exceeded", cmd.stderrLimit), Truncated: true}}
+	}
 	if err == nil {
 		return Succeeded{Stdout: stdout, Stderr: stderr}
 	}
-	return Failed{Error: CommandError{Name: cmd.name, Args: cmd.args, ExitCode: getExitCode(err), Stdout: stdout, Stderr: stderr, Cause: err}}
+	return Failed{Error: CommandError{Name: cmd.name, Args: cmd.args, ExitCode: getExitCode(err), Stdout: stdout, Stderr: stderr, Cause: err, Truncated: false}}
 }
 
 func (cmd Command) Output() (string, error) {
@@ -200,6 +297,9 @@ func (cmd Command) Capture() (string, string, error) {
 	case Succeeded:
 		return string(r.Stdout), string(r.Stderr), nil
 	case Failed:
+		if r.Error.Truncated {
+			return string(r.Error.Stdout), string(r.Error.Stderr), r.Error.Cause
+		}
 		return string(r.Error.Stdout), string(r.Error.Stderr), fmt.Errorf("%v", string(r.Error.Stderr))
 	default:
 		panic("unreachable")
@@ -209,6 +309,182 @@ func (cmd Command) Capture() (string, string, error) {
 func (cmd Command) Check() error {
 	_, _, err := cmd.Capture()
 	return err
+}
+
+func (cmd Command) Stream(onLine func(string)) error {
+	h := ctxpkg.Background()
+	if cmd.timeout > 0 {
+		h = ctxpkg.WithTimeout(h, cmd.timeout)
+	}
+	hCancel := ctxpkg.WithCancel(h)
+	defer hCancel.Cancel()
+	defer h.Cancel()
+	execCmd := prepareCmd(cmd, hCancel.Ctx)
+	stdoutPipe, err_2 := execCmd.StdoutPipe()
+	if err_2 != nil {
+		return err_2
+	}
+	stderrBuf := bytes.Buffer{}
+	stderrBW := &boundedWriter{buf: &stderrBuf, limit: cmd.stderrLimit, written: 0, onExceed: func() { hCancel.Cancel() }, exceeded: false}
+	if cmd.stderrLimit > 0 {
+		execCmd.Stderr = stderrBW
+	} else {
+		execCmd.Stderr = &stderrBuf
+	}
+	err_3 := execCmd.Start()
+	if err_3 != nil {
+		return err_3
+	}
+	scanner := bufio.NewScanner(stdoutPipe)
+	scanner.Buffer([]byte{}, 8*1024*1024)
+	totalBytes := 0
+	limitExceeded := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		if cmd.outputLimit > 0 {
+			lineBytes := len(scanner.Bytes()) + 1
+			if totalBytes+lineBytes > cmd.outputLimit {
+				limitExceeded = true
+				hCancel.Cancel()
+				break
+			}
+			totalBytes = totalBytes + lineBytes
+		}
+		if onLine != nil {
+			onLine(line)
+		}
+	}
+	waitErr := execCmd.Wait()
+	if limitExceeded {
+		return CommandError{Name: cmd.name, Args: cmd.args, ExitCode: getExitCode(waitErr), Stderr: stderrBuf.Bytes(), Truncated: true, Cause: fmt.Errorf("output limit of %v bytes exceeded", cmd.outputLimit)}
+	}
+	if stderrBW.exceeded {
+		return CommandError{Name: cmd.name, Args: cmd.args, ExitCode: getExitCode(waitErr), Stderr: stderrBuf.Bytes(), Truncated: true, Cause: fmt.Errorf("stderr limit of %v bytes exceeded", cmd.stderrLimit)}
+	}
+	if waitErr != nil {
+		return CommandError{Name: cmd.name, Args: cmd.args, ExitCode: getExitCode(waitErr), Stderr: stderrBuf.Bytes(), Cause: waitErr, Truncated: false}
+	}
+	return nil
+}
+
+func (cmd Command) StreamCapture(onStdout func(string), onStderr func(string)) error {
+	h := ctxpkg.Background()
+	if cmd.timeout > 0 {
+		h = ctxpkg.WithTimeout(h, cmd.timeout)
+	}
+	hCancel := ctxpkg.WithCancel(h)
+	defer hCancel.Cancel()
+	defer h.Cancel()
+	execCmd := prepareCmd(cmd, hCancel.Ctx)
+	stdoutPipe, err_4 := execCmd.StdoutPipe()
+	if err_4 != nil {
+		return err_4
+	}
+	stderrPipe, err_5 := execCmd.StderrPipe()
+	if err_5 != nil {
+		return err_5
+	}
+	err_6 := execCmd.Start()
+	if err_6 != nil {
+		return err_6
+	}
+	wg := sync.WaitGroup{}
+	stdoutExceeded := false
+	stderrExceeded := false
+	wg.Go(func() {
+		scanner := bufio.NewScanner(stdoutPipe)
+		scanner.Buffer([]byte{}, 8*1024*1024)
+		totalBytes := 0
+		for scanner.Scan() {
+			line := scanner.Text()
+			if cmd.outputLimit > 0 {
+				lineBytes := len(scanner.Bytes()) + 1
+				if totalBytes+lineBytes > cmd.outputLimit {
+					stdoutExceeded = true
+					hCancel.Cancel()
+					break
+				}
+				totalBytes = totalBytes + lineBytes
+			}
+			if onStdout != nil {
+				onStdout(line)
+			}
+		}
+	})
+	wg.Go(func() {
+		scanner := bufio.NewScanner(stderrPipe)
+		scanner.Buffer([]byte{}, 8*1024*1024)
+		totalBytes := 0
+		for scanner.Scan() {
+			line := scanner.Text()
+			if cmd.stderrLimit > 0 {
+				lineBytes := len(scanner.Bytes()) + 1
+				if totalBytes+lineBytes > cmd.stderrLimit {
+					stderrExceeded = true
+					hCancel.Cancel()
+					break
+				}
+				totalBytes = totalBytes + lineBytes
+			}
+			if onStderr != nil {
+				onStderr(line)
+			}
+		}
+	})
+	wg.Wait()
+	waitErr := execCmd.Wait()
+	if stdoutExceeded {
+		return CommandError{Name: cmd.name, Args: cmd.args, ExitCode: getExitCode(waitErr), Truncated: true, Cause: fmt.Errorf("output limit of %v bytes exceeded", cmd.outputLimit)}
+	}
+	if stderrExceeded {
+		return CommandError{Name: cmd.name, Args: cmd.args, ExitCode: getExitCode(waitErr), Truncated: true, Cause: fmt.Errorf("stderr limit of %v bytes exceeded", cmd.stderrLimit)}
+	}
+	if waitErr != nil {
+		return CommandError{Name: cmd.name, Args: cmd.args, ExitCode: getExitCode(waitErr), Cause: waitErr, Truncated: false}
+	}
+	return nil
+}
+
+func (cmd Command) Lines() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		h := ctxpkg.Background()
+		if cmd.timeout > 0 {
+			h = ctxpkg.WithTimeout(h, cmd.timeout)
+		}
+		hCancel := ctxpkg.WithCancel(h)
+		defer hCancel.Cancel()
+		defer h.Cancel()
+		execCmd := prepareCmd(cmd, hCancel.Ctx)
+		stdoutPipe, err_7 := execCmd.StdoutPipe()
+		if err_7 != nil {
+			return
+		}
+		err_8 := execCmd.Start()
+		if err_8 != nil {
+			return
+		}
+		defer func() {
+			_ = execCmd.Wait()
+		}()
+		scanner := bufio.NewScanner(stdoutPipe)
+		scanner.Buffer([]byte{}, 8*1024*1024)
+		totalBytes := 0
+		for scanner.Scan() {
+			line := scanner.Text()
+			if cmd.outputLimit > 0 {
+				lineBytes := len(scanner.Bytes()) + 1
+				if totalBytes+lineBytes > cmd.outputLimit {
+					hCancel.Cancel()
+					return
+				}
+				totalBytes = totalBytes + lineBytes
+			}
+			if !yield(line) {
+				hCancel.Cancel()
+				return
+			}
+		}
+	}
 }
 
 func getExitCode(err error) int {

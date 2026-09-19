@@ -4,6 +4,7 @@ package http_test
 
 import (
 	"fmt"
+	"io"
 	"kukicha.org/kukicha/stdlib/html"
 	httphelper "kukicha.org/kukicha/stdlib/http"
 	kukistring "kukicha.org/kukicha/stdlib/string"
@@ -525,7 +526,7 @@ func TestAllMethodOrder(t *testing.T) {
 
 func TestAllStatusOrder(t *testing.T) {
 	all := httphelper.AllStatus()
-	wantNames := []string{"Unknown", "OK", "Created", "Accepted", "NoContent", "MovedPermanently", "Found", "NotModified", "BadRequest", "Unauthorized", "Forbidden", "NotFound", "MethodNotAllowed", "Conflict", "Gone", "UnprocessableEntity", "TooManyRequests", "InternalServerError", "BadGateway", "ServiceUnavailable", "GatewayTimeout"}
+	wantNames := []string{"Unknown", "OK", "Created", "Accepted", "NoContent", "MovedPermanently", "Found", "NotModified", "BadRequest", "Unauthorized", "Forbidden", "NotFound", "MethodNotAllowed", "Conflict", "Gone", "PayloadTooLarge", "UnsupportedMediaType", "UnprocessableEntity", "TooManyRequests", "InternalServerError", "BadGateway", "ServiceUnavailable", "GatewayTimeout"}
 	if len(all) != len(wantNames) {
 		t.Fatalf("AllStatus has %v entries, want %v", len(all), len(wantNames))
 	}
@@ -545,5 +546,419 @@ func TestAllStatusOrder(t *testing.T) {
 				t.Errorf("AllStatus raw values not strictly ascending at [%v]: %v after %v", i, all[i].String(), all[i-1].String())
 			}
 		}
+	}
+}
+
+func TestCORS(t *testing.T) {
+	baseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		io.WriteString(w, "ok")
+	})
+	allCors := httphelper.AllowAllCORS(baseHandler)
+	req1, _ := http.NewRequest("OPTIONS", "http://example.com/api", nil)
+	req1.Header.Set("Origin", "http://somewhere.com")
+	rec1 := httptest.NewRecorder()
+	allCors.ServeHTTP(rec1, req1)
+	if rec1.Code != 204 {
+		t.Errorf("AllowAllCORS preflight: expected 204, got %v", rec1.Code)
+	}
+	if rec1.Header().Get("Access-Control-Allow-Origin") != "*" {
+		t.Errorf("AllowAllCORS preflight: expected *")
+	}
+	opts := httphelper.CORSOptions{AllowedOrigins: []string{"https://trusted.com"}, AllowedMethods: []string{"GET", "POST"}, AllowedHeaders: []string{"Content-Type", "Authorization"}, ExposedHeaders: []string{"X-Custom-Header"}, AllowCredentials: true, MaxAge: 3600}
+	corsHandler := httphelper.CORS(baseHandler, opts)
+	req2, _ := http.NewRequest("OPTIONS", "https://api.example.com/data", nil)
+	req2.Header.Set("Origin", "https://trusted.com")
+	rec2 := httptest.NewRecorder()
+	corsHandler.ServeHTTP(rec2, req2)
+	if rec2.Code != 204 {
+		t.Errorf("CORS preflight: expected 204, got %v", rec2.Code)
+	}
+	if rec2.Header().Get("Access-Control-Allow-Origin") != "https://trusted.com" {
+		t.Errorf("CORS preflight origin mismatch")
+	}
+	if rec2.Header().Get("Access-Control-Allow-Credentials") != "true" {
+		t.Errorf("CORS preflight credentials mismatch")
+	}
+	if rec2.Header().Get("Access-Control-Max-Age") != "3600" {
+		t.Errorf("CORS preflight max-age mismatch")
+	}
+	req3, _ := http.NewRequest("OPTIONS", "https://api.example.com/data", nil)
+	req3.Header.Set("Origin", "https://evil.com")
+	rec3 := httptest.NewRecorder()
+	corsHandler.ServeHTTP(rec3, req3)
+	if rec3.Code != 403 {
+		t.Errorf("CORS preflight evil origin: expected 403, got %v", rec3.Code)
+	}
+	req4, _ := http.NewRequest("GET", "https://api.example.com/data", nil)
+	req4.Header.Set("Origin", "https://trusted.com")
+	rec4 := httptest.NewRecorder()
+	corsHandler.ServeHTTP(rec4, req4)
+	if rec4.Code != 200 {
+		t.Errorf("CORS GET: expected 200, got %v", rec4.Code)
+	}
+	if rec4.Header().Get("Access-Control-Allow-Origin") != "https://trusted.com" {
+		t.Errorf("CORS GET origin mismatch")
+	}
+	if rec4.Header().Get("Access-Control-Expose-Headers") != "X-Custom-Header" {
+		t.Errorf("CORS exposed headers mismatch")
+	}
+	req5, _ := http.NewRequest("GET", "https://api.example.com/data", nil)
+	rec5 := httptest.NewRecorder()
+	corsHandler.ServeHTTP(rec5, req5)
+	if rec5.Code != 200 {
+		t.Errorf("Non-CORS GET: expected 200, got %v", rec5.Code)
+	}
+	if rec5.Header().Get("Access-Control-Allow-Origin") != "" {
+		t.Errorf("Non-CORS GET should not set Access-Control-Allow-Origin")
+	}
+}
+
+func TestRequestID(t *testing.T) {
+	var capturedCtxID string
+	var capturedReqID string
+	handler := httphelper.Handler(func(res httphelper.Response, req httphelper.Request) {
+		capturedCtxID = httphelper.RequestIDFromContext(req.Raw().Context())
+		capturedReqID = req.RequestID()
+		_ = res.Text("ok")
+	})
+	wrapped := httphelper.RequestID(handler)
+	req1, _ := http.NewRequest("GET", "/test", nil)
+	rec1 := httptest.NewRecorder()
+	wrapped.ServeHTTP(rec1, req1)
+	outID1 := rec1.Header().Get(httphelper.HeaderXRequestID)
+	if outID1 == "" {
+		t.Fatalf("Expected X-Request-Id header on response")
+	}
+	if capturedCtxID != outID1 {
+		t.Errorf("Context ID %v doesnt match header %v", capturedCtxID, outID1)
+	}
+	if capturedReqID != outID1 {
+		t.Errorf("req.RequestID() %v doesnt match header %v", capturedReqID, outID1)
+	}
+	req2, _ := http.NewRequest("GET", "/test", nil)
+	req2.Header.Set(httphelper.HeaderXRequestID, "custom-id-999")
+	rec2 := httptest.NewRecorder()
+	wrapped.ServeHTTP(rec2, req2)
+	outID2 := rec2.Header().Get(httphelper.HeaderXRequestID)
+	if outID2 != "custom-id-999" {
+		t.Errorf("Expected custom-id-999, got %v", outID2)
+	}
+	if capturedCtxID != "custom-id-999" {
+		t.Errorf("Context ID mismatch: %v", capturedCtxID)
+	}
+}
+
+func TestBodyLimit(t *testing.T) {
+	called := false
+	baseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		_, rerr := io.ReadAll(r.Body)
+		if rerr != nil {
+			w.WriteHeader(500)
+			return
+		}
+		w.WriteHeader(200)
+	})
+	limited := httphelper.BodyLimit(baseHandler, 10)
+	called = false
+	req1, _ := http.NewRequest("POST", "/upload", strings.NewReader("0123456789extra"))
+	req1.Header.Set("Content-Length", "15")
+	rec1 := httptest.NewRecorder()
+	limited.ServeHTTP(rec1, req1)
+	if rec1.Code != 413 {
+		t.Errorf("Expected 413 PayloadTooLarge, got %v", rec1.Code)
+	}
+	if called {
+		t.Errorf("Handler should not have been called for oversized Content-Length")
+	}
+	called = false
+	req2, _ := http.NewRequest("POST", "/upload", strings.NewReader("short"))
+	req2.Header.Set("Content-Length", "5")
+	rec2 := httptest.NewRecorder()
+	limited.ServeHTTP(rec2, req2)
+	if rec2.Code != 200 {
+		t.Errorf("Expected 200 OK, got %v", rec2.Code)
+	}
+	if !called {
+		t.Errorf("Handler should have been called for valid body")
+	}
+}
+
+func TestSSE(t *testing.T) {
+	rec := httptest.NewRecorder()
+	err := httphelper.WriteSSE(rec, "greeting", "hello\nworld")
+	if err != nil {
+		t.Fatalf("WriteSSE failed: %v", err)
+	}
+	expected := "event: greeting\ndata: hello\ndata: world\n\n"
+	if rec.Body.String() != expected {
+		t.Errorf("WriteSSE output mismatch")
+	}
+	rec2 := httptest.NewRecorder()
+	err2 := httphelper.WriteSSEWithID(rec2, "id-42", "alert", "danger")
+	if err2 != nil {
+		t.Fatalf("WriteSSEWithID failed: %v", err2)
+	}
+	expected2 := "id: id-42\nevent: alert\ndata: danger\n\n"
+	if rec2.Body.String() != expected2 {
+		t.Errorf("WriteSSEWithID output mismatch")
+	}
+	rec3 := httptest.NewRecorder()
+	writer, werr := httphelper.NewSSEWriter(rec3)
+	if werr != nil {
+		t.Fatalf("NewSSEWriter failed: %v", werr)
+	}
+	if rec3.Header().Get("Content-Type") != "text/event-stream" {
+		t.Errorf("SSE Content-Type header missing")
+	}
+	if rec3.Header().Get("Cache-Control") != "no-cache" {
+		t.Errorf("SSE Cache-Control header missing")
+	}
+	_ = writer.Send("ping", "pong")
+	_ = writer.SendWithID("evt-1", "user", "alice")
+	_ = writer.SendJSON("metric", map[string]int{"score": 100})
+	_ = writer.Comment("keepalive")
+	body3 := rec3.Body.String()
+	if !kukistring.Contains(body3, "event: ping\ndata: pong\n\n") {
+		t.Errorf("Missing ping event in SSE body")
+	}
+	if !kukistring.Contains(body3, "id: evt-1\nevent: user\ndata: alice\n\n") {
+		t.Errorf("Missing evt-1 event in SSE body")
+	}
+	if !kukistring.Contains(body3, "event: metric\n") || !kukistring.Contains(body3, `{"score":100}`) {
+		t.Errorf("Missing metric json event in SSE body")
+	}
+	if !kukistring.Contains(body3, ": keepalive\n\n") {
+		t.Errorf("Missing keepalive comment in SSE body")
+	}
+	streamData := ": initial comment\n\nevent: joined\ndata: bob\nid: 1\n\nevent: message\ndata: line one\ndata: line two\n\n: another comment\nevent: done\ndata: finished\n\n"
+	events := []httphelper.SSEEvent{}
+	rerr := httphelper.ReadSSE(strings.NewReader(streamData), func(evt httphelper.SSEEvent) bool {
+		events = append(events, evt)
+		return true
+	})
+	if rerr != nil {
+		t.Fatalf("ReadSSE failed: %v", rerr)
+	}
+	if len(events) != 3 {
+		t.Fatalf("Expected 3 events, got %v", len(events))
+	}
+	if events[0].Event != "joined" || events[0].Data != "bob" || events[0].ID != "1" {
+		t.Errorf("Event 0 mismatch")
+	}
+	if events[1].Event != "message" || events[1].Data != "line one\nline two" {
+		t.Errorf("Event 1 mismatch")
+	}
+	if events[2].Event != "done" || events[2].Data != "finished" {
+		t.Errorf("Event 2 mismatch")
+	}
+	earlyEvents := []httphelper.SSEEvent{}
+	_ = httphelper.ReadSSE(strings.NewReader(streamData), func(evt httphelper.SSEEvent) bool {
+		earlyEvents = append(earlyEvents, evt)
+		return false
+	})
+	if len(earlyEvents) != 1 {
+		t.Errorf("Expected early exit after 1 event, got %v", len(earlyEvents))
+	}
+}
+
+type TestUser struct {
+	Name string
+	Age  int
+}
+
+func TestRequestGenericReadJSON(t *testing.T) {
+	rec := httptest.NewRecorder()
+	handler := httphelper.Handler(func(res httphelper.Response, req httphelper.Request) {
+		user, err_1 := req.ReadJSON[TestUser]()
+		if err_1 != nil {
+			_ = res.JSONBadRequest(fmt.Sprintf("invalid json: %v", err_1))
+			return
+		}
+		_ = res.JSON(user)
+	})
+	rawReq := httptest.NewRequest("POST", "/user", strings.NewReader(`{"Name":"Alice","Age":30}`))
+	handler.ServeHTTP(rec, rawReq)
+	if rec.Code != 200 {
+		t.Fatalf("expected 200, got %v: %v", rec.Code, rec.Body.String())
+	}
+	if !kukistring.Contains(rec.Body.String(), `"Alice"`) || !kukistring.Contains(rec.Body.String(), `30`) {
+		t.Errorf("unexpected body: %v", rec.Body.String())
+	}
+}
+
+func TestRequestGenericJSONAlias(t *testing.T) {
+	rec := httptest.NewRecorder()
+	handler := httphelper.Handler(func(res httphelper.Response, req httphelper.Request) {
+		user, err_2 := req.JSON[TestUser]()
+		if err_2 != nil {
+			_ = res.JSONBadRequest(fmt.Sprintf("invalid json: %v", err_2))
+			return
+		}
+		_ = res.JSON(user)
+	})
+	rawReq := httptest.NewRequest("POST", "/user", strings.NewReader(`{"Name":"Bob","Age":25}`))
+	handler.ServeHTTP(rec, rawReq)
+	if rec.Code != 200 {
+		t.Fatalf("expected 200, got %v: %v", rec.Code, rec.Body.String())
+	}
+	if !kukistring.Contains(rec.Body.String(), `"Bob"`) {
+		t.Errorf("unexpected body: %v", rec.Body.String())
+	}
+}
+
+func TestRequestGenericReadJSONLimit(t *testing.T) {
+	rec1 := httptest.NewRecorder()
+	handler := httphelper.Handler(func(res httphelper.Response, req httphelper.Request) {
+		user, err_3 := req.ReadJSONLimit[TestUser](64)
+		if err_3 != nil {
+			_ = res.JSONBadRequest(fmt.Sprintf("bad: %v", err_3))
+			return
+		}
+		_ = res.JSON(user)
+	})
+	rawReq1 := httptest.NewRequest("POST", "/user", strings.NewReader(`{"Name":"Charlie","Age":40}`))
+	handler.ServeHTTP(rec1, rawReq1)
+	if rec1.Code != 200 {
+		t.Fatalf("expected 200, got %v: %v", rec1.Code, rec1.Body.String())
+	}
+	rec2 := httptest.NewRecorder()
+	hugeBody := `{"Name":"` + kukistring.Repeat("A", 100) + `","Age":40}`
+	rawReq2 := httptest.NewRequest("POST", "/user", strings.NewReader(hugeBody))
+	handler.ServeHTTP(rec2, rawReq2)
+	if rec2.Code != 400 {
+		t.Fatalf("expected 400 for oversized body, got %v", rec2.Code)
+	}
+}
+
+func TestRequestDecode(t *testing.T) {
+	rec := httptest.NewRecorder()
+	handler := httphelper.Handler(func(res httphelper.Response, req httphelper.Request) {
+		user := TestUser{}
+		err_4 := req.Decode(&user)
+		if err_4 != nil {
+			_ = res.JSONBadRequest(fmt.Sprintf("invalid json: %v", err_4))
+			return
+		}
+		_ = res.JSON(user)
+	})
+	rawReq := httptest.NewRequest("POST", "/user", strings.NewReader(`{"Name":"Dave","Age":35}`))
+	handler.ServeHTTP(rec, rawReq)
+	if rec.Code != 200 {
+		t.Fatalf("expected 200, got %v: %v", rec.Code, rec.Body.String())
+	}
+	if !kukistring.Contains(rec.Body.String(), `"Dave"`) {
+		t.Errorf("unexpected body: %v", rec.Body.String())
+	}
+}
+
+func TestRequestEmptyBodyError(t *testing.T) {
+	rec := httptest.NewRecorder()
+	handler := httphelper.Handler(func(res httphelper.Response, req httphelper.Request) {
+		user, err_5 := req.ReadJSON[TestUser]()
+		if err_5 != nil {
+			_ = res.JSONBadRequest(fmt.Sprintf("%v", err_5))
+			return
+		}
+		_ = res.JSON(user)
+	})
+	rawReq := httptest.NewRequest("POST", "/user", strings.NewReader(""))
+	handler.ServeHTTP(rec, rawReq)
+	if rec.Code != 400 {
+		t.Fatalf("expected 400, got %v", rec.Code)
+	}
+	if !kukistring.Contains(rec.Body.String(), "request body is empty") {
+		t.Errorf("expected 'request body is empty', got: %v", rec.Body.String())
+	}
+}
+
+func TestRequestContentTypeAndIsJSON(t *testing.T) {
+	rec := httptest.NewRecorder()
+	handler := httphelper.Handler(func(res httphelper.Response, req httphelper.Request) {
+		if !req.IsJSON() {
+			res.Error("unsupported media type", httphelper.StatusUnsupportedMediaType)
+			return
+		}
+		ct := req.ContentType()
+		_ = res.Text(ct)
+	})
+	rawReq1 := httptest.NewRequest("POST", "/test", nil)
+	rawReq1.Header.Set("Content-Type", "application/json; charset=utf-8")
+	handler.ServeHTTP(rec, rawReq1)
+	if rec.Code != 200 {
+		t.Errorf("expected 200 for application/json, got %v", rec.Code)
+	}
+	if rec.Body.String() != "application/json; charset=utf-8" {
+		t.Errorf("expected content-type echo, got: %v", rec.Body.String())
+	}
+	rec2 := httptest.NewRecorder()
+	rawReq2 := httptest.NewRequest("POST", "/test", nil)
+	rawReq2.Header.Set("Content-Type", "text/plain")
+	handler.ServeHTTP(rec2, rawReq2)
+	if rec2.Code != 415 {
+		t.Errorf("expected 415 for text/plain, got %v", rec2.Code)
+	}
+}
+
+func TestResponseJSONErrorsAndProblem(t *testing.T) {
+	rec1 := httptest.NewRecorder()
+	handler1 := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+		errs := map[string]string{"email": "required", "password": "too short"}
+		_ = res.JSONErrors(errs)
+	})
+	handler1.ServeHTTP(rec1, httptest.NewRequest("POST", "/test", nil))
+	if rec1.Code != 400 {
+		t.Fatalf("expected 400, got %v", rec1.Code)
+	}
+	if !kukistring.Contains(rec1.Body.String(), `"email":"required"`) {
+		t.Errorf("missing email error: %v", rec1.Body.String())
+	}
+	rec2 := httptest.NewRecorder()
+	handler2 := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+		_ = res.JSONProblem("Not Found", "Item 42 does not exist", httphelper.StatusNotFound)
+	})
+	handler2.ServeHTTP(rec2, httptest.NewRequest("GET", "/test", nil))
+	if rec2.Code != 404 {
+		t.Fatalf("expected 404, got %v", rec2.Code)
+	}
+	if rec2.Header().Get("Content-Type") != "application/problem+json" {
+		t.Errorf("expected application/problem+json, got: %v", rec2.Header().Get("Content-Type"))
+	}
+	if !kukistring.Contains(rec2.Body.String(), "Item 42 does not exist") {
+		t.Errorf("missing problem detail: %v", rec2.Body.String())
+	}
+}
+
+func TestRequestStrictJSON(t *testing.T) {
+	payloadWithUnknown := `{"Name":"Alice","Age":30,"ExtraField":123}`
+	rec1 := httptest.NewRecorder()
+	handler1 := httphelper.Handler(func(res httphelper.Response, req httphelper.Request) {
+		user, err_6 := req.ReadJSON[TestUser]()
+		if err_6 != nil {
+			_ = res.JSONBadRequest(fmt.Sprintf("err: %v", err_6))
+			return
+		}
+		_ = res.JSON(user)
+	})
+	handler1.ServeHTTP(rec1, httptest.NewRequest("POST", "/user", strings.NewReader(payloadWithUnknown)))
+	if rec1.Code != 200 {
+		t.Fatalf("standard ReadJSON should accept extra fields, got %v: %v", rec1.Code, rec1.Body.String())
+	}
+	rec2 := httptest.NewRecorder()
+	handler2 := httphelper.Handler(func(res httphelper.Response, req httphelper.Request) {
+		user, err_7 := req.ReadJSONStrict[TestUser]()
+		if err_7 != nil {
+			_ = res.JSONBadRequest(fmt.Sprintf("rejected: %v", err_7))
+			return
+		}
+		_ = res.JSON(user)
+	})
+	handler2.ServeHTTP(rec2, httptest.NewRequest("POST", "/user", strings.NewReader(payloadWithUnknown)))
+	if rec2.Code != 400 {
+		t.Fatalf("strict ReadJSON should reject extra fields, got %v", rec2.Code)
+	}
+	if !kukistring.Contains(rec2.Body.String(), "rejected:") {
+		t.Errorf("expected rejection message: %v", rec2.Body.String())
 	}
 }

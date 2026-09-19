@@ -6,6 +6,7 @@ import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as typespkg
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
+import "stdlib/maps"
 
 type GameSession
     game_id: string
@@ -104,11 +105,9 @@ func create_session on gc: reference GameCoordinator(lobby: reference GameLobby)
     gc.active_games[game_id] = session
     players := lobby.get_player_list()
     for info in players
-        pid_val, has_id := info["player_id"]
-        if has_id
-            if pid_val is string as pid_str
-                if pid_str isnt ""
-                    gc.player_to_game[pid_str] = game_id
+        pid_str := maps.StringOr(info, "player_id", "")
+        if pid_str isnt empty
+            gc.player_to_game[pid_str] = game_id
     return gc.active_games[game_id]
 
 func get_session on gc: reference GameCoordinator(game_id: string) optional reference GameSession

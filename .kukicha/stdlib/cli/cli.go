@@ -947,6 +947,23 @@ func (args Args) Respond(data any) {
 	}
 }
 
+func PrintJSON(v any) {
+	data, err_2 := json.PrettyBytes(v)
+	if err_2 != nil {
+		Error(fmt.Sprintf("json error: %v", err_2))
+		return
+	}
+	fmt.Println(string(data))
+}
+
+func (args Args) RespondPretty(data any) {
+	if IsJSON(args) {
+		PrintJSON(data)
+	} else {
+		fmt.Println(fmt.Sprint(data))
+	}
+}
+
 func IsTTY() bool {
 	return term.IsTTY(os.Stdout)
 }
@@ -967,6 +984,19 @@ func Fatal(msg string) {
 func Fail(msg string) {
 	fmt.Fprintln(os.Stderr, msg)
 	exitWithCode(1)
+}
+
+func FailArgs(args Args, msg string) {
+	if IsJSON(args) {
+		PrintJSON(map[string]any{"error": msg})
+	} else {
+		fmt.Fprintf(os.Stderr, "%v %v\n", color.Red("error:"), msg)
+	}
+	exitWithCode(1)
+}
+
+func (args Args) Fail(msg string) {
+	FailArgs(args, msg)
 }
 
 func ExitCode(code int) {

@@ -675,3 +675,33 @@ func TestFatalRoutesThroughSeam(t *testing.T) {
 	cli.Fatal("boom")
 	test.AssertEqual(t, exited, 1)
 }
+
+func TestFailArgsNonJSON(t *testing.T) {
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	t.Cleanup(func() {
+		cli.SetExitFunc(nil)
+	})
+	args := cli.NewArgs(map[string]string{"json": "false"})
+	cli.FailArgs(args, "plain error")
+	test.AssertEqual(t, exited, 1)
+}
+
+func TestFailArgsJSON(t *testing.T) {
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	t.Cleanup(func() {
+		cli.SetExitFunc(nil)
+	})
+	args := cli.NewArgs(map[string]string{"json": "true"})
+	args.Fail("json error")
+	test.AssertEqual(t, exited, 1)
+}
+
+func TestPrintJSONAndRespondPretty(t *testing.T) {
+	cli.PrintJSON(map[string]string{"status": "healthy"})
+	args := cli.NewArgs(map[string]string{"json": "true"})
+	args.RespondPretty(map[string]string{"status": "ok"})
+}

@@ -6,6 +6,7 @@ import "race-to-the-crystal/shared/types" as typespkg
 import "stdlib/cast"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
+import "stdlib/maps"
 import "stdlib/random"
 import "stdlib/string" as strpkg
 import "strings"
@@ -46,20 +47,11 @@ func HandleJoinGame on h: reference HTTPHandler(game_id: string, body: map of st
             data: empty map of string to any,
         }
 
-    player_name_val, has_pn := body["player_name"]
-    if not has_pn
+    player_name := maps.StringOr(body, "player_name", "")
+    if player_name is empty
         return APIResponse{
             success: false,
-            message: "missing player_name",
-            data: empty map of string to any,
-        }
-    player_name := ""
-    if player_name_val is string as pn
-        player_name = pn
-    if player_name equals ""
-        return APIResponse{
-            success: false,
-            message: "invalid player_name",
+            message: "missing or invalid player_name",
             data: empty map of string to any,
         }
 
@@ -133,20 +125,11 @@ func HandleAction on h: reference HTTPHandler(game_id: string, auth_header: stri
             data: empty map of string to any,
         }
 
-    action_type_val, has_at := body["type"]
-    if not has_at
+    type_str := maps.StringOr(body, "type", "")
+    if type_str is empty
         return APIResponse{
             success: false,
-            message: "missing action type",
-            data: empty map of string to any,
-        }
-    type_str := ""
-    if action_type_val is string as ts
-        type_str = ts
-    if type_str equals ""
-        return APIResponse{
-            success: false,
-            message: "invalid action type",
+            message: "missing or invalid action type",
             data: empty map of string to any,
         }
 

@@ -152,6 +152,53 @@ func Parse[T any](data string) (T, error) {
 	return out, nil
 }
 
+func ReadIntoStrict(reader io.Reader, target any) error {
+	return jsonv2.UnmarshalRead(reader, target, jsonv2.MatchCaseInsensitiveNames(true), jsonv2.RejectUnknownMembers(true))
+}
+
+func ParseBytesIntoStrict(data []byte, target any) error {
+	return jsonv2.Unmarshal(data, target, jsonv2.MatchCaseInsensitiveNames(true), jsonv2.RejectUnknownMembers(true))
+}
+
+func ParseIntoStrict(data string, target any) error {
+	return ParseBytesIntoStrict([]byte(data), target)
+}
+
+func ReadStrict[T any](reader io.Reader) (T, error) {
+	data := *new(T)
+	// pipe step 1: ReadIntoStrict(...)
+	err_7 := ReadIntoStrict(reader, &data)
+	if err_7 != nil {
+		err_7 = fmt.Errorf("failed to read json: %w", err_7)
+		var _zero0 T
+		return _zero0, err_7
+	}
+	_ = err_7
+	return data, nil
+}
+
+func ParseBytesStrict[T any](data []byte) (T, error) {
+	out := *new(T)
+	err_8 := ParseBytesIntoStrict(data, &out)
+	if err_8 != nil {
+		err_8 = fmt.Errorf("failed to parse json: %w", err_8)
+		var _zero0 T
+		return _zero0, err_8
+	}
+	return out, nil
+}
+
+func ParseStrict[T any](data string) (T, error) {
+	out := *new(T)
+	err_9 := ParseIntoStrict(data, &out)
+	if err_9 != nil {
+		err_9 = fmt.Errorf("failed to parse json: %w", err_9)
+		var _zero0 T
+		return _zero0, err_9
+	}
+	return out, nil
+}
+
 type JSONValue interface{ isJSONValue() }
 
 type Null struct{}
@@ -217,22 +264,22 @@ func decodeJSON(v any) JSONValue {
 
 func ParseBytesValue(data []byte) (JSONValue, error) {
 	raw := *new(any)
-	err_7 := ParseBytesInto(data, &raw)
-	if err_7 != nil {
-		err_7 = fmt.Errorf("failed to parse json value: %w", err_7)
+	err_10 := ParseBytesInto(data, &raw)
+	if err_10 != nil {
+		err_10 = fmt.Errorf("failed to parse json value: %w", err_10)
 		var _zero0 JSONValue
-		return _zero0, err_7
+		return _zero0, err_10
 	}
 	return decodeJSON(raw), nil
 }
 
 func ParseValue(data string) (JSONValue, error) {
 	raw := *new(any)
-	err_8 := ParseInto(data, &raw)
-	if err_8 != nil {
-		err_8 = fmt.Errorf("failed to parse json value: %w", err_8)
+	err_11 := ParseInto(data, &raw)
+	if err_11 != nil {
+		err_11 = fmt.Errorf("failed to parse json value: %w", err_11)
 		var _zero0 JSONValue
-		return _zero0, err_8
+		return _zero0, err_11
 	}
 	return decodeJSON(raw), nil
 }
@@ -240,13 +287,13 @@ func ParseValue(data string) (JSONValue, error) {
 func ReadValue(reader io.Reader) (JSONValue, error) {
 	raw := *new(any)
 	// pipe step 1: ReadInto(...)
-	err_9 := ReadInto(reader, &raw)
-	if err_9 != nil {
-		err_9 = fmt.Errorf("failed to read json value: %w", err_9)
+	err_12 := ReadInto(reader, &raw)
+	if err_12 != nil {
+		err_12 = fmt.Errorf("failed to read json value: %w", err_12)
 		var _zero0 JSONValue
-		return _zero0, err_9
+		return _zero0, err_12
 	}
-	_ = err_9
+	_ = err_12
 	return decodeJSON(raw), nil
 }
 
@@ -260,9 +307,9 @@ func ParseBytesFrozen(data []byte) (Frozen, error) {
 		return Frozen{}, errors.New("invalid json")
 	}
 	cp := v.Clone()
-	err_10 := cp.Canonicalize()
-	if err_10 != nil {
-		return Frozen{}, err_10
+	err_13 := cp.Canonicalize()
+	if err_13 != nil {
+		return Frozen{}, err_13
 	}
 	return Frozen{Canonical: string(cp)}, nil
 }

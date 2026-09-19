@@ -4,7 +4,11 @@ package maps
 
 import (
 	"cmp"
+	"errors"
+	"fmt"
+	"kukicha.org/kukicha/stdlib/cast"
 	gomaps "maps"
+	"reflect"
 	"slices"
 )
 
@@ -108,4 +112,186 @@ func Invert[K comparable, V comparable](m map[K]V) map[V]K {
 		result[v] = k
 	}
 	return result
+}
+
+func AsMap(v any) (map[string]any, error) {
+	if v == nil || cast.IsNil(v) {
+		return nil, errors.New("value is nil")
+	}
+	switch m := v.(type) {
+	case map[string]any:
+		return m, nil
+	case map[any]any:
+		result := map[string]any{}
+		for k, val := range m {
+			result[cast.ToString(k)] = val
+		}
+		return result, nil
+	}
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Map {
+		result := map[string]any{}
+		for _, k := range rv.MapKeys() {
+			result[cast.ToString(k.Interface())] = rv.MapIndex(k).Interface()
+		}
+		return result, nil
+	}
+	return nil, errors.New("cannot convert to map")
+}
+
+func AsMapOr(v any, defaultValue map[string]any) map[string]any {
+	m, err := AsMap(v)
+	if err != nil {
+		return defaultValue
+	}
+	return m
+}
+
+func AsList(v any) ([]any, error) {
+	if v == nil || cast.IsNil(v) {
+		return []any{}, errors.New("value is nil")
+	}
+	if arr, _isOk := v.([]any); _isOk {
+		return arr, nil
+	}
+	rv := reflect.ValueOf(v)
+	k := rv.Kind()
+	if k == reflect.Slice || k == reflect.Array {
+		n := rv.Len()
+		result := make([]any, n)
+		for i := range n {
+			result[i] = rv.Index(i).Interface()
+		}
+		return result, nil
+	}
+	return []any{}, errors.New("cannot convert to list")
+}
+
+func AsListOr(v any, defaultValue []any) []any {
+	arr, err := AsList(v)
+	if err != nil {
+		return defaultValue
+	}
+	return arr
+}
+
+func String(m map[string]any, key string) (string, error) {
+	v, ok := m[key]
+	if !ok {
+		return "", fmt.Errorf("key not found: %v", key)
+	}
+	if v == nil || cast.IsNil(v) {
+		return "", fmt.Errorf("key '%v' is nil", key)
+	}
+	switch val := v.(type) {
+	case string:
+		return val, nil
+	case []byte:
+		return string(val), nil
+	case int:
+		return cast.ToString(val), nil
+	case int64:
+		return cast.ToString(val), nil
+	case float64:
+		return cast.ToString(val), nil
+	case bool:
+		return cast.ToString(val), nil
+	}
+	return "", fmt.Errorf("key '%v' cannot be converted to string", key)
+}
+
+func StringOr(m map[string]any, key string, defaultValue string) string {
+	s, err := String(m, key)
+	if err != nil {
+		return defaultValue
+	}
+	return s
+}
+
+func Int(m map[string]any, key string) (int, error) {
+	v, ok := m[key]
+	if !ok {
+		return 0, fmt.Errorf("key not found: %v", key)
+	}
+	return cast.ToInt(v)
+}
+
+func IntOr(m map[string]any, key string, defaultValue int) int {
+	n, err := Int(m, key)
+	if err != nil {
+		return defaultValue
+	}
+	return n
+}
+
+func Float(m map[string]any, key string) (float64, error) {
+	v, ok := m[key]
+	if !ok {
+		return 0.0, fmt.Errorf("key not found: %v", key)
+	}
+	return cast.ToFloat64(v)
+}
+
+func FloatOr(m map[string]any, key string, defaultValue float64) float64 {
+	f, err := Float(m, key)
+	if err != nil {
+		return defaultValue
+	}
+	return f
+}
+
+func Float64(m map[string]any, key string) (float64, error) {
+	return Float(m, key)
+}
+
+func Float64Or(m map[string]any, key string, defaultValue float64) float64 {
+	return FloatOr(m, key, defaultValue)
+}
+
+func Bool(m map[string]any, key string) (bool, error) {
+	v, ok := m[key]
+	if !ok {
+		return false, fmt.Errorf("key not found: %v", key)
+	}
+	return cast.ToBool(v)
+}
+
+func BoolOr(m map[string]any, key string, defaultValue bool) bool {
+	b, err := Bool(m, key)
+	if err != nil {
+		return defaultValue
+	}
+	return b
+}
+
+func Map(m map[string]any, key string) (map[string]any, error) {
+	v, ok := m[key]
+	if !ok {
+		return nil, fmt.Errorf("key not found: %v", key)
+	}
+	return AsMap(v)
+}
+
+func MapOr(m map[string]any, key string, defaultValue map[string]any) map[string]any {
+	val, err := Map(m, key)
+	if err != nil {
+		return defaultValue
+	}
+	return val
+}
+
+func List(m map[string]any, key string) ([]any, error) {
+	v, ok := m[key]
+	if !ok {
+		return []any{}, fmt.Errorf("key not found: %v", key)
+	}
+	return AsList(v)
+}
+
+func ListOr(m map[string]any, key string, defaultValue []any) []any {
+	val, err := List(m, key)
+	if err != nil {
+		return defaultValue
+	}
+	return val
 }

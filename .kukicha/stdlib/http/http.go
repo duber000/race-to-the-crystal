@@ -3,18 +3,23 @@
 package http
 
 import (
+	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"html"
 	"io"
+	errs "kukicha.org/kukicha/stdlib/errors"
 	htmlpkg "kukicha.org/kukicha/stdlib/html"
 	"kukicha.org/kukicha/stdlib/json"
 	"kukicha.org/kukicha/stdlib/parse"
 	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/kukicha/stdlib/uuid"
 	"net"
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -79,31 +84,33 @@ func (e Method) String() string {
 type Status int
 
 const (
-	StatusUnknown             Status = 0
-	StatusOK                  Status = 200
-	StatusCreated             Status = 201
-	StatusAccepted            Status = 202
-	StatusNoContent           Status = 204
-	StatusMovedPermanently    Status = 301
-	StatusFound               Status = 302
-	StatusNotModified         Status = 304
-	StatusBadRequest          Status = 400
-	StatusUnauthorized        Status = 401
-	StatusForbidden           Status = 403
-	StatusNotFound            Status = 404
-	StatusMethodNotAllowed    Status = 405
-	StatusConflict            Status = 409
-	StatusGone                Status = 410
-	StatusUnprocessableEntity Status = 422
-	StatusTooManyRequests     Status = 429
-	StatusInternalServerError Status = 500
-	StatusBadGateway          Status = 502
-	StatusServiceUnavailable  Status = 503
-	StatusGatewayTimeout      Status = 504
+	StatusUnknown              Status = 0
+	StatusOK                   Status = 200
+	StatusCreated              Status = 201
+	StatusAccepted             Status = 202
+	StatusNoContent            Status = 204
+	StatusMovedPermanently     Status = 301
+	StatusFound                Status = 302
+	StatusNotModified          Status = 304
+	StatusBadRequest           Status = 400
+	StatusUnauthorized         Status = 401
+	StatusForbidden            Status = 403
+	StatusNotFound             Status = 404
+	StatusMethodNotAllowed     Status = 405
+	StatusConflict             Status = 409
+	StatusGone                 Status = 410
+	StatusPayloadTooLarge      Status = 413
+	StatusUnsupportedMediaType Status = 415
+	StatusUnprocessableEntity  Status = 422
+	StatusTooManyRequests      Status = 429
+	StatusInternalServerError  Status = 500
+	StatusBadGateway           Status = 502
+	StatusServiceUnavailable   Status = 503
+	StatusGatewayTimeout       Status = 504
 )
 
 func AllStatus() []Status {
-	return []Status{StatusUnknown, StatusOK, StatusCreated, StatusAccepted, StatusNoContent, StatusMovedPermanently, StatusFound, StatusNotModified, StatusBadRequest, StatusUnauthorized, StatusForbidden, StatusNotFound, StatusMethodNotAllowed, StatusConflict, StatusGone, StatusUnprocessableEntity, StatusTooManyRequests, StatusInternalServerError, StatusBadGateway, StatusServiceUnavailable, StatusGatewayTimeout}
+	return []Status{StatusUnknown, StatusOK, StatusCreated, StatusAccepted, StatusNoContent, StatusMovedPermanently, StatusFound, StatusNotModified, StatusBadRequest, StatusUnauthorized, StatusForbidden, StatusNotFound, StatusMethodNotAllowed, StatusConflict, StatusGone, StatusPayloadTooLarge, StatusUnsupportedMediaType, StatusUnprocessableEntity, StatusTooManyRequests, StatusInternalServerError, StatusBadGateway, StatusServiceUnavailable, StatusGatewayTimeout}
 }
 
 func (e Status) String() string {
@@ -138,6 +145,10 @@ func (e Status) String() string {
 		return "Conflict"
 	case StatusGone:
 		return "Gone"
+	case StatusPayloadTooLarge:
+		return "PayloadTooLarge"
+	case StatusUnsupportedMediaType:
+		return "UnsupportedMediaType"
 	case StatusUnprocessableEntity:
 		return "UnprocessableEntity"
 	case StatusTooManyRequests:
@@ -655,6 +666,136 @@ func SecureHeaders(handler http.Handler) http.Handler {
 	})
 }
 
+type CORSOptions struct {
+	AllowedOrigins   []string
+	AllowedMethods   []string
+	AllowedHeaders   []string
+	ExposedHeaders   []string
+	AllowCredentials bool
+	MaxAge           int
+}
+
+func DefaultCORSOptions() CORSOptions {
+	return CORSOptions{AllowedOrigins: []string{"*"}, AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}, AllowedHeaders: []string{"*"}, ExposedHeaders: []string{}, AllowCredentials: false, MaxAge: 86400}
+}
+
+func CORS(next http.Handler, opts CORSOptions) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		originMatch := false
+		isWildcard := false
+		for _, allowed := range opts.AllowedOrigins {
+			if allowed == "*" {
+				originMatch = true
+				isWildcard = true
+				break
+			}
+			if kukistring.EqualFold(allowed, origin) {
+				originMatch = true
+				break
+			}
+		}
+		if !originMatch {
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(int(StatusForbidden))
+				return
+			}
+			next.ServeHTTP(w, r)
+			return
+		}
+		if isWildcard && !opts.AllowCredentials {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Add("Vary", "Origin")
+		}
+		if opts.AllowCredentials {
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+		if len(opts.ExposedHeaders) > 0 {
+			w.Header().Set("Access-Control-Expose-Headers", kukistring.Join(opts.ExposedHeaders, ", "))
+		}
+		if r.Method == "OPTIONS" {
+			if len(opts.AllowedMethods) > 0 {
+				w.Header().Set("Access-Control-Allow-Methods", kukistring.Join(opts.AllowedMethods, ", "))
+			} else {
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS")
+			}
+			if len(opts.AllowedHeaders) > 0 {
+				w.Header().Set("Access-Control-Allow-Headers", kukistring.Join(opts.AllowedHeaders, ", "))
+			} else {
+				reqHeaders := r.Header.Get("Access-Control-Request-Headers")
+				if reqHeaders != "" {
+					w.Header().Set("Access-Control-Allow-Headers", reqHeaders)
+				} else {
+					w.Header().Set("Access-Control-Allow-Headers", "*")
+				}
+			}
+			if opts.MaxAge > 0 {
+				w.Header().Set("Access-Control-Max-Age", fmt.Sprintf("%v", opts.MaxAge))
+			}
+			w.WriteHeader(int(StatusNoContent))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func AllowAllCORS(next http.Handler) http.Handler {
+	return CORS(next, DefaultCORSOptions())
+}
+
+type requestIDContextKey string
+
+const requestIDKey requestIDContextKey = "kukicha_request_id"
+
+func RequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := r.Header.Get(HeaderXRequestID)
+		if id == "" {
+			id = uuid.String(uuid.NewV7())
+		}
+		w.Header().Set(HeaderXRequestID, id)
+		ctx := context.WithValue(r.Context(), requestIDKey, id)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func RequestIDFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	v := ctx.Value(requestIDKey)
+	if s, _isOk := v.(string); _isOk {
+		return s
+	}
+	return ""
+}
+
+func BodyLimit(next http.Handler, maxBytes int64) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cl := r.Header.Get(HeaderContentLength)
+		if cl != "" {
+			n, err := strconv.ParseInt(cl, 10, 64)
+			if err == nil && n > maxBytes {
+				w.Header().Set(HeaderContentType, ContentJSON)
+				w.WriteHeader(int(StatusPayloadTooLarge))
+				errBody := map[string]string{"error": fmt.Sprintf("request body exceeds limit of %v bytes", maxBytes)}
+				_ = json.Write(w, errBody)
+				return
+			}
+		}
+		if r.Body != nil {
+			r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 type Request struct {
 	raw *http.Request
 }
@@ -766,6 +907,18 @@ func (res Response) JSONInternalError(message string) error {
 	return json.Write(res.raw, errorBody)
 }
 
+func (res Response) JSONErrors(fieldErrors map[string]string) error {
+	errorBody := map[string]any{"errors": fieldErrors}
+	return res.JSONStatus(errorBody, StatusBadRequest)
+}
+
+func (res Response) JSONProblem(title string, detail string, status Status) error {
+	res.raw.Header().Set("Content-Type", "application/problem+json")
+	res.raw.WriteHeader(int(status))
+	problem := map[string]any{"title": title, "detail": detail, "status": int(status)}
+	return json.Write(res.raw, problem)
+}
+
 func (res Response) Text(content string) error {
 	res.raw.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	io.WriteString(res.raw, content)
@@ -860,24 +1013,236 @@ func (res Response) MethodNotAllowed(allowed ...string) {
 	res.raw.WriteHeader(int(StatusMethodNotAllowed))
 }
 
-func (req Request) ReadJSON(target any) error {
-	return json.ReadInto(req.raw.Body, target)
+func (req Request) ContentType() string {
+	return req.raw.Header.Get(HeaderContentType)
 }
 
-func (req Request) ReadJSONAndClose(target any) error {
+func (req Request) IsJSON() bool {
+	ct := req.ContentType()
+	return kukistring.HasPrefix(kukistring.ToLower(ct), ContentJSON)
+}
+
+func isBodyEmptyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+	s := fmt.Sprintf("%v", err)
+	return kukistring.Contains(s, "EOF")
+}
+
+func (req Request) ReadJSON[T any]() (T, error) {
+	if req.raw == nil || req.raw.Body == nil {
+		var _zero0 T
+		return _zero0, errors.New("request body is empty")
+	}
+	data := *new(T)
+	err_10 := json.ReadInto(req.raw.Body, &data)
+	if err_10 != nil {
+		if isBodyEmptyError(err_10) {
+			var _zero0 T
+			return _zero0, errors.New("request body is empty")
+		}
+		var _zero0 T
+		return _zero0, errs.Wrap(err_10, "failed to decode request json")
+	}
+	return data, nil
+}
+
+func (req Request) JSON[T any]() (T, error) {
+	return req.ReadJSON[T]()
+}
+
+func (req Request) ReadJSONStrict[T any]() (T, error) {
+	if req.raw == nil || req.raw.Body == nil {
+		var _zero0 T
+		return _zero0, errors.New("request body is empty")
+	}
+	data := *new(T)
+	err_11 := json.ReadIntoStrict(req.raw.Body, &data)
+	if err_11 != nil {
+		if isBodyEmptyError(err_11) {
+			var _zero0 T
+			return _zero0, errors.New("request body is empty")
+		}
+		var _zero0 T
+		return _zero0, errs.Wrap(err_11, "failed to decode request json")
+	}
+	return data, nil
+}
+
+func (req Request) ReadJSONAndClose[T any]() (T, error) {
+	if req.raw == nil || req.raw.Body == nil {
+		var _zero0 T
+		return _zero0, errors.New("request body is empty")
+	}
 	defer req.raw.Body.Close()
-	return json.ReadInto(req.raw.Body, target)
+	data := *new(T)
+	err_12 := json.ReadInto(req.raw.Body, &data)
+	if err_12 != nil {
+		if isBodyEmptyError(err_12) {
+			var _zero0 T
+			return _zero0, errors.New("request body is empty")
+		}
+		var _zero0 T
+		return _zero0, errs.Wrap(err_12, "failed to decode request json")
+	}
+	return data, nil
 }
 
-func (req Request) ReadJSONLimit(maxBytes int64, target any) error {
+func (req Request) ReadJSONLimit[T any](maxBytes int64) (T, error) {
+	if req.raw == nil || req.raw.Body == nil {
+		var _zero0 T
+		return _zero0, errors.New("request body is empty")
+	}
+	body, err := io.ReadAll(io.LimitReader(req.raw.Body, maxBytes+1))
+	if err != nil {
+		var _zero0 T
+		return _zero0, err
+	}
+	if len(body) == 0 {
+		var _zero0 T
+		return _zero0, errors.New("request body is empty")
+	}
+	if int64(len(body)) > maxBytes {
+		var _zero0 T
+		return _zero0, fmt.Errorf("request body exceeds limit of %v bytes", maxBytes)
+	}
+	data := *new(T)
+	err_13 := json.ParseBytesInto(body, &data)
+	if err_13 != nil {
+		if isBodyEmptyError(err_13) {
+			var _zero0 T
+			return _zero0, errors.New("request body is empty")
+		}
+		var _zero0 T
+		return _zero0, errs.Wrap(err_13, "failed to decode request json")
+	}
+	return data, nil
+}
+
+func (req Request) ReadJSONLimitStrict[T any](maxBytes int64) (T, error) {
+	if req.raw == nil || req.raw.Body == nil {
+		var _zero0 T
+		return _zero0, errors.New("request body is empty")
+	}
+	body, err := io.ReadAll(io.LimitReader(req.raw.Body, maxBytes+1))
+	if err != nil {
+		var _zero0 T
+		return _zero0, err
+	}
+	if len(body) == 0 {
+		var _zero0 T
+		return _zero0, errors.New("request body is empty")
+	}
+	if int64(len(body)) > maxBytes {
+		var _zero0 T
+		return _zero0, fmt.Errorf("request body exceeds limit of %v bytes", maxBytes)
+	}
+	data := *new(T)
+	err_14 := json.ParseBytesIntoStrict(body, &data)
+	if err_14 != nil {
+		if isBodyEmptyError(err_14) {
+			var _zero0 T
+			return _zero0, errors.New("request body is empty")
+		}
+		var _zero0 T
+		return _zero0, errs.Wrap(err_14, "failed to decode request json")
+	}
+	return data, nil
+}
+
+func (req Request) Decode(target any) error {
+	if req.raw == nil || req.raw.Body == nil {
+		return errors.New("request body is empty")
+	}
+	err_15 := json.ReadInto(req.raw.Body, target)
+	if err_15 != nil {
+		if isBodyEmptyError(err_15) {
+			return errors.New("request body is empty")
+		}
+		return err_15
+	}
+	return nil
+}
+
+func (req Request) DecodeStrict(target any) error {
+	if req.raw == nil || req.raw.Body == nil {
+		return errors.New("request body is empty")
+	}
+	err_16 := json.ReadIntoStrict(req.raw.Body, target)
+	if err_16 != nil {
+		if isBodyEmptyError(err_16) {
+			return errors.New("request body is empty")
+		}
+		return err_16
+	}
+	return nil
+}
+
+func (req Request) DecodeAndClose(target any) error {
+	if req.raw == nil || req.raw.Body == nil {
+		return errors.New("request body is empty")
+	}
+	defer req.raw.Body.Close()
+	err_17 := json.ReadInto(req.raw.Body, target)
+	if err_17 != nil {
+		if isBodyEmptyError(err_17) {
+			return errors.New("request body is empty")
+		}
+		return err_17
+	}
+	return nil
+}
+
+func (req Request) DecodeLimit(maxBytes int64, target any) error {
+	if req.raw == nil || req.raw.Body == nil {
+		return errors.New("request body is empty")
+	}
 	body, err := io.ReadAll(io.LimitReader(req.raw.Body, maxBytes+1))
 	if err != nil {
 		return err
 	}
+	if len(body) == 0 {
+		return errors.New("request body is empty")
+	}
 	if int64(len(body)) > maxBytes {
 		return fmt.Errorf("request body exceeds limit of %v bytes", maxBytes)
 	}
-	return json.ParseBytesInto(body, target)
+	err_18 := json.ParseBytesInto(body, target)
+	if err_18 != nil {
+		if isBodyEmptyError(err_18) {
+			return errors.New("request body is empty")
+		}
+		return err_18
+	}
+	return nil
+}
+
+func (req Request) DecodeLimitStrict(maxBytes int64, target any) error {
+	if req.raw == nil || req.raw.Body == nil {
+		return errors.New("request body is empty")
+	}
+	body, err := io.ReadAll(io.LimitReader(req.raw.Body, maxBytes+1))
+	if err != nil {
+		return err
+	}
+	if len(body) == 0 {
+		return errors.New("request body is empty")
+	}
+	if int64(len(body)) > maxBytes {
+		return fmt.Errorf("request body exceeds limit of %v bytes", maxBytes)
+	}
+	err_19 := json.ParseBytesIntoStrict(body, target)
+	if err_19 != nil {
+		if isBodyEmptyError(err_19) {
+			return errors.New("request body is empty")
+		}
+		return err_19
+	}
+	return nil
 }
 
 func (req Request) GetQueryParam(key string) string {
@@ -893,8 +1258,8 @@ func (req Request) GetQueryInt(key string) (int, error) {
 	if value == "" {
 		return 0, fmt.Errorf("query parameter '%v' is required", key)
 	}
-	val, err_10 := parse.Int(value)
-	if err_10 != nil {
+	val, err_20 := parse.Int(value)
+	if err_20 != nil {
 		return 0, fmt.Errorf("query parameter '%v' must be an integer", key)
 	}
 	return val, nil
@@ -905,8 +1270,8 @@ func (req Request) GetQueryIntOr(key string, defaultValue int) int {
 	if value == "" {
 		return defaultValue
 	}
-	val, err_11 := parse.Int(value)
-	if err_11 != nil {
+	val, err_21 := parse.Int(value)
+	if err_21 != nil {
 		return defaultValue
 	}
 	return val
@@ -917,8 +1282,8 @@ func (req Request) GetQueryBool(key string) (bool, error) {
 	if value == "" {
 		return false, fmt.Errorf("query parameter '%v' is required", key)
 	}
-	val, err_12 := parse.Bool(value)
-	if err_12 != nil {
+	val, err_22 := parse.Bool(value)
+	if err_22 != nil {
 		return false, fmt.Errorf("query parameter '%v' must be a boolean", key)
 	}
 	return val, nil
@@ -929,8 +1294,8 @@ func (req Request) GetQueryBoolOr(key string, defaultValue bool) bool {
 	if value == "" {
 		return defaultValue
 	}
-	val, err_13 := parse.Bool(value)
-	if err_13 != nil {
+	val, err_23 := parse.Bool(value)
+	if err_23 != nil {
 		return defaultValue
 	}
 	return val
@@ -941,8 +1306,8 @@ func (req Request) GetQueryFloat(key string) (float64, error) {
 	if value == "" {
 		return 0.0, fmt.Errorf("query parameter '%v' is required", key)
 	}
-	val, err_14 := parse.Float64(value)
-	if err_14 != nil {
+	val, err_24 := parse.Float64(value)
+	if err_24 != nil {
 		return 0.0, fmt.Errorf("query parameter '%v' must be a number", key)
 	}
 	return val, nil
@@ -953,8 +1318,8 @@ func (req Request) GetQueryFloatOr(key string, defaultValue float64) float64 {
 	if value == "" {
 		return defaultValue
 	}
-	val, err_15 := parse.Float64(value)
-	if err_15 != nil {
+	val, err_25 := parse.Float64(value)
+	if err_25 != nil {
 		return defaultValue
 	}
 	return val
@@ -990,4 +1355,173 @@ func (req Request) IsPatch() bool {
 
 func (req Request) RealIP(trustedProxies ...string) string {
 	return RealIP(req.raw, trustedProxies...)
+}
+
+func (req Request) RequestID() string {
+	id := RequestIDFromContext(req.raw.Context())
+	if id != "" {
+		return id
+	}
+	return req.raw.Header.Get(HeaderXRequestID)
+}
+
+func (res Response) SSE() (*SSEWriter, error) {
+	return NewSSEWriter(res.raw)
+}
+
+type SSEEvent struct {
+	Event string
+	Data  string
+	ID    string
+}
+
+type SSEWriter struct {
+	w       http.ResponseWriter
+	flusher http.Flusher
+}
+
+func NewSSEWriter(w http.ResponseWriter) (*SSEWriter, error) {
+	if !func() bool { _, _isOk := w.(http.Flusher); return _isOk }() {
+		return nil, errors.New("streaming not supported: ResponseWriter does not implement http.Flusher")
+	}
+	flusher := w.(http.Flusher)
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+	flusher.Flush()
+	return &SSEWriter{w: w, flusher: flusher}, nil
+}
+
+func (s *SSEWriter) Send(event string, data string) error {
+	return writeSSE(s.w, s.flusher, "", event, data)
+}
+
+func (s *SSEWriter) SendWithID(id string, event string, data string) error {
+	return writeSSE(s.w, s.flusher, id, event, data)
+}
+
+func (s *SSEWriter) SendJSON(event string, value any) error {
+	data, err_26 := json.String(value)
+	if err_26 != nil {
+		return err_26
+	}
+	return s.Send(event, data)
+}
+
+func (s *SSEWriter) Comment(comment string) error {
+	b := strings.Builder{}
+	for _, line := range kukistring.Split(comment, "\n") {
+		line = kukistring.TrimRight(line, "\r")
+		_, _ = b.WriteString(": ")
+		_, _ = b.WriteString(line)
+		_, _ = b.WriteString("\n")
+	}
+	_, _ = b.WriteString("\n")
+	_, err_27 := io.WriteString(s.w, b.String())
+	if err_27 != nil {
+		return err_27
+	}
+	s.flusher.Flush()
+	return nil
+}
+
+func WriteSSE(w io.Writer, event string, data string) error {
+	return writeSSE(w, nil, "", event, data)
+}
+
+func WriteSSEWithID(w io.Writer, id string, event string, data string) error {
+	return writeSSE(w, nil, id, event, data)
+}
+
+func writeSSE(w io.Writer, flusher http.Flusher, id string, event string, data string) error {
+	b := strings.Builder{}
+	if id != "" {
+		_, _ = b.WriteString("id: ")
+		_, _ = b.WriteString(id)
+		_, _ = b.WriteString("\n")
+	}
+	if event != "" {
+		_, _ = b.WriteString("event: ")
+		_, _ = b.WriteString(event)
+		_, _ = b.WriteString("\n")
+	}
+	for _, line := range kukistring.Split(data, "\n") {
+		line = kukistring.TrimRight(line, "\r")
+		_, _ = b.WriteString("data: ")
+		_, _ = b.WriteString(line)
+		_, _ = b.WriteString("\n")
+	}
+	_, _ = b.WriteString("\n")
+	_, err_28 := io.WriteString(w, b.String())
+	if err_28 != nil {
+		return err_28
+	}
+	if flusher != nil {
+		flusher.Flush()
+	} else if f, _isOk := w.(http.Flusher); _isOk {
+		f.Flush()
+	}
+	return nil
+}
+
+func ReadSSE(r io.Reader, onEvent func(SSEEvent) bool) error {
+	scanner := bufio.NewScanner(r)
+	scanner.Buffer([]byte{}, 1048576)
+	currEvent := ""
+	currData := ""
+	currID := ""
+	hasData := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		line = kukistring.TrimRight(line, "\r")
+		if line == "" {
+			if hasData || currEvent != "" || currID != "" {
+				evt := SSEEvent{Event: currEvent, Data: currData, ID: currID}
+				if !onEvent(evt) {
+					return nil
+				}
+				currEvent = ""
+				currData = ""
+				currID = ""
+				hasData = false
+			}
+			continue
+		}
+		if kukistring.HasPrefix(line, ":") {
+			continue
+		}
+		if line == "data" {
+			if !hasData {
+				currData = ""
+				hasData = true
+			} else {
+				currData = fmt.Sprintf("%v\n", currData)
+			}
+		} else if kukistring.HasPrefix(line, "data:") {
+			chunk := kukistring.TrimPrefix(line, "data:")
+			if kukistring.HasPrefix(chunk, " ") {
+				chunk = kukistring.TrimPrefix(chunk, " ")
+			}
+			if !hasData {
+				currData = chunk
+				hasData = true
+			} else {
+				currData = fmt.Sprintf("%v\n%v", currData, chunk)
+			}
+		} else if kukistring.HasPrefix(line, "event:") {
+			currEvent = kukistring.TrimSpace(kukistring.TrimPrefix(line, "event:"))
+		} else if kukistring.HasPrefix(line, "id:") {
+			currID = kukistring.TrimSpace(kukistring.TrimPrefix(line, "id:"))
+		}
+	}
+	err := scanner.Err()
+	if err != nil {
+		return err
+	}
+	if hasData || currEvent != "" || currID != "" {
+		evt := SSEEvent{Event: currEvent, Data: currData, ID: currID}
+		onEvent(evt)
+	}
+	return nil
 }
