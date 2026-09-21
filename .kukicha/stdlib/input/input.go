@@ -15,22 +15,33 @@ import (
 
 var ErrCanceled = errors.New("input: selection canceled")
 
+var sharedStdin *bufio.Reader
+
+var sharedStdinFile *os.File
+
+func readStdinLine() (string, error) {
+	if sharedStdin == nil || sharedStdinFile != os.Stdin {
+		sharedStdin = bufio.NewReader(os.Stdin)
+		sharedStdinFile = os.Stdin
+	}
+	text, err := sharedStdin.ReadString('\n')
+	if err != nil {
+		return kukistring.TrimSpace(text), err
+	}
+	return kukistring.TrimSpace(text), nil
+}
+
 func ReadPasswordAllowEcho(prompt string) (string, error) {
 	if prompt != "" {
 		fmt.Print(prompt)
 	}
 	if !termpkg.IsTTY(os.Stdin) {
-		reader := bufio.NewReader(os.Stdin)
-		text, err_1 := reader.ReadString('\n')
-		if err_1 != nil {
-			return "", err_1
-		}
-		return kukistring.TrimSpace(text), nil
+		return readStdinLine()
 	}
 	fd := int(os.Stdin.Fd())
-	bytes, err_2 := term.ReadPassword(fd)
-	if err_2 != nil {
-		return "", err_2
+	bytes, err_1 := term.ReadPassword(fd)
+	if err_1 != nil {
+		return "", err_1
 	}
 	fmt.Println()
 	return string(bytes), nil
@@ -40,12 +51,7 @@ func ReadLine(prompt string) (string, error) {
 	if prompt != "" {
 		fmt.Print(prompt)
 	}
-	reader := bufio.NewReader(os.Stdin)
-	text, err_3 := reader.ReadString('\n')
-	if err_3 != nil {
-		return "", err_3
-	}
-	return kukistring.TrimSpace(text), nil
+	return readStdinLine()
 }
 
 func ReadPassword(prompt string) (string, error) {
@@ -56,19 +62,19 @@ func ReadPassword(prompt string) (string, error) {
 		return "", errors.New("input: stdin is not a TTY; password input requires a terminal (use ReadPasswordAllowEcho for non-interactive use)")
 	}
 	fd := int(os.Stdin.Fd())
-	bytes, err_4 := term.ReadPassword(fd)
-	if err_4 != nil {
-		return "", err_4
+	bytes, err_2 := term.ReadPassword(fd)
+	if err_2 != nil {
+		return "", err_2
 	}
 	fmt.Println()
 	return string(bytes), nil
 }
 
 func Confirm(prompt string) (bool, error) {
-	answer, err_5 := ReadLine(fmt.Sprintf("%v [y/N]: ", prompt))
-	if err_5 != nil {
-		err_5 = fmt.Errorf("confirm prompt: %w", err_5)
-		return false, err_5
+	answer, err_3 := ReadLine(fmt.Sprintf("%v [y/N]: ", prompt))
+	if err_3 != nil {
+		err_3 = fmt.Errorf("confirm prompt: %w", err_3)
+		return false, err_3
 	}
 	lower := kukistring.ToLower(kukistring.TrimSpace(answer))
 	return lower == "y" || lower == "yes", nil
@@ -88,17 +94,17 @@ func chooseIndex(prompt string, display []string) (int, error) {
 		fmt.Printf("  %v) %v\n", i+1, opt)
 	}
 	fmt.Println("")
-	raw, err_6 := ReadLine("Enter number (or q to quit): ")
-	if err_6 != nil {
-		err_6 = fmt.Errorf("choose prompt: %w", err_6)
-		return 0, err_6
+	raw, err_4 := ReadLine("Enter number (or q to quit): ")
+	if err_4 != nil {
+		err_4 = fmt.Errorf("choose prompt: %w", err_4)
+		return 0, err_4
 	}
 	trimmed := kukistring.TrimSpace(raw)
 	if trimmed == "" || trimmed == "q" || trimmed == "Q" {
 		return -1, ErrCanceled
 	}
-	val, err_7 := parse.Int(trimmed)
-	if err_7 != nil {
+	val, err_5 := parse.Int(trimmed)
+	if err_5 != nil {
 		return -1, fmt.Errorf("invalid selection: %v", trimmed)
 	}
 	if val < 1 || val > len(display) {
@@ -237,18 +243,18 @@ func (f *Form) Bool(key string) bool {
 func promptField(w *os.File, reader *bufio.Reader, field FormField) (string, error) {
 	switch field.Kind {
 	case FieldKindText:
-		line, err_8 := readLineFrom(w, reader, field.Prompt)
-		if err_8 != nil {
-			return "", err_8
+		line, err_6 := readLineFrom(w, reader, field.Prompt)
+		if err_6 != nil {
+			return "", err_6
 		}
 		if line == "" && field.Default != "" {
 			return field.Default, nil
 		}
 		return line, nil
 	case FieldKindConfirm:
-		line, err_9 := readLineFrom(w, reader, fmt.Sprintf("%v[y/N]: ", field.Prompt))
-		if err_9 != nil {
-			return "", err_9
+		line, err_7 := readLineFrom(w, reader, fmt.Sprintf("%v[y/N]: ", field.Prompt))
+		if err_7 != nil {
+			return "", err_7
 		}
 		lower := kukistring.ToLower(kukistring.TrimSpace(line))
 		if lower == "y" || lower == "yes" {
@@ -269,16 +275,16 @@ func promptChoose(w *os.File, reader *bufio.Reader, field FormField) (string, er
 	for i, opt := range field.Options {
 		fmt.Fprintf(w, "  %v) %v\n", i+1, opt)
 	}
-	raw, err_10 := readLineFrom(w, reader, "Enter number (or q to quit): ")
-	if err_10 != nil {
-		return "", err_10
+	raw, err_8 := readLineFrom(w, reader, "Enter number (or q to quit): ")
+	if err_8 != nil {
+		return "", err_8
 	}
 	trimmed := kukistring.TrimSpace(raw)
 	if trimmed == "" || trimmed == "q" || trimmed == "Q" {
 		return "", errors.New("cancelled")
 	}
-	val, err_11 := parse.Int(trimmed)
-	if err_11 != nil {
+	val, err_9 := parse.Int(trimmed)
+	if err_9 != nil {
 		return "", fmt.Errorf("invalid selection: %v", trimmed)
 	}
 	if val < 1 || val > len(field.Options) {
@@ -291,9 +297,9 @@ func readLineFrom(w *os.File, reader *bufio.Reader, prompt string) (string, erro
 	if prompt != "" {
 		fmt.Fprint(w, prompt)
 	}
-	text, err_12 := reader.ReadString('\n')
-	if err_12 != nil {
-		return "", err_12
+	text, err_10 := reader.ReadString('\n')
+	if err_10 != nil {
+		return "", err_10
 	}
 	return kukistring.TrimSpace(text), nil
 }

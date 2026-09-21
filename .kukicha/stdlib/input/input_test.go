@@ -201,3 +201,20 @@ func TestChooseValueCancel(t *testing.T) {
 	_, err := input.ChooseValue("pick:", []string{"a", "b"})
 	test.AssertErrorIs(t, err, input.ErrCanceled)
 }
+
+func TestReadLineSharesBufferedStdin(t *testing.T) {
+	withStdin(t, "first\nsecond\nthird\n")
+	a, aerr := input.ReadLine("a: ")
+	test.AssertNoError(t, aerr)
+	test.AssertEqual(t, a, "first")
+	b, berr := input.ReadLine("b: ")
+	test.AssertEqual(t, b, "second")
+	if berr == nil {
+		test.AssertTrue(t, true)
+	} else {
+		test.AssertTrue(t, kukistring.Contains(fmt.Sprintf("%v", berr), "EOF"))
+	}
+	c, cerr := input.ReadLine("c: ")
+	test.AssertEqual(t, c, "third")
+	test.AssertTrue(t, (cerr == nil) || kukistring.Contains(fmt.Sprintf("%v", cerr), "EOF"))
+}
