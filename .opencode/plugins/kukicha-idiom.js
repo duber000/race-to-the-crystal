@@ -9,11 +9,10 @@
 //            file before moving on (the write already landed on disk).
 // WARNINGS -> appended to the tool output; visible but non-blocking.
 //
-// Loaded automatically by opencode from .opencode/plugin/. No build step.
+// Loaded automatically by opencode from .opencode/plugins/. No build step.
 
+import { Plugin } from "@opencode/plugin"
 import { readFile } from "node:fs/promises"
-
-/** @typedef {import("@opencode-ai/plugin").Plugin} Plugin */
 
 // Tools that land file content on disk.
 const WRITE_TOOLS = new Set(["write", "edit", "patch", "multiedit"])
@@ -154,12 +153,31 @@ function fmt(entries) {
     return entries.map((e) => `  L${e.line}: ${e.text}\n        -> ${e.msg}`).join("\n")
 }
 
-/** @type {Plugin} */
-export const KukichaIdiom = async () => {
-    return {
-        "tool.execute.after": async (input, output) => {
-            if (!WRITE_TOOLS.has(input.tool)) return
-            const args = input.args || {}
+// V1 wrote warnings onto the tool's text output. In V2 the result content is
+// a string or a list of content parts; append accordingly.
+function appendNote(result, note) {
+    const content = result.content
+    if (content === undefined || content === "") return { ...result, content: note }
+    if (typeof content === "string") return { ...result, content: content + note }
+    const parts = [...content]
+    const lastText = parts
+        .map((p) => (typeof p.text === "string" ? true : false))
+        .lastIndexOf(true)
+    if (lastText >= 0) {
+        parts[lastText] = { ...parts[lastText], text: parts[lastText].text + note }
+    } else {
+        parts.push({ type: "text", text: note })
+    }
+    return { ...result, content: parts }
+}
+
+export default Plugin.define({
+    id: "kukicha-idiom",
+    async setup(ctx) {
+        await ctx.tool.hook("execute.after", async (event) => {
+            if (event.status !== "completed") return
+            if (!WRITE_TOOLS.has(event.tool)) return
+            const args = (event.input && typeof event.input === "object" ? event.input : {}) || {}
             const path = args.filePath || args.path || args.file
             if (typeof path !== "string") return
             if (!path.endsWith(".kuki")) return
@@ -190,7 +208,7 @@ export const KukichaIdiom = async () => {
             if (warnings.length) {
                 const note =
                     `\n\n⚠️  Kukicha idiom warnings in ${path}:\n` + fmt(warnings)
-                output.output = (output.output || "") + note
+                event.result = appendNote(event.result, note)
             }
 
             if (errors.length) {
@@ -200,6 +218,6 @@ export const KukichaIdiom = async () => {
                         fmt(errors),
                 )
             }
-        },
-    }
-}
+        })
+    },
+})
