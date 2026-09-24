@@ -60,8 +60,9 @@ func TestDeployToken(t: reference testing.T)
     gs.createTokensForPlayer(types.PlayerID("p1"))
     tok := gs.DeployToken(types.PlayerID("p1"), 10, types.Pos(1, 1))
     test.AssertNotNil(t, tok)
-    test.AssertTrue(t, tok.isDeployed)
-    test.AssertEqual(t, tok.position, types.Pos(1, 1))
+    if tok isnt empty
+        test.AssertTrue(t, tok.isDeployed)
+        test.AssertEqual(t, tok.position, types.Pos(1, 1))
 
 func TestStartGame(t: reference testing.T)
     gs := CreateGame(2)

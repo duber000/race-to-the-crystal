@@ -173,7 +173,7 @@ func BuildScore(source string) (float64, error) {
 	}
 	defer cleanup()
 	path := files.Join(dir, "candidate.kuki")
-	err_3 := files.WriteString(path, source)
+	err_3 := files.WriteString(source, path)
 	if err_3 != nil {
 		return 0, err_3
 	}
@@ -188,7 +188,7 @@ func RunScore(source string, metric func(string) (float64, error)) (float64, err
 	}
 	defer cleanup()
 	path := files.Join(dir, "candidate.kuki")
-	err_4 := files.WriteString(path, source)
+	err_4 := files.WriteString(source, path)
 	if err_4 != nil {
 		return 0, err_4
 	}

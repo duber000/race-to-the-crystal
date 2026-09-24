@@ -54,4 +54,5 @@ func TestBoardGetCell(t: reference testing.T)
     b := NewBoard()
     cell := b.getCell(5, 7)
     test.AssertNotNil(t, cell)
-    test.AssertEqual(t, cell.position, types.Pos(5, 7))
+    if cell isnt empty
+        test.AssertEqual(t, cell.position, types.Pos(5, 7))

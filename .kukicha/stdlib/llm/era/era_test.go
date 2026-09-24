@@ -5,6 +5,7 @@ package era_test
 import (
 	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
 	"kukicha.org/kukicha/stdlib/llm/era"
+	"kukicha.org/kukicha/stdlib/shell"
 	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 )
@@ -83,4 +84,26 @@ func TestRunLoopCancelled(t *testing.T) {
 	test.AssertNoError(t, err)
 	test.AssertEqual(t, len(tree), 1)
 	test.AssertEqual(t, winner.Source, "BASELINE")
+}
+
+func TestBuildScore(t *testing.T) {
+	if !shell.IsInstalled("kukicha") {
+		t.Skip("kukicha binary not on PATH")
+	}
+	score, err := era.BuildScore("func main()\n    print(\"candidate\")\n")
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, score, 1.0)
+}
+
+func stubMetric(out string) (float64, error) {
+	return 42.0, nil
+}
+
+func TestRunScore(t *testing.T) {
+	if !shell.IsInstalled("kukicha") {
+		t.Skip("kukicha binary not on PATH")
+	}
+	score, err := era.RunScore("func main()\n    print(\"hello\")\n", stubMetric)
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, score, 42.0)
 }
