@@ -89,6 +89,8 @@ All numeric game constants live in `shared/constants/`. All enums live in `share
 ### Go version
 Requires Go 1.26+. See `go.mod` for the current version.
 
+### Tracked vendored stdlib
+Unlike most consumer repos where `.kukicha/` is gitignored, `race-to-the-crystal` tracks `.kukicha/stdlib/` directly in git. After running `kukicha init`, stage `.kukicha/stdlib/` with `git add .kukicha/stdlib/`.
 
 <!-- kukicha:start -->
 # Kukicha
