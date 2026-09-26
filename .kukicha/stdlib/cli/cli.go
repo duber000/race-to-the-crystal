@@ -295,6 +295,7 @@ func exitWithCode(code int) {
 
 type handlerError struct {
 	inner error
+	args  Args
 }
 
 func (e handlerError) Error() string {
@@ -315,7 +316,11 @@ func Error(msg string) {
 func Run(app *Command) {
 	err := RunWithArgs(app, os.Args)
 	if he, _isOk := err.(handlerError); _isOk {
-		fmt.Fprintf(os.Stderr, "error: %v\n", he.inner)
+		if IsJSON(he.args) {
+			PrintJSON(map[string]any{"error": fmt.Sprintf("%v", he.inner)})
+		} else {
+			fmt.Fprintf(os.Stderr, "error: %v\n", he.inner)
+		}
 		exitWithCode(1)
 		return
 	}
@@ -446,7 +451,7 @@ func RunWithArgs(app *Command, args []string) error {
 		if oc.HandlerE != nil {
 			herr := oc.HandlerE(oc.Args)
 			if herr != nil {
-				return handlerError{inner: herr}
+				return handlerError{inner: herr, args: oc.Args}
 			}
 			return nil
 		}

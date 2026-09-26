@@ -5,9 +5,11 @@ package cli_test
 import (
 	"errors"
 	"fmt"
+	"io"
 	"kukicha.org/kukicha/stdlib/cli"
 	kukistring "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/test"
+	"os"
 	"testing"
 )
 
@@ -704,4 +706,86 @@ func TestPrintJSONAndRespondPretty(t *testing.T) {
 	cli.PrintJSON(map[string]string{"status": "healthy"})
 	args := cli.NewArgs(map[string]string{"json": "true"})
 	args.RespondPretty(map[string]string{"status": "ok"})
+}
+
+func TestActionE_RunNonJSON(t *testing.T) {
+	oldArgs := os.Args
+	oldStderr := os.Stderr
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stderr = w
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stderr = oldStderr
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	os.Args = []string{"demo", "work"}
+	workCmd := cli.NewCommand("work", "fails at runtime").ActionE(failingAction)
+	app := cli.WithCommands(cli.BoolGlobalFlag(cli.New("demo"), "json", "json output", false), workCmd)
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 1)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "error: db open failed")
+}
+
+func TestActionE_RunJSON(t *testing.T) {
+	oldArgs := os.Args
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stdout = oldStdout
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	os.Args = []string{"demo", "--json", "work"}
+	workCmd := cli.NewCommand("work", "fails at runtime").ActionE(failingAction)
+	app := cli.WithCommands(cli.BoolGlobalFlag(cli.New("demo"), "json", "json output", false), workCmd)
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 1)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "\"error\"")
+	test.AssertContains(t, out, "db open failed")
+}
+
+func TestDefaultActionE_RunJSON(t *testing.T) {
+	oldArgs := os.Args
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stdout = oldStdout
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	os.Args = []string{"demo", "--json"}
+	app := cli.DefaultActionE(cli.BoolGlobalFlag(cli.New("demo"), "json", "json output", false), failingAction)
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 1)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "\"error\"")
+	test.AssertContains(t, out, "db open failed")
 }

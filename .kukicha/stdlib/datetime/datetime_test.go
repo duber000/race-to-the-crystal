@@ -5,6 +5,7 @@ package datetime_test
 import (
 	"fmt"
 	"kukicha.org/kukicha/stdlib/datetime"
+	kukistring "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/test"
 	"testing"
 	"time"
@@ -192,6 +193,15 @@ func TestNowISO(t *testing.T) {
 		parsed, err_5 := time.Parse(time.RFC3339, s)
 		if err_5 != nil {
 			panic(fmt.Sprintf("parse: %v", err_5))
+		}
+		test.AssertTrue(t, time.Since(parsed) < time.Minute)
+	})
+	t.Run("NowISOUTC ends in Z and round-trips through RFC3339", func(t *testing.T) {
+		s := datetime.NowISOUTC()
+		test.AssertTrue(t, kukistring.HasSuffix(s, "Z"))
+		parsed, err_6 := time.Parse(time.RFC3339, s)
+		if err_6 != nil {
+			panic(fmt.Sprintf("parse: %v", err_6))
 		}
 		test.AssertTrue(t, time.Since(parsed) < time.Minute)
 	})

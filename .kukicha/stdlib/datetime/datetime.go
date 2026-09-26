@@ -211,6 +211,10 @@ func NowISO() string {
 	return time.Now().Format(time.RFC3339)
 }
 
+func NowISOUTC() string {
+	return time.Now().UTC().Format(time.RFC3339)
+}
+
 func humanRelative(d Duration) string {
 	secs := int64(d.Seconds())
 	if secs < 60 && secs > -60 {
