@@ -1,3 +1,18 @@
+---
+type: Agent Instructions
+title: AGENTS.md — race-to-the-crystal repository guide
+description: Architecture, commands, conventions, and vendored stdlib notes for agents working in race-to-the-crystal.
+tags: [agents, conventions, kukicha, ebitengine, game, babylonjs, websocket]
+generated: { by: antigravity/gemini-3.8-flash, at: 2026-09-26T12:55:00-04:00 }
+verified:
+stale_after: 2026-12-26T00:00:00Z
+status: stable
+sources:
+  - id: repo-tree
+    resource: /
+    title: Repository source tree
+---
+
 # Race to the Crystal
 
 ## Commands
