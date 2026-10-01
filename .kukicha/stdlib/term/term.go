@@ -16,8 +16,8 @@ func IsTTY(f *os.File) bool {
 	if f == nil {
 		return false
 	}
-	info, err_1 := f.Stat()
-	if err_1 != nil {
+	info, err := f.Stat()
+	if err != nil {
 		return false
 	}
 	return info.Mode()&os.ModeCharDevice != 0
@@ -60,7 +60,7 @@ func VisibleWidth(s string) int {
 			for i < n {
 				b := int(s[i])
 				i = i + 1
-				if func() bool { _cmp_2 := 0x40; _cmp_3 := b; return _cmp_2 <= _cmp_3 && _cmp_3 <= 0x7e }() {
+				if func() bool { _cmp_1 := 0x40; _cmp_2 := b; return _cmp_1 <= _cmp_2 && _cmp_2 <= 0x7e }() {
 					break
 				}
 			}
@@ -112,8 +112,8 @@ func Width() int {
 	if cols == "" {
 		return 80
 	}
-	n, err_4 := strconv.Atoi(cols)
-	if err_4 != nil {
+	n, err := strconv.Atoi(cols)
+	if err != nil {
 		return 80
 	}
 	if n <= 0 {

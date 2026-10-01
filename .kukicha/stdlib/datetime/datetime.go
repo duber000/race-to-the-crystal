@@ -115,10 +115,10 @@ func ParseCustom(value string, layout string) (Time, error) {
 }
 
 func ParseInLocation(value string, format Layout, location string) (Time, error) {
-	loc, err_1 := time.LoadLocation(location)
-	if err_1 != nil {
+	loc, err := time.LoadLocation(location)
+	if err != nil {
 		var _zero0 Time
-		return _zero0, err_1
+		return _zero0, err
 	}
 	return time.ParseInLocation(goLayout(format), value, loc)
 }

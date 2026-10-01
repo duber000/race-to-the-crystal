@@ -18,9 +18,9 @@ type ReleaseOptions struct {
 }
 
 func ListTags(repo string) ([]string, error) {
-	raw, err_1 := shell.Output("gh", "api", fmt.Sprintf("repos/%v/tags", repo), "--paginate", "--jq", ".[].name")
-	if err_1 != nil {
-		return []string{}, fmt.Errorf("failed to fetch tags for %v: %v", repo, err_1)
+	raw, err := shell.Output("gh", "api", fmt.Sprintf("repos/%v/tags", repo), "--paginate", "--jq", ".[].name")
+	if err != nil {
+		return []string{}, fmt.Errorf("failed to fetch tags for %v: %v", repo, err)
 	}
 	if kukistring.IsBlank(raw) {
 		return []string{}, nil
@@ -46,35 +46,35 @@ func TagExists(repo string, tag string) (bool, error) {
 }
 
 func DefaultBranch(repo string) (string, error) {
-	branch, err_2 := shell.Output("gh", "repo", "view", repo, "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name")
-	if err_2 != nil {
-		return "", fmt.Errorf("failed to get default branch for %v: %v", repo, err_2)
+	branch, err := shell.Output("gh", "repo", "view", repo, "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name")
+	if err != nil {
+		return "", fmt.Errorf("failed to get default branch for %v: %v", repo, err)
 	}
 	return kukistring.TrimSpace(branch), nil
 }
 
 func CurrentBranch() (string, error) {
-	branch, err_3 := shell.Output("git", "rev-parse", "--abbrev-ref", "HEAD")
-	if err_3 != nil {
-		err_3 = fmt.Errorf("failed to get current branch: %w", err_3)
-		return "", err_3
+	branch, err := shell.Output("git", "rev-parse", "--abbrev-ref", "HEAD")
+	if err != nil {
+		err = fmt.Errorf("failed to get current branch: %w", err)
+		return "", err
 	}
 	return kukistring.TrimSpace(branch), nil
 }
 
 func ShortCommit() (string, error) {
-	sha, err_4 := shell.Output("git", "rev-parse", "--short", "HEAD")
-	if err_4 != nil {
-		err_4 = fmt.Errorf("failed to get short commit: %w", err_4)
-		return "", err_4
+	sha, err := shell.Output("git", "rev-parse", "--short", "HEAD")
+	if err != nil {
+		err = fmt.Errorf("failed to get short commit: %w", err)
+		return "", err
 	}
 	return kukistring.TrimSpace(sha), nil
 }
 
 func ListReleases(repo string) ([]string, error) {
-	raw, err_5 := shell.Output("gh", "api", fmt.Sprintf("repos/%v/releases", repo), "--paginate", "--jq", ".[].tag_name")
-	if err_5 != nil {
-		return []string{}, fmt.Errorf("failed to fetch releases for %v: %v", repo, err_5)
+	raw, err := shell.Output("gh", "api", fmt.Sprintf("repos/%v/releases", repo), "--paginate", "--jq", ".[].tag_name")
+	if err != nil {
+		return []string{}, fmt.Errorf("failed to fetch releases for %v: %v", repo, err)
 	}
 	if kukistring.IsBlank(raw) {
 		return []string{}, nil
@@ -135,28 +135,28 @@ func RepoExists(repo string) (bool, error) {
 }
 
 func CurrentUser() (string, error) {
-	login, err_6 := shell.Output("gh", "api", "user", "--jq", ".login")
-	if err_6 != nil {
-		err_6 = fmt.Errorf("failed to get current user: %w", err_6)
-		return "", err_6
+	login, err := shell.Output("gh", "api", "user", "--jq", ".login")
+	if err != nil {
+		err = fmt.Errorf("failed to get current user: %w", err)
+		return "", err
 	}
 	return kukistring.TrimSpace(login), nil
 }
 
 func Clone(url string, path string) error {
-	_, err_7 := shell.Output("git", "clone", url, path)
-	if err_7 != nil {
-		err_7 = fmt.Errorf("clone failed: %w", err_7)
-		return err_7
+	_, err := shell.Output("git", "clone", url, path)
+	if err != nil {
+		err = fmt.Errorf("clone failed: %w", err)
+		return err
 	}
 	return nil
 }
 
 func CloneShallow(url string, path string, depth int) error {
-	_, err_8 := shell.Output("git", "clone", "--depth", fmt.Sprintf("%v", depth), url, path)
-	if err_8 != nil {
-		err_8 = fmt.Errorf("shallow clone failed: %w", err_8)
-		return err_8
+	_, err := shell.Output("git", "clone", "--depth", fmt.Sprintf("%v", depth), url, path)
+	if err != nil {
+		err = fmt.Errorf("shallow clone failed: %w", err)
+		return err
 	}
 	return nil
 }

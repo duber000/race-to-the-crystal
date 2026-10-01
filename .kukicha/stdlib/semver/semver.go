@@ -71,16 +71,16 @@ func Parse(tag string) (Version, error) {
 			return Version{}, fmt.Errorf("invalid semver: leading zero not allowed: %v", tag)
 		}
 	}
-	major, err_1 := parse.Int(parts[0])
+	major, err := parse.Int(parts[0])
+	if err != nil {
+		return Version{}, fmt.Errorf("invalid semver: %v", tag)
+	}
+	minor, err_1 := parse.Int(parts[1])
 	if err_1 != nil {
 		return Version{}, fmt.Errorf("invalid semver: %v", tag)
 	}
-	minor, err_2 := parse.Int(parts[1])
+	patch, err_2 := parse.Int(parts[2])
 	if err_2 != nil {
-		return Version{}, fmt.Errorf("invalid semver: %v", tag)
-	}
-	patch, err_3 := parse.Int(parts[2])
-	if err_3 != nil {
 		return Version{}, fmt.Errorf("invalid semver: %v", tag)
 	}
 	if major < 0 || minor < 0 || patch < 0 {
@@ -109,8 +109,8 @@ func Format(v Version) string {
 }
 
 func Valid(tag string) bool {
-	_, err_4 := Parse(tag)
-	if err_4 != nil {
+	_, err := Parse(tag)
+	if err != nil {
 		return false
 	}
 	return true
@@ -149,8 +149,8 @@ func Highest(tags []string) (string, error) {
 	}
 	parsed := make([]Version, 0, len(valid))
 	for _, tag := range valid {
-		v, err_5 := Parse(tag)
-		if err_5 != nil {
+		v, err := Parse(tag)
+		if err != nil {
 			continue
 		}
 		parsed = append(parsed, v)

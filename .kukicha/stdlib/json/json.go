@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"encoding/json/jsontext"
 	jsonv2 "encoding/json/v2"
-	"errors"
+	kukierrors "errors"
 	"fmt"
 	"io"
 	errs "kukicha.org/kukicha/stdlib/errors"
@@ -304,7 +304,7 @@ type Frozen struct {
 func ParseBytesFrozen(data []byte) (Frozen, error) {
 	v := jsontext.Value(data)
 	if !v.IsValid() {
-		return Frozen{}, errors.New("invalid json")
+		return Frozen{}, kukierrors.New("invalid json")
 	}
 	cp := v.Clone()
 	err_13 := cp.Canonicalize()
@@ -512,7 +512,7 @@ func DecodeStringWith[T any](c Codec, data string) (T, error) {
 	}
 	if rt.Kind() == reflect.Interface && !decodedFitsInterface(v, rt) {
 		var _zero0 T
-		return _zero0, errors.New("json: decoded value does not implement the requested interface type")
+		return _zero0, kukierrors.New("json: decoded value does not implement the requested interface type")
 	}
 	return v.(T), nil
 }
@@ -531,7 +531,7 @@ func DecodeWith[T any](c Codec, data []byte) (T, error) {
 	}
 	if rt.Kind() == reflect.Interface && !decodedFitsInterface(v, rt) {
 		var _zero0 T
-		return _zero0, errors.New("json: decoded value does not implement the requested interface type")
+		return _zero0, kukierrors.New("json: decoded value does not implement the requested interface type")
 	}
 	return v.(T), nil
 }
@@ -698,15 +698,15 @@ type Invalid struct {
 
 func (Invalid) isLookupResult() {}
 
-var ErrPathNotFound = errors.New("json: path not found")
+var ErrPathNotFound = kukierrors.New("json: path not found")
 
-var ErrTypeMismatch = errors.New("json: value is not of the expected type")
+var ErrTypeMismatch = kukierrors.New("json: value is not of the expected type")
 
 func walkSegments(data []byte, segs []PathSegment) (jsontext.Value, error) {
 	if len(segs) == 0 {
 		v := jsontext.Value(data)
 		if !v.IsValid() {
-			return nil, errors.New("invalid json")
+			return nil, kukierrors.New("invalid json")
 		}
 		return v.Clone(), nil
 	}
@@ -730,7 +730,7 @@ func walkSegmentsDec(dec *jsontext.Decoder, segs []PathSegment) (jsontext.Value,
 	if k, _isOk := head.(Key); _isOk {
 		return walkObjectKey(dec, k.Name, rest)
 	}
-	return nil, errors.New("json: unreachable path segment kind")
+	return nil, kukierrors.New("json: unreachable path segment kind")
 }
 
 func walkObjectKey(dec *jsontext.Decoder, key string, rest []PathSegment) (jsontext.Value, error) {
@@ -793,7 +793,7 @@ func wrapNotFound(msg string) error {
 
 func valueToJSONValue(v jsontext.Value) (JSONValue, error) {
 	if !v.IsValid() {
-		return Null{}, errors.New("invalid json value")
+		return Null{}, kukierrors.New("invalid json value")
 	}
 	raw := *new(any)
 	err := jsonv2.Unmarshal(v, &raw)

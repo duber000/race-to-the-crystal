@@ -13,16 +13,16 @@ import (
 )
 
 func captureToFile(t *testing.T) (*os.File, string) {
-	f, err_1 := os.CreateTemp("", "kuki-log-test-*.log")
-	if err_1 != nil {
+	f, err := os.CreateTemp("", "kuki-log-test-*.log")
+	if err != nil {
 		panic("CreateTemp failed")
 	}
 	return f, f.Name()
 }
 
 func readAll(t *testing.T, path string) string {
-	bytes, err_2 := os.ReadFile(path)
-	if err_2 != nil {
+	bytes, err := os.ReadFile(path)
+	if err != nil {
 		panic("ReadFile failed")
 	}
 	return fmt.Sprintf("%s", bytes)

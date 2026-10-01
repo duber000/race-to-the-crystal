@@ -132,9 +132,9 @@ func ProposeRewrite(ask func(string) (string, error), task Task, parent Candidat
 		blocks = append(blocks, safe.Wrap("IDEAS", ideas))
 	}
 	prompt := safe.Frame(instructions, blocks)
-	raw, err_1 := ask(prompt)
-	if err_1 != nil {
-		return "", err_1
+	raw, err := ask(prompt)
+	if err != nil {
+		return "", err
 	}
 	return stripFences(raw), nil
 }
@@ -159,9 +159,9 @@ func ProposeRecombination(ask func(string) (string, error), task Task, top []Can
 		blocks = append(blocks, safe.Wrap("IDEAS", ideas))
 	}
 	prompt := safe.Frame(instructions, blocks)
-	raw, err_2 := ask(prompt)
-	if err_2 != nil {
-		return "", err_2
+	raw, err := ask(prompt)
+	if err != nil {
+		return "", err
 	}
 	return stripFences(raw), nil
 }
@@ -173,9 +173,9 @@ func BuildScore(source string) (float64, error) {
 	}
 	defer cleanup()
 	path := files.Join(dir, "candidate.kuki")
-	err_3 := files.WriteString(source, path)
-	if err_3 != nil {
-		return 0, err_3
+	err := files.WriteString(source, path)
+	if err != nil {
+		return 0, err
 	}
 	shell.Output("kukicha", "build", "--json", "--skip-build", path)
 	return 1.0, nil
@@ -188,26 +188,26 @@ func RunScore(source string, metric func(string) (float64, error)) (float64, err
 	}
 	defer cleanup()
 	path := files.Join(dir, "candidate.kuki")
-	err_4 := files.WriteString(source, path)
-	if err_4 != nil {
-		return 0, err_4
+	err := files.WriteString(source, path)
+	if err != nil {
+		return 0, err
 	}
-	out, err_5 := shell.Output("kukicha", "run", path)
-	if err_5 != nil {
-		return 0, err_5
+	out, err_1 := shell.Output("kukicha", "run", path)
+	if err_1 != nil {
+		return 0, err_1
 	}
 	return metric(out)
 }
 
 func BenchScore(source string, setup func(string) (string, error), benchName string) (float64, error) {
-	workDir, err_6 := setup(source)
-	if err_6 != nil {
-		return 0, err_6
+	workDir, err := setup(source)
+	if err != nil {
+		return 0, err
 	}
 	// pipe step 1: Output(...)
-	out, err_8 := shell.New("go", "test", "-bench", benchName, "-benchmem", "-count=1", "-run=^$", "./...").Dir(workDir).Output()
-	if err_8 != nil {
-		return 0, err_8
+	out, err_3 := shell.New("go", "test", "-bench", benchName, "-benchmem", "-count=1", "-run=^$", "./...").Dir(workDir).Output()
+	if err_3 != nil {
+		return 0, err_3
 	}
 	return parseBenchNsPerOp(out, benchName)
 }

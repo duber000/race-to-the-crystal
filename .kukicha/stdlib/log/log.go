@@ -187,8 +187,8 @@ func formatValue(v any) string {
 }
 
 func encodeJSONValue(v any) string {
-	bytes, err_1 := json.Bytes(v)
-	if err_1 != nil {
+	bytes, err := json.Bytes(v)
+	if err != nil {
 		return fmt.Sprintf("%q", fmt.Sprintf("%v", v))
 	}
 	return string(bytes)

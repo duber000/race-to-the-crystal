@@ -17,8 +17,8 @@ func resetEnv() {
 }
 
 func TestIsTTYPipe(t *testing.T) {
-	r, w, err_1 := os.Pipe()
-	if err_1 != nil {
+	r, w, err := os.Pipe()
+	if err != nil {
 		panic("pipe failed")
 	}
 	defer r.Close()

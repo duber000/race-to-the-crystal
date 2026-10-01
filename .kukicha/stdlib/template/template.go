@@ -17,9 +17,22 @@ type HTMLTemplate struct {
 }
 
 func Render(tmpl string, data any) (string, error) {
-	parsed, err_1 := texttmpl.New("template").Parse(tmpl)
+	parsed, err := texttmpl.New("template").Parse(tmpl)
+	if err != nil {
+		return "", err
+	}
+	buf := bytes.Buffer{}
+	err_1 := parsed.Execute(&buf, data)
 	if err_1 != nil {
 		return "", err_1
+	}
+	return buf.String(), nil
+}
+
+func HTML(tmpl string, data any) (string, error) {
+	parsed, err := htmltmpl.New("template").Parse(tmpl)
+	if err != nil {
+		return "", err
 	}
 	buf := bytes.Buffer{}
 	err_2 := parsed.Execute(&buf, data)
@@ -29,51 +42,38 @@ func Render(tmpl string, data any) (string, error) {
 	return buf.String(), nil
 }
 
-func HTML(tmpl string, data any) (string, error) {
-	parsed, err_3 := htmltmpl.New("template").Parse(tmpl)
-	if err_3 != nil {
-		return "", err_3
-	}
-	buf := bytes.Buffer{}
-	err_4 := parsed.Execute(&buf, data)
-	if err_4 != nil {
-		return "", err_4
-	}
-	return buf.String(), nil
-}
-
 func Compile(name string, src string) (Template, error) {
-	parsed, err_5 := texttmpl.New(name).Parse(src)
-	if err_5 != nil {
+	parsed, err := texttmpl.New(name).Parse(src)
+	if err != nil {
 		var _zero0 Template
-		return _zero0, err_5
+		return _zero0, err
 	}
 	return Template{inner: parsed}, nil
 }
 
 func CompileHTML(name string, src string) (HTMLTemplate, error) {
-	parsed, err_6 := htmltmpl.New(name).Parse(src)
-	if err_6 != nil {
+	parsed, err := htmltmpl.New(name).Parse(src)
+	if err != nil {
 		var _zero0 HTMLTemplate
-		return _zero0, err_6
+		return _zero0, err
 	}
 	return HTMLTemplate{inner: parsed}, nil
 }
 
 func (t Template) Render(data any) (string, error) {
 	buf := bytes.Buffer{}
-	err_7 := t.inner.Execute(&buf, data)
-	if err_7 != nil {
-		return "", err_7
+	err := t.inner.Execute(&buf, data)
+	if err != nil {
+		return "", err
 	}
 	return buf.String(), nil
 }
 
 func (t HTMLTemplate) Render(data any) (string, error) {
 	buf := bytes.Buffer{}
-	err_8 := t.inner.Execute(&buf, data)
-	if err_8 != nil {
-		return "", err_8
+	err := t.inner.Execute(&buf, data)
+	if err != nil {
+		return "", err
 	}
 	return buf.String(), nil
 }

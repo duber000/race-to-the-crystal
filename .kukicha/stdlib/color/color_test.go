@@ -144,8 +144,8 @@ func TestStylerNonTTY(t *testing.T) {
 	defer term.ResetColorOverride()
 	_ = os.Unsetenv("FORCE_COLOR")
 	_ = os.Unsetenv("NO_COLOR")
-	f, err_1 := os.Open("color.kuki")
-	if err_1 != nil {
+	f, err := os.Open("color.kuki")
+	if err != nil {
 		panic("open failed")
 	}
 	defer f.Close()
