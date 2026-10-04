@@ -49,7 +49,7 @@ func PlayTurn(api: reference learn.LearnerAPI)
 
     api.Say(bot.Describe())
 
-    if len(api.MyTokens()) equals 0
+    if api.MyTokens() is empty
         api.Place(10, 2, 2)
     for tid in api.MyTokens()
         bot.Step(api, tid)

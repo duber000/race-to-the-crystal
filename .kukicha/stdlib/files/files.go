@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
+	"kukicha.org/kukicha/stdlib/files/filetimes"
 	"kukicha.org/kukicha/stdlib/json"
 	kukistring "kukicha.org/kukicha/stdlib/string"
 	"os"
@@ -352,6 +353,14 @@ func Copy(src string, dst string) error {
 
 func Move(src string, dst string) error {
 	return os.Rename(src, dst)
+}
+
+func SetTimes(path string, atime time.Time, mtime time.Time) error {
+	return os.Chtimes(path, atime, mtime)
+}
+
+func SetTimesNoFollow(path string, atime time.Time, mtime time.Time) error {
+	return filetimes.SetTimesNoFollow(path, atime, mtime)
 }
 
 func MkDir(path string) error {

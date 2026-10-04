@@ -372,3 +372,103 @@ make ai-client
 make clean
 git status
 ```
+
+---
+
+## Phase 7 — Adopt `game` v0.2.0 & `game/spatial` Features
+
+Scan date: 2026-09-26  
+Status: `[ ]` pending
+
+`kukicha.org/game` v0.2.0 introduced the standalone, headless `spatial` stdlib package (`kukicha.org/game/spatial`) providing 2D/3D vectors, AABBs, distance metrics (Manhattan, Euclidean, squared), collision tests, waypoint steering, and nearest-neighbor queries, alongside Ebitengine 2.10 windowing and input enhancements.
+
+### 7.1 Module Dependency
+- [ ] **`go.mod`**: Add `kukicha.org/game v0.2.0` with local replace directive:
+  ```go
+  require kukicha.org/game v0.2.0
+  replace kukicha.org/game => ../game
+  ```
+
+### 7.2 Vector Type Conversion Helpers
+- [ ] **`shared/types/types.kuki`**:
+  Add ergonomic bridge methods between grid `types.Position` and continuous `spatial.Vec2`:
+  ```kukicha
+  func ToVec2 on p: Position spatial.Vec2
+      return spatial.NewVec2(p.X as float64, p.Y as float64)
+
+  func PosFromVec2(v: spatial.Vec2) Position
+      return Pos(math.Round(v.X) as int, math.Round(v.Y) as int)
+  ```
+
+### 7.3 Manhattan Distance & Adjacency Modernization
+The codebase currently implements manual sign-flipping Manhattan distance in three separate locations (`game/movement.kuki`, `game/token.kuki`, and `game/ai_strategy.kuki`).
+
+- [ ] **`game/movement.kuki:136-143` (`getDistance`)**:
+  Replace manual absolute-value logic with `spatial.DistanceManhattan2D`:
+  ```kukicha
+  // Before
+  func getDistance(pos1: types.Position, pos2: types.Position) int
+      dx := pos1.X - pos2.X
+      if dx < 0
+          dx = -dx
+      dy := pos1.Y - pos2.Y
+      if dy < 0
+          dy = -dy
+      return dx + dy
+
+  // After
+  func getDistance(pos1: types.Position, pos2: types.Position) int
+      p1 := spatial.NewVec2(pos1.X as float64, pos1.Y as float64)
+      p2 := spatial.NewVec2(pos2.X as float64, pos2.Y as float64)
+      return spatial.DistanceManhattan2D(p1, p2) as int
+  ```
+
+- [ ] **`game/token.kuki:94-101` (`distanceTo`)**:
+  Delegate `distanceTo` directly to `getDistance` or `spatial.DistanceManhattan2D`:
+  ```kukicha
+  func distanceTo on t: Token(other: types.Position) int
+      return getDistance(t.position, other)
+  ```
+
+- [ ] **`game/movement.kuki:145-152` & `game/token.kuki:103-111` (`isAdjacent`, `isAdjacentTo`)**:
+  Simplify adjacency checks using `spatial.DistanceManhattan2D` and delta bounds.
+
+- [ ] **`game/ai_strategy.kuki:230-248` (`scoreDestination`)**:
+  Refactor distance calculation from candidate destination to objectives using `spatial.DistanceManhattan2D`:
+  ```kukicha
+  func scoreDestination(dest: types.Position, objectives: list of types.Position, tok: optional reference Token) float64
+      minDist := 999999.0
+      pDest := spatial.NewVec2(dest.X as float64, dest.Y as float64)
+      for obj in objectives
+          pObj := spatial.NewVec2(obj.X as float64, obj.Y as float64)
+          dist := spatial.DistanceManhattan2D(pDest, pObj)
+          if dist < minDist
+              minDist = dist
+      if tok isnt empty
+          if tok.movementRange() >= 2
+              minDist = minDist - 0.5
+      return minDist
+  ```
+
+### 7.4 Board Bounds Containment
+- [ ] **`game/board.kuki:142-143` (`isValidPosition`)**:
+  Currently:
+  ```kukicha
+  func isValidPosition on b: Board(x: int, y: int) bool
+      return x >= 0 and x < b.width and y >= 0 and y < b.height
+  ```
+  Adopt `spatial.InBounds2D` and `spatial.Box2`:
+  Precompute or construct `spatial.NewBox2(0.0, 0.0, (b.width - 1) as float64, (b.height - 1) as float64)` to encapsulate grid containment checks cleanly.
+
+### 7.5 Nearest-Neighbor & Proximity Queries
+- [ ] **`game/ai_strategy.kuki` & `game/ai_observation.kuki`**:
+  Evaluate using `spatial.FindNearest2D` / `spatial.BatchDistances2D`:
+  - Finding closest objective/crystal/generator to deployed tokens.
+  - Sorting attack candidates by proximity during AI decision making.
+
+### 7.6 Desktop Client Modernization (`client/desktop/`)
+- [ ] **`client/desktop/main.kuki`**:
+  - Adopt `game.DarkMode()` / `game.SetDarkMode(dark)` to support OS dark mode preferences for window frames and UI chrome.
+  - Adopt `game.ScreenSize()` for responsive layout scaling when window resizing is enabled (`WindowResizingModeEnabled`).
+- [ ] **Smooth Token Movement & Waypoint Navigation**:
+  - If animated movement is added to the 2D desktop board, use `spatial.SteerActor(current, target, speed, dt, arrivalRadius)` for smooth frame-by-frame interpolation with automatic cardinal facing (`FacingSouth/West/East/North`) and arrival snapping.
