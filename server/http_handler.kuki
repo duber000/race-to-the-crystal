@@ -2,7 +2,7 @@ petiole main
 
 import "net"
 import "race-to-the-crystal/game" as gamepkg
-import "race-to-the-crystal/shared/types" as typespkg
+import "race-to-the-crystal/shared/types"
 import "stdlib/cast"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
@@ -443,10 +443,10 @@ func buildGameAction on h: reference HTTPHandler(playerId: string, actionType: g
         when gamepkg.MOVE
             tid := h.getIntField(data, "token_id", 0)
             dest := h.getPositionField(data, "destination")
-            return gamepkg.NewMoveAction(typespkg.TokenID(tid), dest)
+            return gamepkg.NewMoveAction(types.TokenID(tid), dest)
         when gamepkg.ATTACK
-            attackerId := typespkg.TokenID(h.getIntField(data, "attacker_id", 0))
-            defenderId := typespkg.TokenID(h.getIntField(data, "defender_id", 0))
+            attackerId := types.TokenID(h.getIntField(data, "attacker_id", 0))
+            defenderId := types.TokenID(h.getIntField(data, "defender_id", 0))
             return gamepkg.NewAttackAction(attackerId, defenderId)
         when gamepkg.DEPLOY
             hv := h.getIntField(data, "health_value", 1)
@@ -464,25 +464,25 @@ func getIntField on h: reference HTTPHandler(data: map of string to any, key: st
         return defaultVal
     return result
 
-func getPositionField on h: reference HTTPHandler(data: map of string to any, key: string) typespkg.Position
+func getPositionField on h: reference HTTPHandler(data: map of string to any, key: string) types.Position
     val, has := data[key]
     if not has
-        return typespkg.Position{X: 0, Y: 0}
+        return types.Position{X: 0, Y: 0}
 
     jsonBytes := jsonpkg.Bytes(val) onerr
-        return typespkg.Position{X: 0, Y: 0}
+        return types.Position{X: 0, Y: 0}
 
     pos := empty list of any
     posStr := jsonBytes as string
     err := jsonpkg.ParseInto(posStr, reference of pos)
     if err isnt empty
-        return typespkg.Position{X: 0, Y: 0}
+        return types.Position{X: 0, Y: 0}
 
     if len(pos) < 2
-        return typespkg.Position{X: 0, Y: 0}
+        return types.Position{X: 0, Y: 0}
     x := cast.ToIntOr(pos[0], 0)
     y := cast.ToIntOr(pos[1], 0)
-    return typespkg.Position{X: x, Y: y}
+    return types.Position{X: x, Y: y}
 
 func actionResultDataToMap(data: gamepkg.ActionResultData) map of string to any
     return gamepkg.ActionDataToDict(data)

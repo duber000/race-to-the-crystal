@@ -12,6 +12,7 @@ petiole main
 
 import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/learn" as learn
+import "race-to-the-crystal/shared/types"
 
 func BestAttack(api: reference learn.LearnerAPI, actions: list of gamepkg.ActionResponse) bool
     bestDamage := 0
@@ -34,7 +35,7 @@ func BestAttack(api: reference learn.LearnerAPI, actions: list of gamepkg.Action
     return found
 
 func StepOne(api: reference learn.LearnerAPI, tid: int) bool
-    pos := api.TokenPosition(tid)
+    var pos: types.Position = api.TokenPosition(tid)
     dx := 0
     dy := 0
     if pos.X < 12

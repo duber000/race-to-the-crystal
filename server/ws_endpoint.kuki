@@ -2,6 +2,7 @@ petiole main
 
 import "net/http"
 import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/shared/types"
 import "stdlib/http" as httphelper
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
@@ -47,8 +48,8 @@ func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Res
     log.Info("WebSocket client connected: {clientId}")
     defer conn.Close()
     for true
-        _msg_type, raw, err := conn.ReadMessage()
-        if err isnt empty
+        _msg_type, raw, rerr := conn.ReadMessage()
+        if rerr isnt empty
             break
         ep.handleClientMessage(clientId, raw as string)
     ep.handleClientDisconnect(clientId)

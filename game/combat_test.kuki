@@ -5,35 +5,35 @@ import "stdlib/test"
 import "testing"
 
 func TestCanAttackValid(t: reference testing.T)
-    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
-    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 8, 8, types.Pos(6, 5))
+    atk := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5)) onerr panic error
+    dfd := NewToken(types.TokenID(2), types.PlayerID("p2"), 8, 8, types.Pos(6, 5)) onerr panic error
     test.AssertTrue(t, canAttack(reference of atk, reference of dfd))
 
 func TestCanAttackSamePlayer(t: reference testing.T)
-    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
-    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p1"), 8, 8, types.Pos(6, 5))
+    atk := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5)) onerr panic error
+    dfd := NewToken(types.TokenID(2), types.PlayerID("p1"), 8, 8, types.Pos(6, 5)) onerr panic error
     test.AssertFalse(t, canAttack(reference of atk, reference of dfd))
 
 func TestCanAttackNotAdjacent(t: reference testing.T)
-    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
-    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 8, 8, types.Pos(10, 10))
+    atk := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5)) onerr panic error
+    dfd := NewToken(types.TokenID(2), types.PlayerID("p2"), 8, 8, types.Pos(10, 10)) onerr panic error
     test.AssertFalse(t, canAttack(reference of atk, reference of dfd))
 
 func TestCanAttackAttackerDead(t: reference testing.T)
-    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 4, 4, types.Pos(5, 5))
+    atk := NewToken(types.TokenID(1), types.PlayerID("p1"), 4, 4, types.Pos(5, 5)) onerr panic error
     atk.takeDamage(4)
-    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 8, 8, types.Pos(6, 5))
+    dfd := NewToken(types.TokenID(2), types.PlayerID("p2"), 8, 8, types.Pos(6, 5)) onerr panic error
     test.AssertFalse(t, canAttack(reference of atk, reference of dfd))
 
 func TestCanAttackDefenderDead(t: reference testing.T)
-    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
-    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 4, 4, types.Pos(6, 5))
+    atk := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5)) onerr panic error
+    dfd := NewToken(types.TokenID(2), types.PlayerID("p2"), 4, 4, types.Pos(6, 5)) onerr panic error
     dfd.takeDamage(4)
     test.AssertFalse(t, canAttack(reference of atk, reference of dfd))
 
 func TestResolveCombatHIT(t: reference testing.T)
-    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
-    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 10, 10, types.Pos(6, 5))
+    atk := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5)) onerr panic error
+    dfd := NewToken(types.TokenID(2), types.PlayerID("p2"), 10, 10, types.Pos(6, 5)) onerr panic error
     outcome := resolveCombat(reference of atk, reference of dfd)
     test.AssertEqual(t, outcome.attackerId, types.TokenID(1))
     test.AssertEqual(t, outcome.defenderId, types.TokenID(2))
@@ -43,16 +43,16 @@ func TestResolveCombatHIT(t: reference testing.T)
     test.AssertTrue(t, dfd.isAlive)
 
 func TestResolveCombatKILLED(t: reference testing.T)
-    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
-    dfd, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 4, 4, types.Pos(6, 5))
+    atk := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5)) onerr panic error
+    dfd := NewToken(types.TokenID(2), types.PlayerID("p2"), 4, 4, types.Pos(6, 5)) onerr panic error
     outcome := resolveCombat(reference of atk, reference of dfd)
     test.AssertEqual(t, outcome.damageDealt, 5)
     test.AssertTrue(t, outcome.defenderKilled)
     test.AssertFalse(t, dfd.isAlive)
 
 func TestWouldKill(t: reference testing.T)
-    atk, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
-    dfd4, _ := NewToken(types.TokenID(2), types.PlayerID("p2"), 4, 4, types.Pos(6, 5))
-    dfd8, _ := NewToken(types.TokenID(3), types.PlayerID("p3"), 8, 8, types.Pos(7, 5))
+    atk := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5)) onerr panic error
+    dfd4 := NewToken(types.TokenID(2), types.PlayerID("p2"), 4, 4, types.Pos(6, 5)) onerr panic error
+    dfd8 := NewToken(types.TokenID(3), types.PlayerID("p3"), 8, 8, types.Pos(7, 5)) onerr panic error
     test.AssertTrue(t, wouldKill(reference of atk, reference of dfd4))
     test.AssertFalse(t, wouldKill(reference of atk, reference of dfd8))

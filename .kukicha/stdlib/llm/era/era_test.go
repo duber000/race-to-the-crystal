@@ -51,6 +51,9 @@ type RunLoopCase struct {
 	wantTreeMin   int
 }
 
+// Stub callables for the Run loop. The proposal source is fixed; the scorer
+// returns 1.0 for proposals and 0.0 for the baseline. With Higher=true the
+// best should be a proposal (1.0); with Higher=false the baseline wins (0.0).
 func stubAsk(prompt string) (string, error) {
 	return "PROPOSAL", nil
 }
@@ -76,6 +79,9 @@ func TestRunLoopWithStubs(t *testing.T) {
 	}
 }
 
+// A pre-cancelled context should keep the loop from expanding past the root —
+// the cancellation check at the top of each round exits cleanly. The tree
+// still contains the scored root, and `best` returns it.
 func TestRunLoopCancelled(t *testing.T) {
 	h := ctxpkg.WithCancel(ctxpkg.Background())
 	h.Cancel()

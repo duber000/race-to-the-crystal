@@ -11,12 +11,14 @@ petiole main
 
 import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/learn" as learn
+import "race-to-the-crystal/shared/types"
 
 func DoAttack(api: reference learn.LearnerAPI, actions: list of gamepkg.ActionResponse) bool
     for a in actions
         switch a as v
             when gamepkg.AttackAction
-                api.Attack(v.AttackerID as int, v.DefenderID as int)
+                var attacker: types.TokenID = v.AttackerID
+                api.Attack(attacker as int, v.DefenderID as int)
                 return true
             default
                 continue

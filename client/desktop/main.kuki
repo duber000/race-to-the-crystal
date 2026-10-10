@@ -3,7 +3,7 @@ petiole main
 import "image/color"
 import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/enums" as enums
-import "race-to-the-crystal/shared/types" as typespkg
+import "race-to-the-crystal/shared/types"
 import "stdlib/log"
 
 import "github.com/hajimehoshi/ebiten/v2"
@@ -67,7 +67,7 @@ type DesktopApp
     gameState: optional reference DesktopGameState
     realGame: optional reference gamepkg.GameState
     realApi: optional reference gamepkg.GameAPI
-    humanPlayer: typespkg.PlayerID
+    humanPlayer: types.PlayerID
     aiStrategy: gamepkg.AIStrategyName
     selectedTokenId: int
     validMoves: list of DesktopPos
@@ -86,7 +86,7 @@ var app: DesktopApp
 func init()
     app = DesktopApp{
         currentScreen: ScreenKind.MainMenu,
-        humanPlayer: typespkg.PlayerID("player_0"),
+        humanPlayer: types.PlayerID("player_0"),
         aiStrategy: gamepkg.AIStrategyNameRANDOM,
         viewOffsetX: 0.0,
         viewOffsetY: 0.0,
@@ -268,7 +268,7 @@ func RunAiTurns()
                 gamepkg.ExecuteAction(gamepkg.NewEndTurnAction(), gs, aiPid)
         guard = guard + 1
 
-func runAiTurn(gs: reference gamepkg.GameState, aiPid: typespkg.PlayerID)
+func runAiTurn(gs: reference gamepkg.GameState, aiPid: types.PlayerID)
     aiApi := gamepkg.NewGameAPI(gs, aiPid)
     guard := 0
     for guard < 30
@@ -290,12 +290,12 @@ func runAiTurn(gs: reference gamepkg.GameState, aiPid: typespkg.PlayerID)
 func chosenToAction(c: gamepkg.ChosenAction) gamepkg.AIAction
     switch c as v
         when gamepkg.ChosenMove
-            dest := typespkg.Pos(v.Destination[0], v.Destination[1])
+            dest := types.Pos(v.Destination[0], v.Destination[1])
             return gamepkg.NewMoveAction(v.TokenID, dest)
         when gamepkg.ChosenAttack
             return gamepkg.NewAttackAction(v.AttackerID, v.DefenderID)
         when gamepkg.ChosenDeploy
-            pos := typespkg.Pos(v.Position[0], v.Position[1])
+            pos := types.Pos(v.Position[0], v.Position[1])
             return gamepkg.NewDeployAction(v.HealthValue, pos)
         default
             return gamepkg.NewEndTurnAction()

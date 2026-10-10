@@ -114,7 +114,7 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
             log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
             result := sess.SendAction(chosen)
             if result isnt empty
-                if msg, has := result["message"]; has
+                if msg, hasMsg := result["message"]; hasMsg
                     var msgStr: string
                     if msg is string as ms
                         msgStr = ms
@@ -212,7 +212,7 @@ func runSSE(args: cli.Args)
                 log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
                 result := sess.SendAction(chosen)
                 if result isnt empty
-                    if msg, has := result["message"]; has
+                    if msg, hasMsg := result["message"]; hasMsg
                         var msgStr: string
                         if msg is string as s
                             msgStr = s

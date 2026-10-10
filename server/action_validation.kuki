@@ -2,6 +2,7 @@ petiole main
 
 import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/constants" as constants
+import "race-to-the-crystal/shared/types"
 import "stdlib/json" as jsonpkg
 import "stdlib/slice"
 import "stdlib/string" as strpkg

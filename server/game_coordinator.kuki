@@ -3,7 +3,7 @@ petiole main
 import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
-import "race-to-the-crystal/shared/types" as typespkg
+import "race-to-the-crystal/shared/types"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/maps"
@@ -38,7 +38,7 @@ func initializePlayers on s: reference GameSession(lobby: reference GameLobby)
         gamePid := "player_{idx}"
         s.networkToGameId[info.playerId] = gamePid
         s.gameToNetworkId[gamePid] = info.playerId
-        api := gamepkg.NewGameAPI(reference of s.gameState, typespkg.PlayerID(gamePid))
+        api := gamepkg.NewGameAPI(reference of s.gameState, types.PlayerID(gamePid))
         log.Info("initialize_players: api created, api.game_state ref created")
         s.apiMap[info.playerId] = api
         idx = idx + 1

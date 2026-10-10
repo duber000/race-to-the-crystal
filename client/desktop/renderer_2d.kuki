@@ -82,7 +82,7 @@ func DrawGame(screen: reference ebiten.Image)
                 (sy + 4) as float32,
                 (sx + CELL_SIZE - 4) as float32,
                 (sy + CELL_SIZE - 4) as float32,
-                2,
+                2.0 as float32,
                 gc,
                 false,
             )
@@ -92,7 +92,7 @@ func DrawGame(screen: reference ebiten.Image)
                 (sy + 4) as float32,
                 (sx + 4) as float32,
                 (sy + CELL_SIZE - 4) as float32,
-                2,
+                2.0 as float32,
                 gc,
                 false,
             )
@@ -124,7 +124,7 @@ func DrawGame(screen: reference ebiten.Image)
                         (tx + CELL_SIZE / 2) as float32,
                         (ty + CELL_SIZE / 2) as float32,
                         (CELL_SIZE / 2 - 2) as float32,
-                        3,
+                        3.0 as float32,
                         ColorWhite,
                         false,
                     )
@@ -147,8 +147,8 @@ func DrawGame(screen: reference ebiten.Image)
                 screen,
                 (mx + CELL_SIZE / 2) as float32,
                 (my + CELL_SIZE / 2) as float32,
-                6,
-                2,
+                6.0 as float32,
+                2.0 as float32,
                 ColorGreen,
                 false,
             )
@@ -161,7 +161,7 @@ func DrawGame(screen: reference ebiten.Image)
                 (ax + CELL_SIZE / 2) as float32,
                 (ay + CELL_SIZE / 2) as float32,
                 (CELL_SIZE / 2 - 2) as float32,
-                3,
+                3.0 as float32,
                 ColorRed,
                 false,
             )
@@ -196,7 +196,7 @@ func DrawGrid(screen: reference ebiten.Image, w: int, h: int, ox: int, oy: int)
             oy as float32,
             xp as float32,
             (h * CELL_SIZE + oy) as float32,
-            1,
+            1.0 as float32,
             ColorDarkGray,
             false,
         )
@@ -208,7 +208,7 @@ func DrawGrid(screen: reference ebiten.Image, w: int, h: int, ox: int, oy: int)
             yp as float32,
             (w * CELL_SIZE + ox) as float32,
             yp as float32,
-            1,
+            1.0 as float32,
             ColorDarkGray,
             false,
         )

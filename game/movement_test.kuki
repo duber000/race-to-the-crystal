@@ -7,7 +7,7 @@ import "testing"
 
 func TestGetValidMovesFromCenter(t: reference testing.T)
     b := NewBoard()
-    tok, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 6, 6, types.Pos(5, 5))
+    tok := NewToken(types.TokenID(1), types.PlayerID("p1"), 6, 6, types.Pos(5, 5)) onerr panic error
     tokensMap := map of types.TokenID to reference Token{1: reference of tok}
     moves := getValidMoves(reference of tok, reference of b, 2, tokensMap)
     test.AssertTrue(t, moves isnt empty)
@@ -24,7 +24,7 @@ func TestGetValidMovesFromCenter(t: reference testing.T)
 
 func TestGetValidMovesRespectsRange(t: reference testing.T)
     b := NewBoard()
-    tok, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5))
+    tok := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5)) onerr panic error
     tokensMap := map of types.TokenID to reference Token{1: reference of tok}
     moves := getValidMoves(reference of tok, reference of b, 1, tokensMap)
     far := false
@@ -35,7 +35,7 @@ func TestGetValidMovesRespectsRange(t: reference testing.T)
 
 func TestIsValidMove(t: reference testing.T)
     b := NewBoard()
-    tok, _ := NewToken(types.TokenID(1), types.PlayerID("p1"), 6, 6, types.Pos(5, 5))
+    tok := NewToken(types.TokenID(1), types.PlayerID("p1"), 6, 6, types.Pos(5, 5)) onerr panic error
     tokensMap := map of types.TokenID to reference Token{1: reference of tok}
     test.AssertTrue(t, isValidMove(reference of tok, types.Pos(7, 5), reference of b, tokensMap))
     test.AssertFalse(t, isValidMove(reference of tok, types.Pos(10, 10), reference of b, tokensMap))
@@ -56,7 +56,7 @@ func TestGetAdjacentPositions(t: reference testing.T)
 
 func TestMoveTokenUpdatesPosition(t: reference testing.T)
     gs := NewGameState()
-    tok, _ := NewToken(types.TokenID(0), types.PlayerID("p0"), 6, 6, types.Pos(5, 5))
+    tok := NewToken(types.TokenID(0), types.PlayerID("p0"), 6, 6, types.Pos(5, 5)) onerr panic error
     tok.isDeployed = true
     gs.tokens[types.TokenID(0)] = reference of tok
     gs.board.setOccupant(types.Pos(5, 5), types.TokenID(0))
@@ -76,9 +76,9 @@ func TestCanStackOnFriendlyGenerator(t: reference testing.T)
     b := NewBoard()
     b.grid[6][6].cellType = enums.GENERATOR
 
-    mover, _ := NewToken(types.TokenID(1), types.PlayerID("p0"), 6, 6, types.Pos(5, 6))
+    mover := NewToken(types.TokenID(1), types.PlayerID("p0"), 6, 6, types.Pos(5, 6)) onerr panic error
     mover.isDeployed = true
-    ally, _ := NewToken(types.TokenID(2), types.PlayerID("p0"), 6, 6, types.Pos(6, 6))
+    ally := NewToken(types.TokenID(2), types.PlayerID("p0"), 6, 6, types.Pos(6, 6)) onerr panic error
     ally.isDeployed = true
     tokensMap := map of types.TokenID to reference Token{1: reference of mover, 2: reference of ally}
 

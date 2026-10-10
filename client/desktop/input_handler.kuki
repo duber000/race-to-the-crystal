@@ -1,7 +1,7 @@
 petiole main
 
 import "race-to-the-crystal/game" as gamepkg
-import "race-to-the-crystal/shared/types" as typespkg
+import "race-to-the-crystal/shared/types"
 
 import "github.com/hajimehoshi/ebiten/v2"
 import "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -68,7 +68,7 @@ func HandleBoardClick(gs: reference gamepkg.GameState, cellX: int, cellY: int)
             return
     clicked := FindTokenAt(gs, cellX, cellY)
     if clicked >= 0
-        tokRef := gs.GetToken(typespkg.TokenID(clicked))
+        tokRef := gs.GetToken(types.TokenID(clicked))
         if tokRef isnt empty
             tok := dereference tokRef
             if tok.PlayerID() equals app.humanPlayer
@@ -121,7 +121,7 @@ func TryMove(cellX: int, cellY: int) bool
             if app.realApi is empty
                 return false
             api := dereference app.realApi
-            result := api.Move(typespkg.TokenID(app.selectedTokenId), cellX, cellY)
+            result := api.Move(types.TokenID(app.selectedTokenId), cellX, cellY)
             app.message = result.Message
             deselect()
             return true
@@ -136,7 +136,7 @@ func TryAttack(cellX: int, cellY: int) bool
             when gamepkg.AttackAction
                 if v.AttackerID as int equals app.selectedTokenId
                     if v.DefenderPosition[0] equals cellX and v.DefenderPosition[1] equals cellY
-                        result := api.Attack(typespkg.TokenID(app.selectedTokenId), v.DefenderID)
+                        result := api.Attack(types.TokenID(app.selectedTokenId), v.DefenderID)
                         app.message = result.Message
                         deselect()
                         return true
