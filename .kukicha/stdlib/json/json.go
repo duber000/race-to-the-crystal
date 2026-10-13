@@ -13,6 +13,7 @@ import (
 	"io"
 	errs "kukicha.org/kukicha/stdlib/errors"
 	"kukicha.org/kukicha/stdlib/maps"
+	"kukicha.org/kukicha/stdlib/sort"
 	kukistring "kukicha.org/kukicha/stdlib/string"
 	"math/big"
 	"os"
@@ -63,6 +64,30 @@ func WithPrefix(enc Encoder, prefix string) Encoder {
 // Uses jsonv2.MarshalWrite for direct io.Writer support
 // Example: response |> json.NewEncoder() |> json.Encode(todo) onerr return
 func Encode(enc Encoder, value any) error {
+	ok, data, cerr := marshalWithCaptured(value)
+	if ok {
+		if cerr != nil {
+			return cerr
+		}
+		if enc.indent == "" && enc.prefix == "" {
+			_, werr := enc.writer.Write(data)
+			return werr
+		}
+		v := jsontext.Value(data)
+		opts := []jsontext.Options{}
+		if enc.indent != "" {
+			opts = append(opts, jsontext.WithIndent(enc.indent))
+		}
+		if enc.prefix != "" {
+			opts = append(opts, jsontext.WithIndentPrefix(enc.prefix))
+		}
+		err_1 := v.Indent(opts...)
+		if err_1 != nil {
+			return err_1
+		}
+		_, werr := enc.writer.Write([]byte(v))
+		return werr
+	}
 	opts := []jsonv2.Options{}
 	if enc.indent != "" {
 		opts = append(opts, jsontext.WithIndent(enc.indent))
@@ -91,13 +116,32 @@ func Decode(dec Decoder, target any) error {
 // Bytes converts a value to compact JSON bytes.
 // Example: jsonBytes := Bytes(data) onerr return
 func Bytes(value any) ([]byte, error) {
-	return jsonv2.Marshal(value)
+	return marshalValue(value)
 }
 
 // PrettyBytes converts a value to pretty-printed JSON bytes with 2-space indentation.
 // Example: jsonBytes := PrettyBytes(config) onerr return
 func PrettyBytes(value any) ([]byte, error) {
+	ok, data, err := marshalWithCaptured(value)
+	if ok {
+		if err != nil {
+			return nil, err
+		}
+		return indentBytes(data)
+	}
 	return jsonv2.Marshal(value, jsontext.WithIndent("  "))
+}
+
+// indentBytes re-indents compact JSON bytes with 2-space indentation.
+// Used for the capture-aware encode path (the plain path lets encoding/json/v2
+// indent during Marshal).
+func indentBytes(data []byte) ([]byte, error) {
+	v := jsontext.Value(data)
+	err_2 := v.Indent(jsontext.WithIndent("  "))
+	if err_2 != nil {
+		return nil, err_2
+	}
+	return []byte(v), nil
 }
 
 // String converts a value to compact JSON string.
@@ -105,9 +149,9 @@ func PrettyBytes(value any) ([]byte, error) {
 // `data as string` cast and keeps the value in Kukicha's idiomatic type.
 // Example: s := json.String(data) onerr return
 func String(value any) (string, error) {
-	data, err_1 := jsonv2.Marshal(value)
-	if err_1 != nil {
-		return "", err_1
+	data, err_3 := marshalValue(value)
+	if err_3 != nil {
+		return "", err_3
 	}
 	return string(data), nil
 }
@@ -115,25 +159,34 @@ func String(value any) (string, error) {
 // PrettyString converts a value to pretty-printed JSON string with 2-space indentation.
 // Example: s := json.PrettyString(config) onerr return
 func PrettyString(value any) (string, error) {
-	data, err_2 := jsonv2.Marshal(value, jsontext.WithIndent("  "))
-	if err_2 != nil {
-		return "", err_2
+	data, err_4 := PrettyBytes(value)
+	if err_4 != nil {
+		return "", err_4
 	}
 	return string(data), nil
 }
 
 // ParseBytesInto parses JSON bytes into a target value.
 // Target must be a pointer (use "reference of" in Kukicha).
+// A struct field tagged `as ",unknown"` (a string-keyed map) captures every
+// member not claimed by a known field, under the same case-insensitive
+// matching rules as the typed decode.
+// Capture applies at the root struct only: unknown members of nested structs
+// are ignored here (non-strict) and rejected by the *Strict variants.
 // Example: ParseBytesInto(jsonBytes, reference of config) onerr return
 func ParseBytesInto(data []byte, target any) error {
-	return jsonv2.Unmarshal(data, target, jsonv2.MatchCaseInsensitiveNames(true))
+	err_5 := jsonv2.Unmarshal(data, target, jsonv2.MatchCaseInsensitiveNames(true))
+	if err_5 != nil {
+		return err_5
+	}
+	return applyUnknownCapture(data, target)
 }
 
 // ParseInto parses a JSON string into a target value.
 // Target must be a pointer (use "reference of" in Kukicha).
 // Example: json.ParseInto(jsonText, reference of config) onerr return
 func ParseInto(data string, target any) error {
-	return jsonv2.Unmarshal([]byte(data), target, jsonv2.MatchCaseInsensitiveNames(true))
+	return ParseBytesInto([]byte(data), target)
 }
 
 // WriteTo writes a value as JSON to a writer, value first for pipes.
@@ -156,8 +209,17 @@ func Write(writer io.Writer, value any) error {
 // ReadInto reads JSON directly from an io.Reader into the target value.
 // Target must be a pointer (use "reference of" in Kukicha).
 // Perfect for HTTP request bodies with pipe placeholder strategy.
+// When the target carries an `as ",unknown"` capture field the whole reader
+// is drained, so capture works for the streaming entry point too.
 // Example: request.Body |> (x => json.ReadInto(x, reference of todo)) onerr return
 func ReadInto(reader io.Reader, target any) error {
+	if hasUnknownCaptureTarget(target) {
+		data, err_6 := io.ReadAll(reader)
+		if err_6 != nil {
+			return err_6
+		}
+		return ParseBytesInto(data, target)
+	}
 	return Decode(NewDecoder(reader), target)
 }
 
@@ -166,9 +228,9 @@ func ReadInto(reader io.Reader, target any) error {
 // Compact (not pretty) output reduces token usage when agents consume it.
 // Example: result |> json.WriteOutput() onerr panic "{error}"
 func WriteOutput(v any) error {
-	data, err_3 := Bytes(v)
-	if err_3 != nil {
-		return err_3
+	data, err_7 := Bytes(v)
+	if err_7 != nil {
+		return err_7
 	}
 	fmt.Fprintln(os.Stdout, string(data))
 	return nil
@@ -181,13 +243,13 @@ func WriteOutput(v any) error {
 func Read[T any](reader io.Reader) (T, error) {
 	data := *new(T)
 	// pipe step 1: ReadInto(...)
-	err_4 := ReadInto(reader, &data)
-	if err_4 != nil {
-		err_4 = fmt.Errorf("failed to read json: %w", err_4)
+	err_8 := ReadInto(reader, &data)
+	if err_8 != nil {
+		err_8 = fmt.Errorf("failed to read json: %w", err_8)
 		var _zero0 T
-		return _zero0, err_4
+		return _zero0, err_8
 	}
-	_ = err_4
+	_ = err_8
 	return data, nil
 }
 
@@ -197,11 +259,11 @@ func Read[T any](reader io.Reader) (T, error) {
 // Example: cfg := json.ParseBytes of Config from data onerr return
 func ParseBytes[T any](data []byte) (T, error) {
 	out := *new(T)
-	err_5 := ParseBytesInto(data, &out)
-	if err_5 != nil {
-		err_5 = fmt.Errorf("failed to parse json: %w", err_5)
+	err_9 := ParseBytesInto(data, &out)
+	if err_9 != nil {
+		err_9 = fmt.Errorf("failed to parse json: %w", err_9)
 		var _zero0 T
-		return _zero0, err_5
+		return _zero0, err_9
 	}
 	return out, nil
 }
@@ -212,24 +274,50 @@ func ParseBytes[T any](data []byte) (T, error) {
 // Example: v := json.Parse of Verdict from reply onerr return
 func Parse[T any](data string) (T, error) {
 	out := *new(T)
-	err_6 := ParseInto(data, &out)
-	if err_6 != nil {
-		err_6 = fmt.Errorf("failed to parse json: %w", err_6)
+	err_10 := ParseInto(data, &out)
+	if err_10 != nil {
+		err_10 = fmt.Errorf("failed to parse json: %w", err_10)
 		var _zero0 T
-		return _zero0, err_6
+		return _zero0, err_10
 	}
 	return out, nil
 }
 
 // ReadIntoStrict reads JSON from an io.Reader into target, rejecting unknown fields.
 // Target must be a pointer (use "reference of" in Kukicha).
+// A target carrying an `as ",unknown"` capture field routes the ROOT's
+// unmatched members into that field instead of rejecting them; unknown
+// members of NESTED structs are still rejected — capture exempts its own
+// level only.
 func ReadIntoStrict(reader io.Reader, target any) error {
+	if hasUnknownCaptureTarget(target) {
+		data, err_11 := io.ReadAll(reader)
+		if err_11 != nil {
+			return err_11
+		}
+		err_12 := ParseBytesInto(data, target)
+		if err_12 != nil {
+			return err_12
+		}
+		return validateStrictNested(data, target)
+	}
 	return jsonv2.UnmarshalRead(reader, target, jsonv2.MatchCaseInsensitiveNames(true), jsonv2.RejectUnknownMembers(true))
 }
 
 // ParseBytesIntoStrict parses JSON bytes into target, rejecting unknown fields.
 // Target must be a pointer (use "reference of" in Kukicha).
+// A target carrying an `as ",unknown"` capture field routes the ROOT's
+// unmatched members into that field instead of rejecting them; unknown
+// members of NESTED structs are still rejected — capture exempts its own
+// level only.
 func ParseBytesIntoStrict(data []byte, target any) error {
+	if hasUnknownCaptureTarget(target) {
+		err_13 := ParseBytesInto(data, target)
+		if err_13 != nil {
+			return err_13
+		}
+		return validateStrictNested(data, target)
+	}
 	return jsonv2.Unmarshal(data, target, jsonv2.MatchCaseInsensitiveNames(true), jsonv2.RejectUnknownMembers(true))
 }
 
@@ -244,13 +332,13 @@ func ParseIntoStrict(data string, target any) error {
 func ReadStrict[T any](reader io.Reader) (T, error) {
 	data := *new(T)
 	// pipe step 1: ReadIntoStrict(...)
-	err_7 := ReadIntoStrict(reader, &data)
-	if err_7 != nil {
-		err_7 = fmt.Errorf("failed to read json: %w", err_7)
+	err_14 := ReadIntoStrict(reader, &data)
+	if err_14 != nil {
+		err_14 = fmt.Errorf("failed to read json: %w", err_14)
 		var _zero0 T
-		return _zero0, err_7
+		return _zero0, err_14
 	}
-	_ = err_7
+	_ = err_14
 	return data, nil
 }
 
@@ -258,11 +346,11 @@ func ReadStrict[T any](reader io.Reader) (T, error) {
 // Example: cfg := json.ParseBytesStrict of Config from data onerr return
 func ParseBytesStrict[T any](data []byte) (T, error) {
 	out := *new(T)
-	err_8 := ParseBytesIntoStrict(data, &out)
-	if err_8 != nil {
-		err_8 = fmt.Errorf("failed to parse json: %w", err_8)
+	err_15 := ParseBytesIntoStrict(data, &out)
+	if err_15 != nil {
+		err_15 = fmt.Errorf("failed to parse json: %w", err_15)
 		var _zero0 T
-		return _zero0, err_8
+		return _zero0, err_15
 	}
 	return out, nil
 }
@@ -271,13 +359,482 @@ func ParseBytesStrict[T any](data []byte) (T, error) {
 // Example: v := json.ParseStrict of Verdict from reply onerr return
 func ParseStrict[T any](data string) (T, error) {
 	out := *new(T)
-	err_9 := ParseIntoStrict(data, &out)
-	if err_9 != nil {
-		err_9 = fmt.Errorf("failed to parse json: %w", err_9)
+	err_16 := ParseIntoStrict(data, &out)
+	if err_16 != nil {
+		err_16 = fmt.Errorf("failed to parse json: %w", err_16)
 		var _zero0 T
-		return _zero0, err_9
+		return _zero0, err_16
 	}
 	return out, nil
+}
+
+// jsonPair is one key/value member of an encoded JSON object, with the raw
+// value preserved so member order can be rebuilt without re-decoding.
+type jsonPair struct {
+	key string
+	raw jsontext.Value
+}
+
+// findCaptureField returns the index of the exported struct field carrying the
+// `,unknown` tag option whose type is a string-keyed map, or -1 when the struct
+// has no usable capture field. A `,unknown` on any other type is ignored,
+// matching encoding/json/v2's treatment of the unrecognized option. The first
+// usable field wins; a second `,unknown` field is treated as an ordinary member
+// (there is no per-type validation for it).
+func findCaptureField(rt reflect.Type) int {
+	for i := range rt.NumField() {
+		f := rt.Field(i)
+		if !f.IsExported() {
+			continue
+		}
+		tag, ok := f.Tag.Lookup("json")
+		if !ok {
+			continue
+		}
+		flagged := false
+		for idx, p := range kukistring.Split(tag, ",") {
+			if idx == 0 {
+				continue
+			}
+			if p == "unknown" {
+				flagged = true
+			}
+		}
+		if !flagged {
+			continue
+		}
+		if f.Type.Kind() != reflect.Map {
+			continue
+		}
+		if f.Type.Key().Kind() != reflect.String {
+			continue
+		}
+		return i
+	}
+	return -1
+}
+
+// hasUnknownCaptureTarget reports whether target (a pointer) points at a
+// struct with a usable `,unknown` capture field.
+func hasUnknownCaptureTarget(target any) bool {
+	rv := reflect.ValueOf(target)
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
+		return false
+	}
+	elem := rv.Elem()
+	if elem.Kind() != reflect.Struct {
+		return false
+	}
+	return findCaptureField(elem.Type()) >= 0
+}
+
+// knownMemberNames returns the folded JSON names the typed decode claims for rt,
+// so unmatched members can exclude them. The fold mirrors
+// MatchCaseInsensitiveNames(true) — case-insensitive with '-' and '_' ignored —
+// so a delimiter variant of a known field (user_id vs UserID) cannot leak into
+// the capture map. The capture field's own name is included, reserving it (a
+// member named exactly like the field is not re-captured). seen bounds recursion
+// through self-referential embedded structs.
+func knownMemberNames(rt reflect.Type, capIdx int) map[string]bool {
+	names := map[string]bool{}
+	collectKnownMemberNames(rt, capIdx, names, map[reflect.Type]bool{})
+	return names
+}
+
+// foldJSONName normalizes a member name the way encoding/json/v2's
+// MatchCaseInsensitiveNames fold does: case-insensitive, with '-' and '_'
+// ignored. (jsonv2 also applies unicode SimpleFold; ASCII is what struct tags
+// exercise.)
+func foldJSONName(name string) string {
+	stripped := kukistring.ReplaceAll(kukistring.ReplaceAll(name, "_", ""), "-", "")
+	return kukistring.ToUpper(stripped)
+}
+
+func collectKnownMemberNames(rt reflect.Type, capIdx int, names map[string]bool, seen map[reflect.Type]bool) {
+	if seen[rt] {
+		return
+	}
+	seen[rt] = true
+	for i := range rt.NumField() {
+		f := rt.Field(i)
+		if i == capIdx {
+			tag, _ := f.Tag.Lookup("json")
+			parts := kukistring.Split(tag, ",")
+			capName := parts[0]
+			if capName == "" {
+				capName = f.Name
+			}
+			names[foldJSONName(capName)] = true
+			continue
+		}
+		tag, _ := f.Tag.Lookup("json")
+		if tag == "-" {
+			continue
+		}
+		parts := kukistring.Split(tag, ",")
+		name := parts[0]
+		if name == "" && f.Anonymous {
+			ft := f.Type
+			if ft.Kind() == reflect.Pointer {
+				ft = ft.Elem()
+			}
+			if ft.Kind() == reflect.Struct {
+				collectKnownMemberNames(ft, -1, names, seen)
+				continue
+			}
+		}
+		if !f.IsExported() {
+			continue
+		}
+		if name == "" {
+			name = f.Name
+		}
+		names[foldJSONName(name)] = true
+	}
+}
+
+// applyUnknownCapture populates the `,unknown` field of the struct behind
+// target with every JSON object member not claimed by a known field. It runs
+// after the normalized typed decode, so known fields keep encoding/json/v2's
+// matching rules (tags, case-insensitivity, embedding) and only the leftovers
+// reach the capture map. Non-object documents leave the field untouched.
+func applyUnknownCapture(data []byte, target any) error {
+	rv := reflect.ValueOf(target)
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
+		return nil
+	}
+	elem := rv.Elem()
+	if elem.Kind() != reflect.Struct {
+		return nil
+	}
+	rt := elem.Type()
+	capIdx := findCaptureField(rt)
+	if capIdx < 0 {
+		return nil
+	}
+	if jsontext.Value(data).Kind() != jsontext.KindBeginObject {
+		return nil
+	}
+	members := map[string]jsontext.Value{}
+	err_17 := jsonv2.Unmarshal(data, &members, jsonv2.MatchCaseInsensitiveNames(true))
+	if err_17 != nil {
+		return err_17
+	}
+	known := knownMemberNames(rt, capIdx)
+	capType := rt.Field(capIdx).Type
+	keyType := capType.Key()
+	elemType := capType.Elem()
+	captured := reflect.MakeMap(capType)
+	for k, raw := range members {
+		if known[foldJSONName(k)] {
+			continue
+		}
+		item := reflect.New(elemType)
+		err_18 := jsonv2.Unmarshal(raw, item.Interface())
+		if err_18 != nil {
+			return errs.Wrap(err_18, "json: capture member "+k)
+		}
+		captured.SetMapIndex(reflect.ValueOf(k).Convert(keyType), item.Elem())
+	}
+	elem.Field(capIdx).Set(captured)
+	return nil
+}
+
+// validateStrictNested checks data against the type behind target (a pointer
+// to a capture-carrying struct): every member of every NESTED struct must be
+// claimed by that struct, or the error jsonv2's RejectUnknownMembers produces
+// (a *jsonv2.SemanticError wrapping jsonv2.ErrUnknownName) is returned. The
+// root's own unknown members are exempt — they were routed into the capture
+// map — but still validate against the capture map's element type, so a
+// capture slot typed as a struct is checked too. Non-object roots, scalars,
+// nulls, and interface-typed positions pass: the typed decode already
+// matched them, and strictness only concerns object members of structs.
+func validateStrictNested(data []byte, target any) error {
+	rv := reflect.ValueOf(target)
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
+		return nil
+	}
+	root := jsontext.Value(data)
+	if root.Kind() != jsontext.KindBeginObject {
+		return nil
+	}
+	return validateStrictWithin(root, rv.Elem().Type(), "", true)
+}
+
+// validateStrictWithin walks raw (a JSON value) against t (its Go type),
+// reporting any object member a nested struct does not claim. root marks the
+// capture-exempt level: only there may an unclaimed member pass (it was
+// captured); below the root an unclaimed member is an error, even on a
+// struct carrying its own `,unknown` field (capture is a root-level
+// contract; recursive capture is a tracked follow-up). Members are visited
+// in sorted key order so the first unknown reported is deterministic.
+func validateStrictWithin(raw jsontext.Value, t reflect.Type, ptr string, root bool) error {
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if raw.Kind() == jsontext.KindBeginObject {
+		members := map[string]jsontext.Value{}
+		err_19 := jsonv2.Unmarshal(raw, &members, jsonv2.MatchCaseInsensitiveNames(true))
+		if err_19 != nil {
+			return err_19
+		}
+		if t.Kind() == reflect.Struct {
+			capIdx := findCaptureField(t)
+			claimed := knownMemberNames(t, capIdx)
+			for _, name := range maps.SortedKeys(members) {
+				fk := foldJSONName(name)
+				escaped := pointerToken(name)
+				child := ptr + "/" + escaped
+				if claimed[fk] {
+					ft, ok := memberFieldType(t, fk)
+					if ok {
+						err_20 := validateStrictWithin(members[name], ft, child, false)
+						if err_20 != nil {
+							return err_20
+						}
+					}
+					continue
+				}
+				if root && capIdx >= 0 {
+					capType := t.Field(capIdx).Type
+					err_21 := validateStrictWithin(members[name], capType.Elem(), child, false)
+					if err_21 != nil {
+						return err_21
+					}
+					continue
+				}
+				return strictUnknownMemberError(t, child)
+			}
+			return nil
+		}
+		if t.Kind() == reflect.Map {
+			for _, name := range maps.SortedKeys(members) {
+				escaped := pointerToken(name)
+				err_22 := validateStrictWithin(members[name], t.Elem(), ptr+"/"+escaped, false)
+				if err_22 != nil {
+					return err_22
+				}
+			}
+		}
+		return nil
+	}
+	if raw.Kind() == jsontext.KindBeginArray {
+		if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
+			elems := []jsontext.Value{}
+			err_23 := jsonv2.Unmarshal(raw, &elems)
+			if err_23 != nil {
+				return err_23
+			}
+			for idx, e := range elems {
+				child := fmt.Sprintf("%v/%v", ptr, idx)
+				err_24 := validateStrictWithin(e, t.Elem(), child, false)
+				if err_24 != nil {
+					return err_24
+				}
+			}
+		}
+		return nil
+	}
+	return nil
+}
+
+// strictUnknownMemberError builds the error the strict entry points return
+// for an unclaimed member: a *jsonv2.SemanticError wrapping
+// jsonv2.ErrUnknownName with the JSON pointer to the offending member and the
+// Go type that did not claim it — the shape encoding/json/v2 itself produces
+// for RejectUnknownMembers, so errors.Is(err, jsonv2.ErrUnknownName) and the
+// documented SemanticError extraction recipe keep working for callers.
+// ByteOffset and JSONKind stay zero (the raw-walk position is the pointer).
+func strictUnknownMemberError(t reflect.Type, ptr string) error {
+	se := jsonv2.SemanticError{GoType: t, JSONPointer: jsontext.Pointer(ptr), Err: jsonv2.ErrUnknownName}
+	return &se
+}
+
+// pointerToken escapes a member name per RFC 6901 the way jsonv2 builds its
+// JSON pointers: "~" becomes "~0" first, then "/" becomes "~1".
+func pointerToken(name string) string {
+	return kukistring.ReplaceAll(kukistring.ReplaceAll(name, "~", "~0"), "/", "~1")
+}
+
+// memberFieldType returns the type of the struct field claiming the folded
+// member name — mirroring knownMemberNames' claim rules (tag name or field
+// name, folded; embedded structs promote their fields, even through
+// unexported embedded types; `json:"-"` never claims) — so strict validation
+// can recurse into the member's own type.
+func memberFieldType(rt reflect.Type, name string) (reflect.Type, bool) {
+	return memberFieldTypeSeen(rt, name, map[reflect.Type]bool{})
+}
+
+func memberFieldTypeSeen(rt reflect.Type, name string, seen map[reflect.Type]bool) (reflect.Type, bool) {
+	if seen[rt] {
+		return nil, false
+	}
+	seen[rt] = true
+	for f := range rt.Fields() {
+		tag, _ := f.Tag.Lookup("json")
+		if tag == "-" {
+			continue
+		}
+		parts := kukistring.Split(tag, ",")
+		fname := parts[0]
+		if fname == "" && f.Anonymous {
+			ft := f.Type
+			if ft.Kind() == reflect.Pointer {
+				ft = ft.Elem()
+			}
+			if ft.Kind() == reflect.Struct {
+				sub, ok := memberFieldTypeSeen(ft, name, seen)
+				if ok {
+					return sub, true
+				}
+				continue
+			}
+		}
+		if !f.IsExported() {
+			continue
+		}
+		if fname == "" {
+			fname = f.Name
+		}
+		if foldJSONName(fname) == name {
+			return f.Type, true
+		}
+	}
+	return nil, false
+}
+
+// marshalValue encodes value with the capture-aware encoder when value is a
+// struct (or pointer to one) carrying a usable `,unknown` field, and falls
+// back to encoding/json/v2 otherwise.
+func marshalValue(value any) ([]byte, error) {
+	ok, data, err := marshalWithCaptured(value)
+	if ok {
+		return data, err
+	}
+	return jsonv2.Marshal(value)
+}
+
+// marshalWithCaptured inlines a struct's `,unknown` map into the root JSON
+// object. It marshals the struct normally (preserving field order, tags, and
+// nested handling), drops the capture field's own member, then appends the
+// captured members sorted by key for deterministic output. Returns ok=false
+// when value is not a struct with a usable capture field.
+func marshalWithCaptured(value any) (bool, []byte, error) {
+	rt := reflect.TypeOf(value)
+	if rt == nil {
+		return false, nil, nil
+	}
+	if rt.Kind() == reflect.Pointer {
+		rt = rt.Elem()
+	}
+	if rt.Kind() != reflect.Struct {
+		return false, nil, nil
+	}
+	capIdx := findCaptureField(rt)
+	if capIdx < 0 {
+		return false, nil, nil
+	}
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return false, nil, nil
+		}
+		rv = rv.Elem()
+	}
+	base, err_25 := jsonv2.Marshal(value)
+	if err_25 != nil {
+		return true, nil, err_25
+	}
+	pairs, perr := jsonObjectPairs(base)
+	if perr != nil {
+		return true, nil, perr
+	}
+	capParts := kukistring.Split(rt.Field(capIdx).Tag.Get("json"), ",")
+	capName := capParts[0]
+	if capName == "" {
+		capName = rt.Field(capIdx).Name
+	}
+	cm := rv.Field(capIdx)
+	buf := bytes.Buffer{}
+	buf.WriteString("{")
+	first := true
+	for _, pair := range pairs {
+		if pair.key == capName {
+			continue
+		}
+		if !first {
+			buf.WriteString(",")
+		}
+		first = false
+		kb, err_26 := jsonv2.Marshal(pair.key)
+		if err_26 != nil {
+			return true, nil, err_26
+		}
+		buf.Write(kb)
+		buf.WriteString(":")
+		buf.Write([]byte(pair.raw))
+	}
+	for _, k := range reflectMapStringKeys(cm) {
+		v := cm.MapIndex(reflect.ValueOf(k).Convert(cm.Type().Key()))
+		vb, err_27 := jsonv2.Marshal(v.Interface())
+		if err_27 != nil {
+			return true, nil, errs.Wrap(err_27, "json: capture member "+k)
+		}
+		if !first {
+			buf.WriteString(",")
+		}
+		first = false
+		kb, err_28 := jsonv2.Marshal(k)
+		if err_28 != nil {
+			return true, nil, err_28
+		}
+		buf.Write(kb)
+		buf.WriteString(":")
+		buf.Write(vb)
+	}
+	buf.WriteString("}")
+	return true, buf.Bytes(), nil
+}
+
+// jsonObjectPairs walks an encoded JSON object into ordered key/raw pairs.
+// Used to rebuild an object with captured members inlined while preserving the
+// struct fields' declaration order.
+func jsonObjectPairs(data []byte) ([]jsonPair, error) {
+	dec := jsontext.NewDecoder(bytes.NewReader(data))
+	tok, terr := dec.ReadToken()
+	if terr != nil {
+		return nil, terr
+	}
+	if tok.Kind() != jsontext.KindBeginObject {
+		return nil, kukierrors.New("json: expected object while inlining captured members")
+	}
+	pairs := []jsonPair{}
+	for dec.PeekKind() != jsontext.KindEndObject {
+		keyTok, kerr := dec.ReadToken()
+		if kerr != nil {
+			return nil, kerr
+		}
+		key := keyTok.String()
+		raw, rerr := dec.ReadValue()
+		if rerr != nil {
+			return nil, rerr
+		}
+		pairs = append(pairs, jsonPair{key: key, raw: raw.Clone()})
+	}
+	_, _ = dec.ReadToken()
+	return pairs, nil
+}
+
+// reflectMapStringKeys returns a map's string keys sorted ascending. The
+// capture map is a string-keyed map with any value type (including a defined
+// string type); sorting keeps encoded output deterministic (Go map iteration is
+// randomized).
+func reflectMapStringKeys(cm reflect.Value) []string {
+	keys := []string{}
+	for _, k := range cm.MapKeys() {
+		keys = append(keys, k.String())
+	}
+	return sort.Strings(keys)
 }
 
 // JSONValue is a sum type over the six JSON value kinds. Returned by
@@ -369,11 +926,11 @@ func decodeJSON(v any) JSONValue {
 // Example: v := json.ParseBytesValue(data) onerr return
 func ParseBytesValue(data []byte) (JSONValue, error) {
 	raw := *new(any)
-	err_10 := ParseBytesInto(data, &raw)
-	if err_10 != nil {
-		err_10 = fmt.Errorf("failed to parse json value: %w", err_10)
+	err_29 := ParseBytesInto(data, &raw)
+	if err_29 != nil {
+		err_29 = fmt.Errorf("failed to parse json value: %w", err_29)
 		var _zero0 JSONValue
-		return _zero0, err_10
+		return _zero0, err_29
 	}
 	return decodeJSON(raw), nil
 }
@@ -382,11 +939,11 @@ func ParseBytesValue(data []byte) (JSONValue, error) {
 // Example: v := json.ParseValue(body) onerr return
 func ParseValue(data string) (JSONValue, error) {
 	raw := *new(any)
-	err_11 := ParseInto(data, &raw)
-	if err_11 != nil {
-		err_11 = fmt.Errorf("failed to parse json value: %w", err_11)
+	err_30 := ParseInto(data, &raw)
+	if err_30 != nil {
+		err_30 = fmt.Errorf("failed to parse json value: %w", err_30)
 		var _zero0 JSONValue
-		return _zero0, err_11
+		return _zero0, err_30
 	}
 	return decodeJSON(raw), nil
 }
@@ -396,13 +953,13 @@ func ParseValue(data string) (JSONValue, error) {
 func ReadValue(reader io.Reader) (JSONValue, error) {
 	raw := *new(any)
 	// pipe step 1: ReadInto(...)
-	err_12 := ReadInto(reader, &raw)
-	if err_12 != nil {
-		err_12 = fmt.Errorf("failed to read json value: %w", err_12)
+	err_31 := ReadInto(reader, &raw)
+	if err_31 != nil {
+		err_31 = fmt.Errorf("failed to read json value: %w", err_31)
 		var _zero0 JSONValue
-		return _zero0, err_12
+		return _zero0, err_31
 	}
-	_ = err_12
+	_ = err_31
 	return decodeJSON(raw), nil
 }
 
@@ -446,9 +1003,9 @@ func ParseBytesFrozen(data []byte) (Frozen, error) {
 		return Frozen{}, kukierrors.New("invalid json")
 	}
 	cp := v.Clone()
-	err_13 := cp.Canonicalize()
-	if err_13 != nil {
-		return Frozen{}, err_13
+	err_32 := cp.Canonicalize()
+	if err_32 != nil {
+		return Frozen{}, err_32
 	}
 	return Frozen{Canonical: string(cp)}, nil
 }
@@ -617,10 +1174,14 @@ func (c Codec) Encode(value any) ([]byte, error) {
 		rv = rv.Elem()
 	}
 	table := c.buildTable(rt)
+	capIdx := findCaptureField(rt)
 	buf := bytes.Buffer{}
 	buf.WriteString("{")
 	first := true
 	for _, f := range table.fields {
+		if f.index == capIdx {
+			continue
+		}
 		fv := rv.Field(f.index)
 		if f.omitEmpty && isZero(fv) {
 			continue
@@ -640,6 +1201,27 @@ func (c Codec) Encode(value any) ([]byte, error) {
 			return nil, verr
 		}
 		buf.Write(valBytes)
+	}
+	if capIdx >= 0 {
+		cm := rv.Field(capIdx)
+		for _, k := range reflectMapStringKeys(cm) {
+			v := cm.MapIndex(reflect.ValueOf(k).Convert(cm.Type().Key()))
+			vb, verr := jsonv2.Marshal(v.Interface())
+			if verr != nil {
+				return nil, errs.Wrap(verr, "json: capture member "+k)
+			}
+			if !first {
+				buf.WriteString(",")
+			}
+			first = false
+			kb, kerr := jsonv2.Marshal(k)
+			if kerr != nil {
+				return nil, kerr
+			}
+			buf.Write(kb)
+			buf.WriteString(":")
+			buf.Write(vb)
+		}
 	}
 	buf.WriteString("}")
 	return buf.Bytes(), nil

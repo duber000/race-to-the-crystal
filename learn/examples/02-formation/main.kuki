@@ -11,7 +11,7 @@ petiole main
 #   - structured results: Place returns DeployData with the new token's id
 #   - memo: Memo/Recall lets you keep state between your turns
 
-import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/game" as gp
 import "race-to-the-crystal/learn" as learn
 import "stdlib/parse"
 
@@ -19,7 +19,7 @@ func DeployFormation(api: reference learn.LearnerAPI)
     pos := parse.IntOr(api.Recall("next"), 0)
     result := api.Place(10, pos, 2)
     switch result.Data as dd
-        when gamepkg.DeployData
+        when gp.DeployData
             api.Memo("t{pos}", "{dd.NewTokenID}")
             api.Say("token #{dd.NewTokenID} deployed at ({pos}, 2)")
         default

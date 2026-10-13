@@ -110,3 +110,151 @@ func TestRaw(t *testing.T) {
 		test.AssertEqual(t, html.Embed(page), "<article><em>safe</em></article>")
 	})
 }
+
+// --- TestClasses ---
+func TestClasses(t *testing.T) {
+	t.Run("active classes sorted and joined", func(t *testing.T) {
+		classes := map[string]bool{"btn": true, "active": true, "hidden": false}
+		test.AssertEqual(t, html.Classes(classes), "active btn")
+	})
+	t.Run("deterministic regardless of insertion order", func(t *testing.T) {
+		classes := map[string]bool{"z": true, "a": true, "m": true}
+		test.AssertEqual(t, html.Classes(classes), "a m z")
+	})
+	t.Run("all false yields empty", func(t *testing.T) {
+		test.AssertEqual(t, html.Classes(map[string]bool{"a": false}), "")
+	})
+	t.Run("empty map yields empty", func(t *testing.T) {
+		test.AssertEqual(t, html.Classes(map[string]bool{}), "")
+	})
+}
+
+// --- TestClassList ---
+func TestClassList(t *testing.T) {
+	t.Run("trims whitespace and drops empty tokens", func(t *testing.T) {
+		test.AssertEqual(t, html.ClassList("  px-4  py-2 ", "", "  ", "btn"), "px-4 py-2 btn")
+	})
+	t.Run("conditionals without empty-string fallback", func(t *testing.T) {
+		isActive := true
+		test.AssertEqual(t, html.ClassList("btn", func() string {
+			if isActive {
+				return "active"
+			} else {
+				return ""
+			}
+		}()), "btn active")
+	})
+	t.Run("no arguments yields empty", func(t *testing.T) {
+		test.AssertEqual(t, html.ClassList(), "")
+	})
+}
+
+// --- TestBoolAttr ---
+func TestBoolAttr(t *testing.T) {
+	t.Run("true yields a leading-space attribute", func(t *testing.T) {
+		f := html.BoolAttr("disabled", true)
+		test.AssertEqual(t, html.Embed(f), " disabled")
+	})
+	t.Run("false yields an empty fragment", func(t *testing.T) {
+		test.AssertEqual(t, html.Embed(html.BoolAttr("disabled", false)), "")
+	})
+	t.Run("punctuation is permitted in names", func(t *testing.T) {
+		test.AssertEqual(t, html.Embed(html.BoolAttr("data-x:y.z", true)), " data-x:y.z")
+	})
+	t.Run("on* handler name panics", func(t *testing.T) {
+		test.AssertPanicsMessage(t, "onclick rejected", "event-handler", func() {
+			html.BoolAttr("onclick", true)
+		})
+	})
+	t.Run("invalid character panics", func(t *testing.T) {
+		test.AssertPanicsMessage(t, "space rejected", "invalid character", func() {
+			html.BoolAttr("disable d", true)
+		})
+	})
+	t.Run("empty name panics", func(t *testing.T) {
+		test.AssertPanicsMessage(t, "empty rejected", "must not be empty", func() {
+			html.BoolAttr("", true)
+		})
+	})
+}
+
+// --- TestBoolAttrInRender ---
+func TestBoolAttrInRender(t *testing.T) {
+	t.Run("inlines right after the tag name without a double space", func(t *testing.T) {
+		page := html.Render(fmt.Sprintf("<button type=\"submit\"%v>Click</button>", html.Embed(html.BoolAttr("disabled", true))))
+		test.AssertEqual(t, html.Embed(page), "<button type=\"submit\" disabled>Click</button>")
+	})
+	t.Run("false leaves a clean tag", func(t *testing.T) {
+		page := html.Render(fmt.Sprintf("<button type=\"submit\"%v>Click</button>", html.Embed(html.BoolAttr("disabled", false))))
+		test.AssertEqual(t, html.Embed(page), "<button type=\"submit\">Click</button>")
+	})
+	t.Run("Classes composes into a class attribute", func(t *testing.T) {
+		classes := map[string]bool{"btn": true, "active": true}
+		page := html.Render(fmt.Sprintf("<div class=\"%v\">x</div>", html.Escape(html.Classes(classes))))
+		test.AssertEqual(t, html.Embed(page), "<div class=\"active btn\">x</div>")
+	})
+}
+
+// --- TestURLAttr ---
+type URLAttrCase struct {
+	name  string
+	input string
+	want  string
+}
+
+func TestURLAttr(t *testing.T) {
+	cases := []URLAttrCase{URLAttrCase{name: "http passes through", input: "http://example.com", want: "http://example.com"}, URLAttrCase{name: "https with path and query passes through", input: "https://example.com/p?q=1", want: "https://example.com/p?q=1"}, URLAttrCase{name: "uppercase scheme passes through", input: "HTTP://example.com", want: "HTTP://example.com"}, URLAttrCase{name: "mailto passes through", input: "mailto:a@b.test", want: "mailto:a@b.test"}, URLAttrCase{name: "tel passes through", input: "tel:+15551234567", want: "tel:+15551234567"}, URLAttrCase{name: "relative path passes through", input: "/users/42", want: "/users/42"}, URLAttrCase{name: "colon past the first segment stays relative", input: "/a/b:c", want: "/a/b:c"}, URLAttrCase{name: "query passes through", input: "?next=/home", want: "?next=/home"}, URLAttrCase{name: "fragment passes through", input: "#top", want: "#top"}, URLAttrCase{name: "protocol-relative passes through", input: "//cdn.example.com/x.js", want: "//cdn.example.com/x.js"}, URLAttrCase{name: "empty passes through", input: "", want: ""}, URLAttrCase{name: "invalid scheme token stays relative", input: "a b:c", want: "a b:c"}, URLAttrCase{name: "javascript replaced with fragment", input: "javascript:alert(1)", want: "#"}, URLAttrCase{name: "javascript case-insensitive replaced", input: "JaVaScRiPt:alert(1)", want: "#"}, URLAttrCase{name: "javascript with interior tab replaced", input: "jav\tascript:alert(1)", want: "#"}, URLAttrCase{name: "javascript with interior newline replaced", input: "java\nscript:alert(1)", want: "#"}, URLAttrCase{name: "javascript with leading space replaced", input: "  javascript:alert(1)", want: "#"}, URLAttrCase{name: "javascript with leading control char replaced", input: "\x0bjavascript:alert(1)", want: "#"}, URLAttrCase{name: "javascript with leading NUL replaced", input: "\x00javascript:alert(1)", want: "#"}, URLAttrCase{name: "data replaced with fragment", input: "data:text/html;base64,PHNjcmlwdD4=", want: "#"}, URLAttrCase{name: "vbscript replaced with fragment", input: "vbscript:msgbox(1)", want: "#"}, URLAttrCase{name: "file replaced with fragment", input: "file:///etc/passwd", want: "#"}, URLAttrCase{name: "unknown scheme replaced with fragment", input: "steam://run/123", want: "#"}}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			test.AssertEqual(t, html.URLAttr(tc.input), tc.want)
+		})
+	}
+}
+
+// --- TestBuilder ---
+// NavLink is the per-item conditional fixture for the Builder loop test.
+type NavLink struct {
+	label     string
+	dialogFor string
+}
+
+func TestBuilder(t *testing.T) {
+	t.Run("joins fragments in order", func(t *testing.T) {
+		b := html.NewBuilder()
+		b.Add(html.Render("<p>one</p>"), html.Render("<p>two</p>"))
+		test.AssertEqual(t, html.Embed(b.Fragment()), "<p>one</p><p>two</p>")
+	})
+	t.Run("Add chains for one-expression assembly", func(t *testing.T) {
+		nav := html.Render("<nav>nav</nav>")
+		main := html.Render("<main>main</main>")
+		page := html.NewBuilder().Add(nav, main).Fragment()
+		test.AssertEqual(t, html.Embed(page), "<nav>nav</nav><main>main</main>")
+	})
+	t.Run("AddList appends a whole list", func(t *testing.T) {
+		items := []html.Fragment{html.Render("<li>a</li>"), html.Render("<li>b</li>")}
+		page := html.NewBuilder().AddList(items).Fragment()
+		test.AssertEqual(t, html.Embed(page), "<li>a</li><li>b</li>")
+	})
+	t.Run("empty builder yields an empty fragment", func(t *testing.T) {
+		test.AssertEqual(t, html.Embed(html.NewBuilder().Fragment()), "")
+	})
+	t.Run("interleaves Add and AddList in call order", func(t *testing.T) {
+		b := html.NewBuilder()
+		b.Add(html.Render("<ul>"))
+		b.AddList([]html.Fragment{html.Render("<li>a</li>")})
+		b.Add(html.Render("</ul>"))
+		test.AssertEqual(t, html.Embed(b.Fragment()), "<ul><li>a</li></ul>")
+	})
+	t.Run("loop with per-item condition stays linear and readable", func(t *testing.T) {
+		links := []NavLink{NavLink{label: "Open", dialogFor: "modal"}, NavLink{label: "Docs", dialogFor: ""}}
+		b := html.NewBuilder()
+		for _, link := range links {
+			if link.dialogFor != "" {
+				b.Add(html.Render(fmt.Sprintf("<button commandfor=\"%v\">%v</button>", html.Escape(link.dialogFor), html.Escape(link.label))))
+			} else {
+				b.Add(html.Render(fmt.Sprintf("<a href=\"/docs\">%v</a>", html.Escape(link.label))))
+			}
+		}
+		test.AssertEqual(t, html.Embed(b.Fragment()), "<button commandfor=\"modal\">Open</button><a href=\"/docs\">Docs</a>")
+	})
+}

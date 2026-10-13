@@ -3,7 +3,8 @@
 // Kukicha Standard Library - HTML Components
 // Component-style HTML rendering with auto-escaping for safe composition.
 // Uses Kukicha string interpolation ({expr}) as the template engine.
-// All user-facing values must go through Escape(); fragments compose via Embed().
+// All user-facing values must go through Escape(); fragments compose via
+// Embed(), incrementally via Builder, and URL-attribute values via URLAttr.
 //
 // Design inspired by templ (https://templ.guide/) by Adrian Hesketh.
 // templ's typed component model and auto-escaping boundary informed the
@@ -12,8 +13,12 @@ package html
 
 import (
 	"bytes"
+	"fmt"
 	"html"
 	"io"
+	"kukicha.org/kukicha/stdlib/slice"
+	"kukicha.org/kukicha/stdlib/sort"
+	kukistring "kukicha.org/kukicha/stdlib/string"
 	"net/http"
 )
 
@@ -59,12 +64,99 @@ func Raw(s string) Fragment {
 // nodes and quoted attribute values. It does NOT make values safe in
 // unquoted attributes (&lt;div class={x}&gt;), JS/event-handler contexts
 // (onclick=), &lt;script&gt; bodies, or URL attributes (href="{x}" where
-// javascript: payloads survive escaping). For anything richer than element
-// text and quoted attributes, use html/template via stdlib/template.HTML
-// — it is context-aware.
+// javascript: payloads survive escaping) — wrap URL-attribute values in
+// html.URLAttr for the scheme check. Interpolations in html.Render/http.HTML
+// sinks are auto-escaped by the compiler, so an explicit Escape there is
+// redundant but harmless.
 // Example: html.Render("<p>{html.Escape(userInput)}</p>")
 func Escape(s string) string {
 	return html.EscapeString(s)
+}
+
+// URLAttr gates a URL for interpolation into a quoted URL attribute
+// (href, src, action, formaction, poster, cite, background, data) and returns
+// it unchanged when its scheme is safe: no scheme at all (relative paths,
+// fragments, queries, protocol-relative //host URLs) or one of http, https,
+// mailto, tel, ftp, ftps, sms. Any other scheme — javascript:, data:,
+// vbscript:, file:, or an unlisted custom one — is replaced with "#", failing
+// closed. html.Escape cannot make a URL attribute safe on its own:
+// "javascript:alert(1)" contains no escapable characters, so the scheme
+// injection survives escaping. Interpolate the call directly — the value is
+// still auto-escaped, so URLAttr is a scheme gate, not an escaping boundary:
+//
+//	html.Render("<a href=\"{html.URLAttr(userWebsite)}\">site</a>")
+//
+// The check is browser-normalized: TAB/CR/LF are stripped anywhere in the
+// URL and leading C0 controls/space are ignored, matching how browsers
+// canonicalize "jav\tascript:alert(1)" into a live javascript: URL.
+// The compile-time twin of this gate lives in internal/semantic
+// (checkHTMLURLAttrParts), which flags href=/src= interpolations written
+// without it.
+func URLAttr(s string) string {
+	stripped := kukistring.ReplaceAll(kukistring.ReplaceAll(kukistring.ReplaceAll(s, "\t", ""), "\n", ""), "\r", "")
+	idx := kukistring.Index(stripped, ":")
+	if idx < 0 {
+		return s
+	}
+	scheme := kukistring.TrimLeft(stripped[:idx], urlControlCutset)
+	if len(scheme) == 0 {
+		return s
+	}
+	if !isURLSchemeToken(scheme) {
+		return s
+	}
+	if slice.Contains(urlAttrAllowedSchemes, kukistring.ToLower(scheme)) {
+		return s
+	}
+	return "#"
+}
+
+// urlControlCutset is every byte a browser ignores at the start of a URL:
+// the C0 control characters (0x00-0x1f) and space. "\x0bjavascript:alert(1)"
+// is a javascript: link in every browser, so the scheme check must see past
+// them.
+var urlControlCutset string = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f "
+
+// urlAttrAllowedSchemes is the URL-attribute scheme allowlist; URLAttr
+// replaces any other syntactically valid scheme with "#".
+var urlAttrAllowedSchemes []string = []string{"http", "https", "mailto", "tel", "ftp", "ftps", "sms"}
+
+// isURLSchemeToken reports whether prefix is a syntactically valid URL scheme
+// per RFC 3986: an ASCII letter followed by ASCII letters, digits, '+', '-'.
+// or '.'. A prefix that is not a valid scheme token means the URL is relative
+// (e.g. "/a/b:c"), which is safe to pass through.
+func isURLSchemeToken(prefix string) bool {
+	if len(prefix) == 0 {
+		return false
+	}
+	first := true
+	for _, r := range prefix {
+		if !isURLSchemeRune(r, first) {
+			return false
+		}
+		first = false
+	}
+	return true
+}
+
+// isURLSchemeRune reports whether r is allowed in a URL scheme token: an
+// ASCII letter at the first position, or a letter, digit, '+', '-', or '.'
+// after it.
+func isURLSchemeRune(r rune, first bool) bool {
+	ch := kukistring.ToLower(string(r))
+	if kukistring.Contains("abcdefghijklmnopqrstuvwxyz", ch) {
+		return true
+	}
+	if first {
+		return false
+	}
+	if kukistring.Contains("0123456789", ch) {
+		return true
+	}
+	if kukistring.Contains("+-.", ch) {
+		return true
+	}
+	return false
 }
 
 // Embed returns the raw HTML content of a Fragment for composition.
@@ -112,6 +204,58 @@ func JoinList(fragments []Fragment) Fragment {
 	return Fragment{content: buf.String()}
 }
 
+// Builder is an incremental Fragment accumulator for loops — the linear
+// replacement for the hand-rolled accumulate idiom
+// (x = html.Render("{html.Embed(x)}<li>...</li>") inside a loop), which
+// rebuilds the whole string on every iteration. Builder keeps loop bodies
+// plain Kukicha, so per-item conditionals read naturally:
+//
+//	b := html.NewBuilder()
+//	for link in links
+//	    if link.DialogFor isnt ""
+//	        b.Add(html.Render("<button ...>"))
+//	    else
+//	        b.Add(html.Render("<a href=\"{html.URLAttr(link.Href)}\">..."))
+//	return b.Fragment()
+//
+// For a plain map over items, html.Map or fragments |> html.JoinList() are
+// already linear; Builder earns its keep when the loop has conditionals or
+// interleaves list and single fragments.
+// Example: page := html.NewBuilder().Add(nav, main).AddList(rows).Fragment()
+type Builder struct {
+	parts []Fragment
+}
+
+// NewBuilder creates an empty Fragment accumulator.
+// Example: b := html.NewBuilder()
+func NewBuilder() *Builder {
+	return &Builder{parts: []Fragment{}}
+}
+
+// Add appends one or more Fragments and returns the builder for chaining.
+// Example: b.Add(row, footer) — or html.NewBuilder().Add(a, b)
+func (b *Builder) Add(fragments ...Fragment) *Builder {
+	b.parts = append(b.parts, fragments...)
+	return b
+}
+
+// AddList appends a list of Fragments and returns the builder for chaining.
+// Example: b.AddList(rows)
+func (b *Builder) AddList(fragments []Fragment) *Builder {
+	b.parts = append(b.parts, fragments...)
+	return b
+}
+
+// Fragment joins the accumulated Fragments into one, in call order.
+// Example: page := b.Fragment()
+func (b *Builder) Fragment() Fragment {
+	buf := bytes.Buffer{}
+	for _, f := range b.parts {
+		buf.WriteString(f.content)
+	}
+	return Fragment{content: buf.String()}
+}
+
 // WriteFragment writes a Fragment to a writer, fragment first for pipes.
 // Example: frag |> html.WriteFragment(w) onerr discard
 func WriteFragment(f Fragment, w http.ResponseWriter) error {
@@ -141,4 +285,94 @@ func When(condition bool, f Fragment) Fragment {
 		return f
 	}
 	return Fragment{content: ""}
+}
+
+// Classes renders a space-delimited `class` attribute value from a map of class
+// names to booleans, including each name whose flag is true. Active names are
+// sorted alphabetically before joining, so the output is deterministic across
+// Go's randomized map iteration — safe for golden tests and server renders.
+// Example:
+//
+//	html.Render("<div class=\"{html.Classes(map of string to bool{\"btn\": true, \"active\": isActive})}\">Submit</div>")
+func Classes(classes map[string]bool) string {
+	active := []string{}
+	for name, enabled := range classes {
+		if enabled {
+			active = append(active, name)
+		}
+	}
+	return kukistring.Join(sort.Strings(active), " ")
+}
+
+// ClassList joins class-name fragments into a space-delimited `class` value,
+// trimming surrounding whitespace and discarding empty tokens, so conditionally
+// included classes never leave double spaces. Unlike Classes it takes strings,
+// which lets it compose with inline conditionals:
+//
+//	html.ClassList("px-4 py-2", if isActive then "ring-2" else "", if isDisabled then "opacity-50" else "")
+func ClassList(classes ...string) string {
+	tokens := []string{}
+	for _, c := range classes {
+		for _, token := range kukistring.Fields(c) {
+			tokens = append(tokens, token)
+		}
+	}
+	return kukistring.Join(tokens, " ")
+}
+
+// BoolAttr renders an HTML5 boolean attribute (`disabled`, `checked`,
+// `selected`, `required`, `readonly`, `hidden`, …) only when condition is true;
+// false yields an empty Fragment. Browsers evaluate boolean attributes by
+// presence, not value — `<input disabled="false">` is still disabled — so
+// omission is the only way to mean false, which otherwise forces duplicated
+// markup or an if/else. The leading space lets the attribute be inlined right
+// after a tag name:
+//
+//	html.Render("<button type=\"submit\"{html.BoolAttr(\"disabled\", isDisabled)}>Click</button>")
+//
+// The name must be a valid HTML attribute token (ASCII letters, digits, '-',
+// '_', ':', '.') and must not be an `on*` event handler; a malformed or unsafe
+// name panics rather than emitting attribute-injection markup. `html.BoolAttr`
+// with a literal name is also checked at compile time.
+func BoolAttr(name string, condition bool) Fragment {
+	if !condition {
+		return Fragment{content: ""}
+	}
+	validateBoolAttrName(name)
+	return Fragment{content: " " + name}
+}
+
+// validateBoolAttrName panics when name is not a safe HTML attribute token.
+// Mirrors the compile-time check in the semantic security pass.
+func validateBoolAttrName(name string) {
+	if name == "" {
+		panic("html.BoolAttr: attribute name must not be empty")
+	}
+	if kukistring.HasPrefix(kukistring.ToLower(name), "on") {
+		panic(fmt.Sprintf("html.BoolAttr: refusing event-handler attribute name \"%v\" (on*) — use addEventListener in a static .js file", name))
+	}
+	for _, r := range name {
+		if !isBoolAttrNameRune(r) {
+			panic(fmt.Sprintf("html.BoolAttr: invalid character in attribute name \"%v\" (allowed: letters, digits, '-', '_', ':', '.')", name))
+		}
+	}
+}
+
+// isBoolAttrNameRune reports whether r is permitted in an HTML attribute name:
+// an ASCII letter, digit, or one of '-', '_', ':', '.'.
+func isBoolAttrNameRune(r rune) bool {
+	ch := string(r)
+	if kukistring.Contains("abcdefghijklmnopqrstuvwxyz", ch) {
+		return true
+	}
+	if kukistring.Contains("ABCDEFGHIJKLMNOPQRSTUVWXYZ", ch) {
+		return true
+	}
+	if kukistring.Contains("0123456789", ch) {
+		return true
+	}
+	if kukistring.Contains("-_:.", ch) {
+		return true
+	}
+	return false
 }

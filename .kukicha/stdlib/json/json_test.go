@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"kukicha.org/kukicha/stdlib/json"
+	"kukicha.org/kukicha/stdlib/maps"
 	"kukicha.org/kukicha/stdlib/test"
 	"strings"
 	"testing"
@@ -1322,4 +1323,329 @@ func TestReadStrict_RejectsUnknown(t *testing.T) {
 	reader := bytes.NewBufferString(`{"Name": "exact", "Port": 1, "Spam": true}`)
 	_, err := json.ReadStrict[Untagged](reader)
 	test.AssertError(t, err)
+}
+
+// WebhookEvent models an open-schema payload: known fields plus an
+// `,unknown` capture map for forward-compatible extras.
+type WebhookEvent struct {
+	ID     string         `json:"id"`
+	Action string         `json:"action"`
+	Extra  map[string]any `json:",unknown"`
+}
+
+func TestUnknownCapture_Parse(t *testing.T) {
+	raw := "{\"id\":\"a\",\"action\":\"push\",\"foo\":\"x\",\"bar\":2,\"nested\":{\"k\":true}}"
+	ev, err_38 := json.Parse[WebhookEvent](raw)
+	if err_38 != nil {
+		panic(fmt.Sprintf("%v", err_38))
+	}
+	test.AssertEqual(t, ev.ID, "a")
+	test.AssertEqual(t, ev.Action, "push")
+	test.AssertEqual(t, len(ev.Extra), 3)
+	test.AssertEqual(t, ev.Extra["foo"], "x")
+	if !(maps.Contains(ev.Extra, "nested")) {
+		t.Error("nested extra missing")
+	}
+}
+
+func TestUnknownCapture_CaseVariantNotLeaked(t *testing.T) {
+	raw := "{\"ID\":\"b\",\"ACTION\":\"noop\",\"zzz\":9}"
+	ev, err_39 := json.Parse[WebhookEvent](raw)
+	if err_39 != nil {
+		panic(fmt.Sprintf("%v", err_39))
+	}
+	test.AssertEqual(t, ev.ID, "b")
+	test.AssertEqual(t, ev.Action, "noop")
+	test.AssertEqual(t, len(ev.Extra), 1)
+	if !(maps.Contains(ev.Extra, "zzz")) {
+		t.Error("zzz should be captured")
+	}
+	if maps.Contains(ev.Extra, "id") || maps.Contains(ev.Extra, "ID") || maps.Contains(ev.Extra, "action") {
+		t.Error("case-variant of a known field leaked into extras")
+	}
+}
+
+func TestUnknownCapture_StrictCapturesInsteadOfRejecting(t *testing.T) {
+	raw := "{\"id\":\"a\",\"action\":\"push\",\"foo\":\"x\"}"
+	ev, err_40 := json.ParseStrict[WebhookEvent](raw)
+	if err_40 != nil {
+		panic(fmt.Sprintf("%v", err_40))
+	}
+	test.AssertEqual(t, ev.ID, "a")
+	test.AssertEqual(t, len(ev.Extra), 1)
+	test.AssertEqual(t, ev.Extra["foo"], "x")
+}
+
+// --- Strict × capture: the nesting contract ---
+// A root `,unknown` capture field exempts only its own level. Unknown members
+// of NESTED structs are still rejected by the strict entry points. Before the
+// nested-validation fix, strict was dropped for the whole document when the
+// root carried a capture field, so a nested unknown member was neither
+// captured (the capture walk never leaves the root) nor rejected — it was
+// silently discarded.
+//
+// The rejection is asserted by message (the jsonv2.ErrUnknownName sentinel's
+// text) rather than errors.Is because json_test.kuki cannot import
+// encoding/json/v2 directly: an aliased jsonv2 import poisons `json.`-qualified
+// resolution against the stdlib/json petiole binding (issue 3mxmzovz7s422).
+type StrictChild struct {
+	Name string
+}
+
+type StrictOuter struct {
+	Child StrictChild
+	Extra map[string]any `json:",unknown"`
+}
+
+func TestUnknownCapture_StrictRejectsNestedUnknown(t *testing.T) {
+	_, err := json.ParseStrict[StrictOuter]("{\"child\":{\"name\":\"x\",\"typo\":1}}")
+	if err == nil {
+		t.Error("strict must reject a nested unknown member; it returned success and silently discarded the member")
+		return
+	}
+	if !strings.Contains(err.Error(), "unknown object member name") {
+		t.Errorf("nested rejection must report jsonv2.ErrUnknownName, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "typo") {
+		t.Errorf("error should name the unknown member, got: %v", err)
+	}
+}
+
+func TestUnknownCapture_StrictStillCapturesRootUnknowns(t *testing.T) {
+	ev, err_41 := json.ParseStrict[StrictOuter]("{\"child\":{\"name\":\"x\"},\"foo\":\"captured\"}")
+	if err_41 != nil {
+		panic(fmt.Sprintf("%v", err_41))
+	}
+	test.AssertEqual(t, ev.Child.Name, "x")
+	test.AssertEqual(t, ev.Extra["foo"], "captured")
+}
+
+// StrictChild nested behind a pointer field: the validation walk derefs on
+// the way down.
+type StrictPtrOuter struct {
+	Child *StrictChild
+	Extra map[string]any `json:",unknown"`
+}
+
+func TestUnknownCapture_StrictRejectsNestedUnknownThroughPointer(t *testing.T) {
+	_, err := json.ParseStrict[StrictPtrOuter]("{\"child\":{\"name\":\"x\",\"typo\":1}}")
+	test.AssertError(t, err)
+}
+
+// Unknowns inside slice elements and map values are rejected too.
+type StrictBatch struct {
+	Items []StrictChild
+	Extra map[string]any `json:",unknown"`
+}
+
+func TestUnknownCapture_StrictRejectsUnknownInSliceItem(t *testing.T) {
+	_, err := json.ParseStrict[StrictBatch]("{\"items\":[{\"name\":\"a\"},{\"name\":\"b\",\"typo\":2}]}")
+	test.AssertError(t, err)
+}
+
+type StrictRegistry struct {
+	Kids  map[string]StrictChild
+	Extra map[string]any `json:",unknown"`
+}
+
+func TestUnknownCapture_StrictRejectsUnknownInMapValue(t *testing.T) {
+	_, err := json.ParseStrict[StrictRegistry]("{\"kids\":{\"one\":{\"name\":\"x\",\"typo\":1}}}")
+	test.AssertError(t, err)
+}
+
+// Depth: the walk recurses through more than one struct level.
+type StrictMid struct {
+	Leaf StrictChild
+}
+
+type StrictTop struct {
+	Mid   StrictMid
+	Extra map[string]any `json:",unknown"`
+}
+
+func TestUnknownCapture_StrictRejectsDeepNestedUnknown(t *testing.T) {
+	_, err := json.ParseStrict[StrictTop]("{\"mid\":{\"leaf\":{\"name\":\"x\",\"typo\":1}}}")
+	test.AssertError(t, err)
+}
+
+// A nested struct with its own `,unknown` field is treated like any other
+// nested struct under strict: capture is a root-level contract, and recursive
+// capture is a tracked follow-up, not implemented.
+type StrictInner struct {
+	Name  string
+	Extra map[string]any `json:",unknown"`
+}
+
+type StrictHolder struct {
+	Inner StrictInner
+	Extra map[string]any `json:",unknown"`
+}
+
+func TestUnknownCapture_StrictRejectsNestedCaptureStructUnknown(t *testing.T) {
+	_, err := json.ParseStrict[StrictHolder]("{\"inner\":{\"name\":\"x\",\"typo\":1}}")
+	test.AssertError(t, err)
+}
+
+// The reader entry point routes through the same validation.
+func TestUnknownCapture_ReadStrictRejectsNestedUnknown(t *testing.T) {
+	reader := bytes.NewBufferString("{\"child\":{\"name\":\"x\",\"typo\":1}}")
+	_, err := json.ReadStrict[StrictOuter](reader)
+	if err == nil {
+		t.Error("strict must reject a nested unknown member; it returned success and silently discarded the member")
+		return
+	}
+	if !strings.Contains(err.Error(), "unknown object member name") {
+		t.Errorf("nested rejection must report jsonv2.ErrUnknownName, got: %v", err)
+	}
+}
+
+// Non-strict stays lenient: nested unknown members are ignored (they are not
+// captured — capture is root-level — but non-strict never rejects).
+func TestUnknownCapture_NonStrictIgnoresNestedUnknown(t *testing.T) {
+	ev, err_42 := json.Parse[StrictOuter]("{\"child\":{\"name\":\"x\",\"typo\":1},\"foo\":\"captured\"}")
+	if err_42 != nil {
+		panic(fmt.Sprintf("%v", err_42))
+	}
+	test.AssertEqual(t, ev.Child.Name, "x")
+	test.AssertEqual(t, ev.Extra["foo"], "captured")
+}
+
+func TestUnknownCapture_Read(t *testing.T) {
+	reader := bytes.NewBufferString("{\"id\":\"a\",\"action\":\"push\",\"foo\":\"x\"}")
+	ev, err_43 := json.Read[WebhookEvent](reader)
+	if err_43 != nil {
+		panic(fmt.Sprintf("%v", err_43))
+	}
+	test.AssertEqual(t, ev.Extra["foo"], "x")
+}
+
+func TestUnknownCapture_MarshalInlinesAndSorts(t *testing.T) {
+	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{"foo": "x", "bar": 2}}
+	s, err_44 := json.String(ev)
+	if err_44 != nil {
+		panic(fmt.Sprintf("%v", err_44))
+	}
+	test.AssertEqual(t, s, "{\"id\":\"a\",\"action\":\"push\",\"bar\":2,\"foo\":\"x\"}")
+}
+
+func TestUnknownCapture_MarshalEmptyOmitsCaptureMember(t *testing.T) {
+	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{}}
+	s, err_45 := json.String(ev)
+	if err_45 != nil {
+		panic(fmt.Sprintf("%v", err_45))
+	}
+	test.AssertEqual(t, s, "{\"id\":\"a\",\"action\":\"push\"}")
+}
+
+func TestUnknownCapture_RoundTrip(t *testing.T) {
+	raw := "{\"id\":\"a\",\"action\":\"push\",\"foo\":\"x\",\"bar\":2}"
+	ev, err_46 := json.Parse[WebhookEvent](raw)
+	if err_46 != nil {
+		panic(fmt.Sprintf("%v", err_46))
+	}
+	out, err_47 := json.String(ev)
+	if err_47 != nil {
+		panic(fmt.Sprintf("%v", err_47))
+	}
+	test.AssertEqual(t, out, "{\"id\":\"a\",\"action\":\"push\",\"bar\":2,\"foo\":\"x\"}")
+}
+
+func TestUnknownCapture_PrettyInlines(t *testing.T) {
+	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{"foo": "x"}}
+	s, err_48 := json.PrettyString(ev)
+	if err_48 != nil {
+		panic(fmt.Sprintf("%v", err_48))
+	}
+	if strings.Contains(s, "Extra") {
+		t.Errorf("pretty output leaked the capture field name: %s", s)
+	}
+	if !strings.Contains(s, `"foo": "x"`) {
+		t.Errorf("pretty output missing inlined extra: %s", s)
+	}
+}
+
+// Delimited has a known field whose JSON name differs from a document member
+// only by a delimiter; jsonv2 folds '_'/'-' as well as case, so the variant is
+// claimed by UserID and must not leak into the extras.
+type Delimited struct {
+	UserID string         `json:"user_id"`
+	Extra  map[string]any `json:",unknown"`
+}
+
+func TestUnknownCapture_DelimiterVariantNotLeaked(t *testing.T) {
+	ev, err_49 := json.Parse[Delimited]("{\"user_id\":\"attacker\",\"other\":1}")
+	if err_49 != nil {
+		panic(fmt.Sprintf("%v", err_49))
+	}
+	test.AssertEqual(t, ev.UserID, "attacker")
+	test.AssertEqual(t, len(ev.Extra), 1)
+	if !(maps.Contains(ev.Extra, "other")) {
+		t.Error("other should be captured")
+	}
+	if maps.Contains(ev.Extra, "user_id") || maps.Contains(ev.Extra, "user-id") {
+		t.Error("delimiter variant of a known field leaked into extras")
+	}
+}
+
+// CaptureKey is a defined string type: the capture map's key must be converted
+// to that type on decode and encode, not passed as a plain string (which
+// panics).
+type CaptureKey string
+
+type NamedKey struct {
+	ID    string             `json:"id"`
+	Extra map[CaptureKey]any `json:",unknown"`
+}
+
+func TestUnknownCapture_NamedStringKey(t *testing.T) {
+	ev, err_50 := json.Parse[NamedKey]("{\"id\":\"a\",\"foo\":1}")
+	if err_50 != nil {
+		panic(fmt.Sprintf("%v", err_50))
+	}
+	test.AssertEqual(t, ev.ID, "a")
+	test.AssertEqual(t, len(ev.Extra), 1)
+	out, err_51 := json.String(ev)
+	if err_51 != nil {
+		panic(fmt.Sprintf("%v", err_51))
+	}
+	test.AssertEqual(t, out, "{\"id\":\"a\",\"foo\":1}")
+}
+
+// Node embeds itself by pointer; collecting known member names must not recurse
+// forever.
+type Node struct {
+	Value string `json:"value"`
+	*Node
+	Extra map[string]any `json:",unknown"`
+}
+
+func TestUnknownCapture_SelfEmbeddingDoesNotRecurse(t *testing.T) {
+	ev, err_52 := json.Parse[Node]("{\"value\":\"v\",\"x\":1}")
+	if err_52 != nil {
+		panic(fmt.Sprintf("%v", err_52))
+	}
+	test.AssertEqual(t, ev.Value, "v")
+	test.AssertEqual(t, len(ev.Extra), 1)
+}
+
+func TestUnknownCapture_EncodeWriter(t *testing.T) {
+	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{"foo": "x", "bar": 2}}
+	buf := bytes.Buffer{}
+	enc := json.NewEncoder(&buf)
+	err_53 := json.Encode(enc, ev)
+	if err_53 != nil {
+		panic(fmt.Sprintf("%v", err_53))
+	}
+	test.AssertEqual(t, buf.String(), "{\"id\":\"a\",\"action\":\"push\",\"bar\":2,\"foo\":\"x\"}")
+}
+
+func TestUnknownCapture_CodecInlines(t *testing.T) {
+	c := json.NewCodec(json.AsIs{})
+	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{"foo": "x", "bar": 2}}
+	data, err_54 := c.Encode(ev)
+	if err_54 != nil {
+		t.Errorf("%v", err_54)
+		return
+	}
+	test.AssertEqual(t, string(data), "{\"id\":\"a\",\"action\":\"push\",\"bar\":2,\"foo\":\"x\"}")
 }
