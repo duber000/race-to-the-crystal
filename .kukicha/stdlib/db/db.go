@@ -599,6 +599,9 @@ func (s *nullSafeField) Scan(value any) error {
 		s.target.SetString(cast.ToString(value))
 		return nil
 	}
+	if bytes, _isOk := value.([]byte); _isOk {
+		value = append([]byte{}, bytes...)
+	}
 	src := reflect.ValueOf(value)
 	if src.Type().ConvertibleTo(s.target.Type()) {
 		s.target.Set(src.Convert(s.target.Type()))

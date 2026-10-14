@@ -42,15 +42,7 @@ import (
 // Returns a db.Pool for use with all stdlib/db query functions.
 // Example: pool := sqlite.Open("/tmp/app.db") onerr panic "{error}"
 func Open(path string) (db.Pool, error) {
-	base := buildURI(path)
-	sep := func() string {
-		if strpkg.Contains(base, "?") {
-			return "&"
-		} else {
-			return "?"
-		}
-	}()
-	return db.Open("sqlite3", base+sep+"_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)")
+	return openWithPragmas(path, openDefaults())
 }
 
 // OpenPath is like Open but first ensures the parent directory exists,
@@ -74,10 +66,13 @@ func OpenMemory() (db.Pool, error) {
 	return db.Open("sqlite3", "file::memory:?_pragma=foreign_keys(ON)")
 }
 
-// OpenWith opens a SQLite database file with custom pragmas.
+// OpenWith opens a SQLite database file with custom pragmas layered over
+// Open's defaults (WAL mode, foreign keys enabled, 5-second busy timeout).
+// A key present in pragmas replaces the matching default; an empty pragmas
+// map therefore behaves exactly like Open.
 // Example: pool := sqlite.OpenWith("/tmp/app.db", map of string to string{"cache_size": "-64000"}) onerr panic "{error}"
 func OpenWith(path string, pragmas map[string]string) (db.Pool, error) {
-	parts := make([]string, 0, len(pragmas))
+	merged := openDefaults()
 	for k, v := range pragmas {
 		if !isValidPragmaName(k) {
 			return db.Pool{}, fmt.Errorf("sqlite.OpenWith: invalid pragma name: %v", k)
@@ -85,20 +80,9 @@ func OpenWith(path string, pragmas map[string]string) (db.Pool, error) {
 		if !isValidPragmaValue(v) {
 			return db.Pool{}, fmt.Errorf("sqlite.OpenWith: invalid pragma value: %v", v)
 		}
-		parts = append(parts, fmt.Sprintf("_pragma=%v(%v)", k, v))
+		merged[k] = v
 	}
-	connStr := buildURI(path)
-	if len(parts) != 0 {
-		sep := func() string {
-			if strpkg.Contains(connStr, "?") {
-				return "&"
-			} else {
-				return "?"
-			}
-		}()
-		connStr = connStr + sep + strpkg.Join(parts, "&")
-	}
-	return db.Open("sqlite3", connStr)
+	return openWithPragmas(path, merged)
 }
 
 type Registrar = func(*sqlite3.Conn) error
@@ -884,6 +868,30 @@ func dumpTable(rawDB *sql.DB, b *strings.Builder, table string) error {
 // rawConnector is satisfied by the ncruces SQLite driver connection.
 type rawConnector interface {
 	Raw() *sqlite3.Conn
+}
+
+// openDefaults returns Open's pragma set: WAL journaling, foreign-key
+// enforcement, and a 5-second busy timeout.
+func openDefaults() map[string]string {
+	return map[string]string{"journal_mode": "WAL", "foreign_keys": "ON", "busy_timeout": "5000"}
+}
+
+// openWithPragmas builds a SQLite URI DSN from a path and an already-validated
+// pragma map.
+func openWithPragmas(path string, pragmas map[string]string) (db.Pool, error) {
+	parts := make([]string, 0, len(pragmas))
+	for k, v := range pragmas {
+		parts = append(parts, fmt.Sprintf("_pragma=%v(%v)", k, v))
+	}
+	connStr := buildURI(path)
+	sep := func() string {
+		if strpkg.Contains(connStr, "?") {
+			return "&"
+		} else {
+			return "?"
+		}
+	}()
+	return db.Open("sqlite3", connStr+sep+strpkg.Join(parts, "&"))
 }
 
 // buildURI constructs a SQLite file URI with properly escaped path components.

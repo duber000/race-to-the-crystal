@@ -4,6 +4,8 @@
 package html_test
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"kukicha.org/kukicha/stdlib/html"
 	"kukicha.org/kukicha/stdlib/test"
@@ -256,5 +258,35 @@ func TestBuilder(t *testing.T) {
 			}
 		}
 		test.AssertEqual(t, html.Embed(b.Fragment()), "<button commandfor=\"modal\">Open</button><a href=\"/docs\">Docs</a>")
+	})
+}
+
+// --- TestWrite ---
+// failingWriter is an io.Writer that always fails, to exercise Write's
+// error propagation.
+type failingWriter struct {
+	wrote int
+}
+
+func (fw *failingWriter) Write(p []byte) (int, error) {
+	return 0, errors.New("failingWriter always fails")
+}
+
+func TestWrite(t *testing.T) {
+	t.Run("writes fragment content to an io.Writer", func(t *testing.T) {
+		buf := bytes.Buffer{}
+		page := html.Render("<p>tea</p>")
+		wErr := html.Write(&buf, page)
+		test.AssertNoError(t, wErr)
+		test.AssertEqual(t, buf.String(), "<p>tea</p>")
+	})
+	t.Run("sets no HTTP headers of its own", func(t *testing.T) {
+		buf := bytes.Buffer{}
+		_ = html.Write(&buf, html.Render("<p>x</p>"))
+		test.AssertEqual(t, buf.String(), "<p>x</p>")
+	})
+	t.Run("propagates writer failures", func(t *testing.T) {
+		wErr := html.Write(&failingWriter{wrote: 0}, html.Render("<p>x</p>"))
+		test.AssertError(t, wErr)
 	})
 }

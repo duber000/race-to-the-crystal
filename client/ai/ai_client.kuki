@@ -122,7 +122,7 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
         return
     return
 
-func runPoll(args: cli.Args)
+func runPoll(args: cli.Args) error
     sess := openSession(args)
     strategy := parseStrategy(cli.GetStringOr(args, "strategy", "random"))
     pollMs := cli.GetIntOr(args, "poll-interval", DEFAULT_POLL_MS)
@@ -138,14 +138,16 @@ func runPoll(args: cli.Args)
     for true
         select
             when receive from ch
-                return
+                return empty
             default
                 takeTurn(reference of sess, strategy)
                 if not sess.active
-                    return
+                    return empty
                 time.Sleep((pollMs * 1000000) as time.Duration)
 
-func runSSE(args: cli.Args)
+    return empty
+
+func runSSE(args: cli.Args) error
     sess := openSession(args)
     strategy := parseStrategy(cli.GetStringOr(args, "strategy", "random"))
 
@@ -221,6 +223,8 @@ func runSSE(args: cli.Args)
         return true
     )
 
+    return empty
+
 func main()
     pollCmd := cli.NewCommand(POLL, "Polling-based AI client (GET /state on timer)")
         |> .StringFlag("server", "Game server URL", DEFAULT_BASE_URL)
@@ -230,7 +234,7 @@ func main()
         |> .StringFlag("strategy", "AI strategy (random|aggressive|defensive)", "random")
         |> .IntFlag("poll-interval", "Poll interval in ms", DEFAULT_POLL_MS)
         |> .BoolFlag("debug", "Enable debug logging", false)
-        |> .Action(runPoll)
+        |> .ActionE(runPoll)
 
     sseCmd := cli.NewCommand(SSE, "SSE-based AI client (subscribe to Mercure stream)")
         |> .StringFlag("server", "Game server URL", DEFAULT_BASE_URL)
@@ -239,7 +243,7 @@ func main()
         |> .StringFlag("name", "AI player name", "")
         |> .StringFlag("strategy", "AI strategy (random|aggressive|defensive)", "random")
         |> .BoolFlag("debug", "Enable debug logging", false)
-        |> .Action(runSSE)
+        |> .ActionE(runSSE)
 
     app := cli.New("race-ai-client")
         |> cli.Description("AI player for Race to the Crystal")

@@ -119,7 +119,7 @@ func removePlayer on l: reference GameLobby(playerId: string) bool
     delete l.players[playerId]
 
     if playerId equals l.hostPlayerId and l.players isnt empty
-        for pid, _ in l.players
+        for pid in l.players
             l.hostPlayerId = pid
             break
 

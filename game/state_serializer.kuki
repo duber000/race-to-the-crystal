@@ -105,7 +105,7 @@ func activeEffectToDict(e: ActiveEffect) StateDict
 
 func effectsToDict on m: reference CrystalEffectsManager(mapOfPlayers: map of types.PlayerID to reference Player) StateDict
     playerEffects := empty map of string to StateDict
-    for pid, _ in mapOfPlayers
+    for pid in mapOfPlayers
         pe := m.getPlayerEffects(pid)
         active := empty list of StateDict
         for eff in pe.activeEffects

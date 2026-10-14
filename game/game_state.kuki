@@ -251,13 +251,13 @@ func StartGame on gs: reference GameState
     if gs.phase isnt enums.SETUP
         return
 
-    for pid, _ in gs.players
+    for pid in gs.players
         gs.createTokensForPlayer(pid)
 
     for pid, pRef in gs.players
         gs._auto_deploy_starting_tokens(pid, enums.PlayerIndex(pRef.color))
 
-    for pid, _ in gs.players
+    for pid in gs.players
         gs.currentTurnPlayerId = pid
         break
 
@@ -318,7 +318,7 @@ func triggerRandomCrystalEffect on gs: reference GameState() (types.PlayerID, en
     effect := random.Choice of enums.CrystalEffect from effects
     targetPlayer := types.PlayerID("")
 
-    for pid, _ in gs.players
+    for pid in gs.players
         targetPlayer = pid
         break
 

@@ -167,12 +167,23 @@ func Embed(f Fragment) string {
 	return f.content
 }
 
+// Write is the io.Writer primitive: it writes a Fragment's content to any
+// writer — SSE partial streams, gzip writers, test buffers, files — with no
+// HTTP semantics (no Content-Type header). The http.ResponseWriter forms
+// (WriteTo, WriteStatusTo, res.WriteHTML) are response-seam wrappers over it.
+// Handle the error where a failed write matters: a dropped connection is
+// often the only signal a stream consumer is gone.
+// Example: html.Write(buf, page) onerr return
+func Write(w io.Writer, f Fragment) error {
+	_, wErr := io.WriteString(w, f.content)
+	return wErr
+}
+
 // WriteTo writes a Fragment to an http.ResponseWriter with text/html headers.
 // Example: html.WriteTo(w, page) onerr discard
 func WriteTo(w http.ResponseWriter, f Fragment) error {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	io.WriteString(w, f.content)
-	return nil
+	return Write(w, f)
 }
 
 // WriteStatusTo writes a Fragment with a custom HTTP status code.
@@ -180,8 +191,7 @@ func WriteTo(w http.ResponseWriter, f Fragment) error {
 func WriteStatusTo(w http.ResponseWriter, f Fragment, status int) error {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	io.WriteString(w, f.content)
-	return nil
+	return Write(w, f)
 }
 
 // Join combines multiple Fragments into one in order.

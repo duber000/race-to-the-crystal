@@ -480,3 +480,90 @@ func TestNumericIntoStringScan(t *testing.T) {
 	}
 	test.AssertEqual(t, fresult.Value, "2.5")
 }
+
+// --- TestBlobScanOwnsBytes ---
+// Regression: database/sql only guarantees a Scan src until the next call, so
+// nullSafeField must copy []byte values. Otherwise a `list of byte` field
+// aliases the driver's reusable buffer and silently mutates after a later
+// scan on the same pool.
+type BlobRow struct {
+	Id   int64  `json:"id"`
+	Data []byte `json:"data"`
+}
+
+func TestBlobScanOwnsBytes(t *testing.T) {
+	pool, err_50 := db.Open("sqlite3", ":memory:")
+	if err_50 != nil {
+		panic(fmt.Sprintf("open: %v", err_50))
+	}
+	defer db.Close(pool)
+	_, err_51 := db.Exec(pool, "CREATE TABLE blobs (id INTEGER PRIMARY KEY, data BLOB NOT NULL)")
+	if err_51 != nil {
+		panic(fmt.Sprintf("create: %v", err_51))
+	}
+	first := []byte{1, 2, 3, 4, 5, 6, 7, 8}
+	second := []byte{9, 10, 11, 12, 13, 14, 15, 16}
+	_, err_52 := db.Exec(pool, "INSERT INTO blobs (id, data) VALUES (?, ?)", 1, first)
+	if err_52 != nil {
+		panic(fmt.Sprintf("insert one: %v", err_52))
+	}
+	_, err_53 := db.Exec(pool, "INSERT INTO blobs (id, data) VALUES (?, ?)", 2, second)
+	if err_53 != nil {
+		panic(fmt.Sprintf("insert two: %v", err_53))
+	}
+	// pipe step 1: db.Query(...)
+	pipe_54, err_55 := db.Query(pool, "SELECT id, data FROM blobs WHERE id = 1")
+	if err_55 != nil {
+		panic(fmt.Sprintf("scan one: %v", err_55))
+	}
+	// pipe step 2: db.ScanOne(...)
+	one, err_57 := db.ScanOne[BlobRow](pipe_54)
+	if err_57 != nil {
+		panic(fmt.Sprintf("scan one: %v", err_57))
+	}
+	test.AssertEqual(t, one.Data, first)
+	// pipe step 1: db.Query(...)
+	pipe_58, err_59 := db.Query(pool, "SELECT id, data FROM blobs WHERE id = 2")
+	if err_59 != nil {
+		panic(fmt.Sprintf("scan two: %v", err_59))
+	}
+	// pipe step 2: db.ScanOne(...)
+	two, err_61 := db.ScanOne[BlobRow](pipe_58)
+	if err_61 != nil {
+		panic(fmt.Sprintf("scan two: %v", err_61))
+	}
+	test.AssertEqual(t, two.Data, second)
+	test.AssertEqual(t, one.Data, first)
+	// pipe step 1: db.ScanRow(...)
+	rowOne, err_63 := db.ScanRow[BlobRow](db.QueryRow(pool, "SELECT id, data FROM blobs WHERE id = 1"))
+	if err_63 != nil {
+		panic(fmt.Sprintf("scan row one: %v", err_63))
+	}
+	test.AssertEqual(t, rowOne.Data, first)
+	// pipe step 1: db.ScanRow(...)
+	rowTwo, err_65 := db.ScanRow[BlobRow](db.QueryRow(pool, "SELECT id, data FROM blobs WHERE id = 2"))
+	if err_65 != nil {
+		panic(fmt.Sprintf("scan row two: %v", err_65))
+	}
+	test.AssertEqual(t, rowTwo.Data, second)
+	test.AssertEqual(t, rowOne.Data, first)
+	// pipe step 1: db.Query(...)
+	pipe_66, err_67 := db.Query(pool, "SELECT id, data FROM blobs ORDER BY id")
+	if err_67 != nil {
+		panic(fmt.Sprintf("scan all: %v", err_67))
+	}
+	// pipe step 2: db.ScanAll(...)
+	all, err_69 := db.ScanAll[BlobRow](pipe_66)
+	if err_69 != nil {
+		panic(fmt.Sprintf("scan all: %v", err_69))
+	}
+	test.AssertEqual(t, len(all), 2)
+	test.AssertEqual(t, all[0].Data, first)
+	test.AssertEqual(t, all[1].Data, second)
+	_, err_70 := db.Exec(pool, "UPDATE blobs SET data = data WHERE id = 1")
+	if err_70 != nil {
+		panic(fmt.Sprintf("update: %v", err_70))
+	}
+	test.AssertEqual(t, all[0].Data, first)
+	test.AssertEqual(t, all[1].Data, second)
+}

@@ -217,8 +217,14 @@ func (p Pattern) FindAllGroups(text string) [][]string {
 }
 
 // Replace replaces all matches of the compiled pattern in text with replacement
-// Use $1, $2 in replacement to reference capture groups
-// Example: cleaned := p.Replace(text, " ")
+// Go backreference rules apply: $1, $2 reference capture groups, and ${name}
+// braces disambiguate a group from following word characters. In a cooked
+// "..." string, kukicha interpolation eats `${1}` (the braces are its own
+// syntax) and a $1 followed by word characters silently expands to empty
+// (Go parses `$1word` as a group NAMED `1word`). Spell the replacement in a
+// literal '...' string, or escape the braces: "$\{1\}return err"
+// Example: cleaned := p.Replace(text, ' ')
+// Example: p.Replace(text, '${1}($2)')   # literal string: braces reach Go intact
 func (p Pattern) Replace(text string, replacement string) string {
 	return p.re.ReplaceAllString(text, replacement)
 }
