@@ -53,7 +53,7 @@ func tokenSymbol(c: enums.PlayerColor) string
 func generatorStatus(gen: reference Generator, gs: reference GameState) string
     if gen.isDisabled
         return "DISABLED"
-    if gen.capturingPlayerId isnt ""
+    if gen.capturingPlayerId isnt empty
         pRef := gs.GetPlayer(gen.capturingPlayerId)
         if pRef isnt empty
             p := dereference pRef

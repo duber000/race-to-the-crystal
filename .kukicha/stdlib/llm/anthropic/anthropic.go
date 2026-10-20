@@ -519,12 +519,6 @@ func AdaptiveThinking(c Client) Client {
 	return c
 }
 
-// Thinking enables extended thinking with a budget (deprecated on Claude 4.6+, use AdaptiveThinking).
-func Thinking(c Client, budgetTokens int) Client {
-	c.thinking = ThinkingConfig{Type: "enabled", BudgetTokens: budgetTokens}
-	return c
-}
-
 // ThinkingEffort is the reasoning-effort level for Effort().
 type ThinkingEffort string
 

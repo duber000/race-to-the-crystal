@@ -99,7 +99,7 @@ func handleConnect on ep: reference WebSocketEndpoint(clientId: string, data: JS
     pnVal, hasPn := data["player_name"]
     if hasPn
         if pnVal is string as pn
-            if pn isnt ""
+            if pn isnt empty
                 playerName = pn
     client.playerId = clientId
     client.playerName = playerName
@@ -125,14 +125,14 @@ func handleCreateGame on ep: reference WebSocketEndpoint(clientId: string, data:
     if client is empty
         ep.sendError(clientId, "Not connected")
         return
-    if client.playerId equals ""
+    if client.playerId is empty
         ep.sendError(clientId, "Not connected")
         return
     gameName := "Game"
     gnVal, hasGn := data["game_name"]
     if hasGn
         if gnVal is string as gn
-            if gn isnt ""
+            if gn isnt empty
                 gameName = gn
     maxPlayers := 4
     mpVal, hasMp := data["max_players"]
@@ -171,7 +171,7 @@ func handleJoinGame on ep: reference WebSocketEndpoint(clientId: string, data: J
     if client is empty
         ep.sendError(clientId, "Not connected")
         return
-    if client.playerId equals ""
+    if client.playerId is empty
         ep.sendError(clientId, "Not connected")
         return
     gameId := ""
@@ -179,7 +179,7 @@ func handleJoinGame on ep: reference WebSocketEndpoint(clientId: string, data: J
     if hasGid
         if gidVal is string as gid
             gameId = gid
-    if gameId equals ""
+    if gameId is empty
         ep.sendError(clientId, "No game_id provided")
         return
     lobby := ep.lobbyMgr.joinLobby(gameId, client.playerId, client.playerName, ClientType.WEB_BROWSER)
@@ -210,7 +210,7 @@ func handleLeaveGame on ep: reference WebSocketEndpoint(clientId: string, data: 
     client := ep.wsHandler.GetClientByID(clientId)
     if client is empty
         return
-    if client.gameId equals ""
+    if client.gameId is empty
         return
     gameId := client.gameId
     playerId := client.playerId
@@ -232,7 +232,7 @@ func handleReady on ep: reference WebSocketEndpoint(clientId: string, data: JSON
     if client is empty
         ep.sendError(clientId, "Not in a game")
         return
-    if client.gameId equals ""
+    if client.gameId is empty
         ep.sendError(clientId, "Not in a game")
         return
     ready := true
@@ -256,7 +256,7 @@ func handleStartGame on ep: reference WebSocketEndpoint(clientId: string, data: 
     if client is empty
         ep.sendError(clientId, "Not connected")
         return
-    if client.playerId equals ""
+    if client.playerId is empty
         ep.sendError(clientId, "Not connected")
         return
     lobby := ep.lobbyMgr.getPlayerLobby(client.playerId)
@@ -283,7 +283,7 @@ func handleGameAction on ep: reference WebSocketEndpoint(clientId: string, msgTy
     if client is empty
         ep.sendError(clientId, "Not connected")
         return
-    if client.playerId equals ""
+    if client.playerId is empty
         ep.sendError(clientId, "Not connected")
         return
     session := ep.coordinator.getPlayerSession(client.playerId)
@@ -313,7 +313,7 @@ func handleStateRequest on ep: reference WebSocketEndpoint(clientId: string)
     client := ep.wsHandler.GetClientByID(clientId)
     if client is empty
         return
-    if client.gameId equals ""
+    if client.gameId is empty
         return
     session := ep.coordinator.getSession(client.gameId)
     if session is empty
@@ -339,7 +339,7 @@ func handleClientDisconnect on ep: reference WebSocketEndpoint(clientId: string)
     ep.lobbyMgr.removePlayerFromAll(playerId)
     ep.coordinator.removePlayer(playerId)
     ep.wsHandler.UnregisterClient(clientId)
-    if gameId isnt ""
+    if gameId isnt empty
         lobby := ep.lobbyMgr.getLobby(gameId)
         if lobby isnt empty
             ep.wsHandler.BroadcastToGame(gameId, JSONMap{
@@ -374,7 +374,7 @@ func broadcastGameWon on ep: reference WebSocketEndpoint(session: reference Game
     winnerNetworkId := session.getWinnerNetworkId()
     winnerName := "Unknown"
     wid := session.gameState.WinnerID()
-    if wid isnt ""
+    if wid isnt empty
         player := session.gameState.GetPlayer(wid)
         if player isnt empty
             winnerName = player.Name()

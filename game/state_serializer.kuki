@@ -141,7 +141,7 @@ func ClientStateDict on gs: reference GameState(perspective: string) StateDict
         "phase": "{gs.phase}",
         "turn_phase": "{gs.turnPhase}",
     }
-    if gs.winnerId isnt ""
+    if gs.winnerId isnt empty
         result["winner_id"] = gs.winnerId as string
     if gs.crystalInstance isnt empty
         crys := dereference gs.crystalInstance
@@ -159,7 +159,7 @@ func ClientStateDict on gs: reference GameState(perspective: string) StateDict
             list of int{ev.Position.X, ev.Position.Y},
             ev.effect,
         }
-    if perspective isnt ""
+    if perspective isnt empty
         result["perspective_player_id"] = perspective
         result["your_player_id"] = perspective
     return result

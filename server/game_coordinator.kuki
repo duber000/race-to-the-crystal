@@ -73,7 +73,7 @@ func isGameOver on s: reference GameSession bool
 
 func getWinnerNetworkId on s: reference GameSession string
     wid := s.gameState.WinnerID()
-    if wid equals ""
+    if wid is empty
         return ""
     nid, has := s.gameToNetworkId[wid as string]
     if has
@@ -82,7 +82,7 @@ func getWinnerNetworkId on s: reference GameSession string
 
 func getCurrentNetworkPlayerId on s: reference GameSession string
     cpid := s.gameState.CurrentTurnPlayerID()
-    if cpid equals ""
+    if cpid is empty
         return ""
     nid, has := s.gameToNetworkId[cpid as string]
     if has

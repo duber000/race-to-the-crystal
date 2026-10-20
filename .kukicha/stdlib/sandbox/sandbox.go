@@ -104,13 +104,6 @@ func (r Root) WriteString(data string, path string) error {
 	return nil
 }
 
-// Deprecated: use WriteJSON instead — Write never wrote plain strings; it
-// marshals to JSON (so box.Write("hello", "f.txt") produced "\"hello\"" with
-// quotes). WriteString, WriteBytes, and WriteJSON say what they do.
-func (r Root) Write(data any, path string) error {
-	return r.WriteJSON(data, path)
-}
-
 // WriteJSON marshals data to JSON and writes it to a file within the sandbox.
 // Example: box.WriteJSON(cfg, "config.json") onerr return
 func (r Root) WriteJSON(data any, path string) error {
@@ -140,7 +133,7 @@ func (r Root) ReadJSON[T any](path string) (T, error) {
 }
 
 // WriteBytes writes raw bytes to a file within the sandbox, creating it if
-// needed. Unlike Write, this does NOT marshal the data — the bytes are
+// needed. Unlike WriteJSON, this does NOT marshal the data — the bytes are
 // written exactly as given (images, archives, pre-encoded content).
 func (r Root) WriteBytes(data []byte, path string) error {
 	err_8 := r.root.WriteFile(path, data, 0o644)
@@ -186,12 +179,6 @@ func (r Root) AppendString(data string, path string) error {
 		return err_10
 	}
 	return nil
-}
-
-// Deprecated: use AppendJSON instead — Append marshals to JSON (one record
-// per line); the name said less than the behavior.
-func (r Root) Append(data any, path string) error {
-	return r.AppendJSON(data, path)
 }
 
 // AppendJSON marshals data to JSON and appends it (with newline) to a file

@@ -101,6 +101,8 @@ func ComputeValidMoves(tokenId: int) list of DesktopPos
                 if v.TokenID as int equals tokenId
                     for d in v.ValidDestinations
                         result = append(result, DPos(d[0], d[1]))
+            default
+                continue
     return result
 
 func ComputeValidAttacks(tokenId: int) list of DesktopPos
@@ -113,6 +115,8 @@ func ComputeValidAttacks(tokenId: int) list of DesktopPos
             when gamepkg.AttackAction
                 if v.AttackerID as int equals tokenId
                     result = append(result, DPos(v.DefenderPosition[0], v.DefenderPosition[1]))
+            default
+                continue
     return result
 
 func TryMove(cellX: int, cellY: int) bool
@@ -140,6 +144,8 @@ func TryAttack(cellX: int, cellY: int) bool
                         app.message = result.Message
                         deselect()
                         return true
+            default
+                continue
     return false
 
 func EndHumanTurn()

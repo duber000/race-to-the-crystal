@@ -745,7 +745,7 @@ func WatchCtx(h ctxpkg.Handle, pattern string, callback func(string)) {
 	lastModified := watchBaseline(pattern)
 	for h.Ctx.Err() == nil {
 		time.Sleep(500 * time.Millisecond)
-		if h.Ctx.Err() != nil {
+		if !(h.Ctx.Err() == nil) {
 			return
 		}
 		scanChanges(pattern, lastModified, callback)

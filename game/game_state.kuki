@@ -265,7 +265,7 @@ func StartGame on gs: reference GameState
     gs.turnNumber = 1
 
 func EndTurn on gs: reference GameState
-    if gs.currentTurnPlayerId equals ""
+    if gs.currentTurnPlayerId is empty
         return
 
     gs.clearTurnState()
@@ -406,7 +406,7 @@ func ToDict on gs: reference GameState map of string to any
     result["phase"] = "{gs.phase}"
     result["turn_number"] = gs.turnNumber
     result["current_turn_player_id"] = gs.currentTurnPlayerId as string
-    if gs.winnerId isnt ""
+    if gs.winnerId isnt empty
         result["winner_id"] = gs.winnerId as string
     result["turn_phase"] = "{gs.turnPhase}"
     playerList := empty list of map of string to any

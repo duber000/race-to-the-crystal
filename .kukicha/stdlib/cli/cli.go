@@ -85,14 +85,7 @@ type Command struct {
 	RestArgName    string
 }
 
-// Flag adds an untyped (string-valued) flag to the command.
-// Example: cmd |> cli.Flag("verbose", "Enable verbose output", "false")
-func (cmd *Command) Flag(name string, desc string, defaultValue string) *Command {
-	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
-	return cmd
-}
-
-// StringFlag adds a string-typed flag to the command (explicit type alias for Flag).
+// StringFlag adds a string-typed flag to the command.
 func (cmd *Command) StringFlag(name string, desc string, defaultValue string) *Command {
 	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
 	return cmd
@@ -125,7 +118,7 @@ func (cmd *Command) IntFlag(name string, desc string, defaultValue int) *Command
 // Example: cmd |> .BoolFlag("verbose", "Verbose output", false) |> .Short("v")
 func (cmd *Command) Short(alias string) *Command {
 	if len(cmd.Flags) == 0 {
-		panic(fmt.Sprintf("cli.Short(%v): no flag to attach alias to — call Short after a Flag/StringFlag/BoolFlag/IntFlag/RequiredFlag in the builder chain", alias))
+		panic(fmt.Sprintf("cli.Short(%v): no flag to attach alias to — call Short after a StringFlag/BoolFlag/IntFlag/RequiredFlag in the builder chain", alias))
 	}
 	last := len(cmd.Flags) - 1
 	cmd.Flags[last].Aliases = append(cmd.Flags[last].Aliases, alias)
@@ -189,12 +182,12 @@ func (cmd *Command) WithCommands(subs ...*Command) *Command {
 }
 
 // NewCommand creates a standalone subcommand builder. Chain with
-// cli.Flag / cli.Arg / cli.Action, then attach to a parent command via
+// cli.StringFlag / cli.Arg / cli.Action, then attach to a parent command via
 // cli.WithCommands.
 // Example:
 //
 //	initCmd := cli.NewCommand("init", "Load a spec")
-//	    |> .Flag("spec", "Spec URL or path", "")
+//	    |> .StringFlag("spec", "Spec URL or path", "")
 //	    |> .Action(cmdInit)
 func NewCommand(name string, desc string) *Command {
 	return &Command{Name: name, Description: desc, Args: make([]ArgDef, 0), Flags: make([]FlagDef, 0), Subcommands: make([]*Command, 0), ActionFunc: nil, ActionFuncE: nil, RestArgName: ""}
@@ -245,14 +238,7 @@ func RequiredArg(app *Command, name string, description string) *Command {
 	return app
 }
 
-// Flag adds a flag to the app
-// Example: app |> cli.Flag("verbose", "Enable verbose output", "false")
-func Flag(app *Command, name string, description string, defaultValue string) *Command {
-	app.Flags = append(app.Flags, FlagDef{Name: name, Description: description, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
-	return app
-}
-
-// StringFlag adds a string-typed flag to the app (explicit typed form of Flag).
+// StringFlag adds a string-typed flag to the app.
 // Example: app |> cli.StringFlag("model", "Model name", "")
 func StringFlag(app *Command, name string, desc string, defaultValue string) *Command {
 	app.Flags = append(app.Flags, FlagDef{Name: name, Description: desc, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})

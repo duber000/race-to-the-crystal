@@ -296,7 +296,7 @@ func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
     typeStr := ""
     if typeAny is string as ts
         typeStr = ts
-    if typeStr equals ""
+    if typeStr is empty
         return EndTurnAction{Description: "unknown"}, false
     switch typeStr
         when "MOVE"

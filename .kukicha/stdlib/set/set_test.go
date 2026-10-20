@@ -12,6 +12,12 @@ import (
 	"testing"
 )
 
+// takesValueSet pins that Set of T is passed by value (not reference Set of T),
+// matching Go's container/set.Set[T] header semantics.
+func takesValueSet(s set.Set[string]) int {
+	return set.Len(s)
+}
+
 // --- TestNew ---
 func TestNew(t *testing.T) {
 	t.Run("creates empty set", func(t *testing.T) {
@@ -24,6 +30,11 @@ func TestNew(t *testing.T) {
 		set.Add(s, "a")
 		test.AssertEqual(t, set.Len(s), 1)
 		test.AssertTrue(t, set.Contains(s, "a"))
+	})
+	t.Run("Set of T is a value header passed without reference", func(t *testing.T) {
+		s := set.New[string]()
+		set.Add(s, "v")
+		test.AssertEqual(t, takesValueSet(s), 1)
 	})
 }
 
@@ -424,6 +435,6 @@ func TestPipeForm(t *testing.T) {
 	s := set.From[string]([]string{"a", "b"})
 	test.AssertTrue(t, set.Contains(s, "a"))
 	test.AssertFalse(t, set.Contains(s, "z"))
-	items := set.ToSlice(s)
+	items := set.ToList(s)
 	test.AssertEqual(t, len(items), 2)
 }

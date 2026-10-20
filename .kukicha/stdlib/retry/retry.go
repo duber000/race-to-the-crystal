@@ -162,7 +162,7 @@ func Do(cfg Config, fn func() error) error {
 func DoCtx(h ctxpkg.Handle, cfg Config, fn func(ctxpkg.Handle) error) error {
 	attempts := max(cfg.MaxAttempts, 1)
 	for attempt := range attempts - 1 {
-		if h.Ctx.Err() != nil {
+		if !(h.Ctx.Err() == nil) {
 			return h.Ctx.Err()
 		}
 		err := fn(h)

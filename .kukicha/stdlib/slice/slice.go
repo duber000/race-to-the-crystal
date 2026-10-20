@@ -7,7 +7,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"slices"
+	goslices "slices"
 )
 
 // Take returns a slice of the first n elements
@@ -78,14 +78,14 @@ func SkipLast[T any](items []T, n int) []T {
 // input yields an empty result.
 // Example: independent := slice.Clone(slice.Take(items, 2))
 func Clone[T any](items []T) []T {
-	return slices.Clone(items)
+	return goslices.Clone(items)
 }
 
 // Reverse returns a reversed copy of the slice
 // The original slice is not modified
 func Reverse[T any](items []T) []T {
-	result := slices.Clone(items)
-	slices.Reverse(result)
+	result := goslices.Clone(items)
+	goslices.Reverse(result)
 	return result
 }
 
@@ -129,30 +129,20 @@ func Chunk[T any](items []T, size int) [][]T {
 // Contains checks if a slice contains the specified value
 // Wraps Go's slices.Contains for convenience
 func Contains[T comparable](items []T, value T) bool {
-	return slices.Contains(items, value)
+	return goslices.Contains(items, value)
 }
 
 // IndexOf returns the index of the first occurrence of value in the slice
 // Returns -1 if the value is not found
 // Wraps Go's slices.Index for convenience
 func IndexOf[T comparable](items []T, value T) int {
-	return slices.Index(items, value)
+	return goslices.Index(items, value)
 }
 
 // Concat concatenates multiple slices into a single slice
 // Returns a new slice containing all elements
-func Concat[T any](slices [][]T) []T {
-	totalLength := 0
-	for _, slice := range slices {
-		totalLength += len(slice)
-	}
-	result := make([]T, 0, totalLength)
-	for _, slice := range slices {
-		for _, item := range slice {
-			result = append(result, item)
-		}
-	}
-	return result
+func Concat[T any](slices ...[]T) []T {
+	return goslices.Concat(slices...)
 }
 
 // Filter returns a new slice containing only elements that satisfy the predicate
@@ -406,7 +396,7 @@ func IndexOr[T comparable](items []T, value T, defaultValue int) int {
 // into a single list. Both names are accepted.
 // Example: flat := matrix |> slice.Flatten()
 func Flatten[T any](slices [][]T) []T {
-	return Concat(slices)
+	return Concat(slices...)
 }
 
 // FindLast returns the last element matching the predicate, or error if not found

@@ -95,7 +95,7 @@ func decodeEmbeddedIPv4(ip net.IP) net.IP {
 	if len(ip) != 16 {
 		return nil
 	}
-	if ip.To4() != nil {
+	if len(ip.To4()) != 0 {
 		return ip.To4()
 	}
 	isCompatible := true
@@ -148,7 +148,7 @@ func checkIP(g Guard, ip net.IP) bool {
 	matched := matchesAny(g, ip)
 	if !matched && len(ip) == 16 {
 		embedded := decodeEmbeddedIPv4(ip)
-		if embedded != nil {
+		if len(embedded) != 0 {
 			matched = matchesAny(g, embedded)
 		}
 	}

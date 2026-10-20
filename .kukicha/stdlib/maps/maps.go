@@ -11,6 +11,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"iter"
 	"kukicha.org/kukicha/stdlib/cast"
 	gomaps "maps"
 	"reflect"
@@ -56,12 +57,18 @@ func GetOr[K comparable, V any](m map[K]V, k K, defaultValue V) V {
 	return v
 }
 
-// Merge combines two maps into a new map
-// If both maps have the same key, the value from the second map wins
-func Merge[K comparable, V any](base map[K]V, overlay map[K]V) map[K]V {
-	result := make(map[K]V, len(base)+len(overlay))
+// Merge combines a base map and zero or more overlays into a new map
+// If maps have the same key, the value from the latest overlay wins
+func Merge[K comparable, V any](base map[K]V, overlays ...map[K]V) map[K]V {
+	total := len(base)
+	for _, overlay := range overlays {
+		total += len(overlay)
+	}
+	result := make(map[K]V, total)
 	gomaps.Copy(result, base)
-	gomaps.Copy(result, overlay)
+	for _, overlay := range overlays {
+		gomaps.Copy(result, overlay)
+	}
 	return result
 }
 
@@ -364,4 +371,109 @@ func ListOr(m map[string]any, key string, defaultValue []any) []any {
 		return defaultValue
 	}
 	return val
+}
+
+// FrozenMap is a read-only wrapper around a map with value semantics.
+// It is safe for concurrent read access from multiple goroutines without synchronization,
+// provided the underlying map and any reference-typed values stored in V are not mutated.
+type FrozenMap[K comparable, V any] struct {
+	inner map[K]V
+}
+
+// Freeze creates a read-only FrozenMap backed by a shallow clone of m.
+// Top-level map entries are isolated from subsequent mutations to m, but reference-typed
+// values (slices, maps, pointers) stored in V are not deep-copied.
+func Freeze[K comparable, V any](m map[K]V) FrozenMap[K, V] {
+	return FrozenMap[K, V]{inner: Clone(m)}
+}
+
+// FreezeNoCopy wraps m directly without cloning when the caller transfers ownership.
+// Only safe if the caller never mutates m after calling FreezeNoCopy; mutating m
+// afterward violates the read-only invariant and can race with concurrent readers.
+func FreezeNoCopy[K comparable, V any](m map[K]V) FrozenMap[K, V] {
+	return FrozenMap[K, V]{inner: m}
+}
+
+// Get returns the value associated with k and true, or zero-value and false if k is absent.
+func (m FrozenMap[K, V]) Get(k K) (V, bool) {
+	v, ok := m.inner[k]
+	return v, ok
+}
+
+// GetOr returns the value associated with k, or defaultValue if k is absent.
+func (m FrozenMap[K, V]) GetOr(k K, defaultValue V) V {
+	v, ok := m.inner[k]
+	if !ok {
+		return defaultValue
+	}
+	return v
+}
+
+// Contains returns true if k exists in the frozen map.
+func (m FrozenMap[K, V]) Contains(k K) bool {
+	_, ok := m.inner[k]
+	return ok
+}
+
+// Len returns the number of key-value pairs in the frozen map.
+func (m FrozenMap[K, V]) Len() int {
+	return len(m.inner)
+}
+
+// IsEmpty returns true if the frozen map contains no key-value pairs.
+func (m FrozenMap[K, V]) IsEmpty() bool {
+	return len(m.inner) == 0
+}
+
+// Keys returns a list of all keys in the frozen map.
+func (m FrozenMap[K, V]) Keys() []K {
+	keys := make([]K, 0, len(m.inner))
+	for k := range m.inner {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// Values returns a list of all values in the frozen map.
+func (m FrozenMap[K, V]) Values() []V {
+	values := make([]V, 0, len(m.inner))
+	for _, v := range m.inner {
+		values = append(values, v)
+	}
+	return values
+}
+
+// Set returns a new FrozenMap with the specified key set to v, leaving m unchanged.
+func (m FrozenMap[K, V]) Set(k K, v V) FrozenMap[K, V] {
+	next := make(map[K]V, len(m.inner)+1)
+	if len(m.inner) != 0 {
+		gomaps.Copy(next, m.inner)
+	}
+	next[k] = v
+	return FreezeNoCopy[K, V](next)
+}
+
+// Delete returns a new FrozenMap without the specified key, leaving m unchanged.
+func (m FrozenMap[K, V]) Delete(k K) FrozenMap[K, V] {
+	if !m.Contains(k) {
+		return m
+	}
+	next := make(map[K]V, len(m.inner)-1)
+	for key, val := range m.inner {
+		if key != k {
+			next[key] = val
+		}
+	}
+	return FreezeNoCopy[K, V](next)
+}
+
+// All returns an iterator sequence yielding (key, value) pairs from the frozen map.
+func (m FrozenMap[K, V]) All() iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		for k, v := range m.inner {
+			if !yield(k, v) {
+				return
+			}
+		}
+	}
 }

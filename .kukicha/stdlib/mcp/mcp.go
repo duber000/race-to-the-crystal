@@ -190,7 +190,7 @@ func encodeContent(c content.Content) mcp.Content {
 // buildCallResult wraps a tool handler return value into a *mcp.CallToolResult.
 // Passes through *mcp.CallToolResult, wraps string as TextContent, and
 // JSON-serializes any other value before wrapping. Used by Tool, ToolWithOpts,
-// and ToolRich. Returns an error when the value cannot be JSON-serialized so
+// and ToolWithContext. Returns an error when the value cannot be JSON-serialized so
 // callers can surface a protocol error instead of a silent empty result.
 func buildCallResult(res any) (*mcp.CallToolResult, error) {
 	switch r := res.(type) {
@@ -207,7 +207,7 @@ func buildCallResult(res any) (*mcp.CallToolResult, error) {
 }
 
 // errorCallResult builds a *mcp.CallToolResult containing a single text block
-// and IsError set. Used by Tool, ToolWithOpts, and ToolRich
+// and IsError set. Used by Tool, ToolWithOpts, and ToolWithContext
 // when the handler returns a non-nil error.
 // Note: handler error messages (paths, internal details) are forwarded verbatim
 // to the connected AI client. Tool authors should avoid leaking sensitive
@@ -418,7 +418,7 @@ func Tool[T any, R any](server *mcp.Server, name string, description string, sch
 	}
 	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		var args T
-		if req.Params.Arguments != nil {
+		if len(req.Params.Arguments) != 0 {
 			unmarshalErr := json.ParseBytesInto(req.Params.Arguments, &args)
 			if unmarshalErr != nil {
 				return nil, unmarshalErr
@@ -770,7 +770,7 @@ func ToolWithOpts[T any, R any](server *mcp.Server, name string, description str
 	}
 	server.AddTool(tool, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		var args T
-		if req.Params.Arguments != nil {
+		if len(req.Params.Arguments) != 0 {
 			unmarshalErr := json.ParseBytesInto(req.Params.Arguments, &args)
 			if unmarshalErr != nil {
 				return nil, unmarshalErr
@@ -788,7 +788,7 @@ func ToolWithOpts[T any, R any](server *mcp.Server, name string, description str
 	})
 }
 
-// ToolContext is passed to ToolRich handlers and exposes runtime capabilities
+// ToolContext is passed to ToolWithContext handlers and exposes runtime capabilities
 // back to the connected client: progress reporting and elicitation.
 type ToolContext struct {
 	inner         *mcp.ServerSession
@@ -823,9 +823,6 @@ func (tc *ToolContext) Elicit(ctx context.Context, message string, schema any) (
 // `mcp.ToolWithContext of MyArgs and MyResult(...)`.
 type ToolWithContextHandler func(context.Context, *ToolContext, JSONObject) (any, error)
 
-// ToolRichHandler is a tool handler that receives a ToolContext.
-type ToolRichHandler = ToolWithContextHandler
-
 // ToolWithContext registers an MCP tool whose handler receives a ToolContext.
 // Use this when the tool needs to log, report progress, request user input,
 // or query the client (instead of just returning a value). T is the args
@@ -839,34 +836,7 @@ func ToolWithContext[T any, R any](server *mcp.Server, name string, description 
 	}
 	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		var args T
-		if req.Params.Arguments != nil {
-			unmarshalErr := json.ParseBytesInto(req.Params.Arguments, &args)
-			if unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
-		}
-		tc := &ToolContext{inner: req.Session, progressToken: req.Params.GetProgressToken()}
-		res, handlerErr := handler(ctx, tc, args)
-		if handlerErr != nil {
-			return errorCallResult(handlerErr.Error()), nil
-		}
-		built, buildErr := buildCallResult(res)
-		if buildErr != nil {
-			return nil, buildErr
-		}
-		return built, nil
-	})
-}
-
-// ToolRich registers an MCP tool whose handler receives a ToolContext.
-func ToolRich[T any, R any](server *mcp.Server, name string, description string, schema any, handler func(context.Context, *ToolContext, T) (R, error)) {
-	err_12 := validateToolSchema(name, schema, handler)
-	if err_12 != nil {
-		panic(fmt.Sprintf("%v", err_12))
-	}
-	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		var args T
-		if req.Params.Arguments != nil {
+		if len(req.Params.Arguments) != 0 {
 			unmarshalErr := json.ParseBytesInto(req.Params.Arguments, &args)
 			if unmarshalErr != nil {
 				return nil, unmarshalErr
@@ -892,7 +862,7 @@ func ToolRich[T any, R any](server *mcp.Server, name string, description string,
 // sessionless direction of the MCP spec (SEP-2567); use it for new HTTP
 // deployments. Leave it false to keep stateful sessions and the legacy
 // initialize handshake, which server->client calls (Elicit / Progress /
-// ToolRich) require.
+// ToolWithContext) require.
 type HTTPOptions struct {
 	Stateless bool
 }
@@ -944,10 +914,10 @@ type ClientPrompt struct {
 
 // ListResources retrieves the available resources from the connected server.
 func ListResources(ctx context.Context, session *ClientSession) ([]ClientResource, error) {
-	result, err_13 := session.inner.ListResources(ctx, nil)
-	if err_13 != nil {
-		err_13 = fmt.Errorf("MCP ListResources failed: %w", err_13)
-		return []ClientResource{}, err_13
+	result, err_12 := session.inner.ListResources(ctx, nil)
+	if err_12 != nil {
+		err_12 = fmt.Errorf("MCP ListResources failed: %w", err_12)
+		return []ClientResource{}, err_12
 	}
 	out := make([]ClientResource, len(result.Resources))
 	for i, r := range result.Resources {
@@ -958,10 +928,10 @@ func ListResources(ctx context.Context, session *ClientSession) ([]ClientResourc
 
 // ListResourceTemplates retrieves the resource templates from the server.
 func ListResourceTemplates(ctx context.Context, session *ClientSession) ([]ClientResourceTemplate, error) {
-	result, err_14 := session.inner.ListResourceTemplates(ctx, nil)
-	if err_14 != nil {
-		err_14 = fmt.Errorf("MCP ListResourceTemplates failed: %w", err_14)
-		return []ClientResourceTemplate{}, err_14
+	result, err_13 := session.inner.ListResourceTemplates(ctx, nil)
+	if err_13 != nil {
+		err_13 = fmt.Errorf("MCP ListResourceTemplates failed: %w", err_13)
+		return []ClientResourceTemplate{}, err_13
 	}
 	out := make([]ClientResourceTemplate, len(result.ResourceTemplates))
 	for i, r := range result.ResourceTemplates {
@@ -974,19 +944,19 @@ func ListResourceTemplates(ctx context.Context, session *ClientSession) ([]Clien
 // A single resource may have multiple content entries (rare for text, more
 // common for embedded multi-file resources).
 func ReadResource(ctx context.Context, session *ClientSession, uri string) ([]*mcp.ResourceContents, error) {
-	result, err_15 := session.inner.ReadResource(ctx, &mcp.ReadResourceParams{URI: uri})
-	if err_15 != nil {
-		return []*mcp.ResourceContents{}, fmt.Errorf("MCP ReadResource \"%v\" failed: %v", uri, err_15)
+	result, err_14 := session.inner.ReadResource(ctx, &mcp.ReadResourceParams{URI: uri})
+	if err_14 != nil {
+		return []*mcp.ResourceContents{}, fmt.Errorf("MCP ReadResource \"%v\" failed: %v", uri, err_14)
 	}
 	return result.Contents, nil
 }
 
 // ListPrompts retrieves the available prompts from the connected server.
 func ListPrompts(ctx context.Context, session *ClientSession) ([]ClientPrompt, error) {
-	result, err_16 := session.inner.ListPrompts(ctx, nil)
-	if err_16 != nil {
-		err_16 = fmt.Errorf("MCP ListPrompts failed: %w", err_16)
-		return []ClientPrompt{}, err_16
+	result, err_15 := session.inner.ListPrompts(ctx, nil)
+	if err_15 != nil {
+		err_15 = fmt.Errorf("MCP ListPrompts failed: %w", err_15)
+		return []ClientPrompt{}, err_15
 	}
 	out := make([]ClientPrompt, len(result.Prompts))
 	for i, p := range result.Prompts {

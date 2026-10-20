@@ -349,342 +349,6 @@ func ValidateServerOpts(opts ServerOpts) error {
 	return validateServerOpts(opts)
 }
 
-// JSON writes a value as JSON to the response with status 200
-// Sets Content-Type to application/json
-// Example: http.JSON(w, user)
-func JSON(w http.ResponseWriter, value any) error {
-	w.Header().Set("Content-Type", "application/json")
-	return json.Write(w, value)
-}
-
-// JSONStatus writes a value as JSON with a custom status code
-// Sets Content-Type to application/json
-// Example: http.JSONStatus(w, user, 201)
-func JSONStatus(w http.ResponseWriter, value any, status Status) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(int(status))
-	return json.Write(w, value)
-}
-
-// JSONCreated writes a value as JSON with status 201 Created
-// Example: http.JSONCreated(w, newUser)
-func JSONCreated(w http.ResponseWriter, value any) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(int(StatusCreated))
-	return json.Write(w, value)
-}
-
-// JSONError writes an error response as JSON
-// Creates a {"error": "message"} response body
-// Example: http.JSONError(w, "user not found", 404)
-func JSONError(w http.ResponseWriter, message string, status Status) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(int(status))
-	errorBody := map[string]string{"error": message}
-	return json.Write(w, errorBody)
-}
-
-// JSONBadRequest writes a 400 Bad Request error as JSON
-// Example: http.JSONBadRequest(w, "invalid input")
-func JSONBadRequest(w http.ResponseWriter, message string) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(int(StatusBadRequest))
-	errorBody := map[string]string{"error": message}
-	return json.Write(w, errorBody)
-}
-
-// JSONUnauthorized writes a 401 Unauthorized error as JSON
-// Example: http.JSONUnauthorized(w, "invalid token")
-func JSONUnauthorized(w http.ResponseWriter, message string) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(int(StatusUnauthorized))
-	errorBody := map[string]string{"error": message}
-	return json.Write(w, errorBody)
-}
-
-// JSONForbidden writes a 403 Forbidden error as JSON
-// Example: http.JSONForbidden(w, "access denied")
-func JSONForbidden(w http.ResponseWriter, message string) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(int(StatusForbidden))
-	errorBody := map[string]string{"error": message}
-	return json.Write(w, errorBody)
-}
-
-// JSONNotFound writes a 404 Not Found error as JSON
-// Example: http.JSONNotFound(w, "user not found")
-func JSONNotFound(w http.ResponseWriter, message string) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(int(StatusNotFound))
-	errorBody := map[string]string{"error": message}
-	return json.Write(w, errorBody)
-}
-
-// JSONInternalError writes a 500 Internal Server Error as JSON
-// Example: http.JSONInternalError(w, "database error")
-func JSONInternalError(w http.ResponseWriter, message string) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(int(StatusInternalServerError))
-	errorBody := map[string]string{"error": message}
-	return json.Write(w, errorBody)
-}
-
-// ReadJSON reads the request body as JSON into the target
-// Target must be a pointer (use "reference of" in Kukicha)
-// Example: http.ReadJSON(r, reference user) onerr return http.JSONBadRequest(w, "invalid json")
-func ReadJSON(r *http.Request, target any) error {
-	return json.ReadInto(r.Body, target)
-}
-
-// ReadJSONAndClose reads the request body as JSON and closes it
-// Target must be a pointer (use "reference of" in Kukicha)
-// Automatically closes the request body after reading
-// Example: http.ReadJSONAndClose(r, reference user) onerr return http.JSONBadRequest(w, "invalid json")
-func ReadJSONAndClose(r *http.Request, target any) error {
-	defer r.Body.Close()
-	return json.ReadInto(r.Body, target)
-}
-
-// ReadJSONLimit reads at most maxBytes from the request body and unmarshals as JSON.
-// Reads maxBytes+1 bytes so an oversized body (limit+1 or more) is detected and
-// rejected with a clear error instead of silently truncating a valid JSON prefix.
-// Use this instead of ReadJSON to prevent OOM from oversized request bodies.
-// Example: http.ReadJSONLimit(r, 1 << 20, reference user) onerr return http.JSONBadRequest(w, "body too large or invalid json")
-func ReadJSONLimit(r *http.Request, maxBytes int64, target any) error {
-	body, err := io.ReadAll(io.LimitReader(r.Body, maxBytes+1))
-	if err != nil {
-		return err
-	}
-	if int64(len(body)) > maxBytes {
-		return fmt.Errorf("request body exceeds limit of %v bytes", maxBytes)
-	}
-	return json.ParseBytesInto(body, target)
-}
-
-// GetQueryParam returns a query parameter value, or empty string if not present
-// Example: name := http.GetQueryParam(r, "name")
-func GetQueryParam(r *http.Request, key string) string {
-	return r.URL.Query().Get(key)
-}
-
-// GetQueryParamOr returns a query parameter value, or default if not present
-// Example: page := http.GetQueryParamOr(r, "page", "1")
-func GetQueryParamOr(r *http.Request, key string, defaultValue string) string {
-	return kukistring.Or(r.URL.Query().Get(key), defaultValue)
-}
-
-// GetQueryInt returns a query parameter as an integer
-// Returns an error if not present or not a valid integer
-// Example: page := http.GetQueryInt(r, "page") onerr return http.JSONBadRequest(w, "invalid page")
-func GetQueryInt(r *http.Request, key string) (int, error) {
-	value := r.URL.Query().Get(key)
-	if value == "" {
-		return 0, fmt.Errorf("query parameter '%v' is required", key)
-	}
-	val, err_1 := parse.Int(value)
-	if err_1 != nil {
-		return 0, fmt.Errorf("query parameter '%v' must be an integer", key)
-	}
-	return val, nil
-}
-
-// GetQueryIntOr returns a query parameter as an integer, or default if not present/invalid
-// Never fails - returns default on any error
-// Example: page := http.GetQueryIntOr(r, "page", 1)
-func GetQueryIntOr(r *http.Request, key string, defaultValue int) int {
-	value := r.URL.Query().Get(key)
-	if value == "" {
-		return defaultValue
-	}
-	val, err_2 := parse.Int(value)
-	if err_2 != nil {
-		return defaultValue
-	}
-	return val
-}
-
-// GetQueryBool returns a query parameter as a boolean
-// Accepts: "true", "false", "1", "0" (case insensitive)
-// Returns an error if not present or not a valid boolean
-// Example: verbose := http.GetQueryBool(r, "verbose") onerr return http.JSONBadRequest(w, "invalid verbose flag")
-func GetQueryBool(r *http.Request, key string) (bool, error) {
-	value := r.URL.Query().Get(key)
-	if value == "" {
-		return false, fmt.Errorf("query parameter '%v' is required", key)
-	}
-	val, err_3 := parse.Bool(value)
-	if err_3 != nil {
-		return false, fmt.Errorf("query parameter '%v' must be a boolean", key)
-	}
-	return val, nil
-}
-
-// GetQueryBoolOr returns a query parameter as a boolean, or default if not present/invalid
-// Never fails - returns default on any error
-// Example: verbose := http.GetQueryBoolOr(r, "verbose", false)
-func GetQueryBoolOr(r *http.Request, key string, defaultValue bool) bool {
-	value := r.URL.Query().Get(key)
-	if value == "" {
-		return defaultValue
-	}
-	val, err_4 := parse.Bool(value)
-	if err_4 != nil {
-		return defaultValue
-	}
-	return val
-}
-
-// GetQueryFloat returns a query parameter as a float64
-// Returns an error if not present or not a valid float
-// Example: ratio := http.GetQueryFloat(r, "ratio") onerr return http.JSONBadRequest(w, "invalid ratio")
-func GetQueryFloat(r *http.Request, key string) (float64, error) {
-	value := r.URL.Query().Get(key)
-	if value == "" {
-		return 0.0, fmt.Errorf("query parameter '%v' is required", key)
-	}
-	val, err_5 := parse.Float64(value)
-	if err_5 != nil {
-		return 0.0, fmt.Errorf("query parameter '%v' must be a number", key)
-	}
-	return val, nil
-}
-
-// GetQueryFloatOr returns a query parameter as a float64, or default if not present/invalid
-// Never fails - returns default on any error
-// Example: ratio := http.GetQueryFloatOr(r, "ratio", 1.0)
-func GetQueryFloatOr(r *http.Request, key string, defaultValue float64) float64 {
-	value := r.URL.Query().Get(key)
-	if value == "" {
-		return defaultValue
-	}
-	val, err_6 := parse.Float64(value)
-	if err_6 != nil {
-		return defaultValue
-	}
-	return val
-}
-
-// GetHeader returns a header value, or empty string if not present
-// Example: token := http.GetHeader(r, "Authorization")
-func GetHeader(r *http.Request, key string) string {
-	return r.Header.Get(key)
-}
-
-// GetHeaderOr returns a header value, or default if not present
-// Example: contentType := http.GetHeaderOr(r, "Content-Type", "application/json")
-func GetHeaderOr(r *http.Request, key string, defaultValue string) string {
-	return kukistring.Or(r.Header.Get(key), defaultValue)
-}
-
-// NoContent sends a 204 No Content response
-// Example: return http.NoContent(w)
-func NoContent(w http.ResponseWriter) {
-	w.WriteHeader(int(StatusNoContent))
-}
-
-// Redirect sends a redirect response (302 by default)
-// Example: http.Redirect(w, "/new-location")
-func Redirect(w http.ResponseWriter, url string) {
-	w.Header().Set("Location", url)
-	w.WriteHeader(int(StatusFound))
-}
-
-// RedirectPermanent sends a 301 permanent redirect response
-// Example: http.RedirectPermanent(w, "/new-location")
-func RedirectPermanent(w http.ResponseWriter, url string) {
-	w.Header().Set("Location", url)
-	w.WriteHeader(int(StatusMovedPermanently))
-}
-
-// SafeRedirect performs a 302 redirect only when the URL is safe to redirect to.
-// Relative paths (must start with a single "/", not "//") are always allowed.
-// Absolute URLs are only allowed when scheme is http/https AND host is in allowedHosts.
-// Schemes like javascript:, data:, file:, vbscript:, and protocol-relative
-// URLs (//evil.example) are always rejected.
-// Returns an error if the redirect would go to an unexpected scheme or host.
-// Example: http.SafeRedirect(w, returnURL, "example.com", "api.example.com") onerr return
-func SafeRedirect(w http.ResponseWriter, redirectURL string, allowedHosts ...string) error {
-	if redirectURL == "" {
-		return errors.New("redirect URL is empty")
-	}
-	if kukistring.HasPrefix(redirectURL, "//") || strings.Contains(redirectURL, "\\") {
-		return fmt.Errorf("protocol-relative redirect '%v' is not allowed", redirectURL)
-	}
-	parsed, err_7 := url.Parse(redirectURL)
-	if err_7 != nil {
-		err_7 = fmt.Errorf("invalid redirect URL: %w", err_7)
-		return err_7
-	}
-	if parsed.Scheme == "" && parsed.Host == "" {
-		if !kukistring.HasPrefix(redirectURL, "/") {
-			return errors.New("relative redirect must start with '/'")
-		}
-		w.Header().Set("Location", redirectURL)
-		w.WriteHeader(int(StatusFound))
-		return nil
-	}
-	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return fmt.Errorf("redirect scheme '%v' is not allowed", parsed.Scheme)
-	}
-	if slices.Contains(allowedHosts, parsed.Host) {
-		w.Header().Set("Location", redirectURL)
-		w.WriteHeader(int(StatusFound))
-		return nil
-	}
-	return fmt.Errorf("redirect to '%v' is not in the allowed hosts list", parsed.Host)
-}
-
-// Text writes a plain text response with status 200
-// Sets Content-Type to text/plain
-// Example: http.Text(w, "Hello, World!")
-func Text(w http.ResponseWriter, content string) error {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	io.WriteString(w, content)
-	return nil
-}
-
-// TextStatus writes a plain text response with a custom status code
-// Example: http.TextStatus(w, "Created", 201)
-func TextStatus(w http.ResponseWriter, content string, status Status) error {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(int(status))
-	io.WriteString(w, content)
-	return nil
-}
-
-// HTML writes an HTML response with status 200
-// Sets Content-Type to text/html
-// WARNING: content is written verbatim — any user input is an XSS vector.
-// Use http.SafeHTML when content may contain user-controlled data.
-// Example: http.HTML(w, "<h1>Hello</h1>")
-func HTML(w http.ResponseWriter, content string) error {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	io.WriteString(w, content)
-	return nil
-}
-
-// SafeHTML writes an HTML response after escaping content via html.EscapeString
-// Use this instead of http.HTML when content may contain user input
-// Sets Content-Type to text/html; charset=utf-8
-// Example: http.SafeHTML(w, userInput)
-func SafeHTML(w http.ResponseWriter, content string) error {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	io.WriteString(w, html.EscapeString(content))
-	return nil
-}
-
-// SetSecureHeaders sets common security response headers on w
-// Call this at the top of each handler before writing the response body
-// Sets: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Content-Security-Policy
-// For middleware-style usage (wrapping a whole handler) use http.SecureHeaders instead
-// Example: httphelper.SetSecureHeaders(w)
-func SetSecureHeaders(w http.ResponseWriter) {
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("X-Frame-Options", "DENY")
-	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-	w.Header().Set("Content-Security-Policy", "default-src 'self'")
-}
-
 // IsGet returns true if the request method is GET
 // Example: if http.IsGet(r) ...
 func IsGet(r *http.Request) bool {
@@ -713,14 +377,6 @@ func IsDelete(r *http.Request) bool {
 // Example: if http.IsPatch(r) ...
 func IsPatch(r *http.Request) bool {
 	return r.Method == MethodPatch.String()
-}
-
-// MethodNotAllowed sends a 405 Method Not Allowed response
-// Sets the Allow header with permitted methods
-// Example: http.MethodNotAllowed(w, "GET", "POST")
-func MethodNotAllowed(w http.ResponseWriter, allowed ...string) {
-	w.Header().Set("Allow", kukistring.Join(allowed, ", "))
-	w.WriteHeader(int(StatusMethodNotAllowed))
 }
 
 // TrustedHosts returns middleware that rejects any request whose Host header
@@ -777,8 +433,8 @@ func validHostHeader(h string) bool {
 // hostname (or bracketed IPv6 literal) untouched. Used for allowlist
 // matching so callers can list bare hostnames.
 func stripPort(h string) string {
-	host, _, err_8 := net.SplitHostPort(h)
-	if err_8 != nil {
+	host, _, err_1 := net.SplitHostPort(h)
+	if err_1 != nil {
 		return h
 	}
 	return host
@@ -799,8 +455,8 @@ func RealIP(r *http.Request, trustedProxies ...string) string {
 	for _, cidr := range trustedProxies {
 		if !kukistring.Contains(cidr, "/") {
 			ip := net.ParseIP(cidr)
-			if ip != nil {
-				if ip.To4() != nil {
+			if len(ip) != 0 {
+				if len(ip.To4()) != 0 {
 					cidr = cidr + "/32"
 				} else {
 					cidr = cidr + "/128"
@@ -824,7 +480,7 @@ func RealIP(r *http.Request, trustedProxies ...string) string {
 	xff := r.Header.Get("X-Forwarded-For")
 	if xff == "" {
 		realIPTrimmed := kukistring.TrimSpace(r.Header.Get("X-Real-Ip"))
-		if realIPTrimmed != "" && net.ParseIP(realIPTrimmed) != nil {
+		if realIPTrimmed != "" && len(net.ParseIP(realIPTrimmed)) != 0 {
 			return realIPTrimmed
 		}
 		return peerHost
@@ -841,7 +497,7 @@ func RealIP(r *http.Request, trustedProxies ...string) string {
 		}
 	}
 	leftmost := kukistring.TrimSpace(parts[0])
-	if net.ParseIP(leftmost) != nil {
+	if len(net.ParseIP(leftmost)) != 0 {
 		return leftmost
 	}
 	return peerHost
@@ -1258,10 +914,10 @@ func (res Response) SafeRedirect(redirectURL string, allowedHosts ...string) err
 	if kukistring.HasPrefix(redirectURL, "//") || strings.Contains(redirectURL, "\\") {
 		return fmt.Errorf("protocol-relative redirect '%v' is not allowed", redirectURL)
 	}
-	parsed, err_9 := url.Parse(redirectURL)
-	if err_9 != nil {
-		err_9 = fmt.Errorf("invalid redirect URL: %w", err_9)
-		return err_9
+	parsed, err_2 := url.Parse(redirectURL)
+	if err_2 != nil {
+		err_2 = fmt.Errorf("invalid redirect URL: %w", err_2)
+		return err_2
 	}
 	if parsed.Scheme == "" && parsed.Host == "" {
 		if !kukistring.HasPrefix(redirectURL, "/") {
@@ -1328,14 +984,14 @@ func (req Request) ReadJSON[T any]() (T, error) {
 		return _zero0, errors.New("request body is empty")
 	}
 	data := *new(T)
-	err_10 := json.ReadInto(req.raw.Body, &data)
-	if err_10 != nil {
-		if isBodyEmptyError(err_10) {
+	err_3 := json.ReadInto(req.raw.Body, &data)
+	if err_3 != nil {
+		if isBodyEmptyError(err_3) {
 			var _zero0 T
 			return _zero0, errors.New("request body is empty")
 		}
 		var _zero0 T
-		return _zero0, errs.Wrap(err_10, "failed to decode request json")
+		return _zero0, errs.Wrap(err_3, "failed to decode request json")
 	}
 	return data, nil
 }
@@ -1354,14 +1010,14 @@ func (req Request) ReadJSONStrict[T any]() (T, error) {
 		return _zero0, errors.New("request body is empty")
 	}
 	data := *new(T)
-	err_11 := json.ReadIntoStrict(req.raw.Body, &data)
-	if err_11 != nil {
-		if isBodyEmptyError(err_11) {
+	err_4 := json.ReadIntoStrict(req.raw.Body, &data)
+	if err_4 != nil {
+		if isBodyEmptyError(err_4) {
 			var _zero0 T
 			return _zero0, errors.New("request body is empty")
 		}
 		var _zero0 T
-		return _zero0, errs.Wrap(err_11, "failed to decode request json")
+		return _zero0, errs.Wrap(err_4, "failed to decode request json")
 	}
 	return data, nil
 }
@@ -1375,14 +1031,14 @@ func (req Request) ReadJSONAndClose[T any]() (T, error) {
 	}
 	defer req.raw.Body.Close()
 	data := *new(T)
-	err_12 := json.ReadInto(req.raw.Body, &data)
-	if err_12 != nil {
-		if isBodyEmptyError(err_12) {
+	err_5 := json.ReadInto(req.raw.Body, &data)
+	if err_5 != nil {
+		if isBodyEmptyError(err_5) {
 			var _zero0 T
 			return _zero0, errors.New("request body is empty")
 		}
 		var _zero0 T
-		return _zero0, errs.Wrap(err_12, "failed to decode request json")
+		return _zero0, errs.Wrap(err_5, "failed to decode request json")
 	}
 	return data, nil
 }
@@ -1409,14 +1065,14 @@ func (req Request) ReadJSONLimit[T any](maxBytes int64) (T, error) {
 		return _zero0, fmt.Errorf("request body exceeds limit of %v bytes", maxBytes)
 	}
 	data := *new(T)
-	err_13 := json.ParseBytesInto(body, &data)
-	if err_13 != nil {
-		if isBodyEmptyError(err_13) {
+	err_6 := json.ParseBytesInto(body, &data)
+	if err_6 != nil {
+		if isBodyEmptyError(err_6) {
 			var _zero0 T
 			return _zero0, errors.New("request body is empty")
 		}
 		var _zero0 T
-		return _zero0, errs.Wrap(err_13, "failed to decode request json")
+		return _zero0, errs.Wrap(err_6, "failed to decode request json")
 	}
 	return data, nil
 }
@@ -1442,14 +1098,14 @@ func (req Request) ReadJSONLimitStrict[T any](maxBytes int64) (T, error) {
 		return _zero0, fmt.Errorf("request body exceeds limit of %v bytes", maxBytes)
 	}
 	data := *new(T)
-	err_14 := json.ParseBytesIntoStrict(body, &data)
-	if err_14 != nil {
-		if isBodyEmptyError(err_14) {
+	err_7 := json.ParseBytesIntoStrict(body, &data)
+	if err_7 != nil {
+		if isBodyEmptyError(err_7) {
 			var _zero0 T
 			return _zero0, errors.New("request body is empty")
 		}
 		var _zero0 T
-		return _zero0, errs.Wrap(err_14, "failed to decode request json")
+		return _zero0, errs.Wrap(err_7, "failed to decode request json")
 	}
 	return data, nil
 }
@@ -1461,12 +1117,12 @@ func (req Request) Decode(target any) error {
 	if req.raw == nil || req.raw.Body == nil {
 		return errors.New("request body is empty")
 	}
-	err_15 := json.ReadInto(req.raw.Body, target)
-	if err_15 != nil {
-		if isBodyEmptyError(err_15) {
+	err_8 := json.ReadInto(req.raw.Body, target)
+	if err_8 != nil {
+		if isBodyEmptyError(err_8) {
 			return errors.New("request body is empty")
 		}
-		return err_15
+		return err_8
 	}
 	return nil
 }
@@ -1477,12 +1133,12 @@ func (req Request) DecodeStrict(target any) error {
 	if req.raw == nil || req.raw.Body == nil {
 		return errors.New("request body is empty")
 	}
-	err_16 := json.ReadIntoStrict(req.raw.Body, target)
-	if err_16 != nil {
-		if isBodyEmptyError(err_16) {
+	err_9 := json.ReadIntoStrict(req.raw.Body, target)
+	if err_9 != nil {
+		if isBodyEmptyError(err_9) {
 			return errors.New("request body is empty")
 		}
-		return err_16
+		return err_9
 	}
 	return nil
 }
@@ -1493,12 +1149,12 @@ func (req Request) DecodeAndClose(target any) error {
 		return errors.New("request body is empty")
 	}
 	defer req.raw.Body.Close()
-	err_17 := json.ReadInto(req.raw.Body, target)
-	if err_17 != nil {
-		if isBodyEmptyError(err_17) {
+	err_10 := json.ReadInto(req.raw.Body, target)
+	if err_10 != nil {
+		if isBodyEmptyError(err_10) {
 			return errors.New("request body is empty")
 		}
-		return err_17
+		return err_10
 	}
 	return nil
 }
@@ -1519,12 +1175,12 @@ func (req Request) DecodeLimit(maxBytes int64, target any) error {
 	if int64(len(body)) > maxBytes {
 		return fmt.Errorf("request body exceeds limit of %v bytes", maxBytes)
 	}
-	err_18 := json.ParseBytesInto(body, target)
-	if err_18 != nil {
-		if isBodyEmptyError(err_18) {
+	err_11 := json.ParseBytesInto(body, target)
+	if err_11 != nil {
+		if isBodyEmptyError(err_11) {
 			return errors.New("request body is empty")
 		}
-		return err_18
+		return err_11
 	}
 	return nil
 }
@@ -1544,12 +1200,12 @@ func (req Request) DecodeLimitStrict(maxBytes int64, target any) error {
 	if int64(len(body)) > maxBytes {
 		return fmt.Errorf("request body exceeds limit of %v bytes", maxBytes)
 	}
-	err_19 := json.ParseBytesIntoStrict(body, target)
-	if err_19 != nil {
-		if isBodyEmptyError(err_19) {
+	err_12 := json.ParseBytesIntoStrict(body, target)
+	if err_12 != nil {
+		if isBodyEmptyError(err_12) {
 			return errors.New("request body is empty")
 		}
-		return err_19
+		return err_12
 	}
 	return nil
 }
@@ -1570,8 +1226,8 @@ func (req Request) GetQueryInt(key string) (int, error) {
 	if value == "" {
 		return 0, fmt.Errorf("query parameter '%v' is required", key)
 	}
-	val, err_20 := parse.Int(value)
-	if err_20 != nil {
+	val, err_13 := parse.Int(value)
+	if err_13 != nil {
 		return 0, fmt.Errorf("query parameter '%v' must be an integer", key)
 	}
 	return val, nil
@@ -1583,8 +1239,8 @@ func (req Request) GetQueryIntOr(key string, defaultValue int) int {
 	if value == "" {
 		return defaultValue
 	}
-	val, err_21 := parse.Int(value)
-	if err_21 != nil {
+	val, err_14 := parse.Int(value)
+	if err_14 != nil {
 		return defaultValue
 	}
 	return val
@@ -1596,8 +1252,8 @@ func (req Request) GetQueryBool(key string) (bool, error) {
 	if value == "" {
 		return false, fmt.Errorf("query parameter '%v' is required", key)
 	}
-	val, err_22 := parse.Bool(value)
-	if err_22 != nil {
+	val, err_15 := parse.Bool(value)
+	if err_15 != nil {
 		return false, fmt.Errorf("query parameter '%v' must be a boolean", key)
 	}
 	return val, nil
@@ -1609,8 +1265,8 @@ func (req Request) GetQueryBoolOr(key string, defaultValue bool) bool {
 	if value == "" {
 		return defaultValue
 	}
-	val, err_23 := parse.Bool(value)
-	if err_23 != nil {
+	val, err_16 := parse.Bool(value)
+	if err_16 != nil {
 		return defaultValue
 	}
 	return val
@@ -1622,8 +1278,8 @@ func (req Request) GetQueryFloat(key string) (float64, error) {
 	if value == "" {
 		return 0.0, fmt.Errorf("query parameter '%v' is required", key)
 	}
-	val, err_24 := parse.Float64(value)
-	if err_24 != nil {
+	val, err_17 := parse.Float64(value)
+	if err_17 != nil {
 		return 0.0, fmt.Errorf("query parameter '%v' must be a number", key)
 	}
 	return val, nil
@@ -1635,8 +1291,8 @@ func (req Request) GetQueryFloatOr(key string, defaultValue float64) float64 {
 	if value == "" {
 		return defaultValue
 	}
-	val, err_25 := parse.Float64(value)
-	if err_25 != nil {
+	val, err_18 := parse.Float64(value)
+	if err_18 != nil {
 		return defaultValue
 	}
 	return val
@@ -1738,9 +1394,9 @@ func (s *SSEWriter) SendWithID(id string, event string, data string) error {
 
 // SendJSON marshals value to JSON and sends it as an SSE event with the given event name.
 func (s *SSEWriter) SendJSON(event string, value any) error {
-	data, err_26 := json.String(value)
-	if err_26 != nil {
-		return err_26
+	data, err_19 := json.String(value)
+	if err_19 != nil {
+		return err_19
 	}
 	return s.Send(event, data)
 }
@@ -1755,9 +1411,9 @@ func (s *SSEWriter) Comment(comment string) error {
 		_, _ = b.WriteString("\n")
 	}
 	_, _ = b.WriteString("\n")
-	_, err_27 := io.WriteString(s.w, b.String())
-	if err_27 != nil {
-		return err_27
+	_, err_20 := io.WriteString(s.w, b.String())
+	if err_20 != nil {
+		return err_20
 	}
 	s.flusher.Flush()
 	return nil
@@ -1794,9 +1450,9 @@ func writeSSE(w io.Writer, flusher http.Flusher, id string, event string, data s
 		_, _ = b.WriteString("\n")
 	}
 	_, _ = b.WriteString("\n")
-	_, err_28 := io.WriteString(w, b.String())
-	if err_28 != nil {
-		return err_28
+	_, err_21 := io.WriteString(w, b.String())
+	if err_21 != nil {
+		return err_21
 	}
 	if flusher != nil {
 		flusher.Flush()

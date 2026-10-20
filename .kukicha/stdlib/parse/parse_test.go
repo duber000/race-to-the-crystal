@@ -171,11 +171,11 @@ func TestCSVRecords(t *testing.T) {
 }
 
 // --- TestWriteCSV ---
-func TestWriteCSV(t *testing.T) {
+func TestWriteCSVTo(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "users.csv")
 	rows := [][]string{[]string{"name", "age"}, []string{"alice", "30"}, []string{"bob,jr", "25"}}
-	err := parse.WriteCSV(path, rows)
+	err := parse.WriteCSVTo(rows, path)
 	test.AssertNoError(t, err)
 	data, readErr := os.ReadFile(path)
 	test.AssertNoError(t, readErr)
@@ -185,12 +185,12 @@ func TestWriteCSV(t *testing.T) {
 	test.AssertEqual(t, roundTrip[2][0], "bob,jr")
 }
 
-// --- TestWriteCSVRecords ---
-func TestWriteCSVRecords(t *testing.T) {
+// --- TestWriteCSVRecordsTo ---
+func TestWriteCSVRecordsTo(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "records.csv")
 	records := []map[string]string{map[string]string{"name": "alice", "age": "30"}, map[string]string{"name": "bob", "age": "25"}}
-	err := parse.WriteCSVRecords(path, records)
+	err := parse.WriteCSVRecordsTo(records, path)
 	test.AssertNoError(t, err)
 	data, readErr := os.ReadFile(path)
 	test.AssertNoError(t, readErr)
@@ -202,8 +202,21 @@ func TestWriteCSVRecords(t *testing.T) {
 	test.AssertEqual(t, rows[1]["name"], "bob")
 }
 
-func TestWriteCSVError(t *testing.T) {
-	err := parse.WriteCSV("/nonexistent-dir-xyz/out.csv", [][]string{[]string{"a"}})
+func TestWriteCSVRecordsToEmptyNonNil(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "empty.csv")
+	rows, err := parse.CSVRecords("name,age\n")
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, len(rows), 0)
+	writeErr := parse.WriteCSVRecordsTo(rows, path)
+	test.AssertNoError(t, writeErr)
+	data, readErr := os.ReadFile(path)
+	test.AssertNoError(t, readErr)
+	test.AssertEqual(t, len(data), 0)
+}
+
+func TestWriteCSVToError(t *testing.T) {
+	err := parse.WriteCSVTo([][]string{[]string{"a"}}, "/nonexistent-dir-xyz/out.csv")
 	test.AssertEqual(t, err != nil, true)
 }
 

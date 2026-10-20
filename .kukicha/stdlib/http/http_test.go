@@ -19,10 +19,13 @@ import (
 // Test JSON/Text helpers set the right headers, status, and body
 func TestResponseHelpers(t *testing.T) {
 	jsonRec := httptest.NewRecorder()
-	err := httphelper.JSON(jsonRec, map[string]any{"status": "ok"})
-	if err != nil {
-		t.Fatalf("JSON helper failed: %v", err)
-	}
+	jsonHandler := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+		err := res.JSON(map[string]any{"status": "ok"})
+		if err != nil {
+			t.Fatalf("JSON helper failed: %v", err)
+		}
+	})
+	jsonHandler.ServeHTTP(jsonRec, httptest.NewRequest("GET", "/", nil))
 	resp := jsonRec.Result()
 	if resp.StatusCode != 200 {
 		t.Errorf("Expected 200, got %v", resp.StatusCode)
@@ -32,10 +35,13 @@ func TestResponseHelpers(t *testing.T) {
 		t.Errorf("Expected JSON content type, got %v", ct)
 	}
 	textRec := httptest.NewRecorder()
-	err2 := httphelper.TextStatus(textRec, "bye", httphelper.StatusCreated)
-	if err2 != nil {
-		t.Fatalf("TextStatus failed: %v", err2)
-	}
+	textHandler := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+		err2 := res.TextStatus("bye", httphelper.StatusCreated)
+		if err2 != nil {
+			t.Fatalf("TextStatus failed: %v", err2)
+		}
+	})
+	textHandler.ServeHTTP(textRec, httptest.NewRequest("GET", "/", nil))
 	if textRec.Result().StatusCode != 201 {
 		t.Errorf("Expected 201 status, got %v", textRec.Result().StatusCode)
 	}
@@ -43,10 +49,13 @@ func TestResponseHelpers(t *testing.T) {
 		t.Errorf("Expected text/plain header")
 	}
 	htmlRec := httptest.NewRecorder()
-	err3 := httphelper.SafeHTML(htmlRec, "<script>x</script>")
-	if err3 != nil {
-		t.Fatalf("SafeHTML failed: %v", err3)
-	}
+	htmlHandler := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+		err3 := res.SafeHTML("<script>x</script>")
+		if err3 != nil {
+			t.Fatalf("SafeHTML failed: %v", err3)
+		}
+	})
+	htmlHandler.ServeHTTP(htmlRec, httptest.NewRequest("GET", "/", nil))
 	if htmlRec.Header().Get("Content-Type") != "text/html; charset=utf-8" {
 		t.Errorf("Expected html content type")
 	}
@@ -58,69 +67,84 @@ func TestResponseHelpers(t *testing.T) {
 
 // Test request helpers parse parameters and booleans
 func TestRequestHelpers(t *testing.T) {
-	req, reqErr := http.NewRequest("GET", "https://example.com/search?page=3&verbose=1", nil)
+	rawReq, reqErr := http.NewRequest("GET", "https://example.com/search?page=3&verbose=1", nil)
 	if reqErr != nil {
 		t.Fatalf("NewRequest: %v", reqErr)
 	}
-	if httphelper.GetQueryParam(req, "page") != "3" {
-		t.Errorf("GetQueryParam returned wrong page")
-	}
-	if httphelper.GetQueryParamOr(req, "missing", "5") != "5" {
-		t.Errorf("GetQueryParamOr should fallback to default")
-	}
-	page, err := httphelper.GetQueryInt(req, "page")
-	if err != nil {
-		t.Fatalf("GetQueryInt failed: %v", err)
-	}
-	if page != 3 {
-		t.Errorf("Expected page 3, got %v", page)
-	}
-	if httphelper.GetQueryIntOr(req, "missing", 7) != 7 {
-		t.Errorf("GetQueryIntOr default mismatch")
-	}
-	verbose, err2 := httphelper.GetQueryBool(req, "verbose")
-	if err2 != nil {
-		t.Fatalf("GetQueryBool failed: %v", err2)
-	}
-	if !verbose {
-		t.Errorf("Expected verbose true")
-	}
-	if !httphelper.GetQueryBoolOr(req, "missing", true) {
-		t.Errorf("GetQueryBoolOr should return default when missing")
-	}
+	handler := httphelper.Handler(func(_res httphelper.Response, req httphelper.Request) {
+		if req.GetQueryParam("page") != "3" {
+			t.Errorf("GetQueryParam returned wrong page")
+		}
+		if req.GetQueryParamOr("missing", "5") != "5" {
+			t.Errorf("GetQueryParamOr should fallback to default")
+		}
+		page, err := req.GetQueryInt("page")
+		if err != nil {
+			t.Fatalf("GetQueryInt failed: %v", err)
+		}
+		if page != 3 {
+			t.Errorf("Expected page 3, got %v", page)
+		}
+		if req.GetQueryIntOr("missing", 7) != 7 {
+			t.Errorf("GetQueryIntOr default mismatch")
+		}
+		verbose, err2 := req.GetQueryBool("verbose")
+		if err2 != nil {
+			t.Fatalf("GetQueryBool failed: %v", err2)
+		}
+		if !verbose {
+			t.Errorf("Expected verbose true")
+		}
+		if !req.GetQueryBoolOr("missing", true) {
+			t.Errorf("GetQueryBoolOr should return default when missing")
+		}
+	})
+	handler.ServeHTTP(httptest.NewRecorder(), rawReq)
 }
 
 // Test SafeRedirect enforces allowed hosts
 func TestSafeRedirect(t *testing.T) {
 	rec := httptest.NewRecorder()
-	err := httphelper.SafeRedirect(rec, "https://example.com/home", "example.com")
-	if err != nil {
-		t.Fatalf("SafeRedirect failed: %v", err)
-	}
+	handler := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+		err := res.SafeRedirect("https://example.com/home", "example.com")
+		if err != nil {
+			t.Fatalf("SafeRedirect failed: %v", err)
+		}
+	})
+	handler.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
 	if rec.Result().Header.Get("Location") != "https://example.com/home" {
 		t.Errorf("Expected location header to match redirect target")
 	}
 	rec2 := httptest.NewRecorder()
-	err2 := httphelper.SafeRedirect(rec2, "https://evil.com", "example.com")
-	if err2 == nil {
-		t.Fatalf("SafeRedirect should return error for blocked host")
-	}
+	handler2 := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+		err2 := res.SafeRedirect("https://evil.com", "example.com")
+		if err2 == nil {
+			t.Fatalf("SafeRedirect should return error for blocked host")
+		}
+	})
+	handler2.ServeHTTP(rec2, httptest.NewRequest("GET", "/", nil))
 	rec3 := httptest.NewRecorder()
-	err3 := httphelper.SafeRedirect(rec3, "/dashboard", "example.com")
-	if err3 != nil {
-		t.Fatalf("SafeRedirect should allow relative path: %v", err3)
-	}
+	handler3 := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+		err3 := res.SafeRedirect("/dashboard", "example.com")
+		if err3 != nil {
+			t.Fatalf("SafeRedirect should allow relative path: %v", err3)
+		}
+	})
+	handler3.ServeHTTP(rec3, httptest.NewRequest("GET", "/", nil))
 	if rec3.Result().Header.Get("Location") != "/dashboard" {
 		t.Errorf("Expected /dashboard location header")
 	}
 	rejects := []string{"javascript:alert(1)", "data:text/html,<script>alert(1)</script>", "file:///etc/passwd", "vbscript:msgbox(1)", "//evil.com/path", "dashboard"}
 	for _, bad := range rejects {
-		rec := httptest.NewRecorder()
-		err := httphelper.SafeRedirect(rec, bad, "example.com")
-		if err == nil {
-			t.Errorf("SafeRedirect should reject %v", bad)
-		}
-		if rec.Result().Header.Get("Location") != "" {
+		badRec := httptest.NewRecorder()
+		badHandler := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+			err := res.SafeRedirect(bad, "example.com")
+			if err == nil {
+				t.Errorf("SafeRedirect should reject %v", bad)
+			}
+		})
+		badHandler.ServeHTTP(badRec, httptest.NewRequest("GET", "/", nil))
+		if badRec.Result().Header.Get("Location") != "" {
 			t.Errorf("Location header should not be set for rejected URL: %v", bad)
 		}
 	}
@@ -136,12 +160,18 @@ func TestMethodAndSecurityHelpers(t *testing.T) {
 		t.Errorf("Expected IsGet false when method is POST")
 	}
 	rec := httptest.NewRecorder()
-	httphelper.SetSecureHeaders(rec)
+	secHandler := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+		res.SetSecureHeaders()
+	})
+	secHandler.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
 	if rec.Header().Get("X-Content-Type-Options") != "nosniff" {
 		t.Errorf("Expected secure headers to be set")
 	}
 	rec2 := httptest.NewRecorder()
-	httphelper.MethodNotAllowed(rec2, "GET", "POST")
+	mnaHandler := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
+		res.MethodNotAllowed("GET", "POST")
+	})
+	mnaHandler.ServeHTTP(rec2, httptest.NewRequest("GET", "/", nil))
 	if rec2.Result().StatusCode != 405 {
 		t.Errorf("Expected 405 for MethodNotAllowed")
 	}
@@ -395,35 +425,44 @@ func TestReadJSONLimitExactAccepted(t *testing.T) {
 	if len(body) != 64 {
 		t.Fatalf("makeBody(64) = %v bytes", len(body))
 	}
-	req := httptest.NewRequest("POST", "/", strings.NewReader(body))
-	var p LimitPayload
-	err := httphelper.ReadJSONLimit(req, 64, &p)
-	if err != nil {
-		t.Errorf("exact-limit body should be accepted, got: %v", err)
-	}
-	if !p.OK {
-		t.Errorf("payload not decoded: OK=%v", p.OK)
-	}
+	rawReq := httptest.NewRequest("POST", "/", strings.NewReader(body))
+	handler := httphelper.Handler(func(_res httphelper.Response, req httphelper.Request) {
+		var p LimitPayload
+		err := req.DecodeLimit(64, &p)
+		if err != nil {
+			t.Errorf("exact-limit body should be accepted, got: %v", err)
+		}
+		if !p.OK {
+			t.Errorf("payload not decoded: OK=%v", p.OK)
+		}
+	})
+	handler.ServeHTTP(httptest.NewRecorder(), rawReq)
 }
 
 func TestReadJSONLimitPlusOneRejected(t *testing.T) {
 	body := makeBody(65)
-	req := httptest.NewRequest("POST", "/", strings.NewReader(body))
-	var p LimitPayload
-	err := httphelper.ReadJSONLimit(req, 64, &p)
-	if err == nil {
-		t.Errorf("limit+1 body should be rejected, but decode succeeded with OK=%v", p.OK)
-	}
+	rawReq := httptest.NewRequest("POST", "/", strings.NewReader(body))
+	handler := httphelper.Handler(func(_res httphelper.Response, req httphelper.Request) {
+		var p LimitPayload
+		err := req.DecodeLimit(64, &p)
+		if err == nil {
+			t.Errorf("limit+1 body should be rejected, but decode succeeded with OK=%v", p.OK)
+		}
+	})
+	handler.ServeHTTP(httptest.NewRecorder(), rawReq)
 }
 
 func TestReadJSONLimitValidPrefixWithExtraRejected(t *testing.T) {
 	body := `{"ok":true}GARBAGE`
-	req := httptest.NewRequest("POST", "/", strings.NewReader(body))
-	var p LimitPayload
-	err := httphelper.ReadJSONLimit(req, 1024, &p)
-	if err == nil {
-		t.Errorf("valid JSON prefix followed by extra bytes should be rejected")
-	}
+	rawReq := httptest.NewRequest("POST", "/", strings.NewReader(body))
+	handler := httphelper.Handler(func(_res httphelper.Response, req httphelper.Request) {
+		var p LimitPayload
+		err := req.DecodeLimit(1024, &p)
+		if err == nil {
+			t.Errorf("valid JSON prefix followed by extra bytes should be rejected")
+		}
+	})
+	handler.ServeHTTP(httptest.NewRecorder(), rawReq)
 }
 
 // expectServeWithRejects fails the test if ValidateServerOpts does NOT return

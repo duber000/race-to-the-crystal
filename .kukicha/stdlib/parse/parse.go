@@ -291,13 +291,6 @@ func CSVRecords(data string) (CSVRows, error) {
 	return result, nil
 }
 
-// Deprecated: use WriteCSVTo instead — rows-first is the pipe-friendly
-// subject-first order; path-first is the os.Create Go-ism.
-// Example: rows |> parse.WriteCSVTo("users.csv") onerr return
-func WriteCSV(path string, rows [][]string) error {
-	return WriteCSVTo(rows, path)
-}
-
 // WriteCSVTo writes rows to path as CSV, rows first for pipes. Overwrites
 // existing files. Each inner list is one row; quoting and escaping follow
 // encoding/csv rules.
@@ -320,13 +313,6 @@ func WriteCSVTo(rows [][]string, path string) error {
 	return w.Error()
 }
 
-// Deprecated: use WriteCSVRecordsTo instead — records-first is the
-// pipe-friendly subject-first order.
-// Example: records |> parse.WriteCSVRecordsTo("users.csv") onerr return
-func WriteCSVRecords(path string, records CSVRows) error {
-	return WriteCSVRecordsTo(records, path)
-}
-
 // WriteCSVRecordsTo writes a list of maps to path as CSV, deriving the
 // header row from the first record's keys (sorted alphabetically for
 // determinism). Missing keys in later records write as empty strings.
@@ -335,7 +321,7 @@ func WriteCSVRecords(path string, records CSVRows) error {
 // Pipe-friendly: records |> parse.WriteCSVRecordsTo("users.csv") onerr return
 // Example: records |> parse.WriteCSVRecordsTo("users.csv") onerr return
 func WriteCSVRecordsTo(records CSVRows, path string) error {
-	if records == nil {
+	if len(records) == 0 {
 		return os.WriteFile(path, []byte{}, 0644)
 	}
 	headers := []string{}

@@ -84,12 +84,12 @@ func TestByKey(t *testing.T) {
 	}
 }
 
-// --- TestReverse ---
+// --- TestByDesc ---
 type ReverseCase struct {
 	name string
 }
 
-func TestReverse(t *testing.T) {
+func TestByDesc(t *testing.T) {
 	cases := []ReverseCase{ReverseCase{name: "reverse ints"}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -98,8 +98,6 @@ func TestReverse(t *testing.T) {
 			test.AssertEqual(t, sorted[0], 3)
 			test.AssertEqual(t, sorted[1], 2)
 			test.AssertEqual(t, sorted[2], 1)
-			sortedOld := sort.Reverse(nums, func(a int, b int) bool { return a < b })
-			test.AssertEqual(t, sortedOld[0], 3)
 		})
 	}
 }

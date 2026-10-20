@@ -350,21 +350,6 @@ func ParseFloat(s string) (float64, error) {
 	return val, nil
 }
 
-// Deprecated: use parse.Bool instead — parsing is parse's namespace, and
-// parse.Bool/parse.BoolOr carry the same accepted set
-// (true/1/yes/on, false/0/no/off, case-insensitive, trimmed).
-// Example: enabled := input |> parse.Bool() onerr return
-func ParseBool(s string) (bool, error) {
-	lower := kukistring.ToLower(kukistring.TrimSpace(s))
-	if lower == "true" || lower == "1" || lower == "yes" || lower == "on" {
-		return true, nil
-	}
-	if lower == "false" || lower == "0" || lower == "no" || lower == "off" {
-		return false, nil
-	}
-	return false, fmt.Errorf("invalid boolean: %v", s)
-}
-
 // NotEmptyList checks that a list has at least one element
 // Example: items |> validate.NotEmptyList() onerr return
 func NotEmptyList[T any](items []T) ([]T, error) {
@@ -390,17 +375,6 @@ func ListMaxLength[T any](items []T, n int) ([]T, error) {
 		return items, fmt.Errorf("list must have at most %v elements", n)
 	}
 	return items, nil
-}
-
-// Deprecated: use ValidateWith instead — it runs the validator and swaps the
-// message in one pipe-friendly call, without threading the (value, err) pair
-// back in as separate arguments.
-// Example: s |> validate.ValidateWith(validate.Email, "Please enter a valid email") onerr return
-func WithMessage(value string, err error, message string) (string, error) {
-	if err != nil {
-		return value, fmt.Errorf("%v", message)
-	}
-	return value, nil
 }
 
 // ValidateWith runs validator on s and replaces any validation error with

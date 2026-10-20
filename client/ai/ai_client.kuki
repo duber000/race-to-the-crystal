@@ -39,14 +39,14 @@ func openSession(args: cli.Args) Session
     joinId := cli.GetStringOr(args, "join", "")
     createName := cli.GetStringOr(args, "create", "")
 
-    if joinId isnt ""
+    if joinId isnt empty
         log.Info("Joining game {joinId} as {sess.playerName}")
         ok := sess.JoinGame(joinId, sess.playerName)
         if not ok
             log.Fatal("failed to join game {joinId}")
         log.Info("Marking as ready")
         sess.SetReady(true)
-    else if createName isnt ""
+    else if createName isnt empty
         log.Info("Creating game {createName} as {sess.playerName}")
         ok := sess.CreateGame(createName, sess.playerName)
         if not ok
@@ -78,7 +78,7 @@ func takeTurn(sess: reference Session, strategy: gamepkg.AIStrategyName)
     log.Debug(
         "takeTurn: state size={len(state)}, perspective={myGameId}, my_net_id={sess.playerId}",
     )
-    if myGameId equals ""
+    if myGameId is empty
         return
 
     cur, has := state["current_turn_player_id"]
@@ -155,7 +155,7 @@ func runSSE(args: cli.Args) error
 
     sess.ConnectSSE((ev: SSEEvent) =>
         evtType := ev.eventType
-        if evtType equals "" or evtType equals "message"
+        if (evtType is empty) or evtType equals "message"
             evtType = "message"
 
         if evtType equals "GAME_WON" or evtType equals "GAME_OVER"
@@ -178,7 +178,7 @@ func runSSE(args: cli.Args) error
             if perspective is string as p
                 myGameId = p
 
-        if myGameId equals ""
+        if myGameId is empty
             return true
 
         cur, has := state["current_turn_player_id"]

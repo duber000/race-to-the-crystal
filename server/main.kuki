@@ -38,7 +38,7 @@ type GameServer
 
 func NewGameServer(config: ServerConfig) (GameServer, error)
     mercureCfg := MercureConfigFromEnv()
-    if config.jwtSecret equals ""
+    if config.jwtSecret is empty
         sk, err := GenerateSecretKey()
         if err isnt empty
             return GameServer{}, errs.Wrap(err, "failed to generate secret key")
@@ -108,7 +108,7 @@ func handleWebSocketRoute on gs: reference GameServer(response: httphelper.Respo
 
 func handleHTTP on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
     response.SetSecureHeaders()
-    if gs.config.staticDir equals ""
+    if gs.config.staticDir is empty
         response.JSONNotFound("no static files configured") onerr discard
         return
 

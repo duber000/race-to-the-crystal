@@ -62,19 +62,8 @@ func ByKey[T any, K cmp.Ordered](items []T, key func(T) K) []T {
 	return result
 }
 
-// Reverse returns a copy of items sorted in descending order using less(a, b).
-// The less function defines the natural order; Reverse inverts it.
-// Collides with slice.Reverse which reverses order — prefer ByDesc for
-// descending sorts so call sites read as sort direction.
-func Reverse[T any](items []T, less func(T, T) bool) []T {
-	result := slices.Clone(items)
-	sort.SliceStable(result, func(i int, j int) bool { return less(result[j], result[i]) })
-	return result
-}
-
 // ByDesc returns a copy of items sorted in descending order using less(a, b).
 // The less function defines the natural ascending order; ByDesc inverts it.
-// English alias for Reverse — reads as "by descending".
 // Example: sort.ByDesc(repos, (a, b) => a.Stars < b.Stars)
 func ByDesc[T any](items []T, less func(T, T) bool) []T {
 	result := slices.Clone(items)

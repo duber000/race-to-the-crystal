@@ -32,7 +32,7 @@ func NewWSClient(clientId: string) WSClient
     }
 
 func IsInGame on c: WSClient bool
-    return c.gameId isnt ""
+    return c.gameId isnt empty
 
 type WSMessage
     gameId: string
@@ -136,7 +136,7 @@ func GetClientCount on wh: reference WebSocketHandler int
 func GetClientsInGame on wh: reference WebSocketHandler(gameId: string) list of string
     result := empty list of string
     for _client_id, client in wh.clients
-        if client.gameId equals gameId and client.playerId isnt ""
+        if client.gameId equals gameId and client.playerId isnt empty
             result = append(result, client.playerId)
     return result
 

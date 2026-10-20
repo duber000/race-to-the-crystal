@@ -642,16 +642,7 @@ func Require(result Result) (string, error) {
 	}
 }
 
-// Which checks if a command exists in the system PATH
-// Returns true if the command is found, false otherwise
-// Example: if shell.Which("git") ...
-func Which(name string) bool {
-	_, err := exec.LookPath(name)
-	return err == nil
-}
-
 // IsInstalled reports whether name is found on PATH.
-// English alias for Which — reads as a question.
 // Example: if shell.IsInstalled("git") ...
 func IsInstalled(name string) bool {
 	_, err := exec.LookPath(name)

@@ -52,7 +52,7 @@ func toDict on p: PlayerInfo map of string to any
     }
 
 func ValidateGameName(gameName: string) error
-    if gameName equals "" or strpkg.TrimSpace(gameName) equals ""
+    if (gameName is empty) or (strpkg.TrimSpace(gameName) is empty)
         return error "Game name cannot be empty"
     if len(gameName) > MAX_GAME_NAME_LENGTH
         return error "Game name too long (max {MAX_GAME_NAME_LENGTH} characters)"
@@ -65,7 +65,7 @@ func ValidateGameName(gameName: string) error
     return empty
 
 func ValidatePlayerName(playerName: string) error
-    if playerName equals "" or strpkg.TrimSpace(playerName) equals ""
+    if (playerName is empty) or (strpkg.TrimSpace(playerName) is empty)
         return error "Player name cannot be empty"
     if len(playerName) > MAX_PLAYER_NAME_LENGTH
         return error "Player name too long (max {MAX_PLAYER_NAME_LENGTH} characters)"

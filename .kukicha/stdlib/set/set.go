@@ -2,8 +2,9 @@
 
 // Kukicha Standard Library - Set
 //
-// Generic HashSet: `Set of T` wraps `map of T to bool` and exposes membership
-// through package functions that take `reference Set of T` as their first
+// Generic HashSet: `Set of T` wraps `map of T to bool` with value-header
+// semantics (matching Go 1.28's planned `container/set.Set[T]`) and exposes
+// membership through package functions that take `Set of T` as their first
 // argument (the established stdlib pattern — call them as
 // `set.Contains(s, x)` or pipe `s |> set.Contains(x)`).
 //
@@ -12,10 +13,12 @@
 // "boolean disagrees with key presence" footgun the interim repair papered
 // over is now structurally impossible.
 //
-// Construct with `New of T()` (empty) or `From of T(items)` (seeded). A `Set`
-// is shared by reference; `Union`/`Intersection`/`Difference`/`SymmetricDifference`/
-// `Clone` return new Sets. `All` yields members as an `iter.Seq` for `for e in`
-// loops and `stdlib/iterator` pipelines.
+// Construct with `New of T()` (empty) or `From of T(items)` (seeded). Because
+// `Set of T` is a lightweight header over its backing map, passing or assigning
+// a constructed `Set` shares that backing map without requiring `reference Set of T`.
+// `Union`/`Intersection`/`Difference`/`SymmetricDifference`/`Clone` return new Sets.
+// `All` yields members as an `iter.Seq` for `for e in` loops and `stdlib/iterator`
+// pipelines.
 //
 // Example:
 //
@@ -35,18 +38,18 @@ import (
 )
 
 // Set is a generic HashSet over any comparable type T. Construct with
-// New of T() or From of T(items); share by reference.
+// New of T() or From of T(items); pass by value (it wraps a map reference).
 type Set[T comparable] struct {
 	items map[T]bool
 }
 
 // New of T returns an empty Set of T ready for Add/Remove/Contains.
-func New[T comparable]() *Set[T] {
-	return &Set[T]{items: map[T]bool{}}
+func New[T comparable]() Set[T] {
+	return Set[T]{items: map[T]bool{}}
 }
 
 // From of T builds a Set of T from a list, deduplicating elements.
-func From[T comparable](items []T) *Set[T] {
+func From[T comparable](items []T) Set[T] {
 	s := New[T]()
 	for _, item := range items {
 		Add(s, item)
@@ -55,33 +58,33 @@ func From[T comparable](items []T) *Set[T] {
 }
 
 // Add inserts item into the set. Idempotent for existing members.
-func Add[T comparable](s *Set[T], item T) {
+func Add[T comparable](s Set[T], item T) {
 	s.items[item] = true
 }
 
 // InsertAll inserts every item of the list into the set in one call. Use it to
 // accumulate members across sources into an existing set.
 // Example: set.InsertAll(s, moreNames)
-func InsertAll[T comparable](s *Set[T], items []T) {
+func InsertAll[T comparable](s Set[T], items []T) {
 	for _, item := range items {
 		s.items[item] = true
 	}
 }
 
 // Remove deletes item from the set. No-op if item is not present.
-func Remove[T comparable](s *Set[T], item T) {
+func Remove[T comparable](s Set[T], item T) {
 	delete(s.items, item)
 }
 
 // Contains reports whether item is a member of the set.
-func Contains[T comparable](s *Set[T], item T) bool {
+func Contains[T comparable](s Set[T], item T) bool {
 	_, present := s.items[item]
 	return present
 }
 
 // ContainsAll reports whether every item of the list is a member of the set.
 // The empty list is contained in every set.
-func ContainsAll[T comparable](s *Set[T], items []T) bool {
+func ContainsAll[T comparable](s Set[T], items []T) bool {
 	for _, item := range items {
 		if !Contains(s, item) {
 			return false
@@ -91,19 +94,19 @@ func ContainsAll[T comparable](s *Set[T], items []T) bool {
 }
 
 // Len returns the number of members.
-func Len[T comparable](s *Set[T]) int {
+func Len[T comparable](s Set[T]) int {
 	return len(s.items)
 }
 
 // IsEmpty reports whether the set has no members.
-func IsEmpty[T comparable](s *Set[T]) bool {
+func IsEmpty[T comparable](s Set[T]) bool {
 	return len(s.items) == 0
 }
 
 // ToList returns a list of the set's members. Order is not guaranteed.
 // This is the idiomatic name — `list of T` is Kukicha for `[]T`.
 // Example: members := set.ToList(s)
-func ToList[T comparable](s *Set[T]) []T {
+func ToList[T comparable](s Set[T]) []T {
 	result := make([]T, 0, len(s.items))
 	for k := range s.items {
 		result = append(result, k)
@@ -111,16 +114,11 @@ func ToList[T comparable](s *Set[T]) []T {
 	return result
 }
 
-// ToSlice returns a list of the set's members. Order is not guaranteed.
-func ToSlice[T comparable](s *Set[T]) []T {
-	return ToList(s)
-}
-
 // ToSortedList returns a list of the set's members in ascending order.
 // Deterministic output for goldens and reports — the one-call replacement for
 // the `ToList + sort` two-step. Requires an ordered element type.
 // Example: names := set.ToSortedList(s)
-func ToSortedList[T cmp.Ordered](s *Set[T]) []T {
+func ToSortedList[T cmp.Ordered](s Set[T]) []T {
 	result := ToList(s)
 	slices.Sort(result)
 	return result
@@ -131,7 +129,7 @@ func ToSortedList[T cmp.Ordered](s *Set[T]) []T {
 // Example: for name in set.All(s)
 //
 //	print(name)
-func All[T comparable](s *Set[T]) iter.Seq[T] {
+func All[T comparable](s Set[T]) iter.Seq[T] {
 	return func(yield func(T) bool) {
 		for k := range s.items {
 			if !yield(k) {
@@ -144,18 +142,18 @@ func All[T comparable](s *Set[T]) iter.Seq[T] {
 // Has reports whether item is a member of the set.
 // English alias for Contains — both read naturally.
 // Example: if set.Has(s, "alice") ...
-func Has[T comparable](s *Set[T], item T) bool {
+func Has[T comparable](s Set[T], item T) bool {
 	return Contains(s, item)
 }
 
 // Size returns the number of members.
 // English alias for Len.
-func Size[T comparable](s *Set[T]) int {
+func Size[T comparable](s Set[T]) int {
 	return Len(s)
 }
 
 // Union returns a new Set containing every member of s and other.
-func Union[T comparable](s *Set[T], other *Set[T]) *Set[T] {
+func Union[T comparable](s Set[T], other Set[T]) Set[T] {
 	result := New[T]()
 	for k := range s.items {
 		result.items[k] = true
@@ -169,7 +167,7 @@ func Union[T comparable](s *Set[T], other *Set[T]) *Set[T] {
 // Intersection returns a new Set containing only members present in both
 // s and other. The name follows Go's planned container/set surface so the
 // eventual re-base onto container/set.Set is an implementation swap.
-func Intersection[T comparable](s *Set[T], other *Set[T]) *Set[T] {
+func Intersection[T comparable](s Set[T], other Set[T]) Set[T] {
 	result := New[T]()
 	for k := range s.items {
 		if Contains(other, k) {
@@ -181,7 +179,7 @@ func Intersection[T comparable](s *Set[T], other *Set[T]) *Set[T] {
 
 // Difference returns a new Set containing members of s that are not in
 // other.
-func Difference[T comparable](s *Set[T], other *Set[T]) *Set[T] {
+func Difference[T comparable](s Set[T], other Set[T]) Set[T] {
 	result := New[T]()
 	for k := range s.items {
 		if !Contains(other, k) {
@@ -193,7 +191,7 @@ func Difference[T comparable](s *Set[T], other *Set[T]) *Set[T] {
 
 // SymmetricDifference returns a new Set containing members that are in exactly
 // one of s and other — members shared by both are excluded.
-func SymmetricDifference[T comparable](s *Set[T], other *Set[T]) *Set[T] {
+func SymmetricDifference[T comparable](s Set[T], other Set[T]) Set[T] {
 	result := New[T]()
 	for k := range s.items {
 		if !Contains(other, k) {
@@ -211,7 +209,7 @@ func SymmetricDifference[T comparable](s *Set[T], other *Set[T]) *Set[T] {
 // Clone returns a new Set with the same members as s. Later mutations of the
 // clone (or the original) never affect the other — the defensive copy Union,
 // Intersection, and Difference already return implicitly.
-func Clone[T comparable](s *Set[T]) *Set[T] {
+func Clone[T comparable](s Set[T]) Set[T] {
 	result := New[T]()
 	for k := range s.items {
 		result.items[k] = true
@@ -221,7 +219,7 @@ func Clone[T comparable](s *Set[T]) *Set[T] {
 
 // Subset reports whether every member of s is also in super.
 // The name follows Go's planned container/set surface.
-func Subset[T comparable](s *Set[T], super *Set[T]) bool {
+func Subset[T comparable](s Set[T], super Set[T]) bool {
 	for k := range s.items {
 		if !Contains(super, k) {
 			return false
@@ -232,12 +230,12 @@ func Subset[T comparable](s *Set[T], super *Set[T]) bool {
 
 // Superset reports whether every member of sub is also in s.
 // The name follows Go's planned container/set surface.
-func Superset[T comparable](s *Set[T], sub *Set[T]) bool {
+func Superset[T comparable](s Set[T], sub Set[T]) bool {
 	return Subset(sub, s)
 }
 
 // Equal reports whether s and other contain the same members.
-func Equal[T comparable](s *Set[T], other *Set[T]) bool {
+func Equal[T comparable](s Set[T], other Set[T]) bool {
 	if len(s.items) != len(other.items) {
 		return false
 	}
@@ -246,7 +244,7 @@ func Equal[T comparable](s *Set[T], other *Set[T]) bool {
 
 // Intersects reports whether s and other share at least one member — the
 // disjointness test, without materializing an Intersection result.
-func Intersects[T comparable](s *Set[T], other *Set[T]) bool {
+func Intersects[T comparable](s Set[T], other Set[T]) bool {
 	for k := range s.items {
 		if Contains(other, k) {
 			return true

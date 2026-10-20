@@ -1519,42 +1519,77 @@ func TestUnknownCapture_Read(t *testing.T) {
 	test.AssertEqual(t, ev.Extra["foo"], "x")
 }
 
-func TestUnknownCapture_MarshalInlinesAndSorts(t *testing.T) {
-	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{"foo": "x", "bar": 2}}
-	s, err_44 := json.String(ev)
+func TestUnknownCapture_Decode(t *testing.T) {
+	reader := bytes.NewBufferString("{\"id\":\"a\",\"action\":\"push\",\"foo\":\"x\"}")
+	ev := WebhookEvent{}
+	// pipe step 1: json.Decode(...)
+	err_44 := json.Decode(json.NewDecoder(reader), &ev)
 	if err_44 != nil {
 		panic(fmt.Sprintf("%v", err_44))
+	}
+	_ = err_44
+	test.AssertEqual(t, ev.ID, "a")
+	test.AssertEqual(t, ev.Action, "push")
+	test.AssertEqual(t, ev.Extra["foo"], "x")
+}
+
+func TestUnknownCapture_DecodeMultiDocumentStream(t *testing.T) {
+	reader := bytes.NewBufferString("{\"id\":\"a\",\"action\":\"push\",\"foo\":\"x\"}" + "\n" + "{\"id\":\"b\",\"action\":\"pull\",\"bar\":42}" + "\n")
+	dec := json.NewDecoder(reader)
+	ev1 := WebhookEvent{}
+	err_45 := json.Decode(dec, &ev1)
+	if err_45 != nil {
+		panic(fmt.Sprintf("%v", err_45))
+	}
+	test.AssertEqual(t, ev1.ID, "a")
+	test.AssertEqual(t, ev1.Action, "push")
+	test.AssertEqual(t, ev1.Extra["foo"], "x")
+	ev2 := WebhookEvent{}
+	err_46 := json.Decode(dec, &ev2)
+	if err_46 != nil {
+		panic(fmt.Sprintf("%v", err_46))
+	}
+	test.AssertEqual(t, ev2.ID, "b")
+	test.AssertEqual(t, ev2.Action, "pull")
+	test.AssertEqual(t, ev2.Extra["bar"], 42.0)
+}
+
+func TestUnknownCapture_MarshalInlinesAndSorts(t *testing.T) {
+	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{"foo": "x", "bar": 2}}
+	s, err_47 := json.String(ev)
+	if err_47 != nil {
+		panic(fmt.Sprintf("%v", err_47))
 	}
 	test.AssertEqual(t, s, "{\"id\":\"a\",\"action\":\"push\",\"bar\":2,\"foo\":\"x\"}")
 }
 
 func TestUnknownCapture_MarshalEmptyOmitsCaptureMember(t *testing.T) {
 	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{}}
-	s, err_45 := json.String(ev)
-	if err_45 != nil {
-		panic(fmt.Sprintf("%v", err_45))
+	s, err_48 := json.String(ev)
+	if err_48 != nil {
+		panic(fmt.Sprintf("%v", err_48))
 	}
 	test.AssertEqual(t, s, "{\"id\":\"a\",\"action\":\"push\"}")
 }
 
 func TestUnknownCapture_RoundTrip(t *testing.T) {
 	raw := "{\"id\":\"a\",\"action\":\"push\",\"foo\":\"x\",\"bar\":2}"
-	ev, err_46 := json.Parse[WebhookEvent](raw)
-	if err_46 != nil {
-		panic(fmt.Sprintf("%v", err_46))
+	ev, err_49 := json.Parse[WebhookEvent](raw)
+	if err_49 != nil {
+		panic(fmt.Sprintf("%v", err_49))
 	}
-	out, err_47 := json.String(ev)
-	if err_47 != nil {
-		panic(fmt.Sprintf("%v", err_47))
+	out, err_50 := json.String(ev)
+	if err_50 != nil {
+		panic(fmt.Sprintf("%v", err_50))
 	}
 	test.AssertEqual(t, out, "{\"id\":\"a\",\"action\":\"push\",\"bar\":2,\"foo\":\"x\"}")
 }
 
 func TestUnknownCapture_PrettyInlines(t *testing.T) {
 	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{"foo": "x"}}
-	s, err_48 := json.PrettyString(ev)
-	if err_48 != nil {
-		panic(fmt.Sprintf("%v", err_48))
+	s, err_51 := json.PrettyString(ev)
+	if err_51 != nil {
+		panic(fmt.Sprintf("%v", err_51))
 	}
 	if strings.Contains(s, "Extra") {
 		t.Errorf("pretty output leaked the capture field name: %s", s)
@@ -1573,9 +1608,9 @@ type Delimited struct {
 }
 
 func TestUnknownCapture_DelimiterVariantNotLeaked(t *testing.T) {
-	ev, err_49 := json.Parse[Delimited]("{\"user_id\":\"attacker\",\"other\":1}")
-	if err_49 != nil {
-		panic(fmt.Sprintf("%v", err_49))
+	ev, err_52 := json.Parse[Delimited]("{\"user_id\":\"attacker\",\"other\":1}")
+	if err_52 != nil {
+		panic(fmt.Sprintf("%v", err_52))
 	}
 	test.AssertEqual(t, ev.UserID, "attacker")
 	test.AssertEqual(t, len(ev.Extra), 1)
@@ -1598,15 +1633,15 @@ type NamedKey struct {
 }
 
 func TestUnknownCapture_NamedStringKey(t *testing.T) {
-	ev, err_50 := json.Parse[NamedKey]("{\"id\":\"a\",\"foo\":1}")
-	if err_50 != nil {
-		panic(fmt.Sprintf("%v", err_50))
+	ev, err_53 := json.Parse[NamedKey]("{\"id\":\"a\",\"foo\":1}")
+	if err_53 != nil {
+		panic(fmt.Sprintf("%v", err_53))
 	}
 	test.AssertEqual(t, ev.ID, "a")
 	test.AssertEqual(t, len(ev.Extra), 1)
-	out, err_51 := json.String(ev)
-	if err_51 != nil {
-		panic(fmt.Sprintf("%v", err_51))
+	out, err_54 := json.String(ev)
+	if err_54 != nil {
+		panic(fmt.Sprintf("%v", err_54))
 	}
 	test.AssertEqual(t, out, "{\"id\":\"a\",\"foo\":1}")
 }
@@ -1620,9 +1655,9 @@ type Node struct {
 }
 
 func TestUnknownCapture_SelfEmbeddingDoesNotRecurse(t *testing.T) {
-	ev, err_52 := json.Parse[Node]("{\"value\":\"v\",\"x\":1}")
-	if err_52 != nil {
-		panic(fmt.Sprintf("%v", err_52))
+	ev, err_55 := json.Parse[Node]("{\"value\":\"v\",\"x\":1}")
+	if err_55 != nil {
+		panic(fmt.Sprintf("%v", err_55))
 	}
 	test.AssertEqual(t, ev.Value, "v")
 	test.AssertEqual(t, len(ev.Extra), 1)
@@ -1632,9 +1667,9 @@ func TestUnknownCapture_EncodeWriter(t *testing.T) {
 	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{"foo": "x", "bar": 2}}
 	buf := bytes.Buffer{}
 	enc := json.NewEncoder(&buf)
-	err_53 := json.Encode(enc, ev)
-	if err_53 != nil {
-		panic(fmt.Sprintf("%v", err_53))
+	err_56 := json.Encode(enc, ev)
+	if err_56 != nil {
+		panic(fmt.Sprintf("%v", err_56))
 	}
 	test.AssertEqual(t, buf.String(), "{\"id\":\"a\",\"action\":\"push\",\"bar\":2,\"foo\":\"x\"}")
 }
@@ -1642,9 +1677,9 @@ func TestUnknownCapture_EncodeWriter(t *testing.T) {
 func TestUnknownCapture_CodecInlines(t *testing.T) {
 	c := json.NewCodec(json.AsIs{})
 	ev := WebhookEvent{ID: "a", Action: "push", Extra: map[string]any{"foo": "x", "bar": 2}}
-	data, err_54 := c.Encode(ev)
-	if err_54 != nil {
-		t.Errorf("%v", err_54)
+	data, err_57 := c.Encode(ev)
+	if err_57 != nil {
+		t.Errorf("%v", err_57)
 		return
 	}
 	test.AssertEqual(t, string(data), "{\"id\":\"a\",\"action\":\"push\",\"bar\":2,\"foo\":\"x\"}")

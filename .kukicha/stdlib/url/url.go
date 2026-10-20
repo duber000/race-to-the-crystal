@@ -269,7 +269,7 @@ func SafeURL(tmpl string, pathParams map[string]string, queryParams map[string]s
 // Use this before consulting a request path against a route table or
 // joining it with a filesystem base — path.Clean alone does not reject
 // encoded traversal, and url.Parse leaves "%2e%2e" un-decoded in Path.
-// Example: clean := url.CleanPath(r.URL.Path) onerr return http.JSONBadRequest(w, "bad path")
+// Example: clean := url.CleanPath(req.URL().Path) onerr return res.JSONBadRequest("bad path")
 func CleanPath(p string) (string, error) {
 	if p == "" {
 		return "", errors.New("path is empty")
@@ -300,7 +300,7 @@ func CleanPath(p string) (string, error) {
 // A trailing slash on base is tolerated. Use this when accepting a
 // user-controlled path that must stay inside a known prefix
 // (a sandboxed file root, a tenant's URL namespace, etc.).
-// Example: if not url.IsSubpath("/static", r.URL.Path) then return http.JSONForbidden(w, "outside static root")
+// Example: if not url.IsSubpath("/static", req.URL().Path) then return res.JSONForbidden("outside static root")
 func IsSubpath(base string, candidate string) bool {
 	cleanBase, err_5 := CleanPath(base)
 	if err_5 != nil {

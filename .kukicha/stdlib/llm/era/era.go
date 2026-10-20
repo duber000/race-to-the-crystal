@@ -110,7 +110,7 @@ func Run(h ctxpkg.Handle, ask func(string) (string, error), task Task, score fun
 	root := Candidate{Source: task.Baseline, Score: rootScore, Parent: -1, Valid: rootErr == nil, Visits: 0}
 	tree = append(tree, root)
 	for range budget {
-		if h.Ctx.Err() != nil {
+		if !(h.Ctx.Err() == nil) {
 			break
 		}
 		parentIdx := SelectFUTS(tree, task.Higher, DefaultExploration)

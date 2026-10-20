@@ -102,7 +102,7 @@ func HandleJoinGame on h: reference HTTPHandler(gameId: string, body: map of str
 
 func HandleAction on h: reference HTTPHandler(gameId: string, authHeader: string, body: map of string to any) APIResponse
     tokenStr := ExtractTokenFromHeader(authHeader)
-    if tokenStr equals ""
+    if tokenStr is empty
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
@@ -196,7 +196,7 @@ func HandleAction on h: reference HTTPHandler(gameId: string, authHeader: string
 
 func HandleGetState on h: reference HTTPHandler(gameId: string, authHeader: string) APIResponse
     tokenStr := ExtractTokenFromHeader(authHeader)
-    if tokenStr equals ""
+    if tokenStr is empty
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
@@ -221,7 +221,7 @@ func HandleGetState on h: reference HTTPHandler(gameId: string, authHeader: stri
 
 func HandleGetActions on h: reference HTTPHandler(gameId: string, authHeader: string) APIResponse
     tokenStr := ExtractTokenFromHeader(authHeader)
-    if tokenStr equals ""
+    if tokenStr is empty
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
@@ -270,26 +270,26 @@ func HandleCreateGame on h: reference HTTPHandler(authHeader: string, body: map 
     tokenStr := ExtractTokenFromHeader(authHeader)
 
     playerId := ""
-    if tokenStr isnt ""
+    if tokenStr isnt empty
         payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
         if payload isnt empty
             playerId = payload.playerId
 
-    if playerId equals ""
+    if playerId is empty
         playerId = random.String(16)
 
     playerName := "Player"
     pnVal, hasPn := body["player_name"]
     if hasPn
         if pnVal is string as pn
-            if pn isnt ""
+            if pn isnt empty
                 playerName = pn
 
     gameName := "Game"
     gnVal, hasGn := body["game_name"]
     if hasGn
         if gnVal is string as gn
-            if gn isnt ""
+            if gn isnt empty
                 gameName = gn
 
     maxPlayers := 4
@@ -325,7 +325,7 @@ func HandleCreateGame on h: reference HTTPHandler(authHeader: string, body: map 
 
 func HandleLeaveGame on h: reference HTTPHandler(gameId: string, authHeader: string) APIResponse
     tokenStr := ExtractTokenFromHeader(authHeader)
-    if tokenStr equals ""
+    if tokenStr is empty
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
@@ -339,7 +339,7 @@ func HandleLeaveGame on h: reference HTTPHandler(gameId: string, authHeader: str
 
 func HandleReady on h: reference HTTPHandler(gameId: string, authHeader: string, body: map of string to any) APIResponse
     tokenStr := ExtractTokenFromHeader(authHeader)
-    if tokenStr equals ""
+    if tokenStr is empty
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
@@ -372,7 +372,7 @@ func HandleReady on h: reference HTTPHandler(gameId: string, authHeader: string,
 
 func HandleStartGame on h: reference HTTPHandler(gameId: string, authHeader: string) APIResponse
     tokenStr := ExtractTokenFromHeader(authHeader)
-    if tokenStr equals ""
+    if tokenStr is empty
         return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
 
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
@@ -427,11 +427,11 @@ func HandleStartGame on h: reference HTTPHandler(gameId: string, authHeader: str
     }
 
 func GetClientIP on h: reference HTTPHandler(remoteAddr: string, xff: string, realIp: string) string
-    if xff isnt ""
+    if xff isnt empty
         parts := strings.Split(xff, ",")
         if parts isnt empty
             return strings.TrimSpace(parts[0])
-    if realIp isnt ""
+    if realIp isnt empty
         return realIp
     host, _port, err := net.SplitHostPort(remoteAddr)
     if err isnt empty

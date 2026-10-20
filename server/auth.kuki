@@ -78,7 +78,7 @@ func VerifyPlayerToken(tokenStr: string, secretKey: string) optional reference T
     return reference of result
 
 func ExtractTokenFromHeader(authorizationHeader: string) string
-    if authorizationHeader equals ""
+    if authorizationHeader is empty
         return ""
     prefix := "Bearer "
     if strpkg.HasPrefix(authorizationHeader, prefix)

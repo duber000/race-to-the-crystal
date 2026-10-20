@@ -42,19 +42,19 @@ type createJoinAPIResponse
     data: playerSessionData
 
 func fillSessionFromData on s: reference Session(d: playerSessionData)
-    if d.playerId isnt ""
+    if d.playerId isnt empty
         s.playerId = d.playerId
-    if d.playerName isnt ""
+    if d.playerName isnt empty
         s.playerName = d.playerName
-    if d.token isnt ""
+    if d.token isnt empty
         s.token = d.token
-    if d.gameId isnt ""
+    if d.gameId isnt empty
         s.gameId = d.gameId
-    if d.sseUrl isnt ""
+    if d.sseUrl isnt empty
         s.sseUrl = d.sseUrl
 
     log.Info("Authenticated as {s.playerName} (player_id={s.playerId}, game_id={s.gameId})")
-    if s.sseUrl isnt ""
+    if s.sseUrl isnt empty
         log.Info("SSE URL: {s.sseUrl}")
 
 func CreateGame on s: reference Session(gameName: string, playerName: string) bool
@@ -410,7 +410,7 @@ type SSEEvent
     data: string
 
 func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
-    if s.sseUrl equals ""
+    if s.sseUrl is empty
         log.Warn("ConnectSSE: no SSE URL configured")
         return
 
@@ -438,7 +438,7 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
     for scanner.Scan()
         line := scanner.Text()
 
-        if line equals ""
+        if line is empty
             if dataBuf.Len() > 0
                 ev := SSEEvent{eventType: currentEvent, data: dataBuf.String()}
                 keepGoing := handler(ev)

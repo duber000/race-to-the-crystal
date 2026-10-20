@@ -70,6 +70,28 @@ func TestMerge(t *testing.T) {
 	if merged["c"] != "3" {
 		t.Errorf("Merge should include overlay key 'c'")
 	}
+	onlyBase := maps.Merge(base)
+	test.AssertEqual(t, len(onlyBase), 2)
+	test.AssertEqual(t, onlyBase["a"], any("1"))
+	test.AssertEqual(t, onlyBase["b"], any("2"))
+	extra1 := map[any]any{any("c"): any("300"), any("d"): any("4")}
+	extra2 := map[any]any{any("d"): any("400"), any("e"): any("5")}
+	multiMerged := maps.Merge(base, overlay, extra1, extra2)
+	test.AssertEqual(t, len(multiMerged), 5)
+	test.AssertEqual(t, multiMerged["a"], any("1"))
+	test.AssertEqual(t, multiMerged["b"], any("99"))
+	test.AssertEqual(t, multiMerged["c"], any("300"))
+	test.AssertEqual(t, multiMerged["d"], any("400"))
+	test.AssertEqual(t, multiMerged["e"], any("5"))
+	defaults := map[string]int{"timeout": 30, "retries": 3}
+	config := maps.Merge(defaults, map[string]int{"timeout": 60, "workers": 4})
+	test.AssertEqual(t, len(config), 3)
+	test.AssertEqual(t, config["timeout"], 60)
+	test.AssertEqual(t, config["retries"], 3)
+	test.AssertEqual(t, config["workers"], 4)
+	piped := maps.Merge(defaults, map[string]int{"timeout": 90})
+	test.AssertEqual(t, piped["timeout"], 90)
+	test.AssertEqual(t, piped["retries"], 3)
 }
 
 // --- TestSortedKeys ---
@@ -391,4 +413,160 @@ func TestMapUntypedAccessors(t *testing.T) {
 		test.AssertEqual(t, len(maps.ListOr(data, "missing", []any{})), 0)
 		test.AssertEqual(t, len(maps.ListOr(data, "str", []any{})), 0)
 	})
+}
+
+func TestFrozenMapBasic(t *testing.T) {
+	m := map[string]int{"a": 1, "b": 2}
+	fm := maps.Freeze(m)
+	test.AssertEqual(t, fm.Len(), 2)
+	test.AssertEqual(t, fm.IsEmpty(), false)
+	valA, okA := fm.Get("a")
+	test.AssertEqual(t, okA, true)
+	test.AssertEqual(t, valA, 1)
+	valMiss, okMiss := fm.Get("missing")
+	test.AssertEqual(t, okMiss, false)
+	test.AssertEqual(t, valMiss, 0)
+	test.AssertEqual(t, fm.GetOr("a", 99), 1)
+	test.AssertEqual(t, fm.GetOr("missing", 99), 99)
+	test.AssertEqual(t, fm.Contains("a"), true)
+	test.AssertEqual(t, fm.Contains("b"), true)
+	test.AssertEqual(t, fm.Contains("missing"), false)
+	keys := fm.Keys()
+	test.AssertEqual(t, len(keys), 2)
+	test.AssertEqual(t, slice.Contains(keys, "a"), true)
+	test.AssertEqual(t, slice.Contains(keys, "b"), true)
+	values := fm.Values()
+	test.AssertEqual(t, len(values), 2)
+	test.AssertEqual(t, slice.Contains(values, 1), true)
+	test.AssertEqual(t, slice.Contains(values, 2), true)
+	fmStr := maps.Freeze(map[string]string{"empty": "", "nonempty": "ok"})
+	ve, okEmpty := fmStr.Get("empty")
+	test.AssertEqual(t, okEmpty, true)
+	test.AssertEqual(t, len(ve) == 0, true)
+	vne, okNonEmpty := fmStr.Get("nonempty")
+	test.AssertEqual(t, okNonEmpty, true)
+	test.AssertEqual(t, len(vne) == 0, false)
+}
+
+func TestFrozenMapImmutability(t *testing.T) {
+	original := map[string]int{"x": 10}
+	fm := maps.Freeze(original)
+	original["x"] = 20
+	original["y"] = 30
+	test.AssertEqual(t, fm.GetOr("x", 0), 10)
+	test.AssertEqual(t, fm.Contains("y"), false)
+	test.AssertEqual(t, fm.Len(), 1)
+}
+
+func TestFrozenMapFreezeNoCopy(t *testing.T) {
+	m := map[string]int{"k": 42}
+	copied := maps.Freeze(m)
+	aliased := maps.FreezeNoCopy(m)
+	test.AssertEqual(t, aliased.Len(), 1)
+	test.AssertEqual(t, aliased.GetOr("k", 0), 42)
+	m["k"] = 99
+	test.AssertEqual(t, copied.GetOr("k", 0), 42)
+	test.AssertEqual(t, aliased.GetOr("k", 0), 99)
+}
+
+func TestFrozenMapEmptyAndNil(t *testing.T) {
+	fmEmpty := maps.Freeze(map[string]int{})
+	test.AssertEqual(t, fmEmpty.Len(), 0)
+	test.AssertEqual(t, fmEmpty.IsEmpty(), true)
+	test.AssertEqual(t, fmEmpty.Contains("any"), false)
+	val, ok := fmEmpty.Get("any")
+	test.AssertEqual(t, ok, false)
+	test.AssertEqual(t, val, 0)
+	test.AssertEqual(t, len(fmEmpty.Keys()), 0)
+	test.AssertEqual(t, len(fmEmpty.Values()), 0)
+	fmNoCopyNil := maps.FreezeNoCopy[string, int](nil)
+	test.AssertEqual(t, fmNoCopyNil.Len(), 0)
+	test.AssertEqual(t, fmNoCopyNil.IsEmpty(), true)
+	fmPopulated := fmNoCopyNil.Set("first", 100)
+	test.AssertEqual(t, fmPopulated.Len(), 1)
+	test.AssertEqual(t, fmPopulated.GetOr("first", 0), 100)
+}
+
+func TestFrozenMapPureTransformations(t *testing.T) {
+	fm1 := maps.Freeze(map[string]int{"a": 1})
+	fm2 := fm1.Set("b", 2)
+	test.AssertEqual(t, fm1.Len(), 1)
+	test.AssertEqual(t, fm1.Contains("b"), false)
+	test.AssertEqual(t, fm2.Len(), 2)
+	test.AssertEqual(t, fm2.GetOr("a", 0), 1)
+	test.AssertEqual(t, fm2.GetOr("b", 0), 2)
+	fm3 := fm2.Set("a", 10)
+	test.AssertEqual(t, fm3.Len(), 2)
+	test.AssertEqual(t, fm3.GetOr("a", 0), 10)
+	test.AssertEqual(t, fm2.GetOr("a", 0), 1)
+	fm4 := fm3.Delete("b")
+	test.AssertEqual(t, fm4.Len(), 1)
+	test.AssertEqual(t, fm4.Contains("b"), false)
+	test.AssertEqual(t, fm3.Len(), 2)
+	test.AssertEqual(t, fm3.Contains("b"), true)
+	fm5 := fm4.Delete("nonexistent")
+	test.AssertEqual(t, fm5.Len(), 1)
+	test.AssertEqual(t, fm5.GetOr("a", 0), 10)
+}
+
+func TestFrozenMapAllIteration(t *testing.T) {
+	fm := maps.Freeze(map[string]int{"a": 1, "b": 2, "c": 3})
+	collected := map[string]int{}
+	valueSum := 0
+	for k, v := range fm.All() {
+		collected[k] = v
+		valueSum += v
+	}
+	test.AssertEqual(t, len(collected), 3)
+	test.AssertEqual(t, valueSum, 6)
+	test.AssertEqual(t, collected["a"], 1)
+	test.AssertEqual(t, collected["b"], 2)
+	test.AssertEqual(t, collected["c"], 3)
+	count := 0
+	for range fm.All() {
+		count += 1
+		break
+	}
+	test.AssertEqual(t, count, 1)
+	fmEmpty := maps.FreezeNoCopy[string, int](nil)
+	emptyCount := 0
+	for range fmEmpty.All() {
+		emptyCount += 1
+	}
+	test.AssertEqual(t, emptyCount, 0)
+}
+
+func TestFrozenMapConcurrentReads(t *testing.T) {
+	fm := maps.Freeze(map[int]int{1: 10, 2: 20, 3: 30, 4: 40})
+	concurrency := 16
+	ready := make(chan bool, concurrency)
+	start := make(chan bool)
+	done := make([]chan bool, concurrency)
+	for c := range concurrency {
+		ch := make(chan bool, 1)
+		done[c] = ch
+		go func() {
+			ready <- true
+			<-start
+			for range 200 {
+				test.AssertEqual(t, fm.GetOr(1, 0), 10)
+				test.AssertEqual(t, fm.Contains(2), true)
+				test.AssertEqual(t, fm.GetOr(999, -1), -1)
+				test.AssertEqual(t, fm.Len(), 4)
+			}
+			ch <- true
+		}()
+	}
+	for range concurrency {
+		<-ready
+	}
+	close(start)
+	for range 50 {
+		mutated := fm.Set(5, 50).Delete(1)
+		test.AssertEqual(t, mutated.Contains(5), true)
+		test.AssertEqual(t, mutated.Contains(1), false)
+	}
+	for _, ch := range done {
+		<-ch
+	}
 }

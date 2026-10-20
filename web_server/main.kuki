@@ -29,7 +29,7 @@ func WebServerConfigFromEnv() WebServerConfig
         gameServerUrl: env.GetOr("GAME_SERVER_URL", "http://localhost:8080"),
         mercureHubUrl: env.GetOr("MERCURE_HUB_URL", "http://localhost:3000/.well-known/mercure"),
         mercureTopicPrefix: env.GetOr("MERCURE_TOPIC_PREFIX", "https://api.game.com/game"),
-        mercureEnabled: mercureEnabled or env.GetOr("MERCURE_PUBLISHER_JWT", "") isnt "",
+        mercureEnabled: mercureEnabled or env.GetOr("MERCURE_PUBLISHER_JWT", "") isnt empty,
         ssePrimaryMode: ssePrimaryMode,
     }
 

@@ -27,7 +27,7 @@ type MercurePublisher
 func NewMercurePublisher(config: MercureConfig) MercurePublisher
     return MercurePublisher{
         config: config,
-        enabled: config.publisherJwt isnt "",
+        enabled: config.publisherJwt isnt empty,
     }
 
 func Enabled on mp: MercurePublisher bool

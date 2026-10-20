@@ -75,4 +75,4 @@ func getCaptureProgress on c: reference Crystal() (int, int)
     return c.turnsHeld, constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
 
 func isContested on c: reference Crystal bool
-    return c.holdingPlayerId equals "" and c.holdingTokenIds isnt empty
+    return (c.holdingPlayerId is empty) and c.holdingTokenIds isnt empty

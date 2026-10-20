@@ -141,16 +141,10 @@ func Check(g Guard, name string, args ...string) (AuthorizedCommand, error) {
 	return AuthorizedCommand{binary: name, args: args}, nil
 }
 
-// Allowed is the boolean form of Check: true only when Check would issue
-// a capability. It discards the authorization — prefer Check + capability
+// IsAllowed is the boolean form of Check — true only when Check would
+// issue a capability. It discards the authorization; prefer Check + capability
 // execution for any real invocation so the guard stays in the loop.
-func Allowed(g Guard, name string, args ...string) bool {
-	_, err := Check(g, name, args...)
-	return err == nil
-}
-
-// IsAllowed is the English alias for Allowed — true only when Check would
-// issue a capability. Reads as `if shellguard.IsAllowed(g, "git", "status")`.
+// Reads as `if shellguard.IsAllowed(g, "git", "status")`.
 func IsAllowed(g Guard, name string, args ...string) bool {
 	_, err := Check(g, name, args...)
 	return err == nil

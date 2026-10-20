@@ -573,7 +573,7 @@ func TestConcat(t *testing.T) {
 	allSlices = append(allSlices, a)
 	allSlices = append(allSlices, b)
 	allSlices = append(allSlices, c)
-	result := slice.Concat(allSlices)
+	result := slice.Concat(allSlices...)
 	t.Run("combined length", func(t *testing.T) {
 		test.AssertEqual(t, len(result), 5)
 	})
@@ -581,6 +581,16 @@ func TestConcat(t *testing.T) {
 		test.AssertEqual(t, result[0], "a")
 		test.AssertEqual(t, result[4], "e")
 	})
+	combined := slice.Concat(a, b, c)
+	test.AssertEqual(t, len(combined), 5)
+	test.AssertEqual(t, combined[0], "a")
+	test.AssertEqual(t, combined[4], "e")
+	piped := slice.Concat(a, b, []string{"x", "y"})
+	test.AssertEqual(t, len(piped), 6)
+	test.AssertEqual(t, piped[4], "x")
+	test.AssertEqual(t, piped[5], "y")
+	emptyResult := slice.Concat[string]()
+	test.AssertEqual(t, len(emptyResult), 0)
 }
 
 // --- TestChunk ---

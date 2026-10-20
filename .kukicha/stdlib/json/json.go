@@ -29,9 +29,10 @@ type Encoder struct {
 	prefix string
 }
 
-// Decoder wraps jsonv2/jsontext for pipe-friendly decoding
+// Decoder wraps jsontext.Decoder for pipe-friendly streaming decoding
 type Decoder struct {
 	reader io.Reader
+	jsond  *jsontext.Decoder
 }
 
 // NewEncoder creates a pipe-friendly encoder
@@ -102,15 +103,27 @@ func Encode(enc Encoder, value any) error {
 // Returns a Decoder for reading JSON from a stream
 // Example: request.Body |> json.NewDecoder() |> json.Decode(reference of result)
 func NewDecoder(reader io.Reader) Decoder {
-	dec := Decoder{reader: reader}
+	dec := Decoder{reader: reader, jsond: jsontext.NewDecoder(reader)}
 	return dec
 }
 
-// Decode reads JSON from the decoder's reader into the target value
-// Target must be a pointer (use "reference of" in Kukicha)
+// Decode reads the next JSON value from the decoder's stream into the target value.
+// Target must be a pointer (use "reference of" in Kukicha).
+// Supports `as ",unknown"` capture fields and multi-document/NDJSON streams.
 // Example: body |> json.NewDecoder() |> json.Decode(reference of todo) onerr return
 func Decode(dec Decoder, target any) error {
-	return jsonv2.UnmarshalRead(dec.reader, target, jsonv2.MatchCaseInsensitiveNames(true))
+	jsond := dec.jsond
+	if jsond == nil {
+		jsond = jsontext.NewDecoder(dec.reader)
+	}
+	if hasUnknownCaptureTarget(target) {
+		raw, err_2 := jsond.ReadValue()
+		if err_2 != nil {
+			return err_2
+		}
+		return ParseBytesInto([]byte(raw), target)
+	}
+	return jsonv2.UnmarshalDecode(jsond, target, jsonv2.MatchCaseInsensitiveNames(true))
 }
 
 // Bytes converts a value to compact JSON bytes.
@@ -137,9 +150,9 @@ func PrettyBytes(value any) ([]byte, error) {
 // indent during Marshal).
 func indentBytes(data []byte) ([]byte, error) {
 	v := jsontext.Value(data)
-	err_2 := v.Indent(jsontext.WithIndent("  "))
-	if err_2 != nil {
-		return nil, err_2
+	err_3 := v.Indent(jsontext.WithIndent("  "))
+	if err_3 != nil {
+		return nil, err_3
 	}
 	return []byte(v), nil
 }
@@ -149,9 +162,9 @@ func indentBytes(data []byte) ([]byte, error) {
 // `data as string` cast and keeps the value in Kukicha's idiomatic type.
 // Example: s := json.String(data) onerr return
 func String(value any) (string, error) {
-	data, err_3 := marshalValue(value)
-	if err_3 != nil {
-		return "", err_3
+	data, err_4 := marshalValue(value)
+	if err_4 != nil {
+		return "", err_4
 	}
 	return string(data), nil
 }
@@ -159,9 +172,9 @@ func String(value any) (string, error) {
 // PrettyString converts a value to pretty-printed JSON string with 2-space indentation.
 // Example: s := json.PrettyString(config) onerr return
 func PrettyString(value any) (string, error) {
-	data, err_4 := PrettyBytes(value)
-	if err_4 != nil {
-		return "", err_4
+	data, err_5 := PrettyBytes(value)
+	if err_5 != nil {
+		return "", err_5
 	}
 	return string(data), nil
 }
@@ -175,9 +188,9 @@ func PrettyString(value any) (string, error) {
 // are ignored here (non-strict) and rejected by the *Strict variants.
 // Example: ParseBytesInto(jsonBytes, reference of config) onerr return
 func ParseBytesInto(data []byte, target any) error {
-	err_5 := jsonv2.Unmarshal(data, target, jsonv2.MatchCaseInsensitiveNames(true))
-	if err_5 != nil {
-		return err_5
+	err_6 := jsonv2.Unmarshal(data, target, jsonv2.MatchCaseInsensitiveNames(true))
+	if err_6 != nil {
+		return err_6
 	}
 	return applyUnknownCapture(data, target)
 }
@@ -214,13 +227,13 @@ func Write(writer io.Writer, value any) error {
 // Example: request.Body |> (x => json.ReadInto(x, reference of todo)) onerr return
 func ReadInto(reader io.Reader, target any) error {
 	if hasUnknownCaptureTarget(target) {
-		data, err_6 := io.ReadAll(reader)
-		if err_6 != nil {
-			return err_6
+		data, err_7 := io.ReadAll(reader)
+		if err_7 != nil {
+			return err_7
 		}
 		return ParseBytesInto(data, target)
 	}
-	return Decode(NewDecoder(reader), target)
+	return jsonv2.UnmarshalRead(reader, target, jsonv2.MatchCaseInsensitiveNames(true))
 }
 
 // WriteOutput writes compact JSON to os.Stdout.
@@ -228,9 +241,9 @@ func ReadInto(reader io.Reader, target any) error {
 // Compact (not pretty) output reduces token usage when agents consume it.
 // Example: result |> json.WriteOutput() onerr panic "{error}"
 func WriteOutput(v any) error {
-	data, err_7 := Bytes(v)
-	if err_7 != nil {
-		return err_7
+	data, err_8 := Bytes(v)
+	if err_8 != nil {
+		return err_8
 	}
 	fmt.Fprintln(os.Stdout, string(data))
 	return nil
@@ -243,13 +256,13 @@ func WriteOutput(v any) error {
 func Read[T any](reader io.Reader) (T, error) {
 	data := *new(T)
 	// pipe step 1: ReadInto(...)
-	err_8 := ReadInto(reader, &data)
-	if err_8 != nil {
-		err_8 = fmt.Errorf("failed to read json: %w", err_8)
+	err_9 := ReadInto(reader, &data)
+	if err_9 != nil {
+		err_9 = fmt.Errorf("failed to read json: %w", err_9)
 		var _zero0 T
-		return _zero0, err_8
+		return _zero0, err_9
 	}
-	_ = err_8
+	_ = err_9
 	return data, nil
 }
 
@@ -259,11 +272,11 @@ func Read[T any](reader io.Reader) (T, error) {
 // Example: cfg := json.ParseBytes of Config from data onerr return
 func ParseBytes[T any](data []byte) (T, error) {
 	out := *new(T)
-	err_9 := ParseBytesInto(data, &out)
-	if err_9 != nil {
-		err_9 = fmt.Errorf("failed to parse json: %w", err_9)
+	err_10 := ParseBytesInto(data, &out)
+	if err_10 != nil {
+		err_10 = fmt.Errorf("failed to parse json: %w", err_10)
 		var _zero0 T
-		return _zero0, err_9
+		return _zero0, err_10
 	}
 	return out, nil
 }
@@ -274,11 +287,11 @@ func ParseBytes[T any](data []byte) (T, error) {
 // Example: v := json.Parse of Verdict from reply onerr return
 func Parse[T any](data string) (T, error) {
 	out := *new(T)
-	err_10 := ParseInto(data, &out)
-	if err_10 != nil {
-		err_10 = fmt.Errorf("failed to parse json: %w", err_10)
+	err_11 := ParseInto(data, &out)
+	if err_11 != nil {
+		err_11 = fmt.Errorf("failed to parse json: %w", err_11)
 		var _zero0 T
-		return _zero0, err_10
+		return _zero0, err_11
 	}
 	return out, nil
 }
@@ -291,13 +304,13 @@ func Parse[T any](data string) (T, error) {
 // level only.
 func ReadIntoStrict(reader io.Reader, target any) error {
 	if hasUnknownCaptureTarget(target) {
-		data, err_11 := io.ReadAll(reader)
-		if err_11 != nil {
-			return err_11
-		}
-		err_12 := ParseBytesInto(data, target)
+		data, err_12 := io.ReadAll(reader)
 		if err_12 != nil {
 			return err_12
+		}
+		err_13 := ParseBytesInto(data, target)
+		if err_13 != nil {
+			return err_13
 		}
 		return validateStrictNested(data, target)
 	}
@@ -312,9 +325,9 @@ func ReadIntoStrict(reader io.Reader, target any) error {
 // level only.
 func ParseBytesIntoStrict(data []byte, target any) error {
 	if hasUnknownCaptureTarget(target) {
-		err_13 := ParseBytesInto(data, target)
-		if err_13 != nil {
-			return err_13
+		err_14 := ParseBytesInto(data, target)
+		if err_14 != nil {
+			return err_14
 		}
 		return validateStrictNested(data, target)
 	}
@@ -332,13 +345,13 @@ func ParseIntoStrict(data string, target any) error {
 func ReadStrict[T any](reader io.Reader) (T, error) {
 	data := *new(T)
 	// pipe step 1: ReadIntoStrict(...)
-	err_14 := ReadIntoStrict(reader, &data)
-	if err_14 != nil {
-		err_14 = fmt.Errorf("failed to read json: %w", err_14)
+	err_15 := ReadIntoStrict(reader, &data)
+	if err_15 != nil {
+		err_15 = fmt.Errorf("failed to read json: %w", err_15)
 		var _zero0 T
-		return _zero0, err_14
+		return _zero0, err_15
 	}
-	_ = err_14
+	_ = err_15
 	return data, nil
 }
 
@@ -346,11 +359,11 @@ func ReadStrict[T any](reader io.Reader) (T, error) {
 // Example: cfg := json.ParseBytesStrict of Config from data onerr return
 func ParseBytesStrict[T any](data []byte) (T, error) {
 	out := *new(T)
-	err_15 := ParseBytesIntoStrict(data, &out)
-	if err_15 != nil {
-		err_15 = fmt.Errorf("failed to parse json: %w", err_15)
+	err_16 := ParseBytesIntoStrict(data, &out)
+	if err_16 != nil {
+		err_16 = fmt.Errorf("failed to parse json: %w", err_16)
 		var _zero0 T
-		return _zero0, err_15
+		return _zero0, err_16
 	}
 	return out, nil
 }
@@ -359,11 +372,11 @@ func ParseBytesStrict[T any](data []byte) (T, error) {
 // Example: v := json.ParseStrict of Verdict from reply onerr return
 func ParseStrict[T any](data string) (T, error) {
 	out := *new(T)
-	err_16 := ParseIntoStrict(data, &out)
-	if err_16 != nil {
-		err_16 = fmt.Errorf("failed to parse json: %w", err_16)
+	err_17 := ParseIntoStrict(data, &out)
+	if err_17 != nil {
+		err_17 = fmt.Errorf("failed to parse json: %w", err_17)
 		var _zero0 T
-		return _zero0, err_16
+		return _zero0, err_17
 	}
 	return out, nil
 }
@@ -516,9 +529,9 @@ func applyUnknownCapture(data []byte, target any) error {
 		return nil
 	}
 	members := map[string]jsontext.Value{}
-	err_17 := jsonv2.Unmarshal(data, &members, jsonv2.MatchCaseInsensitiveNames(true))
-	if err_17 != nil {
-		return err_17
+	err_18 := jsonv2.Unmarshal(data, &members, jsonv2.MatchCaseInsensitiveNames(true))
+	if err_18 != nil {
+		return err_18
 	}
 	known := knownMemberNames(rt, capIdx)
 	capType := rt.Field(capIdx).Type
@@ -530,9 +543,9 @@ func applyUnknownCapture(data []byte, target any) error {
 			continue
 		}
 		item := reflect.New(elemType)
-		err_18 := jsonv2.Unmarshal(raw, item.Interface())
-		if err_18 != nil {
-			return errs.Wrap(err_18, "json: capture member "+k)
+		err_19 := jsonv2.Unmarshal(raw, item.Interface())
+		if err_19 != nil {
+			return errs.Wrap(err_19, "json: capture member "+k)
 		}
 		captured.SetMapIndex(reflect.ValueOf(k).Convert(keyType), item.Elem())
 	}
@@ -574,9 +587,9 @@ func validateStrictWithin(raw jsontext.Value, t reflect.Type, ptr string, root b
 	}
 	if raw.Kind() == jsontext.KindBeginObject {
 		members := map[string]jsontext.Value{}
-		err_19 := jsonv2.Unmarshal(raw, &members, jsonv2.MatchCaseInsensitiveNames(true))
-		if err_19 != nil {
-			return err_19
+		err_20 := jsonv2.Unmarshal(raw, &members, jsonv2.MatchCaseInsensitiveNames(true))
+		if err_20 != nil {
+			return err_20
 		}
 		if t.Kind() == reflect.Struct {
 			capIdx := findCaptureField(t)
@@ -588,18 +601,18 @@ func validateStrictWithin(raw jsontext.Value, t reflect.Type, ptr string, root b
 				if claimed[fk] {
 					ft, ok := memberFieldType(t, fk)
 					if ok {
-						err_20 := validateStrictWithin(members[name], ft, child, false)
-						if err_20 != nil {
-							return err_20
+						err_21 := validateStrictWithin(members[name], ft, child, false)
+						if err_21 != nil {
+							return err_21
 						}
 					}
 					continue
 				}
 				if root && capIdx >= 0 {
 					capType := t.Field(capIdx).Type
-					err_21 := validateStrictWithin(members[name], capType.Elem(), child, false)
-					if err_21 != nil {
-						return err_21
+					err_22 := validateStrictWithin(members[name], capType.Elem(), child, false)
+					if err_22 != nil {
+						return err_22
 					}
 					continue
 				}
@@ -610,9 +623,9 @@ func validateStrictWithin(raw jsontext.Value, t reflect.Type, ptr string, root b
 		if t.Kind() == reflect.Map {
 			for _, name := range maps.SortedKeys(members) {
 				escaped := pointerToken(name)
-				err_22 := validateStrictWithin(members[name], t.Elem(), ptr+"/"+escaped, false)
-				if err_22 != nil {
-					return err_22
+				err_23 := validateStrictWithin(members[name], t.Elem(), ptr+"/"+escaped, false)
+				if err_23 != nil {
+					return err_23
 				}
 			}
 		}
@@ -621,15 +634,15 @@ func validateStrictWithin(raw jsontext.Value, t reflect.Type, ptr string, root b
 	if raw.Kind() == jsontext.KindBeginArray {
 		if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
 			elems := []jsontext.Value{}
-			err_23 := jsonv2.Unmarshal(raw, &elems)
-			if err_23 != nil {
-				return err_23
+			err_24 := jsonv2.Unmarshal(raw, &elems)
+			if err_24 != nil {
+				return err_24
 			}
 			for idx, e := range elems {
 				child := fmt.Sprintf("%v/%v", ptr, idx)
-				err_24 := validateStrictWithin(e, t.Elem(), child, false)
-				if err_24 != nil {
-					return err_24
+				err_25 := validateStrictWithin(e, t.Elem(), child, false)
+				if err_25 != nil {
+					return err_25
 				}
 			}
 		}
@@ -741,9 +754,9 @@ func marshalWithCaptured(value any) (bool, []byte, error) {
 		}
 		rv = rv.Elem()
 	}
-	base, err_25 := jsonv2.Marshal(value)
-	if err_25 != nil {
-		return true, nil, err_25
+	base, err_26 := jsonv2.Marshal(value)
+	if err_26 != nil {
+		return true, nil, err_26
 	}
 	pairs, perr := jsonObjectPairs(base)
 	if perr != nil {
@@ -766,9 +779,9 @@ func marshalWithCaptured(value any) (bool, []byte, error) {
 			buf.WriteString(",")
 		}
 		first = false
-		kb, err_26 := jsonv2.Marshal(pair.key)
-		if err_26 != nil {
-			return true, nil, err_26
+		kb, err_27 := jsonv2.Marshal(pair.key)
+		if err_27 != nil {
+			return true, nil, err_27
 		}
 		buf.Write(kb)
 		buf.WriteString(":")
@@ -776,17 +789,17 @@ func marshalWithCaptured(value any) (bool, []byte, error) {
 	}
 	for _, k := range reflectMapStringKeys(cm) {
 		v := cm.MapIndex(reflect.ValueOf(k).Convert(cm.Type().Key()))
-		vb, err_27 := jsonv2.Marshal(v.Interface())
-		if err_27 != nil {
-			return true, nil, errs.Wrap(err_27, "json: capture member "+k)
+		vb, err_28 := jsonv2.Marshal(v.Interface())
+		if err_28 != nil {
+			return true, nil, errs.Wrap(err_28, "json: capture member "+k)
 		}
 		if !first {
 			buf.WriteString(",")
 		}
 		first = false
-		kb, err_28 := jsonv2.Marshal(k)
-		if err_28 != nil {
-			return true, nil, err_28
+		kb, err_29 := jsonv2.Marshal(k)
+		if err_29 != nil {
+			return true, nil, err_29
 		}
 		buf.Write(kb)
 		buf.WriteString(":")
@@ -926,11 +939,11 @@ func decodeJSON(v any) JSONValue {
 // Example: v := json.ParseBytesValue(data) onerr return
 func ParseBytesValue(data []byte) (JSONValue, error) {
 	raw := *new(any)
-	err_29 := ParseBytesInto(data, &raw)
-	if err_29 != nil {
-		err_29 = fmt.Errorf("failed to parse json value: %w", err_29)
+	err_30 := ParseBytesInto(data, &raw)
+	if err_30 != nil {
+		err_30 = fmt.Errorf("failed to parse json value: %w", err_30)
 		var _zero0 JSONValue
-		return _zero0, err_29
+		return _zero0, err_30
 	}
 	return decodeJSON(raw), nil
 }
@@ -939,11 +952,11 @@ func ParseBytesValue(data []byte) (JSONValue, error) {
 // Example: v := json.ParseValue(body) onerr return
 func ParseValue(data string) (JSONValue, error) {
 	raw := *new(any)
-	err_30 := ParseInto(data, &raw)
-	if err_30 != nil {
-		err_30 = fmt.Errorf("failed to parse json value: %w", err_30)
+	err_31 := ParseInto(data, &raw)
+	if err_31 != nil {
+		err_31 = fmt.Errorf("failed to parse json value: %w", err_31)
 		var _zero0 JSONValue
-		return _zero0, err_30
+		return _zero0, err_31
 	}
 	return decodeJSON(raw), nil
 }
@@ -953,13 +966,13 @@ func ParseValue(data string) (JSONValue, error) {
 func ReadValue(reader io.Reader) (JSONValue, error) {
 	raw := *new(any)
 	// pipe step 1: ReadInto(...)
-	err_31 := ReadInto(reader, &raw)
-	if err_31 != nil {
-		err_31 = fmt.Errorf("failed to read json value: %w", err_31)
+	err_32 := ReadInto(reader, &raw)
+	if err_32 != nil {
+		err_32 = fmt.Errorf("failed to read json value: %w", err_32)
 		var _zero0 JSONValue
-		return _zero0, err_31
+		return _zero0, err_32
 	}
-	_ = err_31
+	_ = err_32
 	return decodeJSON(raw), nil
 }
 
@@ -1003,9 +1016,9 @@ func ParseBytesFrozen(data []byte) (Frozen, error) {
 		return Frozen{}, kukierrors.New("invalid json")
 	}
 	cp := v.Clone()
-	err_32 := cp.Canonicalize()
-	if err_32 != nil {
-		return Frozen{}, err_32
+	err_33 := cp.Canonicalize()
+	if err_33 != nil {
+		return Frozen{}, err_33
 	}
 	return Frozen{Canonical: string(cp)}, nil
 }

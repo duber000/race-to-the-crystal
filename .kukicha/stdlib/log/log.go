@@ -153,7 +153,7 @@ func New(w *os.File) Logger {
 // value type, so deriving is cheap and the original is unaffected.
 // Example: rl := log.With(l, "request_id", id, "path", r.URL.Path); rl.Info("served")
 func With(l Logger, kv ...any) Logger {
-	return Logger{W: l.W, Level: l.Level, Format: l.Format, Service: l.Service, Environment: l.Environment, Component: l.Component, CorrelationID: l.CorrelationID, Fields: slice.Concat([][]any{l.Fields, kv})}
+	return Logger{W: l.W, Level: l.Level, Format: l.Format, Service: l.Service, Environment: l.Environment, Component: l.Component, CorrelationID: l.CorrelationID, Fields: slice.Concat(l.Fields, kv)}
 }
 
 // NewCorrelationID returns a random correlation ID for request/job traces.

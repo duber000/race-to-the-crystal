@@ -69,7 +69,7 @@ func TestFormatArgsDoNotPanic(t *testing.T) {
 func TestAssertEqualFail(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertEqual(f, 1, 2)
-	if f.Errs == nil {
+	if len(f.Errs) == 0 {
 		t.Fatalf("expected Errorf to be called")
 	}
 	if !kukistring.Contains(f.Errs[0], "expected 2, got 1") {
@@ -80,7 +80,7 @@ func TestAssertEqualFail(t *testing.T) {
 func TestAssertEqualFailStringDiff(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertEqual(f, "hello world", "hallo world")
-	if f.Errs == nil {
+	if len(f.Errs) == 0 {
 		t.Fatalf("expected Errorf to be called")
 	}
 	msg := f.Errs[0]
@@ -95,7 +95,7 @@ func TestAssertEqualFailStringDiff(t *testing.T) {
 func TestAssertEqualFailStringLengthDiff(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertEqual(f, "hell", "hellow")
-	if f.Errs == nil {
+	if len(f.Errs) == 0 {
 		t.Fatalf("expected Errorf to be called")
 	}
 	if !kukistring.Contains(f.Errs[0], "length 4 vs 6") {
@@ -106,7 +106,7 @@ func TestAssertEqualFailStringLengthDiff(t *testing.T) {
 func TestAssertEqualFailLengthDiff(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertEqual(f, []int{1, 2}, []int{1, 2, 3})
-	if f.Errs == nil {
+	if len(f.Errs) == 0 {
 		t.Fatalf("expected Errorf to be called")
 	}
 	if !kukistring.Contains(f.Errs[0], "length 2 vs 3") {
@@ -117,7 +117,7 @@ func TestAssertEqualFailLengthDiff(t *testing.T) {
 func TestAssertEqualFailTypeDiff(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertEqual(f, 1, "one")
-	if f.Errs == nil {
+	if len(f.Errs) == 0 {
 		t.Fatalf("expected Errorf to be called")
 	}
 	msg := f.Errs[0]
@@ -129,7 +129,7 @@ func TestAssertEqualFailTypeDiff(t *testing.T) {
 func TestAssertEqualFailWithMessage(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertEqual(f, 1, 2, "case %s", "foo")
-	if f.Errs == nil {
+	if len(f.Errs) == 0 {
 		t.Fatalf("expected Errorf to be called")
 	}
 	if !kukistring.Contains(f.Errs[0], "case foo: expected 2, got 1") {
@@ -140,7 +140,7 @@ func TestAssertEqualFailWithMessage(t *testing.T) {
 func TestAssertNotEqualFail(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertNotEqual(f, 5, 5)
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "expected values to differ") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected values to differ") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -148,7 +148,7 @@ func TestAssertNotEqualFail(t *testing.T) {
 func TestAssertTrueFail(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertTrue(f, false)
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "expected true") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected true") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -156,7 +156,7 @@ func TestAssertTrueFail(t *testing.T) {
 func TestAssertFalseFail(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertFalse(f, true)
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "expected false") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected false") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -164,7 +164,7 @@ func TestAssertFalseFail(t *testing.T) {
 func TestAssertNoErrorFail(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertNoError(f, errors.New("boom"))
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "unexpected error") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "unexpected error") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -172,7 +172,7 @@ func TestAssertNoErrorFail(t *testing.T) {
 func TestAssertErrorFail(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertError(f, nil)
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "expected an error") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected an error") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -180,7 +180,7 @@ func TestAssertErrorFail(t *testing.T) {
 func TestAssertNilFail(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertNil(f, "not nil")
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "expected nil") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected nil") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -188,7 +188,7 @@ func TestAssertNilFail(t *testing.T) {
 func TestAssertNotNilFail(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertNotNil(f, nil)
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "expected non-nil") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected non-nil") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -205,7 +205,7 @@ func TestAssertNilTypedNilPointer(t *testing.T) {
 	test.AssertNil(t, makeTypedNilPointer())
 	f := &FakeTB{}
 	test.AssertNotNil(f, makeTypedNilPointer())
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "expected non-nil") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "expected non-nil") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -213,7 +213,7 @@ func TestAssertNilTypedNilPointer(t *testing.T) {
 func TestAssertNotEmptyFailNil(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertNotEmpty(f, nil)
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "got nil") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "got nil") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -221,7 +221,7 @@ func TestAssertNotEmptyFailNil(t *testing.T) {
 func TestAssertNotEmptyFailZero(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertNotEmpty(f, "")
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "zero value") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "zero value") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -300,7 +300,7 @@ func TestAssertPanicsPass(t *testing.T) {
 func TestAssertPanicsFail(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertPanics(f, "calm function", doNothing)
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "calm function: expected panic") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "calm function: expected panic") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -317,7 +317,7 @@ func TestAssertPanicsMessagePass(t *testing.T) {
 func TestAssertPanicsMessageFailNoPanic(t *testing.T) {
 	f := &FakeTB{}
 	test.AssertPanicsMessage(f, "calm function", "boom", doNothing)
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "calm function: expected panic") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "calm function: expected panic") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -327,7 +327,7 @@ func TestAssertPanicsMessageFailWrongMessage(t *testing.T) {
 	test.AssertPanicsMessage(f, "must fail", "no negative items", func() {
 		panic("no positive items in list")
 	})
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "panic message mismatch") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "panic message mismatch") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
@@ -337,7 +337,7 @@ func TestAssertPanicsMessageFailNonStringPanic(t *testing.T) {
 	test.AssertPanicsMessage(f, "int panic", "boom", func() {
 		panic(42)
 	})
-	if (f.Errs == nil) || !kukistring.Contains(f.Errs[0], "int panic: expected panic message") {
+	if len(f.Errs) == 0 || !kukistring.Contains(f.Errs[0], "int panic: expected panic message") {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }

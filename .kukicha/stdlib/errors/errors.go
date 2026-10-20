@@ -72,7 +72,7 @@ func NewPublic(internalMsg string, publicMsg string) error {
 
 // Public extracts the safe public message from a PublicError.
 // If err is not a PublicError, returns a generic fallback message.
-// Example: httphelper.JSONError(w, errors.Public(err), 500)
+// Example: res.JSONError(errors.Public(err), http.Status.InternalServerError)
 func Public(err error) string {
 	if e, _isOk := err.(PublicError); _isOk {
 		return e.Public
