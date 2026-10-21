@@ -1,0 +1,76 @@
+petiole main
+
+import "race-to-the-crystal/game" as gamepkg
+import "stdlib/json" as jsonpkg
+import "stdlib/test"
+import "testing"
+
+# Decode a JSON object the way the WebSocket handler does, so numeric
+# fields arrive as float64 (encoding/json's behaviour) rather than int.
+func decodeAction(t: reference testing.T, raw: string) JSONMap
+    data := make(JSONMap)
+    jsonpkg.ParseInto(raw, reference of data) onerr
+        test.AssertEqual(t, "{error}", "no error")
+        return data
+
+    return data
+
+# JSON numbers decode to float64, so an action's numeric fields are never
+# `int` on the wire. The validators must still accept them — otherwise the
+# browser (which speaks WebSocket) can never move, attack or deploy.
+func TestValidateMoveAcceptsJSONNumbers(t: reference testing.T)
+    data := decodeAction(t, '{"token_id": 5, "destination": [3, 4]}')
+    result := ValidateMove(data)
+    test.AssertNil(t, result)
+
+func TestValidateAttackAcceptsJSONNumbers(t: reference testing.T)
+    data := decodeAction(t, '{"attacker_id": 5, "defender_id": 9}')
+    result := ValidateAttack(data)
+    test.AssertNil(t, result)
+
+func TestValidateDeployAcceptsJSONNumbers(t: reference testing.T)
+    data := decodeAction(t, '{"health_value": 10, "position": [2, 2]}')
+    result := ValidateDeploy(data)
+    test.AssertNil(t, result)
+
+# A non-numeric token_id must still be rejected.
+func TestValidateMoveRejectsNonNumericTokenId(t: reference testing.T)
+    data := decodeAction(t, '{"token_id": "five", "destination": [3, 4]}')
+    result := ValidateMove(data)
+    test.AssertNotNil(t, result)
+
+func TestValidateMoveRejectsMissingTokenId(t: reference testing.T)
+    data := decodeAction(t, '{"destination": [3, 4]}')
+    result := ValidateMove(data)
+    test.AssertNotNil(t, result)
+
+func TestValidateMoveRejectsBadDestination(t: reference testing.T)
+    data := decodeAction(t, '{"token_id": 5, "destination": "nope"}')
+    result := ValidateMove(data)
+    test.AssertNotNil(t, result)
+
+func TestValidateDeployRejectsInvalidHealthValue(t: reference testing.T)
+    data := decodeAction(t, '{"health_value": 7, "position": [2, 2]}')
+    result := ValidateDeploy(data)
+    test.AssertNotNil(t, result)
+
+# `target_id` is accepted as an alias for `defender_id`.
+func TestValidateAttackAcceptsTargetIdAlias(t: reference testing.T)
+    data := decodeAction(t, '{"attacker_id": 5, "target_id": 9}')
+    normalized := NormalizeActionData(data)
+    result := ValidateAttack(normalized)
+    test.AssertNil(t, result)
+
+# NormalizeActionData must return an allocated map. `empty <Alias>` lowers to
+# a nil map, and writing to a nil map panics at runtime.
+func TestNormalizeActionDataReturnsUsableMap(t: reference testing.T)
+    data := decodeAction(t, '{"token_id": 5, "destination": [3, 4]}')
+    normalized := NormalizeActionData(data)
+    test.AssertNotNil(t, normalized)
+    normalized["probe"] = 1
+    test.AssertEqual(t, normalized["probe"], 1)
+
+# End turn takes no fields and must always validate.
+func TestValidateEndTurn(t: reference testing.T)
+    result := ValidateActionFields(gamepkg.END_TURN, make(JSONMap))
+    test.AssertNil(t, result)

@@ -12,7 +12,7 @@ type ValidationResult
     errorCode: string
     message: string
 
-func ValidateActionFields(actionType: gamepkg.ActionType, data: map of string to any) optional reference ValidationResult
+func ValidateActionFields(actionType: gamepkg.ActionType, data: JSONMap) optional reference ValidationResult
     switch actionType
         when gamepkg.MOVE
             return ValidateMove(data)
@@ -29,7 +29,7 @@ func ValidateActionFields(actionType: gamepkg.ActionType, data: map of string to
                 message: "Unknown action type: {actionType}",
             }
 
-func ValidateMove(data: map of string to any) optional reference ValidationResult
+func ValidateMove(data: JSONMap) optional reference ValidationResult
     _, hasTid := data["token_id"]
     if not hasTid
         return reference of ValidationResult{
@@ -48,7 +48,7 @@ func ValidateMove(data: map of string to any) optional reference ValidationResul
             message: "MOVE requires destination",
         }
 
-    if data["token_id"] is int
+    if isIntegerValue(data["token_id"])
         if not isPositionValue(destVal)
             return reference of ValidationResult{
                 field: "destination",
@@ -64,7 +64,7 @@ func ValidateMove(data: map of string to any) optional reference ValidationResul
             message: "token_id must be an integer",
         }
 
-func ValidateAttack(data: map of string to any) optional reference ValidationResult
+func ValidateAttack(data: JSONMap) optional reference ValidationResult
     _, hasAtk := data["attacker_id"]
     if not hasAtk
         return reference of ValidationResult{
@@ -83,8 +83,8 @@ func ValidateAttack(data: map of string to any) optional reference ValidationRes
             message: "ATTACK requires defender_id",
         }
 
-    if data["attacker_id"] is int
-        if defVal is int
+    if isIntegerValue(data["attacker_id"])
+        if isIntegerValue(defVal)
             return empty
         else
             return reference of ValidationResult{
@@ -99,7 +99,7 @@ func ValidateAttack(data: map of string to any) optional reference ValidationRes
             message: "attacker_id must be an integer",
         }
 
-func ValidateDeploy(data: map of string to any) optional reference ValidationResult
+func ValidateDeploy(data: JSONMap) optional reference ValidationResult
     hvVal, hasHv := data["health_value"]
     if not hasHv
         return reference of ValidationResult{
@@ -116,7 +116,8 @@ func ValidateDeploy(data: map of string to any) optional reference ValidationRes
             message: "DEPLOY requires position",
         }
 
-    if hvVal is int as hvInt
+    if isIntegerValue(hvVal)
+        hvInt := toIntOrZero(hvVal)
         if not slice.Contains(constants.TOKEN_HEALTH_VALUES, hvInt)
             return reference of ValidationResult{
                 field: "health_value",
@@ -139,14 +140,47 @@ func ValidateDeploy(data: map of string to any) optional reference ValidationRes
             message: "health_value must be an integer",
         }
 
+# JSON numbers decode to float64 (encoding/json), so an action's numeric
+# fields arrive as float64 over the wire even when the sender wrote an
+# integer literal. Accept any numeric kind whose value is a whole number.
+func isIntegerValue(val: any) bool
+    if val is int
+        return true
+    if val is int64
+        return true
+    if val is float64 as f
+        return f equals f as int as float64
+    if val is float32 as f32
+        return f32 equals f32 as int as float32
+    return false
+
+func toIntOrZero(val: any) int
+    if val is int as i
+        return i
+    if val is int64 as i64
+        return i64 as int
+    if val is float64 as f
+        return f as int
+    if val is float32 as f32
+        return f32 as int
+    return 0
+
 func isPositionValue(val: any) bool
-    pos := empty list of int
+    pos := empty list of any
     bytes := jsonpkg.Bytes(val) onerr return false
     jsonpkg.ParseBytesInto(bytes, reference of pos) onerr return false
-    return len(pos) equals 2
+    if len(pos) isnt 2
+        return false
+    for element in pos
+        if not isIntegerValue(element)
+            return false
+    return true
 
-func NormalizeActionData(data: map of string to any) map of string to any
-    result := empty map of string to any
+func NormalizeActionData(data: JSONMap) JSONMap
+    # `make(JSONMap)` — NOT `empty JSONMap`. The `empty map of K to V` form is
+    # what lowers to an allocated map; applying it to a transparent alias
+    # lowers to a nil map, and writing to a nil map panics.
+    result := make(JSONMap)
     for key, val in data
         lowerKey := strpkg.ToLower(key)
         if lowerKey equals "type"
