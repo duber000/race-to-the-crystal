@@ -38,6 +38,65 @@ class NetworkManager {
     this.lastStateVersion = null; // Track last processed state version
     this.stateUpdateLock = false; // Prevent concurrent state processing
     this.stateUpdateQueue = [];
+
+    // Event stream tracking. The server stamps every event with a
+    // per-session sequence number, so a gap in the stream is detectable.
+    this.lastEventSeq = 0;
+  }
+
+  /**
+   * Handle an EVENT frame from the server.
+   *
+   * The frame carries the session sequence number and the event itself.
+   * Events are feedback (sound, animation, camera), never state — the
+   * authoritative state always arrives as a FULL_STATE — so a dropped
+   * event costs a bit of polish, not correctness.
+   *
+   * @param {Object} data - { type, game_id, seq, event }
+   * @private
+   */
+  _handleEvent(data) {
+    const event = data.event;
+    if (!event || !event.type) {
+      return;
+    }
+
+    const seq = typeof data.seq === "number" ? data.seq : null;
+    if (seq !== null) {
+      if (seq <= this.lastEventSeq) {
+        // Duplicate or out-of-order frame — ignore it.
+        return;
+      }
+      if (seq > this.lastEventSeq + 1) {
+        // A gap: some events were lost. The next FULL_STATE repairs the
+        // state, so ask for a resync to also repair the event counter.
+        console.warn(
+          `⚠ Event stream gap: expected seq ${this.lastEventSeq + 1}, got ${seq}`,
+        );
+        this.requestStateResync();
+      }
+      this.lastEventSeq = seq;
+    }
+
+    console.log(`✓ Event received: ${event.type}`);
+    this.emit(event.type.toLowerCase(), event);
+  }
+
+  /**
+   * Ask the server to resend the current state.
+   *
+   * The response also carries the server's event sequence number, which
+   * repairs this client's event counter.
+   */
+  requestStateResync() {
+    if (!this.currentGameId) {
+      return;
+    }
+    this.send({
+      type: "RESYNC_STATE",
+      game_id: this.currentGameId,
+      player_id: this.playerId,
+    });
   }
 
   /**
@@ -53,6 +112,12 @@ class NetworkManager {
     }
     
     console.log("✓ Processing FULL_STATE from WebSocket");
+
+    // The server's event sequence number is authoritative: adopt it so a
+    // resync also repairs the event counter.
+    if (typeof data.event_seq === "number") {
+      this.lastEventSeq = data.event_seq;
+    }
     
     // Check for duplicate state (idempotent processing)
     const stateVersion = data.version || data.timestamp || null;
@@ -289,7 +354,12 @@ class NetworkManager {
       case "full_state":
         this._handleFullState(data);
         break;
-      
+
+      case "EVENT":
+      case "event":
+        this._handleEvent(data);
+        break;
+
       case "STATE_UPDATE":
       case "state_update":
         this._handleStateUpdate(data.data || data);

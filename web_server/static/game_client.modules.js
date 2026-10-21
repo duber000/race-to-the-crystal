@@ -88,31 +88,42 @@ class ConnectionManager {
     }
 
     setupFineGrainedHandlers() {
-        this.networkManager.on("token_moved", (data) => {            this.handleTokenMoved(data);
+        // The server's event vocabulary (server/ws_endpoint.kuki) delivered
+        // as EVENT frames. The names here are the lowercased wire types.
+        this.networkManager.on("token_moved", (data) => {
+            this.handleTokenMoved(data);
         });
 
-        this.networkManager.on("combat_result", (data) => {
-            this.handleCombatResult(data);
+        this.networkManager.on("combat_resolved", (data) => {
+            this.handleCombatResolved(data);
         });
 
         this.networkManager.on("token_deployed", (data) => {
             this.handleTokenDeployed(data);
         });
 
-        this.networkManager.on("generator_update", (data) => {
-            this.handleGeneratorUpdate(data);
+        this.networkManager.on("generator_changed", (data) => {
+            this.handleGeneratorChanged(data);
         });
 
-        this.networkManager.on("crystal_update", (data) => {
-            this.handleCrystalUpdate(data);
+        this.networkManager.on("crystal_changed", (data) => {
+            this.handleCrystalChanged(data);
         });
 
-        this.networkManager.on("mystery_event", (data) => {
-            this.handleMysteryEvent(data);
+        this.networkManager.on("mystery_triggered", (data) => {
+            this.handleMysteryTriggered(data);
         });
 
-        this.networkManager.on("turn_change", (data) => {
-            this.handleTurnChange(data);
+        this.networkManager.on("turn_changed", (data) => {
+            this.handleTurnChanged(data);
+        });
+
+        this.networkManager.on("radio_chatter", (data) => {
+            this.handleRadioChatter(data);
+        });
+
+        this.networkManager.on("game_ended", (data) => {
+            this.handleGameEnded(data);
         });
 
         this.networkManager.on("game_won", (data) => {
@@ -160,73 +171,85 @@ class ConnectionManager {
 
     handleTokenMoved(data) {
         if (!this.gameClient.gameState || !this.gameClient.gameState.tokens[data.token_id]) return;
-        
-        // Update local state for immediate feedback
+
+        // Update local state for immediate feedback. The authoritative state
+        // follows as a FULL_STATE, which overwrites this.
         this.gameClient.gameState.tokens[data.token_id].position = data.new_position;
-        
+
         // Trigger animation in renderer
         if (this.gameClient.renderer) {
             this.gameClient.renderer.animateTokenMove(data.token_id, data.old_position, data.new_position);
         }
-        
+
         // Refresh basic state info
         this.updateGameState(this.gameClient.gameState);
     }
 
-    handleCombatResult(data) {
+    handleCombatResolved(data) {
         if (!this.gameClient.gameState) return;
-        
-        // Update local state (health, destruction)
+
+        // Update local state (health, destruction) for immediate feedback.
         const defender = this.gameClient.gameState.tokens[data.defender_id];
         if (defender) {
             defender.health = Math.max(0, defender.health - data.damage);
-            if (data.defender_destroyed) {
+            if (data.defender_killed) {
                 defender.is_alive = false;
             }
         }
-        
+
         // Trigger animation in renderer
         if (this.gameClient.renderer) {
             this.gameClient.renderer.animateCombat(data);
         }
-        
+
         this.updateGameState(this.gameClient.gameState);
     }
 
     handleTokenDeployed(data) {
-        if (!this.gameClient.gameState) return;
-        // (Actual synchronization usually happens via the next state update, 
-        // but we can trigger a spawn animation here)
+        // (State synchronisation happens via the next state update; the
+        // event only drives the spawn animation.)
         if (this.gameClient.renderer) {
             this.gameClient.renderer.animateTokenDeploy(data);
         }
     }
 
-    handleGeneratorUpdate(data) {
+    handleGeneratorChanged(data) {
         if (this.gameClient.renderer) {
             this.gameClient.renderer.animateGeneratorUpdate(data);
         }
     }
 
-    handleCrystalUpdate(data) {
+    handleCrystalChanged(data) {
         if (this.gameClient.renderer) {
             this.gameClient.renderer.animateCrystalUpdate(data);
         }
     }
 
-    handleMysteryEvent(data) {
+    handleMysteryTriggered(data) {
         if (this.gameClient.renderer) {
             this.gameClient.renderer.animateMysteryEvent(data);
         }
     }
 
-    handleTurnChange(data) {
+    handleTurnChanged(data) {
         if (!this.gameClient.gameState) return;
         this.gameClient.gameState.current_turn_player_id = data.current_player_id;
         this.gameClient.gameState.turn_number = data.turn_number;
         this.gameClient.gameState.turn_phase = data.turn_phase;
-        
+
         this.updateGameState(this.gameClient.gameState);
+    }
+
+    handleRadioChatter(data) {
+        // Radio chatter is the agent comms feed (Phase 2). For now it is
+        // only logged — the comms sidebar arrives with the agent seat.
+        console.log(`📻 ${data.player_name}: ${data.text}`);
+    }
+
+    handleGameEnded(data) {
+        if (this.gameClient.renderer) {
+            this.gameClient.renderer.triggerVictoryEffect();
+        }
     }
 
     handleGameWon(data) {

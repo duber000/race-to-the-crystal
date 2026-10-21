@@ -319,22 +319,22 @@ Renderer3D.prototype.animateTokenMove = function(tokenId, oldPos, newPos) {
 };
 
 Renderer3D.prototype.animateCombat = function(data) {
-    // Find absolute world position of defender
-    const defenderX = data.defender_position ? data.defender_position[0] : null;
-    const defenderY = data.defender_position ? data.defender_position[1] : null;
-    
-    // If we don't have position in event, we might need to look up in local state
-    // but the server should ideally send it. 
-    // For now, let's assume we can find the mesh.
-    const tokenData = this.tokenRenderer ? this.tokenRenderer.tokens3D.get(data.defender_id) : null;
-    if (tokenData && tokenData.mesh) {
-        const pos = [
-            Math.floor(tokenData.mesh.position.x / CELL_SIZE),
-            Math.floor(tokenData.mesh.position.z / CELL_SIZE)
-        ];
-        this.triggerExplosion(pos, new BABYLON.Color3(1, 0.2, 0.2));
-        this.playSound("attack");
+    // The event carries the defender's position, so the effect can play
+    // even after the token has been removed from the scene by the state
+    // update that follows.
+    const position = data.defender_position || null;
+    if (!position) {
+        return;
     }
+
+    const killed = data.defender_killed === true;
+    this.triggerExplosion(
+        position,
+        killed ? new BABYLON.Color3(1, 0.2, 0.2) : new BABYLON.Color3(1, 0.8, 0.2),
+    );
+    // Phase 1 adds a dedicated destruction cue; "attack" is the closest
+    // existing sound for now.
+    this.playSound("attack");
 };
 
 Renderer3D.prototype.animateTokenDeploy = function(data) {
@@ -344,7 +344,8 @@ Renderer3D.prototype.animateTokenDeploy = function(data) {
 
 Renderer3D.prototype.animateGeneratorUpdate = function(data) {
     if (data.is_disabled) {
-        this.playSound("power_down");
+        // A generator falling is a loud, physical event.
+        this.playSound("generator_explosion");
     }
 };
 
@@ -353,7 +354,11 @@ Renderer3D.prototype.animateCrystalUpdate = function(data) {
 };
 
 Renderer3D.prototype.animateMysteryEvent = function(data) {
-    const posKey = `${data.details.position[0]},${data.details.position[1]}`;
+    const position = data.position || null;
+    if (!position) {
+        return;
+    }
+    const posKey = `${position[0]},${position[1]}`;
     this.mysteryAnimations.set(posKey, 0.0);
     this.playSound("mystery");
 };
