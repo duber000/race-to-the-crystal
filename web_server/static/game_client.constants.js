@@ -30,10 +30,26 @@ export const PLAYER_COLORS = new Proxy([], {
 });
 
 // Game phases
+//
+// These MUST match the wire format produced by the server's state serializer
+// (game/state_serializer.kuki), which stringifies the enums:
+//
+//   "phase":      "SETUP" | "PLAYING" | "ENDED"
+//   "turn_phase": "MOVEMENT" | "ACTION" | "END_TURN"
+//
+// They are strings, not ordinals — comparing against numbers silently
+// disables every phase-gated behaviour (move vs. attack vs. deploy).
 export const GAME_PHASE = {
-    MOVEMENT: 1,
-    ACTION: 2,
-    END_TURN: 3
+    MOVEMENT: "MOVEMENT",
+    ACTION: "ACTION",
+    END_TURN: "END_TURN"
+};
+
+// Top-level game phase, as sent in game_state.phase
+export const GAME_STATE_PHASE = {
+    SETUP: "SETUP",
+    PLAYING: "PLAYING",
+    ENDED: "ENDED"
 };
 
 // Crystal effects

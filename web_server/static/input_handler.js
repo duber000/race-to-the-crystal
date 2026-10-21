@@ -476,6 +476,38 @@ class InputHandler {
     }
 
     /**
+     * Pick the board cell under a screen coordinate.
+     *
+     * Only the ground and the token meshes are considered. Decoration (the
+     * cage wireframe, crystal frames, generator pillars, FX particles) sits
+     * between the camera and the board, so a default pick resolves to that
+     * decoration's position and lands on the wrong grid cell.
+     *
+     * @param {number} screenX - Canvas-relative X coordinate
+     * @param {number} screenY - Canvas-relative Y coordinate
+     * @returns {{gridX: number, gridY: number}|null}
+     */
+    pickGridCell(screenX, screenY) {
+        const pickResult = this.scene.pick(screenX, screenY, (mesh) => {
+            if (!mesh || !mesh.isPickable) return false;
+            const name = mesh.name || "";
+            return name === "boardGround"
+                || name.startsWith("token_")
+                || name.startsWith("phantom_");
+        });
+
+        if (!pickResult || !pickResult.hit || !pickResult.pickedPoint) {
+            return null;
+        }
+
+        const worldPos = pickResult.pickedPoint;
+        return {
+            gridX: Math.floor(worldPos.x / CELL_SIZE),
+            gridY: Math.floor(worldPos.z / CELL_SIZE),
+        };
+    }
+
+    /**
      * Handle mouse click event.
      * Converts screen coordinates to grid coordinates and emits click event.
      * @param {MouseEvent} event - Mouse event
@@ -493,16 +525,10 @@ class InputHandler {
             y = rect.height / 2;
         }
         
-        // Use Babylon.js picking to get grid coordinates
-        const pickResult = this.scene.pick(x, y);
-        if (pickResult.hit) {
-            // Convert 3D position to grid coordinates
-            const worldPos = pickResult.pickedPoint;
-            const gridX = Math.floor(worldPos.x / CELL_SIZE);
-            const gridY = Math.floor(worldPos.z / CELL_SIZE);
-            
+        const cell = this.pickGridCell(x, y);
+        if (cell) {
             // Emit click event
-            this.emit('click', { gridX, gridY });
+            this.emit('click', { gridX: cell.gridX, gridY: cell.gridY });
         }
     }
 
@@ -517,16 +543,10 @@ class InputHandler {
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
         
-        // Use Babylon.js picking to get grid coordinates
-        const pickResult = this.scene.pick(x, y);
-        if (pickResult.hit) {
-            // Convert 3D position to grid coordinates
-            const worldPos = pickResult.pickedPoint;
-            const gridX = Math.floor(worldPos.x / CELL_SIZE);
-            const gridY = Math.floor(worldPos.z / CELL_SIZE);
-            
+        const cell = this.pickGridCell(x, y);
+        if (cell) {
             // Emit click event (treat tap as click)
-            this.emit('click', { gridX, gridY });
+            this.emit('click', { gridX: cell.gridX, gridY: cell.gridY });
         }
     }
 
@@ -541,14 +561,11 @@ class InputHandler {
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
         
-        // Use Babylon.js picking to get grid coordinates
-        const pickResult = this.scene.pick(x, y);
-        if (pickResult.hit) {
-            // Convert 3D position to grid coordinates
-            const worldPos = pickResult.pickedPoint;
-            const gridX = Math.floor(worldPos.x / CELL_SIZE);
-            const gridY = Math.floor(worldPos.z / CELL_SIZE);
-            
+        const cell = this.pickGridCell(x, y);
+        if (cell) {
+            const gridX = cell.gridX;
+            const gridY = cell.gridY;
+
             // Only emit hover event if cell has changed
             if (this.hoveredCell === null || 
                 this.hoveredCell.gridX !== gridX || 

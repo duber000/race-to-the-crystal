@@ -4,6 +4,7 @@
  */
 
 import { AudioManager } from './audio_manager.js';
+import { CrystalEffectAnimator } from './game_client.crystal_effects.js';
 import { BOARD_CONFIG, CELL_SIZE, GLOW_COLORS } from './game_client.constants.js';
 
 export const CYAN_GLOW = GLOW_COLORS.CYAN;
@@ -188,6 +189,9 @@ class Renderer3D {
         skyboxMaterial.disableLighting = true;
         skybox.material = skyboxMaterial;
         skybox.infiniteDistance = true;
+        // The skybox must never be picked: a ray that misses the board would
+        // otherwise hit the sky sphere and resolve to a garbage grid cell.
+        skybox.isPickable = false;
 
         const starTexture = new BABYLON.DynamicTexture("starTexture", 512, this.scene);
         const ctx = starTexture.getContext();
@@ -317,6 +321,11 @@ class Renderer3D {
         cageMesh.color = CYAN_GLOW;
 
         this.board3D = [verticalMesh, cageMesh];
+        // The cage wireframe is decorative. Leaving it pickable makes every
+        // click on an empty cell resolve to the wireframe's position instead
+        // of the ground beneath it, which lands on the wrong grid cell.
+        verticalMesh.isPickable = false;
+        cageMesh.isPickable = false;
         console.log("Board created with 2 optimized meshes (was 1800+ individual meshes)");
 
         const ground = BABYLON.MeshBuilder.CreateGround(

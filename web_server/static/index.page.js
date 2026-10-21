@@ -53,7 +53,7 @@
         try {
             switch (action) {
                 case 'deploy':
-                    window.gameClient.toggleDeploymentMenu?.();
+                    window.gameClient.handleKeyDown?.({ key: 'deploy' });
                     break;
                 case 'camera':
                     window.gameClient.handleKeyDown?.({ key: 'camera_toggle' });

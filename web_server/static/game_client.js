@@ -37,9 +37,14 @@ class GameClient {
     this.connectionManager = new ConnectionManager(this);
     this.uiController = new UIController(this);
 
+    // InputController translates pointer/keyboard events into game actions.
+    // It must exist for UIController.setupInputHandlers() to subscribe to the
+    // InputHandler's events — without it the game had no click/hover/keyboard
+    // wiring at all.
+    this.inputController = new InputController(this);
+
     // Module instances (initialized later by UIController.initGameModules)
     this.cameraController = null;
-    this.inputController = null;
     this.inputHandler = null; // For backward compatibility
     this.renderer = null;
 
@@ -97,6 +102,19 @@ class GameClient {
       return;
     }
 
+    // Re-entrancy guard: clearing the selection below notifies listeners,
+    // which lands back here. Without this the "not your turn" branch
+    // recurses until the stack overflows.
+    if (this._handlingStateChange) return;
+    this._handlingStateChange = true;
+    try {
+      this._applyStateChange(state);
+    } finally {
+      this._handlingStateChange = false;
+    }
+  }
+
+  _applyStateChange(state) {
     this.turnPhase = state.turn_phase || TurnPhase.MOVEMENT;
 
     if (this.renderer) {

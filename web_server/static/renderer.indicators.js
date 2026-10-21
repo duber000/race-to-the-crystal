@@ -29,6 +29,8 @@ Renderer3D.prototype.updateHoverIndicator = function(gridX, gridY) {
     material.wireframe = true;
     material.alpha = 0.9;
     square.material = material;
+    // Decoration — must not intercept a click meant for the cell below.
+    square.isPickable = false;
 
     this.hoverMesh = square;
 };
@@ -63,6 +65,7 @@ Renderer3D.prototype.updateValidMoveIndicators = function(moves) {
         material.wireframe = true;
         material.alpha = 0.7;
         square.material = material;
+        square.isPickable = false;
 
         this.validMoveMeshes.push(square);
     });
@@ -91,6 +94,7 @@ Renderer3D.prototype.updateValidAttackIndicators = function(attacks) {
         material.wireframe = true;
         material.alpha = 0.7;
         square.material = material;
+        square.isPickable = false;
 
         this.validAttackMeshes.push(square);
     });

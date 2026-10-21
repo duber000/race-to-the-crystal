@@ -2,7 +2,7 @@
 // UI Manager - Handles all UI screens, HUD, and user interface
 // ==========================================================================
 
-import { TurnPhase } from './game_client.constants.js';
+import { CRYSTAL_EFFECT, GAME_STATE_PHASE, TurnPhase } from './game_client.constants.js';
 import { UIUtils } from './ui.utils.js';
 
 class UIManager {
@@ -394,6 +394,10 @@ class UIManager {
             gameName.textContent = `${lobby.game_name || "Game Lobby"}${isHost ? " (Host)" : ""}`;
         }
 
+        // Show the game ID so others can join by ID (the lobby browser only
+        // lists WAITING lobbies, and a private game is joined by ID).
+        this._renderGameId(lobby.game_id);
+
         // Clear and rebuild players list (keep heading)
         playersList.innerHTML = "<h3>Players:</h3>";
 
@@ -421,54 +425,231 @@ class UIManager {
         }
     }
 
+    /**
+     * Render the joinable game ID with a click-to-copy affordance.
+     */
+    _renderGameId(gameId) {
+        const container = document.getElementById("lobby-game-id");
+        if (!container) return;
+
+        if (!gameId) {
+            container.innerHTML = "";
+            return;
+        }
+
+        container.innerHTML = "";
+        const display = document.createElement("div");
+        display.className = "game-id-display";
+        display.textContent = `Game ID: ${gameId}`;
+        display.title = "Click to copy the game ID";
+
+        display.onclick = () => {
+            const copy = () => {
+                display.classList.add("game-id-copy-success");
+                display.textContent = "✓ Copied to clipboard!";
+                setTimeout(() => {
+                    display.classList.remove("game-id-copy-success");
+                    display.textContent = `Game ID: ${gameId}`;
+                }, 1500);
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(gameId).then(copy).catch(() => {
+                    console.warn("Clipboard write failed for game ID");
+                });
+            } else {
+                copy();
+            }
+        };
+
+        container.appendChild(display);
+    }
+
     // ==========================================================================
     // In-Game HUD
     // ==========================================================================
 
+    /**
+     * Update the in-game HUD.
+     *
+     * The DOM ids here must match web_server/templates/index.html:
+     *   #turnNumber #gamePhase #turnPhase #currentPlayer #playersList
+     *   #crystalStatus #crystal-effects-indicator
+     */
     updateHUD(gameState, localPlayerId) {
-        if (!gameState || !localPlayerId) return;
+        if (!gameState) return;
 
-        const player = gameState.players[localPlayerId];
-        if (!player) return;
+        // --- turn / phase counters -------------------------------------------
+        this._setText("turnNumber", gameState.turn_number ?? 0);
+        this._setText("gamePhase", gameState.phase || GAME_STATE_PHASE.SETUP);
+        this._setText("turnPhase", gameState.turn_phase || TurnPhase.MOVEMENT);
 
-        // Update player info
-        const playerName = document.getElementById("player-name");
-        const playerTokens = document.getElementById("player-tokens");
-        const playerHealth = document.getElementById("player-health");
-
-        if (playerName) playerName.textContent = player.name;
-        if (playerTokens) playerTokens.textContent = player.token_ids.length;
-        
-        // Calculate total health
-        let totalHealth = 0;
-        player.token_ids.forEach(tokenId => {
-            const token = gameState.tokens[tokenId];
-            if (token && token.is_alive && token.is_deployed) {
-                totalHealth += token.health;
+        // --- current player --------------------------------------------------
+        const currentPlayer = gameState.current_turn_player_id
+            ? gameState.players?.[gameState.current_turn_player_id]
+            : null;
+        const currentPlayerEl = document.getElementById("currentPlayer");
+        if (currentPlayerEl) {
+            currentPlayerEl.textContent = currentPlayer ? (currentPlayer.name || "Unknown") : "-";
+            currentPlayerEl.className = "";
+            if (currentPlayer) {
+                currentPlayerEl.classList.add("player-color", `player-color-${this._colorIndex(currentPlayer)}`);
             }
-        });
-
-        if (playerHealth) playerHealth.textContent = totalHealth;
-
-        // Update turn info
-        const turnPlayer = document.getElementById("turn-player");
-        const turnPhase = document.getElementById("turn-phase");
-
-        if (turnPlayer && gameState.current_turn_player_id) {
-            const currentPlayer = gameState.players[gameState.current_turn_player_id];
-            turnPlayer.textContent = currentPlayer ? currentPlayer.name : "Unknown";
         }
 
-        if (turnPhase) {
-            turnPhase.textContent = gameState.turn_phase === TurnPhase.MOVEMENT ? "Movement" : "Action";
+        // --- player roster ---------------------------------------------------
+        const playersList = document.getElementById("playersList");
+        if (playersList) {
+            playersList.innerHTML = "";
+            const players = Object.values(gameState.players || {});
+            for (const player of players) {
+                const playerDiv = document.createElement("div");
+                playerDiv.className = "player-info";
+
+                const isLocal = player.id === localPlayerId ? " (YOU)" : "";
+                const name = document.createElement("strong");
+                name.className = `player-color player-color-${this._colorIndex(player)}`;
+                name.textContent = `${player.name || player.player_name || player.id}${isLocal}`;
+
+                const tokenCount = document.createElement("div");
+                const tokenIds = player.token_ids || [];
+                const alive = tokenIds.filter((id) => {
+                    const t = gameState.tokens?.[id];
+                    return t && t.is_alive && t.is_deployed;
+                }).length;
+                tokenCount.textContent = `Tokens: ${alive}/${tokenIds.length}`;
+
+                playerDiv.appendChild(name);
+                playerDiv.appendChild(tokenCount);
+                playersList.appendChild(playerDiv);
+            }
         }
 
-        // Update crystal status
-        const crystalStatus = document.getElementById("crystal-status");
-        if (crystalStatus && gameState.crystal) {
-            const crystalPlayer = gameState.players[gameState.crystal.controlling_player_id];
-            crystalStatus.textContent = crystalPlayer ? `${crystalPlayer.name} controls crystal` : "Crystal unclaimed";
+        // --- crystal capture progress ----------------------------------------
+        this._updateCrystalStatus(gameState);
+
+        // --- active crystal effects -----------------------------------------
+        this.updateCrystalEffectsIndicator(gameState, localPlayerId);
+    }
+
+    /**
+     * Colour index for a player, tolerating either `color_index` or `color`.
+     */
+    _colorIndex(player) {
+        if (typeof player.color_index === "number") return player.color_index;
+        if (typeof player.color === "number") return player.color;
+        return 0;
+    }
+
+    /**
+     * Set an element's text content if the element exists.
+     */
+    _setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    }
+
+    /**
+     * Show crystal ownership / capture progress.
+     */
+    _updateCrystalStatus(gameState) {
+        const el = document.getElementById("crystalStatus");
+        if (!el) return;
+
+        const crystal = gameState.crystal;
+        if (!crystal) {
+            el.textContent = "Crystal unclaimed";
+            return;
         }
+
+        const holderId = crystal.controlling_player_id || crystal.holding_player_id;
+        const holder = holderId ? gameState.players?.[holderId] : null;
+        const required = crystal.base_tokens_required ?? 0;
+        const held = (crystal.holding_token_ids || []).length;
+
+        if (!holder) {
+            el.textContent = `Crystal unclaimed (needs ${required} tokens)`;
+            return;
+        }
+
+        el.textContent = `${holder.name || holderId} controls crystal (${held}/${required} tokens, ${crystal.turns_held} turn${crystal.turns_held === 1 ? "" : "s"})`;
+    }
+
+    /**
+     * Update the crystal effects indicator showing active debuffs/buffs.
+     */
+    updateCrystalEffectsIndicator(gameState, localPlayerId) {
+        const indicator = document.getElementById("crystal-effects-indicator");
+        if (!indicator) return;
+
+        const playerEffects = gameState.crystal_effects?.player_effects?.[localPlayerId];
+        const activeEffects = (playerEffects?.active_effects || []).filter(
+            (e) => e.turns_remaining > 0,
+        );
+
+        if (activeEffects.length === 0) {
+            indicator.innerHTML = "";
+            indicator.classList.add("hidden");
+            return;
+        }
+
+        indicator.classList.remove("hidden");
+        indicator.textContent = "";
+
+        const panel = document.createElement("div");
+        panel.className = "effects-panel";
+
+        for (const effect of activeEffects) {
+            let effectName, icon, cssClass;
+            switch (effect.effect_type) {
+                case CRYSTAL_EFFECT.FOG_OF_WAR:
+                    effectName = "Fog of War";
+                    icon = "🌫️";
+                    cssClass = "fog-of-war";
+                    break;
+                case CRYSTAL_EFFECT.PHANTOM_ENEMIES:
+                    effectName = "Phantom Enemies";
+                    icon = "👻";
+                    cssClass = "phantom-enemies";
+                    break;
+                case CRYSTAL_EFFECT.DAMAGE_BOOST:
+                    effectName = "Damage Boost";
+                    icon = "⚡";
+                    cssClass = "damage-boost";
+                    break;
+                case CRYSTAL_EFFECT.SPEED_BOOST:
+                    effectName = "Speed Boost";
+                    icon = "💨";
+                    cssClass = "speed-boost";
+                    break;
+                default:
+                    effectName = "Unknown Effect";
+                    icon = "❓";
+                    cssClass = "";
+            }
+
+            const badge = document.createElement("div");
+            badge.className = `effect-badge ${cssClass}`.trim();
+
+            const iconSpan = document.createElement("span");
+            iconSpan.className = "effect-icon";
+            iconSpan.textContent = icon;
+
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "effect-name";
+            nameSpan.textContent = effectName;
+
+            const duration = document.createElement("span");
+            duration.className = "effect-duration";
+            duration.textContent = `${effect.turns_remaining} turn${effect.turns_remaining !== 1 ? "s" : ""}`;
+
+            badge.appendChild(iconSpan);
+            badge.appendChild(nameSpan);
+            badge.appendChild(duration);
+            panel.appendChild(badge);
+        }
+
+        indicator.appendChild(panel);
     }
 
     setCanvas(canvas) {

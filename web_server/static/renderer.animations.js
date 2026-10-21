@@ -4,7 +4,7 @@
  */
 
 import { Renderer3D, CYAN_GLOW } from './renderer.base.js';
-import { BOARD_CONFIG, CELL_SIZE } from './game_client.constants.js';
+import { BOARD_CONFIG, CELL_SIZE, CRYSTAL_EFFECT } from './game_client.constants.js';
 
 const WALL_HEIGHT = BOARD_CONFIG.WALL_HEIGHT;
 const BOARD_WIDTH = BOARD_CONFIG.WIDTH;
@@ -174,7 +174,7 @@ Renderer3D.prototype.checkCrystalEffectTrigger = function(gameState) {
     const [affectedPlayerId, effectType] = gameState.last_triggered_crystal_effect;
 
     let affectedTokens = [];
-    if (effectType === CrystalEffect.DAMAGE_BOOST) {
+    if (effectType === CRYSTAL_EFFECT.DAMAGE_BOOST) {
         affectedTokens = Object.values(gameState.tokens || {}).filter(
             t => t.player_id === affectedPlayerId && t.is_deployed && t.is_alive
         );
@@ -187,16 +187,16 @@ Renderer3D.prototype.checkCrystalEffectTrigger = function(gameState) {
     );
 
     switch (effectType) {
-        case CrystalEffect.FOG_OF_WAR:
+        case CRYSTAL_EFFECT.FOG_OF_WAR:
             this.playSound("fog_horn");
             break;
-        case CrystalEffect.PHANTOM_ENEMIES:
+        case CRYSTAL_EFFECT.PHANTOM_ENEMIES:
             this.playSound("ghost");
             break;
-        case CrystalEffect.DAMAGE_BOOST:
+        case CRYSTAL_EFFECT.DAMAGE_BOOST:
             this.playSound("lightning");
             break;
-        case CrystalEffect.SPEED_BOOST:
+        case CRYSTAL_EFFECT.SPEED_BOOST:
             this.playSound("whoosh");
             break;
     }
@@ -226,6 +226,8 @@ Renderer3D.prototype.triggerExplosion = function(position, color) {
         material.emissiveColor = color;
         material.disableLighting = true;
         particle.material = material;
+        // FX only — must never intercept a board click.
+        particle.isPickable = false;
 
         this.explosionParticles.push({
             mesh: particle,
@@ -285,6 +287,8 @@ Renderer3D.prototype.triggerVictoryEffect = function() {
         material.emissiveColor = color;
         material.disableLighting = true;
         confetti.material = material;
+        // FX only — must never intercept a board click.
+        confetti.isPickable = false;
 
         this.confettiParticles.push({
             mesh: confetti,

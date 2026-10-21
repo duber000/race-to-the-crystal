@@ -160,6 +160,9 @@ class TokenRenderer {
             this.scene,
         );
         hexagon.position = new BABYLON.Vector3(worldX, TOKEN_CENTER_Y, worldZ);
+        // Tokens are the one thing a click should resolve to (besides the
+        // ground), so they stay pickable.
+        hexagon.isPickable = true;
 
         const colorKey = playerColor.toHexString();
         if (!this.sharedMaterials.has(colorKey)) {
@@ -197,6 +200,7 @@ class TokenRenderer {
             this.scene,
         );
         hexagon.position = new BABYLON.Vector3(worldX, TOKEN_CENTER_Y, worldZ);
+        hexagon.isPickable = true;
 
         const colorKey = playerColor.toHexString();
         if (!this.sharedPhantomMaterials.has(colorKey)) {
@@ -270,6 +274,8 @@ class TokenRenderer {
         plane.position = new BABYLON.Vector3(position.x, position.y, position.z + TOKEN_HEIGHT);
         plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
         plane.material = this.getSharedHealthMaterial(phantom.apparent_health, true);
+        // Decoration — must not intercept a click meant for the token below.
+        plane.isPickable = false;
         return plane;
     }
 
@@ -302,6 +308,8 @@ class TokenRenderer {
         plane.position = new BABYLON.Vector3(position.x, position.y, position.z + TOKEN_HEIGHT);
         plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
         plane.material = this.getSharedHealthMaterial(token.health, false);
+        // Decoration — must not intercept a click meant for the token below.
+        plane.isPickable = false;
         return plane;
     }
 

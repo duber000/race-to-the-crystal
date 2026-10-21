@@ -164,6 +164,14 @@ Renderer3D.prototype.createSpecialCells = function(gameState) {
             }
         }
     }
+
+    // Everything built above (crystal hub, gold frames, generator pillars,
+    // mystery rings, laser beams) is decoration sitting above the board.
+    // None of it should be pickable — the ground and the tokens are the only
+    // things a click should ever resolve to.
+    this.specialCellMeshes.forEach((mesh) => {
+        if (mesh) mesh.isPickable = false;
+    });
 };
 
 Renderer3D.prototype.createMysteryRing = function(x, y) {

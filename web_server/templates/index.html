@@ -8,10 +8,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
     <!-- PWA and mobile meta tags -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
     <meta name="format-detection" content="telephone=no">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/static/favicon.png">
 
     <title>Race to the Crystal - 3D Web View</title>
 
@@ -21,7 +25,6 @@
     <!-- Preload critical JavaScript resources -->
     <!-- Regular scripts -->
     <link rel="preload" href="/static/mercure_client.js" as="script">
-    <link rel="preload" href="/static/game_client.crystal_effects.js" as="script">
     <!-- ES6 modules (loaded via <script type="module">) -->
     <link rel="modulepreload" href="/static/game_client.constants.js">
     <link rel="modulepreload" href="/static/game_client.device.js">
@@ -33,6 +36,7 @@
     <link rel="modulepreload" href="/static/input_handler.js">
     <link rel="modulepreload" href="/static/renderer.base.js">
     <link rel="modulepreload" href="/static/audio_manager.js">
+    <link rel="modulepreload" href="/static/game_client.crystal_effects.js">
 </head>
 
 <body>
@@ -101,6 +105,7 @@
     <!-- Waiting Room Screen -->
     <div id="waiting-room-screen" class="hidden">
         <h2 id="lobby-game-name">Game Lobby</h2>
+        <div id="lobby-game-id"></div>
         <div id="lobby-players">
             <h3>Players:</h3>
         </div>
@@ -122,6 +127,7 @@
             <div class="status-line">Phase: <span id="gamePhase">Setup</span></div>
             <div class="status-line">Turn Phase: <span id="turnPhase">MOVEMENT</span></div>
             <div class="status-line">Current Player: <span id="currentPlayer">-</span></div>
+            <div class="status-line">Crystal: <span id="crystalStatus">Crystal unclaimed</span></div>
             <div id="playersList"></div>
         </div>
     </details>
@@ -240,9 +246,6 @@
 
     <!-- Game constants (ES6 module, imported by renderer modules) -->
     <script type="module" src="/static/game_client.constants.js"></script>
-
-    <!-- Crystal effect animator (no imports, can be regular script) -->
-    <script src="/static/game_client.crystal_effects.js"></script>
 
     <!-- Device capabilities detection (no imports, can be regular script) -->
     <script type="module" src="/static/game_client.device.js"></script>

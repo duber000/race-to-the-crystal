@@ -103,12 +103,19 @@ class StateManager {
     }
 
     /**
-     * Clear selection state
+     * Clear selection state.
+     *
+     * Only notifies when something was actually selected — clearing an empty
+     * selection would otherwise re-enter the state-change callback for no
+     * reason.
      */
     clearSelection() {
+        const hadSelection = this.selectedTokenId !== null || this.validMoves.size > 0;
         this.selectedTokenId = null;
         this.validMoves = new Set();
-        this._notifyStateChange();
+        if (hadSelection) {
+            this._notifyStateChange();
+        }
     }
 
     /**

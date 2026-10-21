@@ -9,18 +9,18 @@
  *
  * Usage:
  *   const animator = new CrystalEffectAnimator(scene);
- *   animator.startEffect(CrystalEffect.FOG_OF_WAR, crystalPosition, affectedTokens);
+ *   animator.startEffect(CRYSTAL_EFFECT.FOG_OF_WAR, crystalPosition, affectedTokens);
  *   // In render loop:
  *   animator.update(deltaTime);
  */
 
-// Numeric crystal-effect wire codes (match the server's ClientStateDict).
-const CrystalEffect = {
-    FOG_OF_WAR: 1,
-    PHANTOM_ENEMIES: 2,
-    DAMAGE_BOOST: 3,
-    SPEED_BOOST: 4
-};
+import { CELL_SIZE, CRYSTAL_EFFECT, CRYSTAL_EFFECT_ANIMATION } from './game_client.constants.js';
+
+const FOG_SPREAD_SPEED = CRYSTAL_EFFECT_ANIMATION.FOG_SPREAD_SPEED;
+const GHOST_COUNT = CRYSTAL_EFFECT_ANIMATION.GHOST_COUNT;
+const EFFECT_DURATION = CRYSTAL_EFFECT_ANIMATION.DURATION;
+const WHIRLWIND_COUNT = CRYSTAL_EFFECT_ANIMATION.WHIRLWIND_COUNT;
+const LIGHTNING_FLASH_DURATION = CRYSTAL_EFFECT_ANIMATION.LIGHTNING_FLASH_DURATION;
 
 class CrystalEffectAnimator {
     constructor(scene) {
@@ -56,16 +56,16 @@ class CrystalEffectAnimator {
 
         // Initialize particles based on effect type
         switch (effectType) {
-            case CrystalEffect.FOG_OF_WAR:
+            case CRYSTAL_EFFECT.FOG_OF_WAR:
                 this._initFogParticles();
                 break;
-            case CrystalEffect.PHANTOM_ENEMIES:
+            case CRYSTAL_EFFECT.PHANTOM_ENEMIES:
                 this._initGhostParticles();
                 break;
-            case CrystalEffect.DAMAGE_BOOST:
+            case CRYSTAL_EFFECT.DAMAGE_BOOST:
                 this._initLightningFlashes();
                 break;
-            case CrystalEffect.SPEED_BOOST:
+            case CRYSTAL_EFFECT.SPEED_BOOST:
                 this._initWhirlwindParticles();
                 break;
         }
@@ -81,7 +81,7 @@ class CrystalEffectAnimator {
             const particle = {
                 angle: angle,
                 distance: 0.0,
-                speed: CRYSTAL_FOG_SPREAD_SPEED + (Math.random() - 0.5) * 40,
+                speed: FOG_SPREAD_SPEED + (Math.random() - 0.5) * 40,
                 size: 30 + Math.random() * 30,
                 alpha: 0.7,
                 mesh: null
@@ -110,7 +110,7 @@ class CrystalEffectAnimator {
         const worldX = this.crystalPosition[0] * CELL_SIZE + CELL_SIZE / 2;
         const worldZ = this.crystalPosition[1] * CELL_SIZE + CELL_SIZE / 2;
 
-        for (let i = 0; i < CRYSTAL_GHOST_COUNT; i++) {
+        for (let i = 0; i < GHOST_COUNT; i++) {
             const angle = Math.random() * Math.PI * 2;
             const particle = {
                 angle: angle,
@@ -179,7 +179,7 @@ class CrystalEffectAnimator {
         const worldX = this.crystalPosition[0] * CELL_SIZE + CELL_SIZE / 2;
         const worldZ = this.crystalPosition[1] * CELL_SIZE + CELL_SIZE / 2;
 
-        for (let i = 0; i < CRYSTAL_WHIRLWIND_COUNT; i++) {
+        for (let i = 0; i < WHIRLWIND_COUNT; i++) {
             const angle = Math.random() * Math.PI * 2;
             const particle = {
                 angle: angle,
@@ -229,23 +229,23 @@ class CrystalEffectAnimator {
         this.animationTime += deltaTime;
 
         // End animation after duration
-        if (this.animationTime >= CRYSTAL_EFFECT_ANIMATION_DURATION) {
+        if (this.animationTime >= EFFECT_DURATION) {
             this.cleanup();
             return;
         }
 
         // Update particles based on effect type
         switch (this.activeAnimation) {
-            case CrystalEffect.FOG_OF_WAR:
+            case CRYSTAL_EFFECT.FOG_OF_WAR:
                 this._updateFogParticles(deltaTime);
                 break;
-            case CrystalEffect.PHANTOM_ENEMIES:
+            case CRYSTAL_EFFECT.PHANTOM_ENEMIES:
                 this._updateGhostParticles(deltaTime);
                 break;
-            case CrystalEffect.DAMAGE_BOOST:
+            case CRYSTAL_EFFECT.DAMAGE_BOOST:
                 this._updateLightningFlashes(deltaTime);
                 break;
-            case CrystalEffect.SPEED_BOOST:
+            case CRYSTAL_EFFECT.SPEED_BOOST:
                 this._updateWhirlwindParticles(deltaTime);
                 break;
         }
@@ -254,7 +254,7 @@ class CrystalEffectAnimator {
     _updateFogParticles(deltaTime) {
         const worldX = this.crystalPosition[0] * CELL_SIZE + CELL_SIZE / 2;
         const worldZ = this.crystalPosition[1] * CELL_SIZE + CELL_SIZE / 2;
-        const fadeProgress = this.animationTime / CRYSTAL_EFFECT_ANIMATION_DURATION;
+        const fadeProgress = this.animationTime / EFFECT_DURATION;
 
         for (let particle of this.fogParticles) {
             particle.distance += particle.speed * deltaTime;
@@ -273,7 +273,7 @@ class CrystalEffectAnimator {
     _updateGhostParticles(deltaTime) {
         const worldX = this.crystalPosition[0] * CELL_SIZE + CELL_SIZE / 2;
         const worldZ = this.crystalPosition[1] * CELL_SIZE + CELL_SIZE / 2;
-        const fadeProgress = this.animationTime / CRYSTAL_EFFECT_ANIMATION_DURATION;
+        const fadeProgress = this.animationTime / EFFECT_DURATION;
 
         for (let particle of this.ghostParticles) {
             particle.distance += particle.speed * deltaTime;
@@ -296,7 +296,7 @@ class CrystalEffectAnimator {
             flash.flashTime += deltaTime;
 
             // Check if it's time for next flash
-            const flashInterval = CRYSTAL_EFFECT_ANIMATION_DURATION / flash.numFlashes;
+            const flashInterval = EFFECT_DURATION / flash.numFlashes;
             if (flash.flashTime >= flashInterval && flash.currentFlash < flash.numFlashes) {
                 flash.currentFlash++;
                 flash.flashTime = 0.0;
@@ -308,8 +308,8 @@ class CrystalEffectAnimator {
             }
 
             // Fade out current flash
-            if (flash.flashTime < CRYSTAL_LIGHTNING_FLASH_DURATION) {
-                const flashProgress = flash.flashTime / CRYSTAL_LIGHTNING_FLASH_DURATION;
+            if (flash.flashTime < LIGHTNING_FLASH_DURATION) {
+                const flashProgress = flash.flashTime / LIGHTNING_FLASH_DURATION;
                 for (let mesh of flash.meshes) {
                     mesh.material.alpha = 1.0 - flashProgress;
                 }
@@ -324,7 +324,7 @@ class CrystalEffectAnimator {
     _updateWhirlwindParticles(deltaTime) {
         const worldX = this.crystalPosition[0] * CELL_SIZE + CELL_SIZE / 2;
         const worldZ = this.crystalPosition[1] * CELL_SIZE + CELL_SIZE / 2;
-        const fadeProgress = this.animationTime / CRYSTAL_EFFECT_ANIMATION_DURATION;
+        const fadeProgress = this.animationTime / EFFECT_DURATION;
 
         for (let particle of this.whirlwindParticles) {
             particle.distance += particle.speed * deltaTime;
@@ -407,3 +407,5 @@ class CrystalEffectAnimator {
         return this.activeAnimation !== null;
     }
 }
+
+export { CrystalEffectAnimator };

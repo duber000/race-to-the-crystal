@@ -242,28 +242,10 @@ class ConnectionManager {
         }
 
         this.gameClient.gameState = gameState;
-        this.gameClient.turnPhase = gameState.turn_phase || TurnPhase.MOVEMENT;
 
-        if (this.gameClient.renderer) {
-            this.gameClient.renderer.updateGameState(gameState);
-        }
-        this.gameClient.uiManager.updateHUD(gameState, this.gameClient.localPlayerId);
-
-        if (gameState.current_turn_player_id !== this.gameClient.localPlayerId) {
-            this.gameClient.selectedTokenId = null;
-            this.gameClient.validMoves = new Set();
-            if (this.gameClient.renderer) {
-                this.gameClient.renderer.updateValidMoveIndicators(null);
-                this.gameClient.renderer.updateTokenSelectionGlow(null);
-            }
-            if (this.gameClient.uiManager.isDeploymentMenuOpen()) {
-                this.gameClient.uiManager.toggleDeploymentMenu(false);
-            }
-            this.gameClient.uiManager.clearSelection();
-        }
-
-        // Keep first-person highlights in sync with turn/phase/token changes
-        this.gameClient.inputController?.refreshFPIndicators();
+        // Delegate to the façade so there is a single implementation of the
+        // state -> view sync (renderer, HUD, selection, first-person hints).
+        this.gameClient.handleStateChanged(gameState);
     }
 
     connectToServer(host, port, playerName) {
