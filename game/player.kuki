@@ -1,5 +1,6 @@
 petiole game
 
+import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 import "stdlib/slice"
@@ -12,6 +13,10 @@ type Player
     isReady: bool
     isActive: bool
     team: optional reference int
+    # How long this player has to complete a turn before it is passed on.
+    # The server sets it from the player's client type: a human gets less
+    # time than an agent, which may be thinking for a while.
+    turnTimeoutSeconds: int
 
 func NewPlayer(id: types.PlayerID, name: string, color: enums.PlayerColor) Player
     return Player{
@@ -21,6 +26,7 @@ func NewPlayer(id: types.PlayerID, name: string, color: enums.PlayerColor) Playe
         tokenIds: empty list of types.TokenID,
         isReady: false,
         isActive: true,
+        turnTimeoutSeconds: constants.TURN_TIMEOUT_SECONDS,
     }
 
 func tokenCount on p: reference Player int
@@ -40,6 +46,15 @@ func ID on p: reference Player types.PlayerID
 
 func Color on p: reference Player enums.PlayerColor
     return p.color
+
+# How long this player has to complete a turn, in seconds.
+func TurnTimeout on p: reference Player int
+    return p.turnTimeoutSeconds
+
+# Set the turn timeout. The server sets it from the player's client type.
+func SetTurnTimeout on p: reference Player(seconds: int)
+    if seconds > 0
+        p.turnTimeoutSeconds = seconds
 
 func IsActive on p: reference Player bool
     return p.isActive

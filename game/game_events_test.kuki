@@ -1,5 +1,6 @@
 petiole game
 
+import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types"
 import "stdlib/test"
@@ -252,6 +253,51 @@ func TestEventsForActionAttack(t: reference testing.T)
         test.AssertEqual(t, d["attacker_position"], list of int{5, 5})
         test.AssertEqual(t, d["defender_position"], list of int{6, 5})
         test.AssertEqual(t, d["damage"], 5)
+
+# A turn event carries the timeout of the player whose turn it is starting,
+# so the client can count down without asking the server.
+func TestTurnChangedCarriesTimeout(t: reference testing.T)
+    gs := newEventGame()
+    api := NewGameAPI(gs, gs.currentTurnPlayerId)
+
+    pRef := gs.GetPlayer(gs.currentTurnPlayerId)
+    if pRef is empty
+        return
+
+    result := api.EndTurn()
+    test.AssertTrue(t, result.Success)
+
+    # The event carries the timeout of the player whose turn is starting.
+    nextRef := gs.GetPlayer(gs.currentTurnPlayerId)
+    if nextRef is empty
+        return
+    nextRef.SetTurnTimeout(120)
+
+    events := EventsForAction(gs, result.Data)
+    turns := eventsOfType(events, "TURN_CHANGED")
+    test.AssertEqual(t, len(turns), 1)
+
+    if len(turns) equals 1
+        d := EventToDict(turns[0])
+        test.AssertEqual(t, d["current_player_id"], gs.currentTurnPlayerId)
+        test.AssertEqual(t, d["turn_timeout_seconds"], 120)
+
+# A player defaults to the human turn timeout, and the server can raise it
+# for an agent seat.
+func TestPlayerTurnTimeout(t: reference testing.T)
+    gs := newEventGame()
+    pRef := gs.GetPlayer(types.PlayerID("player_0"))
+    if pRef is empty
+        return
+    test.AssertEqual(t, pRef.TurnTimeout(), constants.TURN_TIMEOUT_SECONDS)
+
+    pRef.SetTurnTimeout(constants.AGENT_TURN_TIMEOUT_SECONDS)
+    test.AssertEqual(t, pRef.TurnTimeout(), constants.AGENT_TURN_TIMEOUT_SECONDS)
+
+    # A non-positive timeout is ignored — the player keeps the default
+    # rather than getting a turn that expires instantly.
+    pRef.SetTurnTimeout(0)
+    test.AssertEqual(t, pRef.TurnTimeout(), constants.AGENT_TURN_TIMEOUT_SECONDS)
 
 # The objective diff reports nothing when nothing changed.
 func TestObjectiveEventsBetweenUnchanged(t: reference testing.T)

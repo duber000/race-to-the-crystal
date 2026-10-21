@@ -51,3 +51,7 @@ const MIN_PLAYERS = 2
 const MAX_PLAYERS = 4
 
 const TURN_TIMEOUT_SECONDS = 30
+
+# Agents (LLM seats) get longer to move: a model may spend a while thinking
+# before it acts, and a human timeout would punish it unfairly.
+const AGENT_TURN_TIMEOUT_SECONDS = 120

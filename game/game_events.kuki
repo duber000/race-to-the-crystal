@@ -53,6 +53,13 @@ enum GameEvent
         TurnNumber: int
         CurrentPlayerID: types.PlayerID
         TurnPhase: string
+        # How long the new player has to complete this turn, so the client
+        # can show a countdown without asking the server.
+        TurnTimeoutSeconds: int
+    TurnTimedOut
+        PlayerID: types.PlayerID
+        PlayerName: string
+        TimeoutSeconds: int
     RadioChatter
         PlayerID: types.PlayerID
         PlayerName: string
@@ -78,6 +85,8 @@ func EventTypeName(e: GameEvent) string
             return "MYSTERY_TRIGGERED"
         when TurnChanged
             return "TURN_CHANGED"
+        when TurnTimedOut
+            return "TURN_TIMED_OUT"
         when RadioChatter
             return "RADIO_CHATTER"
         when GameEnded
@@ -142,6 +151,14 @@ func EventToDict(e: GameEvent) JSONMap
                 "turn_number": e.TurnNumber,
                 "current_player_id": e.CurrentPlayerID,
                 "turn_phase": e.TurnPhase,
+                "turn_timeout_seconds": e.TurnTimeoutSeconds,
+            }
+        when TurnTimedOut
+            return JSONMap{
+                "type": "TURN_TIMED_OUT",
+                "player_id": e.PlayerID,
+                "player_name": e.PlayerName,
+                "timeout_seconds": e.TimeoutSeconds,
             }
         when RadioChatter
             return JSONMap{
@@ -208,11 +225,16 @@ func EventsForAction(gs: reference GameState, data: ActionResultData) list of Ga
                 },
             }
         when TurnEndData
+            timeout := 0
+            nextRef := gs.GetPlayer(data.NextPlayerID)
+            if nextRef isnt empty
+                timeout = nextRef.TurnTimeout()
             return list of GameEvent{
                 TurnChanged{
                     TurnNumber: data.TurnNumber,
                     CurrentPlayerID: data.NextPlayerID,
                     TurnPhase: "{gs.turnPhase}",
+                    TurnTimeoutSeconds: timeout,
                 },
             }
         when NoData
