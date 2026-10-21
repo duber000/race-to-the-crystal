@@ -652,6 +652,75 @@ class UIManager {
         indicator.appendChild(panel);
     }
 
+    /**
+     * Show a countdown for the current turn.
+     *
+     * The server sends the timeout in the TURN_CHANGED event; the countdown
+     * runs locally from there, so it does not need a message per second.
+     *
+     * @param {number} seconds - Seconds allowed for the turn
+     * @param {string} playerId - The player whose turn it is
+     */
+    startTurnCountdown(seconds, playerId) {
+        this.stopTurnCountdown();
+        if (!seconds || seconds <= 0) {
+            return;
+        }
+
+        this.turnCountdown = {
+            playerId: playerId,
+            remaining: seconds,
+            deadline: Date.now() + seconds * 1000,
+        };
+
+        const tick = () => {
+            if (!this.turnCountdown) return;
+            const left = Math.max(
+                0,
+                Math.round((this.turnCountdown.deadline - Date.now()) / 1000),
+            );
+            this.turnCountdown.remaining = left;
+            this._renderTurnCountdown(left, seconds);
+
+            if (left <= 0) {
+                this.stopTurnCountdown();
+                return;
+            }
+            this.turnCountdownTimer = setTimeout(tick, 250);
+        };
+
+        this._renderTurnCountdown(seconds, seconds);
+        this.turnCountdownTimer = setTimeout(tick, 250);
+    }
+
+    /**
+     * Stop the turn countdown.
+     */
+    stopTurnCountdown() {
+        if (this.turnCountdownTimer) {
+            clearTimeout(this.turnCountdownTimer);
+            this.turnCountdownTimer = null;
+        }
+        this.turnCountdown = null;
+        const el = document.getElementById("turn-timer");
+        if (el) {
+            el.textContent = "";
+            el.classList.add("hidden");
+        }
+    }
+
+    /**
+     * Render the countdown, warning as it runs down.
+     */
+    _renderTurnCountdown(remaining, total) {
+        const el = document.getElementById("turn-timer");
+        if (!el) return;
+
+        el.classList.remove("hidden");
+        el.textContent = `${remaining}s`;
+        el.classList.toggle("turn-timer-urgent", remaining <= 10 && total > 0);
+    }
+
     setCanvas(canvas) {
         this.canvas = canvas;
     }

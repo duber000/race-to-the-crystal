@@ -257,6 +257,20 @@ game could never begin.
 `joinLobby` remove them from any previous lobby first — and `getPlayerLobby`
 prefers a lobby that is still joinable.
 
+### 2.18 A stalled turn blocked the whole match
+
+Nothing watched the clock on a turn. A player who stopped acting — a
+disconnected human, or an agent that never replied — held the turn forever, and
+every other player waited. This did not matter much while every client was a
+human sitting at a browser; it matters a great deal once an LLM seat is in the
+game, which is the whole point of Phase 2.
+
+**Fix:** a per-session turn clock and a server watchdog (§0.9). The timeout is
+a property of the *player* — the game package holds it, the server sets it
+from the player's client type — so the `TURN_CHANGED` event can carry it and
+the client can count down without asking the server. Humans get 30 s, agents
+get 120 s, and both are configurable via the environment.
+
 ---
 
 ## 3. Target architecture
@@ -519,7 +533,7 @@ Estimated: 3–5 days. Nothing in Phases 1–4 is verifiable until this is done.
 | 0.6 Fix the phantom-client bug | *Not started* | The HTTP path is poll-only by design (§0.5 makes the polled state complete, so this is now a smaller item). |
 | 0.7 Deterministic seats and colours | **Done** | Extended to token ownership and the starting player (§2.16), lobby membership (§2.17), and player names (§2.14). |
 | 0.8 Harden the WebSocket path | *Not started* | |
-| 0.9 Turn timeout / auto-pass | *Not started* | Timeout policy decided: **30 s for humans, 120 s for agents**. |
+| 0.9 Turn timeout / auto-pass | **Done** | 30 s for humans, 120 s for agents, configurable via `TURN_TIMEOUT_SECONDS` / `AGENT_TURN_TIMEOUT_SECONDS`. A watchdog passes stalled turns on; the client shows a countdown. |
 | 0.10 Cleanup | **Partially done** | Deleted the dead UI file; fixed the favicon and the deprecated meta tag. Mercure still needs to be made explicitly WS-primary. |
 | 0.11 Unconditional fog-of-war | *Not started* | The event stream it depends on is now in place. |
 
@@ -534,6 +548,7 @@ the original plan; they are recorded in §2.10–§2.17):
 - `make test` ran stale test artifacts (§2.15).
 - The starting player and token ownership were random per game (§2.16).
 - A stale lobby blocked a player from starting a new game (§2.17).
+- A stalled turn blocked the whole match (§2.18).
 
 **Verified end-to-end in a real browser** (Chromium via DevTools, against a live
 server): connect → create lobby → second player joins → ready → start → select
@@ -1274,16 +1289,18 @@ make lint
 | `web_server/static/index.css` | 1.4, 2.3, 4.3 | Threat overlays, comms panel, radial palette, FAB, `dvh`. |
 | `web_server/templates/index.html` | 0.2, 2.3, 2.4, 4.2 | Add comms panel, scrubber, radial container. |
 | `game/game_events.kuki` | 0.4 | **New.** Event variant enum, `EventTypeName`, `EventToDict`, `EventsForAction`, `ObjectiveStateOf`, `ObjectiveEventsBetween`. |
-| `game/game_events_test.kuki` | 0.4 | **New.** Event derivation and wire-shape tests. |
+| `game/game_events_test.kuki` | 0.4, 0.9 | Event derivation and wire-shape tests. |
 | `game/game_state.kuki` | 0.7 | `StartGame` walks the seat order, so token ownership and the first turn are deterministic. |
+| `game/player.kuki` | 0.9 | `turnTimeoutSeconds` + accessors — the timeout is a property of the player. |
 | `game/visible_state.kuki` | 0.11 | **New.** `VisibleStateDict` (fog of war, unconditional). |
 | `game/visible_state_test.kuki` | 0.11 | **New.** Fog correctness tests (incl. occupant-array leak). |
 | `game/state_serializer.kuki` | 0.7, 0.11 | Deterministic `color_index`; keep `ClientStateDict` unfiltered for internal use. |
 | `game/ai_actions.kuki` | 0.4 | Thread mystery/crystal detail into `ActionResultData` for event emission. |
 | `renderer.tokens.js` (`web_server/static/`) | 0.11 | Skip masked tokens; tolerate `position: null`. |
-| `server/game_coordinator.kuki` | 0.4, 0.11 | Session event log, `eventSeq`, objective state, `recordEvents`; per-player event filtering. |
+| `server/game_coordinator.kuki` | 0.4, 0.9, 0.11 | Session event log, `eventSeq`, objective state, `recordEvents`; the turn clock and per-player timeouts; per-player event filtering. |
 | `server/websocket_handler.kuki` | 0.4, 0.5 | `BroadcastSessionState` / `BroadcastSessionEvents` — shared by both transports. |
-| `server/ws_endpoint.kuki` | 0.4, 0.8, 0.11, 2.2 | Emit `EVENT` frames; `resync_state`; read limit; origin check; rate limit; fogged state; spectator handling. |
+| `server/ws_endpoint.kuki` | 0.4, 0.8, 0.9, 0.11, 2.2 | Emit `EVENT` frames; `resync_state`; the turn watchdog; read limit; origin check; rate limit; fogged state; spectator handling. |
+| `server/main.kuki` | 0.9 | `TURN_TIMEOUT_SECONDS` / `AGENT_TURN_TIMEOUT_SECONDS` config; start the turn watchdog. |
 | `server/http_handler.kuki` | 0.5, 0.6, 0.11 | Per-player fogged full state; the same event frames as the WS path. |
 | `server/agent_endpoint.kuki` | 2.1 | **New.** Agent seat REST API. |
 | `server/lobby.kuki` | 0.7, 2.1, 2.2 | Deterministic player order; one lobby per player; prefer a joinable lobby; `ClientType.HTTP_AI`; `isAgent`/`model`; spectator list. |
@@ -1292,7 +1309,8 @@ make lint
 | `web_server/static/mercure_client.js` | 0.10 | Make the SSE attempt opt-in (WS-primary by default). |
 | `web_server/MERCURE_SETUP.md` | 0.10 | Record the current status and the per-player-topic requirement. |
 | `web_server/static/network_manager.js` | 0.4 | Handle `EVENT` frames; sequence tracking; gap detection and resync. |
-| `web_server/static/game_client.modules.js` | 0.4 | Subscribe to the new event vocabulary; update the handlers to the new field names. |
+| `web_server/static/game_client.modules.js` | 0.4, 0.9 | Subscribe to the new event vocabulary; update the handlers to the new field names; the turn countdown. |
+| `web_server/static/ui_manager.js` | 0.9 | The turn countdown widget. |
 | `web_server/static/renderer.animations.js` | 0.4 | Use the event's own position for the combat effect. |
 | `mcp/` | 2.1 | **New package.** MCP proxy to the agent REST API. |
 | `shared/constants/constants.kuki` | 0.9 | Wire `TURN_TIMEOUT_SECONDS`; add agent-specific timeout. |

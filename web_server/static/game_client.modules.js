@@ -118,6 +118,10 @@ class ConnectionManager {
             this.handleTurnChanged(data);
         });
 
+        this.networkManager.on("turn_timed_out", (data) => {
+            this.handleTurnTimedOut(data);
+        });
+
         this.networkManager.on("radio_chatter", (data) => {
             this.handleRadioChatter(data);
         });
@@ -232,12 +236,28 @@ class ConnectionManager {
     }
 
     handleTurnChanged(data) {
+        // The countdown does not depend on the game state: the server sends
+        // the event before the first FULL_STATE, so the state may still be
+        // null here.
+        this.gameClient.uiManager.startTurnCountdown(
+            data.turn_timeout_seconds || 0,
+            data.current_player_id,
+        );
+
         if (!this.gameClient.gameState) return;
         this.gameClient.gameState.current_turn_player_id = data.current_player_id;
         this.gameClient.gameState.turn_number = data.turn_number;
         this.gameClient.gameState.turn_phase = data.turn_phase;
 
         this.updateGameState(this.gameClient.gameState);
+    }
+
+    handleTurnTimedOut(data) {
+        // The server passed on a turn that ran out of time.
+        this.gameClient.uiManager.showActionError(
+            `${data.player_name} ran out of time — turn passed on.`,
+        );
+        this.gameClient.uiManager.stopTurnCountdown();
     }
 
     handleRadioChatter(data) {

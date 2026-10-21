@@ -379,6 +379,22 @@ body {
     margin: 5px 0;
 }
 
+/* Turn countdown */
+#hud #turn-timer {
+    color: #0ff;
+    font-weight: bold;
+}
+
+#hud #turn-timer.turn-timer-urgent {
+    color: #f00;
+    animation: turn-timer-pulse 1s ease-in-out infinite;
+}
+
+@keyframes turn-timer-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
 #hud .player-info {
     margin: 10px 0;
     padding: 5px;
