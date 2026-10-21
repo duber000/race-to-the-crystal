@@ -225,6 +225,38 @@ without it, while brew writes the file without one.
 sources), and `make build` runs `make clean-generated` first so the two never
 block each other.
 
+### 2.16 The starting player and token ownership were random every game
+
+`GameState.StartGame` iterated `gs.players` — a Go map — three times: to
+create each player's tokens, to auto-deploy their starting tokens, and to
+pick the first player to move. Map iteration order is random, so:
+
+- **Which player took the first turn was random.** The player in the first
+  seat did not necessarily start, despite the seat being deterministic after
+  §2.14.
+- **Token ids were assigned in a random player order.** Sometimes player_0
+  owned tokens 0–19; sometimes it owned 20–39. Anything assuming "token *N*
+  belongs to player *N*" was wrong — including a test written against it,
+  which failed roughly 1 run in 12.
+
+**Fix:** `StartGame` now walks `GameState.orderedPlayerIds()` (the same
+seat order used elsewhere), so token ids, the starting player, and the
+corner quadrants are all consistent in every game.
+
+### 2.17 A player could be in two lobbies, and the stale one blocked the new game
+
+`LobbyManager.getPlayerLobby` returned the *first* lobby containing the
+player, in map iteration order. The client never sends `LEAVE_GAME` when it
+creates a new game, so after playing one match a player was still in the old
+lobby. Creating a new game then left the player in two lobbies, and
+`getPlayerLobby` could return the old one — whose status was already
+`IN_PROGRESS` — so `startGame` refused with "Cannot start game" and the new
+game could never begin.
+
+**Fix:** a player now belongs to one lobby at a time — `createLobby` and
+`joinLobby` remove them from any previous lobby first — and `getPlayerLobby`
+prefers a lobby that is still joinable.
+
 ---
 
 ## 3. Target architecture
@@ -256,13 +288,10 @@ and Phase 2 features implementable at all.
 
 ### 3.1 New: `game/game_events.kuki` — the event vocabulary
 
-A single variant enum, serialized once, consumed by every surface.
+A single variant enum, serialized once, consumed by every surface. **As built**
+(`game/game_events.kuki`), the payload fields are:
 
 ```kukicha
-petiole game
-
-import "shared/types"
-
 enum GameEvent
     TokenMoved
         TokenID: types.TokenID
@@ -270,7 +299,9 @@ enum GameEvent
         NewPosition: list of int
     CombatResolved
         AttackerID: types.TokenID
+        AttackerPosition: list of int
         DefenderID: types.TokenID
+        DefenderPosition: list of int
         Damage: int
         DefenderKilled: bool
     TokenDeployed
@@ -281,18 +312,17 @@ enum GameEvent
         GeneratorID: int
         Position: list of int
         IsDisabled: bool
-        HoldingPlayerID: string
+        HoldingPlayerID: types.PlayerID
         TurnsHeld: int
     CrystalChanged
         Position: list of int
-        HoldingPlayerID: string
-        ControllingPlayerID: string
+        HoldingPlayerID: types.PlayerID
         TurnsHeld: int
         IsContested: bool
     MysteryTriggered
         TokenID: types.TokenID
         Position: list of int
-        Effect: string
+        Effect: enums.MysteryEffect
     TurnChanged
         TurnNumber: int
         CurrentPlayerID: types.PlayerID
@@ -306,30 +336,55 @@ enum GameEvent
         WinnerName: string
 ```
 
-Plus `game/game_events.kuki`:
+Two deliberate changes from the original sketch:
+
+- **Positions are included.** `CombatResolved` carries both the attacker's and
+  the defender's position, so a consumer never has to look the tokens up in
+  the current state. That is what makes the events *replayable* — a scrubber
+  applying snapshot N has no live state to consult — and it means the combat
+  explosion still plays after the state update removes the dead token.
+- **Generator and crystal changes are derived by diffing, not by reading the
+  action result.** `TurnEndData` reports only generators that were *newly
+  disabled*; it does not report ownership changes. `ObjectiveStateOf` snapshots
+  the generators and crystal, and `ObjectiveEventsBetween` diffs two snapshots,
+  so every objective change is reported.
+
+The two free functions (a variant enum cannot have methods — Go lowers it to
+an interface):
 
 ```kukicha
-func EventTypeName on e: GameEvent() string
-func EventToDict on e: GameEvent() map of string to any
+func EventTypeName(e: GameEvent) string
+func EventToDict(e: GameEvent) JSONMap
 ```
 
 `EventToDict` produces a flat, stable JSON frame:
 
 ```json
-{"type":"COMBAT_RESOLVED","attacker_id":5,"defender_id":9,"damage":5,"defender_killed":true}
+{"type":"COMBAT_RESOLVED","attacker_id":5,"attacker_position":[3,4],"defender_id":9,"defender_position":[5,6],"damage":5,"defender_killed":true}
 ```
 
 ### 3.2 New wire message: `EVENT`
 
-Added to `server/ws_endpoint.kuki` alongside `FULL_STATE`:
+Sent per player, alongside `FULL_STATE`:
 
 ```json
 {"type":"EVENT","game_id":"abc","seq":42,"event":{"type":"COMBAT_RESOLVED","attacker_id":5,"defender_id":9,"damage":5,"defender_killed":true}}
 ```
 
+`seq` is a monotonically increasing per-session counter. The client drops
+frames it has already seen (`seq <= lastEventSeq`), and on a gap
+(`seq > lastEventSeq + 1`) it requests a resync. The resync response is a
+`FULL_STATE` carrying the server's `event_seq`, which repairs the counter —
+so a dropped event costs a little polish, never correctness: the state
+itself is always authoritative.
+
+Events are sent **before** the state update, so the client gets immediate
+feedback (the token slides into position, the defender's health drops) before
+the authoritative state lands on top.
+
 `seq` is a monotonically increasing per-session counter. It gives the client:
-- ordering guarantees (replacing the ad-hoc `stateUpdateLock` / `stateUpdateQueue` in
-  `network_manager.js`),
+- ordering guarantees (for the event stream; the state path keeps the existing
+  `stateUpdateLock` / `stateUpdateQueue`),
 - gap detection (a missed `seq` ⇒ request a `FULL_STATE` resync),
 - replay seeking.
 
@@ -459,17 +514,17 @@ Estimated: 3–5 days. Nothing in Phases 1–4 is verifiable until this is done.
 | 0.1 Instantiate the input controller | **Done** | Also fixed the mobile Deploy button, which called a façade method that does not exist. |
 | 0.2 Reconcile the HUD with the template | **Done** | Rewrote `updateHUD` against the real ids; ported the crystal-effects panel out of the dead file; deleted `game_client.ui.js`; added a crystal-status line and the click-to-copy game ID. |
 | 0.3 Fix the crystal-effects module | **Done** | Converted to an ES module importing the constants; deleted the duplicate local `CrystalEffect` map. |
-| 0.4 Server-side event stream | *Not started* | The keystone. |
-| 0.5 Unify the HTTP and WS state paths | *Not started* | |
-| 0.6 Fix the phantom-client bug | *Not started* | |
-| 0.7 Deterministic seats and colours | **Done** | Extended beyond `color_index` to seat assignment and player names (§2.14). |
+| 0.4 Server-side event stream | **Done** | `game/game_events.kuki` (9 event types), `EVENT` frames with a per-session `seq`, per-player broadcast, client-side gap detection and resync. |
+| 0.5 Unify the HTTP and WS state paths | **Done** | Both paths now broadcast the same per-player full state and the same event frames. `GET /state` returns the full state, not the slim dict. |
+| 0.6 Fix the phantom-client bug | *Not started* | The HTTP path is poll-only by design (§0.5 makes the polled state complete, so this is now a smaller item). |
+| 0.7 Deterministic seats and colours | **Done** | Extended to token ownership and the starting player (§2.16), lobby membership (§2.17), and player names (§2.14). |
 | 0.8 Harden the WebSocket path | *Not started* | |
 | 0.9 Turn timeout / auto-pass | *Not started* | Timeout policy decided: **30 s for humans, 120 s for agents**. |
-| 0.10 Cleanup | **Partially done** | Deleted the dead UI file; fixed the favicon and the deprecated meta tag. Mercure is still to be made explicitly WS-primary. |
-| 0.11 Unconditional fog-of-war | *Not started* | |
+| 0.10 Cleanup | **Partially done** | Deleted the dead UI file; fixed the favicon and the deprecated meta tag. Mercure still needs to be made explicitly WS-primary. |
+| 0.11 Unconditional fog-of-war | *Not started* | The event stream it depends on is now in place. |
 
-**Additional defects found and fixed while validating 0.1–0.3** (these were not in
-the original plan; they are recorded in §2.10–§2.15):
+**Additional defects found and fixed while validating 0.1–0.5** (these were not in
+the original plan; they are recorded in §2.10–§2.17):
 
 - Turn-phase type mismatch between the client and the wire format (§2.10).
 - Board decoration was pickable, so clicks resolved to the wrong cell (§2.11).
@@ -477,13 +532,17 @@ the original plan; they are recorded in §2.10–§2.15):
 - `handleStateChanged` recursed infinitely on every non-your-turn update (§2.13).
 - Lobby seats, colours and names were unstable (§2.14).
 - `make test` ran stale test artifacts (§2.15).
+- The starting player and token ownership were random per game (§2.16).
+- A stale lobby blocked a player from starting a new game (§2.17).
 
 **Verified end-to-end in a real browser** (Chromium via DevTools, against a live
 server): connect → create lobby → second player joins → ready → start → select
 a token → **move** it → **deploy** a token → **end turn**, with the HUD
-updating on every state change and the server accepting every action. Plus
-`kukicha fmt --check .`, `kukicha check ./...`, `make build` and `make test` all
-green.
+updating on every state change and the server accepting every action. Both
+players receive the same event stream with matching, monotonic sequence
+numbers, and no gaps. Plus `kukicha fmt --check .`, `kukicha check ./...`,
+`make build` and `make test` all green, and 20 consecutive full-suite runs
+with no failures.
 
 ### 0.1 Instantiate the input controller
 
@@ -1214,21 +1273,27 @@ make lint
 | `web_server/static/input_handler.js` | 4.1 | Delegate to the touch arbiter; keep the mouse path. |
 | `web_server/static/index.css` | 1.4, 2.3, 4.3 | Threat overlays, comms panel, radial palette, FAB, `dvh`. |
 | `web_server/templates/index.html` | 0.2, 2.3, 2.4, 4.2 | Add comms panel, scrubber, radial container. |
-| `game/game_events.kuki` | 0.4 | **New.** Event variant enum + `EventToDict`. |
+| `game/game_events.kuki` | 0.4 | **New.** Event variant enum, `EventTypeName`, `EventToDict`, `EventsForAction`, `ObjectiveStateOf`, `ObjectiveEventsBetween`. |
+| `game/game_events_test.kuki` | 0.4 | **New.** Event derivation and wire-shape tests. |
+| `game/game_state.kuki` | 0.7 | `StartGame` walks the seat order, so token ownership and the first turn are deterministic. |
 | `game/visible_state.kuki` | 0.11 | **New.** `VisibleStateDict` (fog of war, unconditional). |
 | `game/visible_state_test.kuki` | 0.11 | **New.** Fog correctness tests (incl. occupant-array leak). |
 | `game/state_serializer.kuki` | 0.7, 0.11 | Deterministic `color_index`; keep `ClientStateDict` unfiltered for internal use. |
 | `game/ai_actions.kuki` | 0.4 | Thread mystery/crystal detail into `ActionResultData` for event emission. |
 | `renderer.tokens.js` (`web_server/static/`) | 0.11 | Skip masked tokens; tolerate `position: null`. |
-| `server/game_coordinator.kuki` | 0.4, 0.11 | Session event log, snapshots, mutex; per-player event filtering. |
-| `server/ws_endpoint.kuki` | 0.4, 0.8, 0.11, 2.2 | Emit `EVENT` frames; read limit; origin check; rate limit; fogged state; spectator handling. |
-| `server/http_handler.kuki` | 0.5, 0.6, 0.11 | Per-player fogged full state; drop the phantom client. |
+| `server/game_coordinator.kuki` | 0.4, 0.11 | Session event log, `eventSeq`, objective state, `recordEvents`; per-player event filtering. |
+| `server/websocket_handler.kuki` | 0.4, 0.5 | `BroadcastSessionState` / `BroadcastSessionEvents` — shared by both transports. |
+| `server/ws_endpoint.kuki` | 0.4, 0.8, 0.11, 2.2 | Emit `EVENT` frames; `resync_state`; read limit; origin check; rate limit; fogged state; spectator handling. |
+| `server/http_handler.kuki` | 0.5, 0.6, 0.11 | Per-player fogged full state; the same event frames as the WS path. |
 | `server/agent_endpoint.kuki` | 2.1 | **New.** Agent seat REST API. |
-| `server/lobby.kuki` | 2.1, 2.2 | Use `ClientType.HTTP_AI`; add `isAgent`/`model`; spectator list. |
+| `server/lobby.kuki` | 0.7, 2.1, 2.2 | Deterministic player order; one lobby per player; prefer a joinable lobby; `ClientType.HTTP_AI`; `isAgent`/`model`; spectator list. |
 | `server/auth.kuki` | 2.1 | Reuse `CreatePlayerToken` for agent seats. |
 | `server/mercure_publisher.kuki` | 0.10 | Keep, but document as inactive; per-player topics required before it can carry fogged state. |
 | `web_server/static/mercure_client.js` | 0.10 | Make the SSE attempt opt-in (WS-primary by default). |
 | `web_server/MERCURE_SETUP.md` | 0.10 | Record the current status and the per-player-topic requirement. |
+| `web_server/static/network_manager.js` | 0.4 | Handle `EVENT` frames; sequence tracking; gap detection and resync. |
+| `web_server/static/game_client.modules.js` | 0.4 | Subscribe to the new event vocabulary; update the handlers to the new field names. |
+| `web_server/static/renderer.animations.js` | 0.4 | Use the event's own position for the combat effect. |
 | `mcp/` | 2.1 | **New package.** MCP proxy to the agent REST API. |
 | `shared/constants/constants.kuki` | 0.9 | Wire `TURN_TIMEOUT_SECONDS`; add agent-specific timeout. |
 | `learn/learn_api.kuki` | 0.11 | Document the omniscient-visibility boundary (§3.3.1). |
