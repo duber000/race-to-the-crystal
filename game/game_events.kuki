@@ -1,0 +1,319 @@
+petiole game
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+
+# ==========================================================================
+# Game events — the vocabulary shared by the server (which produces them)
+# and every client (which reacts to them).
+#
+# One event log serves three consumers: live feedback (screen shake, combat
+# text, camera moves), the battle replay, and the agent comms feed. A single
+# vocabulary means a replay looks like the live game, because it is driven
+# by the same events.
+#
+# Events are self-contained: they carry the positions they refer to, so a
+# consumer never has to look the information up in the current state. That
+# is what makes them replayable — a scrubber applying snapshot N has no
+# live state to consult.
+# ==========================================================================
+
+enum GameEvent
+    TokenMoved
+        TokenID: types.TokenID
+        OldPosition: list of int
+        NewPosition: list of int
+    CombatResolved
+        AttackerID: types.TokenID
+        AttackerPosition: list of int
+        DefenderID: types.TokenID
+        DefenderPosition: list of int
+        Damage: int
+        DefenderKilled: bool
+    TokenDeployed
+        TokenID: types.TokenID
+        HealthValue: int
+        Position: list of int
+    GeneratorChanged
+        GeneratorID: int
+        Position: list of int
+        IsDisabled: bool
+        HoldingPlayerID: types.PlayerID
+        TurnsHeld: int
+    CrystalChanged
+        Position: list of int
+        HoldingPlayerID: types.PlayerID
+        TurnsHeld: int
+        IsContested: bool
+    MysteryTriggered
+        TokenID: types.TokenID
+        Position: list of int
+        Effect: enums.MysteryEffect
+    TurnChanged
+        TurnNumber: int
+        CurrentPlayerID: types.PlayerID
+        TurnPhase: string
+    RadioChatter
+        PlayerID: types.PlayerID
+        PlayerName: string
+        Text: string
+    GameEnded
+        WinnerID: types.PlayerID
+        WinnerName: string
+
+# Wire name of an event, e.g. "TOKEN_MOVED".
+func EventTypeName(e: GameEvent) string
+    switch e
+        when TokenMoved
+            return "TOKEN_MOVED"
+        when CombatResolved
+            return "COMBAT_RESOLVED"
+        when TokenDeployed
+            return "TOKEN_DEPLOYED"
+        when GeneratorChanged
+            return "GENERATOR_CHANGED"
+        when CrystalChanged
+            return "CRYSTAL_CHANGED"
+        when MysteryTriggered
+            return "MYSTERY_TRIGGERED"
+        when TurnChanged
+            return "TURN_CHANGED"
+        when RadioChatter
+            return "RADIO_CHATTER"
+        when GameEnded
+            return "GAME_ENDED"
+
+# Flat JSON representation of an event, with a "type" discriminator. The
+# shape is stable: it is the wire format for the live stream, the battle
+# log, and the agent API alike.
+func EventToDict(e: GameEvent) JSONMap
+    switch e
+        when TokenMoved
+            return JSONMap{
+                "type": "TOKEN_MOVED",
+                "token_id": e.TokenID,
+                "old_position": e.OldPosition,
+                "new_position": e.NewPosition,
+            }
+        when CombatResolved
+            return JSONMap{
+                "type": "COMBAT_RESOLVED",
+                "attacker_id": e.AttackerID,
+                "attacker_position": e.AttackerPosition,
+                "defender_id": e.DefenderID,
+                "defender_position": e.DefenderPosition,
+                "damage": e.Damage,
+                "defender_killed": e.DefenderKilled,
+            }
+        when TokenDeployed
+            return JSONMap{
+                "type": "TOKEN_DEPLOYED",
+                "token_id": e.TokenID,
+                "health_value": e.HealthValue,
+                "position": e.Position,
+            }
+        when GeneratorChanged
+            return JSONMap{
+                "type": "GENERATOR_CHANGED",
+                "generator_id": e.GeneratorID,
+                "position": e.Position,
+                "is_disabled": e.IsDisabled,
+                "holding_player_id": e.HoldingPlayerID,
+                "turns_held": e.TurnsHeld,
+            }
+        when CrystalChanged
+            return JSONMap{
+                "type": "CRYSTAL_CHANGED",
+                "position": e.Position,
+                "holding_player_id": e.HoldingPlayerID,
+                "turns_held": e.TurnsHeld,
+                "is_contested": e.IsContested,
+            }
+        when MysteryTriggered
+            return JSONMap{
+                "type": "MYSTERY_TRIGGERED",
+                "token_id": e.TokenID,
+                "position": e.Position,
+                "effect": "{e.Effect}",
+            }
+        when TurnChanged
+            return JSONMap{
+                "type": "TURN_CHANGED",
+                "turn_number": e.TurnNumber,
+                "current_player_id": e.CurrentPlayerID,
+                "turn_phase": e.TurnPhase,
+            }
+        when RadioChatter
+            return JSONMap{
+                "type": "RADIO_CHATTER",
+                "player_id": e.PlayerID,
+                "player_name": e.PlayerName,
+                "text": e.Text,
+            }
+        when GameEnded
+            return JSONMap{
+                "type": "GAME_ENDED",
+                "winner_id": e.WinnerID,
+                "winner_name": e.WinnerName,
+            }
+
+# ==========================================================================
+# Deriving events from game state
+# ==========================================================================
+
+# Grid position of a token, or an empty list when the token is unknown.
+func tokenPosition(gs: reference GameState, tokenId: types.TokenID) list of int
+    tRef := gs.GetToken(tokenId)
+    if tRef is empty
+        return empty list of int
+    t := dereference tRef
+    return list of int{t.position.X, t.position.Y}
+
+# The events produced by a successful action. `gs` is the game state
+# *after* the action has been applied.
+func EventsForAction(gs: reference GameState, data: ActionResultData) list of GameEvent
+    switch data
+        when MoveData
+            events := list of GameEvent{
+                TokenMoved{
+                    TokenID: data.TokenID,
+                    OldPosition: data.OldPosition,
+                    NewPosition: data.NewPosition,
+                },
+            }
+            if data.MysteryTriggered
+                events = append(events, MysteryTriggered{
+                    TokenID: data.TokenID,
+                    Position: data.NewPosition,
+                    Effect: data.MysteryEffect,
+                })
+            return events
+        when AttackData
+            return list of GameEvent{
+                CombatResolved{
+                    AttackerID: data.AttackerID,
+                    AttackerPosition: tokenPosition(gs, data.AttackerID),
+                    DefenderID: data.DefenderID,
+                    DefenderPosition: tokenPosition(gs, data.DefenderID),
+                    Damage: data.DamageDealt,
+                    DefenderKilled: data.DefenderKilled,
+                },
+            }
+        when DeployData
+            return list of GameEvent{
+                TokenDeployed{
+                    TokenID: data.NewTokenID,
+                    HealthValue: data.HealthValue,
+                    Position: data.Position,
+                },
+            }
+        when TurnEndData
+            return list of GameEvent{
+                TurnChanged{
+                    TurnNumber: data.TurnNumber,
+                    CurrentPlayerID: data.NextPlayerID,
+                    TurnPhase: "{gs.turnPhase}",
+                },
+            }
+        when NoData
+            return empty list of GameEvent
+
+# ==========================================================================
+# Objective state (generators and crystal)
+#
+# Generators and the crystal change as a side effect of ending a turn. The
+# action result only reports generators that were *newly disabled* — it
+# does not report ownership changes — so the events are derived by diffing
+# the objective state across the action instead.
+# ==========================================================================
+
+type GeneratorState
+    ID: int
+    Position: list of int
+    IsDisabled: bool
+    HoldingPlayerID: types.PlayerID
+    TurnsHeld: int
+
+type CrystalState
+    Position: list of int
+    HoldingPlayerID: types.PlayerID
+    TurnsHeld: int
+    IsContested: bool
+
+type ObjectiveState
+    Generators: list of GeneratorState
+    Crystal: CrystalState
+
+# Find a generator's state by id.
+func findGeneratorState(gens: list of GeneratorState, generatorId: int) optional reference GeneratorState
+    for g in gens
+        if g.ID equals generatorId
+            found := g
+            return reference of found
+    return empty
+
+# Capture the current objective state.
+func ObjectiveStateOf(gs: reference GameState) ObjectiveState
+    gens := empty list of GeneratorState
+    for g in gs.generators
+        gens = append(gens, GeneratorState{
+            ID: g.id,
+            Position: list of int{g.position.X, g.position.Y},
+            IsDisabled: g.isDisabled,
+            HoldingPlayerID: g.capturingPlayerId,
+            TurnsHeld: g.turnsHeld,
+        })
+
+    crystal := CrystalState{
+        Position: empty list of int,
+        HoldingPlayerID: "",
+        TurnsHeld: 0,
+        IsContested: false,
+    }
+    if gs.crystalInstance isnt empty
+        crys := dereference gs.crystalInstance
+        crystal = CrystalState{
+            Position: list of int{crys.position.X, crys.position.Y},
+            HoldingPlayerID: crys.holdingPlayerId,
+            TurnsHeld: crys.turnsHeld,
+            IsContested: crys.isContested(),
+        }
+
+    return ObjectiveState{Generators: gens, Crystal: crystal}
+
+# Events describing what changed between two objective snapshots.
+func ObjectiveEventsBetween(before: ObjectiveState, after: ObjectiveState) list of GameEvent
+    events := empty list of GameEvent
+
+    for gen in after.Generators
+        prev := findGeneratorState(before.Generators, gen.ID)
+        if prev is empty
+            continue
+        oldGen := dereference prev
+
+        unchanged := oldGen.IsDisabled equals gen.IsDisabled and
+            oldGen.HoldingPlayerID equals gen.HoldingPlayerID and
+            oldGen.TurnsHeld equals gen.TurnsHeld
+        if unchanged
+            continue
+
+        events = append(events, GeneratorChanged{
+            GeneratorID: gen.ID,
+            Position: gen.Position,
+            IsDisabled: gen.IsDisabled,
+            HoldingPlayerID: gen.HoldingPlayerID,
+            TurnsHeld: gen.TurnsHeld,
+        })
+
+    crystalChanged := before.Crystal.TurnsHeld isnt after.Crystal.TurnsHeld or
+        before.Crystal.HoldingPlayerID isnt after.Crystal.HoldingPlayerID or
+        before.Crystal.IsContested isnt after.Crystal.IsContested
+    if crystalChanged
+        events = append(events, CrystalChanged{
+            Position: after.Crystal.Position,
+            HoldingPlayerID: after.Crystal.HoldingPlayerID,
+            TurnsHeld: after.Crystal.TurnsHeld,
+            IsContested: after.Crystal.IsContested,
+        })
+
+    return events

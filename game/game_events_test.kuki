@@ -1,0 +1,326 @@
+petiole game
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types"
+import "stdlib/test"
+import "testing"
+
+# A started two-player game. Player 0 moves first.
+func newEventGame() reference GameState
+    gs := CreateGame(2)
+    gs.StartGame()
+    return reference of gs
+
+# The first deployed, alive token of a player, as a reference into the
+# game state (not a copy).
+func firstDeployedToken(gs: reference GameState, playerId: types.PlayerID) optional reference Token
+    for t in gs.GetPlayerTokens(playerId)
+        tRef := gs.GetToken(t.id)
+        if tRef isnt empty
+            return tRef
+    return empty
+
+# The events of a given type, or an empty list when there is none.
+func eventsOfType(events: list of GameEvent, name: string) list of GameEvent
+    result := empty list of GameEvent
+    for e in events
+        if EventTypeName(e) equals name
+            result = append(result, e)
+    return result
+
+# A free, plain cell the player may deploy on. The board is generated
+# randomly, so a fixed position is not safe to assume — mystery squares can
+# land in the deployment corner.
+func freeDeployPosition(gs: reference GameState, playerId: types.PlayerID) optional reference types.Position
+    pRef := gs.GetPlayer(playerId)
+    if pRef is empty
+        return empty
+    p := dereference pRef
+
+    for pos in gs.board.getDeployablePositions(enums.PlayerIndex(p.color))
+        cell := gs.board.getCellAt(pos)
+        if cell is empty
+            continue
+        c := dereference cell
+        if c.isOccupied()
+            continue
+        if c.cellType isnt enums.NORMAL
+            continue
+        found := pos
+        return reference of found
+    return empty
+
+func TestEventTypeNames(t: reference testing.T)
+    move := TokenMoved{TokenID: 1, OldPosition: list of int{0, 0}, NewPosition: list of int{1, 1}}
+    test.AssertEqual(t, EventTypeName(move), "TOKEN_MOVED")
+
+    combat := CombatResolved{
+        AttackerID: 1,
+        AttackerPosition: list of int{0, 0},
+        DefenderID: 2,
+        DefenderPosition: list of int{1, 1},
+        Damage: 5,
+        DefenderKilled: true,
+    }
+    test.AssertEqual(t, EventTypeName(combat), "COMBAT_RESOLVED")
+
+# Every event type serialises with a "type" discriminator and the expected
+# field names. This is the wire format — the live stream, the battle log
+# and the agent API all use it — so it must not drift.
+func TestEventToDictCoversEveryType(t: reference testing.T)
+    cases := list of GameEvent{
+        TokenMoved{TokenID: 1, OldPosition: list of int{0, 0}, NewPosition: list of int{1, 1}},
+        CombatResolved{
+            AttackerID: 1,
+            AttackerPosition: list of int{0, 0},
+            DefenderID: 2,
+            DefenderPosition: list of int{1, 1},
+            Damage: 5,
+            DefenderKilled: true,
+        },
+        TokenDeployed{TokenID: 3, HealthValue: 10, Position: list of int{2, 2}},
+        GeneratorChanged{
+            GeneratorID: 1,
+            Position: list of int{6, 6},
+            IsDisabled: true,
+            HoldingPlayerID: types.PlayerID("player_0"),
+            TurnsHeld: 2,
+        },
+        CrystalChanged{
+            Position: list of int{12, 12},
+            HoldingPlayerID: types.PlayerID("player_1"),
+            TurnsHeld: 3,
+            IsContested: true,
+        },
+        MysteryTriggered{TokenID: 4, Position: list of int{5, 5}, Effect: enums.MysteryEffect.HEAL},
+        TurnChanged{
+            TurnNumber: 4,
+            CurrentPlayerID: types.PlayerID("player_1"),
+            TurnPhase: "MOVEMENT",
+        },
+        RadioChatter{
+            PlayerID: types.PlayerID("player_1"),
+            PlayerName: "Bob",
+            Text: "Holding the east generator.",
+        },
+        GameEnded{WinnerID: types.PlayerID("player_1"), WinnerName: "Bob"},
+    }
+
+    expected := list of string{
+        "TOKEN_MOVED",
+        "COMBAT_RESOLVED",
+        "TOKEN_DEPLOYED",
+        "GENERATOR_CHANGED",
+        "CRYSTAL_CHANGED",
+        "MYSTERY_TRIGGERED",
+        "TURN_CHANGED",
+        "RADIO_CHATTER",
+        "GAME_ENDED",
+    }
+
+    test.AssertEqual(t, len(cases), len(expected))
+    for i from 0 to len(cases)
+        d := EventToDict(cases[i])
+        test.AssertEqual(t, d["type"], expected[i])
+        test.AssertEqual(t, EventTypeName(cases[i]), expected[i])
+
+func TestEventToDictShape(t: reference testing.T)
+    combat := CombatResolved{
+        AttackerID: 7,
+        AttackerPosition: list of int{3, 4},
+        DefenderID: 9,
+        DefenderPosition: list of int{5, 6},
+        Damage: 5,
+        DefenderKilled: true,
+    }
+    d := EventToDict(combat)
+    test.AssertEqual(t, d["type"], "COMBAT_RESOLVED")
+    test.AssertEqual(t, d["attacker_id"], types.TokenID(7))
+    test.AssertEqual(t, d["defender_id"], types.TokenID(9))
+    test.AssertEqual(t, d["damage"], 5)
+    test.AssertEqual(t, d["defender_killed"], true)
+    test.AssertEqual(t, d["attacker_position"], list of int{3, 4})
+    test.AssertEqual(t, d["defender_position"], list of int{5, 6})
+
+# A move produces a TokenMoved event carrying both positions.
+func TestEventsForActionMove(t: reference testing.T)
+    gs := newEventGame()
+    api := NewGameAPI(gs, gs.currentTurnPlayerId)
+
+    tokRef := firstDeployedToken(gs, gs.currentTurnPlayerId)
+    if tokRef is empty
+        return
+    tokenId := tokRef.ID()
+    oldPos := tokRef.Position()
+
+    moves := getValidMoves(tokRef, reference of gs.board, tokRef.movementRange(), gs.tokens)
+    if moves is empty
+        return
+    dest := moves[0]
+
+    result := api.Move(tokenId, dest.X, dest.Y)
+    test.AssertTrue(t, result.Success)
+
+    events := EventsForAction(gs, result.Data)
+    moved := eventsOfType(events, "TOKEN_MOVED")
+    test.AssertEqual(t, len(moved), 1)
+
+    if len(moved) equals 1
+        d := EventToDict(moved[0])
+        test.AssertEqual(t, d["token_id"], tokenId)
+        test.AssertEqual(t, d["old_position"], list of int{oldPos.X, oldPos.Y})
+        test.AssertEqual(t, d["new_position"], list of int{dest.X, dest.Y})
+
+# A deploy produces a TokenDeployed event.
+func TestEventsForActionDeploy(t: reference testing.T)
+    gs := newEventGame()
+    api := NewGameAPI(gs, gs.currentTurnPlayerId)
+
+    posRef := freeDeployPosition(gs, gs.currentTurnPlayerId)
+    if posRef is empty
+        return
+    pos := dereference posRef
+
+    result := api.Deploy(10, pos.X, pos.Y)
+    test.AssertTrue(t, result.Success)
+
+    events := EventsForAction(gs, result.Data)
+    deployed := eventsOfType(events, "TOKEN_DEPLOYED")
+    test.AssertEqual(t, len(deployed), 1)
+
+    if len(deployed) equals 1
+        d := EventToDict(deployed[0])
+        test.AssertEqual(t, d["health_value"], 10)
+        test.AssertEqual(t, d["position"], list of int{pos.X, pos.Y})
+
+# Ending a turn produces a TurnChanged event naming the next player.
+func TestEventsForActionEndTurn(t: reference testing.T)
+    gs := newEventGame()
+    api := NewGameAPI(gs, gs.currentTurnPlayerId)
+    first := gs.currentTurnPlayerId
+
+    result := api.EndTurn()
+    test.AssertTrue(t, result.Success)
+
+    events := EventsForAction(gs, result.Data)
+    turns := eventsOfType(events, "TURN_CHANGED")
+    test.AssertEqual(t, len(turns), 1)
+
+    if len(turns) equals 1
+        d := EventToDict(turns[0])
+        test.AssertEqual(t, d["current_player_id"], gs.currentTurnPlayerId)
+        test.AssertNotEqual(t, d["current_player_id"], first)
+        test.AssertEqual(t, d["turn_phase"], "MOVEMENT")
+
+# An attack produces a CombatResolved event carrying both positions, so a
+# consumer never has to look the tokens up in the current state.
+func TestEventsForActionAttack(t: reference testing.T)
+    gs := newEventGame()
+    api := NewGameAPI(gs, gs.currentTurnPlayerId)
+
+    attackerRef := firstDeployedToken(gs, gs.currentTurnPlayerId)
+    defenderRef := firstDeployedToken(gs, "player_1")
+    if attackerRef is empty
+        return
+    if defenderRef is empty
+        return
+
+    # A move puts the turn in the ACTION phase, which is when an attack is
+    # legal.
+    moves := getValidMoves(attackerRef, reference of gs.board, attackerRef.movementRange(), gs.tokens)
+    if moves is empty
+        return
+    dest := moves[0]
+    moveResult := api.Move(attackerRef.ID(), dest.X, dest.Y)
+    test.AssertTrue(t, moveResult.Success)
+
+    # Put the two tokens next to each other.
+    attackerRef.position = types.Pos(5, 5)
+    defenderRef.position = types.Pos(6, 5)
+
+    result := api.Attack(attackerRef.ID(), defenderRef.ID())
+    test.AssertTrue(t, result.Success)
+
+    events := EventsForAction(gs, result.Data)
+    combats := eventsOfType(events, "COMBAT_RESOLVED")
+    test.AssertEqual(t, len(combats), 1)
+
+    if len(combats) equals 1
+        d := EventToDict(combats[0])
+        test.AssertEqual(t, d["attacker_id"], attackerRef.ID())
+        test.AssertEqual(t, d["defender_id"], defenderRef.ID())
+        test.AssertEqual(t, d["attacker_position"], list of int{5, 5})
+        test.AssertEqual(t, d["defender_position"], list of int{6, 5})
+        test.AssertEqual(t, d["damage"], 5)
+
+# The objective diff reports nothing when nothing changed.
+func TestObjectiveEventsBetweenUnchanged(t: reference testing.T)
+    gs := newEventGame()
+    before := ObjectiveStateOf(gs)
+    after := ObjectiveStateOf(gs)
+    events := ObjectiveEventsBetween(before, after)
+    test.AssertEqual(t, len(events), 0)
+
+# A generator that changes ownership is reported, even though the action
+# result only mentions newly *disabled* generators.
+func TestObjectiveEventsBetweenGeneratorChanged(t: reference testing.T)
+    gs := newEventGame()
+    before := ObjectiveStateOf(gs)
+
+    # Write through the slice element: `gs.generators[0]` is addressable,
+    # so this mutates the generator the game state actually holds.
+    gs.generators[0].capturingPlayerId = types.PlayerID("player_0")
+    gs.generators[0].turnsHeld = 1
+
+    after := ObjectiveStateOf(gs)
+    events := ObjectiveEventsBetween(before, after)
+    changes := eventsOfType(events, "GENERATOR_CHANGED")
+    test.AssertEqual(t, len(changes), 1)
+
+    if len(changes) equals 1
+        d := EventToDict(changes[0])
+        test.AssertEqual(t, d["generator_id"], gs.generators[0].id)
+        test.AssertEqual(t, d["holding_player_id"], types.PlayerID("player_0"))
+        test.AssertEqual(t, d["turns_held"], 1)
+        test.AssertEqual(t, d["is_disabled"], false)
+
+# A generator that becomes disabled is reported.
+func TestObjectiveEventsBetweenGeneratorDisabled(t: reference testing.T)
+    gs := newEventGame()
+    before := ObjectiveStateOf(gs)
+
+    gs.generators[0].isDisabled = true
+    gs.generators[0].capturingPlayerId = types.PlayerID("player_0")
+    gs.generators[0].turnsHeld = 2
+
+    after := ObjectiveStateOf(gs)
+    events := ObjectiveEventsBetween(before, after)
+    changes := eventsOfType(events, "GENERATOR_CHANGED")
+    test.AssertEqual(t, len(changes), 1)
+
+    if len(changes) equals 1
+        d := EventToDict(changes[0])
+        test.AssertEqual(t, d["is_disabled"], true)
+        test.AssertEqual(t, d["turns_held"], 2)
+
+# A crystal whose capture progress changes is reported.
+func TestObjectiveEventsBetweenCrystalChanged(t: reference testing.T)
+    gs := newEventGame()
+    before := ObjectiveStateOf(gs)
+
+    # Mutate through the reference — `dereference` would copy the crystal
+    # and the change would be lost.
+    crysRef := gs.crystalInstance
+    if crysRef isnt empty
+        crysRef.holdingPlayerId = types.PlayerID("player_1")
+        crysRef.turnsHeld = 2
+
+    after := ObjectiveStateOf(gs)
+    events := ObjectiveEventsBetween(before, after)
+    changes := eventsOfType(events, "CRYSTAL_CHANGED")
+    test.AssertEqual(t, len(changes), 1)
+
+    if len(changes) equals 1
+        d := EventToDict(changes[0])
+        test.AssertEqual(t, d["holding_player_id"], types.PlayerID("player_1"))
+        test.AssertEqual(t, d["turns_held"], 2)

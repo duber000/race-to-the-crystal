@@ -251,15 +251,22 @@ func StartGame on gs: reference GameState
     if gs.phase isnt enums.SETUP
         return
 
-    for pid in gs.players
+    # Player order is the seat order, not map iteration order. `gs.players` is
+    # a map, so iterating it directly would give each game a different token
+    # id assignment and a different starting player.
+    ordered := gs.orderedPlayerIds()
+
+    for pid in ordered
         gs.createTokensForPlayer(pid)
 
-    for pid, pRef in gs.players
-        gs._auto_deploy_starting_tokens(pid, enums.PlayerIndex(pRef.color))
+    for pid in ordered
+        pRef := gs.GetPlayer(pid)
+        if pRef isnt empty
+            gs._auto_deploy_starting_tokens(pid, enums.PlayerIndex(pRef.color))
 
-    for pid in gs.players
-        gs.currentTurnPlayerId = pid
-        break
+    # The player in the first seat takes the first turn.
+    if ordered isnt empty
+        gs.currentTurnPlayerId = ordered[0]
 
     gs.phase = enums.PLAYING
     gs.turnNumber = 1
