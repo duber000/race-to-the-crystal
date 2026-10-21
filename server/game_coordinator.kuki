@@ -7,6 +7,7 @@ import "race-to-the-crystal/shared/types"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/maps"
+import "time"
 
 type GameSession
     gameId: string
@@ -24,8 +25,20 @@ type GameSession
     # The objective state as of the last event, used to detect generator and
     # crystal changes between actions.
     objectiveState: gamepkg.ObjectiveState
+    # Turn timing. `turnStartedAt` is when the current turn began,
+    # `turnNetworkPlayerId` is whose turn it is, and
+    # `currentTurnTimeoutSeconds` is how long they have. The watchdog
+    # passes a stalled turn on.
+    turnStartedAt: float64
+    turnNetworkPlayerId: string
+    currentTurnTimeoutSeconds: int
+    # Per-player turn timeouts, keyed by network player id.
+    playerTimeouts: map of string to int
+    # The configured timeouts for this session.
+    defaultTurnTimeoutSeconds: int
+    defaultAgentTurnTimeoutSeconds: int
 
-func NewGameSession(gameId: string, lobby: reference GameLobby) reference GameSession
+func NewGameSession(gameId: string, lobby: reference GameLobby, turnTimeoutSeconds: int, agentTurnTimeoutSeconds: int) reference GameSession
     gs := gamepkg.CreateGame(len(lobby.players))
     session := GameSession{
         gameId: gameId,
@@ -38,12 +51,20 @@ func NewGameSession(gameId: string, lobby: reference GameLobby) reference GameSe
         events: empty list of gamepkg.GameEvent,
         eventSeq: 0,
         objectiveState: gamepkg.ObjectiveState{},
+        turnStartedAt: 0.0,
+        turnNetworkPlayerId: "",
+        currentTurnTimeoutSeconds: 0,
+        playerTimeouts: empty map of string to int,
+        defaultTurnTimeoutSeconds: turnTimeoutSeconds,
+        defaultAgentTurnTimeoutSeconds: agentTurnTimeoutSeconds,
     }
     session.initializePlayers(lobby)
     session.gameState.StartGame()
     # Baseline the objective state so the first action does not report every
     # generator and the crystal as changed.
     session.objectiveState = gamepkg.ObjectiveStateOf(reference of session.gameState)
+    # The first turn starts ticking now.
+    session.beginTurn(session.getCurrentNetworkPlayerId())
     return reference of session
 
 func initializePlayers on s: reference GameSession(lobby: reference GameLobby)
@@ -66,7 +87,39 @@ func initializePlayers on s: reference GameSession(lobby: reference GameLobby)
         if pRef isnt empty
             pRef.SetName(info.playerName)
 
+            # A human gets a shorter turn than an agent, which may spend a
+            # while thinking before it acts.
+            timeout := s.defaultTurnTimeoutSeconds
+            if info.clientType equals ClientType.HTTP_AI or info.clientType equals ClientType.AI
+                timeout = s.defaultAgentTurnTimeoutSeconds
+            if timeout <= 0
+                timeout = constants.TURN_TIMEOUT_SECONDS
+            pRef.SetTurnTimeout(timeout)
+            s.playerTimeouts[info.playerId] = timeout
+
         s.apiMap[info.playerId] = api
+
+# Start the turn clock for a player. Called when the game starts and
+# whenever the turn passes to another player.
+func beginTurn on s: reference GameSession(networkPlayerId: string)
+    if networkPlayerId is empty
+        return
+    s.turnNetworkPlayerId = networkPlayerId
+    s.turnStartedAt = time.Now().UnixNano() as float64 / 1e9
+    timeout := s.playerTimeouts[networkPlayerId]
+    if timeout <= 0
+        timeout = constants.TURN_TIMEOUT_SECONDS
+    s.currentTurnTimeoutSeconds = timeout
+
+# Seconds left on the current turn, or -1 when the turn is not being timed.
+func turnSecondsRemaining on s: reference GameSession(now: float64) int
+    if s.currentTurnTimeoutSeconds <= 0 or s.turnStartedAt <= 0.0
+        return -1
+    elapsed := now - s.turnStartedAt
+    remaining := s.currentTurnTimeoutSeconds - elapsed as int
+    if remaining < 0
+        return 0
+    return remaining
 
 func executeGameAction on s: reference GameSession(networkPlayerId: string, action: gamepkg.AIAction) (bool, string, gamepkg.ActionResultData, list of gamepkg.GameEvent)
     _, has := s.networkToGameId[networkPlayerId]
@@ -84,9 +137,33 @@ func executeGameAction on s: reference GameSession(networkPlayerId: string, acti
         "After action: s.game_state.current={s.gameState.CurrentTurnPlayerID()}, s.game_state.turn={s.gameState.TurnNumber()}",
     )
     if result.Success
-        events := s.recordEvents(result.Data)
+        events := s.recordEvents(result.Data, empty list of gamepkg.GameEvent)
+
+        # If the turn passed to another player, start their clock.
+        currentNetwork := s.getCurrentNetworkPlayerId()
+        if currentNetwork isnt empty and currentNetwork isnt s.turnNetworkPlayerId
+            s.beginTurn(currentNetwork)
+
         return true, result.Message, result.Data, events
     return false, result.Message, gamepkg.NewEmptyResultData(), empty list of gamepkg.GameEvent
+
+# The event announcing the first turn of the match, so a client knows the
+# turn clock and the timeout before the first action is taken.
+func recordStartEvents on s: reference GameSession list of gamepkg.GameEvent
+    gamePid := s.getCurrentNetworkPlayerId()
+    if gamePid is empty
+        return empty list of gamepkg.GameEvent
+    timeout := s.playerTimeouts[gamePid]
+    if timeout <= 0
+        timeout = constants.TURN_TIMEOUT_SECONDS
+    event := gamepkg.TurnChanged{
+        TurnNumber: s.gameState.TurnNumber(),
+        CurrentPlayerID: types.PlayerID(gamePid),
+        TurnPhase: "{s.gameState.TurnPhase()}",
+        TurnTimeoutSeconds: timeout,
+    }
+    s.events = append(s.events, event)
+    return list of gamepkg.GameEvent{event}
 
 # Derive the events produced by an action, append them to the session's log
 # and return them.
@@ -96,8 +173,14 @@ func executeGameAction on s: reference GameSession(networkPlayerId: string, acti
 # reported even when the action result only mentions newly *disabled*
 # generators. Objectives update during an end-turn, before the turn itself
 # advances, so the objective events come first.
-func recordEvents on s: reference GameSession(data: gamepkg.ActionResultData) list of gamepkg.GameEvent
+#
+# `leading` is an optional list of events to record before the derived ones
+# — the server uses it to mark a turn that timed out.
+func recordEvents on s: reference GameSession(data: gamepkg.ActionResultData, leading: list of gamepkg.GameEvent) list of gamepkg.GameEvent
     events := empty list of gamepkg.GameEvent
+
+    for e in leading
+        events = append(events, e)
 
     after := gamepkg.ObjectiveStateOf(reference of s.gameState)
     for e in gamepkg.ObjectiveEventsBetween(s.objectiveState, after)
@@ -112,9 +195,6 @@ func recordEvents on s: reference GameSession(data: gamepkg.ActionResultData) li
     return events
 
 func getStateDict on s: reference GameSession JSONMap
-    return s.gameState.ToDict()
-
-func getStateForPlayer on s: reference GameSession(networkPlayerId: string) JSONMap
     return s.gameState.ToDict()
 
 func isGameOver on s: reference GameSession bool
@@ -141,16 +221,21 @@ func getCurrentNetworkPlayerId on s: reference GameSession string
 type GameCoordinator
     activeGames: map of string to reference GameSession
     playerToGame: map of string to string
+    # Turn timeouts handed to each new session.
+    turnTimeoutSeconds: int
+    agentTurnTimeoutSeconds: int
 
-func NewGameCoordinator() GameCoordinator
+func NewGameCoordinator(turnTimeoutSeconds: int, agentTurnTimeoutSeconds: int) GameCoordinator
     return GameCoordinator{
         activeGames: empty map of string to reference GameSession,
         playerToGame: empty map of string to string,
+        turnTimeoutSeconds: turnTimeoutSeconds,
+        agentTurnTimeoutSeconds: agentTurnTimeoutSeconds,
     }
 
 func createSession on gc: reference GameCoordinator(lobby: reference GameLobby) reference GameSession
     gameId := lobby.gameId
-    session := NewGameSession(gameId, lobby)
+    session := NewGameSession(gameId, lobby, gc.turnTimeoutSeconds, gc.agentTurnTimeoutSeconds)
     gc.activeGames[gameId] = session
     players := lobby.getPlayerList()
     for info in players

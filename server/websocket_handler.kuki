@@ -32,7 +32,9 @@ func NewWSClient(clientId: string) WSClient
         ipAddress: "",
     }
 
-func IsInGame on c: WSClient bool
+# `reference WSClient`, not `WSClient`: the struct holds a sync.Mutex, and
+# copying it would copy the lock.
+func IsInGame on c: reference WSClient bool
     return c.gameId isnt empty
 
 type WSMessage

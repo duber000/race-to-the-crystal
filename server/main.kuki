@@ -3,6 +3,7 @@ petiole main
 import "net/http"
 import "os"
 import "path/filepath"
+import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/types"
 import "stdlib/env"
 import "stdlib/errors" as errs
@@ -16,15 +17,23 @@ type ServerConfig
     staticDir: string
     jwtSecret: string
     debug: bool
+    # How long a player has to complete a turn before it is passed on.
+    # Agents get longer: a model may spend a while thinking before it acts.
+    turnTimeoutSeconds: int
+    agentTurnTimeoutSeconds: int
 
 func ServerConfigFromEnv() ServerConfig
     httpPort := env.GetIntOr("HTTP_PORT", 8080) onerr panic "invalid HTTP_PORT: {error}"
     debug := env.GetBoolOr("DEBUG", false) onerr panic "invalid DEBUG: {error}"
+    turnTimeout := env.GetIntOr("TURN_TIMEOUT_SECONDS", constants.TURN_TIMEOUT_SECONDS) onerr panic "invalid TURN_TIMEOUT_SECONDS: {error}"
+    agentTimeout := env.GetIntOr("AGENT_TURN_TIMEOUT_SECONDS", constants.AGENT_TURN_TIMEOUT_SECONDS) onerr panic "invalid AGENT_TURN_TIMEOUT_SECONDS: {error}"
     return ServerConfig{
         httpPort: httpPort,
         staticDir: env.GetOr("STATIC_DIR", ""),
         jwtSecret: env.GetOr("JWT_SECRET_KEY", ""),
         debug: debug,
+        turnTimeoutSeconds: turnTimeout,
+        agentTurnTimeoutSeconds: agentTimeout,
     }
 
 type GameServer
@@ -50,7 +59,7 @@ func NewGameServer(config: ServerConfig) (GameServer, error)
         wsHandler: NewWebSocketHandler(),
         mercure: NewMercurePublisher(mercureCfg),
     }
-    gs.coordinator = NewGameCoordinator()
+    gs.coordinator = NewGameCoordinator(config.turnTimeoutSeconds, config.agentTurnTimeoutSeconds)
     gs.httpHandler = NewHTTPHandler(
         reference of gs.coordinator,
         reference of gs.lobbyMgr,
@@ -69,6 +78,9 @@ func Start on gs: reference GameServer
         reference of gs.mercure,
         reference of gs.httpHandler,
     )
+    # Pass on turns that run out of time, so a stalled player cannot block
+    # the match for everyone else.
+    gs.wsEndpoint.startTurnWatchdog()
     mux := http.NewServeMux()
     gs.registerRoutes(mux)
 

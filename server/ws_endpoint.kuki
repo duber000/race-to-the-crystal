@@ -2,12 +2,14 @@ petiole main
 
 import "net/http"
 import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types"
 import "stdlib/http" as httphelper
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/random"
 import "stdlib/string" as strpkg
+import "time"
 
 import "github.com/gorilla/websocket"
 
@@ -35,6 +37,69 @@ func NewWebSocketEndpoint(coordinator: reference GameCoordinator, lobbyMgr: refe
         mercure: mercure,
         httpHandler: httpHandler,
     }
+
+# Start the watchdog that passes on stalled turns.
+#
+# Without it, a player who stops acting — a disconnected human, or an agent
+# that never replies — blocks the whole match for everyone else.
+func startTurnWatchdog on ep: reference WebSocketEndpoint
+    go
+        for true
+            time.Sleep(time.Second)
+            ep.checkTurnTimeouts()
+
+# Pass on any turn that has run out of time.
+func checkTurnTimeouts on ep: reference WebSocketEndpoint
+    now := time.Now().UnixNano() as float64 / 1e9
+    for _gameId, session in ep.coordinator.activeGames
+        if session.gameState.Phase() isnt enums.PLAYING
+            continue
+        # turnSecondsRemaining returns 0 only when the time is up, and -1
+        # when the turn is not being timed at all.
+        if session.turnSecondsRemaining(now) isnt 0
+            continue
+        ep.timeOutTurn(session)
+
+# Pass on a turn that ran out of time.
+func timeOutTurn on ep: reference WebSocketEndpoint(session: reference GameSession)
+    networkPlayerId := session.turnNetworkPlayerId
+    if networkPlayerId is empty
+        return
+    api, hasApi := session.apiMap[networkPlayerId]
+    if not hasApi
+        return
+
+    gamePid := session.networkToGameId[networkPlayerId]
+    playerName := "Unknown"
+    pRef := session.gameState.GetPlayer(types.PlayerID(gamePid))
+    if pRef isnt empty
+        playerName = pRef.Name()
+
+    log.Info(
+        "Turn timed out for {playerName} ({gamePid}) after {session.currentTurnTimeoutSeconds}s",
+    )
+
+    result := api.EndTurn()
+    if not result.Success
+        return
+
+    timeoutEvent := gamepkg.TurnTimedOut{
+        PlayerID: types.PlayerID(gamePid),
+        PlayerName: playerName,
+        TimeoutSeconds: session.currentTurnTimeoutSeconds,
+    }
+    events := session.recordEvents(result.Data, list of gamepkg.GameEvent{timeoutEvent})
+    ep.wsHandler.BroadcastSessionEvents(session, events)
+    ep.wsHandler.BroadcastSessionState(session)
+
+    # The turn passed to the next player; start their clock.
+    currentNetwork := session.getCurrentNetworkPlayerId()
+    if currentNetwork isnt empty
+        session.beginTurn(currentNetwork)
+
+    if session.isGameOver()
+        ep.broadcastGameWon(session)
+        ep.lobbyMgr.finishGame(session.gameId)
 
 func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Response, request: httphelper.Request)
     conn, err := wsUpgrader.Upgrade(response.Raw(), request.Raw(), empty)
@@ -272,6 +337,9 @@ func handleStartGame on ep: reference WebSocketEndpoint(clientId: string, data: 
         return
     session := ep.coordinator.createSession(lobby)
     ep.lobbyMgr.setGameInProgress(lobby.gameId)
+    # Announce the first turn, so clients know the turn clock and timeout
+    # before the first action.
+    ep.wsHandler.BroadcastSessionEvents(session, session.recordStartEvents())
     ep.broadcastState(session)
     ep.wsHandler.BroadcastToGame(lobby.gameId, JSONMap{
         "type": "START_GAME",

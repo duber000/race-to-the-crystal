@@ -413,6 +413,7 @@ func HandleStartGame on h: reference HTTPHandler(gameId: string, authHeader: str
 
     # Broadcast the same frames the WebSocket path would, so a client sees
     # one state shape whichever transport it used.
+    h.wsHandler.BroadcastSessionEvents(session, session.recordStartEvents())
     h.wsHandler.BroadcastSessionState(session)
     h.wsHandler.BroadcastToGame(gameId, map of string to any{
         "type": "GAME_STARTED",
