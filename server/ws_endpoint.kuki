@@ -84,7 +84,7 @@ func handleClientMessage on ep: reference WebSocketEndpoint(clientId: string, ra
             ep.handleStartGame(clientId, data)
         when "move", "attack", "deploy", "end_turn"
             ep.handleGameAction(clientId, msgType, data)
-        when "sse_fallback_request"
+        when "sse_fallback_request", "resync_state"
             ep.handleStateRequest(clientId)
         when "disconnect"
             ep.handleClientDisconnect(clientId)
@@ -300,10 +300,11 @@ func handleGameAction on ep: reference WebSocketEndpoint(clientId: string, msgTy
         ep.sendInvalidAction(clientId, msgType, "validation failed: {validationErr.message}")
         return
     action := ep.httpHandler.buildGameAction(client.playerId, actionType, normalized)
-    success, message, _result_data := session.executeGameAction(client.playerId, action)
+    success, message, _result_data, events := session.executeGameAction(client.playerId, action)
     if not success
         ep.sendInvalidAction(clientId, msgType, message)
         return
+    ep.broadcastEvents(session, events)
     ep.broadcastState(session)
     if session.isGameOver()
         ep.broadcastGameWon(session)
@@ -327,7 +328,10 @@ func handleStateRequest on ep: reference WebSocketEndpoint(clientId: string)
         "type": "FULL_STATE",
         "game_id": session.gameId,
         "game_state": state,
+        "event_seq": session.eventSeq,
     })
+    # The client resets its event counter to this, so a resync also
+    # repairs a gap in the event stream.
 
 func handleClientDisconnect on ep: reference WebSocketEndpoint(clientId: string)
     client := ep.wsHandler.GetClientByID(clientId)
@@ -361,14 +365,12 @@ func sendInvalidAction on ep: reference WebSocketEndpoint(clientId: string, acti
         "reason": reason,
     })
 
+# Broadcast event frames to the players in the session.
+func broadcastEvents on ep: reference WebSocketEndpoint(session: reference GameSession, events: list of gamepkg.GameEvent)
+    ep.wsHandler.BroadcastSessionEvents(session, events)
+
 func broadcastState on ep: reference WebSocketEndpoint(session: reference GameSession)
-    for nid, gamePid in session.networkToGameId
-        state := session.gameState.ClientStateDict(gamePid)
-        ep.wsHandler.SendToClient(nid, JSONMap{
-            "type": "FULL_STATE",
-            "game_id": session.gameId,
-            "game_state": state,
-        })
+    ep.wsHandler.BroadcastSessionState(session)
 
 func broadcastGameWon on ep: reference WebSocketEndpoint(session: reference GameSession)
     winnerNetworkId := session.getWinnerNetworkId()

@@ -168,15 +168,13 @@ func HandleAction on h: reference HTTPHandler(gameId: string, authHeader: string
         }
 
     action := h.buildGameAction(playerId, actionType, normalized)
-    success, message, resultData := session.executeGameAction(playerId, action)
+    success, message, resultData, events := session.executeGameAction(playerId, action)
 
     if success
-        state := session.getStateDict()
-        h.wsHandler.BroadcastToGame(gameId, map of string to any{
-            "type": "STATE_UPDATE",
-            "game_id": gameId,
-            "state": state,
-        })
+        # Broadcast the same frames the WebSocket path would: the event
+        # stream, then the per-player full state.
+        h.wsHandler.BroadcastSessionEvents(session, events)
+        h.wsHandler.BroadcastSessionState(session)
         if session.isGameOver()
             winnerId := session.getWinnerNetworkId()
             h.wsHandler.BroadcastToGame(gameId, map of string to any{
@@ -211,11 +209,14 @@ func HandleGetState on h: reference HTTPHandler(gameId: string, authHeader: stri
             data: empty map of string to any,
         }
 
-    state := session.getStateDict()
-    gamePid, hasPid := session.networkToGameId[payload.playerId]
+    # The full per-player state, the same shape the WebSocket path sends.
+    # The slim dict has no board, tokens or generators, so a polling client
+    # could never render the game from it.
+    gamePid := ""
+    pidVal, hasPid := session.networkToGameId[payload.playerId]
     if hasPid
-        state["perspective_player_id"] = gamePid
-        state["your_player_id"] = gamePid
+        gamePid = pidVal
+    state := session.gameState.ClientStateDict(gamePid)
 
     return APIResponse{success: true, message: "ok", data: state}
 
@@ -410,11 +411,12 @@ func HandleStartGame on h: reference HTTPHandler(gameId: string, authHeader: str
     session := h.coordinator.createSession(lobby)
     h.lobbyMgr.setGameInProgress(gameId)
 
-    state := session.getStateDict()
+    # Broadcast the same frames the WebSocket path would, so a client sees
+    # one state shape whichever transport it used.
+    h.wsHandler.BroadcastSessionState(session)
     h.wsHandler.BroadcastToGame(gameId, map of string to any{
         "type": "GAME_STARTED",
         "game_id": gameId,
-        "state": state,
     })
 
     return APIResponse{
@@ -422,7 +424,6 @@ func HandleStartGame on h: reference HTTPHandler(gameId: string, authHeader: str
         message: "game started",
         data: map of string to any{
             "game_id": gameId,
-            "state": state,
         },
     }
 

@@ -1,5 +1,6 @@
 petiole main
 
+import "race-to-the-crystal/game" as gamepkg
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/string" as strpkg
@@ -145,3 +146,37 @@ func GetClientByID on wh: reference WebSocketHandler(clientId: string) optional 
     if ok
         return client
     return empty
+
+# Broadcast the per-player full state to everyone in the session.
+#
+# The state is per player because it carries that player's perspective. Both
+# the WebSocket and the HTTP action paths use this, so a client sees the
+# same state shape whichever transport submitted the action.
+func BroadcastSessionState on wh: reference WebSocketHandler(session: reference GameSession)
+    for nid, gamePid in session.networkToGameId
+        state := session.gameState.ClientStateDict(gamePid)
+        wh.SendToClient(nid, JSONMap{
+            "type": "FULL_STATE",
+            "game_id": session.gameId,
+            "game_state": state,
+        })
+
+# Broadcast event frames to the players in the session.
+#
+# Each frame carries a per-session sequence number, so a client can detect a
+# gap in the stream and resynchronise. The frames are sent per player
+# rather than broadcast wholesale, because fog-of-war will need to filter
+# them per viewer.
+func BroadcastSessionEvents on wh: reference WebSocketHandler(session: reference GameSession, events: list of gamepkg.GameEvent)
+    if events is empty
+        return
+    for e in events
+        session.eventSeq = session.eventSeq + 1
+        seq := session.eventSeq
+        for nid, _gamePid in session.networkToGameId
+            wh.SendToClient(nid, JSONMap{
+                "type": "EVENT",
+                "game_id": session.gameId,
+                "seq": seq,
+                "event": gamepkg.EventToDict(e),
+            })

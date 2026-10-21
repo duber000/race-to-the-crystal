@@ -212,6 +212,10 @@ func createLobby on lm: reference LobbyManager(playerId: string, playerName: str
 
     gameId := random.String(16)
     lobby := NewGameLobby(gameId, gameName, playerId, maxPlayers)
+    # A player belongs to one lobby at a time. Leaving any previous lobby
+    # keeps `getPlayerLobby` unambiguous — otherwise a stale lobby can
+    # block the new one from starting.
+    lm.removePlayerFromAll(playerId)
     lobby.addPlayer(playerId, playerName, clientType)
     lm.lobbies[gameId] = reference of lobby
     return lm.lobbies[gameId]
@@ -225,6 +229,9 @@ func joinLobby on lm: reference LobbyManager(gameId: string, playerId: string, p
         return empty
     if lobby.status isnt GameStatus.WAITING
         return empty
+    # A player belongs to one lobby at a time — leaving any previous lobby
+    # keeps `getPlayerLobby` unambiguous.
+    lm.removePlayerFromAll(playerId)
     success := lobby.addPlayer(playerId, playerName, clientType)
     if not success
         return empty
@@ -276,13 +283,25 @@ func listAvailableLobbies on lm: reference LobbyManager list of JSONMap
     return result
 
 func getPlayerLobby on lm: reference LobbyManager(playerId: string) optional reference GameLobby
-    for _, lobby in lm.lobbies
+    # A player can be in more than one lobby — for example after a match
+    # ends without a leave. Prefer a lobby that is still joinable, so that
+    # ready/start act on the right one.
+    for _gameId, lobby in lm.lobbies
+        _, exists := lobby.players[playerId]
+        if not exists
+            continue
+        if lobby.status equals GameStatus.WAITING or lobby.status equals GameStatus.STARTING
+            return lobby
+
+    # Otherwise fall back to any lobby the player is in.
+    for _gameId, lobby in lm.lobbies
         _, exists := lobby.players[playerId]
         if exists
             return lobby
     return empty
 
 func removePlayerFromAll on lm: reference LobbyManager(playerId: string)
-    lobby := lm.getPlayerLobby(playerId)
-    if lobby isnt empty
-        lm.leaveLobby(lobby.gameId, playerId)
+    for _gameId, lobby in lm.lobbies
+        _, exists := lobby.players[playerId]
+        if exists
+            lm.leaveLobby(lobby.gameId, playerId)
