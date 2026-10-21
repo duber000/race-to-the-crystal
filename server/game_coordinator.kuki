@@ -14,7 +14,7 @@ type GameSession
     gameState: gamepkg.GameState
     networkToGameId: map of string to string
     gameToNetworkId: map of string to string
-    lastState: reference map of string to any
+    lastState: reference JSONMap
     apiMap: map of string to gamepkg.GameAPI
 
 func NewGameSession(gameId: string, lobby: reference GameLobby) reference GameSession
@@ -33,15 +33,26 @@ func NewGameSession(gameId: string, lobby: reference GameLobby) reference GameSe
     return reference of session
 
 func initializePlayers on s: reference GameSession(lobby: reference GameLobby)
-    idx := 0
-    for _idx, info in lobby.players
-        gamePid := "player_{idx}"
+    # `lobby.players` is a map, so iterating it directly assigns seats in
+    # random order. Use the lobby's stable join order (colour index) instead,
+    # so a player's seat, colour and corner quadrant never shuffle between
+    # games.
+    for info in lobby.orderedPlayers()
+        gamePid := "player_{info.colorIndex}"
         s.networkToGameId[info.playerId] = gamePid
         s.gameToNetworkId[gamePid] = info.playerId
         api := gamepkg.NewGameAPI(reference of s.gameState, types.PlayerID(gamePid))
         log.Info("initialize_players: api created, api.game_state ref created")
+
+        # Carry the lobby display name into the match. `pRef` is a reference —
+        # calling through it mutates the player the game state holds. (Do not
+        # `dereference` it first: that copies the struct and the rename is
+        # lost.)
+        pRef := s.gameState.GetPlayer(types.PlayerID(gamePid))
+        if pRef isnt empty
+            pRef.SetName(info.playerName)
+
         s.apiMap[info.playerId] = api
-        idx = idx + 1
 
 func executeGameAction on s: reference GameSession(networkPlayerId: string, action: gamepkg.AIAction) (bool, string, gamepkg.ActionResultData)
     _, has := s.networkToGameId[networkPlayerId]
@@ -62,10 +73,10 @@ func executeGameAction on s: reference GameSession(networkPlayerId: string, acti
         return true, result.Message, result.Data
     return false, result.Message, gamepkg.NewEmptyResultData()
 
-func getStateDict on s: reference GameSession map of string to any
+func getStateDict on s: reference GameSession JSONMap
     return s.gameState.ToDict()
 
-func getStateForPlayer on s: reference GameSession(networkPlayerId: string) map of string to any
+func getStateForPlayer on s: reference GameSession(networkPlayerId: string) JSONMap
     return s.gameState.ToDict()
 
 func isGameOver on s: reference GameSession bool
@@ -144,10 +155,10 @@ func removePlayer on gc: reference GameCoordinator(playerId: string) string
 func getActiveGameCount on gc: reference GameCoordinator int
     return len(gc.activeGames)
 
-func listActiveGames on gc: reference GameCoordinator list of map of string to any
-    result := empty list of map of string to any
+func listActiveGames on gc: reference GameCoordinator list of JSONMap
+    result := empty list of JSONMap
     for _game_id, session in gc.activeGames
-        entry := map of string to any{
+        entry := JSONMap{
             "id": session.gameId,
             "name": session.gameName,
             "turn": session.gameState.TurnNumber(),

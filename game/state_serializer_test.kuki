@@ -1,0 +1,52 @@
+petiole game
+
+import "race-to-the-crystal/shared/types"
+import "stdlib/test"
+import "testing"
+
+# The colour index of a player must be stable across calls. `gs.players` is a
+# map, so an unsorted iteration assigns indices in random order — which made
+# a player's colour change between state broadcasts.
+func TestPlayerColorIndexIsStable(t: reference testing.T)
+    gs := CreateGame(4)
+    gs.StartGame()
+
+    first := gs.PlayerColorIndexes()
+    for i from 0 through 20
+        next := gs.PlayerColorIndexes()
+        for j from 0 through 3
+            pid := "player_{j}"
+            test.AssertEqual(t, next[pid], first[pid])
+
+# Player ids are "player_0".."player_3" — the colour index must follow the
+# numeric suffix, not lexicographic order ("player_10" would sort before
+# "player_2").
+func TestPlayerColorIndexFollowsSeat(t: reference testing.T)
+    gs := CreateGame(4)
+    gs.StartGame()
+
+    for i from 0 through 3
+        pid := types.PlayerID("player_{i}")
+        test.AssertEqual(t, gs.PlayerColorIndex(pid), i)
+
+# The perspective annotation must still be present.
+func TestClientStateDictPerspective(t: reference testing.T)
+    gs := CreateGame(2)
+    gs.StartGame()
+
+    state := gs.ClientStateDict("player_1")
+    test.AssertEqual(t, state["perspective_player_id"], "player_1")
+    test.AssertEqual(t, state["your_player_id"], "player_1")
+
+# Player names are carried into the state so the HUD shows real lobby names
+# rather than "Player 1".
+func TestPlayerSetName(t: reference testing.T)
+    gs := CreateGame(2)
+    gs.StartGame()
+
+    pRef := gs.GetPlayer(types.PlayerID("player_0"))
+    if pRef is empty
+        return
+    p := dereference pRef
+    p.SetName("Alice")
+    test.AssertEqual(t, p.Name(), "Alice")

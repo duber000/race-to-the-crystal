@@ -2,6 +2,7 @@ petiole main
 
 import "stdlib/random"
 import "stdlib/regex"
+import "stdlib/sort"
 import "stdlib/string" as strpkg
 
 const MAX_GAME_NAME_LENGTH = 50
@@ -41,9 +42,9 @@ func NewPlayerInfo(playerId: string, playerName: string, clientType: ClientType,
         colorIndex: colorIndex,
     }
 
-func toDict on p: PlayerInfo map of string to any
+func toDict on p: PlayerInfo JSONMap
     ctStr := p.clientType.String()
-    return map of string to any{
+    return JSONMap{
         "player_id": p.playerId,
         "player_name": p.playerName,
         "client_type": ctStr,
@@ -151,22 +152,35 @@ func getAiNeededCount on l: reference GameLobby int
     return l.maxPlayers - len(l.players)
 
 func reassignColors on l: reference GameLobby
+    # Players are stored in a map, so iteration order is random. Sort by the
+    # current colour index (which tracks join order) before re-indexing, or
+    # seats and colours shuffle on every call.
+    ordered := l.orderedPlayers()
     idx := 0
-    for _, info in l.players
+    for info in ordered
         updated := info
         updated.colorIndex = idx
         l.players[info.playerId] = updated
         idx = idx + 1
 
-func getPlayerList on l: reference GameLobby list of map of string to any
-    result := empty list of map of string to any
+# Players in stable join order (by colour index). `l.players` is a map, so
+# raw iteration order is random — never iterate it directly for anything
+# order-dependent.
+func orderedPlayers on l: reference GameLobby list of PlayerInfo
+    infos := empty list of PlayerInfo
     for _, info in l.players
+        infos = append(infos, info)
+    return sort.ByKey(infos, (p: PlayerInfo) => p.colorIndex)
+
+func getPlayerList on l: reference GameLobby list of JSONMap
+    result := empty list of JSONMap
+    for info in l.orderedPlayers()
         result = append(result, info.toDict())
     return result
 
-func toDict on l: GameLobby map of string to any
+func toDict on l: GameLobby JSONMap
     statusStr := l.status.String()
-    return map of string to any{
+    return JSONMap{
         "game_id": l.gameId,
         "game_name": l.gameName,
         "host_player_id": l.hostPlayerId,
@@ -254,8 +268,8 @@ func finishGame on lm: reference LobbyManager(gameId: string) bool
     lobby.status = GameStatus.FINISHED
     return true
 
-func listAvailableLobbies on lm: reference LobbyManager list of map of string to any
-    result := empty list of map of string to any
+func listAvailableLobbies on lm: reference LobbyManager list of JSONMap
+    result := empty list of JSONMap
     for _, lobby in lm.lobbies
         if lobby.status equals GameStatus.WAITING and len(lobby.players) < lobby.maxPlayers
             result = append(result, lobby.toDict())

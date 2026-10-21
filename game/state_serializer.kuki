@@ -2,8 +2,20 @@ petiole game
 
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
+import "stdlib/maps"
+import "stdlib/parse"
+import "stdlib/sort"
+import "strings"
 
 type StateDict = map of string to any
+
+# Numeric seat index of a game player id ("player_2" -> 2). Player ids that
+# do not follow the pattern sort as 0.
+func playerIdIndex(pid: string) int
+    if not strings.HasPrefix(pid, "player_")
+        return 0
+    suffix := strings.TrimPrefix(pid, "player_")
+    return parse.IntOr(suffix, 0)
 
 # Wire format for crystal effects: numeric, matching the frontend's
 # CRYSTAL_EFFECT mapping (FOG_OF_WAR=1 .. SPEED_BOOST=4).
@@ -113,14 +125,45 @@ func effectsToDict on m: reference CrystalEffectsManager(mapOfPlayers: map of ty
         playerEffects[pid as string] = StateDict{"active_effects": active}
     return StateDict{"player_effects": playerEffects}
 
+# Game player ids in stable seat order. `gs.players` is a map, so raw
+# iteration order is random — always use this for anything order-dependent
+# (colour index, seat order, player listing).
+func orderedPlayerIds on gs: reference GameState list of types.PlayerID
+    return sort.ByKey(maps.Keys(gs.players), (pid: types.PlayerID) => playerIdIndex(pid as string))
+
+# Colour index per player id, in seat order. This is the single source of
+# truth for the "color_index" field in the client state dict — the mapping
+# must never depend on map iteration order, or a player's colour would
+# change between broadcasts.
+func PlayerColorIndexes on gs: reference GameState map of string to int
+    result := empty map of string to int
+    idx := 0
+    for pid in gs.orderedPlayerIds()
+        result[pid as string] = idx
+        idx = idx + 1
+    return result
+
+# Colour index of a single player, or -1 if the player does not exist.
+func PlayerColorIndex on gs: reference GameState(playerId: types.PlayerID) int
+    indexes := gs.PlayerColorIndexes()
+    idx, has := indexes[playerId as string]
+    if not has
+        return -1
+    return idx
+
 # Full client-facing state dict. `perspective` is the game player id
 # ("player_0") to annotate the state with; pass "" to omit.
 func ClientStateDict on gs: reference GameState(perspective: string) StateDict
     playersMap := empty map of string to StateDict
-    idx := 0
-    for pid, p in gs.players
-        playersMap[pid as string] = playerToDict(p, idx)
-        idx = idx + 1
+    # `gs.players` is a map, so iterating it directly assigns colour indices
+    # in random order — the player's colour would change between broadcasts.
+    # Sort by the numeric player id ("player_0", "player_1", ...) instead.
+    colorIndexes := gs.PlayerColorIndexes()
+    for pid in gs.orderedPlayerIds()
+        pRef := gs.GetPlayer(pid)
+        if pRef is empty
+            continue
+        playersMap[pid as string] = playerToDict(pRef, colorIndexes[pid as string])
 
     tokensMap := empty map of string to StateDict
     for tid, t in gs.tokens

@@ -29,6 +29,12 @@ func tokenCount on p: reference Player int
 func Name on p: reference Player string
     return p.name
 
+# Set the player's display name. The server uses this to carry the lobby
+# name (e.g. "Alice", or an agent's model name) into the match, so the HUD
+# and the agent comms show real names instead of "Player 1".
+func SetName on p: reference Player(playerName: string)
+    p.name = playerName
+
 func ID on p: reference Player types.PlayerID
     return p.id
 
