@@ -183,7 +183,10 @@ func ClientStateDict on gs: reference GameState(perspective: string) StateDict
 
     gens := empty list of StateDict
     for g in gs.generators
-        gens = append(gens, generatorToDict(g))
+        d := generatorToDict(g)
+        _, count := gs.dominantTokensOnCell(g.position)
+        d["tokens_present"] = count
+        gens = append(gens, d)
 
     result := StateDict{
         "board": boardToDict(reference of gs.board),
@@ -202,6 +205,8 @@ func ClientStateDict on gs: reference GameState(perspective: string) StateDict
     if crys isnt empty
         crystalDict := crystalToDict(crys)
         crystalDict["tokens_required"] = gs.CrystalTokensRequired()
+        _, count := gs.dominantTokensOnCell(crys.position)
+        crystalDict["tokens_present"] = count
         result["crystal"] = crystalDict
     if gs.lastTriggeredCrystalEffect isnt empty
         ev := dereference gs.lastTriggeredCrystalEffect

@@ -67,8 +67,48 @@ func TestGeneratorOutOfViewMasksTheCaptureProgress(t: reference testing.T)
     test.AssertEqual(t, gen["tokens_present"], 0)
     test.AssertEqual(t, gen["capturing_player_id"], "")
 
-# The crystal shows how many tokens it needs and how many turns the
-# capture takes.
+# The token count is live: a token standing on the generator is counted
+# before the capture has been updated by an end turn. The capture only
+# advances on an end turn, but the player wants to know what is on the
+# cell right now.
+func TestGeneratorTokenCountIsLive(t: reference testing.T)
+    gs := newObjectiveGame()
+    gen := gs.generators[0]
+
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+    test.AssertEqual(t, generatorDict(state, 0)["tokens_present"], 0)
+
+    placeObjectiveToken(gs, types.TokenID(0), gen.position.X, gen.position.Y)
+    state = gs.VisibleStateDict(types.PlayerID("player_0"))
+    test.AssertEqual(t, generatorDict(state, 0)["tokens_present"], 1)
+
+    placeObjectiveToken(gs, types.TokenID(1), gen.position.X, gen.position.Y)
+    state = gs.VisibleStateDict(types.PlayerID("player_0"))
+    test.AssertEqual(t, generatorDict(state, 0)["tokens_present"], 2)
+
+# A contested cell -- one token each -- is not being captured by anyone,
+# so the count is zero.
+func TestContestedCellHasNoTokenCount(t: reference testing.T)
+    gs := newObjectiveGame()
+    gen := gs.generators[0]
+
+    placeObjectiveToken(gs, types.TokenID(0), gen.position.X, gen.position.Y)
+    placeObjectiveToken(gs, types.TokenID(20), gen.position.X, gen.position.Y)
+
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+    test.AssertEqual(t, generatorDict(state, 0)["tokens_present"], 0)
+
+# The crystal's token count is live too.
+func TestCrystalTokenCountIsLive(t: reference testing.T)
+    gs := newObjectiveGame()
+    crys := gs.crystalInstance
+    if crys is empty
+        return
+    placeObjectiveToken(gs, types.TokenID(0), crys.position.X, crys.position.Y)
+
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+    test.AssertEqual(t, crystalDict(state)["tokens_present"], 1)
+
 func TestCrystalShowsTheCaptureRequirements(t: reference testing.T)
     gs := newObjectiveGame()
     state := gs.VisibleStateDict(types.PlayerID("player_0"))

@@ -349,6 +349,26 @@ func triggerRandomCrystalEffect on gs: reference GameState() (types.PlayerID, en
     gs.lastTriggeredCrystalEffect = reference of CrystalEvent{playerId: targetPlayer, effectType: effect}
     return targetPlayer, effect, true
 
+# The player with the most tokens on a cell, and how many they have.
+#
+# This is the *live* count, not the snapshot the capture status was last
+# updated with: the capture only advances on an end turn, but a player
+# wants to know what is on the cell right now. A tie is contested, so
+# nobody is winning it and the count is zero.
+func dominantTokensOnCell on gs: reference GameState(pos: types.Position) (types.PlayerID, int)
+    counts := empty map of types.PlayerID to list of types.TokenID
+    for _, t in gs.tokens
+        if t.isAlive and t.isDeployed and t.position equals pos
+            ids := counts[t.playerId]
+            if ids is empty
+                ids = empty list of types.TokenID
+            ids = append(ids, t.id)
+            counts[t.playerId] = ids
+    player, count, found := findDominantPlayer(counts)
+    if not found
+        return types.PlayerID(""), 0
+    return player, count
+
 # How many tokens the crystal needs before it can be captured: the base
 # requirement, less two for every generator that has fallen.
 #

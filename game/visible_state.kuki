@@ -117,8 +117,9 @@ func visibleBoardToDict(b: reference Board, visibleIds: map of int to bool) Stat
 # The capture requirements are rules, not secrets, so they are always
 # shown: the client draws the capture progress from them and must not
 # have to know the numbers itself.
-func visibleGeneratorToDict(g: Generator, inView: bool) StateDict
+func visibleGeneratorToDict(g: Generator, inView: bool, tokensPresent: int) StateDict
     d := generatorToDict(g)
+    d["tokens_present"] = tokensPresent
     if not inView
         d["capturing_player_id"] = ""
         d["capture_token_ids"] = empty list of int
@@ -129,9 +130,10 @@ func visibleGeneratorToDict(g: Generator, inView: bool) StateDict
 # A crystal dict. Its position is the objective, so it is always shown;
 # who holds it and how far along the capture is only shown when the viewer
 # can see it.
-func visibleCrystalToDict(c: reference Crystal, inView: bool, tokensRequired: int) StateDict
+func visibleCrystalToDict(c: reference Crystal, inView: bool, tokensRequired: int, tokensPresent: int) StateDict
     d := crystalToDict(c)
     d["tokens_required"] = tokensRequired
+    d["tokens_present"] = tokensPresent
     if not inView
         d["holding_player_id"] = ""
         d["controlling_player_id"] = ""
@@ -217,7 +219,8 @@ func VisibleStateDict on gs: reference GameState(viewer: types.PlayerID) StateDi
     gens := empty list of StateDict
     for g in gs.generators
         inView := cellIsVisible(cells, g.position.X, g.position.Y)
-        gens = append(gens, visibleGeneratorToDict(g, inView))
+        _, count := gs.dominantTokensOnCell(g.position)
+        gens = append(gens, visibleGeneratorToDict(g, inView, count))
 
     result := StateDict{
         "board": visibleBoardToDict(reference of gs.board, visibleIds),
@@ -236,7 +239,8 @@ func VisibleStateDict on gs: reference GameState(viewer: types.PlayerID) StateDi
     crys := gs.crystalInstance
     if crys isnt empty
         inView := cellIsVisible(cells, crys.position.X, crys.position.Y)
-        result["crystal"] = visibleCrystalToDict(crys, inView, gs.CrystalTokensRequired())
+        _, count := gs.dominantTokensOnCell(crys.position)
+        result["crystal"] = visibleCrystalToDict(crys, inView, gs.CrystalTokensRequired(), count)
     if gs.lastTriggeredCrystalEffect isnt empty
         ev := dereference gs.lastTriggeredCrystalEffect
         result["last_triggered_crystal_effect"] = list of any{
