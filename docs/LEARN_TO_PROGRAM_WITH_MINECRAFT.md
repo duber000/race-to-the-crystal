@@ -31,6 +31,27 @@ The follow-up became the **learn-to-program course** in this repo:
 - Tutorials live in this repo so scripts import the game package directly
   and are covered by `make learn-check` / `make learn-test`.
 
+**Visibility — the learner layer is deliberately omniscient.** Network
+clients (the browser, the `client/ai/` bot, and any agent seat) play under
+fog of war: a player sees the terrain, its own tokens, and enemy tokens
+within a radius of three cells of one of its own tokens. The `learn/`
+layer does **not** apply that mask. `api.Board()`, `api.Observe()` and
+`api.Actions()` are computed from the true game state, so a learner sees
+every enemy token and its health.
+
+That is on purpose. The tutorials reason about enemy positions and attack
+targets (`08-reading-the-game`, `10-strategy-ladder`), and `Actions()` is
+derived from the true state, so masking it here would leave a learner being
+told to attack a token it cannot see. The same applies to the in-process
+AI that plays the opponent in `learn/simulation.kuki`: it plays with perfect
+information.
+
+The consequence to keep in mind is that the two AI clients play to
+different information regimes. The networked `client/ai/` bot is fogged;
+the in-process simulation AI is not. If the in-process AI is ever promoted
+to a networked seat, it must observe through the same fog filter to stay
+fair.
+
 **Side fix:** implementing the simulation surfaced a game bug —
 `_auto_deploy_starting_tokens` mutated copies from the reserve slice
 instead of the tokens in `GameState.tokens`, so starting tokens occupied

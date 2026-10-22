@@ -243,6 +243,15 @@ pick the first player to move. Map iteration order is random, so:
 seat order used elsewhere), so token ids, the starting player, and the
 corner quadrants are all consistent in every game.
 
+> **Follow-up (see §4.0.1, defect 2).** `StartGame` was fixed, but the *rotation* was not:
+> `getActivePlayers` still iterated `gs.players`, so the turn order after the first turn was
+> random and the turn counter advanced only when the random rotation landed on seat 0. The
+> rotation now also walks `orderedPlayerIds()`.
+>
+> Note that the turn number is a **round** counter, not a per-turn counter: it advances once per
+> full cycle of the seats, so with four players the HUD shows the same number for four
+> consecutive turns.
+
 ### 2.17 A player could be in two lobbies, and the stale one blocked the new game
 
 `LobbyManager.getPlayerLobby` returned the *first* lobby containing the
@@ -379,6 +388,13 @@ enum GameEvent
         TurnNumber: int
         CurrentPlayerID: types.PlayerID
         TurnPhase: string
+        # How long the new player has to complete this turn, so the client
+        # can show a countdown without asking the server.
+        TurnTimeoutSeconds: int
+    TurnTimedOut
+        PlayerID: types.PlayerID
+        PlayerName: string
+        TimeoutSeconds: int
     RadioChatter
         PlayerID: types.PlayerID
         PlayerName: string
@@ -590,7 +606,7 @@ Estimated: 3–5 days. Nothing in Phases 1–4 is verifiable until this is done.
 | 0.1 Instantiate the input controller | **Done** | Also fixed the mobile Deploy button, which called a façade method that does not exist. |
 | 0.2 Reconcile the HUD with the template | **Done** | Rewrote `updateHUD` against the real ids; ported the crystal-effects panel out of the dead file; deleted `game_client.ui.js`; added a crystal-status line and the click-to-copy game ID. |
 | 0.3 Fix the crystal-effects module | **Done** | Converted to an ES module importing the constants; deleted the duplicate local `CrystalEffect` map. |
-| 0.4 Server-side event stream | **Done** | `game/game_events.kuki` (9 event types), `EVENT` frames with a per-session `seq`, per-player broadcast, client-side gap detection and resync. |
+| 0.4 Server-side event stream | **Done** | `game/game_events.kuki` (10 event types), `EVENT` frames with a per-session `seq`, per-player broadcast, client-side gap detection and resync. |
 | 0.5 Unify the HTTP and WS state paths | **Done** | Both paths now broadcast the same per-player full state and the same event frames. `GET /state` returns the full state, not the slim dict. |
 | 0.6 Fix the phantom-client bug | **Done** | The HTTP path is the *agent* path: it now labels seats `HTTP_AI` (so they get the agent turn timeout) and registers no phantom WebSocket client. HTTP players are poll-only by design. |
 | 0.7 Deterministic seats and colours | **Done** | Extended to token ownership and the starting player (§2.16), lobby membership (§2.17), and player names (§2.14). |
@@ -812,6 +828,62 @@ Plus a manual browser checklist:
 - [ ] An attack visibly moves the token and updates health **without** a page reload.
 - [ ] With fog on: a second browser in a separate seat cannot see the first player's tokens, and
       neither can see the other's via `board.grid[].occupants`.
+- [ ] **A match can be played to completion**, and the win is announced — the crystal is
+      captured, the game reaches `ENDED`, a `GAME_ENDED` event is delivered, and the turn does
+      not pass on to the loser.
+
+> **The last item was missing from this checklist when Phase 0 was closed out, and its absence
+> hid a game-breaking bug.** The checklist verified the *plumbing* — the wire protocol, the
+> HUD, the event stream — but never the *win condition*. A crystal-capture bug (see §4.0.1) had
+> been present since the Kukicha 0.84 migration and survived every unit test, because the
+> crystal tests exercised `Crystal` in isolation and never through `GameState`. Any phase whose
+> deliverable is "watch a match play out" — Phase 2's spectator, the replay scrubber, the AI
+> arena — would have inherited it. **Add a "play a match to completion" item to every phase's
+> exit gate that involves a match actually finishing.**
+
+### 4.0.1 Defects found after Phase 0 was closed out
+
+Phase 0 was marked done on 2026-10-21 on the strength of the unit tests and the browser
+checklist above. A later audit — driven by actually playing a match rather than by reading the
+code — found seven more defects, six of which were live in the shipped build. All are now
+fixed.
+
+| # | Defect | Impact | Fix |
+|---|---|---|---|
+| 1 | **The crystal could never be captured.** `updateGeneratorsAndCrystal` read the crystal with `dereference`, which copies the struct. `updateCaptureStatus` has a pointer receiver, so `turnsHeld` was written to the copy and discarded. The capture requirement was never met and `phase` never became `ENDED`. | **Game-breaking.** The game could not be won — by the browser client, the desktop client, the AI client or the `learn/` simulation. | Call through the reference. `game/crystal_state_test.kuki` covers the integration path through `GameState`; it fails against the old code. |
+| 2 | **The turn rotation and the turn counter were random.** `getActivePlayers` iterated `gs.players`, a Go map. The rotation jumped between seats at random and the counter advanced only when the random rotation landed on seat 0 — measured `{1: 95, 2: 21, 3: 4}` over 40 four-player games. | The HUD's turn counter was wrong for most of a match, and the turn order shuffled between games. | Build the list from `orderedPlayerIds()`. `TestTurnRotationFollowsSeatOrder` pins the rotation. |
+| 3 | **`make server` (and `desktop`, `ai-client`, `web-server`) failed after `make test`.** `kukicha brew` writes `main.go` without the `// Generated by Kukicha` header; `kukicha build` refuses to overwrite a file without it. Only `make build` ran `clean-generated`. | The documented build commands broke depending on what ran before them. `make web-server-run` also exec'd `./web_server`, a directory. | Run `clean-generated` in every build target. |
+| 4 | **A mystery-square teleport desynced the board's occupant lists.** The teleport moved the token without moving its occupant entry. | The mystery square kept a stale occupant forever (so it could never be occupied again) and the token's new cell listed no occupants. | Move the occupant entry with the token. `mystery_square_test.kuki` covers it. |
+| 5 | **The `GameEnded` event was declared but never produced.** `EventsForAction` only emitted `TurnChanged` for an end-turn. | The event stream — the log the replay scrubber and spectator read from — had no end marker. | Derive `GameEnded` from the game state when the match is over. The turn also stops rotating at that point, so the loser does not get a turn. |
+| 6 | **The browser refused a legal move.** The client computed its own set of legal moves and treated *any* occupied cell as blocked, while the server only blocks enemy tokens and friendly tokens on normal cells. | **Game-breaking.** The generator capture needs two tokens on one cell and the crystal capture up to twelve, so the browser could never stack a second token and the match could not be won from the browser. The desktop client was unaffected — it asks the game package for the legal actions. | Follow the server's rule in `calculateValidMoves`. |
+| 7 | **The `GAME_WON` message was never handled.** The client had a handler for it, but the network manager had no case for the message type, so every win logged "Unknown message type: GAME_WON". | The winner was never named in the browser. | Add the case and the handler. |
+
+Two of these were invisible to the Phase 0 checklist because it never ran a match to completion
+and never rebuilt the server after changing game logic. Both are now covered by tests that fail
+against the old code.
+
+**How the match was finally played to completion.** The browser has no test harness, so the
+verification was scripted: a driver in the page walks tokens onto the generators to disable
+them, then parks four tokens on the crystal and holds them there. The run below took ~90 turns
+and produced: all four generators disabled, the crystal captured, `phase = ENDED`,
+`winner = player_0`, a `GAME_ENDED` event on both clients, a `GAME_WON` message naming the
+winner, and exactly 100 confetti meshes (the victory effect firing once, not twice).
+
+**The general lesson, and what to watch for in later phases.** Two of these defects — the
+crystal capture and the move rules — were the *same kind* of bug: the rule was implemented
+twice, in two places, and the copies drifted. The crystal was copied with `dereference`; the
+move rules were re-implemented in JavaScript. In both cases the authoritative copy was right
+and the second copy was wrong, and in both cases the second copy was the one the player
+touched.
+
+So the rule for the rest of the roadmap is: **the browser must not re-implement game rules.**
+Every place the client decides what is legal, allowed or possible is a place that can drift
+from the server and silently make the game unwinnable. When Phase 1 starts adding client-side
+overlays and Phase 2 adds agent seats, the legal-action list should come from the game package
+(`game/ai_actions.kuki` already produces it — the desktop client uses it) rather than being
+computed again in JavaScript. The threat overlays in §1.4 are the obvious candidate: they are
+a *projection* of the rules, not a copy of them, and they must be checked against the same
+source.
 
 ---
 
