@@ -366,6 +366,11 @@ class NetworkManager {
         this._handleEvent(data);
         break;
 
+      case "GAME_WON":
+      case "game_won":
+        this.handleGameWon(data);
+        break;
+
       case "STATE_UPDATE":
       case "state_update":
         this._handleStateUpdate(data.data || data);
@@ -524,6 +529,18 @@ class NetworkManager {
     this.currentGameId = null;
     this.connectionState = STATE.CONNECTED;
     this.emit("lobby_left");
+  }
+
+  /**
+   * The match is over. The winner is named here, so the browser can say
+   * who won rather than just playing the victory effect.
+   */
+  handleGameWon(data) {
+    console.log(`Game won by ${data.winner_name}`);
+    this.emit("game_won", {
+      winner_id: data.winner_id,
+      winner_name: data.winner_name,
+    });
   }
 
   handleUnknownMessage(data) {
