@@ -809,11 +809,25 @@ class InputController {
                         !visited.has(key)
                     ) {
                         const tokenAt = this.getTokenAt(nx, ny);
-                        if (!tokenAt) {
-                            visited.add(key);
-                            validMoves.add(key);
-                            queue.push([[nx, ny], distance + 1]);
+                        if (tokenAt) {
+                            // An enemy token always blocks the cell. A
+                            // friendly token blocks it too, *unless* the
+                            // cell is a generator or the crystal: the
+                            // server lets friendly tokens stack on those,
+                            // and both the generator capture (two tokens)
+                            // and the crystal capture (up to twelve) need
+                            // several tokens on one cell. Without this the
+                            // browser could never stack a second token and
+                            // the match could never be won.
+                            const isFriendly =
+                                tokenAt.player_id === this.gameClient.localPlayerId;
+                            if (!isFriendly || !this.isStackableCell(nx, ny)) {
+                                continue;
+                            }
                         }
+                        visited.add(key);
+                        validMoves.add(key);
+                        queue.push([[nx, ny], distance + 1]);
                     }
                 }
             }
@@ -878,6 +892,23 @@ class InputController {
             }
         }
         return null;
+    }
+
+    /**
+     * Whether friendly tokens may share this cell.
+     *
+     * The server only lets two of your own tokens stand on the same cell
+     * when that cell is a generator or the crystal — both captures need
+     * several tokens on one cell. Cell types: 1 = generator, 2 = crystal.
+     */
+    isStackableCell(gridX, gridY) {
+        const state = this.gameClient.gameState;
+        if (!state || !state.board || !state.board.grid) return false;
+        const row = state.board.grid[gridY];
+        if (!row) return false;
+        const cell = row[gridX];
+        if (!cell) return false;
+        return cell.cell_type === 1 || cell.cell_type === 2;
     }
 
     isOurToken(tokenId) {
