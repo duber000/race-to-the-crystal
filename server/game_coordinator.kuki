@@ -7,6 +7,7 @@ import "race-to-the-crystal/shared/types"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/maps"
+import "sync"
 import "time"
 
 type GameSession
@@ -37,10 +38,16 @@ type GameSession
     # The configured timeouts for this session.
     defaultTurnTimeoutSeconds: int
     defaultAgentTurnTimeoutSeconds: int
+    # Serialises actions on this session. Two actions arriving at once (a
+    # fast client, or the watchdog ending a stalled turn while a player
+    # acts) must not interleave on the shared game state.
+    actionMu: sync.Mutex
 
 func NewGameSession(gameId: string, lobby: reference GameLobby, turnTimeoutSeconds: int, agentTurnTimeoutSeconds: int) reference GameSession
     gs := gamepkg.CreateGame(len(lobby.players))
-    session := GameSession{
+    # Built as a reference from the start: the session holds a mutex, and
+    # copying the struct would copy the lock.
+    session := reference of GameSession{
         gameId: gameId,
         gameName: lobby.gameName,
         gameState: gs,
@@ -58,6 +65,7 @@ func NewGameSession(gameId: string, lobby: reference GameLobby, turnTimeoutSecon
         defaultTurnTimeoutSeconds: turnTimeoutSeconds,
         defaultAgentTurnTimeoutSeconds: agentTurnTimeoutSeconds,
     }
+
     session.initializePlayers(lobby)
     session.gameState.StartGame()
     # Baseline the objective state so the first action does not report every
@@ -65,7 +73,7 @@ func NewGameSession(gameId: string, lobby: reference GameLobby, turnTimeoutSecon
     session.objectiveState = gamepkg.ObjectiveStateOf(reference of session.gameState)
     # The first turn starts ticking now.
     session.beginTurn(session.getCurrentNetworkPlayerId())
-    return reference of session
+    return session
 
 func initializePlayers on s: reference GameSession(lobby: reference GameLobby)
     # `lobby.players` is a map, so iterating it directly assigns seats in
@@ -122,6 +130,10 @@ func turnSecondsRemaining on s: reference GameSession(now: float64) int
     return remaining
 
 func executeGameAction on s: reference GameSession(networkPlayerId: string, action: gamepkg.AIAction) (bool, string, gamepkg.ActionResultData, list of gamepkg.GameEvent)
+    # Serialise: two actions must not interleave on the shared game state.
+    s.actionMu.Lock()
+    defer s.actionMu.Unlock()
+
     _, has := s.networkToGameId[networkPlayerId]
     if not has
         return false, "Player not in game", gamepkg.NewEmptyResultData(), empty list of gamepkg.GameEvent

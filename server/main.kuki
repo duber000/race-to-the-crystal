@@ -81,6 +81,9 @@ func Start on gs: reference GameServer
     # Pass on turns that run out of time, so a stalled player cannot block
     # the match for everyone else.
     gs.wsEndpoint.startTurnWatchdog()
+    # Restrict which origins may open a WebSocket. Empty allows any, which
+    # is the default for a local server.
+    setAllowedWsOrigins(env.GetOr("WS_ALLOWED_ORIGINS", ""))
     mux := http.NewServeMux()
     gs.registerRoutes(mux)
 

@@ -9,6 +9,7 @@ import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/random"
 import "stdlib/string" as strpkg
+import "strings"
 import "time"
 
 import "github.com/gorilla/websocket"
@@ -19,8 +20,38 @@ var wsUpgrader = websocket.Upgrader{
     CheckOrigin: checkWsOrigin,
 }
 
+# Origins allowed to open a WebSocket. Empty means "any origin", which is
+# the default for a local server; set WS_ALLOWED_ORIGINS in a deployment to
+# lock it down.
+var allowedWsOrigins: list of string = empty list of string
+
+# Restrict the WebSocket to a set of origins. An empty list allows any.
+func setAllowedWsOrigins(origins: string)
+    allowedWsOrigins = empty list of string
+    if origins is empty
+        return
+    for part in strings.Split(origins, ",")
+        trimmed := strings.TrimSpace(part)
+        if trimmed isnt empty
+            allowedWsOrigins = append(allowedWsOrigins, trimmed)
+
 func checkWsOrigin(r: reference http.Request) bool
-    return true
+    origin := r.Header.Get("Origin")
+
+    # A request with no Origin is not a browser — the AI client, curl and
+    # the Go tests all connect without one.
+    if origin is empty
+        return true
+
+    if allowedWsOrigins is empty
+        return true
+
+    for allowed in allowedWsOrigins
+        if origin equals allowed
+            return true
+
+    log.Warn("Rejected WebSocket connection from origin {origin}")
+    return false
 
 type WebSocketEndpoint
     coordinator: reference GameCoordinator
@@ -62,6 +93,17 @@ func checkTurnTimeouts on ep: reference WebSocketEndpoint
 
 # Pass on a turn that ran out of time.
 func timeOutTurn on ep: reference WebSocketEndpoint(session: reference GameSession)
+    # The same lock the action path takes: a timed-out turn and a player's
+    # action must not interleave on the shared game state.
+    session.actionMu.Lock()
+    defer session.actionMu.Unlock()
+
+    # Re-check under the lock: the player may have acted while we waited
+    # for it.
+    now := time.Now().UnixNano() as float64 / 1e9
+    if session.turnSecondsRemaining(now) isnt 0
+        return
+
     networkPlayerId := session.turnNetworkPlayerId
     if networkPlayerId is empty
         return
@@ -106,6 +148,9 @@ func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Res
     if err isnt empty
         log.Warn("WebSocket upgrade failed: {err}")
         return
+    # Enforce a cap on the messages a client may send. Without it a client
+    # could stream an arbitrarily large frame at the server.
+    conn.SetReadLimit(MAX_MESSAGE_SIZE)
     clientId := random.String(16)
     client := NewWSClient(clientId)
     client.conn = conn
@@ -358,6 +403,14 @@ func handleGameAction on ep: reference WebSocketEndpoint(clientId: string, msgTy
     if session is empty
         ep.sendError(clientId, "Not in a game")
         return
+
+    # The WebSocket path was unlimited while the HTTP path was rate
+    # limited, so a client could flood the server with actions.
+    actionAllowed := ep.httpHandler.rateLimiter.CheckAction(client.playerId)
+    if not actionAllowed
+        ep.sendInvalidAction(clientId, msgType, "rate limit exceeded")
+        return
+
     actionType := gamepkg.ParseActionType(strpkg.ToUpper(msgType)) onerr
         ep.sendInvalidAction(clientId, msgType, "unknown action type")
         return
