@@ -892,6 +892,8 @@ source.
 Depends on Phase 0.4 (event stream) and 0.11 (fog — all of Phase 1 draws over the final state
 shape, and the threat overlays in 1.4 must respect masked tokens).
 
+**Status: §1.4 is done (§1.4.1). §1.1–1.3 and §1.5 are not started.**
+
 ### 1.1 Screen shake, impact particles, floating combat text
 
 **New file `web_server/static/renderer.fx.js`** (a `Renderer3D.prototype` side-effect module,
@@ -993,6 +995,8 @@ actually alive.
 
 ### 1.4 Tactical telegraphing and threat overlays
 
+**Status: done (2026-10-21).** See §1.4.1 for what was built and where the plan was wrong.
+
 Extend `web_server/static/renderer.indicators.js` (already has hover / valid-move / valid-attack
 ground quads). Add:
 
@@ -1007,6 +1011,36 @@ ground quads). Add:
 
 These are pure client-side projections over state the client already has — the cheapest and
 highest-value slice of Phase 1. Ship them **first**, before 1.1–1.3.
+
+### 1.4.1 What was built, and where the plan was wrong
+
+The plan's framing of 1.4 as "pure client-side projections over state the client already has" is
+where it goes wrong, and it is the same mistake the last two game-breaking defects were. The
+browser cannot re-implement the rules: the moment it does, the copy the player touches is the one
+that drifts, and the failure is silent. So the *data* is computed by the game package and the
+client only draws it.
+
+| Item | Plan | What was built |
+|---|---|---|
+| Threat tiles on hover | Client checks the 8 neighbours of the hovered cell against visible enemy tokens. | The game package computes a **threat map** — cell → the ids of the enemy tokens that can attack it — and sends it in the state. The map uses the token's own adjacency rule, so it cannot drift from the combat code. Only enemy tokens the viewer can see are included, and only the cells the viewer can see are mapped. The client rings the threatening tokens and marks the cell. |
+| Generator control radius | "The radius in which a player controls it." | **There is no such rule in the game.** A generator is captured by standing on it; the only thing generators affect is the crystal's token requirement. The item was dropped rather than inventing a mechanic. |
+| Crystal progress arc | A progress arc on the crystal. | A **capture progress indicator** on every generator and the crystal: two rings of pips, the inner one for the turns of the capture and the outer one for the tokens it needs, lit as they arrive. Rings rather than a filled arc, because the objective's own mesh stands on the cell and hides anything drawn under it. |
+
+The requirements themselves (`tokens_required`, `turns_required`) are sent by the game package
+rather than hard-coded in the browser, so the crystal's falling requirement — two tokens per
+generator that has fallen — is a number the client is told, not one it works out.
+
+**The token count had to be live.** The first implementation reported the capture snapshot from
+the last end turn, so a player standing a token on a generator was told "0 of 2" until the turn
+ended. The capture only advances on an end turn, but the player wants to know what is on the
+cell right now, so `dominantTokensOnCell` counts the tokens as they stand. A cell with one token
+of each player is contested, so nobody is winning it and the count is zero — which is what the
+capture rules say.
+
+**Verified in a browser**, against a live server: hovering a cell adjacent to a visible enemy
+token rings that token in red and marks the cell; hovering a safe cell marks nothing; the pips
+light and dim as a capture progresses, and a generator that falls drops its indicator. The
+server side is covered by `game/threat_map_test.kuki` and `game/objective_progress_test.kuki`.
 
 ### 1.5 Mobile- and low-end-safe budgets
 
@@ -1414,7 +1448,7 @@ make lint
 | `web_server/static/game_client.crystal_effects.js` | 0.3 | Convert to an ES module; import constants. |
 | `web_server/static/network_manager.js` | 0.4 | Handle `EVENT` frames; seq-based ordering; resync. |
 | `web_server/static/renderer.animations.js` | 0.3, 1.1 | Fix dead crystal-mesh pulses; hook trauma update. |
-| `web_server/static/renderer.indicators.js` | 1.4 | Threat tiles, generator radius, crystal path. |
+| `web_server/static/renderer.indicators.js` | 1.4 | Threat tiles on hover; the objective capture progress rings. |
 | `web_server/static/renderer.fx.js` | 1.1 | **New.** Trauma shake, particle bursts, floating combat text. |
 | `web_server/static/game_client.renderer.js` | 1.1 | Import `renderer.fx.js`. |
 | `web_server/static/camera_controller.js` | 1.2 | Focus system, follow mode, user-input cancellation. |
@@ -1431,8 +1465,11 @@ make lint
 | `game/game_state.kuki` | 0.7 | `StartGame` walks the seat order, so token ownership and the first turn are deterministic. |
 | `game/player.kuki` | 0.9 | `turnTimeoutSeconds` + accessors — the timeout is a property of the player. |
 | `game/visible_state.kuki` | 0.11 | **New.** `VisibleStateDict` (fog of war, unconditional). |
+| `game/visible_state.kuki` | 1.4 | The threat map: cell → the enemy tokens that can attack it. |
+| `game/threat_map_test.kuki` | 1.4 | **New.** The threat map, and that it says nothing about the dark. |
+| `game/objective_progress_test.kuki` | 1.4 | **New.** The capture requirements and the live token count. |
 | `game/visible_state_test.kuki` | 0.11 | **New.** Fog correctness tests (incl. occupant-array leak). |
-| `game/state_serializer.kuki` | 0.7, 0.11 | Deterministic `color_index`; keep `ClientStateDict` unfiltered for internal use. |
+| `game/state_serializer.kuki` | 0.7, 0.11, 1.4 | Deterministic `color_index`; keep `ClientStateDict` unfiltered for internal use; the capture requirements and the live token count. |
 | `game/ai_actions.kuki` | 0.4 | Thread mystery/crystal detail into `ActionResultData` for event emission. |
 | `renderer.tokens.js` (`web_server/static/`) | 0.11 | Skip masked tokens; tolerate `position: null`. |
 | `server/game_coordinator.kuki` | 0.4, 0.9, 0.11 | Session event log, `eventSeq`, objective state, `recordEvents`; the turn clock and per-player timeouts; per-player event filtering. |
