@@ -13,21 +13,32 @@ type MysteryEventResult
     newHealth: int
 
 func triggerMysteryEvent(tok: reference Token, brd: reference Board, playerIndex: int) MysteryEventResult
-    oldPos := tok.position
-    oldHp := tok.health
-
     isHeads := random.Int(0, 2) equals 0
 
     if isHeads
-        tok.healToFull()
-        return MysteryEventResult{
-            effect: enums.HEAL,
-            tokenId: tok.id,
-            oldPosition: oldPos,
-            newPosition: tok.position,
-            oldHealth: oldHp,
-            newHealth: tok.health,
-        }
+        return applyMysteryHeal(tok)
+    return applyMysteryTeleport(tok, brd, playerIndex)
+
+# The heal effect: the token is restored to full health where it stands.
+func applyMysteryHeal(tok: reference Token) MysteryEventResult
+    oldPos := tok.position
+    oldHp := tok.health
+
+    tok.healToFull()
+    return MysteryEventResult{
+        effect: enums.HEAL,
+        tokenId: tok.id,
+        oldPosition: oldPos,
+        newPosition: tok.position,
+        oldHealth: oldHp,
+        newHealth: tok.health,
+    }
+
+# The teleport effect: the token is moved to a free cell in the player's own
+# deployment quadrant.
+func applyMysteryTeleport(tok: reference Token, brd: reference Board, playerIndex: int) MysteryEventResult
+    oldPos := tok.position
+    oldHp := tok.health
 
     deployPositions := brd.getDeployablePositions(playerIndex)
     teleportPos := types.Pos(-1, -1)
@@ -44,7 +55,14 @@ func triggerMysteryEvent(tok: reference Token, brd: reference Board, playerIndex
     if not found
         teleportPos = brd.getStartingPosition(playerIndex)
 
+    # The teleport moves the token off the board, so the board's occupant
+    # lists have to follow it. Without this the mystery square keeps a
+    # stale occupant (so it can never be occupied again) and the cell the
+    # token lands on lists no occupants.
+    brd.clearOccupant(oldPos, tok.id)
     tok.moveTo(teleportPos)
+    brd.setOccupant(teleportPos, tok.id)
+
     return MysteryEventResult{
         effect: enums.TELEPORT,
         tokenId: tok.id,

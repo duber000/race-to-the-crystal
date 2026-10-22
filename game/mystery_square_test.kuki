@@ -1,0 +1,70 @@
+petiole game
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+import "stdlib/slice"
+import "stdlib/test"
+import "testing"
+
+# A mystery-square teleport moves the token off the board. The board's
+# occupant lists have to follow it: without that, the mystery square keeps
+# a stale occupant (so it can never be occupied again) and the cell the
+# token lands on lists no occupants.
+func TestMysteryTeleportKeepsOccupantsInSync(t: reference testing.T)
+    gsRef := reference of CreateGame(2)
+    gsRef.StartGame()
+
+    mysteryPositions := gsRef.board.getMysteryPositions()
+    if mysteryPositions is empty
+        t.Skip("the board has no mystery square")
+        return
+
+    mystery := mysteryPositions[0]
+    gsRef.MoveToken(types.TokenID(0), mystery)
+
+    tokRef := gsRef.GetToken(types.TokenID(0))
+    if tokRef is empty
+        t.Skip("the game has no token 0")
+        return
+
+    result := applyMysteryTeleport(tokRef, reference of gsRef.board, 0)
+
+    test.AssertEqual(t, result.effect, enums.MysteryEffect.TELEPORT)
+
+    oldOccupants := cellOccupants(gsRef, result.oldPosition)
+    test.AssertFalse(t, slice.Contains(oldOccupants, types.TokenID(0)))
+
+    newOccupants := cellOccupants(gsRef, result.newPosition)
+    test.AssertTrue(t, slice.Contains(newOccupants, types.TokenID(0)))
+
+# The heal effect leaves the token where it is, so the occupant lists must
+# not change.
+func TestMysteryHealKeepsTheTokenInPlace(t: reference testing.T)
+    gsRef := reference of CreateGame(2)
+    gsRef.StartGame()
+
+    mysteryPositions := gsRef.board.getMysteryPositions()
+    if mysteryPositions is empty
+        t.Skip("the board has no mystery square")
+        return
+
+    mystery := mysteryPositions[0]
+    gsRef.MoveToken(types.TokenID(0), mystery)
+
+    tokRef := gsRef.GetToken(types.TokenID(0))
+    if tokRef is empty
+        t.Skip("the game has no token 0")
+        return
+
+    result := applyMysteryHeal(tokRef)
+
+    test.AssertEqual(t, result.effect, enums.MysteryEffect.HEAL)
+    test.AssertEqual(t, result.newPosition, mystery)
+    test.AssertTrue(t, slice.Contains(cellOccupants(gsRef, mystery), types.TokenID(0)))
+
+# The occupant ids the board records for a cell.
+func cellOccupants(gs: reference GameState, pos: types.Position) list of types.TokenID
+    cell := gs.board.getCellAt(pos)
+    if cell is empty
+        return empty list of types.TokenID
+    return cell.occupants
