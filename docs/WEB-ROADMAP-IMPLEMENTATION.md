@@ -271,6 +271,27 @@ from the player's client type — so the `TURN_CHANGED` event can carry it and
 the client can count down without asking the server. Humans get 30 s, agents
 get 120 s, and both are configurable via the environment.
 
+### 2.19 The WebSocket path was the soft one
+
+The HTTP path had a rate limiter, an origin check and a message size cap.
+The WebSocket path — the one the browser actually uses — had none of them:
+
+- `MAX_MESSAGE_SIZE` was declared (as 1024, itself too small for a full state
+  frame) and **never applied**.
+- `checkWsOrigin` returned `true` unconditionally, so any page could open a
+  WebSocket to the server.
+- The action path was not rate limited, so a client could flood it.
+- Two actions arriving at once could interleave on the shared game state —
+  there was no lock.
+
+**Fix:** the size cap is applied and raised to 256 KiB (a full state frame for
+a 24×24 board with 80 tokens is tens of kilobytes); the origin check honours
+a `WS_ALLOWED_ORIGINS` allowlist, and a request with no `Origin` header is
+allowed because it cannot come from a browser; the action path shares the
+HTTP rate limiter; and a per-session mutex serialises actions — including the
+watchdog ending a stalled turn, which re-checks the clock under the lock in
+case the player acted while it waited.
+
 ---
 
 ## 3. Target architecture
@@ -532,7 +553,7 @@ Estimated: 3–5 days. Nothing in Phases 1–4 is verifiable until this is done.
 | 0.5 Unify the HTTP and WS state paths | **Done** | Both paths now broadcast the same per-player full state and the same event frames. `GET /state` returns the full state, not the slim dict. |
 | 0.6 Fix the phantom-client bug | *Not started* | The HTTP path is poll-only by design (§0.5 makes the polled state complete, so this is now a smaller item). |
 | 0.7 Deterministic seats and colours | **Done** | Extended to token ownership and the starting player (§2.16), lobby membership (§2.17), and player names (§2.14). |
-| 0.8 Harden the WebSocket path | *Not started* | |
+| 0.8 Harden the WebSocket path | **Done** | Message size cap enforced; origin allowlist (`WS_ALLOWED_ORIGINS`); the action path is rate limited; a per-session mutex serialises actions. |
 | 0.9 Turn timeout / auto-pass | **Done** | 30 s for humans, 120 s for agents, configurable via `TURN_TIMEOUT_SECONDS` / `AGENT_TURN_TIMEOUT_SECONDS`. A watchdog passes stalled turns on; the client shows a countdown. |
 | 0.10 Cleanup | **Partially done** | Deleted the dead UI file; fixed the favicon and the deprecated meta tag. Mercure still needs to be made explicitly WS-primary. |
 | 0.11 Unconditional fog-of-war | *Not started* | The event stream it depends on is now in place. |
@@ -549,6 +570,8 @@ the original plan; they are recorded in §2.10–§2.17):
 - The starting player and token ownership were random per game (§2.16).
 - A stale lobby blocked a player from starting a new game (§2.17).
 - A stalled turn blocked the whole match (§2.18).
+- The WebSocket path had no size cap, no origin check, no rate limit and no
+  action lock (§2.19).
 
 **Verified end-to-end in a real browser** (Chromium via DevTools, against a live
 server): connect → create lobby → second player joins → ready → start → select
@@ -1298,9 +1321,9 @@ make lint
 | `game/ai_actions.kuki` | 0.4 | Thread mystery/crystal detail into `ActionResultData` for event emission. |
 | `renderer.tokens.js` (`web_server/static/`) | 0.11 | Skip masked tokens; tolerate `position: null`. |
 | `server/game_coordinator.kuki` | 0.4, 0.9, 0.11 | Session event log, `eventSeq`, objective state, `recordEvents`; the turn clock and per-player timeouts; per-player event filtering. |
-| `server/websocket_handler.kuki` | 0.4, 0.5 | `BroadcastSessionState` / `BroadcastSessionEvents` — shared by both transports. |
-| `server/ws_endpoint.kuki` | 0.4, 0.8, 0.9, 0.11, 2.2 | Emit `EVENT` frames; `resync_state`; the turn watchdog; read limit; origin check; rate limit; fogged state; spectator handling. |
-| `server/main.kuki` | 0.9 | `TURN_TIMEOUT_SECONDS` / `AGENT_TURN_TIMEOUT_SECONDS` config; start the turn watchdog. |
+| `server/websocket_handler.kuki` | 0.4, 0.5, 0.8 | `BroadcastSessionState` / `BroadcastSessionEvents` — shared by both transports; the message size cap. |
+| `server/ws_endpoint.kuki` | 0.4, 0.8, 0.9, 0.11, 2.2 | Emit `EVENT` frames; `resync_state`; the turn watchdog; the message size cap; the origin allowlist; the action rate limit; fogged state; spectator handling. |
+| `server/main.kuki` | 0.8, 0.9 | `TURN_TIMEOUT_SECONDS` / `AGENT_TURN_TIMEOUT_SECONDS` / `WS_ALLOWED_ORIGINS` config; start the turn watchdog. |
 | `server/http_handler.kuki` | 0.5, 0.6, 0.11 | Per-player fogged full state; the same event frames as the WS path. |
 | `server/agent_endpoint.kuki` | 2.1 | **New.** Agent seat REST API. |
 | `server/lobby.kuki` | 0.7, 2.1, 2.2 | Deterministic player order; one lobby per player; prefer a joinable lobby; `ClientType.HTTP_AI`; `isAgent`/`model`; spectator list. |
