@@ -181,6 +181,29 @@ ordering helper:
 A map iteration that assigns an index, a colour, a seat or a turn order is
 a bug waiting to happen.
 
+#### Fog of war
+Network clients play under fog: a player sees the terrain, their own tokens,
+and enemy tokens within `VISIBILITY_RADIUS` (3 cells, square/Chebyshev) of
+one of their own tokens. The rules live in `game/visible_state.kuki` —
+`VisibleStateDict` for the state and `FilterEventForViewer` for the event
+stream. Both are applied on **every** path that leaves the server.
+
+The `learn/` layer is deliberately exempt and stays omniscient — it is a
+teaching tool, and its `Actions()` is computed from the true state.
+
+Two things are easy to get wrong:
+
+- **A masked token's id must not appear in its cell's occupant list.** Masking
+  the token but leaving it in `board.grid[y][x].occupants` gives the position
+  away. There is a test for exactly this.
+- **Masked tokens have `position: null`.** Six places in the client read
+  `token.position[0]` without checking for null. Every one of them needs a
+  guard, or the renderer throws and the HUD stops updating.
+
+The event sequence number is **per player**: the fog hides some events from
+some players, so a shared counter would show them a gap for every hidden
+event.
+
 #### Game logic entry points
 - To modify or extend game rules: work inside `game/` (no rendering or network imports allowed)
 - To expose a new action to AI/server: add it to `game/ai_actions.kuki`, then expose via `GameAPI` in `game/api.kuki`
@@ -222,11 +245,16 @@ The full language reference is the `kukicha` skill — read it before writing
   auto-dereferences for field access and method calls.
 - **`is` narrowing does not apply to concrete map types.** Narrow through a
   typed local instead, and read scalars with `cast.ToIntOr` or a typed
-  helper.
+  helper. Note that in the `game` package `map of string to any` and the
+  `StateDict` alias are the *same* type, so `is map of string to any` is
+  rejected there while `is map of string to StateDict` is accepted.
 - **A variant enum cannot be a method receiver, and cannot be taken by
   pointer.** `*GameEvent` is a pointer to an interface. Pass such values as
   lists, not as `optional reference`.
 - **Empty `when` arms are not allowed** — give the arm a body.
+- **Each `*_test.kuki` file is checked on its own.** A helper defined in one
+  test file is not visible from another, so test files cannot share
+  utilities.
 
 #### Go version
 Requires Go 1.27+. See `go.mod` for the current version.

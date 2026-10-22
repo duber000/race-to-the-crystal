@@ -427,63 +427,87 @@ The server still sends a `FULL_STATE` after each action (authoritative), but the
 what drive FX, camera and audio. This keeps the protocol robust: if an event is missed, the state
 still converges; if an event arrives, the juice fires.
 
-### 3.3 New: `game/visible_state.kuki` — fog of war (unconditional)
+### 3.3 `game/visible_state.kuki` — fog of war (unconditional)
 
 **Decision: every network client sees only what its own tokens can see.** This is a core game rule
 change, so it lands in Phase 0 (§0.11), not Phase 2.
+
+**As built** (`game/visible_state.kuki`):
 
 ```kukicha
 const VISIBILITY_RADIUS = 3
 
 func VisibleStateDict on gs: reference GameState(viewer: types.PlayerID) StateDict
+func FilterEventForViewer on gs: reference GameState(e: GameEvent, viewer: types.PlayerID) list of GameEvent
 ```
-
-Returns the same shape as `ClientStateDict` but with visibility rules applied:
 
 | Element | Rule |
 |---|---|
 | Terrain (walls, generator/mystery/crystal **positions**) | Always visible — it is static and acts as a landmark frame. |
 | Own tokens | Always visible, full detail. |
 | Enemy tokens **within** `VISIBILITY_RADIUS` of any own token | Visible: position, health, owner. |
-| Enemy tokens **outside** that radius | Masked: `is_visible: false`, `position: null`, `health: null`, `owner_player_id` retained (you can tell *that* something is out there if it is on a tile you own — optional refinement, see below). |
-| Enemy tokens on a cell the viewer owns | Revealed ("you see the enemy standing on your generator") — a common and forgiving rule. |
+| Enemy tokens **outside** that radius | Masked: `is_visible: false`, `position: null`, `health: null`, `max_health: null`. The id and owner are kept — the viewer knows the token exists. |
+| Enemy tokens on a cell the viewer owns | Revealed (the viewer's own tokens put that cell in view anyway). |
 | Generator `is_disabled` | Always visible — it is a physical fact about the map. |
-| Generator `holding_player_id` / `turns_held` | Visible only if the generator is within the viewer's radius, or the holder is the viewer. |
+| Generator `capturing_player_id` / `turns_held` | Visible only if the generator is within the viewer's sight, or the holder is the viewer. |
 | Crystal position | Always visible (it is the objective). |
-| Crystal `holding_player_id` / `controlling_player_id` / `turns_held` | Visible only within the viewer's radius, or when the viewer is the holder. |
-| `last_triggered_mystery_event` | Masked if the event position is outside the radius. |
-| Board cell `occupants` | Masked consistently with the token rules (an occupant array must not leak a masked token's position). |
+| Crystal `holding_player_id` / `turns_held` | Visible only within the viewer's sight, or the holder is the viewer. |
+| `last_triggered_mystery_event` | Masked if the event position is outside the view. |
+| Board cell `occupants` | **Masked consistently** — a masked token's id must not appear in its cell's occupant list, or the position is given away. This is the easiest leak to get wrong, and it has its own test. |
+
+The radius is a **square (Chebyshev) distance**, matching the 8-way movement the
+game uses — a diagonal is as close as an orthogonal step. The visible area is
+the square around each of the viewer's deployed tokens, plus the cells they own
+(a generator they are capturing, the crystal they hold). A player with no
+tokens on the board sees nothing.
 
 **Radius asymmetry:** the viewer's *own* tokens define the radius, so a player who spreads tokens
 out sees more. That is the strategic texture fog-of-war should create.
 
-**Where it must be applied — every path that leaves the server:**
+**Where it is applied — every path that leaves the server:**
 
-| Path | Current | Required |
-|---|---|---|
-| WS `FULL_STATE` | `ClientStateDict(gamePid)` — already per-player ✅ | `VisibleStateDict(gamePid)` |
-| WS `EVENT` frames | n/a (new) | Each event payload must be filtered for the receiving player. An `EVENT` frame describing an enemy move is a leak. |
-| HTTP `GET /state` | `ToDict()` (slim, shared) | `VisibleStateDict(playerId)` |
-| HTTP `POST /action` → broadcast | `ToDict()` (shared) | per-player `VisibleStateDict` |
-| Agent `/observe` | n/a | `VisibleStateDict(agentPlayerId)` |
+| Path | Now |
+|---|---|
+| WS `FULL_STATE` | `VisibleStateDict(gamePid)` — per player, fogged. |
+| WS `EVENT` frames | Filtered per player by `FilterEventForViewer`. |
+| HTTP `GET /state` | `VisibleStateDict(playerId)` — was the slim shared dict. |
+| HTTP `POST /action` → broadcast | Per-player fogged state, via the shared broadcaster. |
+| Agent `/observe` (Phase 2) | Will use `VisibleStateDict(agentPlayerId)`. |
 
-**Event filtering** is the subtle one. `CombatResolved` names both `attacker_id` and `defender_id`.
-If the viewer cannot see the defender, the frame must be rewritten to `{"type":"COMBAT_RESOLVED",
-"defender_id":null,"damage":null,"attacker_id":5}` — or dropped entirely if the viewer can see
-neither combatant. Design rule: **an event is delivered to a player only if at least one participant
-is visible to them**, and any participant they cannot see is nulled out.
+**Event filtering.** An event is delivered when at least one participant is
+visible; any participant the viewer cannot see is stripped out of it — a combat
+they can partly see arrives with the hidden side removed (`attacker_id: -1`,
+and the damage stripped with a hidden defender, because an amount of damage
+with no target is a hint that something happened). Events about tokens that are
+entirely hidden are not delivered at all.
 
-**Renderer support.** `renderer.tokens.js#updateTokens` currently draws every token in
-`gameState.tokens`. Masked tokens must be skipped, and the renderer must tolerate `position: null`
-(do not compute a world position from it). Add a `.is_visible !== false` guard and a null-position
-guard. This also lets the renderer draw a "last known position" ghost for a token that was seen and
-then lost — a nice touch, but optional.
+**The event sequence number is now per player.** The fog hides some events from
+some players, so a shared counter would show them a gap for every hidden event
+— and the client's gap detection would ask for a resync on every one. Each
+player has their own counter, and the `FULL_STATE` a client receives carries
+*its* counter so a resync repairs it.
+
+**No leak through the actions endpoint.** The `AttackAction` in
+`ActionsWithPhase()` names the defender and its position, which would seem to
+defeat the fog — but an attack requires the attacker to be *adjacent* to the
+defender, so the defender is always within the attacker's own sight radius and
+therefore always visible to the player making the request.
+
+**Renderer support.** `renderer.tokens.js#updateTokens` draws every deployed
+token in `gameState.tokens`, so masked tokens must be skipped and a null
+position must be tolerated. Six places in the client read `token.position[0]`
+without checking for null — `renderer.colors.js` (twice), the two `getTokenAt`
+helpers, `camera_controller.js` and `game_client.crystal_effects.js` — and all
+of them need a guard. The HUD's token count is masked too: it counts only the
+tokens the viewer can see, so the roster does not leak how many pieces the
+enemy has on the board.
 
 **Interaction with the crystal effect.** `game/crystal_effects.kuki` has an (unapplied) `FOG_OF_WAR`
 crystal effect. With unconditional fog in place, that effect should be redefined as a
 **radius modifier** (e.g. halves the viewer's `VISIBILITY_RADIUS` for N turns) rather than an
 independent masking mechanism. Do not leave two overlapping fog systems. Implementing the effect is
 optional; defining its semantics is not.
+
 
 ### 3.3.1 Boundary: the `learn/` layer stays omniscient
 
@@ -556,7 +580,7 @@ Estimated: 3–5 days. Nothing in Phases 1–4 is verifiable until this is done.
 | 0.8 Harden the WebSocket path | **Done** | Message size cap enforced; origin allowlist (`WS_ALLOWED_ORIGINS`); the action path is rate limited; a per-session mutex serialises actions. |
 | 0.9 Turn timeout / auto-pass | **Done** | 30 s for humans, 120 s for agents, configurable via `TURN_TIMEOUT_SECONDS` / `AGENT_TURN_TIMEOUT_SECONDS`. A watchdog passes stalled turns on; the client shows a countdown. |
 | 0.10 Cleanup | **Partially done** | Deleted the dead UI file; fixed the favicon and the deprecated meta tag. Mercure still needs to be made explicitly WS-primary. |
-| 0.11 Unconditional fog-of-war | *Not started* | The event stream it depends on is now in place. |
+| 0.11 Unconditional fog-of-war | **Done** | `game/visible_state.kuki`: a viewer sees the terrain, its own tokens, and enemy tokens within a radius of 3. Objective ownership and cell occupants are masked. Events are filtered per viewer. |
 
 **Additional defects found and fixed while validating 0.1–0.5** (these were not in
 the original plan; they are recorded in §2.10–§2.17):

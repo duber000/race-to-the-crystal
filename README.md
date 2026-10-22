@@ -13,6 +13,7 @@ Race to the Crystal is a turn-based strategy game where players compete to captu
 - **Web Client**: Browser-based 3D view (JavaScript + Babylon.js) — the networked client
 - **Desktop Client**: 2D top-down view (Kukicha + Ebitengine) — local play only
 - **Network Multiplayer**: Web clients and AI clients play together on the same server
+- **Fog of War**: You see the terrain, but only the enemy tokens your own tokens are near
 - **AI Players**: Multiple strategy modes (random, aggressive, defensive)
 - **Strategic Gameplay**: Generators, mystery squares, combat, and token deployment
 - **GPU-Accelerated Graphics**: Tron-style wireframes with glow effects
@@ -110,6 +111,10 @@ provides the same actions as buttons.
 6. **Turn Timer**: You have 30 seconds to complete your turn. The HUD counts
    down, and if the timer runs out your turn is passed on automatically. AI
    players get 120 seconds, since a model may need a while to think.
+7. **Fog of War**: You see the whole board, but only the enemy tokens your own
+   tokens are near — roughly 3 cells away. Spreading your tokens out gives
+   you a wider view. Enemy tokens out of sight are hidden, and so is who is
+   holding the crystal or a generator until you can see it.
 
 **See [docs/GAME.md](docs/GAME.md) for complete rules and mechanics.**
 
