@@ -19,6 +19,7 @@ build: ## Transpile and build all Kukicha packages
 	kukicha build ./...
 
 server: ## Build the game server
+	$(MAKE) clean-generated
 	kukicha build ./server
 	go build -o race-server ./server/
 
@@ -27,6 +28,7 @@ server-run: ## Build and run the game server
 	./race-server
 
 desktop: ## Build the desktop client (pure Go; Ebitengine 2.10 needs no C toolchain)
+	$(MAKE) clean-generated
 	kukicha build ./client/desktop/
 	go build -o race-desktop ./client/desktop/
 
@@ -35,6 +37,7 @@ desktop-run: ## Build and run the desktop client
 	./race-desktop
 
 ai-client: ## Build the AI client
+	$(MAKE) clean-generated
 	kukicha build ./client/ai/
 	go build -o race-ai-client ./client/ai/
 
@@ -43,11 +46,12 @@ ai-client-run: ## Build and run the AI client
 	./race-ai-client
 
 web-server: ## Build the web server
+	$(MAKE) clean-generated
 	kukicha build ./web_server
 
 web-server-run: ## Build and run the web server
 	$(MAKE) web-server
-	./web_server
+	./web_server/web_server
 
 learn: ## List learner example scripts
 	@ls learn/examples/
