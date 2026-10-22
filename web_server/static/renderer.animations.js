@@ -69,21 +69,17 @@ Renderer3D.prototype.updateAnimations = function() {
     this.updateMysteryAnimations();
     this.updateExplosionParticles();
 
-    const crystal = this.scene.getMeshByName("crystal");
-    if (crystal) {
-        const pulse = 1 + 0.15 * Math.sin(this.animationTime * 2);
-        crystal.scaling.x = pulse;
-        crystal.scaling.z = pulse;
-        crystal.rotation.y = this.animationTime * 0.5;
-
-        for (let i = 1; i <= 6; i++) {
-            const glowLayer = this.scene.getMeshByName(`crystal_glow_${i}`);
-            if (glowLayer) {
-                glowLayer.scaling.x = pulse;
-                glowLayer.scaling.z = pulse;
-                glowLayer.rotation.y = this.animationTime * 0.5;
-            }
-        }
+    // The crystal is the objective, so give it a slow breathing pulse.
+    // The mesh used to be looked up as "crystal" with "crystal_glow_N"
+    // layers; neither name exists any more -- renderer.special.js builds
+    // the hub and its frames, and the renderer already tracks them.
+    if (this.crystalMesh && this.crystalMesh.mesh) {
+        const hub = this.crystalMesh.mesh;
+        const pulse = 1 + 0.06 * Math.sin(this.animationTime * 2);
+        // The hub is created with a vertical stretch; only breathe
+        // horizontally so the silhouette stays the same.
+        hub.scaling.x = pulse;
+        hub.scaling.z = pulse;
     }
 
     if (this.confettiParticles.length > 0) {
