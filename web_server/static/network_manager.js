@@ -33,6 +33,14 @@ class NetworkManager {
     this.mercureClient = null;
     this.ssePrimaryMode = false; // Set from server config
     this.usingSSEForState = false; // True if actively using SSE for state updates
+    // Mercure/SSE is an optional extra event feed, opt in with ?sse=1. The
+    // WebSocket is always the state path.
+    this.sseOptIn = false;
+    try {
+        this.sseOptIn = new URLSearchParams(window.location.search).get('sse') === '1';
+    } catch (e) {
+        this.sseOptIn = false;
+    }
     
     // State update tracking for race condition prevention
     this.lastStateVersion = null; // Track last processed state version
@@ -105,12 +113,10 @@ class NetworkManager {
    * @private
    */
   _handleFullState(data) {
-    // In SSE-primary mode, only process FULL_STATE via WebSocket if SSE is not active
-    if (this.usingSSEForState && this.mercureClient && this.mercureClient.isConnected()) {
-      console.log("⚠ Ignoring FULL_STATE from WebSocket (using SSE)");
-      return;
-    }
-    
+    // The WebSocket is the state path, always. Mercure/SSE is an optional
+    // extra event feed, never a substitute for it: the server publishes
+    // per-game topics, and the state is now per-player (fog of war), so a
+    // published state would carry the wrong perspective.
     console.log("✓ Processing FULL_STATE from WebSocket");
 
     // The server's event sequence number is authoritative: adopt it so a
@@ -527,31 +533,26 @@ class NetworkManager {
 
   async initMercure() {
     try {
-      if (typeof MercureClient === 'undefined') {
-        console.log("⚠ MercureClient not found - SSE support disabled");
-        return false;
-      }
+      // Loaded dynamically so a missing file degrades to "no SSE" instead of
+      // breaking this module.
+      const { MercureClient } = await import('./mercure_client.js');
 
       this.mercureClient = new MercureClient();
       const mercureReady = await this.mercureClient.init();
 
       if (mercureReady) {
         this.useMercure = true;
-
-        // Check if SSE-primary mode is enabled from server config
-        if (this.mercureClient.config && this.mercureClient.config.sse_primary_mode) {
-          this.ssePrimaryMode = true;
-          console.log("✓ SSE-primary mode enabled - state updates via SSE only");
-        } else {
-          this.ssePrimaryMode = false;
-          console.log("✓ Dual-channel mode - state updates via both SSE and WebSocket");
-        }
-
+        // SSE is an *extra* event feed, never the state path. The state is
+        // per-player (fog of war) and the server publishes per-game topics,
+        // so a published state would carry the wrong perspective. The
+        // WebSocket carries the state and the event stream.
+        this.ssePrimaryMode = false;
         console.log(
-          "✓ Mercure client initialized - will use SSE for state updates",
+          "✓ Mercure available - the WebSocket still carries the state; " +
+            "add ?sse=1 to the URL to subscribe to the event feed as well",
         );
       } else {
-        console.log("⚠ Mercure initialization failed - using WebSocket for all updates");
+        console.log("⚠ Mercure unavailable - using WebSocket for all updates");
         this.useMercure = false;
         this.ssePrimaryMode = false;
       }
@@ -569,22 +570,21 @@ class NetworkManager {
       return;
     }
 
+    // Opt in with ?sse=1. SSE is not the state path, and subscribing to a
+    // topic nobody publishes to is just noise.
+    if (!this.sseOptIn) {
+      return;
+    }
+
     console.log(`Subscribing to Mercure for game ${this.currentGameId}...`);
 
     // Update the topic to include the game_id
     this.mercureClient.setTopic(`${this.mercureClient.config.mercure_topic}/${this.currentGameId}`);
 
-    // Fallback function: switch back to WebSocket if SSE fails
+    // Fallback function: the WebSocket is always the state path, so a
+    // failed SSE subscription needs no recovery beyond a state refresh.
     const fallbackToWebSocket = async () => {
-      console.warn("⚠ SSE failed - requesting WebSocket fallback");
-      
-      // Immediately set usingSSEForState to false to ensure we accept FULL_STATE messages
-      this.usingSSEForState = false;
-
-      // If we were waiting for the game to start, ensure we can receive FULL_STATE via WebSocket
-      if (this.connectionState === STATE.GAME_STARTING) {
-        console.log("⚠ Game was starting but SSE failed - will accept FULL_STATE via WebSocket");
-      }
+      console.warn("⚠ SSE failed - the WebSocket continues to carry the state");
 
       // Request the server to send FULL_STATE via WebSocket
       this.send({
@@ -598,62 +598,21 @@ class NetworkManager {
       (update) => {
         console.log("✓ Mercure update received");
 
-        // Mark that we're successfully using SSE for state updates
-        if (!this.usingSSEForState) {
-          this.usingSSEForState = true;
-          console.log("✓ Using SSE for state updates");
-        }
-
-        // Check for duplicate state (idempotent processing)
-        const stateVersion = update.version || update.timestamp || null;
-        if (stateVersion && this.lastStateVersion && stateVersion === this.lastStateVersion) {
-          console.log("⚠ Duplicate SSE state detected, skipping (idempotent)");
-          return;
-        }
-        
-        // Set lock to prevent concurrent processing
-        if (this.stateUpdateLock) {
-          console.log("⚠ State update already processing, queuing SSE update");
-          this.stateUpdateQueue.push({ source: "sse", data: { game_state: update } });
-          return;
-        }
-        
-        this.stateUpdateLock = true;
-
-        // Transition to IN_GAME state if needed (critical for enabling game actions)
-        if (this.connectionState === STATE.GAME_STARTING) {
-          this.connectionState = STATE.IN_GAME;
-          console.log("✓ Transitioned to IN_GAME state via SSE - game actions now enabled");
-        }
-
-        // Dispatch based on message type
+        // Dispatch based on message type. A state frame is *ignored*: the
+        // WebSocket is the state path, and the state is per-player (fog of
+        // war) while the Mercure topic is per-game, so a published state
+        // would carry the wrong perspective. Fine-grained events are
+        // additive and are passed through.
         const type = update.type;
         if (type === "STATE_UPDATE" || type === "state_update") {
-          this._handleStateUpdate(update);
+          console.log("⚠ Ignoring SSE state update - the WebSocket carries the state");
         } else if (type === "FULL_STATE" || type === "full_state") {
-          this.emit("full_state", {
-            game_state: update,
-          });
+          console.log("⚠ Ignoring SSE full state - the WebSocket carries the state");
         } else if (type) {
-          // It's a fine-grained event (TOKEN_MOVED, COMBAT_RESULT, etc.)
+          // It's a fine-grained event (TOKEN_MOVED, COMBAT_RESOLVED, etc.)
           console.log(`✓ SSE Event received: ${type}`);
           this.emit(type.toLowerCase(), update);
-        } else {
-          // Default to full state for legacy/raw updates
-          this.emit("full_state", {
-            game_state: update,
-          });
         }
-        
-        // Update last processed version
-        if (stateVersion) {
-          this.lastStateVersion = stateVersion;
-        }
-        
-        this.stateUpdateLock = false;
-        
-        // Process queued updates
-        this._processStateQueue();
       },
       fallbackToWebSocket
     );

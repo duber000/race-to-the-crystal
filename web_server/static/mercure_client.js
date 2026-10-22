@@ -1,23 +1,23 @@
 /**
- * Mercure EventSource client for real-time game state updates.
+ * Mercure EventSource client for real-time game updates.
  *
- * This module provides an alternative to WebSocket for receiving real-time
- * game state updates using Server-Sent Events (SSE) via Mercure.
+ * An ES module, loaded dynamically by network_manager.js. Mercure/SSE is an
+ * optional extra event feed — the WebSocket carries the game state and the
+ * event stream. The server publishes per-game topics, and the state is
+ * per-player (fog of war), so a published state would carry the wrong
+ * perspective: the client ignores state frames that arrive over SSE.
  *
  * @example
+ * const { MercureClient } = await import('./mercure_client.js');
  * const mercure = new MercureClient();
  * await mercure.init();
  * mercure.subscribe((update) => {
- *     console.log('Game state updated:', update);
+ *     console.log('Game event received:', update);
  * });
  */
-// Timeout defaults (may be overridden by window.TIMEOUT_CONFIG from game_client.constants.js)
-const _MERCURE_TIMEOUTS = (typeof TIMEOUT_CONFIG !== 'undefined') ? TIMEOUT_CONFIG : {
-  SSE_SILENCE_MS: 30000,
-  SSE_CHECK_INTERVAL_MS: 5000,
-  RECONNECT_MAX_DELAY_MS: 30000,
-  RECONNECT_MAX_ATTEMPTS: 4
-};
+import { TIMEOUT_CONFIG } from './game_client.constants.js';
+
+const _MERCURE_TIMEOUTS = TIMEOUT_CONFIG;
 
 class MercureClient {
   /**
@@ -277,6 +277,4 @@ class MercureClient {
  */
 
 // Export for use in other modules
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = MercureClient;
-}
+export { MercureClient };

@@ -153,7 +153,7 @@ func runSSE(args: cli.Args) error
 
     log.Info("Subscribing to SSE stream with strategy {strategy}")
 
-    sess.ConnectSSE((ev: SSEEvent) =>
+    connected := sess.ConnectSSE((ev: SSEEvent) =>
         evtType := ev.eventType
         if (evtType is empty) or evtType equals "message"
             evtType = "message"
@@ -222,6 +222,12 @@ func runSSE(args: cli.Args) error
 
         return true
     )
+
+    # The server does not publish to Mercure today, so the stream usually
+    # cannot be established. Fall back to polling rather than hanging.
+    if not connected
+        log.Warn("SSE stream unavailable - falling back to polling")
+        return runPoll(args)
 
     return empty
 

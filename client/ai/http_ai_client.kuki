@@ -409,10 +409,19 @@ type SSEEvent
     eventType: string
     data: string
 
-func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
+# Connect to the Mercure SSE stream and feed events to the handler.
+#
+# The server does not currently publish to Mercure — the game state and the
+# event stream both travel over the WebSocket, and the state is per-player
+# (fog of war) while a Mercure topic is per-game. The SSE mode is kept for
+# when a publisher is wired up, but it reports whether it actually connected
+# so the caller can fall back to polling.
+#
+# Returns true if the stream was established.
+func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool) bool
     if s.sseUrl is empty
         log.Warn("ConnectSSE: no SSE URL configured")
-        return
+        return false
 
     resp := fetch.New(s.sseUrl)
         |> fetch.Method("GET")
@@ -421,12 +430,12 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
         |> fetch.Retry(3, 500)
         |> fetch.Do() onerr
             log.Error("SSE connect failed: {error}")
-            return
+            return false
 
     raw := resp.Raw()
     if raw is empty
         log.Error("SSE raw empty")
-        return
+        return false
     defer raw.Body.Close()
     body := raw.Body
     scanner := bufio.NewScanner(body)
@@ -445,7 +454,7 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
                 dataBuf.Reset()
                 currentEvent = "message"
                 if not keepGoing
-                    return
+                    return true
         else if strings.HasPrefix(line, "event:")
             currentEvent = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
         else if strings.HasPrefix(line, "data:")
@@ -457,6 +466,7 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool)
     err := scanner.Err()
     if err isnt empty
         log.Error("SSE scan error: {err}")
+    return true
 
 func ExtractStateFromSSE(ev: SSEEvent) Payload
     parsed := make(Payload)

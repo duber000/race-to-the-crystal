@@ -236,19 +236,22 @@ class AudioManager {
 
     /**
      * Update generator hums based on game state
+     *
+     * Called on every state update, so it only starts and stops the hums
+     * that actually changed — restarting all of them each time would click.
      */
     updateGeneratorHums(generators) {
         if (!this.generatorHumEnabled || !this.musicEnabled) return;
 
-        // Stop all hums first
-        this.stopGeneratorHums();
-
-        // Start hums for active generators
         for (let i = 0; i < generators.length; i++) {
             const generator = generators[i];
+            const shouldRun = !generator.is_disabled && !!this.generatorHums[i];
+            const isRunning = !!this.generatorHumSources[i];
 
-            if (!generator.is_disabled && this.generatorHums[i]) {
+            if (shouldRun && !isRunning) {
                 this.startGeneratorHum(i);
+            } else if (!shouldRun && isRunning) {
+                this.stopGeneratorHum(i);
             }
         }
     }
@@ -258,6 +261,7 @@ class AudioManager {
      */
     startGeneratorHum(generatorIndex) {
         if (!this.generatorHums[generatorIndex]) return;
+        if (this.generatorHumSources[generatorIndex]) return;
 
         const source = this.audioContext.createBufferSource();
         source.buffer = this.generatorHums[generatorIndex];
@@ -272,14 +276,31 @@ class AudioManager {
 
         this.generatorHumSources[generatorIndex] = source;
         this.generatorHumGains[generatorIndex] = gainNode;
+    }
 
-        console.log(`[AudioManager] Generator ${generatorIndex} hum started`);
+    /**
+     * Stop a specific generator hum
+     */
+    stopGeneratorHum(generatorIndex) {
+        const source = this.generatorHumSources[generatorIndex];
+        if (source) {
+            try {
+                source.stop();
+            } catch (e) {
+                // Already stopped.
+            }
+        }
+        this.generatorHumSources[generatorIndex] = null;
+        this.generatorHumGains[generatorIndex] = null;
     }
 
     /**
      * Stop all generator hums
      */
     stopGeneratorHums() {
+        for (let i = 0; i < this.generatorHumSources.length; i++) {
+            this.stopGeneratorHum(i);
+        }
         this.generatorHumSources = [];
         this.generatorHumGains = [];
     }

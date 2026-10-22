@@ -385,6 +385,9 @@ class Renderer3D {
         this.checkMysteryLandings(gameState);
         this.updateSpecialCellColors(gameState);
         this.checkCrystalEffectTrigger(gameState);
+        // The ambient hum follows the generators: one per standing generator,
+        // none for one that has fallen.
+        this.updateGeneratorHums(gameState.generators || []);
     }
 
     startRenderLoop() {
