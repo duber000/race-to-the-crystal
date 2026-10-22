@@ -37,6 +37,13 @@ class Renderer3D {
         this.validMoveMeshes = [];
         this.validAttackMeshes = [];
         this.hoverMesh = null;
+        // Phase 1.4 overlays. `threatMeshes` mark the enemy tokens that
+        // can hit the cell under the pointer; `objectiveMeshes` show the
+        // capture progress on the generators and the crystal.
+        this.threatMeshes = [];
+        this.objectiveMeshes = [];
+        this.hoveredCell = null;
+        this.lastGameState = null;
         this.generatorLines = [];
         this.generatorLineMeshes = [];
         this.healthLabels = new Map();
@@ -380,6 +387,8 @@ class Renderer3D {
     }
 
     updateGameState(gameState) {
+        // The tactical overlays read the state, so keep the last one.
+        this.lastGameState = gameState;
         this.createSpecialCells(gameState);
         this.updateTokens(gameState);
         this.checkMysteryLandings(gameState);
@@ -388,6 +397,10 @@ class Renderer3D {
         // The ambient hum follows the generators: one per standing generator,
         // none for one that has fallen.
         this.updateGeneratorHums(gameState.generators || []);
+        // The capture progress on the objectives, and the threat overlay on
+        // the cell under the pointer (which the last state may have moved).
+        this.updateObjectiveIndicators(gameState);
+        this.updateThreatIndicators();
     }
 
     startRenderLoop() {
