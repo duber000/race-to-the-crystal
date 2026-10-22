@@ -80,7 +80,7 @@ test-specific: ## Run specific test (usage: make test-specific PKG=./game/...)
 
 clean: ## Remove build artifacts and empty dirs
 	$(MAKE) clean-generated
-	rm -f desktop race-desktop race-ai-client race-server web_server/web_server
+	rm -f desktop race-desktop race-ai-client ai race-server web_server/web_server
 	find . -type d -empty -delete 2>/dev/null; true
 
 lint: ## Check formatting
