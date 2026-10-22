@@ -351,11 +351,14 @@ func updateGeneratorsAndCrystal on gs: reference GameState() (list of int, bool)
     disabledCount := countDisabledGenerators(gs.generators)
 
     crystalCaptured := false
-    if gs.crystalInstance isnt empty
-        c := dereference gs.crystalInstance
-        crystalPos := c.position
+    # Call through the reference. `dereference` would copy the crystal, and
+    # the capture progress (holdingPlayerId, turnsHeld) would be written to
+    # the copy -- so the crystal could never be captured.
+    cRef := gs.crystalInstance
+    if cRef isnt empty
+        crystalPos := cRef.position
         taps := tokensByPos[crystalPos]
-        outcome := c.updateCaptureStatus(taps, disabledCount)
+        outcome := cRef.updateCaptureStatus(taps, disabledCount)
         if outcome.isWinner
             gs.winnerId = outcome.winnerId
             gs.phase = enums.ENDED

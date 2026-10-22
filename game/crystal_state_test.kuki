@@ -1,0 +1,40 @@
+petiole game
+
+import "race-to-the-crystal/shared/constants" as constants
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+import "stdlib/test"
+import "testing"
+
+# The crystal capture must accumulate across end turns. The unit-level
+# Crystal tests above cover `updateCaptureStatus` in isolation; this one
+# covers the integration path (GameState -> updateGeneratorsAndCrystal ->
+# Crystal), which is where a `dereference` copy silently discarded the
+# capture progress and left the crystal uncapturable.
+func TestCrystalCaptureProgressesThroughGameState(t: reference testing.T)
+    gsRef := reference of CreateGame(2)
+    gsRef.StartGame()
+
+    crystalPos := gsRef.crystalInstance.position
+    deployOntoCrystal(gsRef, types.PlayerID("player_0"), crystalPos)
+
+    test.AssertEqual(t, gsRef.crystalInstance.turnsHeld, 0)
+
+    gsRef.EndTurnWithObjectiveUpdate()
+    test.AssertEqual(t, gsRef.crystalInstance.holdingPlayerId, types.PlayerID("player_0"))
+    test.AssertEqual(t, gsRef.crystalInstance.turnsHeld, 1)
+
+    gsRef.EndTurnWithObjectiveUpdate()
+    test.AssertEqual(t, gsRef.crystalInstance.turnsHeld, 2)
+
+    gsRef.EndTurnWithObjectiveUpdate()
+    test.AssertEqual(t, gsRef.crystalInstance.turnsHeld, 3)
+    test.AssertEqual(t, gsRef.phase, enums.ENDED)
+    test.AssertEqual(t, gsRef.winnerId, types.PlayerID("player_0"))
+
+# Deploy a player's reserve tokens onto a cell.
+func deployOntoCrystal(gs: reference GameState, playerId: types.PlayerID, pos: types.Position)
+    for _, health in constants.TOKEN_HEALTH_VALUES
+        for i from 0 to 20
+            if gs.DeployToken(playerId, health, pos) is empty
+                break
