@@ -74,7 +74,10 @@ func HandleJoinGame on h: reference HTTPHandler(gameId: string, body: map of str
         }
 
     playerId := random.String(16)
-    joinResult := h.lobbyMgr.joinLobby(gameId, playerId, playerName, ClientType.WEB_BROWSER)
+    # The HTTP join path is the agent path — the browser joins over the
+    # WebSocket. Labelling it WEB_BROWSER gave agent seats the short human
+    # turn timeout, and hid them from the lobby's client-type column.
+    joinResult := h.lobbyMgr.joinLobby(gameId, playerId, playerName, ClientType.HTTP_AI)
     if joinResult is empty
         return APIResponse{
             success: false,
@@ -83,8 +86,10 @@ func HandleJoinGame on h: reference HTTPHandler(gameId: string, body: map of str
         }
 
     h.lobbyMgr.setReady(gameId, playerId, true)
-    h.wsHandler.UpdateClientPlayerID(playerId, playerId, playerName)
-    h.wsHandler.UpdateClientGameID(playerId, gameId)
+    # No WebSocket registration: an HTTP client has no connection, so it
+    # never receives pushed state and polls GET /api/game/{id}/state
+    # instead. Registering a client with no connection would only create a
+    # phantom the broadcaster skips.
 
     token := CreatePlayerToken(playerId, gameId, h.jwtSecret, 24)
 
@@ -304,7 +309,9 @@ func HandleCreateGame on h: reference HTTPHandler(authHeader: string, body: map 
     if maxPlayers > 4
         maxPlayers = 4
 
-    lobby := h.lobbyMgr.createLobby(playerId, playerName, gameName, ClientType.WEB_BROWSER, maxPlayers)
+    # The HTTP create path is the agent path — the browser creates over the
+    # WebSocket. See HandleJoinGame.
+    lobby := h.lobbyMgr.createLobby(playerId, playerName, gameName, ClientType.HTTP_AI, maxPlayers)
     if lobby is empty
         return APIResponse{
             success: false,
