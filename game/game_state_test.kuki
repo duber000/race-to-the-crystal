@@ -79,6 +79,28 @@ func TestEndTurn(t: reference testing.T)
     gs.EndTurn()
     test.AssertNotEqual(t, gs.currentTurnPlayerId, first)
 
+# The turn rotation must follow the seat order. `gs.players` is a Go map,
+# so a rotation built from a raw map iteration is random: the turn order
+# shuffles between games and the turn counter only advances when the
+# random rotation happens to land on the first seat.
+func TestTurnRotationFollowsSeatOrder(t: reference testing.T)
+    gsRef := reference of CreateGame(4)
+    gsRef.StartGame()
+    test.AssertEqual(t, gsRef.currentTurnPlayerId, types.PlayerID("player_0"))
+
+    gsRef.EndTurn()
+    test.AssertEqual(t, gsRef.currentTurnPlayerId, types.PlayerID("player_1"))
+    gsRef.EndTurn()
+    test.AssertEqual(t, gsRef.currentTurnPlayerId, types.PlayerID("player_2"))
+    gsRef.EndTurn()
+    test.AssertEqual(t, gsRef.currentTurnPlayerId, types.PlayerID("player_3"))
+
+    # The turn number advances when the rotation wraps back to the first
+    # seat, so it is a round counter.
+    gsRef.EndTurn()
+    test.AssertEqual(t, gsRef.currentTurnPlayerId, types.PlayerID("player_0"))
+    test.AssertEqual(t, gsRef.turnNumber, 2)
+
 func TestGameStateToDict(t: reference testing.T)
     gs := CreateGame(2)
     gs.StartGame()

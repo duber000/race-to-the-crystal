@@ -298,10 +298,16 @@ func advanceToNextPlayer on gs: reference GameState
             gs.triggerRandomCrystalEffect()
 
 func getActivePlayers on gs: reference GameState list of types.PlayerID
+    # `gs.players` is a Go map, so iterating it directly yields a random
+    # order. The turn rotation must follow the seat order, otherwise the
+    # turn order is random and the turn counter only advances when the
+    # random rotation happens to land on the first seat.
     result := empty list of types.PlayerID
-    for pid, pRef in gs.players
-        if pRef.isActive
-            result = append(result, pid)
+    for pid in gs.orderedPlayerIds()
+        pRef := gs.GetPlayer(pid)
+        if pRef isnt empty
+            if pRef.isActive
+                result = append(result, pid)
     return result
 
 func calculateNextPlayerIndex on gs: reference GameState(active: list of types.PlayerID) int
