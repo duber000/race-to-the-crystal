@@ -272,7 +272,6 @@ the client can count down without asking the server. Humans get 30 s, agents
 get 120 s, and both are configurable via the environment.
 
 ### 2.19 The WebSocket path was the soft one
-
 The HTTP path had a rate limiter, an origin check and a message size cap.
 The WebSocket path — the one the browser actually uses — had none of them:
 
@@ -291,6 +290,24 @@ allowed because it cannot come from a browser; the action path shares the
 HTTP rate limiter; and a per-session mutex serialises actions — including the
 watchdog ending a stalled turn, which re-checks the clock under the lock in
 case the player acted while it waited.
+
+### 2.20 The HTTP path labelled agent seats as browsers
+
+`HandleCreateGame` and `HandleJoinGame` recorded `ClientType.WEB_BROWSER`.
+But the HTTP path *is* the agent path — the browser creates and joins over
+the WebSocket, and only the AI client uses the HTTP endpoints. So agent seats
+were recorded as human players, which had two consequences: the turn timeout
+gave them the human's 30 seconds rather than the agent's 120 (§0.9), and the
+lobby's client-type column could not tell a model from a person.
+
+**Fix:** the HTTP path records `ClientType.HTTP_AI`.
+
+The same path also called `UpdateClientPlayerID` / `UpdateClientGameID` for
+the HTTP player. Both are guarded by `if ok` on a client lookup, and an
+HTTP player has no connection, so they were **no-ops** — dead code that
+looked like it registered the player. They are gone, replaced by a comment
+explaining that an HTTP player is poll-only: it has no connection, so it
+never receives pushed state and polls `GET /api/game/{id}/state` instead.
 
 ---
 
@@ -575,11 +592,11 @@ Estimated: 3–5 days. Nothing in Phases 1–4 is verifiable until this is done.
 | 0.3 Fix the crystal-effects module | **Done** | Converted to an ES module importing the constants; deleted the duplicate local `CrystalEffect` map. |
 | 0.4 Server-side event stream | **Done** | `game/game_events.kuki` (9 event types), `EVENT` frames with a per-session `seq`, per-player broadcast, client-side gap detection and resync. |
 | 0.5 Unify the HTTP and WS state paths | **Done** | Both paths now broadcast the same per-player full state and the same event frames. `GET /state` returns the full state, not the slim dict. |
-| 0.6 Fix the phantom-client bug | *Not started* | The HTTP path is poll-only by design (§0.5 makes the polled state complete, so this is now a smaller item). |
+| 0.6 Fix the phantom-client bug | **Done** | The HTTP path is the *agent* path: it now labels seats `HTTP_AI` (so they get the agent turn timeout) and registers no phantom WebSocket client. HTTP players are poll-only by design. |
 | 0.7 Deterministic seats and colours | **Done** | Extended to token ownership and the starting player (§2.16), lobby membership (§2.17), and player names (§2.14). |
 | 0.8 Harden the WebSocket path | **Done** | Message size cap enforced; origin allowlist (`WS_ALLOWED_ORIGINS`); the action path is rate limited; a per-session mutex serialises actions. |
 | 0.9 Turn timeout / auto-pass | **Done** | 30 s for humans, 120 s for agents, configurable via `TURN_TIMEOUT_SECONDS` / `AGENT_TURN_TIMEOUT_SECONDS`. A watchdog passes stalled turns on; the client shows a countdown. |
-| 0.10 Cleanup | **Partially done** | Deleted the dead UI file; fixed the favicon and the deprecated meta tag. Mercure still needs to be made explicitly WS-primary. |
+| 0.10 Cleanup | **Done** | Mercure is explicitly WS-primary and documented as not a state path; the generator hums are wired up and fixed to stop their sources; the AI client's SSE mode falls back to polling. |
 | 0.11 Unconditional fog-of-war | **Done** | `game/visible_state.kuki`: a viewer sees the terrain, its own tokens, and enemy tokens within a radius of 3. Objective ownership and cell occupants are masked. Events are filtered per viewer. |
 
 **Additional defects found and fixed while validating 0.1–0.5** (these were not in
@@ -596,6 +613,8 @@ the original plan; they are recorded in §2.10–§2.17):
 - A stalled turn blocked the whole match (§2.18).
 - The WebSocket path had no size cap, no origin check, no rate limit and no
   action lock (§2.19).
+- The HTTP path labelled agent seats as browsers, giving them the short human
+  turn timeout (§2.20).
 
 **Verified end-to-end in a real browser** (Chromium via DevTools, against a live
 server): connect → create lobby → second player joins → ready → start → select
