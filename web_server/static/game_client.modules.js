@@ -16,6 +16,10 @@ class ConnectionManager {
         this.gameClient = gameClient;
         this.networkManager = null;
         this.stateManager = gameClient.stateManager;
+        // The end of a match arrives twice: as a GAME_ENDED event on the
+        // event stream and as a GAME_WON message. The victory effect must
+        // only fire once.
+        this.victoryTriggered = false;
     }
 
     init() {
@@ -56,6 +60,7 @@ class ConnectionManager {
         });
 
         this.networkManager.on("game_starting", () => {
+            this.victoryTriggered = false;
             this.gameClient.updateUIState(STATE.GAME_STARTING);
         });
 
@@ -269,16 +274,29 @@ class ConnectionManager {
     }
 
     handleGameEnded(data) {
-        if (this.gameClient.renderer) {
-            this.gameClient.renderer.triggerVictoryEffect();
-        }
+        this.triggerVictoryOnce();
     }
 
     handleGameWon(data) {
+        this.triggerVictoryOnce();
+        alert(`GAME OVER! ${data.winner_name} has won the race to the crystal!`);
+    }
+
+    /**
+     * Play the victory effect, at most once per match.
+     *
+     * The end of a match is announced twice — a GAME_ENDED event on the
+     * event stream and a GAME_WON message — so the effect has to be
+     * idempotent or the confetti is spawned twice.
+     */
+    triggerVictoryOnce() {
+        if (this.victoryTriggered) {
+            return;
+        }
+        this.victoryTriggered = true;
         if (this.gameClient.renderer) {
             this.gameClient.renderer.triggerVictoryEffect();
         }
-        alert(`GAME OVER! ${data.winner_name} has won the race to the crystal!`);
     }
 
     updateGameState(gameState) {

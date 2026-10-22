@@ -213,6 +213,38 @@ func TestEventsForActionEndTurn(t: reference testing.T)
         test.AssertNotEqual(t, d["current_player_id"], first)
         test.AssertEqual(t, d["turn_phase"], "MOVEMENT")
 
+# The end of a match produces a GameEnded event naming the winner. The turn
+# does not pass on, so there is no TurnChanged to report either.
+func TestEventsForActionGameEnded(t: reference testing.T)
+    gs := newEventGame()
+
+    crystalPos := gs.crystalInstance.position
+    for _, health in constants.TOKEN_HEALTH_VALUES
+        for i from 0 to 20
+            if gs.DeployToken(types.PlayerID("player_0"), health, crystalPos) is empty
+                break
+
+    events := empty list of GameEvent
+    for i from 0 to 8
+        api := NewGameAPI(gs, gs.currentTurnPlayerId)
+        result := api.EndTurn()
+        test.AssertTrue(t, result.Success)
+        events = EventsForAction(gs, result.Data)
+        if eventsOfType(events, "GAME_ENDED") isnt empty
+            break
+
+    ended := eventsOfType(events, "GAME_ENDED")
+    test.AssertEqual(t, len(ended), 1)
+
+    if len(ended) equals 1
+        d := EventToDict(ended[0])
+        test.AssertEqual(t, d["type"], "GAME_ENDED")
+        test.AssertEqual(t, d["winner_id"], types.PlayerID("player_0"))
+        test.AssertEqual(t, d["winner_name"], "Player 1")
+
+    # The turn does not pass on to the loser.
+    test.AssertEqual(t, len(eventsOfType(events, "TURN_CHANGED")), 0)
+
 # An attack produces a CombatResolved event carrying both positions, so a
 # consumer never has to look the tokens up in the current state.
 func TestEventsForActionAttack(t: reference testing.T)

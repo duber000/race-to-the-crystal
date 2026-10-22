@@ -284,6 +284,11 @@ func clearTurnState on gs: reference GameState
 
 func advanceToNextPlayer on gs: reference GameState
     gs.crystalEffects.endTurnUpdate()
+
+    # The match is over -- the turn does not pass on to the loser.
+    if gs.phase equals enums.ENDED
+        return
+
     active := gs.getActivePlayers()
 
     if active is empty

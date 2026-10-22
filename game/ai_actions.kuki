@@ -379,6 +379,14 @@ func ExecuteEndTurn(gs: reference GameState) ActionResult
 
     message := "Turn ended\n  Turn {gs.turnNumber} begins\n  Current player: {newPlayerName}"
 
+    # The match is over, so no turn begins -- the turn does not pass on.
+    if gs.phase equals enums.ENDED
+        winnerName := "Unknown"
+        winnerRef := gs.GetPlayer(gs.winnerId)
+        if winnerRef isnt empty
+            winnerName = winnerRef.name
+        message = "Turn ended\n  GAME OVER - {winnerName} won the race to the crystal!"
+
     return SuccessResult(message, TurnEndData{
         TurnNumber: gs.turnNumber,
         NextPlayerID: gs.currentTurnPlayerId,

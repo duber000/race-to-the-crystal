@@ -186,6 +186,17 @@ func tokenPosition(gs: reference GameState, tokenId: types.TokenID) list of int
     t := dereference tRef
     return list of int{t.position.X, t.position.Y}
 
+# The display name of the player who won, or an empty string when there is
+# no winner (yet).
+func winnerNameOf(gs: reference GameState) string
+    winnerId := gs.winnerId
+    if winnerId is empty
+        return ""
+    pRef := gs.GetPlayer(winnerId)
+    if pRef is empty
+        return ""
+    return pRef.name
+
 # The events produced by a successful action. `gs` is the game state
 # *after* the action has been applied.
 func EventsForAction(gs: reference GameState, data: ActionResultData) list of GameEvent
@@ -225,6 +236,15 @@ func EventsForAction(gs: reference GameState, data: ActionResultData) list of Ga
                 },
             }
         when TurnEndData
+            if gs.phase equals enums.ENDED
+                # The match is over. The turn does not pass on, so there is
+                # no turn change to report -- only the end of the match.
+                return list of GameEvent{
+                    GameEnded{
+                        WinnerID: gs.winnerId,
+                        WinnerName: winnerNameOf(gs),
+                    },
+                }
             timeout := 0
             nextRef := gs.GetPlayer(data.NextPlayerID)
             if nextRef isnt empty

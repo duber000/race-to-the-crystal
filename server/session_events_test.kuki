@@ -1,0 +1,62 @@
+petiole main
+
+import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/shared/constants" as constants
+import "race-to-the-crystal/shared/types" as types
+import "stdlib/test"
+import "testing"
+
+# The wire names of the events a session recorded.
+func recordedEventNames(events: list of gamepkg.GameEvent) list of string
+    names := empty list of string
+    for e in events
+        names = append(names, gamepkg.EventTypeName(e))
+    return names
+
+# A session logs the events its actions produce. This drives a session to a
+# win and checks that the log ends with a GAME_ENDED event naming the
+# winner -- the event the replay log and the spectator need, and the one
+# the client uses to play the victory effect.
+func TestSessionLogsGameEndedWhenTheMatchIsWon(t: reference testing.T)
+    lm := NewLobbyManager()
+    lobby := lm.createLobby("net_a", "Alpha", "T", ClientTypeWEB_BROWSER, 2)
+    test.AssertNotNil(t, lobby)
+    if lobby is empty
+        return
+    lm.joinLobby(lobby.gameId, "net_b", "Bravo", ClientTypeWEB_BROWSER)
+
+    gc := NewGameCoordinator(600, 600)
+    session := gc.createSession(lobby)
+
+    gs := reference of session.gameState
+    crystalRef := gs.CrystalInstance()
+    test.AssertNotNil(t, crystalRef)
+    if crystalRef is empty
+        return
+    crystalPos := crystalRef.Position()
+
+    # Park player_0's tokens on the crystal.
+    for _, health in constants.TOKEN_HEALTH_VALUES
+        for i from 0 to 20
+            if gs.DeployToken(types.PlayerID("player_0"), health, crystalPos) is empty
+                break
+
+    # End turns until somebody wins the crystal.
+    for i from 0 to 8
+        if session.isGameOver()
+            break
+        networkId := "net_a"
+        if gs.CurrentTurnPlayerID() equals types.PlayerID("player_1")
+            networkId = "net_b"
+        ok, message, _, _ := session.executeGameAction(networkId, gamepkg.NewEndTurnAction())
+        test.AssertTrue(t, ok)
+        test.AssertNotEqual(t, message, "")
+
+    test.AssertTrue(t, session.isGameOver())
+
+    names := recordedEventNames(session.events)
+    found := false
+    for n in names
+        if n equals "GAME_ENDED"
+            found = true
+    test.AssertTrue(t, found)
