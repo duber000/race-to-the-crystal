@@ -113,25 +113,72 @@ func visibleBoardToDict(b: reference Board, visibleIds: map of int to bool) Stat
 # A generator dict. Whether a generator has fallen is a physical fact
 # about the board, so `is_disabled` is always shown; who is capturing it
 # is only shown when the viewer can see it.
+#
+# The capture requirements are rules, not secrets, so they are always
+# shown: the client draws the capture progress from them and must not
+# have to know the numbers itself.
 func visibleGeneratorToDict(g: Generator, inView: bool) StateDict
     d := generatorToDict(g)
     if not inView
         d["capturing_player_id"] = ""
         d["capture_token_ids"] = empty list of int
         d["turns_held"] = 0
+        d["tokens_present"] = 0
     return d
 
 # A crystal dict. Its position is the objective, so it is always shown;
 # who holds it and how far along the capture is only shown when the viewer
 # can see it.
-func visibleCrystalToDict(c: reference Crystal, inView: bool) StateDict
+func visibleCrystalToDict(c: reference Crystal, inView: bool, tokensRequired: int) StateDict
     d := crystalToDict(c)
+    d["tokens_required"] = tokensRequired
     if not inView
         d["holding_player_id"] = ""
         d["controlling_player_id"] = ""
         d["holding_token_ids"] = empty list of int
         d["turns_held"] = 0
+        d["tokens_present"] = 0
     return d
+
+# The cells a token could attack from: the cells it stands next to.
+#
+# The adjacency rule itself comes from the token, so this cannot drift
+# from the combat code -- the eight offsets are only a candidate set that
+# the token's own rule filters.
+func attackableCellsFrom(tok: reference Token, width: int, height: int) list of types.Position
+    cells := empty list of types.Position
+    for dx from -1 through 1
+        for dy from -1 through 1
+            if dx equals 0 and dy equals 0
+                continue
+            x := tok.position.X + dx
+            y := tok.position.Y + dy
+            if x < 0 or x >= width or y < 0 or y >= height
+                continue
+            if tok.isAdjacentTo(types.Pos(x, y))
+                cells = append(cells, types.Pos(x, y))
+    return cells
+
+# The cells that are under attack, keyed "x,y", with the ids of the enemy
+# tokens threatening each cell.
+#
+# This is what a tactical overlay needs: "if I put a token here, who can
+# hit it?". Only the enemy tokens the viewer can actually see are
+# included, and only the cells the viewer can see are mapped -- so the
+# map never says anything the viewer could not work out for themselves.
+func threatMap on gs: reference GameState(viewer: types.PlayerID, cells: map of string to bool) map of string to list of int
+    threats := empty map of string to list of int
+    for tid, t in gs.tokens
+        if t.playerId equals viewer
+            continue
+        if not tokenIsVisible(t, viewer, cells)
+            continue
+        for c in attackableCellsFrom(t, gs.board.width, gs.board.height)
+            key := "{c.X},{c.Y}"
+            if not cellIsVisible(cells, c.X, c.Y)
+                continue
+            threats[key] = append(threats[key], tid as int)
+    return threats
 
 # The client-facing state dict for one viewer, with everything they may not
 # see masked out.
@@ -182,13 +229,14 @@ func VisibleStateDict on gs: reference GameState(viewer: types.PlayerID) StateDi
         "turn_number": gs.turnNumber,
         "phase": "{gs.phase}",
         "turn_phase": "{gs.turnPhase}",
+        "threat_map": gs.threatMap(viewer, cells),
     }
     if gs.winnerId isnt empty
         result["winner_id"] = gs.winnerId as string
-    if gs.crystalInstance isnt empty
-        crys := dereference gs.crystalInstance
+    crys := gs.crystalInstance
+    if crys isnt empty
         inView := cellIsVisible(cells, crys.position.X, crys.position.Y)
-        result["crystal"] = visibleCrystalToDict(reference of crys, inView)
+        result["crystal"] = visibleCrystalToDict(crys, inView, gs.CrystalTokensRequired())
     if gs.lastTriggeredCrystalEffect isnt empty
         ev := dereference gs.lastTriggeredCrystalEffect
         result["last_triggered_crystal_effect"] = list of any{

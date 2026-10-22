@@ -1,5 +1,6 @@
 petiole game
 
+import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/enums" as enums
 import "race-to-the-crystal/shared/types" as types
 import "stdlib/maps"
@@ -93,7 +94,12 @@ func crystalToDict(c: reference Crystal) StateDict
         "holding_token_ids": holdingIds,
         "turns_held": c.turnsHeld,
         "base_tokens_required": c.baseTokensRequired,
+        "tokens_present": len(holdingIds),
+        "turns_required": c.turnsRequired(),
     }
+    # How many tokens are on the crystal, and how many turns the
+    # capture takes. `tokens_required` is added by the caller: it
+    # depends on how many generators have fallen.
 
 func generatorToDict(g: Generator) StateDict
     capIds := empty list of int
@@ -106,7 +112,13 @@ func generatorToDict(g: Generator) StateDict
         "capture_token_ids": capIds,
         "turns_held": g.turnsHeld,
         "is_disabled": g.isDisabled,
+        "tokens_present": len(capIds),
+        "tokens_required": constants.GENERATOR_CAPTURE_TOKENS_REQUIRED,
+        "turns_required": constants.GENERATOR_CAPTURE_TURNS_REQUIRED,
     }
+    # The capture requirements and how far along the capture is. The
+    # client draws the progress from these, so it must not have to
+    # know the rules itself.
 
 func activeEffectToDict(e: ActiveEffect) StateDict
     return StateDict{
@@ -186,9 +198,11 @@ func ClientStateDict on gs: reference GameState(perspective: string) StateDict
     }
     if gs.winnerId isnt empty
         result["winner_id"] = gs.winnerId as string
-    if gs.crystalInstance isnt empty
-        crys := dereference gs.crystalInstance
-        result["crystal"] = crystalToDict(reference of crys)
+    crys := gs.crystalInstance
+    if crys isnt empty
+        crystalDict := crystalToDict(crys)
+        crystalDict["tokens_required"] = gs.CrystalTokensRequired()
+        result["crystal"] = crystalDict
     if gs.lastTriggeredCrystalEffect isnt empty
         ev := dereference gs.lastTriggeredCrystalEffect
         result["last_triggered_crystal_effect"] = list of any{

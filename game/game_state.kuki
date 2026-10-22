@@ -349,6 +349,17 @@ func triggerRandomCrystalEffect on gs: reference GameState() (types.PlayerID, en
     gs.lastTriggeredCrystalEffect = reference of CrystalEvent{playerId: targetPlayer, effectType: effect}
     return targetPlayer, effect, true
 
+# How many tokens the crystal needs before it can be captured: the base
+# requirement, less two for every generator that has fallen.
+#
+# The client draws the crystal's capture progress from this, so it must
+# come from the rules rather than being computed in the browser.
+func CrystalTokensRequired on gs: reference GameState int
+    crys := gs.crystalInstance
+    if crys is empty
+        return 0
+    return crys.getTokensRequired(countDisabledGenerators(gs.generators))
+
 func updateGeneratorsAndCrystal on gs: reference GameState() (list of int, bool)
     tokensByPos := empty map of types.Position to list of TokenAtPos
 

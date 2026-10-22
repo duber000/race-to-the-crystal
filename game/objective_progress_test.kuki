@@ -1,0 +1,95 @@
+petiole game
+
+import "race-to-the-crystal/shared/types"
+import "stdlib/test"
+import "testing"
+
+# --- Objective capture progress ---------------------------------------------
+#
+# The client draws the capture progress of the generators and the crystal.
+# The requirements and the progress come from the rules, so the browser
+# does not have to know them.
+
+# A started two-player game.
+func newObjectiveGame() reference GameState
+    gs := CreateGame(2)
+    gs.StartGame()
+    return reference of gs
+
+# The generator dict at an index.
+func generatorDict(state: StateDict, index: int) StateDict
+    gensVal := state["generators"]
+    if gensVal is list of StateDict as gens
+        return gens[index]
+    return StateDict{}
+
+# The crystal dict.
+func crystalDict(state: StateDict) StateDict
+    crysVal := state["crystal"]
+    if crysVal is StateDict as crys
+        return crys
+    return StateDict{}
+
+# Put a token on a cell and deploy it.
+func placeObjectiveToken(gs: reference GameState, tokenId: types.TokenID, x: int, y: int)
+    tRef := gs.GetToken(tokenId)
+    if tRef is empty
+        return
+    tRef.position = types.Pos(x, y)
+    tRef.isDeployed = true
+    gs.board.setOccupant(types.Pos(x, y), tokenId)
+
+# A generator shows the requirements of a capture even when the viewer
+# cannot see it: the numbers are rules, not secrets.
+func TestGeneratorAlwaysShowsTheCaptureRequirements(t: reference testing.T)
+    gs := newObjectiveGame()
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+
+    gen := generatorDict(state, 0)
+    test.AssertEqual(t, gen["tokens_required"], 2)
+    test.AssertEqual(t, gen["turns_required"], 2)
+
+# A generator out of sight hides who is capturing it and how far along the
+# capture is, but not the requirements.
+func TestGeneratorOutOfViewMasksTheCaptureProgress(t: reference testing.T)
+    gs := newObjectiveGame()
+    # The viewer has no tokens on the board, so nothing is in sight.
+    for tid in gs.GetPlayerTokens(types.PlayerID("player_0"))
+        tRef := gs.GetToken(tid.id)
+        if tRef isnt empty
+            tRef.isDeployed = false
+
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+    gen := generatorDict(state, 0)
+    test.AssertEqual(t, gen["tokens_required"], 2)
+    test.AssertEqual(t, gen["turns_required"], 2)
+    test.AssertEqual(t, gen["turns_held"], 0)
+    test.AssertEqual(t, gen["tokens_present"], 0)
+    test.AssertEqual(t, gen["capturing_player_id"], "")
+
+# The crystal shows how many tokens it needs and how many turns the
+# capture takes.
+func TestCrystalShowsTheCaptureRequirements(t: reference testing.T)
+    gs := newObjectiveGame()
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+
+    crys := crystalDict(state)
+    test.AssertEqual(t, crys["turns_required"], 3)
+    test.AssertEqual(t, crys["tokens_required"], 12)
+    test.AssertEqual(t, crys["tokens_present"], 0)
+
+# Every generator that falls takes two tokens off the crystal's
+# requirement, and the client is told the new number.
+func TestCrystalRequirementFallsWithEachGenerator(t: reference testing.T)
+    gs := newObjectiveGame()
+    gens := gs.generators
+
+    for i from 0 to len(gens)
+        state := gs.VisibleStateDict(types.PlayerID("player_0"))
+        crys := crystalDict(state)
+        test.AssertEqual(t, crys["tokens_required"], 12 - 2 * i)
+        gens[i].isDisabled = true
+
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+    crys := crystalDict(state)
+    test.AssertEqual(t, crys["tokens_required"], 4)

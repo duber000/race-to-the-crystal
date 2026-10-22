@@ -1,0 +1,111 @@
+petiole game
+
+import "race-to-the-crystal/shared/types"
+import "stdlib/test"
+import "testing"
+
+# --- Threat map -------------------------------------------------------------
+#
+# The threat map answers "if I put a token here, who can hit it?". It is
+# computed by the rules in the game package, not by the client, so it
+# cannot drift from the combat code.
+
+# A started two-player game.
+func newThreatGame() reference GameState
+    gs := CreateGame(2)
+    gs.StartGame()
+    return reference of gs
+
+# Place a token of one player on a specific cell.
+func placeThreatToken(gs: reference GameState, playerId: types.PlayerID, tokenId: types.TokenID, x: int, y: int)
+    tRef := gs.GetToken(tokenId)
+    if tRef is empty
+        return
+    tRef.position = types.Pos(x, y)
+    tRef.isDeployed = true
+    gs.board.setOccupant(types.Pos(x, y), tokenId)
+
+# Take a player's deployed tokens off the board, so the visible region is
+# unambiguous.
+func retractTokens(gs: reference GameState, playerId: types.PlayerID)
+    for tid in gs.GetPlayerTokens(playerId)
+        tRef := gs.GetToken(tid.id)
+        if tRef is empty
+            continue
+        tRef.isDeployed = false
+
+# The token ids threatening a cell, as the threat map records them.
+func threatIdsAt(gs: reference GameState, viewer: types.PlayerID, x: int, y: int) list of int
+    cells := gs.visibleCells(viewer)
+    threats := gs.threatMap(viewer, cells)
+    return threats["{x},{y}"]
+
+# An enemy token next to a cell threatens it.
+func TestAdjacentEnemyTokenThreatensTheCell(t: reference testing.T)
+    gs := newThreatGame()
+    placeThreatToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeThreatToken(gs, types.PlayerID("player_1"), 20, 1, 1)
+
+    ids := threatIdsAt(gs, types.PlayerID("player_0"), 0, 0)
+    test.AssertEqual(t, len(ids), 1)
+    test.AssertEqual(t, ids[0], 20)
+
+# Two cells away is not adjacent, so there is no threat.
+func TestDistantEnemyTokenDoesNotThreatenTheCell(t: reference testing.T)
+    gs := newThreatGame()
+    placeThreatToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeThreatToken(gs, types.PlayerID("player_1"), 20, 2, 2)
+
+    ids := threatIdsAt(gs, types.PlayerID("player_0"), 0, 0)
+    test.AssertEqual(t, len(ids), 0)
+
+# Your own tokens are not a threat to you.
+func TestOwnTokenDoesNotThreatenTheCell(t: reference testing.T)
+    gs := newThreatGame()
+    placeThreatToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeThreatToken(gs, types.PlayerID("player_0"), 1, 1, 1)
+
+    ids := threatIdsAt(gs, types.PlayerID("player_0"), 0, 0)
+    test.AssertEqual(t, len(ids), 0)
+
+# An enemy token the viewer cannot see is not a threat: the map only says
+# what the viewer could work out for themselves.
+func TestHiddenEnemyTokenIsNotAThreat(t: reference testing.T)
+    gs := newThreatGame()
+    placeThreatToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeThreatToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+
+    ids := threatIdsAt(gs, types.PlayerID("player_0"), 0, 0)
+    test.AssertEqual(t, len(ids), 0)
+
+# The map only covers the cells the viewer can see, so it cannot be used to
+# probe the dark.
+func TestThreatMapOnlyCoversVisibleCells(t: reference testing.T)
+    gs := newThreatGame()
+    # Keep a single token in view, so the visible region is unambiguous.
+    retractTokens(gs, types.PlayerID("player_0"))
+    placeThreatToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeThreatToken(gs, types.PlayerID("player_1"), 20, 2, 2)
+
+    viewer := types.PlayerID("player_0")
+    cells := gs.visibleCells(viewer)
+    threats := gs.threatMap(viewer, cells)
+
+    # The enemy is within the radius, so it is visible, and the cell it
+    # stands next to is mapped as threatened.
+    test.AssertTrue(t, cellIsVisible(cells, 2, 2))
+    test.AssertTrue(t, threats["1,1"] isnt empty)
+
+    # A cell outside the radius is not mentioned: the map says nothing
+    # about the dark.
+    test.AssertFalse(t, cellIsVisible(cells, 4, 4))
+    test.AssertTrue(t, threats["4,4"] is empty)
+
+# The state the client receives carries the threat map.
+func TestVisibleStateCarriesTheThreatMap(t: reference testing.T)
+    gs := newThreatGame()
+    placeThreatToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeThreatToken(gs, types.PlayerID("player_1"), 20, 1, 1)
+
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+    test.AssertNotNil(t, state["threat_map"])
