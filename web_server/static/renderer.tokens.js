@@ -73,22 +73,29 @@ class TokenRenderer {
     }
 
     filterVisibleTokens(gameState, allTokens) {
+        // Fog of war: the server masks the tokens a player cannot see. They
+        // are still present in the state, but marked `is_visible: false`
+        // with no position, and must not be rendered.
+        const seen = allTokens.filter(
+            (token) => token.is_visible !== false && token.position,
+        );
+
         if (!gameState.crystal?.active_effect) {
-            return allTokens;
+            return seen;
         }
 
         const effect = gameState.crystal.active_effect;
         const localPlayerId = this.localPlayerId;
 
         if (effect.type === CRYSTAL_EFFECT.FOG_OF_WAR) {
-            return allTokens.filter((token) => token.player_id === localPlayerId);
+            return seen.filter((token) => token.player_id === localPlayerId);
         }
 
         if (effect.type === CRYSTAL_EFFECT.PHANTOM_ENEMIES) {
-            return allTokens;
+            return seen;
         }
 
-        return allTokens;
+        return seen;
     }
 
     updatePhantomTokens(gameState) {

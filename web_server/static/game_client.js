@@ -177,6 +177,9 @@ class GameClient {
       if (
         token.is_deployed &&
         token.is_alive &&
+        // A token hidden by fog of war has no position — it is not on the
+        // board as far as this player is concerned.
+        token.position &&
         token.position[0] === gridX &&
         token.position[1] === gridY
       ) {

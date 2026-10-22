@@ -321,9 +321,10 @@ Renderer3D.prototype.animateTokenMove = function(tokenId, oldPos, newPos) {
 Renderer3D.prototype.animateCombat = function(data) {
     // The event carries the defender's position, so the effect can play
     // even after the token has been removed from the scene by the state
-    // update that follows.
-    const position = data.defender_position || null;
-    if (!position) {
+    // update that follows. A combat the player only partly saw has the
+    // hidden side stripped out, so the position may be empty.
+    const position = data.defender_position;
+    if (!position || position.length < 2) {
         return;
     }
 
@@ -354,8 +355,8 @@ Renderer3D.prototype.animateCrystalUpdate = function(data) {
 };
 
 Renderer3D.prototype.animateMysteryEvent = function(data) {
-    const position = data.position || null;
-    if (!position) {
+    const position = data.position;
+    if (!position || position.length < 2) {
         return;
     }
     const posKey = `${position[0]},${position[1]}`;

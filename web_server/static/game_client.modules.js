@@ -174,11 +174,13 @@ class ConnectionManager {
     }
 
     handleTokenMoved(data) {
-        if (!this.gameClient.gameState || !this.gameClient.gameState.tokens[data.token_id]) return;
+        const token = this.gameClient.gameState?.tokens?.[data.token_id];
+        if (!token) return;
 
         // Update local state for immediate feedback. The authoritative state
-        // follows as a FULL_STATE, which overwrites this.
-        this.gameClient.gameState.tokens[data.token_id].position = data.new_position;
+        // follows as a FULL_STATE, which overwrites this. A token hidden by
+        // fog of war has no position and is never sent a move.
+        token.position = data.new_position;
 
         // Trigger animation in renderer
         if (this.gameClient.renderer) {
@@ -849,6 +851,8 @@ class InputController {
             if (
                 token.is_deployed &&
                 token.is_alive &&
+                // A token hidden by fog of war has no position.
+                token.position &&
                 token.position[0] === gridX &&
                 token.position[1] === gridY
             ) {

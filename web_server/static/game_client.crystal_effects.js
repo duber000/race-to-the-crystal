@@ -143,6 +143,7 @@ class CrystalEffectAnimator {
 
     _initLightningFlashes() {
         for (let token of this.affectedTokens) {
+            // A token hidden by fog of war has no position.
             if (!token.position) continue;
 
             const flash = {

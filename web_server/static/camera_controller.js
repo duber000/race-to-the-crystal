@@ -242,6 +242,13 @@ class CameraController {
      * @private
      */
     _firstPersonPose(token) {
+        // A token hidden by fog of war has no position. The camera can
+        // only follow one of the player's own tokens, so this should not
+        // happen — but a null position must not throw.
+        if (!token || !token.position) {
+            return null;
+        }
+
         const worldX = token.position[0] * this.cellSize + this.cellSize / 2;
         const worldZ = token.position[1] * this.cellSize + this.cellSize / 2;
 
@@ -268,6 +275,7 @@ class CameraController {
      */
     _updateFirstPersonCamera(token, dt) {
         const pose = this._firstPersonPose(token);
+        if (!pose) return;
         const s = 1 - Math.exp(-dt * FP_SMOOTHING);
         const pos = BABYLON.Vector3.Lerp(this.camera.position, pose.position, s);
         const target = BABYLON.Vector3.Lerp(this.camera.target, pose.target, s);
@@ -282,6 +290,7 @@ class CameraController {
     snapToToken(token) {
         if (this.cameraMode !== "firstperson" || !token) return;
         const pose = this._firstPersonPose(token);
+        if (!pose) return;
         this._setCameraPose(pose.position, pose.target);
     }
 

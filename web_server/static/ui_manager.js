@@ -513,11 +513,15 @@ class UIManager {
 
                 const tokenCount = document.createElement("div");
                 const tokenIds = player.token_ids || [];
-                const alive = tokenIds.filter((id) => {
+                const visible = tokenIds.filter((id) => {
                     const t = gameState.tokens?.[id];
-                    return t && t.is_alive && t.is_deployed;
+                    if (!t || !t.is_alive || !t.is_deployed) return false;
+                    // With fog of war on, only count the tokens this player
+                    // can actually see — otherwise the roster would leak
+                    // where the enemy has pieces on the board.
+                    return player.id === localPlayerId || t.is_visible !== false;
                 }).length;
-                tokenCount.textContent = `Tokens: ${alive}/${tokenIds.length}`;
+                tokenCount.textContent = `Tokens: ${visible}/${tokenIds.length}`;
 
                 playerDiv.appendChild(name);
                 playerDiv.appendChild(tokenCount);

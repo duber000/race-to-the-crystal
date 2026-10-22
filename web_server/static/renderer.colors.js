@@ -19,6 +19,9 @@ Renderer3D.prototype.updateSpecialCellColors = function(gameState) {
         const tokensHere = [];
         for (const token of Object.values(gameState.tokens)) {
             if (!token.is_deployed || !token.is_alive) continue;
+            // A token hidden by fog of war has no position — it is not on
+            // this cell as far as this player is concerned.
+            if (!token.position) continue;
             if (token.position[0] === gen.position[0] && token.position[1] === gen.position[1]) {
                 tokensHere.push(token);
             }
@@ -89,6 +92,8 @@ Renderer3D.prototype.updateSpecialCellColors = function(gameState) {
         const tokensAtCrystal = [];
         for (const token of Object.values(gameState.tokens)) {
             if (!token.is_deployed || !token.is_alive) continue;
+            // A token hidden by fog of war has no position.
+            if (!token.position) continue;
             if (token.position[0] === gameState.crystal.position[0] && 
                 token.position[1] === gameState.crystal.position[1]) {
                 tokensAtCrystal.push(token);
