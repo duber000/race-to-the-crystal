@@ -1,0 +1,308 @@
+petiole game
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types"
+
+# ==========================================================================
+# Fog of war
+#
+# A viewer sees the terrain of the whole board — it is static, and it is
+# the frame they navigate by — but only the enemy tokens their own tokens
+# can see, and only the ownership of objectives they are close enough to
+# watch.
+#
+# The rules live here, in the game package, rather than in the server:
+# they are game rules, they must be identical for every client, and they
+# are far easier to test here than through the wire.
+# ==========================================================================
+
+# How far a viewer can see, in cells. A square (Chebyshev) radius, matching
+# the 8-way movement the game uses.
+const VISIBILITY_RADIUS = 3
+
+# Grid distance between two cells, counting the number of king moves. The
+# square radius means a diagonal is as close as an orthogonal step.
+func visibilityDistance(ax: int, ay: int, bx: int, by: int) int
+    dx := ax - bx
+    if dx < 0
+        dx = -dx
+    dy := ay - by
+    if dy < 0
+        dy = -dy
+    if dx > dy
+        return dx
+    return dy
+
+# The cells a viewer can see, keyed "x,y".
+#
+# That is the square around each of their deployed tokens, plus the cells
+# they own: a generator they are capturing, and the crystal they hold.
+func visibleCells on gs: reference GameState(viewer: types.PlayerID) map of string to bool
+    cells := empty map of string to bool
+
+    for t in gs.GetPlayerTokens(viewer)
+        for dx from -VISIBILITY_RADIUS through VISIBILITY_RADIUS
+            for dy from -VISIBILITY_RADIUS through VISIBILITY_RADIUS
+                x := t.position.X + dx
+                y := t.position.Y + dy
+                if x >= 0 and x < gs.board.width and y >= 0 and y < gs.board.height
+                    cells["{x},{y}"] = true
+
+    for g in gs.generators
+        if g.capturingPlayerId equals viewer
+            cells["{g.position.X},{g.position.Y}"] = true
+
+    if gs.crystalInstance isnt empty
+        crys := dereference gs.crystalInstance
+        if crys.holdingPlayerId equals viewer
+            cells["{crys.position.X},{crys.position.Y}"] = true
+
+    return cells
+
+# Is a cell within a viewer's sight?
+func cellIsVisible(cells: map of string to bool, x: int, y: int) bool
+    seen, has := cells["{x},{y}"]
+    return has and seen
+
+# Can the viewer see this token? Their own tokens are always visible, and
+# an enemy token is visible if it stands in a cell the viewer can see.
+func tokenIsVisible(token: reference Token, viewer: types.PlayerID, cells: map of string to bool) bool
+    if token.playerId equals viewer
+        return true
+    if not token.isDeployed
+        return false
+    return cellIsVisible(cells, token.position.X, token.position.Y)
+
+# The token ids the viewer can see.
+func visibleTokenIds on gs: reference GameState(viewer: types.PlayerID, cells: map of string to bool) map of int to bool
+    result := empty map of int to bool
+    for tid, t in gs.tokens
+        if tokenIsVisible(t, viewer, cells)
+            result[tid as int] = true
+    return result
+
+# A cell dict whose occupants are limited to the tokens the viewer can see.
+#
+# This is the easy leak to miss: a masked token whose id still appears in
+# its cell's occupant list reveals exactly where it is.
+func visibleCellToDict(c: Cell, visibleIds: map of int to bool) StateDict
+    occupants := empty list of int
+    for tid in c.occupants
+        seen, has := visibleIds[tid as int]
+        if has and seen
+            occupants = append(occupants, tid as int)
+    return StateDict{
+        "position": list of int{c.position.X, c.position.Y},
+        "cell_type": c.cellType as int,
+        "occupants": occupants,
+    }
+
+func visibleBoardToDict(b: reference Board, visibleIds: map of int to bool) StateDict
+    grid := empty list of list of StateDict
+    for row in b.grid
+        rowDicts := empty list of StateDict
+        for cell in row
+            rowDicts = append(rowDicts, visibleCellToDict(cell, visibleIds))
+        grid = append(grid, rowDicts)
+    return StateDict{
+        "width": b.width,
+        "height": b.height,
+        "grid": grid,
+    }
+
+# A generator dict. Whether a generator has fallen is a physical fact
+# about the board, so `is_disabled` is always shown; who is capturing it
+# is only shown when the viewer can see it.
+func visibleGeneratorToDict(g: Generator, inView: bool) StateDict
+    d := generatorToDict(g)
+    if not inView
+        d["capturing_player_id"] = ""
+        d["capture_token_ids"] = empty list of int
+        d["turns_held"] = 0
+    return d
+
+# A crystal dict. Its position is the objective, so it is always shown;
+# who holds it and how far along the capture is only shown when the viewer
+# can see it.
+func visibleCrystalToDict(c: reference Crystal, inView: bool) StateDict
+    d := crystalToDict(c)
+    if not inView
+        d["holding_player_id"] = ""
+        d["controlling_player_id"] = ""
+        d["holding_token_ids"] = empty list of int
+        d["turns_held"] = 0
+    return d
+
+# The client-facing state dict for one viewer, with everything they may not
+# see masked out.
+#
+# An empty viewer means "no perspective" — a spectator, or an internal
+# caller — and gets the unmasked state.
+func VisibleStateDict on gs: reference GameState(viewer: types.PlayerID) StateDict
+    if viewer is empty
+        return gs.ClientStateDict("")
+
+    cells := gs.visibleCells(viewer)
+    visibleIds := gs.visibleTokenIds(viewer, cells)
+
+    playersMap := empty map of string to StateDict
+    colorIndexes := gs.PlayerColorIndexes()
+    for pid in gs.orderedPlayerIds()
+        pRef := gs.GetPlayer(pid)
+        if pRef is empty
+            continue
+        playersMap[pid as string] = playerToDict(pRef, colorIndexes[pid as string])
+
+    tokensMap := empty map of string to StateDict
+    for tid, t in gs.tokens
+        d := tokenToDict(t)
+        if tokenIsVisible(t, viewer, cells)
+            d["is_visible"] = true
+        else
+            # The viewer knows the token exists — it has an id and an owner —
+            # but not where it is or how healthy it is.
+            d["is_visible"] = false
+            d["position"] = empty
+            d["health"] = empty
+            d["max_health"] = empty
+        tokensMap["{tid}"] = d
+
+    gens := empty list of StateDict
+    for g in gs.generators
+        inView := cellIsVisible(cells, g.position.X, g.position.Y)
+        gens = append(gens, visibleGeneratorToDict(g, inView))
+
+    result := StateDict{
+        "board": visibleBoardToDict(reference of gs.board, visibleIds),
+        "players": playersMap,
+        "tokens": tokensMap,
+        "generators": gens,
+        "crystal_effects": gs.crystalEffects.effectsToDict(gs.players),
+        "current_turn_player_id": gs.currentTurnPlayerId as string,
+        "turn_number": gs.turnNumber,
+        "phase": "{gs.phase}",
+        "turn_phase": "{gs.turnPhase}",
+    }
+    if gs.winnerId isnt empty
+        result["winner_id"] = gs.winnerId as string
+    if gs.crystalInstance isnt empty
+        crys := dereference gs.crystalInstance
+        inView := cellIsVisible(cells, crys.position.X, crys.position.Y)
+        result["crystal"] = visibleCrystalToDict(reference of crys, inView)
+    if gs.lastTriggeredCrystalEffect isnt empty
+        ev := dereference gs.lastTriggeredCrystalEffect
+        result["last_triggered_crystal_effect"] = list of any{
+            ev.playerId as string,
+            crystalEffectNumber(ev.effectType),
+        }
+    if gs.lastTriggeredMysteryEvent isnt empty
+        ev := dereference gs.lastTriggeredMysteryEvent
+        # A mystery square in the dark is a mystery square in the dark.
+        if cellIsVisible(cells, ev.Position.X, ev.Position.Y)
+            result["last_triggered_mystery_event"] = list of any{
+                ev.TokenID as int,
+                list of int{ev.Position.X, ev.Position.Y},
+                ev.effect,
+            }
+    result["perspective_player_id"] = viewer as string
+    result["your_player_id"] = viewer as string
+    return result
+
+# The event as one viewer may see it, or an empty list when they may not
+# see it at all.
+#
+# The viewer sees an event when at least one participant is visible to
+# them; any participant they cannot see is stripped out of it.
+func FilterEventForViewer on gs: reference GameState(e: GameEvent, viewer: types.PlayerID) list of GameEvent
+    if viewer is empty
+        return list of GameEvent{e}
+
+    cells := gs.visibleCells(viewer)
+
+    switch e
+        when TokenMoved
+            tRef := gs.GetToken(e.TokenID)
+            if tRef is empty
+                return empty list of GameEvent
+            if not tokenIsVisible(tRef, viewer, cells)
+                return empty list of GameEvent
+            return list of GameEvent{e}
+        when TokenDeployed
+            tRef := gs.GetToken(e.TokenID)
+            if tRef is empty
+                return empty list of GameEvent
+            if not tokenIsVisible(tRef, viewer, cells)
+                return empty list of GameEvent
+            return list of GameEvent{e}
+        when CombatResolved
+            attackerVisible := false
+            attackerRef := gs.GetToken(e.AttackerID)
+            if attackerRef isnt empty
+                attackerVisible = tokenIsVisible(attackerRef, viewer, cells)
+            defenderVisible := false
+            defenderRef := gs.GetToken(e.DefenderID)
+            if defenderRef isnt empty
+                defenderVisible = tokenIsVisible(defenderRef, viewer, cells)
+
+            if not attackerVisible and not defenderVisible
+                return empty list of GameEvent
+
+            # Strip out a participant the viewer cannot see. The damage is
+            # stripped with the defender: an amount of damage with no target
+            # is a hint that something happened.
+            if attackerVisible and defenderVisible
+                return list of GameEvent{e}
+            if attackerVisible
+                return list of GameEvent{
+                    CombatResolved{
+                        AttackerID: e.AttackerID,
+                        AttackerPosition: e.AttackerPosition,
+                        DefenderID: -1,
+                        DefenderPosition: empty list of int,
+                        Damage: 0,
+                        DefenderKilled: false,
+                    },
+                }
+            return list of GameEvent{
+                CombatResolved{
+                    AttackerID: -1,
+                    AttackerPosition: empty list of int,
+                    DefenderID: e.DefenderID,
+                    DefenderPosition: e.DefenderPosition,
+                    Damage: e.Damage,
+                    DefenderKilled: e.DefenderKilled,
+                },
+            }
+        when GeneratorChanged
+            inView := cellIsVisible(cells, e.Position[0], e.Position[1])
+            # A generator falling is public news; who was capturing it is not.
+            if not inView and not e.IsDisabled
+                return empty list of GameEvent
+            if inView
+                return list of GameEvent{e}
+            return list of GameEvent{
+                GeneratorChanged{
+                    GeneratorID: e.GeneratorID,
+                    Position: e.Position,
+                    IsDisabled: e.IsDisabled,
+                    HoldingPlayerID: "",
+                    TurnsHeld: 0,
+                },
+            }
+        when CrystalChanged
+            inView := cellIsVisible(cells, e.Position[0], e.Position[1])
+            if not inView
+                return empty list of GameEvent
+            return list of GameEvent{e}
+        when MysteryTriggered
+            if not cellIsVisible(cells, e.Position[0], e.Position[1])
+                return empty list of GameEvent
+            return list of GameEvent{e}
+        when TurnChanged
+            return list of GameEvent{e}
+        when TurnTimedOut
+            return list of GameEvent{e}
+        when RadioChatter
+            return list of GameEvent{e}
+        when GameEnded
+            return list of GameEvent{e}

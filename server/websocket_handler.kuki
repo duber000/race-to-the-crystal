@@ -1,6 +1,7 @@
 petiole main
 
 import "race-to-the-crystal/game" as gamepkg
+import "race-to-the-crystal/shared/types"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/string" as strpkg
@@ -154,34 +155,41 @@ func GetClientByID on wh: reference WebSocketHandler(clientId: string) optional 
 
 # Broadcast the per-player full state to everyone in the session.
 #
-# The state is per player because it carries that player's perspective. Both
-# the WebSocket and the HTTP action paths use this, so a client sees the
-# same state shape whichever transport submitted the action.
+# The state is fogged: each player receives only what their own tokens can
+# see. Both the WebSocket and the HTTP action paths use this, so a client
+# sees the same state shape whichever transport submitted the action.
 func BroadcastSessionState on wh: reference WebSocketHandler(session: reference GameSession)
     for nid, gamePid in session.networkToGameId
-        state := session.gameState.ClientStateDict(gamePid)
+        state := session.gameState.VisibleStateDict(types.PlayerID(gamePid))
         wh.SendToClient(nid, JSONMap{
             "type": "FULL_STATE",
             "game_id": session.gameId,
             "game_state": state,
+            "event_seq": session.playerEventSeqs[nid],
         })
+        # This player's own event counter, so a resync repairs it.
 
 # Broadcast event frames to the players in the session.
 #
-# Each frame carries a per-session sequence number, so a client can detect a
-# gap in the stream and resynchronise. The frames are sent per player
-# rather than broadcast wholesale, because fog-of-war will need to filter
-# them per viewer.
+# Each frame carries a sequence number, so a client can detect a gap in the
+# stream and resynchronise. The counter is *per player*: the fog hides some
+# events from some players, and a shared counter would show them a gap for
+# every hidden event.
 func BroadcastSessionEvents on wh: reference WebSocketHandler(session: reference GameSession, events: list of gamepkg.GameEvent)
     if events is empty
         return
     for e in events
         session.eventSeq = session.eventSeq + 1
-        seq := session.eventSeq
-        for nid, _gamePid in session.networkToGameId
+        for nid, gamePid in session.networkToGameId
+            viewer := types.PlayerID(gamePid)
+            visible := session.gameState.FilterEventForViewer(e, viewer)
+            if visible is empty
+                continue
+            seq := session.playerEventSeqs[nid] + 1
+            session.playerEventSeqs[nid] = seq
             wh.SendToClient(nid, JSONMap{
                 "type": "EVENT",
                 "game_id": session.gameId,
                 "seq": seq,
-                "event": gamepkg.EventToDict(e),
+                "event": gamepkg.EventToDict(visible[0]),
             })

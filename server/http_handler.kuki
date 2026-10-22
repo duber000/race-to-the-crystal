@@ -211,12 +211,13 @@ func HandleGetState on h: reference HTTPHandler(gameId: string, authHeader: stri
 
     # The full per-player state, the same shape the WebSocket path sends.
     # The slim dict has no board, tokens or generators, so a polling client
-    # could never render the game from it.
+    # could never render the game from it. It is fogged like the WebSocket
+    # path: a client only sees what its own tokens can see.
     gamePid := ""
     pidVal, hasPid := session.networkToGameId[payload.playerId]
     if hasPid
         gamePid = pidVal
-    state := session.gameState.ClientStateDict(gamePid)
+    state := session.gameState.VisibleStateDict(types.PlayerID(gamePid))
 
     return APIResponse{success: true, message: "ok", data: state}
 

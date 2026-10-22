@@ -444,15 +444,14 @@ func handleStateRequest on ep: reference WebSocketEndpoint(clientId: string)
     gpVal, hasGp := session.networkToGameId[client.playerId]
     if hasGp
         gamePid = gpVal
-    state := session.gameState.ClientStateDict(gamePid)
+    state := session.gameState.VisibleStateDict(types.PlayerID(gamePid))
     ep.wsHandler.SendToClient(clientId, JSONMap{
         "type": "FULL_STATE",
         "game_id": session.gameId,
         "game_state": state,
-        "event_seq": session.eventSeq,
+        "event_seq": session.playerEventSeqs[client.playerId],
     })
-    # The client resets its event counter to this, so a resync also
-    # repairs a gap in the event stream.
+    # This client's own event counter, so the resync also repairs it.
 
 func handleClientDisconnect on ep: reference WebSocketEndpoint(clientId: string)
     client := ep.wsHandler.GetClientByID(clientId)

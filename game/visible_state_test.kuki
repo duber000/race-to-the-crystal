@@ -1,0 +1,300 @@
+petiole game
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types"
+import "stdlib/test"
+import "testing"
+
+# A started two-player game. Player 0 moves first.
+func newFogGame() reference GameState
+    gs := CreateGame(2)
+    gs.StartGame()
+    return reference of gs
+
+# The token dict for a token id in a state dict.
+func stateToken(state: StateDict, tokenId: int) StateDict
+    tokensVal := state["tokens"]
+    if tokensVal is map of string to StateDict as tokens
+        return tokens["{tokenId}"]
+    return StateDict{}
+
+# The occupant list a cell would report to a viewer.
+#
+# The state dict's shapes differ per key — "board" is a StateDict but
+# "tokens" is a map of StateDict — so reading the grid back out of it is a
+# type minefield. Test the filter directly instead.
+func visibleOccupants(gs: reference GameState, viewer: types.PlayerID, x: int, y: int) list of int
+    cells := gs.visibleCells(viewer)
+    visibleIds := gs.visibleTokenIds(viewer, cells)
+    cellRef := gs.board.getCellAt(types.Pos(x, y))
+    if cellRef is empty
+        return empty list of int
+    d := visibleCellToDict(dereference cellRef, visibleIds)
+    occVal := d["occupants"]
+    if occVal is list of int as occ
+        return occ
+    return empty list of int
+
+# Place a token of one player on a specific cell.
+func placeToken(gs: reference GameState, playerId: types.PlayerID, tokenId: types.TokenID, x: int, y: int)
+    tRef := gs.GetToken(tokenId)
+    if tRef is empty
+        return
+    tRef.position = types.Pos(x, y)
+    tRef.isDeployed = true
+    gs.board.setOccupant(types.Pos(x, y), tokenId)
+
+# A viewer's own tokens are always visible, whatever the distance.
+func TestOwnTokensAlwaysVisible(t: reference testing.T)
+    gs := newFogGame()
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+
+    for tok in gs.GetPlayerTokens(types.PlayerID("player_0"))
+        d := stateToken(state, tok.id as int)
+        test.AssertEqual(t, d["is_visible"], true)
+        test.AssertNotEqual(t, d["position"], empty)
+
+# An enemy token far away is masked: the viewer knows it exists, but not
+# where it is or how healthy it is.
+func TestDistantEnemyTokenIsMasked(t: reference testing.T)
+    gs := newFogGame()
+
+    # Put player 0's tokens in one corner and player 1's in the far one.
+    placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeToken(gs, types.PlayerID("player_0"), 1, 1, 0)
+    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+    d := stateToken(state, 20)
+    test.AssertEqual(t, d["is_visible"], false)
+    test.AssertEqual(t, d["position"], empty)
+    test.AssertEqual(t, d["health"], empty)
+    # The id and owner are still there: the viewer knows the token exists.
+    test.AssertEqual(t, d["id"], 20)
+    test.AssertEqual(t, d["player_id"], "player_1")
+
+# An enemy token within the visibility radius is fully visible.
+func TestNearbyEnemyTokenIsVisible(t: reference testing.T)
+    gs := newFogGame()
+    placeToken(gs, types.PlayerID("player_0"), 0, 5, 5)
+    placeToken(gs, types.PlayerID("player_1"), 20, 7, 5)
+
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+    d := stateToken(state, 20)
+    test.AssertEqual(t, d["is_visible"], true)
+    test.AssertEqual(t, d["position"], list of int{7, 5})
+    test.AssertEqual(t, d["health"], 10)
+
+# The token is hidden from the *other* player, symmetrically.
+func TestFogIsSymmetric(t: reference testing.T)
+    gs := newFogGame()
+    placeToken(gs, types.PlayerID("player_0"), 0, 5, 5)
+    placeToken(gs, types.PlayerID("player_1"), 20, 7, 5)
+
+    seenByZero := stateToken(gs.VisibleStateDict(types.PlayerID("player_0")), 20)
+    seenByOne := stateToken(gs.VisibleStateDict(types.PlayerID("player_1")), 0)
+
+    test.AssertEqual(t, seenByZero["is_visible"], true)
+    test.AssertEqual(t, seenByOne["is_visible"], true)
+
+    # Move them apart and both go dark.
+    placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+
+    seenByZero2 := stateToken(gs.VisibleStateDict(types.PlayerID("player_0")), 20)
+    seenByOne2 := stateToken(gs.VisibleStateDict(types.PlayerID("player_1")), 0)
+    test.AssertEqual(t, seenByZero2["is_visible"], false)
+    test.AssertEqual(t, seenByOne2["is_visible"], false)
+
+# The occupant list of a cell must not leak a token the viewer cannot see.
+# This is the easy one to get wrong: masking the token but leaving its id in
+# the cell's occupant list gives the position away.
+func TestMaskedTokenIsNotInCellOccupants(t: reference testing.T)
+    gs := newFogGame()
+    placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+
+    occupants := visibleOccupants(gs, types.PlayerID("player_0"), 23, 23)
+    test.AssertEqual(t, len(occupants), 0)
+
+    # The owner of the cell can still see their own token there.
+    ownOccupants := visibleOccupants(gs, types.PlayerID("player_1"), 23, 23)
+    test.AssertEqual(t, len(ownOccupants), 1)
+    test.AssertEqual(t, ownOccupants[0], 20)
+
+# A visible enemy token does appear in its cell's occupant list.
+func TestVisibleTokenIsInCellOccupants(t: reference testing.T)
+    gs := newFogGame()
+    placeToken(gs, types.PlayerID("player_0"), 0, 5, 5)
+    placeToken(gs, types.PlayerID("player_1"), 20, 7, 5)
+
+    occupants := visibleOccupants(gs, types.PlayerID("player_0"), 7, 5)
+    test.AssertEqual(t, len(occupants), 1)
+    test.AssertEqual(t, occupants[0], 20)
+
+# The terrain is always visible: it is static, and it is the frame the
+# viewer navigates by.
+func TestTerrainIsAlwaysVisible(t: reference testing.T)
+    gs := newFogGame()
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+
+    boardVal := state["board"]
+    if boardVal is map of string to StateDict as board
+        gridVal := board["grid"]
+        test.AssertNotEqual(t, gridVal, empty)
+        # A cell far from any token still reports its type.
+        cellRef := gs.board.getCellAt(types.Pos(23, 23))
+        if cellRef isnt empty
+            cell := dereference cellRef
+            d := visibleCellToDict(cell, gs.visibleTokenIds(
+                types.PlayerID("player_0"),
+                gs.visibleCells(types.PlayerID("player_0")),
+            ))
+            test.AssertNotEqual(t, d["cell_type"], empty)
+            test.AssertEqual(t, d["position"], list of int{23, 23})
+
+# The crystal's position is public; who holds it is not, until it is seen.
+func TestCrystalOwnershipIsMaskedUntilSeen(t: reference testing.T)
+    gs := newFogGame()
+    placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+
+    crysRef := gs.crystalInstance
+    if crysRef is empty
+        return
+    crysRef.holdingPlayerId = types.PlayerID("player_1")
+    crysRef.turnsHeld = 2
+
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+    crystalVal := state["crystal"]
+    if crystalVal is StateDict as crystal
+        test.AssertEqual(t, crystal["position"], list of int{12, 12})
+        test.AssertEqual(t, crystal["holding_player_id"], "")
+        test.AssertEqual(t, crystal["turns_held"], 0)
+
+    # The holder sees it.
+    ownState := gs.VisibleStateDict(types.PlayerID("player_1"))
+    ownCrystal := ownState["crystal"]
+    if ownCrystal is StateDict as crystal
+        test.AssertEqual(t, crystal["holding_player_id"], "player_1")
+        test.AssertEqual(t, crystal["turns_held"], 2)
+
+# A generator that has fallen is public; who was capturing it is not.
+func TestGeneratorOwnershipIsMaskedUntilSeen(t: reference testing.T)
+    gs := newFogGame()
+    placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+
+    gs.generators[0].capturingPlayerId = types.PlayerID("player_1")
+    gs.generators[0].turnsHeld = 1
+
+    state := gs.VisibleStateDict(types.PlayerID("player_0"))
+    gensVal := state["generators"]
+    if gensVal is list of StateDict as gens
+        gen := gens[0]
+        test.AssertEqual(t, gen["is_disabled"], false)
+        test.AssertEqual(t, gen["capturing_player_id"], "")
+        test.AssertEqual(t, gen["turns_held"], 0)
+
+# A viewer with no perspective (a spectator) sees everything.
+func TestEmptyViewerSeesEverything(t: reference testing.T)
+    gs := newFogGame()
+    placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+
+    state := gs.VisibleStateDict(types.PlayerID(""))
+    d := stateToken(state, 20)
+    # The unmasked state carries no "is_visible" key; absent means visible.
+    test.AssertEqual(t, d["is_visible"], empty)
+    test.AssertEqual(t, d["position"], list of int{23, 23})
+
+# --- Event filtering -------------------------------------------------------
+
+# An event about a token the viewer cannot see is not delivered.
+func TestEventForHiddenTokenIsFiltered(t: reference testing.T)
+    gs := newFogGame()
+    placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+
+    moved := TokenMoved{
+        TokenID: 20,
+        OldPosition: list of int{22, 22},
+        NewPosition: list of int{23, 23},
+    }
+    hidden := gs.FilterEventForViewer(moved, types.PlayerID("player_0"))
+    test.AssertEqual(t, len(hidden), 0)
+
+    visible := gs.FilterEventForViewer(moved, types.PlayerID("player_1"))
+    test.AssertEqual(t, len(visible), 1)
+
+# A combat between two hidden tokens is not delivered at all.
+func TestCombatBetweenHiddenTokensIsFiltered(t: reference testing.T)
+    gs := newFogGame()
+    # Both combatants belong to the other player, and both are far away.
+    placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+    placeToken(gs, types.PlayerID("player_1"), 21, 22, 23)
+
+    combat := CombatResolved{
+        AttackerID: 20,
+        AttackerPosition: list of int{23, 23},
+        DefenderID: 21,
+        DefenderPosition: list of int{22, 23},
+        Damage: 5,
+        DefenderKilled: false,
+    }
+    hidden := gs.FilterEventForViewer(combat, types.PlayerID("player_0"))
+    test.AssertEqual(t, len(hidden), 0)
+
+# A combat the viewer can partly see is delivered with the hidden
+# participant stripped out.
+func TestCombatStripsHiddenParticipant(t: reference testing.T)
+    gs := newFogGame()
+    # The viewer's token is next to the enemy's, so the enemy is visible...
+    placeToken(gs, types.PlayerID("player_0"), 0, 5, 5)
+    placeToken(gs, types.PlayerID("player_1"), 20, 7, 5)
+    # ...but the enemy that is attacking is a different, distant token.
+    placeToken(gs, types.PlayerID("player_1"), 21, 23, 23)
+
+    combat := CombatResolved{
+        AttackerID: 21,
+        AttackerPosition: list of int{23, 23},
+        DefenderID: 0,
+        DefenderPosition: list of int{5, 5},
+        Damage: 5,
+        DefenderKilled: false,
+    }
+    events := gs.FilterEventForViewer(combat, types.PlayerID("player_0"))
+    test.AssertEqual(t, len(events), 1)
+
+    d := EventToDict(events[0])
+    test.AssertEqual(t, d["attacker_id"], types.TokenID(-1))
+    test.AssertEqual(t, d["attacker_position"], empty list of int)
+    # The visible defender is still reported.
+    test.AssertEqual(t, d["defender_id"], types.TokenID(0))
+    test.AssertEqual(t, d["damage"], 5)
+
+# The turn changing is public news.
+func TestTurnChangeIsAlwaysDelivered(t: reference testing.T)
+    gs := newFogGame()
+    turn := TurnChanged{
+        TurnNumber: 2,
+        CurrentPlayerID: types.PlayerID("player_1"),
+        TurnPhase: "MOVEMENT",
+        TurnTimeoutSeconds: 30,
+    }
+    events := gs.FilterEventForViewer(turn, types.PlayerID("player_0"))
+    test.AssertEqual(t, len(events), 1)
+
+# A mystery square in the dark stays a mystery.
+func TestMysteryEventOutsideViewIsFiltered(t: reference testing.T)
+    gs := newFogGame()
+    placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
+
+    mystery := MysteryTriggered{
+        TokenID: 20,
+        Position: list of int{23, 23},
+        Effect: enums.MysteryEffect.HEAL,
+    }
+    hidden := gs.FilterEventForViewer(mystery, types.PlayerID("player_0"))
+    test.AssertEqual(t, len(hidden), 0)

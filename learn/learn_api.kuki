@@ -23,6 +23,14 @@ petiole learn
 #   func main()
 #       sim := learn.NewSimulation(learn.NewConfig())
 #       sim.Run(PlayTurn)
+#
+# Visibility: the learner sees the WHOLE board — every enemy token, its
+# position and its health. Network clients (the browser, the AI client, an
+# agent seat) play under fog of war and only see what their own tokens can
+# see. This layer is a teaching and inspection tool, so it stays omniscient:
+# the tutorials reason about enemy positions, and Actions() is computed from
+# the true state, so masking it here would leave a learner being told to
+# attack a token it cannot see.
 
 import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/enums" as enums

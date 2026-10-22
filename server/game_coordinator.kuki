@@ -20,9 +20,13 @@ type GameSession
     apiMap: map of string to gamepkg.GameAPI
     # The event log: every event the session has produced, in order.
     events: list of gamepkg.GameEvent
-    # Sequence number of the last event broadcast. Clients use it to detect
-    # gaps and resynchronise.
+    # Sequence number of the last event produced. This is the log index, not
+    # a wire counter.
     eventSeq: int
+    # Per-player event counters, keyed by network player id. The fog hides
+    # some events from some players, so each player needs their own
+    # sequence to detect gaps without seeing one for every hidden event.
+    playerEventSeqs: map of string to int
     # The objective state as of the last event, used to detect generator and
     # crystal changes between actions.
     objectiveState: gamepkg.ObjectiveState
@@ -57,6 +61,7 @@ func NewGameSession(gameId: string, lobby: reference GameLobby, turnTimeoutSecon
         apiMap: empty map of string to gamepkg.GameAPI,
         events: empty list of gamepkg.GameEvent,
         eventSeq: 0,
+        playerEventSeqs: empty map of string to int,
         objectiveState: gamepkg.ObjectiveState{},
         turnStartedAt: 0.0,
         turnNetworkPlayerId: "",
