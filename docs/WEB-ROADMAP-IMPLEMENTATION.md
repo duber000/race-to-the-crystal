@@ -1220,6 +1220,8 @@ The roadmap's "18–20 kHz" target has real hardware problems:
 
 ### 7.2 Host-authoritative relay with a WASM game-logic worker
 
+**Spike result (2026-10-23):** success. `game/` (plus its `shared/*` dependencies) compiles cleanly to `GOOS=js GOARCH=wasm` after a `kukicha brew ./...` pass, producing a ~1.6 MB `game.wasm`. No OS-dependent imports blocked the build. This validates the host-browser-authority design and the stateless relay that sits behind it. Hotseat was deliberately excluded per request; acoustic P2P remains a stretch goal (decision D3).
+
 The roadmap hand-waves "WASM-compiled Kukicha game logic worker". This is actually tractable here
 because **`game/` is pure logic with zero external dependencies** — it has no rendering, no network,
 and no stdlib dependencies beyond `shared/`.
