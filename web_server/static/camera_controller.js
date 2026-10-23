@@ -53,9 +53,16 @@ class CameraController {
         this.cameraPitch = -15;
         this.mouseLookSensitivity = 0.3;
         this._transition = null;
+        this._focusTransition = null;
+        this._focusActive = false;
         this._lastUpdateTime = null;
 
         this._initCameras();
+
+        const cancel = () => this.cancelFocus();
+        this.canvas.addEventListener('mousedown', cancel);
+        this.canvas.addEventListener('wheel', cancel, { passive: true });
+        this.canvas.addEventListener('touchstart', cancel, { passive: true });
     }
 
     /**
@@ -203,6 +210,66 @@ class CameraController {
      * Per-frame camera update. Called from the render loop callback.
      * @param {Object|null} token - Controlled token in first-person mode
      */
+    focusOn(worldPos, options) {
+        if (this.cameraMode !== "overview") return;
+        const opts = options || {};
+        const radius = opts.radius || 45;
+        const duration = opts.duration || 0.6;
+        let wx, wz;
+        if (Array.isArray(worldPos)) {
+            wx = worldPos[0] * this.cellSize + this.cellSize / 2;
+            wz = worldPos[1] * this.cellSize + this.cellSize / 2;
+        } else if (worldPos && typeof worldPos.x !== "undefined") {
+            wx = worldPos.x;
+            wz = worldPos.z;
+        } else {
+            return;
+        }
+        const target = new BABYLON.Vector3(wx, 0, wz);
+        const alpha = Math.PI / 4;
+        const beta = Math.PI / 3;
+        const position = new BABYLON.Vector3(
+            target.x + radius * Math.sin(alpha) * Math.sin(beta),
+            radius * Math.cos(beta),
+            target.z + radius * Math.cos(alpha) * Math.sin(beta),
+        );
+        const pose = { position, target, alpha, beta, radius };
+        this._focusTransition = {
+            elapsed: 0,
+            duration: duration,
+            fromPos: this.camera.position.clone(),
+            fromTarget: this.camera.target.clone(),
+            toPos: pose.position,
+            toTarget: pose.target,
+            finalPose: pose,
+        };
+        this._focusActive = false;
+    }
+
+    releaseFocus() {
+        if (this.cameraMode !== "overview") return;
+        const pose = this._overviewPose();
+        this._focusTransition = {
+            elapsed: 0,
+            duration: TRANSITION_DURATION,
+            fromPos: this.camera.position.clone(),
+            fromTarget: this.camera.target.clone(),
+            toPos: pose.position,
+            toTarget: pose.target,
+            finalPose: pose,
+        };
+        this._focusActive = false;
+    }
+
+    cancelFocus() {
+        this._focusTransition = null;
+        this._focusActive = false;
+    }
+
+    followToken(tokenId) {
+        this._followTokenId = tokenId;
+    }
+
     update(token) {
         const now = performance.now();
         const dt = this._lastUpdateTime === null ?
@@ -212,6 +279,27 @@ class CameraController {
         if (this.cameraMode === "firstperson") {
             if (token) {
                 this._updateFirstPersonCamera(token, dt);
+            }
+            return;
+        }
+
+        if (this._focusTransition) {
+            this._focusTransition.elapsed += dt;
+            const t = Math.min(this._focusTransition.elapsed / this._focusTransition.duration, 1);
+            const ease = t * t * (3 - 2 * t);
+            const pos = BABYLON.Vector3.Lerp(this._focusTransition.fromPos, this._focusTransition.toPos, ease);
+            const tgt = BABYLON.Vector3.Lerp(this._focusTransition.fromTarget, this._focusTransition.toTarget, ease);
+            this._setCameraPose(pos, tgt);
+            if (t >= 1) {
+                const pose = this._focusTransition.finalPose;
+                this.camera.alpha = pose.alpha;
+                this.camera.beta = pose.beta;
+                this.camera.radius = pose.radius;
+                this.camera.target.copyFrom(pose.target);
+                this.camera.fov = OVERVIEW_FOV;
+                this._applyOverviewBetaLimits();
+                this._focusTransition = null;
+                this._focusActive = true;
             }
             return;
         }

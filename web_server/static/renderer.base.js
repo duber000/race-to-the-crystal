@@ -411,6 +411,9 @@ class Renderer3D {
                 if (this._cameraUpdateCallback) {
                     this._cameraUpdateCallback();
                 }
+                if (typeof this.applyCameraShake === 'function') {
+                    this.applyCameraShake();
+                }
                 this.scene.render();
             }
         });

@@ -211,6 +211,18 @@ class ConnectionManager {
         // Trigger animation in renderer
         if (this.gameClient.renderer) {
             this.gameClient.renderer.animateCombat(data);
+            if (this.gameClient.renderer.audioManager) {
+                this.gameClient.renderer.audioManager.duck('music', 0.75, 0.6);
+                this.gameClient.renderer.audioManager.duck('hum', 0.75, 0.6);
+                this.gameClient.renderer.audioManager.playSynthesizedSound('bass_hit');
+            }
+        }
+
+        // Camera choreography: briefly frame the defender on combat.
+        if (data.defender_position && this.gameClient.cameraController) {
+            const cc = this.gameClient.cameraController;
+            cc.focusOn(data.defender_position, { radius: 38, duration: 0.45 });
+            setTimeout(() => cc.releaseFocus(), 1100);
         }
 
         this.updateGameState(this.gameClient.gameState);
@@ -227,12 +239,25 @@ class ConnectionManager {
     handleGeneratorChanged(data) {
         if (this.gameClient.renderer) {
             this.gameClient.renderer.animateGeneratorUpdate(data);
+            if (data && data.is_disabled && this.gameClient.renderer.audioManager) {
+                this.gameClient.renderer.audioManager.playSynthesizedSound('chord_rise');
+            }
+        }
+        if (data && data.is_disabled && data.position && this.gameClient.cameraController) {
+            const cc = this.gameClient.cameraController;
+            cc.focusOn(data.position, { radius: 42, duration: 0.55 });
+            setTimeout(() => cc.releaseFocus(), 1500);
         }
     }
 
     handleCrystalChanged(data) {
         if (this.gameClient.renderer) {
             this.gameClient.renderer.animateCrystalUpdate(data);
+        }
+        if (data && data.position && !data.is_contested && this.gameClient.cameraController) {
+            const cc = this.gameClient.cameraController;
+            cc.focusOn(data.position, { radius: 40, duration: 0.5 });
+            setTimeout(() => cc.releaseFocus(), 1300);
         }
     }
 
@@ -1117,6 +1142,9 @@ class UIController {
             WALL_HEIGHT,
             this.gameClient.deviceCapabilities,
         );
+        if (this.gameClient.renderer) {
+            this.gameClient.renderer.cameraController = this.gameClient.cameraController;
+        }
 
         // Initialize the post-processing pipeline now that we have a camera
         if (this.gameClient.renderer && this.gameClient.cameraController.camera) {

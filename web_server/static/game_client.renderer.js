@@ -22,6 +22,7 @@ import './renderer.special.js';
 import './renderer.indicators.js';
 import './renderer.colors.js';
 import './renderer.animations.js';
+import './renderer.fx.js';
 
 // Add TokenRenderer to prototype for use by other modules
 Renderer3D.prototype.TokenRenderer = TokenRenderer;

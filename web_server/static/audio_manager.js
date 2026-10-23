@@ -27,6 +27,14 @@ class AudioManager {
         this.crystalHum = null;
         this.crystalHumEnabled = false;
 
+        // Master bus (Phase 1.3)
+        this.masterGain = null;
+        this.compressor = null;
+        this.sfxGain = null;
+        this.musicGain = null;
+        this.humGain = null;
+        this.voiceGain = null;
+
         // Sound effects cache
         this.soundEffects = new Map();
         this.activeSoundPlayers = [];
@@ -63,6 +71,29 @@ class AudioManager {
 
         if (this.audioContext.state === 'suspended') {
             this.audioContext.resume();
+        }
+
+        if (!this.masterGain) {
+            const ctx = this.audioContext;
+            this.sfxGain = ctx.createGain();
+            this.musicGain = ctx.createGain();
+            this.humGain = ctx.createGain();
+            this.voiceGain = ctx.createGain();
+            this.masterGain = ctx.createGain();
+            this.compressor = ctx.createDynamicsCompressor();
+
+            this.sfxGain.gain.value = 1;
+            this.musicGain.gain.value = 1;
+            this.humGain.gain.value = 1;
+            this.voiceGain.gain.value = 1;
+            this.masterGain.gain.value = 1;
+
+            this.sfxGain.connect(this.masterGain);
+            this.musicGain.connect(this.masterGain);
+            this.humGain.connect(this.masterGain);
+            this.voiceGain.connect(this.masterGain);
+            this.masterGain.connect(this.compressor);
+            this.compressor.connect(this.audioContext.destination);
         }
 
         return this.audioContext;
@@ -190,7 +221,7 @@ class AudioManager {
         gainNode.gain.value = this.musicVolume;
 
         source.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
+        gainNode.connect(this.musicGain || this.audioContext.destination);
         source.start(0);
 
         this.backgroundMusicSource = source;
@@ -271,7 +302,7 @@ class AudioManager {
         gainNode.gain.value = this.humVolume;
 
         source.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
+        gainNode.connect(this.humGain || this.audioContext.destination);
         source.start(0);
 
         this.generatorHumSources[generatorIndex] = source;
@@ -326,7 +357,7 @@ class AudioManager {
         gainNode.gain.value = 0.5;
 
         source.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
+        gainNode.connect(this.sfxGain || this.audioContext.destination);
         source.start(0);
 
         // Keep reference for cleanup
@@ -432,6 +463,18 @@ class AudioManager {
             case 'whoosh':
                 this._playWhooshSound(ctx, now);
                 break;
+            case 'bass_hit':
+                this._playBassHit(ctx, now);
+                break;
+            case 'chord_rise':
+                this._playChordRise(ctx, now);
+                break;
+            case 'crystal_extract':
+                this._playCrystalExtract(ctx, now);
+                break;
+            case 'tick':
+                this._playTurnCountdownTick(ctx, now);
+                break;
             default:
                 this._playDeploySound(ctx, now);
                 break;
@@ -456,7 +499,7 @@ class AudioManager {
 
         osc.connect(filter);
         filter.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.sfxGain || ctx.destination);
 
         osc.start(now);
         osc.stop(now + 0.5);
@@ -486,7 +529,7 @@ class AudioManager {
 
         noise.connect(noiseFilter);
         noiseFilter.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.sfxGain || ctx.destination);
 
         noise.start(now);
         noise.stop(now + duration);
@@ -505,7 +548,7 @@ class AudioManager {
         gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
 
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.sfxGain || ctx.destination);
 
         osc.start(now);
         osc.stop(now + duration);
@@ -523,7 +566,7 @@ class AudioManager {
         noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
 
         noise.connect(noiseGain);
-        noiseGain.connect(ctx.destination);
+        noiseGain.connect(this.sfxGain || ctx.destination);
         noise.start(now);
     }
 
@@ -544,7 +587,7 @@ class AudioManager {
             gain.gain.exponentialRampToValueAtTime(0.001, now + decay);
 
             osc.connect(gain);
-            gain.connect(ctx.destination);
+            gain.connect(this.sfxGain || ctx.destination);
 
             osc.start(now);
             osc.stop(now + decay);
@@ -563,7 +606,7 @@ class AudioManager {
         noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
 
         noise.connect(noiseGain);
-        noiseGain.connect(ctx.destination);
+        noiseGain.connect(this.sfxGain || ctx.destination);
         noise.start(now);
     }
 
@@ -582,7 +625,7 @@ class AudioManager {
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.sfxGain || ctx.destination);
 
         osc.start(now);
         osc.stop(now + duration);
@@ -595,7 +638,7 @@ class AudioManager {
             harmGain.gain.setValueAtTime((0.1 * (3 - idx)) / 3, now);
             harmGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
             harm.connect(harmGain);
-            harmGain.connect(ctx.destination);
+            harmGain.connect(this.sfxGain || ctx.destination);
             harm.start(now);
             harm.stop(now + duration);
         });
@@ -613,7 +656,7 @@ class AudioManager {
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.sfxGain || ctx.destination);
 
         osc.start(now);
         osc.stop(now + 0.2);
@@ -641,7 +684,7 @@ class AudioManager {
         gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
 
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.sfxGain || ctx.destination);
 
         osc.start(now);
         lfo.start(now);
@@ -672,7 +715,7 @@ class AudioManager {
 
         osc.connect(filter);
         filter.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.sfxGain || ctx.destination);
 
         osc.start(now);
         osc.stop(now + duration);
@@ -685,7 +728,7 @@ class AudioManager {
             harmGain.gain.setValueAtTime(0.05 * (3 - i) / 3, now);
             harmGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
             harm.connect(harmGain);
-            harmGain.connect(ctx.destination);
+            harmGain.connect(this.sfxGain || ctx.destination);
             harm.start(now);
             harm.stop(now + duration);
         }
@@ -707,7 +750,7 @@ class AudioManager {
         noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
 
         noise.connect(noiseGain);
-        noiseGain.connect(ctx.destination);
+        noiseGain.connect(this.sfxGain || ctx.destination);
         noise.start(now);
 
         const osc = ctx.createOscillator();
@@ -728,7 +771,7 @@ class AudioManager {
 
         osc.connect(filter);
         filter.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.sfxGain || ctx.destination);
 
         osc.start(now + 0.1);
         osc.stop(now + duration);
@@ -760,7 +803,7 @@ class AudioManager {
 
         noise.connect(filter);
         filter.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.sfxGain || ctx.destination);
 
         noise.start(now);
         noise.stop(now + duration);
@@ -781,6 +824,112 @@ class AudioManager {
         this.generatorHums = [];
         this.backgroundMusic = null;
     }
+
+    // ---- Master bus helpers (Phase 1.3) ----
+
+    setMasterVolume(value) {
+        if (this.masterGain) {
+            this.masterGain.gain.value = Math.max(0, Math.min(1, value));
+        }
+    }
+
+    duck(category, amount, duration) {
+        const gain = category === 'music' ? this.musicGain
+            : category === 'hum' ? this.humGain
+            : category === 'voice' ? this.voiceGain
+            : this.sfxGain;
+        if (!gain) return;
+        const ctx = this.audioContext;
+        const now = ctx.currentTime;
+        const hold = Math.max(0, (duration || 0.5) - 0.52);
+        const target = Math.max(0.05, 1 - (amount || 0.75));
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(gain.gain.value, now);
+        gain.gain.linearRampToValueAtTime(target, now + 0.12);
+        gain.gain.linearRampToValueAtTime(target, now + 0.12 + hold);
+        gain.gain.linearRampToValueAtTime(1, now + 0.12 + hold + 0.4);
+    }
+
+    _playBassHit(ctx, now) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(80, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.connect(gain);
+        gain.connect(this.sfxGain || ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+    }
+
+    _playChordRise(ctx, now) {
+        const duration = 0.6;
+        const freqs = [220, 277, 330, 440];
+        freqs.forEach((f, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const filter = ctx.createBiquadFilter();
+            osc.type = 'sawtooth';
+            osc.frequency.value = f;
+            osc.detune.value = (i - 1.5) * 6;
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(400, now);
+            filter.frequency.exponentialRampToValueAtTime(2000, now + duration);
+            gain.gain.setValueAtTime(0.0, now);
+            gain.gain.linearRampToValueAtTime(0.06, now + duration * 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.sfxGain || ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.05);
+        });
+    }
+
+    _playCrystalExtract(ctx, now) {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((f, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = f;
+            const t = now + i * 0.1;
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.12, t + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+            osc.connect(gain);
+            gain.connect(this.sfxGain || ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.5);
+        });
+        const sub = ctx.createOscillator();
+        const sg = ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(60, now);
+        sub.frequency.exponentialRampToValueAtTime(30, now + 0.6);
+        sg.gain.setValueAtTime(0.25, now);
+        sg.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        sub.connect(sg);
+        sg.connect(this.sfxGain || ctx.destination);
+        sub.start(now);
+        sub.stop(now + 0.6);
+    }
+
+    _playTurnCountdownTick(ctx, now) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880, now);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.sfxGain || ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+    }
+
 }
 
 // Export for module usage

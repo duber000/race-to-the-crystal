@@ -892,7 +892,23 @@ source.
 Depends on Phase 0.4 (event stream) and 0.11 (fog — all of Phase 1 draws over the final state
 shape, and the threat overlays in 1.4 must respect masked tokens).
 
-**Status: §1.4 is done (§1.4.1). §1.1–1.3 and §1.5 are not started.**
+**Status: §1.1, §1.2, §1.3 and §1.4 are done (see §1.1.1 / §1.2.1 / §1.3.1 / §1.4.1). §1.5 is partially done (FX intensity scaled on low-end profiles).**
+
+### 1.1.1 What was built (Phase 1.1)
+
+- `web_server/static/renderer.fx.js` — trauma-based camera shake (decayed per frame, applied to the ArcRotate target so the rig stays intact), impact particle bursts (`triggerTokenBurst`, `triggerCrystalBurst`), floating damage numbers as billboarded `DynamicTexture` planes, pulse rings for deploys, and event to FX wiring patched onto `animateCombat` / `animateTokenMove` / `animateTokenDeploy` / `animateGeneratorUpdate` / `animateMysteryEvent` / `triggerVictoryEffect`.
+- Shake intensity is scaled to 35% on low-end profiles (`shouldOptimizePerformance`).
+
+### 1.2.1 What was built (Phase 1.2)
+
+- `CameraController` gained `focusOn(worldPos, {radius,duration,easing})`, `releaseFocus()`, `cancelFocus()` and `followToken(tokenId)`, implemented as a serialised transition that hands control back on completion; any mouse / touch / wheel input during a focus cancels it.
+- Push-ins wired to `combat_resolved`, `generator_changed` (disabled) and `crystal_changed` (captured) in `game_client.modules.js`.
+
+### 1.3.1 What was built (Phase 1.3)
+
+- `AudioManager` restructured onto a master bus (sfx / music / hum / voice -> masterGain -> compressor -> destination), with `setMasterVolume` and `duck(category, amount, duration)` (ramp down, hold, restore) for music / hum ducking.
+- New synthesised cues `_playBassHit`, `_playChordRise`, `_playCrystalExtract`, `_playTurnCountdownTick`.
+- Combat ducks music + hum and fires `bass_hit`; a disabled generator fires `chord_rise`.
 
 ### 1.1 Screen shake, impact particles, floating combat text
 
