@@ -1118,7 +1118,7 @@ separate, looser bucket — an LLM turn is a burst of tool calls.
 
 ### 2.2 Spectator mode
 
-**Partial (server side, 2026-10-22):** `GameSession.spectators`, `/api/game/{id}/spectate`, unfiltered state delivery and event forwarding to spectator ids, rejected actions for spectators. WS-side registration of a spectator connection is still manual (no browser-side spectator seat yet).
+**Progress (2026-10-22→23):** server-side spectator seat, unfiltered state/event delivery and `HandleGetState` already shipped; the browser lobby now lists in-progress games and spectating kicks off an HTTP polling view. Full real-time WS push to a spectator seat remains pending (spectators currently poll).
 
 The browser needs a read-only seat:
 
