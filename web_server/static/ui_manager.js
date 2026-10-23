@@ -12,6 +12,7 @@ class UIManager {
         this.lobbyHandlersSetup = false;
         this.playerId = null;
         this.onJoinGame = null;
+        this.onSpectateGame = null;
         this.onLeaveLobby = null;
         this.onStartGame = null;
         this.onToggleReady = null;
@@ -193,11 +194,12 @@ class UIManager {
     // Lobby Browser UI
     // ==========================================================================
 
-    setupLobbyBrowserHandlers(onCreateGame, onJoinGame, onRefreshGames, onDisconnect) {
+    setupLobbyBrowserHandlers(onCreateGame, onJoinGame, onRefreshGames, onDisconnect, onSpectateGame) {
         this.onCreateGame = onCreateGame;
         this.onJoinGame = onJoinGame;
         this.onRefreshGames = onRefreshGames;
         this.onDisconnect = onDisconnect;
+        this.onSpectateGame = onSpectateGame || null;
 
         // Setup join by game ID
         const joinIdBtn = document.getElementById("join-by-id-btn");
@@ -319,6 +321,7 @@ class UIManager {
             const id = game.game_id || game.id;
             const playerCount = game.current_players ?? (game.players ? game.players.length : 0);
             const maxPlayers = game.max_players || 4;
+            const status = (game.status || game.game_status || 'WAITING').toUpperCase();
             const item = document.createElement("div");
             item.className = "game-item";
 
@@ -329,17 +332,31 @@ class UIManager {
             strong.textContent = name;
 
             const span = document.createElement("span");
-            span.textContent = `${playerCount}/${maxPlayers} players`;
+            span.textContent = `${playerCount}/${maxPlayers} players • ${status}`;
 
             info.appendChild(strong);
             info.appendChild(span);
             item.appendChild(info);
 
-            item.onclick = () => {
-                if (this.onJoinGame) {
-                    this.onJoinGame(id);
-                }
-            };
+            if (status === 'IN_PROGRESS') {
+                const btn = document.createElement('button');
+                btn.textContent = 'Spectate';
+                btn.className = 'spectate-btn';
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (this.onSpectateGame) this.onSpectateGame(id);
+                };
+                item.appendChild(btn);
+                item.onclick = () => {
+                    if (this.onSpectateGame) this.onSpectateGame(id);
+                };
+            } else {
+                item.onclick = () => {
+                    if (this.onJoinGame) {
+                        this.onJoinGame(id);
+                    }
+                };
+            }
             gameList.appendChild(item);
         });
     }

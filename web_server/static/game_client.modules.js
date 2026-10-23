@@ -1145,6 +1145,12 @@ class UIController {
                 }
                 this.gameClient.networkManager.disconnect();
             },
+            (gameId) => {
+                if (!this.gameClient.connectionManager) {
+                    return;
+                }
+                this.gameClient.connectionManager.spectateGame(gameId);
+            },
         );
     }
 
