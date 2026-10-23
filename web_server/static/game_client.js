@@ -57,6 +57,7 @@ class GameClient {
     this.turnPhase = GAME_PHASE.MOVEMENT;
     this.musicPlaying = true;
     this.replayMode = false;
+    this.isSpectator = false;
 
     // Direct access for convenience (optional)
     Object.defineProperty(this, 'gameState', {

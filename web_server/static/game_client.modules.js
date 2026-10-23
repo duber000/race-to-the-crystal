@@ -373,6 +373,50 @@ class ConnectionManager {
     getConnectionState() {
         return this.networkManager ? this.networkManager.getConnectionState() : STATE.DISCONNECTED;
     }
+
+    spectateGame(gameId) {
+        fetch(`/api/game/${gameId}/spectate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+        }).then((r) => r.json()).then((data) => {
+            if (!data || !data.success) {
+                console.error('[Spectate] failed', data && data.message);
+                if (this.gameClient.uiManager) this.gameClient.uiManager.showActionError(data && data.message ? data.message : 'spectate failed');
+                return;
+            }
+            this.gameClient.isSpectator = true;
+            this.spectatorToken = data.data.token;
+            this.spectatorGameId = data.data.game_id || gameId;
+            if (this.networkManager) this.networkManager.connectionState = STATE.IN_GAME;
+            this.gameClient.updateUIState(STATE.IN_GAME);
+            this.startSpectatorPoll();
+        }).catch((err) => {
+            console.error('[Spectate] error', err);
+        });
+    }
+
+    startSpectatorPoll() {
+        if (this.spectatorInterval) clearInterval(this.spectatorInterval);
+        const gameId = this.spectatorGameId;
+        const token = this.spectatorToken;
+        this.spectatorInterval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/game/${gameId}/state`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                const json = await res.json();
+                if (json && json.success) {
+                    if (!this.gameClient.gameInitialized) {
+                        this.gameClient.gameInitialized = true;
+                    }
+                    this.gameClient.stateManager.setFullState({ game_state: json.data });
+                }
+            } catch (err) {
+                console.error('[Spectate] poll error', err);
+            }
+        }, 1000);
+    }
 }
 
 /**
