@@ -85,6 +85,24 @@ func HandleJoinGame on h: reference HTTPHandler(gameId: string, body: map of str
             data: empty map of string to any,
         }
 
+    # Record agent metadata for HTTP (agent) seats.
+    model := ""
+    agentKind := ""
+    mVal, hasM := body["model"]
+    if hasM
+        if mVal is string as ms
+            model = ms
+    aVal, hasA := body["agent_kind"]
+    if hasA
+        if aVal is string as akv
+            agentKind = akv
+    info, exists := lobby.players[playerId]
+    if exists
+        info.isAgent = true
+        info.model = model
+        info.agentKind = agentKind
+        lobby.players[playerId] = info
+
     h.lobbyMgr.setReady(gameId, playerId, true)
     # No WebSocket registration: an HTTP client has no connection, so it
     # never receives pushed state and polls GET /api/game/{id}/state
@@ -319,6 +337,24 @@ func HandleCreateGame on h: reference HTTPHandler(authHeader: string, body: map 
             data: empty map of string to any,
         }
 
+    # Record agent metadata for the HTTP (agent) host seat.
+    model := ""
+    agentKind := ""
+    mVal, hasM := body["model"]
+    if hasM
+        if mVal is string as ms
+            model = ms
+    aVal, hasA := body["agent_kind"]
+    if hasA
+        if aVal is string as akv
+            agentKind = akv
+    info, exists := lobby.players[playerId]
+    if exists
+        info.isAgent = true
+        info.model = model
+        info.agentKind = agentKind
+        lobby.players[playerId] = info
+
     token := CreatePlayerToken(playerId, lobby.gameId, h.jwtSecret, 24)
 
     return APIResponse{
@@ -496,3 +532,40 @@ func getPositionField on h: reference HTTPHandler(data: map of string to any, ke
 
 func actionResultDataToMap(data: gamepkg.ActionResultData) map of string to any
     return gamepkg.ActionDataToDict(data)
+
+func HandleSay on h: reference HTTPHandler(gameId: string, authHeader: string, body: map of string to any) APIResponse
+    tokenStr := ExtractTokenFromHeader(authHeader)
+    if tokenStr is empty
+        return APIResponse{success: false, message: "missing auth token", data: empty map of string to any}
+
+    payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
+    if payload is empty
+        return APIResponse{success: false, message: "invalid token", data: empty map of string to any}
+    if not ValidateTokenForGame(payload, gameId)
+        return APIResponse{success: false, message: "token not valid for this game", data: empty map of string to any}
+
+    session := h.coordinator.getPlayerSession(payload.playerId)
+    if session is empty
+        return APIResponse{success: false, message: "not in a game", data: empty map of string to any}
+
+    text := maps.StringOr(body, "text", "")
+    if text is empty
+        return APIResponse{success: false, message: "missing text", data: empty map of string to any}
+
+    playerName := maps.StringOr(body, "player_name", "")
+    if playerName is empty
+        playerName = payload.playerId
+
+    event := gamepkg.RadioChatter{
+        PlayerID: types.PlayerID(payload.playerId),
+        PlayerName: playerName,
+        Text: text,
+    }
+    session.events = append(session.events, event)
+    h.wsHandler.BroadcastSessionEvents(session, list of gamepkg.GameEvent{event})
+
+    return APIResponse{
+        success: true,
+        message: "ok",
+        data: empty map of string to any,
+    }

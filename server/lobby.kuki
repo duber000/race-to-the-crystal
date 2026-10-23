@@ -32,6 +32,9 @@ type PlayerInfo
     clientType: ClientType
     isReady: bool
     colorIndex: int
+    isAgent: bool
+    model: string
+    agentKind: string
 
 func NewPlayerInfo(playerId: string, playerName: string, clientType: ClientType, colorIndex: int) PlayerInfo
     return PlayerInfo{
@@ -40,6 +43,9 @@ func NewPlayerInfo(playerId: string, playerName: string, clientType: ClientType,
         clientType: clientType,
         isReady: false,
         colorIndex: colorIndex,
+        isAgent: false,
+        model: "",
+        agentKind: "",
     }
 
 func toDict on p: PlayerInfo JSONMap
@@ -50,6 +56,9 @@ func toDict on p: PlayerInfo JSONMap
         "client_type": ctStr,
         "is_ready": p.isReady,
         "color_index": p.colorIndex,
+        "is_agent": p.isAgent,
+        "model": p.model,
+        "agent_kind": p.agentKind,
     }
 
 func ValidateGameName(gameName: string) error

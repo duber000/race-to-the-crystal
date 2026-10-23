@@ -1070,6 +1070,8 @@ profile. `renderer.base.js` already gates god rays on `shouldOptimizePerformance
 
 ### 2.1 Agent seat
 
+**Partial (server side, 2026-10-22):** `PlayerInfo` gains `is_agent` / `model` / `agent_kind`; HTTP create+join record agent metadata for `HTTP_AI` seats (both accept `model` / `agent_kind` in the body); `POST /api/game/{id}/say` appends a `RadioChatter` event and broadcasts it. The REST surface (`/state`, `/actions`, `/action`) already serves an agent seat. A thin stdio MCP adapter under `mcp/` is still TBD.
+
 **Server changes (`server/`):**
 
 New file `server/agent_endpoint.kuki`:
