@@ -1325,3 +1325,33 @@ body {
 .action-btn.main-action:active {
     background: rgba(0, 255, 0, 0.2);
 }
+
+/* Tactical Comms (Phase 2.3) */
+#tactical-comms {
+    max-width: 340px;
+    margin-top: 0.5rem;
+}
+#comms-list {
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.comms-entry {
+    padding: 0.35rem 0.45rem;
+    border-left: 3px solid #5b9fff;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+.comms-name {
+    font-weight: 600;
+    color: #7ec8ff;
+    margin-bottom: 0.15rem;
+}
+.comms-text {
+    color: #e8e8e8;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}

@@ -5,6 +5,7 @@
 // Import modules
 import { StateManager } from './state_manager.js';
 import { UIManager } from './ui_manager.js';
+import { TacticalComms } from './game_client.comms.js';
 import { DeviceCapabilities } from './game_client.device.js';
 import { GAME_PHASE, TurnPhase, STATE } from './game_client.constants.js';
 import { ConnectionManager, InputController, UIController } from './game_client.modules.js';
@@ -34,6 +35,7 @@ class GameClient {
     // Initialize managers
     this.stateManager = new StateManager();
     this.uiManager = new UIManager();
+    this.commsManager = new TacticalComms(this);
     this.connectionManager = new ConnectionManager(this);
     this.uiController = new UIController(this);
 

@@ -293,9 +293,10 @@ class ConnectionManager {
     }
 
     handleRadioChatter(data) {
-        // Radio chatter is the agent comms feed (Phase 2). For now it is
-        // only logged — the comms sidebar arrives with the agent seat.
         console.log(`📻 ${data.player_name}: ${data.text}`);
+        if (this.gameClient.commsManager) {
+            this.gameClient.commsManager.add(data);
+        }
     }
 
     handleGameEnded(data) {
