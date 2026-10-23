@@ -37,12 +37,21 @@ class ConnectionManager {
         this.networkManager.on("connected", (data) => {
             this.gameClient.uiManager.showConnectionStatus("Connected!");
             this.gameClient.uiManager.playerId = data.player_id || data.playerId;
+            if (this.pendingSpectateGameId) {
+                const gid = this.pendingSpectateGameId;
+                this.pendingSpectateGameId = null;
+                this.networkManager.send({ type: 'SPECTATE', game_id: gid });
+                return;
+            }
             this.gameClient.updateUIState(STATE.CONNECTED);
             this.networkManager.requestGameList();
         });
 
         this.networkManager.on("game_list", (data) => {
             this.gameClient.uiManager.renderGameList(data.games || []);
+        });
+        this.networkManager.on("spectate_ack", (data) => {
+            this.gameClient.updateUIState(STATE.IN_GAME);
         });
 
         this.networkManager.on("lobby_joined", (data) => {
@@ -375,48 +384,21 @@ class ConnectionManager {
     }
 
     spectateGame(gameId) {
-        fetch(`/api/game/${gameId}/spectate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-        }).then((r) => r.json()).then((data) => {
-            if (!data || !data.success) {
-                console.error('[Spectate] failed', data && data.message);
-                if (this.gameClient.uiManager) this.gameClient.uiManager.showActionError(data && data.message ? data.message : 'spectate failed');
-                return;
-            }
-            this.gameClient.isSpectator = true;
-            this.spectatorToken = data.data.token;
-            this.spectatorGameId = data.data.game_id || gameId;
-            if (this.networkManager) this.networkManager.connectionState = STATE.IN_GAME;
-            this.gameClient.updateUIState(STATE.IN_GAME);
-            this.startSpectatorPoll();
-        }).catch((err) => {
-            console.error('[Spectate] error', err);
-        });
+        this.gameClient.isSpectator = true;
+        this.pendingSpectateGameId = gameId;
+        if (!this.networkManager) this.init();
+        if (this.networkManager.connectionState === STATE.CONNECTED) {
+            this.networkManager.send({ type: 'SPECTATE', game_id: gameId });
+        } else {
+            // reuse default connection inputs
+            const host = (document.getElementById('server-host-input')?.value || 'localhost').trim();
+            const port = (document.getElementById('server-port-input')?.value || '8000').trim();
+            const name = (document.getElementById('player-name-input')?.value || 'Spectator').trim();
+            this.networkManager.connect(host, port, name);
+        }
     }
 
-    startSpectatorPoll() {
-        if (this.spectatorInterval) clearInterval(this.spectatorInterval);
-        const gameId = this.spectatorGameId;
-        const token = this.spectatorToken;
-        this.spectatorInterval = setInterval(async () => {
-            try {
-                const res = await fetch(`/api/game/${gameId}/state`, {
-                    headers: { 'Authorization': `Bearer ${token}` },
-                });
-                const json = await res.json();
-                if (json && json.success) {
-                    if (!this.gameClient.gameInitialized) {
-                        this.gameClient.gameInitialized = true;
-                    }
-                    this.gameClient.stateManager.setFullState({ game_state: json.data });
-                }
-            } catch (err) {
-                console.error('[Spectate] poll error', err);
-            }
-        }, 1000);
-    }
+
 }
 
 /**
