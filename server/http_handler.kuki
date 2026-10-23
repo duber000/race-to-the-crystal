@@ -286,6 +286,9 @@ func HandleGetActions on h: reference HTTPHandler(gameId: string, authHeader: st
 
 func HandleListGames on h: reference HTTPHandler APIResponse
     lobbies := h.lobbyMgr.listAvailableLobbies()
+    for _gid, lob in h.lobbyMgr.lobbies
+        if lob.status equals GameStatus.IN_PROGRESS
+            lobbies = append(lobbies, lob.toDict())
     return APIResponse{success: true, message: "ok", data: map of string to any{"games": lobbies}}
 
 func HandleCreateGame on h: reference HTTPHandler(authHeader: string, body: map of string to any, clientIp: string) APIResponse
