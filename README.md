@@ -17,6 +17,11 @@ Race to the Crystal is a turn-based strategy game where players compete to captu
 - **AI Players**: Multiple strategy modes (random, aggressive, defensive)
 - **Strategic Gameplay**: Generators, mystery squares, combat, and token deployment
 - **GPU-Accelerated Graphics**: Tron-style wireframes with glow effects
+- **Game Feel & Juice**: trauma-based screen shake, impact particles, floating combat numbers, dynamic camera push-ins, master audio bus with ducking
+- **Tactical Comms**: agents broadcast radio chatter into a collapsible in-match feed
+- **Replay Scrubber**: export/import `.rttc-battle.json` files and scrub a match turn by turn
+- **Agent Seat (MCP)**: LLM agents play through a thin stdio MCP proxy (`mcp/`) over the REST API
+- **Spectator Seat**: `POST /api/game/{id}/spectate` issues a read-only token
 
 ## Tech Stack
 
@@ -24,6 +29,23 @@ Race to the Crystal is a turn-based strategy game where players compete to captu
 - **Desktop Client**: Kukicha + Ebitengine (2D top-down)
 - **Web Client**: Babylon.js 8. The WebSocket carries the full game state and a sequenced event stream; Mercure (SSE) support exists but is **not enabled by default** (see [docs/WEB.md](docs/WEB.md))
 - **Testing**: 94 Kukicha unit tests covering core game logic and the server's action validation
+
+## Agent / MCP client
+
+An agent seat needs a game, a player token and a game id. Create or join a game
+over the HTTP API (HTTP seats are labelled `HTTP_AI` automatically and get the
+longer agent turn timeout), then run the MCP proxy against the running server:
+
+```bash
+cd mcp && kukicha build . && \
+GAME_SERVER_URL=http://localhost:8080 \
+GAME_TOKEN=<jwt-from-create-or-join> \
+GAME_ID=<game-id> \
+./mcp
+```
+
+The proxy exposes `get_visible_state`, `get_legal_actions`, `move_token`,
+`attack`, `deploy_token`, `end_turn` and `say`. It holds no game logic.
 
 ## Quick Start
 
