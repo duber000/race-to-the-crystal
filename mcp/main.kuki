@@ -1,0 +1,168 @@
+petiole main
+
+import "net/http"
+import "io"
+import "race-to-the-crystal/shared/constants" as constants
+import "stdlib/env"
+import "stdlib/json" as jsonpkg
+import "bytes"
+import "stdlib/mcp" as mcpkg
+import "stdlib/jsonschema" as jsonschema
+
+var serverUrl = env.GetOr("GAME_SERVER_URL", "http://localhost:8080")
+var gameToken = env.GetOr("GAME_TOKEN", "")
+var gameId = env.GetOr("GAME_ID", "")
+
+type MoveArgs
+    TokenID: int
+    X: int
+    Y: int
+
+type AttackArgs
+    AttackerID: int
+    DefenderID: int
+
+type DeployArgs
+    HealthValue: int
+    X: int
+    Y: int
+
+type SayArgs
+    Text: string
+
+type NoArgs struct{}
+
+func doRequest(method: string, path: string, body: map of string to any) (string, error)
+    url := "{serverUrl}{path}"
+    bodyReader := io.Reader(nil)
+    if body isnt empty
+        b, err := jsonpkg.Bytes(body)
+        if err isnt empty
+            return "", err
+        bodyReader = bytes.NewReader(b)
+    req, err := http.NewRequest(method, url, bodyReader)
+    if err isnt empty
+        return "", err
+    req.Header.Set("Authorization", "Bearer {gameToken}")
+    if body isnt empty
+        req.Header.Set("Content-Type", "application/json")
+    resp, err := http.DefaultClient.Do(req)
+    if err isnt empty
+        return "", err
+    defer resp.Body.Close()
+    data, err := io.ReadAll(resp.Body)
+    if err isnt empty
+        return "", err
+    if resp.StatusCode >= 400
+        return string(data), error "{resp.Status}: {string(data)}"
+    return string(data), empty
+
+func getState(args: NoArgs) (any, error)
+    return doRequest("GET", "/api/game/{gameId}/state", empty map of string to any)
+
+func getActions(args: NoArgs) (any, error)
+    return doRequest("GET", "/api/game/{gameId}/actions", empty map of string to any)
+
+func moveToken(args: MoveArgs) (any, error)
+    body := map of string to any{
+        "type": "MOVE",
+        "data": map of string to any{
+            "token_id": args.TokenID,
+            "x": args.X,
+            "y": args.Y,
+        },
+    }
+    return doRequest("POST", "/api/game/{gameId}/action", body)
+
+func attack(args: AttackArgs) (any, error)
+    body := map of string to any{
+        "type": "ATTACK",
+        "data": map of string to any{
+            "attacker_id": args.AttackerID,
+            "defender_id": args.DefenderID,
+        },
+    }
+    return doRequest("POST", "/api/game/{gameId}/action", body)
+
+func deployToken(args: DeployArgs) (any, error)
+    body := map of string to any{
+        "type": "DEPLOY",
+        "data": map of string to any{
+            "health_value": args.HealthValue,
+            "x": args.X,
+            "y": args.Y,
+        },
+    }
+    return doRequest("POST", "/api/game/{gameId}/action", body)
+
+func endTurn(args: NoArgs) (any, error)
+    body := map of string to any{
+        "type": "END_TURN",
+        "data": empty map of string to any,
+    }
+    return doRequest("POST", "/api/game/{gameId}/action", body)
+
+func say(args: SayArgs) (any, error)
+    body := map of string to any{
+        "text": args.Text,
+    }
+    return doRequest("POST", "/api/game/{gameId}/say", body)
+
+func main()
+    if gameId is empty or gameToken is empty
+        print("GAME_ID and GAME_TOKEN are required")
+        return
+
+    server := mcpkg.New("race-to-the-crystal", "1.0")
+
+    server
+        |> mcpkg.Tool of NoArgs(
+            "get_visible_state",
+            "Fog-filtered game state for the calling agent",
+            jsonschema.From of NoArgs,
+            getState,
+        )
+    server
+        |> mcpkg.Tool of NoArgs(
+            "get_legal_actions",
+            "Legal actions for the calling agent this turn",
+            jsonschema.From of NoArgs,
+            getActions,
+        )
+    server
+        |> mcpkg.Tool of MoveArgs(
+            "move_token",
+            "Move a token to (x,y)",
+            jsonschema.From of MoveArgs,
+            moveToken,
+        )
+    server
+        |> mcpkg.Tool of AttackArgs(
+            "attack",
+            "Attack an enemy token",
+            jsonschema.From of AttackArgs,
+            attack,
+        )
+    server
+        |> mcpkg.Tool of DeployArgs(
+            "deploy_token",
+            "Deploy a new token",
+            jsonschema.From of DeployArgs,
+            deployToken,
+        )
+    server
+        |> mcpkg.Tool of NoArgs(
+            "end_turn",
+            "End the current turn",
+            jsonschema.From of NoArgs,
+            endTurn,
+        )
+    server
+        |> mcpkg.Tool of SayArgs(
+            "say",
+            "Send radio chatter",
+            jsonschema.From of SayArgs,
+            say,
+        )
+
+    mcpkg.Serve(server) onerr panic "{error}"
