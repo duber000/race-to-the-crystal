@@ -16,6 +16,9 @@ type GameSession
     gameState: gamepkg.GameState
     networkToGameId: map of string to string
     gameToNetworkId: map of string to string
+    # Spectator network ids (not seated players). They receive the
+    # unfiltered state and every event.
+    spectators: map of string to bool
     lastState: reference JSONMap
     apiMap: map of string to gamepkg.GameAPI
     # The event log: every event the session has produced, in order.
@@ -57,6 +60,7 @@ func NewGameSession(gameId: string, lobby: reference GameLobby, turnTimeoutSecon
         gameState: gs,
         networkToGameId: empty map of string to string,
         gameToNetworkId: empty map of string to string,
+        spectators: empty map of string to bool,
         lastState: empty,
         apiMap: empty map of string to gamepkg.GameAPI,
         events: empty list of gamepkg.GameEvent,

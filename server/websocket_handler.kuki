@@ -169,6 +169,17 @@ func BroadcastSessionState on wh: reference WebSocketHandler(session: reference 
         })
         # This player's own event counter, so a resync repairs it.
 
+    # Spectators (read-only) receive the unfiltered state.
+    for specId, _ in session.spectators
+        if _, ok := session.playerEventSeqs[specId]; !ok
+            session.playerEventSeqs[specId] = 0
+        wh.SendToClient(specId, JSONMap{
+            "type": "FULL_STATE",
+            "game_id": session.gameId,
+            "game_state": session.gameState.ClientStateDict(""),
+            "event_seq": session.playerEventSeqs[specId],
+        })
+
 # Broadcast event frames to the players in the session.
 #
 # Each frame carries a sequence number, so a client can detect a gap in the
@@ -192,4 +203,17 @@ func BroadcastSessionEvents on wh: reference WebSocketHandler(session: reference
                 "game_id": session.gameId,
                 "seq": seq,
                 "event": gamepkg.EventToDict(visible[0]),
+            })
+
+        # Spectators receive every event unfiltered.
+        for specId, _ in session.spectators
+            if _, ok := session.playerEventSeqs[specId]; !ok
+                session.playerEventSeqs[specId] = 0
+            seq := session.playerEventSeqs[specId] + 1
+            session.playerEventSeqs[specId] = seq
+            wh.SendToClient(specId, JSONMap{
+                "type": "EVENT",
+                "game_id": session.gameId,
+                "seq": seq,
+                "event": gamepkg.EventToDict(e),
             })

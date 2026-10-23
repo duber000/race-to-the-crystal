@@ -236,11 +236,16 @@ func HandleGetState on h: reference HTTPHandler(gameId: string, authHeader: stri
     # The slim dict has no board, tokens or generators, so a polling client
     # could never render the game from it. It is fogged like the WebSocket
     # path: a client only sees what its own tokens can see.
-    gamePid := ""
-    pidVal, hasPid := session.networkToGameId[payload.playerId]
-    if hasPid
-        gamePid = pidVal
-    state := session.gameState.VisibleStateDict(types.PlayerID(gamePid))
+    state := empty map of string to any
+    # Spectators see everything (no fog).
+    if _, isSpec := session.spectators[payload.playerId]; isSpec
+        state = session.gameState.ClientStateDict("")
+    else
+        gamePid := ""
+        pidVal, hasPid := session.networkToGameId[payload.playerId]
+        if hasPid
+            gamePid = pidVal
+        state = session.gameState.VisibleStateDict(types.PlayerID(gamePid))
 
     return APIResponse{success: true, message: "ok", data: state}
 
@@ -568,4 +573,27 @@ func HandleSay on h: reference HTTPHandler(gameId: string, authHeader: string, b
         success: true,
         message: "ok",
         data: empty map of string to any,
+    }
+
+
+func HandleSpectate on h: reference HTTPHandler(gameId: string, body: map of string to any, clientIp: string) APIResponse
+    session := h.coordinator.getSession(gameId)
+    if session is empty
+        return APIResponse{success: false, message: "game session not found", data: empty map of string to any}
+
+    spectatorId := random.String(16)
+    session.spectators[spectatorId] = true
+    if _, ok := session.playerEventSeqs[spectatorId]; !ok
+        session.playerEventSeqs[spectatorId] = 0
+
+    token := CreatePlayerToken(spectatorId, gameId, h.jwtSecret, 24)
+
+    return APIResponse{
+        success: true,
+        message: "spectating",
+        data: map of string to any{
+            "spectator_id": spectatorId,
+            "token": token,
+            "game_id": gameId,
+        },
     }
