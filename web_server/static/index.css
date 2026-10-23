@@ -320,6 +320,7 @@ body {
 #renderCanvas {
     width: 100%;
     height: 100vh;
+    height: 100dvh;
     display: block;
     outline: none;
     /* Suppress browser-default touch gestures (scroll/zoom/pan) so the game
@@ -1223,6 +1224,25 @@ body {
     textarea {
         -webkit-user-select: text;
         user-select: text;
+    }
+}
+
+/* End Turn floating action button (mobile) */
+@media (max-width: 768px) {
+    #mobile-btn-end-turn.action-btn.main-action {
+        position: fixed;
+        right: 1rem;
+        bottom: calc(6.5rem + env(safe-area-inset-bottom));
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: rgba(0, 255, 255, 0.15);
+        border: 2px solid #0ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(0, 255, 255, 0.35);
+        z-index: 1001;
     }
 }
 
