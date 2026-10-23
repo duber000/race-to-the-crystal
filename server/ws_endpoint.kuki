@@ -196,6 +196,8 @@ func handleClientMessage on ep: reference WebSocketEndpoint(clientId: string, ra
             ep.handleGameAction(clientId, msgType, data)
         when "sse_fallback_request", "resync_state"
             ep.handleStateRequest(clientId)
+        when "spectate"
+            ep.handleSpectate(clientId, data)
         when "disconnect"
             ep.handleClientDisconnect(clientId)
         default
@@ -430,6 +432,35 @@ func handleGameAction on ep: reference WebSocketEndpoint(clientId: string, msgTy
     if session.isGameOver()
         ep.broadcastGameWon(session)
         ep.lobbyMgr.finishGame(session.gameId)
+
+func handleSpectate on ep: reference WebSocketEndpoint(clientId: string, data: JSONMap)
+    client := ep.wsHandler.GetClientByID(clientId)
+    if client is empty
+        return
+    gameId := ""
+    gv, has := data["game_id"]
+    if has
+        if gv is string as gs
+            gameId = gs
+    if gameId is empty
+        ep.sendError(clientId, "missing game_id")
+        return
+    session := ep.coordinator.getSession(gameId)
+    if session is empty
+        ep.sendError(clientId, "game session not found")
+        return
+    client.gameId = gameId
+    ep.wsHandler.UpdateClientGameID(clientId, gameId)
+    if _, ok := session.spectators[clientId]; !ok
+        session.spectators[clientId] = true
+    if _, ok := session.playerEventSeqs[clientId]; !ok
+        session.playerEventSeqs[clientId] = 0
+    ep.wsHandler.SendToClient(clientId, JSONMap{
+        "type": "SPECTATE_ACK",
+        "game_id": gameId,
+    })
+    # Push a fresh state to the spectator.
+    ep.wsHandler.BroadcastSessionState(session)
 
 func handleStateRequest on ep: reference WebSocketEndpoint(clientId: string)
     client := ep.wsHandler.GetClientByID(clientId)

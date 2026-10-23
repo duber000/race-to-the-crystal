@@ -390,6 +390,11 @@ class NetworkManager {
       case "lobby_left":
         this.handleLeaveGame(data);
         break;
+
+      case "SPECTATE_ACK":
+      case "spectate_ack":
+        this.handleSpectateAck(data);
+        break;
       
       default:
         this.handleUnknownMessage(data);
@@ -541,6 +546,11 @@ class NetworkManager {
       winner_id: data.winner_id,
       winner_name: data.winner_name,
     });
+  }
+
+  handleSpectateAck(data) {
+    console.log('[Spectate] ack', data);
+    this.currentGameId = data.game_id || this.currentGameId;
   }
 
   handleUnknownMessage(data) {
