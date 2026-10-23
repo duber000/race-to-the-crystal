@@ -6,6 +6,7 @@
 import { StateManager } from './state_manager.js';
 import { UIManager } from './ui_manager.js';
 import { TacticalComms } from './game_client.comms.js';
+import { ReplayController } from './game_client.replay.js';
 import { DeviceCapabilities } from './game_client.device.js';
 import { GAME_PHASE, TurnPhase, STATE } from './game_client.constants.js';
 import { ConnectionManager, InputController, UIController } from './game_client.modules.js';
@@ -36,6 +37,7 @@ class GameClient {
     this.stateManager = new StateManager();
     this.uiManager = new UIManager();
     this.commsManager = new TacticalComms(this);
+    this.replayController = new ReplayController(this);
     this.connectionManager = new ConnectionManager(this);
     this.uiController = new UIController(this);
 
@@ -54,6 +56,7 @@ class GameClient {
     this.gameInitialized = false;
     this.turnPhase = GAME_PHASE.MOVEMENT;
     this.musicPlaying = true;
+    this.replayMode = false;
 
     // Direct access for convenience (optional)
     Object.defineProperty(this, 'gameState', {

@@ -160,6 +160,7 @@ class ConnectionManager {
     }
 
     handleFullState(data) {
+        if (this.gameClient.replayMode) return;
         // Initialize game modules on first FULL_STATE
         if (!this.gameClient.gameInitialized) {
             this.gameClient.gameInitialized = true;
@@ -175,6 +176,7 @@ class ConnectionManager {
     }
 
     handleStateUpdate(delta) {
+        if (this.gameClient.replayMode) return;
         this.stateManager.applyDelta(delta);
     }
 

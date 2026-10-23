@@ -51,6 +51,7 @@ class StateManager {
         
         // Callbacks for when state changes
         this.onStateChange = null;
+        this.replayMode = false;
     }
 
     /**
