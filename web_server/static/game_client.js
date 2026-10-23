@@ -7,6 +7,8 @@ import { StateManager } from './state_manager.js';
 import { UIManager } from './ui_manager.js';
 import { TacticalComms } from './game_client.comms.js';
 import { ReplayController } from './game_client.replay.js';
+import { TouchArbiter } from './game_client.touch.js';
+import { RadialPalette } from './game_client.radial.js';
 import { DeviceCapabilities } from './game_client.device.js';
 import { GAME_PHASE, TurnPhase, STATE } from './game_client.constants.js';
 import { ConnectionManager, InputController, UIController } from './game_client.modules.js';
@@ -38,6 +40,8 @@ class GameClient {
     this.uiManager = new UIManager();
     this.commsManager = new TacticalComms(this);
     this.replayController = new ReplayController(this);
+    this.touchArbiter = new TouchArbiter(this);
+    this.radialPalette = new RadialPalette(this);
     this.connectionManager = new ConnectionManager(this);
     this.uiController = new UIController(this);
 
@@ -115,6 +119,7 @@ class GameClient {
     this._handlingStateChange = true;
     try {
       this._applyStateChange(state);
+      if (this.radialPalette) this.radialPalette.refresh(this.stateManager.selectedTokenId);
     } finally {
       this._handlingStateChange = false;
     }
