@@ -260,6 +260,23 @@ The full language reference is the `kukicha` skill — read it before writing
 #### Go version
 Requires Go 1.27+. See `go.mod` for the current version.
 
+#### HTTP routes (game server, port 8080)
+
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/games` | GET | list waiting/in-progress games |
+| `/api/game/create` | POST | create game (HTTP seats are `HTTP_AI`) |
+| `/api/game/{id}/join` | POST | join a waiting game |
+| `/api/game/{id}/spectate` | POST | read-only spectator token |
+| `/api/game/{id}/ready` | POST | toggle ready |
+| `/api/game/{id}/start` | POST | start game |
+| `/api/game/{id}/state` | GET | per-player (or spectator) state |
+| `/api/game/{id}/actions` | GET | legal actions for the seat |
+| `/api/game/{id}/action` | POST | submit one action |
+| `/api/game/{id}/say` | POST | radio chatter (broadcast as `RadioChatter`) |
+| `/api/game/{id}/leave` | POST | leave a game |
+| `/ws` | GET (upgrade) | WebSocket: state + event stream |
+
 #### Server configuration
 The game server and web server read their configuration from the environment:
 
