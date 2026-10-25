@@ -4,7 +4,6 @@
 package files_test
 
 import (
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
 	"kukicha.org/kukicha/stdlib/files"
 	"kukicha.org/kukicha/stdlib/test"
 	"os"
@@ -431,32 +430,6 @@ func TestListByModTime(t *testing.T) {
 	test.AssertEqual(t, entries[2].Name, "old.txt")
 }
 
-// --- TestWatch ---
-type WatchCase struct {
-	name string
-}
-
-func TestWatch(t *testing.T) {
-	cases := []WatchCase{WatchCase{name: "watch file"}}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			tmpDir, err := os.MkdirTemp("", "kukicha-watch-test-")
-			test.AssertNoError(t, err)
-			defer os.RemoveAll(tmpDir)
-			testFile := filepath.Join(tmpDir, "watch.txt")
-			_ = files.WriteString("initial", testFile)
-			ch := make(chan string)
-			go files.Watch(filepath.Join(tmpDir, "*.txt"), func(path string) {
-				ch <- path
-			})
-			time.Sleep(1 * time.Second)
-			_ = files.WriteString("modified", testFile)
-			receivedPath := <-ch
-			test.AssertEqual(t, receivedPath, testFile)
-		})
-	}
-}
-
 // --- TestGlob ---
 type GlobCase struct {
 	name string
@@ -511,48 +484,6 @@ func TestTempFileAuto(t *testing.T) {
 	cleanup()
 	_, statErr2 := os.Stat(path)
 	test.AssertEqual(t, os.IsNotExist(statErr2), true)
-}
-
-// --- TestWatchCtxCancelledReturns ---
-func TestWatchCtxCancelledReturns(t *testing.T) {
-	h := ctxpkg.WithCancel(ctxpkg.Background())
-	h.Cancel()
-	fired := make(chan string)
-	done := make(chan bool)
-	go func() {
-		files.WatchCtx(h, "/nonexistent-dir/*.txt", func(path string) {
-			fired <- path
-		})
-		done <- true
-	}()
-	<-done
-}
-
-// --- TestWatchCtxLiveAndCancel ---
-func TestWatchCtxLiveAndCancel(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "kukicha-watchctx-test-")
-	test.AssertNoError(t, err)
-	defer os.RemoveAll(tmpDir)
-	first := filepath.Join(tmpDir, "first.txt")
-	_ = files.WriteString("initial", first)
-	h := ctxpkg.WithCancel(ctxpkg.Background())
-	defer h.Cancel()
-	ch := make(chan string)
-	done := make(chan bool)
-	pattern := filepath.Join(tmpDir, "*.txt")
-	go func() {
-		files.WatchCtx(h, pattern, func(path string) {
-			ch <- path
-		})
-		done <- true
-	}()
-	time.Sleep(1 * time.Second)
-	second := filepath.Join(tmpDir, "second.txt")
-	_ = files.WriteString("new", second)
-	receivedPath := <-ch
-	test.AssertEqual(t, receivedPath, second)
-	h.Cancel()
-	<-done
 }
 
 // --- TestUserDirs ---

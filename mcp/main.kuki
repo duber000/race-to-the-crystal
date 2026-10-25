@@ -1,16 +1,18 @@
 petiole main
 
-import "net/http"
+import "bytes"
 import "io"
+import "net/http"
 import "race-to-the-crystal/shared/constants" as constants
 import "stdlib/env"
 import "stdlib/json" as jsonpkg
-import "bytes"
-import "stdlib/mcp" as mcpkg
 import "stdlib/jsonschema" as jsonschema
+import "stdlib/mcp" as mcpkg
 
 var serverUrl = env.GetOr("GAME_SERVER_URL", "http://localhost:8080")
+
 var gameToken = env.GetOr("GAME_TOKEN", "")
+
 var gameId = env.GetOr("GAME_ID", "")
 
 type MoveArgs
@@ -30,32 +32,32 @@ type DeployArgs
 type SayArgs
     Text: string
 
-type NoArgs struct{}
+type NoArgs struct {}
 
 func doRequest(method: string, path: string, body: map of string to any) (string, error)
     url := "{serverUrl}{path}"
-    bodyReader := io.Reader(nil)
+    bodyReader := io.Reader(empty)
     if body isnt empty
         b, err := jsonpkg.Bytes(body)
-        if err isnt empty
+        if err != nil
             return "", err
         bodyReader = bytes.NewReader(b)
     req, err := http.NewRequest(method, url, bodyReader)
-    if err isnt empty
+    if err != nil
         return "", err
     req.Header.Set("Authorization", "Bearer {gameToken}")
     if body isnt empty
         req.Header.Set("Content-Type", "application/json")
     resp, err := http.DefaultClient.Do(req)
-    if err isnt empty
+    if err != nil
         return "", err
     defer resp.Body.Close()
     data, err := io.ReadAll(resp.Body)
-    if err isnt empty
+    if err != nil
         return "", err
     if resp.StatusCode >= 400
-        return string(data), error "{resp.Status}: {string(data)}"
-    return string(data), empty
+        return data as string, error "{resp.Status}: {data as string}"
+    return data as string, empty
 
 func getState(args: NoArgs) (any, error)
     return doRequest("GET", "/api/game/{gameId}/state", empty map of string to any)
@@ -109,7 +111,7 @@ func say(args: SayArgs) (any, error)
     return doRequest("POST", "/api/game/{gameId}/say", body)
 
 func main()
-    if gameId is empty or gameToken is empty
+    if (gameId is empty) or (gameToken is empty)
         print("GAME_ID and GAME_TOKEN are required")
         return
 
@@ -151,18 +153,8 @@ func main()
             deployToken,
         )
     server
-        |> mcpkg.Tool of NoArgs(
-            "end_turn",
-            "End the current turn",
-            jsonschema.From of NoArgs,
-            endTurn,
-        )
+        |> mcpkg.Tool of NoArgs("end_turn", "End the current turn", jsonschema.From of NoArgs, endTurn)
     server
-        |> mcpkg.Tool of SayArgs(
-            "say",
-            "Send radio chatter",
-            jsonschema.From of SayArgs,
-            say,
-        )
+        |> mcpkg.Tool of SayArgs("say", "Send radio chatter", jsonschema.From of SayArgs, say)
 
     mcpkg.Serve(server) onerr panic "{error}"

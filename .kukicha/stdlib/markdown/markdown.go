@@ -151,19 +151,23 @@ func TryToHTMLWith(md string, opts Options) (string, error) {
 // HTML in the source is escaped. Returns "" on render error; use TryToHTML
 // for onerr.
 func ToHTML(md string) string {
-	html, err_1 := TryToHTML(md)
-	if err_1 != nil {
-		return ""
-	}
-	return html
+	return func() string {
+		onerrVal_1, err_2 := TryToHTML(md)
+		if err_2 != nil {
+			return ""
+		}
+		return onerrVal_1
+	}()
 }
 
 // ToHTMLWith renders Markdown to HTML with the given options.
 // Returns "" on render error; use TryToHTMLWith for onerr.
 func ToHTMLWith(md string, opts Options) string {
-	html, err_2 := TryToHTMLWith(md, opts)
-	if err_2 != nil {
-		return ""
-	}
-	return html
+	return func() string {
+		onerrVal_3, err_4 := TryToHTMLWith(md, opts)
+		if err_4 != nil {
+			return ""
+		}
+		return onerrVal_3
+	}()
 }

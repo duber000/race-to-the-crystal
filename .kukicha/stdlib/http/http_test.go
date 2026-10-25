@@ -4,6 +4,7 @@
 package http_test
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"kukicha.org/kukicha/stdlib/html"
@@ -1046,4 +1047,65 @@ func TestRequestStrictJSON(t *testing.T) {
 	if !kukistring.Contains(rec2.Body.String(), "rejected:") {
 		t.Errorf("expected rejection message: %v", rec2.Body.String())
 	}
+}
+
+func TestReadBodyReturnsExactBytes(t *testing.T) {
+	payload := []byte{0x00, 0x01, 0x7f, 0x80, 0xff, 0x0a}
+	rawReq := httptest.NewRequest("POST", "/", bytes.NewReader(payload))
+	handler := httphelper.Handler(func(_res httphelper.Response, req httphelper.Request) {
+		raw, err := req.ReadBody()
+		if err != nil {
+			t.Errorf("ReadBody failed: %v", err)
+			return
+		}
+		if len(raw) != len(payload) {
+			t.Errorf("ReadBody returned %v bytes, want %v", len(raw), len(payload))
+			return
+		}
+		{
+			_iStart, _iEnd := 0, len(payload)-1
+			_iStep := _iStart + 1 - _iStart
+			if _iStart > _iEnd {
+				_iStep = -_iStep
+			}
+			for i := _iStart; i != _iEnd+_iStep; i += _iStep {
+				if raw[i] != payload[i] {
+					t.Errorf("byte %v = %v, want %v", i, raw[i], payload[i])
+				}
+			}
+		}
+	})
+	handler.ServeHTTP(httptest.NewRecorder(), rawReq)
+}
+
+func TestReadBodyLimitExactAccepted(t *testing.T) {
+	payload := []byte{0x01, 0x02, 0x03, 0x04}
+	rawReq := httptest.NewRequest("POST", "/", bytes.NewReader(payload))
+	handler := httphelper.Handler(func(_res httphelper.Response, req httphelper.Request) {
+		raw, err := req.ReadBodyLimit(4)
+		if err != nil {
+			t.Errorf("exact-limit body should be accepted, got: %v", err)
+			return
+		}
+		if len(raw) != 4 {
+			t.Errorf("ReadBodyLimit returned %v bytes, want 4", len(raw))
+		}
+	})
+	handler.ServeHTTP(httptest.NewRecorder(), rawReq)
+}
+
+func TestReadBodyLimitPlusOneRejected(t *testing.T) {
+	payload := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
+	rawReq := httptest.NewRequest("POST", "/", bytes.NewReader(payload))
+	handler := httphelper.Handler(func(_res httphelper.Response, req httphelper.Request) {
+		raw, err := req.ReadBodyLimit(4)
+		if err == nil {
+			t.Errorf("limit+1 body should be rejected, got %v bytes", len(raw))
+			return
+		}
+		if !kukistring.Contains(fmt.Sprintf("%v", err), "exceeds limit") {
+			t.Errorf("expected a limit error, got: %v", err)
+		}
+	})
+	handler.ServeHTTP(httptest.NewRecorder(), rawReq)
 }

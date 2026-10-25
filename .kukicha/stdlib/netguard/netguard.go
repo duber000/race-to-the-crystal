@@ -64,6 +64,7 @@ type Guard struct {
 	networks    []*net.IPNet
 	mode        GuardMode
 	dialTimeout time.Duration
+	transport   *http.Transport
 }
 
 // parseCIDRs parses a list of CIDR strings, returning the networks or an error.
@@ -168,7 +169,9 @@ func NewAllow(cidrs []string) (Guard, error) {
 		var _zero0 Guard
 		return _zero0, err_1
 	}
-	return Guard{networks: nets, mode: GuardModeAllow}, nil
+	g := Guard{networks: nets, mode: GuardModeAllow}
+	g.transport = newTransport(g)
+	return g, nil
 }
 
 // NewBlock creates a Guard that blocks connections to the listed CIDRs.
@@ -178,12 +181,19 @@ func NewBlock(cidrs []string) (Guard, error) {
 		var _zero0 Guard
 		return _zero0, err_2
 	}
-	return Guard{networks: nets, mode: GuardModeBlock}, nil
+	g := Guard{networks: nets, mode: GuardModeBlock}
+	g.transport = newTransport(g)
+	return g, nil
 }
 
 var ssrfCIDRs = []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16", "::1/128", "fc00::/7", "fe80::/10", "0.0.0.0/8", "100.64.0.0/10", "192.0.0.0/24", "192.0.2.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "224.0.0.0/4", "240.0.0.0/4"}
 
 var defaultSSRFNetworks []*net.IPNet
+
+// defaultSSRFGuard is the shared policy for NewSSRFGuard. Its transport is
+// built once, so every SSRF-guarded request shares one connection pool
+// instead of paying a TCP+TLS handshake per call.
+var defaultSSRFGuard Guard
 
 func init() {
 	var err_3 error
@@ -191,12 +201,16 @@ func init() {
 	if err_3 != nil {
 		panic(fmt.Sprintf("netguard: BUG in hardcoded SSRF CIDRs: %v", err_3))
 	}
+	defaultSSRFGuard = Guard{networks: defaultSSRFNetworks, mode: GuardModeBlock}
+	defaultSSRFGuard.transport = newTransport(defaultSSRFGuard)
 }
 
 // NewSSRFGuard creates a Guard that blocks all private, loopback, link-local,
 // CGN, multicast, and reserved IP ranges — the standard SSRF protection set.
+// The returned Guard shares one pooled transport with every other guard from
+// this constructor, so guarded requests reuse connections.
 func NewSSRFGuard() Guard {
-	return Guard{networks: defaultSSRFNetworks, mode: GuardModeBlock}
+	return defaultSSRFGuard
 }
 
 // Check validates a single IP string against the guard policy.
@@ -213,9 +227,14 @@ func Check(g Guard, ipStr string) bool {
 // the escape hatch for slow-DNS environments where the 30s DialContext
 // default binds. The policy (networks + mode) is unchanged. A zero or
 // negative duration keeps the default.
+// The copy gets its own transport, because the guarded dialer is bound to
+// the guard's timeout.
 // Example: slow |> netguard.WithDialTimeout(2 * time.Minute)
 func WithDialTimeout(g Guard, d time.Duration) Guard {
-	g.dialTimeout = d
+	if d > 0 && d != g.dialTimeout {
+		g.dialTimeout = d
+		g.transport = newTransport(g)
+	}
 	return g
 }
 
@@ -259,12 +278,30 @@ func DialContext(g Guard, ctx context.Context, network string, addr string) (net
 	return dialer.DialContext(ctx, network, dialAddr)
 }
 
-// HTTPTransport returns an *http.Transport that uses the guarded DialContext.
-func HTTPTransport(g Guard) *http.Transport {
+// newTransport builds the guarded *http.Transport for a policy.
+//
+// The transport mirrors http.DefaultTransport's tunables — HTTP/2, the
+// handshake and idle timeouts, the idle-connection pool — so a guarded
+// client behaves like an ordinary one instead of a bare transport that
+// re-handshakes on every call. Proxy stays nil: with an environment proxy
+// the guarded dialer would see the proxy address instead of the target, so
+// the policy would be checked against the wrong host.
+func newTransport(g Guard) *http.Transport {
 	dial := func(dialCtx context.Context, dialNetwork string, dialAddr string) (net.Conn, error) {
 		return DialContext(g, dialCtx, dialNetwork, dialAddr)
 	}
-	return &http.Transport{DialContext: dial}
+	return &http.Transport{DialContext: dial, ForceAttemptHTTP2: true, MaxIdleConns: 100, IdleConnTimeout: 90 * time.Second, TLSHandshakeTimeout: 10 * time.Second, ExpectContinueTimeout: 1 * time.Second}
+}
+
+// HTTPTransport returns the *http.Transport that uses the guarded
+// DialContext. The transport is memoized on the guard, so repeated calls
+// share one connection pool instead of opening a new one per request.
+func HTTPTransport(g Guard) *http.Transport {
+	transport := g.transport
+	if transport != nil {
+		return transport
+	}
+	return newTransport(g)
 }
 
 // HTTPClient returns an *http.Client using the guarded transport.

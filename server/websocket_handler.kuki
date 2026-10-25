@@ -104,7 +104,7 @@ func SendToClient on wh: reference WebSocketHandler(clientId: string, data: map 
     client.writeMu.Lock()
     defer client.writeMu.Unlock()
     err := client.conn.WriteMessage(websocket.TextMessage, jsonBytes)
-    if err isnt empty
+    if err != nil
         log.Debug("WebSocket send to {clientId} failed: {err}")
         return false
     return true
@@ -117,7 +117,7 @@ func BroadcastToGame on wh: reference WebSocketHandler(gameId: string, data: JSO
             client.writeMu.Lock()
             err := client.conn.WriteMessage(websocket.TextMessage, jsonBytes)
             client.writeMu.Unlock()
-            if err isnt empty
+            if err != nil
                 log.Debug("WebSocket broadcast failed: {err}")
 
 func ProcessMessage on wh: reference WebSocketHandler(clientId: string, rawData: string) map of string to any
@@ -171,7 +171,7 @@ func BroadcastSessionState on wh: reference WebSocketHandler(session: reference 
 
     # Spectators (read-only) receive the unfiltered state.
     for specId, _ in session.spectators
-        if _, ok := session.playerEventSeqs[specId]; !ok
+        if _, ok := session.playerEventSeqs[specId]; not ok
             session.playerEventSeqs[specId] = 0
         wh.SendToClient(specId, JSONMap{
             "type": "FULL_STATE",
@@ -207,7 +207,7 @@ func BroadcastSessionEvents on wh: reference WebSocketHandler(session: reference
 
         # Spectators receive every event unfiltered.
         for specId, _ in session.spectators
-            if _, ok := session.playerEventSeqs[specId]; !ok
+            if _, ok := session.playerEventSeqs[specId]; not ok
                 session.playerEventSeqs[specId] = 0
             seq := session.playerEventSeqs[specId] + 1
             session.playerEventSeqs[specId] = seq

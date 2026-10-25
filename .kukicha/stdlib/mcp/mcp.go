@@ -1056,7 +1056,7 @@ func (r *CompletionRouter) Handler() CompletionHandler {
 		}
 		argName := req.Params.Argument.Name
 		partial := req.Params.Argument.Value
-		prevArgs := *new(PromptArgs)
+		prevArgs := PromptArgs{}
 		if req.Params.Context != nil {
 			prevArgs = req.Params.Context.Arguments
 		}

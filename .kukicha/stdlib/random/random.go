@@ -39,9 +39,8 @@ func String(length int) string {
 // Choice. NOT cryptographically secure — see package doc.
 // Example: code := random.StringWith(8, "ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
 // Deprecated: only pays off with a custom alphabet, and no consumer has
-// needed one. Removed after 1.0.0 per the stdlib knife review
-// (docs/STDLIBS-UNDER-THE-KNIFE.md); the deprecation ships through the
-// stable window.
+// needed one. Removed after 1.0.0 per the stdlib knife review; the
+// deprecation ships through the stable window.
 func StringWith(length int, alphabet string) string {
 	if len(alphabet) == 0 {
 		panic("random: StringWith of empty alphabet")

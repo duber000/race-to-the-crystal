@@ -145,7 +145,7 @@ func timeOutTurn on ep: reference WebSocketEndpoint(session: reference GameSessi
 
 func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Response, request: httphelper.Request)
     conn, err := wsUpgrader.Upgrade(response.Raw(), request.Raw(), empty)
-    if err isnt empty
+    if err != nil
         log.Warn("WebSocket upgrade failed: {err}")
         return
     # Enforce a cap on the messages a client may send. Without it a client
@@ -159,7 +159,7 @@ func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Res
     defer conn.Close()
     for true
         _msg_type, raw, rerr := conn.ReadMessage()
-        if rerr isnt empty
+        if rerr != nil
             break
         ep.handleClientMessage(clientId, raw as string)
     ep.handleClientDisconnect(clientId)
@@ -419,7 +419,7 @@ func handleGameAction on ep: reference WebSocketEndpoint(clientId: string, msgTy
 
     normalized := NormalizeActionData(data)
     validationErr := ValidateActionFields(actionType, normalized)
-    if validationErr isnt empty
+    if validationErr != nil
         ep.sendInvalidAction(clientId, msgType, "validation failed: {validationErr.message}")
         return
     action := ep.httpHandler.buildGameAction(client.playerId, actionType, normalized)
@@ -451,9 +451,9 @@ func handleSpectate on ep: reference WebSocketEndpoint(clientId: string, data: J
         return
     client.gameId = gameId
     ep.wsHandler.UpdateClientGameID(clientId, gameId)
-    if _, ok := session.spectators[clientId]; !ok
+    if _, ok := session.spectators[clientId]; not ok
         session.spectators[clientId] = true
-    if _, ok := session.playerEventSeqs[clientId]; !ok
+    if _, ok := session.playerEventSeqs[clientId]; not ok
         session.playerEventSeqs[clientId] = 0
     ep.wsHandler.SendToClient(clientId, JSONMap{
         "type": "SPECTATE_ACK",

@@ -532,8 +532,8 @@ func buildFieldMaps(elemType reflect.Type) *fieldMaps {
 		}
 		tag := field.Tag.Get("json")
 		if tag != "" && tag != "-" {
-			parts := strpkg.Split(tag, ",")
-			tagMap[parts[0]] = i
+			jsonName, _, _ := strpkg.Cut(tag, ",")
+			tagMap[jsonName] = i
 		}
 		nameMap[strpkg.ToLower(field.Name)] = i
 		snakeMap[camelToSnake(field.Name)] = i
@@ -629,15 +629,29 @@ func orderedFieldScanners(elem reflect.Value, elemType reflect.Type) []any {
 	return scanners
 }
 
-// camelToSnake converts CamelCase to snake_case.
+// camelToSnake converts CamelCase to snake_case. An uppercase run followed
+// by a lowercase letter is one acronym segment: SourceURL → source_url,
+// APIKey → api_key, JSONPayload → json_payload. A fully-capitalized name
+// folds to a single lowercase segment (HTMLURL → htmlurl) — inherently
+// ambiguous; the json-tag map is the disambiguator for such fields.
+// (Insert the separator before an uppercase letter when the previous rune
+// is lowercase — the word boundary — or the next rune is lowercase — the
+// acronym run ending; consecutive uppercase letters stay glued.)
 func camelToSnake(s string) string {
+	runes := []rune{}
+	for _, c := range s {
+		runes = append(runes, c)
+	}
 	result := ""
-	for i, r := range s {
+	for i, r := range runes {
 		if unicode.IsUpper(r) {
-			if i > 0 {
+			lower := strpkg.ToLower(string(r))
+			prevLower := i > 0 && unicode.IsLower(runes[i-1])
+			nextLower := i+1 < len(runes) && unicode.IsLower(runes[i+1])
+			if i > 0 && (prevLower || nextLower) {
 				result = result + "_"
 			}
-			result = strpkg.ToLower(result + string(r))
+			result = result + lower
 		} else {
 			result = result + string(r)
 		}

@@ -80,3 +80,30 @@ func TestWithDialTimeoutDials(t *testing.T) {
 	msg := fmt.Sprintf("%v", dialErr)
 	test.AssertFalse(t, kukistring.Contains(msg, "blocked by policy"))
 }
+
+// --- TestTransportMemoization ---
+// The guarded transport is memoized on the guard: a transport built per call
+// gave every guarded request its own connection pool, so no connection was
+// ever reused and every call paid a TCP+TLS handshake.
+func TestHTTPTransportIsMemoizedPerGuard(t *testing.T) {
+	guard := netguard.NewSSRFGuard()
+	first := netguard.HTTPTransport(guard)
+	second := netguard.HTTPTransport(guard)
+	test.AssertTrue(t, first == second)
+}
+
+// The default SSRF policy is shared, so its transport (and its connection
+// pool) is shared too: the SSRF-safe fetch path reuses connections.
+func TestSSRFGuardSharesOneTransport(t *testing.T) {
+	first := netguard.HTTPTransport(netguard.NewSSRFGuard())
+	second := netguard.HTTPTransport(netguard.NewSSRFGuard())
+	test.AssertTrue(t, first == second)
+}
+
+// A guard with its own dial timeout needs its own transport: the guarded
+// dialer is bound to the timeout.
+func TestWithDialTimeoutBuildsOwnTransport(t *testing.T) {
+	guard := netguard.NewSSRFGuard()
+	slow := netguard.WithDialTimeout(guard, 2*time.Second)
+	test.AssertFalse(t, netguard.HTTPTransport(guard) == netguard.HTTPTransport(slow))
+}

@@ -495,12 +495,12 @@ func Parse(app *Command, args []string) ParseResult {
 		values := defaultValues(app, nil)
 		rootArgs := Args{values: values, rest: map[string][]string{}}
 		for _, f := range app.Flags {
-			if f.Required && values[f.Name] == "" {
+			if f.Required && (len(values[f.Name]) == 0) {
 				return Invalid{Reason: fmt.Sprintf("flag --%v is required", f.Name)}
 			}
 		}
 		for _, a := range app.Args {
-			if a.Required && values[a.Name] == "" {
+			if a.Required && (len(values[a.Name]) == 0) {
 				return Invalid{Reason: fmt.Sprintf("argument %v is required", a.Name)}
 			}
 		}
@@ -555,16 +555,16 @@ func Parse(app *Command, args []string) ParseResult {
 	if len(rootUnknown) != 0 {
 		return Invalid{Reason: fmt.Sprintf("unknown flag: --%v", rootUnknown[0])}
 	}
-	if bad := validateTypedValues(values, allFlagDefs); bad != "" {
+	if bad := validateTypedValues(values, allFlagDefs); len(bad) != 0 {
 		return Invalid{Reason: fmt.Sprintf("flag --%v has an invalid value", bad)}
 	}
 	for _, f := range app.Flags {
-		if f.Required && values[f.Name] == "" {
+		if f.Required && (len(values[f.Name]) == 0) {
 			return Invalid{Reason: fmt.Sprintf("flag --%v is required", f.Name)}
 		}
 	}
 	for _, a := range app.Args {
-		if a.Required && values[a.Name] == "" {
+		if a.Required && (len(values[a.Name]) == 0) {
 			return Invalid{Reason: fmt.Sprintf("argument %v is required", a.Name)}
 		}
 	}
@@ -604,7 +604,7 @@ func RunWithArgs(app *Command, args []string) error {
 		}
 		return nil
 	case ShowVersion:
-		if app.Version != "" {
+		if len(app.Version) != 0 {
 			fmt.Printf("%v %v\n", app.Name, app.Version)
 		} else {
 			fmt.Println(app.Name)
@@ -716,7 +716,7 @@ func parseFlagsAndPositionals(args []string, start int, values map[string]string
 			if posIndex < len(positionalNames) {
 				values[positionalNames[posIndex]] = arg
 				posIndex += 1
-			} else if restArgName != "" {
+			} else if len(restArgName) != 0 {
 				rest[restArgName] = append(rest[restArgName], arg)
 			}
 			i += 1
@@ -732,7 +732,7 @@ func parseFlagsAndPositionals(args []string, start int, values map[string]string
 func validateTypedValues(values map[string]string, flagDefs []FlagDef) string {
 	for _, f := range flagDefs {
 		v := values[f.Name]
-		if v == "" {
+		if len(v) == 0 {
 			continue
 		}
 		if f.Kind == FlagKindBool {
@@ -796,16 +796,16 @@ func parseLeaf(app *Command, leaf *Command, args []string, leadingStart int, sub
 	if len(trailingUnknown) != 0 {
 		return Invalid{Reason: fmt.Sprintf("unknown flag: --%v", trailingUnknown[0])}
 	}
-	if bad := validateTypedValues(values, allFlagDefs); bad != "" {
+	if bad := validateTypedValues(values, allFlagDefs); len(bad) != 0 {
 		return Invalid{Reason: fmt.Sprintf("flag --%v has an invalid value", bad)}
 	}
 	for _, f := range leaf.Flags {
-		if f.Required && values[f.Name] == "" {
+		if f.Required && (len(values[f.Name]) == 0) {
 			return Invalid{Reason: fmt.Sprintf("flag --%v is required", f.Name)}
 		}
 	}
 	for _, a := range leaf.Args {
-		if a.Required && values[a.Name] == "" {
+		if a.Required && (len(values[a.Name]) == 0) {
 			return Invalid{Reason: fmt.Sprintf("argument %v is required", a.Name)}
 		}
 	}
@@ -921,7 +921,7 @@ func printHelpTo(w *os.File, app *Command) {
 	usageLabel := s.Bold("Usage:")
 	nameStyled := s.Cyan(app.Name)
 	out(fmt.Sprintf("%v %v [flags] [subcommand]", usageLabel, nameStyled))
-	if app.Description != "" {
+	if len(app.Description) != 0 {
 		out("")
 		out(app.Description)
 	}
@@ -945,7 +945,7 @@ func printHelpTo(w *os.File, app *Command) {
 			out(fmt.Sprintf("  %v  %v", s.Cyan(padded), s.Dim(sub.Description)))
 		}
 	}
-	if app.Version != "" {
+	if len(app.Version) != 0 {
 		out("")
 		versionLabel := s.Dim("Version:")
 		out(fmt.Sprintf("%v %v", versionLabel, app.Version))
@@ -968,7 +968,7 @@ func printLeafHelp(app *Command, leaf *Command, path []string) {
 	} else {
 		fmt.Printf("%v %v%v [flags]\n", usageLabel, nameStyled, pathStyled)
 	}
-	if leaf.Description != "" {
+	if len(leaf.Description) != 0 {
 		fmt.Println("")
 		fmt.Println(leaf.Description)
 	}
@@ -1056,7 +1056,7 @@ func printFlagRowTo(w *os.File, s color.Styler, f FlagDef, width int) {
 	suffix := ""
 	if f.Required {
 		suffix = " (required)"
-	} else if f.DefaultValue != "" && f.DefaultValue != "false" {
+	} else if len(f.DefaultValue) != 0 && f.DefaultValue != "false" {
 		suffix = fmt.Sprintf(" (default: %v)", f.DefaultValue)
 	}
 	fmt.Fprintf(w, "  %v  %v\n", s.Cyan(padded), s.Dim(f.Description+suffix))
@@ -1241,11 +1241,7 @@ func GetString(args Args, name string) string {
 
 // GetStringOr returns the value of a named argument or flag, or defaultVal if absent.
 func GetStringOr(args Args, name string, defaultVal string) string {
-	val := args.values[name]
-	if val == "" {
-		return defaultVal
-	}
-	return val
+	return kukistring.Or(args.values[name], defaultVal)
 }
 
 // GetBool returns the boolean value of a flag
@@ -1258,7 +1254,7 @@ func GetBool(args Args, name string) bool {
 // Example: debug := cli.GetBoolOr(args, "verbose", false)
 func GetBoolOr(args Args, name string, defaultVal bool) bool {
 	val := args.values[name]
-	if val == "" {
+	if len(val) == 0 {
 		return defaultVal
 	}
 	lower := kukistring.ToLower(val)
@@ -1274,7 +1270,7 @@ func GetBoolOr(args Args, name string, defaultVal bool) bool {
 // GetInt returns the integer value of an argument
 func GetInt(args Args, name string) (int, error) {
 	strVal := args.values[name]
-	if strVal == "" {
+	if len(strVal) == 0 {
 		return 0, fmt.Errorf("argument %v not found", name)
 	}
 	return parse.Int(strVal)
@@ -1284,14 +1280,10 @@ func GetInt(args Args, name string) (int, error) {
 // Example: port := cli.GetIntOr(args, "limit", 10)
 func GetIntOr(args Args, name string, defaultVal int) int {
 	strVal := args.values[name]
-	if strVal == "" {
+	if len(strVal) == 0 {
 		return defaultVal
 	}
-	n, err := parse.Int(strVal)
-	if err != nil {
-		return defaultVal
-	}
-	return n
+	return parse.IntOr(strVal, defaultVal)
 }
 
 // GetFloat returns the float64 value of an argument
@@ -1299,7 +1291,7 @@ func GetIntOr(args Args, name string, defaultVal int) int {
 // Example: rate := cli.GetFloat(args, "rate") onerr return
 func GetFloat(args Args, name string) (float64, error) {
 	strVal := args.values[name]
-	if strVal == "" {
+	if len(strVal) == 0 {
 		return 0.0, fmt.Errorf("argument %v not found", name)
 	}
 	return parse.Float64(strVal)
@@ -1309,14 +1301,10 @@ func GetFloat(args Args, name string) (float64, error) {
 // Example: rate := cli.GetFloatOr(args, "rate", 1.0)
 func GetFloatOr(args Args, name string, defaultVal float64) float64 {
 	strVal := args.values[name]
-	if strVal == "" {
+	if len(strVal) == 0 {
 		return defaultVal
 	}
-	n, err := parse.Float64(strVal)
-	if err != nil {
-		return defaultVal
-	}
-	return n
+	return parse.Float64Or(strVal, defaultVal)
 }
 
 // GetRest returns the list of variadic positional values collected under a

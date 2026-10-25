@@ -49,7 +49,7 @@ func NewGameServer(config: ServerConfig) (GameServer, error)
     mercureCfg := MercureConfigFromEnv()
     if config.jwtSecret is empty
         sk, err := GenerateSecretKey()
-        if err isnt empty
+        if err != nil
             return GameServer{}, errs.Wrap(err, "failed to generate secret key")
         config.jwtSecret = sk
 
@@ -92,7 +92,7 @@ func Start on gs: reference GameServer
 
     go
         err := http.ListenAndServe(addr, mux)
-        if err isnt empty
+        if err != nil
             log.Error("HTTP server error: {err}")
 
     log.Info("Server started. Press Ctrl+C to stop.")
@@ -327,7 +327,7 @@ func writeAPIResponse on gs: reference GameServer(response: httphelper.Response,
 func main()
     config := ServerConfigFromEnv()
     server, err := NewGameServer(config)
-    if err isnt empty
+    if err != nil
         log.Fatal("Failed to create game server: {err}")
         return
     server.Start()

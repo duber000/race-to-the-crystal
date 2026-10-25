@@ -152,6 +152,8 @@ type Request struct {
 	timeoutOverridden bool
 	method            string
 	body              any
+	rawBody           []byte
+	hasRawBody        bool
 	transport         *http.Transport
 	retryMaxAttempts  int
 	retryDelayMs      int
@@ -172,6 +174,12 @@ const defaultMaxBodySize = 524288000
 // The common case — reading the body as text or JSON — is one method call
 // that auto-closes the body. For streaming, call Close() and use the Raw()
 // escape hatch to reach the underlying *http.Response.
+//
+// A response whose body is NOT read must be closed explicitly:
+// `resp.Close() onerr discard` (or `fetch.GetStatus(url)` for a status-only
+// call). An unclosed body is never drained, so the connection is never
+// returned to the pool — every call pays a fresh TCP+TLS handshake until
+// the client timeout tears the connection down.
 type Response struct {
 	StatusCode  int
 	Status      string
@@ -205,6 +213,9 @@ func (r Response) Header(name string) string {
 }
 
 // Text reads the response body as a string and closes the body.
+// The body is closed, but the handle stays in place: a second read fails
+// with the underlying read error, not "already consumed". Use Close() to
+// clear the handle.
 func (r Response) Text() (string, error) {
 	if r.raw == nil {
 		return "", errors.New("response already consumed or empty")
@@ -218,6 +229,7 @@ func (r Response) Text() (string, error) {
 }
 
 // Bytes reads the response body as a list of byte and closes the body.
+// The body is closed, but the handle stays in place — see Text().
 func (r Response) Bytes() ([]byte, error) {
 	if r.raw == nil {
 		return []byte{}, errors.New("response already consumed or empty")
@@ -228,6 +240,7 @@ func (r Response) Bytes() ([]byte, error) {
 }
 
 // JSON reads the response body and decodes it as typed JSON.
+// The body is closed, but the handle stays in place — see Text().
 // Example: data := resp.JSON of User
 func (r Response) JSON[T any]() (T, error) {
 	if r.raw == nil {
@@ -246,6 +259,7 @@ func (r Response) JSON[T any]() (T, error) {
 }
 
 // Decode reads the response body and decodes JSON into a typed target.
+// The body is closed, but the handle stays in place — see Text().
 // Target must be a pointer (use "reference of" in Kukicha).
 func (r Response) Decode(target any) error {
 	if r.raw == nil {
@@ -256,9 +270,12 @@ func (r Response) Decode(target any) error {
 }
 
 // Close releases the response body. Call this if you use Raw() for streaming
-// and need to clean up. Text/Bytes/JSON/Decode call it automatically. The
-// receiver is a reference so the consumed-mark sticks: a second Close is a
-// no-op and the body accessors then report "already consumed".
+// and need to clean up, and whenever you read only the status or the headers.
+// Text/Bytes/JSON/Decode call it automatically.
+// The receiver is a reference so the consumed-mark sticks: a second Close is a
+// no-op and the body accessors then report "already consumed". Close and Raw
+// are the only accessors that clear the handle — the read accessors close the
+// body but leave it in place.
 func (r *Response) Close() error {
 	if r.raw == nil {
 		return nil
@@ -355,9 +372,33 @@ func Method(req Request, method HTTPMethod) Request {
 
 // Body sets the request body and returns the modified request for chaining
 // Can accept any data type - will be automatically serialized to JSON
+// A string body is sent verbatim (no JSON encoding); any other value is
+// JSON-encoded. Use RawBody for byte-exact payloads.
 // Example: req := fetch.New(url) |> fetch.Body(data)
 func Body(req Request, data any) Request {
 	req.body = data
+	req.hasRawBody = false
+	req.rawBody = []byte{}
+	return req
+}
+
+// RawBody sets the request body to the exact bytes and returns the modified
+// request for chaining. The bytes are sent verbatim — no JSON encoding — so
+// the receiver sees exactly what was sent.
+// Use it when the protocol's contract or signature is defined over the
+// byte-exact body: an HMAC-signed webhook (the signature is computed over
+// the exact bytes), a non-JSON wire format (CSV, protobuf, CBOR), or a
+// captured-response replay. Set the content type yourself with
+// fetch.Header("Content-Type", ...) — a raw body gets no default.
+// Example: req := fetch.New(url)
+//
+//	|> fetch.Method(fetch.HTTPMethod.POST)
+//	|> fetch.Header("Content-Type", "application/octet-stream")
+//	|> fetch.RawBody(fixture as list of byte)
+func RawBody(req Request, data []byte) Request {
+	req.rawBody = data
+	req.hasRawBody = true
+	req.body = nil
 	return req
 }
 
@@ -480,7 +521,9 @@ func OnError[T any](req Request, target *T) Request {
 // Shared by doOnce and SessionDo so the serialization rules stay in one place.
 func buildHTTPRequest(req Request) (*http.Request, error) {
 	var bodyData any
-	if req.body != nil {
+	if req.hasRawBody {
+		bodyData = req.rawBody
+	} else if req.body != nil {
 		switch bodyStr := req.body.(type) {
 		case string:
 			bodyData = []byte(bodyStr)
@@ -499,9 +542,9 @@ func buildHTTPRequest(req Request) (*http.Request, error) {
 	for name, value := range req.headers {
 		httpReq.Header.Set(name, value)
 	}
-	if req.body != nil {
+	if req.body != nil || req.hasRawBody {
 		contentType := httpReq.Header.Get("Content-Type")
-		if contentType == "" {
+		if contentType == "" && !req.hasRawBody {
 			httpReq.Header.Set("Content-Type", "application/json")
 		}
 	}
@@ -601,6 +644,9 @@ func doOnce(req Request) (rawResult, error) {
 // When the server returns a Retry-After header on a retryable response, the
 // retry sleeps for at least that duration instead of the computed backoff.
 // Returns a Response wrapper with StatusCode, Status, Text(), JSON(), etc.
+// The response body belongs to the caller: read it (Text/Bytes/JSON/Decode
+// close it) or close it explicitly — `resp.Close() onerr discard` — so the
+// connection is returned to the pool.
 // Example: resp := fetch.New(url) |> fetch.Header(...) |> fetch.Do() onerr return
 func Do(req Request) (Response, error) {
 	if req.retryMaxAttempts <= 1 {
@@ -629,10 +675,7 @@ func Do(req Request) (Response, error) {
 		}
 		if resp.StatusCode == 429 || resp.StatusCode == 503 {
 			retryAfterMs := parseRetryAfter(resp)
-			err_9 := resp.Body.Close()
-			if err_9 != nil {
-				return err_9
-			}
+			_ = resp.Body.Close()
 			if retryAfterMs > 0 {
 				sleepMs := max(retryAfterMs, delayMs)
 				time.Sleep(time.Duration(sleepMs) * time.Millisecond)
@@ -673,7 +716,7 @@ func finalizeResponse(req Request, result rawResult) (Response, error) {
 	if raw == nil {
 		return resp, nil
 	}
-	if func() bool { _cmp_10 := 200; _cmp_11 := raw.StatusCode; return _cmp_10 <= _cmp_11 && _cmp_11 < 300 }() && req.successTarget != nil {
+	if func() bool { _cmp_9 := 200; _cmp_10 := raw.StatusCode; return _cmp_9 <= _cmp_10 && _cmp_10 < 300 }() && req.successTarget != nil {
 		body, readErr := io.ReadAll(raw.Body)
 		_ = raw.Body.Close()
 		resp.raw = nil
@@ -781,14 +824,32 @@ func createHTTPRequest(reqCtx context.Context, method string, url string, bodyDa
 // Get performs an HTTP GET request to the specified URL (quick function)
 // Returns a Response wrapper with StatusCode, Status, Text(), JSON(), etc.
 // Example: resp := fetch.Get("https://api.example.com/data") onerr return
+// A response whose body is not read must be closed: `resp.Close() onerr
+// discard` (or use fetch.GetStatus for a status-only call).
 func Get(url string) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_13 := Do(New(url))
-	if err_13 != nil {
+	resp, err_12 := Do(New(url))
+	if err_12 != nil {
 		var _zero0 Response
-		return _zero0, err_13
+		return _zero0, err_12
 	}
 	return resp, nil
+}
+
+// GetStatus performs an HTTP GET and returns only the status code, closing
+// the body so the connection is returned to the pool. Use it for health
+// checks, pollers, and webhook deliveries that never read the body — a
+// response that is only inspected for its status still has to be closed, or
+// the connection is held until the client timeout.
+// Example: code := fetch.GetStatus("https://api.example.com/health") onerr return
+func GetStatus(url string) (int, error) {
+	resp, err_13 := Get(url)
+	if err_13 != nil {
+		return 0, err_13
+	}
+	code := resp.StatusCode
+	_ = resp.Close()
+	return code, nil
 }
 
 // GetCtx performs an HTTP GET with a context for cancellation/timeout.
@@ -833,14 +894,30 @@ func SafeGet(url string) (Response, error) {
 	return resp, nil
 }
 
+// SafeGetStatus performs an SSRF-protected HTTP GET and returns only the
+// status code, closing the body so the connection is returned to the pool.
+// Uses netguard to block requests to internal IPs, cloud metadata endpoints,
+// and loopback addresses. Use this instead of fetch.GetStatus inside HTTP handlers
+// or when probing untrusted URLs that never read the body.
+// Example: code := fetch.SafeGetStatus("https://api.example.com/health") onerr return
+func SafeGetStatus(url string) (int, error) {
+	resp, err_18 := SafeGet(url)
+	if err_18 != nil {
+		return 0, err_18
+	}
+	code := resp.StatusCode
+	_ = resp.Close()
+	return code, nil
+}
+
 // SafeGetCtx performs an SSRF-protected HTTP GET with a context.
 // Example: resp := fetch.SafeGetCtx(h, url) onerr return
 func SafeGetCtx(h ctxpkg.Handle, url string) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_19 := Do(WithContext(NewExternal(url), h))
-	if err_19 != nil {
+	resp, err_20 := Do(WithContext(NewExternal(url), h))
+	if err_20 != nil {
 		var _zero0 Response
-		return _zero0, err_19
+		return _zero0, err_20
 	}
 	return resp, nil
 }
@@ -851,10 +928,10 @@ func SafeGetCtx(h ctxpkg.Handle, url string) (Response, error) {
 // Example: resp := fetch.Post("https://api.example.com/users", userData) onerr return
 func Post(url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_21 := Do(Body(Method(New(url), HTTPMethodPOST), data))
-	if err_21 != nil {
+	resp, err_22 := Do(Body(Method(New(url), HTTPMethodPOST), data))
+	if err_22 != nil {
 		var _zero0 Response
-		return _zero0, err_21
+		return _zero0, err_22
 	}
 	return resp, nil
 }
@@ -863,10 +940,10 @@ func Post(url string, data any) (Response, error) {
 // Example: resp := fetch.PostCtx(h, url, data) onerr return
 func PostCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_23 := Do(Body(Method(WithContext(New(url), h), HTTPMethodPOST), data))
-	if err_23 != nil {
+	resp, err_24 := Do(Body(Method(WithContext(New(url), h), HTTPMethodPOST), data))
+	if err_24 != nil {
 		var _zero0 Response
-		return _zero0, err_23
+		return _zero0, err_24
 	}
 	return resp, nil
 }
@@ -875,10 +952,10 @@ func PostCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 // Example: resp := fetch.SafePost("https://api.example.com/users", userData) onerr return
 func SafePost(url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_25 := Do(Body(Method(NewExternal(url), HTTPMethodPOST), data))
-	if err_25 != nil {
+	resp, err_26 := Do(Body(Method(NewExternal(url), HTTPMethodPOST), data))
+	if err_26 != nil {
 		var _zero0 Response
-		return _zero0, err_25
+		return _zero0, err_26
 	}
 	return resp, nil
 }
@@ -887,10 +964,10 @@ func SafePost(url string, data any) (Response, error) {
 // Example: resp := fetch.SafePostCtx(h, url, data) onerr return
 func SafePostCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_27 := Do(Body(Method(WithContext(NewExternal(url), h), HTTPMethodPOST), data))
-	if err_27 != nil {
+	resp, err_28 := Do(Body(Method(WithContext(NewExternal(url), h), HTTPMethodPOST), data))
+	if err_28 != nil {
 		var _zero0 Response
-		return _zero0, err_27
+		return _zero0, err_28
 	}
 	return resp, nil
 }
@@ -899,10 +976,10 @@ func SafePostCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 // Example: resp := fetch.Put("https://api.example.com/users/1", userData) onerr return
 func Put(url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_29 := Do(Body(Method(New(url), HTTPMethodPUT), data))
-	if err_29 != nil {
+	resp, err_30 := Do(Body(Method(New(url), HTTPMethodPUT), data))
+	if err_30 != nil {
 		var _zero0 Response
-		return _zero0, err_29
+		return _zero0, err_30
 	}
 	return resp, nil
 }
@@ -911,10 +988,10 @@ func Put(url string, data any) (Response, error) {
 // Example: resp := fetch.PutCtx(h, url, data) onerr return
 func PutCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_31 := Do(Body(Method(WithContext(New(url), h), HTTPMethodPUT), data))
-	if err_31 != nil {
+	resp, err_32 := Do(Body(Method(WithContext(New(url), h), HTTPMethodPUT), data))
+	if err_32 != nil {
 		var _zero0 Response
-		return _zero0, err_31
+		return _zero0, err_32
 	}
 	return resp, nil
 }
@@ -923,10 +1000,10 @@ func PutCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 // Example: resp := fetch.SafePut("https://api.example.com/users/1", userData) onerr return
 func SafePut(url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_33 := Do(Body(Method(NewExternal(url), HTTPMethodPUT), data))
-	if err_33 != nil {
+	resp, err_34 := Do(Body(Method(NewExternal(url), HTTPMethodPUT), data))
+	if err_34 != nil {
 		var _zero0 Response
-		return _zero0, err_33
+		return _zero0, err_34
 	}
 	return resp, nil
 }
@@ -934,10 +1011,10 @@ func SafePut(url string, data any) (Response, error) {
 // SafePutCtx performs an SSRF-protected HTTP PUT with a context.
 func SafePutCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_35 := Do(Body(Method(WithContext(NewExternal(url), h), HTTPMethodPUT), data))
-	if err_35 != nil {
+	resp, err_36 := Do(Body(Method(WithContext(NewExternal(url), h), HTTPMethodPUT), data))
+	if err_36 != nil {
 		var _zero0 Response
-		return _zero0, err_35
+		return _zero0, err_36
 	}
 	return resp, nil
 }
@@ -946,10 +1023,10 @@ func SafePutCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 // Example: resp := fetch.Patch("https://api.example.com/users/1", patchData) onerr return
 func Patch(url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_37 := Do(Body(Method(New(url), HTTPMethodPATCH), data))
-	if err_37 != nil {
+	resp, err_38 := Do(Body(Method(New(url), HTTPMethodPATCH), data))
+	if err_38 != nil {
 		var _zero0 Response
-		return _zero0, err_37
+		return _zero0, err_38
 	}
 	return resp, nil
 }
@@ -957,10 +1034,10 @@ func Patch(url string, data any) (Response, error) {
 // PatchCtx performs an HTTP PATCH with a context.
 func PatchCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_39 := Do(Body(Method(WithContext(New(url), h), HTTPMethodPATCH), data))
-	if err_39 != nil {
+	resp, err_40 := Do(Body(Method(WithContext(New(url), h), HTTPMethodPATCH), data))
+	if err_40 != nil {
 		var _zero0 Response
-		return _zero0, err_39
+		return _zero0, err_40
 	}
 	return resp, nil
 }
@@ -968,10 +1045,10 @@ func PatchCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 // SafePatch performs an SSRF-protected HTTP PATCH request
 func SafePatch(url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_41 := Do(Body(Method(NewExternal(url), HTTPMethodPATCH), data))
-	if err_41 != nil {
+	resp, err_42 := Do(Body(Method(NewExternal(url), HTTPMethodPATCH), data))
+	if err_42 != nil {
 		var _zero0 Response
-		return _zero0, err_41
+		return _zero0, err_42
 	}
 	return resp, nil
 }
@@ -979,10 +1056,10 @@ func SafePatch(url string, data any) (Response, error) {
 // SafePatchCtx performs an SSRF-protected HTTP PATCH with a context.
 func SafePatchCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_43 := Do(Body(Method(WithContext(NewExternal(url), h), HTTPMethodPATCH), data))
-	if err_43 != nil {
+	resp, err_44 := Do(Body(Method(WithContext(NewExternal(url), h), HTTPMethodPATCH), data))
+	if err_44 != nil {
 		var _zero0 Response
-		return _zero0, err_43
+		return _zero0, err_44
 	}
 	return resp, nil
 }
@@ -991,10 +1068,10 @@ func SafePatchCtx(h ctxpkg.Handle, url string, data any) (Response, error) {
 // Example: resp := fetch.Delete("https://api.example.com/users/1") onerr return
 func Delete(url string) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_45 := Do(Method(New(url), HTTPMethodDELETE))
-	if err_45 != nil {
+	resp, err_46 := Do(Method(New(url), HTTPMethodDELETE))
+	if err_46 != nil {
 		var _zero0 Response
-		return _zero0, err_45
+		return _zero0, err_46
 	}
 	return resp, nil
 }
@@ -1002,10 +1079,10 @@ func Delete(url string) (Response, error) {
 // DeleteCtx performs an HTTP DELETE with a context.
 func DeleteCtx(h ctxpkg.Handle, url string) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_47 := Do(Method(WithContext(New(url), h), HTTPMethodDELETE))
-	if err_47 != nil {
+	resp, err_48 := Do(Method(WithContext(New(url), h), HTTPMethodDELETE))
+	if err_48 != nil {
 		var _zero0 Response
-		return _zero0, err_47
+		return _zero0, err_48
 	}
 	return resp, nil
 }
@@ -1014,10 +1091,10 @@ func DeleteCtx(h ctxpkg.Handle, url string) (Response, error) {
 // Example: resp := fetch.SafeDelete("https://api.example.com/users/1") onerr return
 func SafeDelete(url string) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_49 := Do(Method(NewExternal(url), HTTPMethodDELETE))
-	if err_49 != nil {
+	resp, err_50 := Do(Method(NewExternal(url), HTTPMethodDELETE))
+	if err_50 != nil {
 		var _zero0 Response
-		return _zero0, err_49
+		return _zero0, err_50
 	}
 	return resp, nil
 }
@@ -1025,18 +1102,21 @@ func SafeDelete(url string) (Response, error) {
 // SafeDeleteCtx performs an SSRF-protected HTTP DELETE with a context.
 func SafeDeleteCtx(h ctxpkg.Handle, url string) (Response, error) {
 	// pipe step 1: Do(...)
-	resp, err_51 := Do(Method(WithContext(NewExternal(url), h), HTTPMethodDELETE))
-	if err_51 != nil {
+	resp, err_52 := Do(Method(WithContext(NewExternal(url), h), HTTPMethodDELETE))
+	if err_52 != nil {
 		var _zero0 Response
-		return _zero0, err_51
+		return _zero0, err_52
 	}
 	return resp, nil
 }
 
 // CheckStatus checks if response status is successful (2xx/3xx).
 // Returns the response unchanged if successful. On a 4xx/5xx response the
-// body is closed and the response's raw handle is cleared so the connection
-// is returned to the pool, then an error is returned.
+// body is closed so the connection is returned to the pool, and an error is
+// returned; the returned response carries the status but no body handle.
+// The response passed in is consumed on the error path — the closed body
+// stays in the caller's copy, so read the body from the returned response
+// (the piped form `resp |> fetch.CheckStatus()` rebinds for you).
 // The error message includes the status text only — the response body is
 // intentionally omitted to avoid leaking credentials that some APIs echo
 // in their error JSON.
@@ -1070,11 +1150,11 @@ func JSON[T any](resp Response) (T, error) {
 	}
 	defer resp.raw.Body.Close()
 	data := *new(T)
-	err_52 := json.ReadInto(resp.raw.Body, &data)
-	if err_52 != nil {
-		err_52 = fmt.Errorf("failed to decode response json: %w", err_52)
+	err_53 := json.ReadInto(resp.raw.Body, &data)
+	if err_53 != nil {
+		err_53 = fmt.Errorf("failed to decode response json: %w", err_53)
 		var _zero0 T
-		return _zero0, err_52
+		return _zero0, err_53
 	}
 	return data, nil
 }
@@ -1083,18 +1163,18 @@ func JSON[T any](resp Response) (T, error) {
 // Example: issues := fetch.GetJSON of list of Issue from url onerr panic "{error}"
 func GetJSON[T any](url string) (T, error) {
 	// pipe step 1: Get(...)
-	pipe_53, err_54 := Get(url)
-	if err_54 != nil {
-		err_54 = fmt.Errorf("GET request failed: %w", err_54)
+	pipe_54, err_55 := Get(url)
+	if err_55 != nil {
+		err_55 = fmt.Errorf("GET request failed: %w", err_55)
 		var _zero0 T
-		return _zero0, err_54
+		return _zero0, err_55
 	}
 	// pipe step 2: CheckStatus(...)
-	resp, err_56 := CheckStatus(pipe_53)
-	if err_56 != nil {
-		err_56 = fmt.Errorf("GET request failed: %w", err_56)
+	resp, err_57 := CheckStatus(pipe_54)
+	if err_57 != nil {
+		err_57 = fmt.Errorf("GET request failed: %w", err_57)
 		var _zero0 T
-		return _zero0, err_56
+		return _zero0, err_57
 	}
 	if resp.raw == nil {
 		var _zero0 T
@@ -1102,11 +1182,11 @@ func GetJSON[T any](url string) (T, error) {
 	}
 	defer resp.raw.Body.Close()
 	data := *new(T)
-	err_57 := json.ReadInto(resp.raw.Body, &data)
-	if err_57 != nil {
-		err_57 = fmt.Errorf("failed to decode json response: %w", err_57)
+	err_58 := json.ReadInto(resp.raw.Body, &data)
+	if err_58 != nil {
+		err_58 = fmt.Errorf("failed to decode json response: %w", err_58)
 		var _zero0 T
-		return _zero0, err_57
+		return _zero0, err_58
 	}
 	return data, nil
 }
@@ -1141,6 +1221,8 @@ func BasicAuth(req Request, username string, password string) Request {
 // Example: req |> fetch.FormData(map of string to string{"grant_type": "client_credentials"})
 func FormData(req Request, data map[string]string) Request {
 	req.body = url.EncodeForm(data)
+	req.hasRawBody = false
+	req.rawBody = []byte{}
 	req = Header(req, "Content-Type", "application/x-www-form-urlencoded")
 	return req
 }
@@ -1155,8 +1237,8 @@ type Session struct {
 // NewSession creates a new session with a cookie jar for maintaining state
 // Example: session := fetch.NewSession()
 func NewSession() Session {
-	jar, err_58 := cookiejar.New(nil)
-	if err_58 != nil {
+	jar, err_59 := cookiejar.New(nil)
+	if err_59 != nil {
 		jar = nil
 	}
 	client := http.Client{Jar: jar}
@@ -1196,10 +1278,10 @@ func SessionDo(s Session, req Request) (Response, error) {
 		s.client.Transport = req.transport
 	}
 	s.client.Timeout = time.Duration(req.timeoutNs)
-	httpReq, err_59 := buildHTTPRequest(req)
-	if err_59 != nil {
+	httpReq, err_60 := buildHTTPRequest(req)
+	if err_60 != nil {
 		var _zero0 Response
-		return _zero0, err_59
+		return _zero0, err_60
 	}
 	result := rawResult{}
 	if req.dump {
@@ -1209,10 +1291,10 @@ func SessionDo(s Session, req Request) (Response, error) {
 		traceInfo := &TraceInfo{}
 		httpReq = attachTrace(httpReq, traceInfo)
 		start := time.Now()
-		resp, err_60 := s.client.Do(httpReq)
-		if err_60 != nil {
+		resp, err_61 := s.client.Do(httpReq)
+		if err_61 != nil {
 			var _zero0 Response
-			return _zero0, err_60
+			return _zero0, err_61
 		}
 		traceInfo.TotalTime = time.Since(start)
 		traceInfo.ResponseTime = traceInfo.TotalTime - traceInfo.FirstResponseTime
@@ -1228,10 +1310,10 @@ func SessionDo(s Session, req Request) (Response, error) {
 		result.resp = resp
 		return finalizeResponse(req, result)
 	}
-	resp, err_61 := s.client.Do(httpReq)
-	if err_61 != nil {
+	resp, err_62 := s.client.Do(httpReq)
+	if err_62 != nil {
 		var _zero0 Response
-		return _zero0, err_61
+		return _zero0, err_62
 	}
 	if req.maxBodySize > 0 {
 		resp.Body = &limitReadCloser{r: io.LimitReader(resp.Body, req.maxBodySize+1), c: resp.Body, limit: req.maxBodySize, read: 0}
@@ -1276,9 +1358,9 @@ func DownloadTo(resp Response, box sandbox.Root, path string) error {
 		return errors.New("response already consumed or empty")
 	}
 	defer resp.raw.Body.Close()
-	bodyBytes, err_62 := io.ReadAll(resp.raw.Body)
-	if err_62 != nil {
-		return err_62
+	bodyBytes, err_63 := io.ReadAll(resp.raw.Body)
+	if err_63 != nil {
+		return err_63
 	}
 	return box.WriteString(string(bodyBytes), path)
 }

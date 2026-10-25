@@ -464,7 +464,7 @@ func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool) bool
             dataBuf.WriteString(strings.TrimLeft(chunk, " ")) onerr discard
 
     err := scanner.Err()
-    if err isnt empty
+    if err != nil
         log.Error("SSE scan error: {err}")
     return true
 

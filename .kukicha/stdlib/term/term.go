@@ -16,8 +16,9 @@
 package term
 
 import (
+	"kukicha.org/kukicha/stdlib/env"
+	kukistring "kukicha.org/kukicha/stdlib/string"
 	"os"
-	"strconv"
 	"unicode/utf8"
 )
 
@@ -50,10 +51,10 @@ func ColorEnabledFor(w *os.File) bool {
 	if colorOverridden {
 		return colorOverrideValue
 	}
-	if os.Getenv("FORCE_COLOR") != "" {
+	if env.HasValue("FORCE_COLOR") {
 		return true
 	}
-	if os.Getenv("NO_COLOR") != "" {
+	if env.HasValue("NO_COLOR") {
 		return false
 	}
 	return IsTTY(w)
@@ -123,14 +124,7 @@ func PadRightVisible(s string, n int) string {
 	if w >= n {
 		return s
 	}
-	pad := n - w
-	out := s
-	j := 0
-	for j < pad {
-		out = out + " "
-		j += 1
-	}
-	return out
+	return s + kukistring.Repeat(" ", n-w)
 }
 
 // PadLeftVisible returns s padded with spaces on the left to at least n
@@ -142,14 +136,7 @@ func PadLeftVisible(s string, n int) string {
 	if w >= n {
 		return s
 	}
-	pad := n - w
-	out := ""
-	j := 0
-	for j < pad {
-		out = out + " "
-		j += 1
-	}
-	return out + s
+	return kukistring.Repeat(" ", n-w) + s
 }
 
 // Width returns the terminal column count, falling back to 80.
@@ -157,13 +144,9 @@ func PadLeftVisible(s string, n int) string {
 // intentionally omitted to keep this package dependency-free; callers that
 // need live resize tracking can wrap golang.org/x/term themselves.
 func Width() int {
-	cols := os.Getenv("COLUMNS")
-	if cols == "" {
-		return 80
-	}
-	n, err := strconv.Atoi(cols)
+	n, err := env.GetIntOr("COLUMNS", 80)
 	if err != nil {
-		return 80
+		n = 80
 	}
 	if n <= 0 {
 		return 80

@@ -4,14 +4,19 @@
 package fetch_test
 
 import (
+	"fmt"
+	"io"
 	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
 	"kukicha.org/kukicha/stdlib/fetch"
 	"kukicha.org/kukicha/stdlib/json"
+	"kukicha.org/kukicha/stdlib/netguard"
 	kukistring "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/test"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -615,6 +620,17 @@ func TestSafeGet(t *testing.T) {
 	test.AssertTrue(t, resp.StatusCode == 0 || resp.StatusCode == http.StatusOK)
 }
 
+// --- TestSafeGetStatus ---
+func TestSafeGetStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	code, err := fetch.SafeGetStatus(server.URL)
+	test.AssertError(t, err)
+	test.AssertEqual(t, code, 0)
+}
+
 // fetchLimitPayload is the struct the limit tests decode into.
 type fetchLimitPayload struct {
 	OK bool `json:"ok"`
@@ -750,17 +766,25 @@ func TestCheckStatusClosesBodyOnError(t *testing.T) {
 }
 
 func TestRepeatedErrorResponsesReuseConnection(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	recorder := &fetchConnRecorder{}
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("error"))
 	}))
+	server.Config.ConnState = func(c net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			recorder.Record()
+		}
+	}
+	server.Start()
 	defer server.Close()
-	for range 1 {
+	for range 2 {
 		resp, err := fetch.Do(fetch.New(server.URL))
 		test.AssertNoError(t, err)
 		_, checkErr := fetch.CheckStatus(resp)
 		test.AssertError(t, checkErr)
 	}
+	test.AssertEqual(t, recorder.Count(), 1)
 }
 
 func TestRequestHeaderCloneIsolation(t *testing.T) {
@@ -834,4 +858,293 @@ func TestAllHTTPMethodOrder(t *testing.T) {
 			t.Errorf("ParseHTTPMethod(%v) round-trip returned %v", all[i].String(), got.String())
 		}
 	}
+}
+
+// fetchConnRecorder counts the client connections a test server accepted.
+// The accepted-connection count is the only reliable reuse signal: the
+// client's ephemeral port can be reused by the OS for a fresh connection, so
+// the remote address alone does not tell a reused connection from a new one.
+type fetchConnRecorder struct {
+	mu    sync.Mutex
+	conns int
+	reqs  int
+}
+
+// Record notes one accepted connection.
+func (r *fetchConnRecorder) Record() {
+	r.mu.Lock()
+	r.conns += 1
+	r.mu.Unlock()
+}
+
+// Request notes one served request.
+func (r *fetchConnRecorder) Request() {
+	r.mu.Lock()
+	r.reqs += 1
+	r.mu.Unlock()
+}
+
+// Count returns how many connections the server accepted.
+func (r *fetchConnRecorder) Count() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.conns
+}
+
+// Requests returns how many requests the server served.
+func (r *fetchConnRecorder) Requests() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.reqs
+}
+
+// TestGetStatusReleasesConnection pins the status-only contract: a response
+// whose body is never read still has to be closed, or the connection is never
+// returned to the pool. GetStatus closes it, so two status-only calls share
+// one connection.
+func TestGetStatusReleasesConnection(t *testing.T) {
+	recorder := &fetchConnRecorder{}
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("body"))
+	}))
+	server.Config.ConnState = func(c net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			recorder.Record()
+		}
+	}
+	server.Start()
+	defer server.Close()
+	for range 2 {
+		code, err := fetch.GetStatus(server.URL)
+		test.AssertNoError(t, err)
+		test.AssertEqual(t, code, http.StatusOK)
+	}
+	test.AssertEqual(t, recorder.Count(), 1)
+}
+
+// TestGuardedRequestsReuseConnection pins the SSRF-guarded path: the guarded
+// transport is memoized on the guard, so repeated guarded requests share one
+// connection pool instead of paying a handshake each.
+func TestGuardedRequestsReuseConnection(t *testing.T) {
+	recorder := &fetchConnRecorder{}
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	server.Config.ConnState = func(c net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			recorder.Record()
+		}
+	}
+	server.Start()
+	defer server.Close()
+	guard, err := netguard.NewAllow([]string{"127.0.0.0/8"})
+	test.AssertNoError(t, err)
+	for range 2 {
+		transport := netguard.HTTPTransport(guard)
+		resp, doErr := fetch.Do(fetch.Transport(fetch.New(server.URL), transport))
+		test.AssertNoError(t, doErr)
+		_ = resp.Close()
+	}
+	test.AssertEqual(t, recorder.Count(), 1)
+}
+
+// TestRetryOnRateLimitReportsStatus pins the retry contract: a rate-limited
+// response is retried the configured number of times, and the attempt result
+// is the status — a body-close failure must not replace it.
+func TestRetryOnRateLimitReportsStatus(t *testing.T) {
+	recorder := &fetchConnRecorder{}
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		recorder.Request()
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte("slow down"))
+	}))
+	server.Config.ConnState = func(c net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			recorder.Record()
+		}
+	}
+	server.Start()
+	defer server.Close()
+	_, err := fetch.Do(fetch.Retry(fetch.New(server.URL), 3, 1))
+	test.AssertError(t, err)
+	test.AssertTrue(t, kukistring.Contains(fmt.Sprintf("%v", err), "status 429"))
+	test.AssertEqual(t, recorder.Requests(), 3)
+	test.AssertEqual(t, recorder.Count(), 1)
+}
+
+// fetchBodyRecorder captures the bytes a test server received.
+type fetchBodyRecorder struct {
+	mu          sync.Mutex
+	body        []byte
+	contentType string
+}
+
+// Record notes the received body and content type.
+func (r *fetchBodyRecorder) Record(body []byte, contentType string) {
+	r.mu.Lock()
+	r.body = body
+	r.contentType = contentType
+	r.mu.Unlock()
+}
+
+// Body returns the received body.
+func (r *fetchBodyRecorder) Body() []byte {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.body
+}
+
+// ContentType returns the received content type.
+func (r *fetchBodyRecorder) ContentType() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.contentType
+}
+
+// TestRawBodySendsExactBytes pins the byte-exact send: the receiver must get
+// exactly the bytes that were sent — a JSON re-marshal would change them
+// (and break an HMAC computed over the body).
+func TestRawBodySendsExactBytes(t *testing.T) {
+	recorder := &fetchBodyRecorder{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		recorder.Record(body, r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	payload := []byte{0x00, 0x01, 0x7f, 0x80, 0xff, 0x0a}
+	resp, err := fetch.Do(fetch.RawBody(fetch.Header(fetch.Method(fetch.New(server.URL), fetch.HTTPMethodPOST), "Content-Type", "application/octet-stream"), payload))
+	test.AssertNoError(t, err)
+	_ = resp.Close()
+	received := recorder.Body()
+	test.AssertEqual(t, len(received), len(payload))
+	{
+		_iStart, _iEnd := 0, len(payload)-1
+		_iStep := _iStart + 1 - _iStart
+		if _iStart > _iEnd {
+			_iStep = -_iStep
+		}
+		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
+			test.AssertEqual(t, received[i], payload[i])
+		}
+	}
+	test.AssertEqual(t, recorder.ContentType(), "application/octet-stream")
+}
+
+// TestBodyStillJSONEncodes guards the adjacent form: the ordinary body
+// builder still JSON-encodes its payload.
+func TestBodyStillJSONEncodes(t *testing.T) {
+	recorder := &fetchBodyRecorder{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		recorder.Record(body, r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	resp, err := fetch.Do(fetch.Body(fetch.Method(fetch.New(server.URL), fetch.HTTPMethodPOST), map[string]string{"ok": "yes"}))
+	test.AssertNoError(t, err)
+	_ = resp.Close()
+	test.AssertEqual(t, kukistring.Contains(string(recorder.Body()), "\"ok\""), true)
+	test.AssertEqual(t, recorder.ContentType(), "application/json")
+}
+
+// TestBodyBuilderOrderingMatrix pins the last-wins symmetry across Body,
+// RawBody, and FormData: whichever builder was called last on the chain must
+// win the serialization decision and clear competing body state.
+func TestBodyBuilderOrderingRawBodyThenFormData(t *testing.T) {
+	recorder := &fetchBodyRecorder{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		recorder.Record(body, r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	resp, err := fetch.Do(fetch.FormData(fetch.RawBody(fetch.Method(fetch.New(server.URL), fetch.HTTPMethodPOST), []byte{0xde, 0xad, 0xbe, 0xef}), map[string]string{"a": "b"}))
+	test.AssertNoError(t, err)
+	_ = resp.Close()
+	test.AssertEqual(t, string(recorder.Body()), "a=b")
+	test.AssertEqual(t, recorder.ContentType(), "application/x-www-form-urlencoded")
+}
+
+func TestBodyBuilderOrderingFormDataThenRawBody(t *testing.T) {
+	recorder := &fetchBodyRecorder{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		recorder.Record(body, r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	payload := []byte{0xca, 0xfe, 0xba, 0xbe}
+	resp, err := fetch.Do(fetch.RawBody(fetch.FormData(fetch.Method(fetch.New(server.URL), fetch.HTTPMethodPOST), map[string]string{"a": "b"}), payload))
+	test.AssertNoError(t, err)
+	_ = resp.Close()
+	received := recorder.Body()
+	test.AssertEqual(t, len(received), len(payload))
+	{
+		_iStart, _iEnd := 0, len(payload)-1
+		_iStep := _iStart + 1 - _iStart
+		if _iStart > _iEnd {
+			_iStep = -_iStep
+		}
+		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
+			test.AssertEqual(t, received[i], payload[i])
+		}
+	}
+}
+
+func TestBodyBuilderOrderingRawBodyThenBody(t *testing.T) {
+	recorder := &fetchBodyRecorder{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		recorder.Record(body, r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	resp, err := fetch.Do(fetch.Body(fetch.RawBody(fetch.Method(fetch.New(server.URL), fetch.HTTPMethodPOST), []byte{0xde, 0xad}), map[string]string{"key": "value"}))
+	test.AssertNoError(t, err)
+	_ = resp.Close()
+	test.AssertEqual(t, kukistring.Contains(string(recorder.Body()), "\"key\""), true)
+	test.AssertEqual(t, recorder.ContentType(), "application/json")
+}
+
+func TestBodyBuilderOrderingBodyThenRawBody(t *testing.T) {
+	recorder := &fetchBodyRecorder{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		recorder.Record(body, r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	payload := []byte{0x01, 0x02, 0x03}
+	resp, err := fetch.Do(fetch.RawBody(fetch.Body(fetch.Method(fetch.New(server.URL), fetch.HTTPMethodPOST), map[string]string{"key": "value"}), payload))
+	test.AssertNoError(t, err)
+	_ = resp.Close()
+	received := recorder.Body()
+	test.AssertEqual(t, len(received), len(payload))
+	{
+		_iStart, _iEnd := 0, len(payload)-1
+		_iStep := _iStart + 1 - _iStart
+		if _iStart > _iEnd {
+			_iStep = -_iStep
+		}
+		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
+			test.AssertEqual(t, received[i], payload[i])
+		}
+	}
+}
+
+func TestBodyBuilderOrderingBodyThenFormData(t *testing.T) {
+	recorder := &fetchBodyRecorder{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		recorder.Record(body, r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	resp, err := fetch.Do(fetch.FormData(fetch.Body(fetch.Method(fetch.New(server.URL), fetch.HTTPMethodPOST), map[string]string{"key": "value"}), map[string]string{"form": "val"}))
+	test.AssertNoError(t, err)
+	_ = resp.Close()
+	test.AssertEqual(t, string(recorder.Body()), "form=val")
+	test.AssertEqual(t, recorder.ContentType(), "application/x-www-form-urlencoded")
 }

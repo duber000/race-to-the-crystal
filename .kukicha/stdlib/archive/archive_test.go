@@ -5,7 +5,6 @@ package archive_test
 
 import (
 	"kukicha.org/kukicha/stdlib/archive"
-	errs "kukicha.org/kukicha/stdlib/errors"
 	"kukicha.org/kukicha/stdlib/files"
 	strpkg "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/test"
@@ -364,57 +363,6 @@ func TestEntryExists(t *testing.T) {
 	})
 }
 
-// --- TestExtractEntry ---
-func TestExtractEntry(t *testing.T) {
-	t.Run("zip writes only the named member", func(t *testing.T) {
-		tmp := t.TempDir()
-		p := makeZipFixture(t, tmp)
-		out := filepath.Join(tmp, "one")
-		err_43 := archive.ExtractEntry(p, "sub/nested.txt", out)
-		if err_43 != nil {
-			t.Fatalf("ExtractEntry: %v", err_43)
-			return
-		}
-		body, err_44 := files.ReadString(filepath.Join(out, "sub", "nested.txt"))
-		if err_44 != nil {
-			t.Fatalf("read: %v", err_44)
-			return
-		}
-		test.AssertEqual(t, body, "nested")
-		_, statErr := os.Stat(filepath.Join(out, "top.txt"))
-		test.AssertTrue(t, statErr != nil)
-	})
-	t.Run("targz", func(t *testing.T) {
-		tmp := t.TempDir()
-		p := makeTarGzFixture(t, tmp)
-		out := filepath.Join(tmp, "one")
-		err_45 := archive.ExtractEntry(p, "top.txt", out)
-		if err_45 != nil {
-			t.Fatalf("ExtractEntry: %v", err_45)
-			return
-		}
-		body, err_46 := files.ReadString(filepath.Join(out, "top.txt"))
-		if err_46 != nil {
-			t.Fatalf("read: %v", err_46)
-			return
-		}
-		test.AssertEqual(t, body, "top-level")
-	})
-	t.Run("missing member wraps the sentinel", func(t *testing.T) {
-		tmp := t.TempDir()
-		p := makeZipFixture(t, tmp)
-		err := archive.ExtractEntry(p, "missing.txt", filepath.Join(tmp, "one"))
-		test.AssertError(t, err)
-		test.AssertTrue(t, errs.Is(err, archive.ErrEntryNotFound))
-	})
-	t.Run("rejects a name that escapes dest", func(t *testing.T) {
-		tmp := t.TempDir()
-		p := makeZipFixture(t, tmp)
-		err := archive.ExtractEntry(p, "../escape.txt", filepath.Join(tmp, "one"))
-		test.AssertError(t, err)
-	})
-}
-
 // --- TestReadEntryOr ---
 func TestReadEntryOr(t *testing.T) {
 	tmp := t.TempDir()
@@ -436,8 +384,8 @@ func TestReadEntryOr(t *testing.T) {
 }
 
 // --- TestErrEntryNotFound ---
-// The sentinel ReadEntry/ExtractEntry wrap so callers can tell absence from
-// I/O failure (test.AssertErrorIs landed in 1.3 pins identity through %w).
+// The sentinel ReadEntry wraps so callers can tell absence from
+// I/O failure (test.AssertErrorIs pins identity through %w).
 func TestErrEntryNotFound(t *testing.T) {
 	tmp := t.TempDir()
 	p := makeZipFixture(t, tmp)

@@ -60,7 +60,7 @@ func Start on ws: reference WebServer
 
     go
         err := http.ListenAndServe(addr, mux)
-        if err isnt empty
+        if err != nil
             log.Error("HTTP server error: {err}")
 
     ch := make(channel of bool)
@@ -89,6 +89,6 @@ func handleConfig on ws: reference WebServer(response: httphelper.Response, requ
 func main()
     config := WebServerConfigFromEnv()
     server, err := NewWebServer(config)
-    if err isnt empty
+    if err != nil
         log.Fatal("{err}")
     server.Start()

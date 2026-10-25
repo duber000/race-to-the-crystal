@@ -78,12 +78,14 @@ type Version struct {
 // (1.0.0-alpha) and build metadata (1.0.0+build) are rejected, and leading
 // zeros (01.02.03) are rejected. See audit blocker resolution.
 func Parse(tag string) (Version, error) {
-	raw := tag
-	prefix := ""
-	if kukistring.HasPrefix(raw, "v") {
-		prefix = "v"
-		raw = kukistring.TrimPrefix(raw, "v")
-	}
+	raw, ok := kukistring.CutPrefix(tag, "v")
+	prefix := func() string {
+		if ok {
+			return "v"
+		} else {
+			return ""
+		}
+	}()
 	parts := kukistring.Split(raw, ".")
 	if len(parts) != 3 {
 		return Version{}, fmt.Errorf("invalid semver: %v", tag)

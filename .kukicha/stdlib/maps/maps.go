@@ -76,10 +76,7 @@ func Merge[K comparable, V any](base map[K]V, overlays ...map[K]V) map[K]V {
 // Useful for deterministic iteration over maps
 // Example: keys := maps.SortedKeys(config)
 func SortedKeys[K cmp.Ordered, V any](m map[K]V) []K {
-	keys := make([]K, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
+	keys := Keys(m)
 	slices.Sort(keys)
 	return keys
 }
@@ -126,9 +123,8 @@ func Omit[K comparable, V any](m map[K]V, keys []K) map[K]V {
 // keep. Pick/Omit select by key list; Filter selects by predicate.
 // Example: active := maps.Filter(users, (id: string, u: User) => u.active)
 // Deprecated: a library duplicate of map-to-map syntax — the plain loop says
-// it directly. Removed after 1.0.0 per the stdlib knife review
-// (docs/STDLIBS-UNDER-THE-KNIFE.md); the deprecation ships through the
-// stable window.
+// it directly. Removed after 1.0.0 per the stdlib knife review; the
+// deprecation ships through the stable window.
 func Filter[K comparable, V any](m map[K]V, keep func(K, V) bool) map[K]V {
 	result := map[K]V{}
 	for k, v := range m {
@@ -144,9 +140,8 @@ func Filter[K comparable, V any](m map[K]V, keep func(K, V) bool) map[K]V {
 // preserved, so a value transform that collides cannot lose entries.
 // Example: names := maps.MapValues(users, (u: User) => u.name)
 // Deprecated: a library duplicate of map-to-map syntax — the plain loop says
-// it directly. Removed after 1.0.0 per the stdlib knife review
-// (docs/STDLIBS-UNDER-THE-KNIFE.md); the deprecation ships through the
-// stable window.
+// it directly. Removed after 1.0.0 per the stdlib knife review; the
+// deprecation ships through the stable window.
 func MapValues[K comparable, V any, R any](m map[K]V, transform func(V) R) map[K]R {
 	result := map[K]R{}
 	for k, v := range m {
@@ -160,9 +155,8 @@ func MapValues[K comparable, V any, R any](m map[K]V, transform func(V) R) map[K
 // back to is unspecified (map iteration order is random).
 // Example: byCode := maps.Invert(statusNames)
 // Deprecated: a library duplicate of map-to-map syntax — the plain loop says
-// it directly. Removed after 1.0.0 per the stdlib knife review
-// (docs/STDLIBS-UNDER-THE-KNIFE.md); the deprecation ships through the
-// stable window.
+// it directly. Removed after 1.0.0 per the stdlib knife review; the
+// deprecation ships through the stable window.
 func Invert[K comparable, V comparable](m map[K]V) map[V]K {
 	result := map[V]K{}
 	for k, v := range m {

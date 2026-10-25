@@ -19,6 +19,7 @@ package table
 
 import (
 	"fmt"
+	"kukicha.org/kukicha/stdlib/slice"
 	strpkg "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/term"
 	"strings"
@@ -93,9 +94,7 @@ func New(headers []string) Table {
 func AddRow(t Table, row []string) Table {
 	padded := make([]string, len(t.Headers))
 	for i := range len(t.Headers) {
-		if i < len(row) {
-			padded[i] = row[i]
-		}
+		padded[i] = slice.GetOr(row, i, "")
 	}
 	t.Rows = append(t.Rows, padded)
 	return t
@@ -148,10 +147,7 @@ func renderTable(t Table, style Style) string {
 	for _, row := range t.Rows {
 		for i := range len(t.Headers) {
 			if i < len(row) {
-				w := term.VisibleWidth(row[i])
-				if w > widths[i] {
-					widths[i] = w
-				}
+				widths[i] = max(widths[i], term.VisibleWidth(row[i]))
 			}
 		}
 	}
@@ -184,10 +180,7 @@ func renderTable(t Table, style Style) string {
 func renderPlainRow(cols []string, widths []int) string {
 	sb := strings.Builder{}
 	for i := range len(widths) {
-		val := ""
-		if i < len(cols) {
-			val = cols[i]
-		}
+		val := slice.GetOr(cols, i, "")
 		sb.WriteString(term.PadRightVisible(val, widths[i]))
 		if i < len(widths)-1 {
 			sb.WriteString("  ")
@@ -213,10 +206,7 @@ func renderMarkdownRow(cols []string, widths []int) string {
 	sb := strings.Builder{}
 	sb.WriteString("|")
 	for i := range len(widths) {
-		val := ""
-		if i < len(cols) {
-			val = cols[i]
-		}
+		val := slice.GetOr(cols, i, "")
 		sb.WriteString(fmt.Sprintf(" %v |", term.PadRightVisible(val, widths[i])))
 	}
 	sb.WriteString("\n")
@@ -279,10 +269,7 @@ func renderBoxRow(cols []string, widths []int) string {
 	sb := strings.Builder{}
 	sb.WriteString("│")
 	for i := range len(widths) {
-		val := ""
-		if i < len(cols) {
-			val = cols[i]
-		}
+		val := slice.GetOr(cols, i, "")
 		sb.WriteString(fmt.Sprintf(" %v │", term.PadRightVisible(val, widths[i])))
 	}
 	sb.WriteString("\n")

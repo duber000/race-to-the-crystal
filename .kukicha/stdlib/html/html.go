@@ -94,11 +94,11 @@ func Escape(s string) string {
 // without it.
 func URLAttr(s string) string {
 	stripped := kukistring.ReplaceAll(kukistring.ReplaceAll(kukistring.ReplaceAll(s, "\t", ""), "\n", ""), "\r", "")
-	idx := kukistring.Index(stripped, ":")
-	if idx < 0 {
+	before, _, found := kukistring.Cut(stripped, ":")
+	if !found {
 		return s
 	}
-	scheme := kukistring.TrimLeft(stripped[:idx], urlControlCutset)
+	scheme := kukistring.TrimLeft(before, urlControlCutset)
 	if len(scheme) == 0 {
 		return s
 	}

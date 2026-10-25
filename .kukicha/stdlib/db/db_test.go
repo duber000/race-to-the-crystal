@@ -567,3 +567,67 @@ func TestBlobScanOwnsBytes(t *testing.T) {
 	test.AssertEqual(t, all[0].Data, first)
 	test.AssertEqual(t, all[1].Data, second)
 }
+
+// LinkRow has NO json tags — the scan fold must resolve its snake_case
+// columns by name alone. Acronym-cased fields (SourceURL, APIKey) once
+// folded to source_u_r_l / api_key and silently scanned as zero values
+// (issue sh.tangled.repo.issue/3mybnesrxe622); PlainText pins the
+// non-acronym fold still working.
+type LinkRow struct {
+	Id        int64
+	SourceURL string
+	APIKey    string
+	PlainText string
+}
+
+func TestScanAcronymFields(t *testing.T) {
+	pool, err_71 := db.Open("sqlite3", ":memory:")
+	if err_71 != nil {
+		panic(fmt.Sprintf("open failed: %v", err_71))
+	}
+	defer db.Close(pool)
+	_, err_72 := db.Exec(pool, "CREATE TABLE links (id INTEGER PRIMARY KEY, source_url TEXT, api_key TEXT, plain_text TEXT)")
+	if err_72 != nil {
+		panic(fmt.Sprintf("create failed: %v", err_72))
+	}
+	_, err_73 := db.Exec(pool, "INSERT INTO links (id, source_url, api_key, plain_text) VALUES (1, 'https://example.com', 'k-1', 'note')")
+	if err_73 != nil {
+		panic(fmt.Sprintf("insert failed: %v", err_73))
+	}
+	// pipe step 1: db.Query(...)
+	pipe_74, err_75 := db.Query(pool, "SELECT id, source_url, api_key, plain_text FROM links")
+	if err_75 != nil {
+		panic(fmt.Sprintf("scan all: %v", err_75))
+	}
+	// pipe step 2: db.ScanAll(...)
+	all, err_77 := db.ScanAll[LinkRow](pipe_74)
+	if err_77 != nil {
+		panic(fmt.Sprintf("scan all: %v", err_77))
+	}
+	test.AssertEqual(t, len(all), 1)
+	test.AssertEqual(t, all[0].Id, int64(1))
+	test.AssertEqual(t, all[0].SourceURL, "https://example.com")
+	test.AssertEqual(t, all[0].APIKey, "k-1")
+	test.AssertEqual(t, all[0].PlainText, "note")
+	// pipe step 1: db.Query(...)
+	pipe_78, err_79 := db.Query(pool, "SELECT id, source_url, api_key, plain_text FROM links WHERE id = 1")
+	if err_79 != nil {
+		panic(fmt.Sprintf("scan one: %v", err_79))
+	}
+	// pipe step 2: db.ScanOne(...)
+	one, err_81 := db.ScanOne[LinkRow](pipe_78)
+	if err_81 != nil {
+		panic(fmt.Sprintf("scan one: %v", err_81))
+	}
+	test.AssertEqual(t, one.SourceURL, "https://example.com")
+	test.AssertEqual(t, one.APIKey, "k-1")
+	test.AssertEqual(t, one.PlainText, "note")
+	// pipe step 1: db.ScanRow(...)
+	row, err_83 := db.ScanRow[LinkRow](db.QueryRow(pool, "SELECT id, source_url, api_key, plain_text FROM links WHERE id = 1"))
+	if err_83 != nil {
+		panic(fmt.Sprintf("scan row: %v", err_83))
+	}
+	test.AssertEqual(t, row.SourceURL, "https://example.com")
+	test.AssertEqual(t, row.APIKey, "k-1")
+	test.AssertEqual(t, row.PlainText, "note")
+}

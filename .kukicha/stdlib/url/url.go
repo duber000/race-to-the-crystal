@@ -22,10 +22,10 @@ package url
 import (
 	"errors"
 	"fmt"
+	"kukicha.org/kukicha/stdlib/maps"
 	"kukicha.org/kukicha/stdlib/slice"
 	"kukicha.org/kukicha/stdlib/sort"
 	kukistring "kukicha.org/kukicha/stdlib/string"
-	"maps"
 	gonet "net"
 	gourl "net/url"
 	"path"
@@ -71,7 +71,7 @@ func Parse(s string) (Parsed, error) {
 	flat := map[string]string{}
 	for k, vs := range q {
 		if len(vs) != 0 {
-			flat[k] = vs[len(vs)-1]
+			flat[k] = slice.LastOr(vs, "")
 		}
 	}
 	return Parsed{Scheme: u.Scheme, Host: u.Host, Path: u.Path, Fragment: u.Fragment, Params: flat, Raw: s}, nil
@@ -86,8 +86,7 @@ func ParseMulti(s string) (ParsedMulti, error) {
 		return _zero0, err_2
 	}
 	q := map[string][]string(u.Query())
-	multi := map[string][]string{}
-	maps.Copy(multi, q)
+	multi := maps.Clone(q)
 	return ParsedMulti{Scheme: u.Scheme, Host: u.Host, Path: u.Path, Fragment: u.Fragment, Params: multi, Raw: s}, nil
 }
 
@@ -143,11 +142,7 @@ func Port(u Parsed) string {
 // the URL boundary; Parse's last-value-wins rule for repeated keys applies.
 // Example: page := url.ParamOr(u, "page", "1")
 func ParamOr(u Parsed, key string, defaultValue string) string {
-	v, ok := u.Params[key]
-	if !ok {
-		return defaultValue
-	}
-	return v
+	return maps.GetOr(u.Params, key, defaultValue)
 }
 
 // Builder is a fluent URL builder. Use url.New() to start one, then
@@ -271,7 +266,7 @@ func SafeURL(tmpl string, pathParams map[string]string, queryParams map[string]s
 // encoded traversal, and url.Parse leaves "%2e%2e" un-decoded in Path.
 // Example: clean := url.CleanPath(req.URL().Path) onerr return res.JSONBadRequest("bad path")
 func CleanPath(p string) (string, error) {
-	if p == "" {
+	if len(p) == 0 {
 		return "", errors.New("path is empty")
 	}
 	if kukistring.Contains(p, "\x00") {

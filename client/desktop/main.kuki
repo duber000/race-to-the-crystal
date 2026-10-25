@@ -142,7 +142,7 @@ func main()
     ebiten.SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     err := ebiten.RunGame(reference of DesktopAdapter{})
-    if err isnt empty
+    if err != nil
         log.Fatal("{err}")
 
 func Update on a: reference DesktopAdapter error

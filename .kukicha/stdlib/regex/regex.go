@@ -241,17 +241,3 @@ func (p Pattern) ReplaceFunc(text string, replacer func(string) string) string {
 func (p Pattern) Split(text string) []string {
 	return p.re.Split(text, -1)
 }
-
-// SplitN splits text around matches of the compiled pattern into at most n
-// substrings; the final substring contains the remaining unsplit text.
-// n <= 0 returns a one-element list holding the original string.
-// Example: parts := p.SplitN("a,b,c", 2)   # ["a", "b,c"] — split-on-first
-func (p Pattern) SplitN(text string, n int) []string {
-	return p.re.Split(text, n)
-}
-
-// Count returns the number of matches of the compiled pattern in text.
-// Example: commas := regex.MustCompile(`,`).Count(csvLine)
-func (p Pattern) Count(text string) int {
-	return len(p.re.FindAllStringIndex(text, -1))
-}

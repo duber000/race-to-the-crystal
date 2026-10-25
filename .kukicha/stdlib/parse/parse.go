@@ -16,10 +16,10 @@ import (
 	"gopkg.in/yaml.v3"
 	"kukicha.org/kukicha/stdlib/datetime"
 	"kukicha.org/kukicha/stdlib/json"
+	"kukicha.org/kukicha/stdlib/maps"
 	"kukicha.org/kukicha/stdlib/slice"
 	kukistring "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/validate"
-	"maps"
 	"net/url"
 	"os"
 	"reflect"
@@ -450,7 +450,5 @@ func Query(s string) (map[string][]string, error) {
 	if err_18 != nil {
 		return map[string][]string{}, err_18
 	}
-	result := map[string][]string{}
-	maps.Copy(result, map[string][]string(v))
-	return result, nil
+	return maps.Clone(map[string][]string(v)), nil
 }

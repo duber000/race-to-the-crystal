@@ -170,24 +170,6 @@ func tarGzHasEntry(archivePath string, name string) bool {
 	}
 }
 
-// ExtractEntry writes exactly one named member to dest (the member's relative
-// path preserved under it) and returns without touching any other entry. The
-// full hardened path applies: zip-slip and symlink-traversal rejection, and a
-// decompression-bomb cap at defaultMaxExtractBytes for the single entry.
-// A missing entry errors with ErrEntryNotFound (wrapped, naming the entry);
-// a directory entry is an error.
-// Example: archive.ExtractEntry("release.zip", "bin/app", "/opt/app") onerr return
-func ExtractEntry(archivePath string, name string, dest string) error {
-	format := detectFormat(archivePath)
-	if format == "zip" {
-		return extractEntryZip(archivePath, name, dest)
-	}
-	if format == "targz" {
-		return extractEntryTarGz(archivePath, name, dest)
-	}
-	return fmt.Errorf("archive: unrecognized format for %v", archivePath)
-}
-
 // WriteZip creates a zip archive containing the listed files. Entry names
 // preserve the given relative paths. Absolute paths and paths with ".."
 // segments that would escape the source directory are rejected.
@@ -574,148 +556,48 @@ func readEntryTarGz(archivePath string, name string) ([]byte, error) {
 	return nil, fmt.Errorf("%w: %v", ErrEntryNotFound, name)
 }
 
-// extractEntryZip writes one zip member through the hardened path.
-func extractEntryZip(archivePath string, name string, dest string) error {
-	if !filepath.IsLocal(name) {
-		return fmt.Errorf("archive: entry escapes destination: %v", name)
-	}
-	r, err_33 := zip.OpenReader(archivePath)
+func writeTarDir(tw *tar.Writer, root string, dir string) error {
+	entries, err_33 := os.ReadDir(dir)
 	if err_33 != nil {
 		return err_33
 	}
-	defer r.Close()
-	for _, f := range r.File {
-		if f.Name == name {
-			if f.FileInfo().IsDir() {
-				return fmt.Errorf("archive: entry is a directory: %v", name)
-			}
-			rc, err_34 := f.Open()
-			if err_34 != nil {
-				return err_34
-			}
-			defer rc.Close()
-			target, joinErr := safeJoin(dest, name)
-			if joinErr != nil {
-				return joinErr
-			}
-			err_35 := os.MkdirAll(filepath.Dir(target), 0o755)
-			if err_35 != nil {
-				return err_35
-			}
-			outFile, createErr := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.FileInfo().Mode().Perm())
-			if createErr != nil {
-				return fmt.Errorf("archive: open failed for %v", name)
-			}
-			_, copyErr := copyCapped(outFile, rc, defaultMaxExtractBytes)
-			closeErr := outFile.Close()
-			if copyErr != nil {
-				return copyErr
-			}
-			if closeErr != nil {
-				return fmt.Errorf("archive: close error for %v", name)
-			}
-			return nil
-		}
-	}
-	return fmt.Errorf("%w: %v", ErrEntryNotFound, name)
-}
-
-// extractEntryTarGz streams a tar.gz archive until the named member and writes
-// it through the hardened path.
-func extractEntryTarGz(archivePath string, name string, dest string) error {
-	if !filepath.IsLocal(name) {
-		return fmt.Errorf("archive: entry escapes destination: %v", name)
-	}
-	f, err_36 := os.Open(archivePath)
-	if err_36 != nil {
-		return err_36
-	}
-	defer f.Close()
-	gz, err_37 := gzip.NewReader(f)
-	if err_37 != nil {
-		return err_37
-	}
-	defer gz.Close()
-	tr := tar.NewReader(gz)
-	for {
-		hdr, hdrErr := tr.Next()
-		if errors.Is(hdrErr, io.EOF) {
-			return fmt.Errorf("%w: %v", ErrEntryNotFound, name)
-		}
-		if hdrErr != nil {
-			return hdrErr
-		}
-		if hdr.Name == name {
-			if hdr.FileInfo().IsDir() {
-				return fmt.Errorf("archive: entry is a directory: %v", name)
-			}
-			target, joinErr := safeJoin(dest, name)
-			if joinErr != nil {
-				return joinErr
-			}
-			err_38 := os.MkdirAll(filepath.Dir(target), 0o755)
-			if err_38 != nil {
-				return err_38
-			}
-			outFile, createErr := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, hdr.FileInfo().Mode().Perm())
-			if createErr != nil {
-				return fmt.Errorf("archive: open failed for %v", name)
-			}
-			_, copyErr := copyCapped(outFile, tr, defaultMaxExtractBytes)
-			closeErr := outFile.Close()
-			if copyErr != nil {
-				return copyErr
-			}
-			if closeErr != nil {
-				return fmt.Errorf("archive: close error for %v", name)
-			}
-			return nil
-		}
-	}
-}
-
-func writeTarDir(tw *tar.Writer, root string, dir string) error {
-	entries, err_39 := os.ReadDir(dir)
-	if err_39 != nil {
-		return err_39
-	}
 	for _, e := range entries {
 		full := filepath.Join(dir, e.Name())
-		info, err_40 := e.Info()
-		if err_40 != nil {
-			return err_40
+		info, err_34 := e.Info()
+		if err_34 != nil {
+			return err_34
 		}
-		rel, err_41 := filepath.Rel(root, full)
-		if err_41 != nil {
-			return err_41
+		rel, err_35 := filepath.Rel(root, full)
+		if err_35 != nil {
+			return err_35
 		}
-		hdr, err_42 := tar.FileInfoHeader(info, "")
-		if err_42 != nil {
-			return err_42
+		hdr, err_36 := tar.FileInfoHeader(info, "")
+		if err_36 != nil {
+			return err_36
 		}
 		hdr.Name = filepath.ToSlash(rel)
-		err_43 := tw.WriteHeader(hdr)
-		if err_43 != nil {
-			return err_43
+		err_37 := tw.WriteHeader(hdr)
+		if err_37 != nil {
+			return err_37
 		}
 		if info.IsDir() {
-			err_44 := writeTarDir(tw, root, full)
-			if err_44 != nil {
-				return err_44
+			err_38 := writeTarDir(tw, root, full)
+			if err_38 != nil {
+				return err_38
 			}
 			continue
 		}
 		if !info.Mode().IsRegular() {
 			continue
 		}
-		src, err_45 := os.Open(full)
-		if err_45 != nil {
-			return err_45
+		src, err_39 := os.Open(full)
+		if err_39 != nil {
+			return err_39
 		}
 		_, copyErr := io.Copy(tw, src)
-		err_46 := src.Close()
-		if err_46 != nil {
-			return err_46
+		err_40 := src.Close()
+		if err_40 != nil {
+			return err_40
 		}
 		if copyErr != nil {
 			return copyErr

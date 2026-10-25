@@ -451,26 +451,3 @@ func TestFindNamedOr(t *testing.T) {
 		test.AssertEqual(t, got["h"], "0")
 	})
 }
-
-// --- TestCount ---
-func TestCount(t *testing.T) {
-	p := regex.MustCompile(`,`)
-	test.AssertEqual(t, p.Count("a,b,c,d"), 3)
-	test.AssertEqual(t, p.Count("nocomma"), 0)
-	word := regex.MustCompile(`\w+`)
-	test.AssertEqual(t, word.Count("one two three"), 3)
-}
-
-// --- TestSplitN ---
-func TestSplitN(t *testing.T) {
-	p := regex.MustCompile(`,`)
-	t.Run("splits into at most n parts", func(t *testing.T) {
-		got := p.SplitN("a,b,c,d", 2)
-		test.AssertEqual(t, len(got), 2)
-		test.AssertEqual(t, got[0], "a")
-		test.AssertEqual(t, got[1], "b,c,d")
-	})
-	t.Run("n greater than parts yields all", func(t *testing.T) {
-		test.AssertEqual(t, len(p.SplitN("a,b", 10)), 2)
-	})
-}

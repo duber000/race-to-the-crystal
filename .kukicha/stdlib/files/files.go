@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
 	"kukicha.org/kukicha/stdlib/files/filetimes"
 	"kukicha.org/kukicha/stdlib/json"
 	kukistring "kukicha.org/kukicha/stdlib/string"
@@ -717,79 +716,4 @@ func UserCachePath(app string, filename string) (string, error) {
 func UseWith(path string, action func(string)) {
 	defer os.RemoveAll(path)
 	action(path)
-}
-
-// Watch monitors files matching a pattern for changes
-// Polls for changes every 500ms and fires the callback for new and modified
-// files. Runs until the process exits — use WatchCtx when the watch must
-// stop (shutdown, deadline).
-// Example: files.Watch("./*.txt", (path) => print("changed: {path}"))
-func Watch(pattern string, callback func(string)) {
-	lastModified := watchBaseline(pattern)
-	for {
-		time.Sleep(500 * time.Millisecond)
-		scanChanges(pattern, lastModified, callback)
-	}
-}
-
-// WatchCtx monitors files matching a pattern for changes until the context
-// handle is cancelled — the cancellable partner of Watch. Same 500ms
-// polling and new/modified callback contract; shutdown latency is at most
-// one poll interval after Cancel or deadline.
-// Example:
-//
-//	h := ctx.WithTimeout(ctx.Background(), 30 * time.Second)
-//	defer ctx.Cancel(h)
-//	files.WatchCtx(h, "./*.txt", (path) => print("changed: {path}"))
-func WatchCtx(h ctxpkg.Handle, pattern string, callback func(string)) {
-	lastModified := watchBaseline(pattern)
-	for h.Ctx.Err() == nil {
-		time.Sleep(500 * time.Millisecond)
-		if !(h.Ctx.Err() == nil) {
-			return
-		}
-		scanChanges(pattern, lastModified, callback)
-	}
-}
-
-// watchBaseline records current mod times for all matches so existing files
-// do not fire the callback on the first poll.
-func watchBaseline(pattern string) map[string]int64 {
-	lastModified := map[string]int64{}
-	matches, globErr := filepath.Glob(pattern)
-	if globErr != nil {
-		return lastModified
-	}
-	for _, match := range matches {
-		info, statErr := os.Stat(match)
-		if statErr != nil {
-			continue
-		}
-		lastModified[match] = info.ModTime().UnixNano()
-	}
-	return lastModified
-}
-
-// scanChanges runs one poll pass, updating lastModified and firing the
-// callback for new and modified matches. Mutates lastModified in place.
-func scanChanges(pattern string, lastModified map[string]int64, callback func(string)) {
-	matches, globErr := filepath.Glob(pattern)
-	if globErr != nil {
-		return
-	}
-	for _, match := range matches {
-		info, statErr := os.Stat(match)
-		if statErr != nil {
-			continue
-		}
-		currentModTime := info.ModTime().UnixNano()
-		lastModTime := lastModified[match]
-		if lastModTime == 0 {
-			lastModified[match] = currentModTime
-			callback(match)
-		} else if currentModTime > lastModTime {
-			lastModified[match] = currentModTime
-			callback(match)
-		}
-	}
 }

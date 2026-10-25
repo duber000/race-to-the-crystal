@@ -977,7 +977,11 @@ func isBodyEmptyError(err error) bool {
 }
 
 // ReadJSON reads the request body as JSON and decodes it into T.
-// Example: user := req.ReadJSON of User() onerr return res.JSONBadRequest("invalid json")
+// Example:
+//
+//	user := req.ReadJSON of User() onerr
+//	    res.JSONBadRequest("invalid json") onerr discard
+//	    return
 func (req Request) ReadJSON[T any]() (T, error) {
 	if req.raw == nil || req.raw.Body == nil {
 		var _zero0 T
@@ -997,13 +1001,21 @@ func (req Request) ReadJSON[T any]() (T, error) {
 }
 
 // JSON reads the request body and decodes it as typed JSON — alias for ReadJSON.
-// Example: user := req.JSON of User() onerr return res.JSONBadRequest("invalid json")
+// Example:
+//
+//	user := req.JSON of User() onerr
+//	    res.JSONBadRequest("invalid json") onerr discard
+//	    return
 func (req Request) JSON[T any]() (T, error) {
 	return req.ReadJSON[T]()
 }
 
 // ReadJSONStrict reads the request body as JSON and decodes it into T, rejecting unknown fields.
-// Example: user := req.ReadJSONStrict of User() onerr return res.JSONBadRequest("unknown fields or invalid json: {error}")
+// Example:
+//
+//	user := req.ReadJSONStrict of User() onerr
+//	    res.JSONBadRequest("unknown fields") onerr discard
+//	    return
 func (req Request) ReadJSONStrict[T any]() (T, error) {
 	if req.raw == nil || req.raw.Body == nil {
 		var _zero0 T
@@ -1023,7 +1035,11 @@ func (req Request) ReadJSONStrict[T any]() (T, error) {
 }
 
 // ReadJSONAndClose reads the request body as JSON, decodes it into T, and closes the body.
-// Example: user := req.ReadJSONAndClose of User() onerr return res.JSONBadRequest("invalid json")
+// Example:
+//
+//	user := req.ReadJSONAndClose of User() onerr
+//	    res.JSONBadRequest("invalid json") onerr discard
+//	    return
 func (req Request) ReadJSONAndClose[T any]() (T, error) {
 	if req.raw == nil || req.raw.Body == nil {
 		var _zero0 T
@@ -1045,7 +1061,11 @@ func (req Request) ReadJSONAndClose[T any]() (T, error) {
 
 // ReadJSONLimit reads at most maxBytes from the request body and decodes it into T.
 // Reads maxBytes+1 bytes so an oversized body is detected and rejected with an error.
-// Example: user := req.ReadJSONLimit of User(65536) onerr return res.JSONBadRequest("body too large or invalid json")
+// Example:
+//
+//	user := req.ReadJSONLimit of User(65536) onerr
+//	    res.JSONBadRequest("body too large or invalid json") onerr discard
+//	    return
 func (req Request) ReadJSONLimit[T any](maxBytes int64) (T, error) {
 	if req.raw == nil || req.raw.Body == nil {
 		var _zero0 T
@@ -1078,7 +1098,11 @@ func (req Request) ReadJSONLimit[T any](maxBytes int64) (T, error) {
 }
 
 // ReadJSONLimitStrict reads at most maxBytes and decodes it into T, rejecting unknown fields.
-// Example: user := req.ReadJSONLimitStrict of User(65536) onerr return res.JSONBadRequest("unknown fields: {error}")
+// Example:
+//
+//	user := req.ReadJSONLimitStrict of User(65536) onerr
+//	    res.JSONBadRequest("unknown fields") onerr discard
+//	    return
 func (req Request) ReadJSONLimitStrict[T any](maxBytes int64) (T, error) {
 	if req.raw == nil || req.raw.Body == nil {
 		var _zero0 T
@@ -1110,9 +1134,57 @@ func (req Request) ReadJSONLimitStrict[T any](maxBytes int64) (T, error) {
 	return data, nil
 }
 
+// ReadBody reads the request body as raw bytes.
+// Use it when the protocol's contract or signature is defined over the exact
+// bytes — an HMAC-verified webhook receiver computes its signature over the
+// body it received, so a re-encoded body breaks the check.
+// Prefer ReadBodyLimit for a body of unknown size: it caps the read.
+// Example:
+//
+//	raw := req.ReadBody() onerr
+//	    res.JSONBadRequest("bad body") onerr discard
+//	    return
+func (req Request) ReadBody() ([]byte, error) {
+	if req.raw == nil || req.raw.Body == nil {
+		return []byte{}, errors.New("request body is empty")
+	}
+	body, err := io.ReadAll(req.raw.Body)
+	if err != nil {
+		return []byte{}, err
+	}
+	return body, nil
+}
+
+// ReadBodyLimit reads at most maxBytes from the request body and returns the
+// raw bytes. Reads maxBytes+1 bytes so an oversized body is detected and
+// rejected with an error — the handler can answer 413 without reading the
+// whole body.
+// Example:
+//
+//	raw := req.ReadBodyLimit(1048576) onerr
+//	    res.JSONBadRequest("body too large") onerr discard
+//	    return
+func (req Request) ReadBodyLimit(maxBytes int64) ([]byte, error) {
+	if req.raw == nil || req.raw.Body == nil {
+		return []byte{}, errors.New("request body is empty")
+	}
+	body, err := io.ReadAll(io.LimitReader(req.raw.Body, maxBytes+1))
+	if err != nil {
+		return []byte{}, err
+	}
+	if int64(len(body)) > maxBytes {
+		return []byte{}, fmt.Errorf("request body exceeds limit of %v bytes", maxBytes)
+	}
+	return body, nil
+}
+
 // Decode reads the request body as JSON into the target pointer.
 // Target must be a pointer (use "reference of" in Kukicha).
-// Example: req.Decode(reference of user) onerr return res.JSONBadRequest("invalid json")
+// Example:
+//
+//	req.Decode(reference of user) onerr
+//	    res.JSONBadRequest("invalid json") onerr discard
+//	    return
 func (req Request) Decode(target any) error {
 	if req.raw == nil || req.raw.Body == nil {
 		return errors.New("request body is empty")
@@ -1128,7 +1200,11 @@ func (req Request) Decode(target any) error {
 }
 
 // DecodeStrict reads the request body as JSON into target, rejecting unknown fields.
-// Example: req.DecodeStrict(reference of user) onerr return res.JSONBadRequest("unknown fields: {error}")
+// Example:
+//
+//	req.DecodeStrict(reference of user) onerr
+//	    res.JSONBadRequest("unknown fields") onerr discard
+//	    return
 func (req Request) DecodeStrict(target any) error {
 	if req.raw == nil || req.raw.Body == nil {
 		return errors.New("request body is empty")
@@ -1160,7 +1236,11 @@ func (req Request) DecodeAndClose(target any) error {
 }
 
 // DecodeLimit reads at most maxBytes from the request body into the target pointer.
-// Example: req.DecodeLimit(65536, reference of user) onerr return res.JSONBadRequest("body too large or invalid json")
+// Example:
+//
+//	req.DecodeLimit(65536, reference of user) onerr
+//	    res.JSONBadRequest("body too large or invalid json") onerr discard
+//	    return
 func (req Request) DecodeLimit(maxBytes int64, target any) error {
 	if req.raw == nil || req.raw.Body == nil {
 		return errors.New("request body is empty")
@@ -1223,7 +1303,7 @@ func (req Request) GetQueryParamOr(key string, defaultValue string) string {
 // GetQueryInt returns a query parameter as an integer.
 func (req Request) GetQueryInt(key string) (int, error) {
 	value := req.raw.URL.Query().Get(key)
-	if value == "" {
+	if len(value) == 0 {
 		return 0, fmt.Errorf("query parameter '%v' is required", key)
 	}
 	val, err_13 := parse.Int(value)
@@ -1236,24 +1316,20 @@ func (req Request) GetQueryInt(key string) (int, error) {
 // GetQueryIntOr returns a query parameter as an integer, or default if not present/invalid.
 func (req Request) GetQueryIntOr(key string, defaultValue int) int {
 	value := req.raw.URL.Query().Get(key)
-	if value == "" {
+	if len(value) == 0 {
 		return defaultValue
 	}
-	val, err_14 := parse.Int(value)
-	if err_14 != nil {
-		return defaultValue
-	}
-	return val
+	return parse.IntOr(value, defaultValue)
 }
 
 // GetQueryBool returns a query parameter as a boolean.
 func (req Request) GetQueryBool(key string) (bool, error) {
 	value := req.raw.URL.Query().Get(key)
-	if value == "" {
+	if len(value) == 0 {
 		return false, fmt.Errorf("query parameter '%v' is required", key)
 	}
-	val, err_15 := parse.Bool(value)
-	if err_15 != nil {
+	val, err_14 := parse.Bool(value)
+	if err_14 != nil {
 		return false, fmt.Errorf("query parameter '%v' must be a boolean", key)
 	}
 	return val, nil
@@ -1262,24 +1338,20 @@ func (req Request) GetQueryBool(key string) (bool, error) {
 // GetQueryBoolOr returns a query parameter as a boolean, or default if not present/invalid.
 func (req Request) GetQueryBoolOr(key string, defaultValue bool) bool {
 	value := req.raw.URL.Query().Get(key)
-	if value == "" {
+	if len(value) == 0 {
 		return defaultValue
 	}
-	val, err_16 := parse.Bool(value)
-	if err_16 != nil {
-		return defaultValue
-	}
-	return val
+	return parse.BoolOr(value, defaultValue)
 }
 
 // GetQueryFloat returns a query parameter as a float64.
 func (req Request) GetQueryFloat(key string) (float64, error) {
 	value := req.raw.URL.Query().Get(key)
-	if value == "" {
+	if len(value) == 0 {
 		return 0.0, fmt.Errorf("query parameter '%v' is required", key)
 	}
-	val, err_17 := parse.Float64(value)
-	if err_17 != nil {
+	val, err_15 := parse.Float64(value)
+	if err_15 != nil {
 		return 0.0, fmt.Errorf("query parameter '%v' must be a number", key)
 	}
 	return val, nil
@@ -1288,14 +1360,10 @@ func (req Request) GetQueryFloat(key string) (float64, error) {
 // GetQueryFloatOr returns a query parameter as a float64, or default if not present/invalid.
 func (req Request) GetQueryFloatOr(key string, defaultValue float64) float64 {
 	value := req.raw.URL.Query().Get(key)
-	if value == "" {
+	if len(value) == 0 {
 		return defaultValue
 	}
-	val, err_18 := parse.Float64(value)
-	if err_18 != nil {
-		return defaultValue
-	}
-	return val
+	return parse.Float64Or(value, defaultValue)
 }
 
 // GetHeader returns a header value, or empty string if not present.
@@ -1394,9 +1462,9 @@ func (s *SSEWriter) SendWithID(id string, event string, data string) error {
 
 // SendJSON marshals value to JSON and sends it as an SSE event with the given event name.
 func (s *SSEWriter) SendJSON(event string, value any) error {
-	data, err_19 := json.String(value)
-	if err_19 != nil {
-		return err_19
+	data, err_16 := json.String(value)
+	if err_16 != nil {
+		return err_16
 	}
 	return s.Send(event, data)
 }
@@ -1411,9 +1479,9 @@ func (s *SSEWriter) Comment(comment string) error {
 		_, _ = b.WriteString("\n")
 	}
 	_, _ = b.WriteString("\n")
-	_, err_20 := io.WriteString(s.w, b.String())
-	if err_20 != nil {
-		return err_20
+	_, err_17 := io.WriteString(s.w, b.String())
+	if err_17 != nil {
+		return err_17
 	}
 	s.flusher.Flush()
 	return nil
@@ -1450,9 +1518,9 @@ func writeSSE(w io.Writer, flusher http.Flusher, id string, event string, data s
 		_, _ = b.WriteString("\n")
 	}
 	_, _ = b.WriteString("\n")
-	_, err_21 := io.WriteString(w, b.String())
-	if err_21 != nil {
-		return err_21
+	_, err_18 := io.WriteString(w, b.String())
+	if err_18 != nil {
+		return err_18
 	}
 	if flusher != nil {
 		flusher.Flush()

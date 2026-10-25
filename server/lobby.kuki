@@ -107,7 +107,7 @@ func NewGameLobby(gameId: string, gameName: string, hostPlayerId: string, maxPla
 
 func addPlayer on l: reference GameLobby(playerId: string, playerName: string, clientType: ClientType) bool
     err := ValidatePlayerName(playerName)
-    if err isnt empty
+    if err != nil
         return false
 
     _, exists := l.players[playerId]
@@ -208,10 +208,10 @@ func NewLobbyManager() LobbyManager
 
 func createLobby on lm: reference LobbyManager(playerId: string, playerName: string, gameName: string, clientType: ClientType, maxPlayers: int) optional reference GameLobby
     err := ValidateGameName(gameName)
-    if err isnt empty
+    if err != nil
         return empty
     err = ValidatePlayerName(playerName)
-    if err isnt empty
+    if err != nil
         return empty
 
     if maxPlayers < 2
