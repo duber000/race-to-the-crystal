@@ -579,6 +579,7 @@ func BatchExec(pool db.Pool, query string, rows [][]any) (int64, error) {
 
 // CreateFunction registers a custom scalar SQL function on the database.
 // The function receives arguments as strings and returns a string (TEXT) result.
+// If any SQL argument is NULL, the function short-circuits and returns NULL.
 // Sets MaxOpenConns(1) to ensure the function is available for all queries.
 // Example:
 //
@@ -597,6 +598,7 @@ func CreateFunction(pool db.Pool, name string, nArgs int, fn func([]string) stri
 // float64 value (stored as SQLite REAL). Use this for numeric UDFs like
 // distance metrics, trigonometry, or any computation that needs ORDER BY on the
 // result without a CAST.
+// If any SQL argument is NULL, the function short-circuits and returns NULL.
 // Sets MaxOpenConns(1) to ensure the function is available for all queries.
 // Example:
 //
@@ -609,6 +611,7 @@ func CreateFunctionFloat(pool db.Pool, name string, nArgs int, fn func([]string)
 
 // CreateFunctionInt registers a custom scalar SQL function that returns an
 // int64 value (stored as SQLite INTEGER).
+// If any SQL argument is NULL, the function short-circuits and returns NULL.
 // Sets MaxOpenConns(1) to ensure the function is available for all queries.
 // Example:
 //
@@ -621,6 +624,7 @@ func CreateFunctionInt(pool db.Pool, name string, nArgs int, fn func([]string) i
 
 // CreateFunctionBool registers a custom scalar SQL function that returns a
 // bool value (stored as SQLite INTEGER 0/1).
+// If any SQL argument is NULL, the function short-circuits and returns NULL.
 // Sets MaxOpenConns(1) to ensure the function is available for all queries.
 // Example:
 //
@@ -639,6 +643,10 @@ func CreateFunctionBool(pool db.Pool, name string, nArgs int, fn func([]string) 
 // CreateBlobFunction registers a custom scalar SQL function whose arguments
 // are received as raw byte slices (BLOBs) and returns a BLOB result.
 // Use this when your function operates on binary data rather than text.
+// A NULL SQL argument is passed to fn as empty (nil), while a zero-length
+// BLOB is passed as a non-nil empty list, so fn can distinguish the two.
+// If fn returns empty (nil), SQL NULL is returned; if fn returns a non-nil
+// empty list, SQL returns a zero-length BLOB.
 // Sets MaxOpenConns(1) to ensure the function is available for all queries.
 // Example:
 //
@@ -657,6 +665,7 @@ func CreateBlobFunction(pool db.Pool, name string, nArgs int, fn func([][]byte) 
 // are received as raw byte slices (BLOBs) and returns a float64 value (SQLite REAL).
 // Ideal for vector distance metrics where arguments are binary-encoded vectors
 // and the result is a numeric distance.
+// If any SQL argument is NULL, the function short-circuits and returns NULL.
 // Sets MaxOpenConns(1) to ensure the function is available for all queries.
 // Example:
 //
@@ -737,62 +746,96 @@ func registerScalarFunction(pool db.Pool, name string, nArgs int, sfn sqlite3.Sc
 
 func makeScalarFunc(fn func([]string) string) sqlite3.ScalarFunction {
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-		strArgs := make([]string, len(args))
-		for i, arg := range args {
-			strArgs[i] = arg.Text()
+		if hasNullArg(args) {
+			ctx.ResultNull()
+			return
 		}
-		ctx.ResultText(fn(strArgs))
+		ctx.ResultText(fn(textArgs(args)))
 	}
 }
 
 func makeScalarFuncFloat(fn func([]string) float64) sqlite3.ScalarFunction {
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-		strArgs := make([]string, len(args))
-		for i, arg := range args {
-			strArgs[i] = arg.Text()
+		if hasNullArg(args) {
+			ctx.ResultNull()
+			return
 		}
-		ctx.ResultFloat(fn(strArgs))
+		ctx.ResultFloat(fn(textArgs(args)))
 	}
 }
 
 func makeScalarFuncInt(fn func([]string) int64) sqlite3.ScalarFunction {
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-		strArgs := make([]string, len(args))
-		for i, arg := range args {
-			strArgs[i] = arg.Text()
+		if hasNullArg(args) {
+			ctx.ResultNull()
+			return
 		}
-		ctx.ResultInt64(fn(strArgs))
+		ctx.ResultInt64(fn(textArgs(args)))
 	}
 }
 
 func makeScalarFuncBool(fn func([]string) bool) sqlite3.ScalarFunction {
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-		strArgs := make([]string, len(args))
-		for i, arg := range args {
-			strArgs[i] = arg.Text()
+		if hasNullArg(args) {
+			ctx.ResultNull()
+			return
 		}
-		ctx.ResultBool(fn(strArgs))
+		ctx.ResultBool(fn(textArgs(args)))
 	}
 }
 
+// makeScalarFuncBlob is the one variant whose fn sees NULL: a NULL argument
+// arrives as empty and an empty result is returned as NULL (ncruces maps a
+// nil result to NULL), while a zero-length BLOB round-trips as a non-nil
+// zero-length list.
 func makeScalarFuncBlob(fn func([][]byte) []byte) sqlite3.ScalarFunction {
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-		blobArgs := make([][]byte, len(args))
-		for i, arg := range args {
-			blobArgs[i] = arg.Blob(nil)
-		}
-		ctx.ResultBlob(fn(blobArgs))
+		ctx.ResultBlob(fn(blobArgs(args)))
 	}
 }
 
 func makeScalarFuncBlobFloat(fn func([][]byte) float64) sqlite3.ScalarFunction {
 	return func(ctx sqlite3.Context, args ...sqlite3.Value) {
-		blobArgs := make([][]byte, len(args))
-		for i, arg := range args {
-			blobArgs[i] = arg.Blob(nil)
+		if hasNullArg(args) {
+			ctx.ResultNull()
+			return
 		}
-		ctx.ResultFloat(fn(blobArgs))
+		ctx.ResultFloat(fn(blobArgs(args)))
 	}
+}
+
+// hasNullArg reports whether any SQL argument is NULL. Variants whose Go
+// signature cannot carry NULL short-circuit to a NULL result, matching the
+// NULL-in/NULL-out behavior of SQLite's built-in scalar functions.
+func hasNullArg(args []sqlite3.Value) bool {
+	for _, arg := range args {
+		if arg.Type() == sqlite3.NULL {
+			return true
+		}
+	}
+	return false
+}
+
+// textArgs converts SQL arguments to their text form.
+func textArgs(args []sqlite3.Value) []string {
+	strArgs := make([]string, len(args))
+	for i, arg := range args {
+		strArgs[i] = arg.Text()
+	}
+	return strArgs
+}
+
+// blobArgs copies SQL arguments as BLOBs, keeping NULL (empty) distinct from a
+// zero-length BLOB (a non-nil empty list) — Value.Blob(empty) would return nil
+// for both.
+func blobArgs(args []sqlite3.Value) [][]byte {
+	blobs := make([][]byte, len(args))
+	for i, arg := range args {
+		if arg.Type() != sqlite3.NULL {
+			blobs[i] = arg.Blob(make([]byte, 0))
+		}
+	}
+	return blobs
 }
 
 // Dump exports the database as SQL text (CREATE TABLE + INSERT statements).
@@ -978,13 +1021,11 @@ func formatSQLValue(v any) string {
 		return cast.ToString(f)
 	}
 	if b, _isOk := v.(bool); _isOk {
-		return func() string {
-			if b {
-				return "1"
-			} else {
-				return "0"
-			}
-		}()
+		if b {
+			return "1"
+		} else {
+			return "0"
+		}
 	}
 	s := fmt.Sprintf("%v", v)
 	return "'" + strpkg.ReplaceAll(s, "'", "''") + "'"

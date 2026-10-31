@@ -3,7 +3,6 @@ petiole main
 import "bytes"
 import "io"
 import "net/http"
-import "race-to-the-crystal/shared/constants" as constants
 import "stdlib/env"
 import "stdlib/json" as jsonpkg
 import "stdlib/jsonschema" as jsonschema
@@ -39,21 +38,21 @@ func doRequest(method: string, path: string, body: map of string to any) (string
     bodyReader := io.Reader(empty)
     if body isnt empty
         b, err := jsonpkg.Bytes(body)
-        if err != nil
+        if err isnt empty
             return "", err
         bodyReader = bytes.NewReader(b)
     req, err := http.NewRequest(method, url, bodyReader)
-    if err != nil
+    if err isnt empty
         return "", err
     req.Header.Set("Authorization", "Bearer {gameToken}")
     if body isnt empty
         req.Header.Set("Content-Type", "application/json")
     resp, err := http.DefaultClient.Do(req)
-    if err != nil
+    if err isnt empty
         return "", err
     defer resp.Body.Close()
     data, err := io.ReadAll(resp.Body)
-    if err != nil
+    if err isnt empty
         return "", err
     if resp.StatusCode >= 400
         return data as string, error "{resp.Status}: {data as string}"

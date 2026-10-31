@@ -218,7 +218,11 @@ func TestEventsForActionEndTurn(t: reference testing.T)
 func TestEventsForActionGameEnded(t: reference testing.T)
     gs := newEventGame()
 
-    crystalPos := gs.crystalInstance.position
+    ci := gs.crystalInstance
+    test.AssertNotNil(t, ci)
+    if ci is empty
+        return
+    crystalPos := ci.position
     for _, health in constants.TOKEN_HEALTH_VALUES
         for i from 0 to 20
             if gs.DeployToken(types.PlayerID("player_0"), health, crystalPos) is empty

@@ -103,8 +103,8 @@ func SendToClient on wh: reference WebSocketHandler(clientId: string, data: map 
     jsonBytes := jsonpkg.Bytes(data) onerr return false
     client.writeMu.Lock()
     defer client.writeMu.Unlock()
-    err := client.conn.WriteMessage(websocket.TextMessage, jsonBytes)
-    if err != nil
+    var err: error = client.conn.WriteMessage(websocket.TextMessage, jsonBytes)
+    if err isnt empty
         log.Debug("WebSocket send to {clientId} failed: {err}")
         return false
     return true
@@ -115,9 +115,9 @@ func BroadcastToGame on wh: reference WebSocketHandler(gameId: string, data: JSO
     for _client_id, client in wh.clients
         if client.gameId equals gameId and client.conn isnt empty
             client.writeMu.Lock()
-            err := client.conn.WriteMessage(websocket.TextMessage, jsonBytes)
+            var err: error = client.conn.WriteMessage(websocket.TextMessage, jsonBytes)
             client.writeMu.Unlock()
-            if err != nil
+            if err isnt empty
                 log.Debug("WebSocket broadcast failed: {err}")
 
 func ProcessMessage on wh: reference WebSocketHandler(clientId: string, rawData: string) map of string to any

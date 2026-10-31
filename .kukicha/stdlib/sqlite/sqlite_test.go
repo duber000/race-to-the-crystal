@@ -796,6 +796,115 @@ func TestCreateBlobFunctionFloat(t *testing.T) {
 	}
 }
 
+// --- TestScalarFunctionNulls ---
+// Pins the NULL contract of every CreateFunction* / CreateBlobFunction*
+// variant. Regression: NULL arguments used to reach text functions as "" and
+// blob functions as a nil slice indistinguishable from a zero-length BLOB,
+// so NULL came back as an empty string, 0, or an empty BLOB instead of
+// NULL; and a zero-length BLOB passed straight through a blob function came
+// back as NULL once ncruces v0.36.0 began mapping a nil result to NULL.
+type ScalarFunctionNullsCase struct {
+	name  string
+	query string
+	want  string
+}
+
+func noBlob() []byte {
+	return nil
+}
+
+func TestScalarFunctionNulls(t *testing.T) {
+	cases := []ScalarFunctionNullsCase{ScalarFunctionNullsCase{name: "text NULL arg returns NULL", query: "SELECT quote(shout(NULL))", want: "NULL"}, ScalarFunctionNullsCase{name: "text any NULL arg returns NULL", query: "SELECT quote(join2('a', NULL))", want: "NULL"}, ScalarFunctionNullsCase{name: "text empty string is not NULL", query: "SELECT quote(shout(''))", want: "''"}, ScalarFunctionNullsCase{name: "text non-NULL args call fn", query: "SELECT quote(join2('a', 'b'))", want: "'ab'"}, ScalarFunctionNullsCase{name: "float NULL arg returns NULL", query: "SELECT quote(str_len_f(NULL))", want: "NULL"}, ScalarFunctionNullsCase{name: "int NULL arg returns NULL", query: "SELECT quote(str_len_i(NULL))", want: "NULL"}, ScalarFunctionNullsCase{name: "bool NULL arg returns NULL", query: "SELECT quote(is_nonempty(NULL))", want: "NULL"}, ScalarFunctionNullsCase{name: "blob passes X'' through as X''", query: "SELECT quote(blob_id(X''))", want: "X''"}, ScalarFunctionNullsCase{name: "blob passes NULL through as NULL", query: "SELECT quote(blob_id(NULL))", want: "NULL"}, ScalarFunctionNullsCase{name: "blob passes bytes through", query: "SELECT quote(blob_id(X'0102'))", want: "X'0102'"}, ScalarFunctionNullsCase{name: "blob returning empty yields NULL", query: "SELECT quote(blob_none(X'01'))", want: "NULL"}, ScalarFunctionNullsCase{name: "blob fn sees NULL arg and may return X''", query: "SELECT quote(blob_zero(NULL))", want: "X''"}, ScalarFunctionNullsCase{name: "blob float NULL arg returns NULL", query: "SELECT quote(blob_sum(NULL))", want: "NULL"}, ScalarFunctionNullsCase{name: "blob float X'' arg calls fn", query: "SELECT quote(blob_sum(X''))", want: "0.0"}}
+	pool, err_89 := sqlite.OpenMemory()
+	if err_89 != nil {
+		panic(fmt.Sprintf("open: %v", err_89))
+	}
+	defer db.Close(pool)
+	err_90 := sqlite.CreateFunction(pool, "shout", 1, func(args []string) string { return strpkg.ToUpper(args[0]) })
+	if err_90 != nil {
+		panic(fmt.Sprintf("create shout: %v", err_90))
+	}
+	err_91 := sqlite.CreateFunction(pool, "join2", 2, func(args []string) string { return args[0] + args[1] })
+	if err_91 != nil {
+		panic(fmt.Sprintf("create join2: %v", err_91))
+	}
+	err_92 := sqlite.CreateFunctionFloat(pool, "str_len_f", 1, func(args []string) float64 { return float64(len(args[0])) })
+	if err_92 != nil {
+		panic(fmt.Sprintf("create str_len_f: %v", err_92))
+	}
+	err_93 := sqlite.CreateFunctionInt(pool, "str_len_i", 1, func(args []string) int64 { return int64(len(args[0])) })
+	if err_93 != nil {
+		panic(fmt.Sprintf("create str_len_i: %v", err_93))
+	}
+	err_94 := sqlite.CreateFunctionBool(pool, "is_nonempty", 1, func(args []string) bool { return len(args[0]) > 0 })
+	if err_94 != nil {
+		panic(fmt.Sprintf("create is_nonempty: %v", err_94))
+	}
+	err_95 := sqlite.CreateBlobFunction(pool, "blob_id", 1, func(args [][]byte) []byte { return args[0] })
+	if err_95 != nil {
+		panic(fmt.Sprintf("create blob_id: %v", err_95))
+	}
+	err_96 := sqlite.CreateBlobFunction(pool, "blob_none", 1, func(args [][]byte) []byte { return noBlob() })
+	if err_96 != nil {
+		panic(fmt.Sprintf("create blob_none: %v", err_96))
+	}
+	err_97 := sqlite.CreateBlobFunction(pool, "blob_zero", 1, func(args [][]byte) []byte { return []byte{} })
+	if err_97 != nil {
+		panic(fmt.Sprintf("create blob_zero: %v", err_97))
+	}
+	err_98 := sqlite.CreateBlobFunctionFloat(pool, "blob_sum", 1, func(args [][]byte) float64 { return float64(len(args[0])) })
+	if err_98 != nil {
+		panic(fmt.Sprintf("create blob_sum: %v", err_98))
+	}
+	rawDB := db.RawDB(pool)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ""
+			err_99 := rawDB.QueryRow(tc.query).Scan(&result)
+			if err_99 != nil {
+				panic(fmt.Sprintf("scan: %v", err_99))
+			}
+			test.AssertEqual(t, result, tc.want)
+		})
+	}
+}
+
+// --- TestBindByteSliceNull ---
+// Pins the driver's []byte binding: a nil list of byte binds SQL NULL, a
+// non-nil zero-length one binds a zero-length BLOB.
+type BindByteSliceNullCase struct {
+	name  string
+	value []byte
+	want  string
+}
+
+func TestBindByteSliceNull(t *testing.T) {
+	cases := []BindByteSliceNullCase{BindByteSliceNullCase{name: "nil binds NULL", value: noBlob(), want: "NULL"}, BindByteSliceNullCase{name: "zero-length binds X''", value: []byte{}, want: "X''"}}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			pool, err_100 := sqlite.OpenMemory()
+			if err_100 != nil {
+				panic(fmt.Sprintf("open: %v", err_100))
+			}
+			defer db.Close(pool)
+			_, err_101 := db.Exec(pool, "CREATE TABLE blobs (b BLOB)")
+			if err_101 != nil {
+				panic(fmt.Sprintf("create: %v", err_101))
+			}
+			_, err_102 := db.Exec(pool, "INSERT INTO blobs (b) VALUES (?)", tc.value)
+			if err_102 != nil {
+				panic(fmt.Sprintf("insert: %v", err_102))
+			}
+			result := ""
+			err_103 := db.RawDB(pool).QueryRow("SELECT quote(b) FROM blobs").Scan(&result)
+			if err_103 != nil {
+				panic(fmt.Sprintf("scan: %v", err_103))
+			}
+			test.AssertEqual(t, result, tc.want)
+		})
+	}
+}
+
 // --- TestDump ---
 type DumpCase struct {
 	name string
@@ -807,9 +916,9 @@ func TestDump(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := setupTestDB(t)
 			defer db.Close(pool)
-			sql, err_89 := sqlite.Dump(pool)
-			if err_89 != nil {
-				panic(fmt.Sprintf("dump: %v", err_89))
+			sql, err_104 := sqlite.Dump(pool)
+			if err_104 != nil {
+				panic(fmt.Sprintf("dump: %v", err_104))
 			}
 			test.AssertTrue(t, strpkg.Contains(sql, "CREATE TABLE"))
 			test.AssertTrue(t, strpkg.Contains(sql, "INSERT INTO"))
@@ -821,22 +930,22 @@ func TestDump(t *testing.T) {
 
 func TestAddNotNull(t *testing.T) {
 	t.Run("add NOT NULL to column", func(t *testing.T) {
-		pool, err_90 := sqlite.OpenMemory()
-		if err_90 != nil {
-			panic(fmt.Sprintf("open: %v", err_90))
+		pool, err_105 := sqlite.OpenMemory()
+		if err_105 != nil {
+			panic(fmt.Sprintf("open: %v", err_105))
 		}
 		defer db.Close(pool)
-		_, err_91 := db.Exec(pool, "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)")
-		if err_91 != nil {
-			panic(fmt.Sprintf("create: %v", err_91))
+		_, err_106 := db.Exec(pool, "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)")
+		if err_106 != nil {
+			panic(fmt.Sprintf("create: %v", err_106))
 		}
-		_, err_92 := db.Exec(pool, "INSERT INTO items (name) VALUES (?)", "widget")
-		if err_92 != nil {
-			panic(fmt.Sprintf("insert: %v", err_92))
+		_, err_107 := db.Exec(pool, "INSERT INTO items (name) VALUES (?)", "widget")
+		if err_107 != nil {
+			panic(fmt.Sprintf("insert: %v", err_107))
 		}
-		err_93 := sqlite.AddNotNull(pool, "items", "name")
-		if err_93 != nil {
-			panic(fmt.Sprintf("add not null: %v", err_93))
+		err_108 := sqlite.AddNotNull(pool, "items", "name")
+		if err_108 != nil {
+			panic(fmt.Sprintf("add not null: %v", err_108))
 		}
 		_, err := db.Exec(pool, "INSERT INTO items (name) VALUES (NULL)")
 		test.AssertError(t, err)
@@ -845,79 +954,79 @@ func TestAddNotNull(t *testing.T) {
 
 func TestDropNotNull(t *testing.T) {
 	t.Run("drop NOT NULL from column", func(t *testing.T) {
-		pool, err_94 := sqlite.OpenMemory()
-		if err_94 != nil {
-			panic(fmt.Sprintf("open: %v", err_94))
+		pool, err_109 := sqlite.OpenMemory()
+		if err_109 != nil {
+			panic(fmt.Sprintf("open: %v", err_109))
 		}
 		defer db.Close(pool)
-		_, err_95 := db.Exec(pool, "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL)")
-		if err_95 != nil {
-			panic(fmt.Sprintf("create: %v", err_95))
+		_, err_110 := db.Exec(pool, "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL)")
+		if err_110 != nil {
+			panic(fmt.Sprintf("create: %v", err_110))
 		}
-		err_96 := sqlite.DropNotNull(pool, "items", "name")
-		if err_96 != nil {
-			panic(fmt.Sprintf("drop not null: %v", err_96))
+		err_111 := sqlite.DropNotNull(pool, "items", "name")
+		if err_111 != nil {
+			panic(fmt.Sprintf("drop not null: %v", err_111))
 		}
-		_, err_97 := db.Exec(pool, "INSERT INTO items (name) VALUES (NULL)")
-		if err_97 != nil {
-			panic(fmt.Sprintf("insert null: %v", err_97))
+		_, err_112 := db.Exec(pool, "INSERT INTO items (name) VALUES (NULL)")
+		if err_112 != nil {
+			panic(fmt.Sprintf("insert null: %v", err_112))
 		}
 	})
 }
 
 func TestAddCheck(t *testing.T) {
 	t.Run("add CHECK constraint", func(t *testing.T) {
-		pool, err_98 := sqlite.OpenMemory()
-		if err_98 != nil {
-			panic(fmt.Sprintf("open: %v", err_98))
+		pool, err_113 := sqlite.OpenMemory()
+		if err_113 != nil {
+			panic(fmt.Sprintf("open: %v", err_113))
 		}
 		defer db.Close(pool)
-		_, err_99 := db.Exec(pool, "CREATE TABLE ages (id INTEGER PRIMARY KEY, age INTEGER)")
-		if err_99 != nil {
-			panic(fmt.Sprintf("create: %v", err_99))
+		_, err_114 := db.Exec(pool, "CREATE TABLE ages (id INTEGER PRIMARY KEY, age INTEGER)")
+		if err_114 != nil {
+			panic(fmt.Sprintf("create: %v", err_114))
 		}
-		err_100 := sqlite.AddCheck(pool, "ages", "age >= 0")
-		if err_100 != nil {
-			panic(fmt.Sprintf("add check: %v", err_100))
+		err_115 := sqlite.AddCheck(pool, "ages", "age >= 0")
+		if err_115 != nil {
+			panic(fmt.Sprintf("add check: %v", err_115))
 		}
 		_, err := db.Exec(pool, "INSERT INTO ages (age) VALUES (?)", -1)
 		test.AssertError(t, err)
-		_, err_101 := db.Exec(pool, "INSERT INTO ages (age) VALUES (?)", 25)
-		if err_101 != nil {
-			panic(fmt.Sprintf("insert: %v", err_101))
+		_, err_116 := db.Exec(pool, "INSERT INTO ages (age) VALUES (?)", 25)
+		if err_116 != nil {
+			panic(fmt.Sprintf("insert: %v", err_116))
 		}
 	})
 }
 
 func TestDropCheck(t *testing.T) {
 	t.Run("drop named CHECK constraint", func(t *testing.T) {
-		pool, err_102 := sqlite.OpenMemory()
-		if err_102 != nil {
-			panic(fmt.Sprintf("open: %v", err_102))
+		pool, err_117 := sqlite.OpenMemory()
+		if err_117 != nil {
+			panic(fmt.Sprintf("open: %v", err_117))
 		}
 		defer db.Close(pool)
-		_, err_103 := db.Exec(pool, "CREATE TABLE ages (id INTEGER PRIMARY KEY, age INTEGER, CONSTRAINT age_positive CHECK (age >= 0))")
-		if err_103 != nil {
-			panic(fmt.Sprintf("create: %v", err_103))
+		_, err_118 := db.Exec(pool, "CREATE TABLE ages (id INTEGER PRIMARY KEY, age INTEGER, CONSTRAINT age_positive CHECK (age >= 0))")
+		if err_118 != nil {
+			panic(fmt.Sprintf("create: %v", err_118))
 		}
 		_, err := db.Exec(pool, "INSERT INTO ages (age) VALUES (?)", -1)
 		test.AssertError(t, err)
-		err_104 := sqlite.DropCheck(pool, "ages", "age_positive")
-		if err_104 != nil {
-			panic(fmt.Sprintf("drop check: %v", err_104))
+		err_119 := sqlite.DropCheck(pool, "ages", "age_positive")
+		if err_119 != nil {
+			panic(fmt.Sprintf("drop check: %v", err_119))
 		}
-		_, err_105 := db.Exec(pool, "INSERT INTO ages (age) VALUES (?)", -1)
-		if err_105 != nil {
-			panic(fmt.Sprintf("insert: %v", err_105))
+		_, err_120 := db.Exec(pool, "INSERT INTO ages (age) VALUES (?)", -1)
+		if err_120 != nil {
+			panic(fmt.Sprintf("insert: %v", err_120))
 		}
 	})
 }
 
 func TestAddNotNullInvalidName(t *testing.T) {
 	t.Run("reject invalid names", func(t *testing.T) {
-		pool, err_106 := sqlite.OpenMemory()
-		if err_106 != nil {
-			panic(fmt.Sprintf("open: %v", err_106))
+		pool, err_121 := sqlite.OpenMemory()
+		if err_121 != nil {
+			panic(fmt.Sprintf("open: %v", err_121))
 		}
 		defer db.Close(pool)
 		err := sqlite.AddNotNull(pool, "table; DROP TABLE users", "col")
@@ -929,9 +1038,9 @@ func TestAddNotNullInvalidName(t *testing.T) {
 
 func TestAddCheckInvalid(t *testing.T) {
 	t.Run("reject empty expression", func(t *testing.T) {
-		pool, err_107 := sqlite.OpenMemory()
-		if err_107 != nil {
-			panic(fmt.Sprintf("open: %v", err_107))
+		pool, err_122 := sqlite.OpenMemory()
+		if err_122 != nil {
+			panic(fmt.Sprintf("open: %v", err_122))
 		}
 		defer db.Close(pool)
 		err := sqlite.AddCheck(pool, "t", "")
@@ -941,33 +1050,33 @@ func TestAddCheckInvalid(t *testing.T) {
 
 func TestReindexExpressions(t *testing.T) {
 	t.Run("reindex expressions succeeds", func(t *testing.T) {
-		pool, err_108 := sqlite.OpenMemory()
-		if err_108 != nil {
-			panic(fmt.Sprintf("open: %v", err_108))
+		pool, err_123 := sqlite.OpenMemory()
+		if err_123 != nil {
+			panic(fmt.Sprintf("open: %v", err_123))
 		}
 		defer db.Close(pool)
-		_, err_109 := db.Exec(pool, "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)")
-		if err_109 != nil {
-			panic(fmt.Sprintf("create: %v", err_109))
+		_, err_124 := db.Exec(pool, "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)")
+		if err_124 != nil {
+			panic(fmt.Sprintf("create: %v", err_124))
 		}
-		_, err_110 := db.Exec(pool, "CREATE INDEX idx_name_lower ON items (lower(name))")
-		if err_110 != nil {
-			panic(fmt.Sprintf("index: %v", err_110))
+		_, err_125 := db.Exec(pool, "CREATE INDEX idx_name_lower ON items (lower(name))")
+		if err_125 != nil {
+			panic(fmt.Sprintf("index: %v", err_125))
 		}
-		_, err_111 := db.Exec(pool, "INSERT INTO items (name) VALUES (?)", "Hello")
-		if err_111 != nil {
-			panic(fmt.Sprintf("insert: %v", err_111))
+		_, err_126 := db.Exec(pool, "INSERT INTO items (name) VALUES (?)", "Hello")
+		if err_126 != nil {
+			panic(fmt.Sprintf("insert: %v", err_126))
 		}
-		err_112 := sqlite.ReindexExpressions(pool)
-		if err_112 != nil {
-			panic(fmt.Sprintf("reindex: %v", err_112))
+		err_127 := sqlite.ReindexExpressions(pool)
+		if err_127 != nil {
+			panic(fmt.Sprintf("reindex: %v", err_127))
 		}
 		rawDB := db.RawDB(pool)
 		row := rawDB.QueryRow("SELECT name FROM items WHERE lower(name) = ?", "hello")
 		result := ""
-		err_113 := row.Scan(&result)
-		if err_113 != nil {
-			panic(fmt.Sprintf("scan: %v", err_113))
+		err_128 := row.Scan(&result)
+		if err_128 != nil {
+			panic(fmt.Sprintf("scan: %v", err_128))
 		}
 		test.AssertEqual(t, result, "Hello")
 	})
@@ -987,15 +1096,15 @@ func TestColumns(t *testing.T) {
 	cases := []ColumnsCase{ColumnsCase{name: "returns all columns with metadata", createSQL: "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL, qty INTEGER DEFAULT 0)", table: "items", wantLen: 3, wantFirst: "id", wantPK: 1}, ColumnsCase{name: "empty table name", createSQL: "", table: "", wantLen: 0, wantFirst: "", wantPK: 0}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			pool, err_114 := sqlite.OpenMemory()
-			if err_114 != nil {
-				panic(fmt.Sprintf("open: %v", err_114))
+			pool, err_129 := sqlite.OpenMemory()
+			if err_129 != nil {
+				panic(fmt.Sprintf("open: %v", err_129))
 			}
 			defer db.Close(pool)
 			if tc.createSQL != "" {
-				_, err_115 := db.Exec(pool, tc.createSQL)
-				if err_115 != nil {
-					panic(fmt.Sprintf("create: %v", err_115))
+				_, err_130 := db.Exec(pool, tc.createSQL)
+				if err_130 != nil {
+					panic(fmt.Sprintf("create: %v", err_130))
 				}
 			}
 			cols, err := sqlite.Columns(pool, tc.table)
@@ -1033,14 +1142,14 @@ func TestIndexes(t *testing.T) {
 			pool := setupTestDB(t)
 			defer db.Close(pool)
 			for _, sql := range tc.createIndexSQL {
-				_, err_116 := db.Exec(pool, sql)
-				if err_116 != nil {
-					panic(fmt.Sprintf("create index: %v", err_116))
+				_, err_131 := db.Exec(pool, sql)
+				if err_131 != nil {
+					panic(fmt.Sprintf("create index: %v", err_131))
 				}
 			}
-			idxs, err_117 := sqlite.Indexes(pool, "users")
-			if err_117 != nil {
-				panic(fmt.Sprintf("indexes: %v", err_117))
+			idxs, err_132 := sqlite.Indexes(pool, "users")
+			if err_132 != nil {
+				panic(fmt.Sprintf("indexes: %v", err_132))
 			}
 			test.AssertEqual(t, len(idxs), tc.wantLen)
 			if tc.wantLen > 0 {
@@ -1072,20 +1181,20 @@ func TestForeignKeys(t *testing.T) {
 	cases := []ForeignKeysCase{ForeignKeysCase{name: "lists single-column foreign key", createSQL: []string{"CREATE TABLE parents (id INTEGER PRIMARY KEY)", "CREATE TABLE children (id INTEGER PRIMARY KEY, parent_id INTEGER REFERENCES parents(id))"}, table: "children", wantLen: 1, wantTable: "parents", wantFrom: "parent_id"}, ForeignKeysCase{name: "compound foreign key", createSQL: []string{"CREATE TABLE depts (campus TEXT, code TEXT, PRIMARY KEY (campus, code))", "CREATE TABLE courses (id INTEGER PRIMARY KEY, campus TEXT, dept_code TEXT, FOREIGN KEY (campus, dept_code) REFERENCES depts)"}, table: "courses", wantLen: 2, wantTable: "depts", wantFrom: "campus"}, ForeignKeysCase{name: "no foreign keys", createSQL: []string{"CREATE TABLE standalone (id INTEGER PRIMARY KEY)"}, table: "standalone", wantLen: 0, wantTable: "", wantFrom: ""}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			pool, err_118 := sqlite.OpenMemory()
-			if err_118 != nil {
-				panic(fmt.Sprintf("open: %v", err_118))
+			pool, err_133 := sqlite.OpenMemory()
+			if err_133 != nil {
+				panic(fmt.Sprintf("open: %v", err_133))
 			}
 			defer db.Close(pool)
 			for _, sql := range tc.createSQL {
-				_, err_119 := db.Exec(pool, sql)
-				if err_119 != nil {
-					panic(fmt.Sprintf("create: %v", err_119))
+				_, err_134 := db.Exec(pool, sql)
+				if err_134 != nil {
+					panic(fmt.Sprintf("create: %v", err_134))
 				}
 			}
-			fks, err_120 := sqlite.ForeignKeys(pool, tc.table)
-			if err_120 != nil {
-				panic(fmt.Sprintf("foreign keys: %v", err_120))
+			fks, err_135 := sqlite.ForeignKeys(pool, tc.table)
+			if err_135 != nil {
+				panic(fmt.Sprintf("foreign keys: %v", err_135))
 			}
 			test.AssertEqual(t, len(fks), tc.wantLen)
 			if tc.wantLen > 0 {
@@ -1113,17 +1222,17 @@ func TestDropIndex(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := setupTestDB(t)
 			defer db.Close(pool)
-			_, err_121 := db.Exec(pool, "CREATE INDEX idx_name ON users (name)")
-			if err_121 != nil {
-				panic(fmt.Sprintf("create index: %v", err_121))
+			_, err_136 := db.Exec(pool, "CREATE INDEX idx_name ON users (name)")
+			if err_136 != nil {
+				panic(fmt.Sprintf("create index: %v", err_136))
 			}
-			err_122 := sqlite.DropIndexWithIgnore(pool, "idx_name", tc.ignore)
-			if err_122 != nil {
-				panic(fmt.Sprintf("drop: %v", err_122))
+			err_137 := sqlite.DropIndexWithIgnore(pool, "idx_name", tc.ignore)
+			if err_137 != nil {
+				panic(fmt.Sprintf("drop: %v", err_137))
 			}
-			idxs, err_123 := sqlite.Indexes(pool, "users")
-			if err_123 != nil {
-				panic(fmt.Sprintf("indexes: %v", err_123))
+			idxs, err_138 := sqlite.Indexes(pool, "users")
+			if err_138 != nil {
+				panic(fmt.Sprintf("indexes: %v", err_138))
 			}
 			test.AssertEqual(t, len(idxs), 0)
 		})
@@ -1147,9 +1256,9 @@ func TestDropIndexMissing(t *testing.T) {
 
 func TestDropIndexInvalidName(t *testing.T) {
 	t.Run("reject injection attempt", func(t *testing.T) {
-		pool, err_124 := sqlite.OpenMemory()
-		if err_124 != nil {
-			panic(fmt.Sprintf("open: %v", err_124))
+		pool, err_139 := sqlite.OpenMemory()
+		if err_139 != nil {
+			panic(fmt.Sprintf("open: %v", err_139))
 		}
 		defer db.Close(pool)
 		err := sqlite.DropIndex(pool, "idx; DROP TABLE users")
@@ -1165,15 +1274,15 @@ var regexpPool *db.Pool
 // are installed before any connection opens.
 func ensureRegexpPool(t *testing.T) db.Pool {
 	regexpOnce.Do(func() {
-		f, err_125 := os.CreateTemp("", "kuki-sqlite-ext-*.db")
-		if err_125 != nil {
-			panic(fmt.Sprintf("temp: %v", err_125))
+		f, err_140 := os.CreateTemp("", "kuki-sqlite-ext-*.db")
+		if err_140 != nil {
+			panic(fmt.Sprintf("temp: %v", err_140))
 		}
 		path := f.Name()
 		_ = f.Close()
-		p, err_126 := sqlite.OpenWithExtensions(path, map[string]string{}, regexpext.Register)
-		if err_126 != nil {
-			panic(fmt.Sprintf("open: %v", err_126))
+		p, err_141 := sqlite.OpenWithExtensions(path, map[string]string{}, regexpext.Register)
+		if err_141 != nil {
+			panic(fmt.Sprintf("open: %v", err_141))
 		}
 		regexpPool = &p
 	})
@@ -1186,9 +1295,9 @@ func ensureRegexpPool(t *testing.T) db.Pool {
 func scalarString(pool db.Pool, query string) string {
 	row := db.RawDB(pool).QueryRow(query)
 	out := ""
-	err_127 := row.Scan(&out)
-	if err_127 != nil {
-		panic(fmt.Sprintf("scan: %v", err_127))
+	err_142 := row.Scan(&out)
+	if err_142 != nil {
+		panic(fmt.Sprintf("scan: %v", err_142))
 	}
 	return out
 }
@@ -1197,16 +1306,16 @@ func TestOpenWithExtensions_Regexp(t *testing.T) {
 	pool := ensureRegexpPool(t)
 	defer db.Close(pool)
 	t.Run("empty pragmas inherit Open defaults", func(t *testing.T) {
-		mode, err_128 := sqlite.Pragma(pool, "journal_mode")
-		if err_128 != nil {
-			panic(fmt.Sprintf("pragma: %v", err_128))
+		mode, err_143 := sqlite.Pragma(pool, "journal_mode")
+		if err_143 != nil {
+			panic(fmt.Sprintf("pragma: %v", err_143))
 		}
 		test.AssertEqual(t, mode, "wal")
 	})
 	t.Run("regexp_like matches", func(t *testing.T) {
-		n, err_129 := db.Count(pool, "SELECT regexp_like('hello world', '^hello')")
-		if err_129 != nil {
-			panic(fmt.Sprintf("count: %v", err_129))
+		n, err_144 := db.Count(pool, "SELECT regexp_like('hello world', '^hello')")
+		if err_144 != nil {
+			panic(fmt.Sprintf("count: %v", err_144))
 		}
 		test.AssertEqual(t, n, int64(1))
 	})
@@ -1215,9 +1324,9 @@ func TestOpenWithExtensions_Regexp(t *testing.T) {
 		test.AssertEqual(t, got, "key=value")
 	})
 	t.Run("regexp_like does not match", func(t *testing.T) {
-		n, err_130 := db.Count(pool, "SELECT regexp_like('hello world', '^world')")
-		if err_130 != nil {
-			panic(fmt.Sprintf("count: %v", err_130))
+		n, err_145 := db.Count(pool, "SELECT regexp_like('hello world', '^world')")
+		if err_145 != nil {
+			panic(fmt.Sprintf("count: %v", err_145))
 		}
 		test.AssertEqual(t, n, int64(0))
 	})
@@ -1227,30 +1336,30 @@ func TestColumnExists(t *testing.T) {
 	pool := setupTestDB(t)
 	defer db.Close(pool)
 	t.Run("column exists exact case", func(t *testing.T) {
-		exists, err_131 := sqlite.ColumnExists(pool, "users", "name")
-		if err_131 != nil {
-			panic(fmt.Sprintf("ColumnExists: %v", err_131))
+		exists, err_146 := sqlite.ColumnExists(pool, "users", "name")
+		if err_146 != nil {
+			panic(fmt.Sprintf("ColumnExists: %v", err_146))
 		}
 		test.AssertEqual(t, exists, true)
 	})
 	t.Run("column exists case insensitive", func(t *testing.T) {
-		exists, err_132 := sqlite.ColumnExists(pool, "users", "EMAIL")
-		if err_132 != nil {
-			panic(fmt.Sprintf("ColumnExists: %v", err_132))
+		exists, err_147 := sqlite.ColumnExists(pool, "users", "EMAIL")
+		if err_147 != nil {
+			panic(fmt.Sprintf("ColumnExists: %v", err_147))
 		}
 		test.AssertEqual(t, exists, true)
 	})
 	t.Run("column does not exist", func(t *testing.T) {
-		exists, err_133 := sqlite.ColumnExists(pool, "users", "missing_col")
-		if err_133 != nil {
-			panic(fmt.Sprintf("ColumnExists: %v", err_133))
+		exists, err_148 := sqlite.ColumnExists(pool, "users", "missing_col")
+		if err_148 != nil {
+			panic(fmt.Sprintf("ColumnExists: %v", err_148))
 		}
 		test.AssertEqual(t, exists, false)
 	})
 	t.Run("table does not exist returns false", func(t *testing.T) {
-		exists, err_134 := sqlite.ColumnExists(pool, "nonexistent_table", "id")
-		if err_134 != nil {
-			panic(fmt.Sprintf("ColumnExists: %v", err_134))
+		exists, err_149 := sqlite.ColumnExists(pool, "nonexistent_table", "id")
+		if err_149 != nil {
+			panic(fmt.Sprintf("ColumnExists: %v", err_149))
 		}
 		test.AssertEqual(t, exists, false)
 	})
@@ -1261,9 +1370,9 @@ func TestVectorPackUnpack(t *testing.T) {
 		original := []float32{1.5, -2.25, 0.0, 42.125}
 		blob := sqlite.PackVector(original)
 		test.AssertEqual(t, len(blob), 16)
-		unpacked, err_135 := sqlite.UnpackVector(blob)
-		if err_135 != nil {
-			panic(fmt.Sprintf("unpack: %v", err_135))
+		unpacked, err_150 := sqlite.UnpackVector(blob)
+		if err_150 != nil {
+			panic(fmt.Sprintf("unpack: %v", err_150))
 		}
 		test.AssertEqual(t, len(unpacked), 4)
 		test.AssertEqual(t, unpacked[0], float32(1.5))
@@ -1275,9 +1384,9 @@ func TestVectorPackUnpack(t *testing.T) {
 		original := []float32{}
 		blob := sqlite.PackVector(original)
 		test.AssertEqual(t, len(blob), 0)
-		unpacked, err_136 := sqlite.UnpackVector(blob)
-		if err_136 != nil {
-			panic(fmt.Sprintf("unpack: %v", err_136))
+		unpacked, err_151 := sqlite.UnpackVector(blob)
+		if err_151 != nil {
+			panic(fmt.Sprintf("unpack: %v", err_151))
 		}
 		test.AssertEqual(t, len(unpacked), 0)
 	})
@@ -1289,9 +1398,9 @@ func TestVectorPackUnpack(t *testing.T) {
 		original := []float64{1.5, -2.25, 0.0, 42.125}
 		blob := sqlite.PackVector64(original)
 		test.AssertEqual(t, len(blob), 16)
-		unpacked, err_137 := sqlite.UnpackVector64(blob)
-		if err_137 != nil {
-			panic(fmt.Sprintf("unpack64: %v", err_137))
+		unpacked, err_152 := sqlite.UnpackVector64(blob)
+		if err_152 != nil {
+			panic(fmt.Sprintf("unpack64: %v", err_152))
 		}
 		test.AssertEqual(t, len(unpacked), 4)
 		test.AssertEqual(t, unpacked[0], 1.5)

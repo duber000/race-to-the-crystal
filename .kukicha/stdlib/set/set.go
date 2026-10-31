@@ -39,6 +39,8 @@ import (
 
 // Set is a generic HashSet over any comparable type T. Construct with
 // New of T() or From of T(items); pass by value (it wraps a map reference).
+// Keys follow Go map semantics (e.g. IEEE 754 NaN != NaN, so NaN elements
+// are not retrievable via Contains and distinct NaN insertions accumulate).
 type Set[T comparable] struct {
 	items map[T]bool
 }

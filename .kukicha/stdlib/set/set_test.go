@@ -9,6 +9,7 @@ import (
 	"kukicha.org/kukicha/stdlib/slice"
 	kukistring "kukicha.org/kukicha/stdlib/string"
 	"kukicha.org/kukicha/stdlib/test"
+	"math"
 	"testing"
 )
 
@@ -437,4 +438,16 @@ func TestPipeForm(t *testing.T) {
 	test.AssertFalse(t, set.Contains(s, "z"))
 	items := set.ToList(s)
 	test.AssertEqual(t, len(items), 2)
+}
+
+// --- TestFloatKeys ---
+// Verifies that Set follows Go map semantics for float keys:
+// +0.0 and -0.0 compare equal, while NaN != NaN per IEEE 754.
+func TestFloatKeys(t *testing.T) {
+	s := set.New[float64]()
+	set.Add(s, 0.0)
+	test.AssertTrue(t, set.Contains(s, -0.0))
+	set.Add(s, math.NaN())
+	test.AssertFalse(t, set.Contains(s, math.NaN()))
+	test.AssertEqual(t, set.Len(s), 2)
 }

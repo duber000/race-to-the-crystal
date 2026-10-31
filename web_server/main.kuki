@@ -50,8 +50,10 @@ func Start on ws: reference WebServer
         "GET /static/",
         http.StripPrefix("/static/", http.FileServer(http.Dir(ws.config.staticDir))),
     )
-    mux.Handle("/api/", ws.proxy)
-    mux.Handle("/ws", ws.proxy)
+    proxy := ws.proxy
+    if proxy isnt empty
+        mux.Handle("/api/", proxy)
+        mux.Handle("/ws", proxy)
 
     addr := ":{ws.config.port}"
     log.Info("Web server starting on {addr}")
@@ -60,7 +62,7 @@ func Start on ws: reference WebServer
 
     go
         err := http.ListenAndServe(addr, mux)
-        if err != nil
+        if err isnt empty
             log.Error("HTTP server error: {err}")
 
     ch := make(channel of bool)
@@ -89,6 +91,6 @@ func handleConfig on ws: reference WebServer(response: httphelper.Response, requ
 func main()
     config := WebServerConfigFromEnv()
     server, err := NewWebServer(config)
-    if err != nil
+    if err isnt empty
         log.Fatal("{err}")
     server.Start()

@@ -15,20 +15,25 @@ func TestCrystalCaptureProgressesThroughGameState(t: reference testing.T)
     gsRef := reference of CreateGame(2)
     gsRef.StartGame()
 
-    crystalPos := gsRef.crystalInstance.position
+    ci := gsRef.crystalInstance
+    test.AssertNotNil(t, ci)
+    if ci is empty
+        return
+
+    crystalPos := ci.position
     deployOntoCrystal(gsRef, types.PlayerID("player_0"), crystalPos)
 
-    test.AssertEqual(t, gsRef.crystalInstance.turnsHeld, 0)
+    test.AssertEqual(t, ci.turnsHeld, 0)
 
     gsRef.EndTurnWithObjectiveUpdate()
-    test.AssertEqual(t, gsRef.crystalInstance.holdingPlayerId, types.PlayerID("player_0"))
-    test.AssertEqual(t, gsRef.crystalInstance.turnsHeld, 1)
+    test.AssertEqual(t, ci.holdingPlayerId, types.PlayerID("player_0"))
+    test.AssertEqual(t, ci.turnsHeld, 1)
 
     gsRef.EndTurnWithObjectiveUpdate()
-    test.AssertEqual(t, gsRef.crystalInstance.turnsHeld, 2)
+    test.AssertEqual(t, ci.turnsHeld, 2)
 
     gsRef.EndTurnWithObjectiveUpdate()
-    test.AssertEqual(t, gsRef.crystalInstance.turnsHeld, 3)
+    test.AssertEqual(t, ci.turnsHeld, 3)
     test.AssertEqual(t, gsRef.phase, enums.ENDED)
     test.AssertEqual(t, gsRef.winnerId, types.PlayerID("player_0"))
 

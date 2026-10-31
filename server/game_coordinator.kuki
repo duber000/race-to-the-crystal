@@ -19,7 +19,7 @@ type GameSession
     # Spectator network ids (not seated players). They receive the
     # unfiltered state and every event.
     spectators: map of string to bool
-    lastState: reference JSONMap
+    lastState: optional reference JSONMap
     apiMap: map of string to gamepkg.GameAPI
     # The event log: every event the session has produced, in order.
     events: list of gamepkg.GameEvent

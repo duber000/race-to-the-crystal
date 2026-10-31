@@ -145,8 +145,9 @@ func timeOutTurn on ep: reference WebSocketEndpoint(session: reference GameSessi
 
 func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Response, request: httphelper.Request)
     conn, err := wsUpgrader.Upgrade(response.Raw(), request.Raw(), empty)
-    if err != nil
-        log.Warn("WebSocket upgrade failed: {err}")
+    upgradeErr := err as error
+    if upgradeErr isnt empty
+        log.Warn("WebSocket upgrade failed: {upgradeErr}")
         return
     # Enforce a cap on the messages a client may send. Without it a client
     # could stream an arbitrarily large frame at the server.
@@ -158,8 +159,9 @@ func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Res
     log.Info("WebSocket client connected: {clientId}")
     defer conn.Close()
     for true
-        _msg_type, raw, rerr := conn.ReadMessage()
-        if rerr != nil
+        _, raw, rerr := conn.ReadMessage()
+        readErr := rerr as error
+        if readErr isnt empty
             break
         ep.handleClientMessage(clientId, raw as string)
     ep.handleClientDisconnect(clientId)
@@ -419,7 +421,7 @@ func handleGameAction on ep: reference WebSocketEndpoint(clientId: string, msgTy
 
     normalized := NormalizeActionData(data)
     validationErr := ValidateActionFields(actionType, normalized)
-    if validationErr != nil
+    if validationErr isnt empty
         ep.sendInvalidAction(clientId, msgType, "validation failed: {validationErr.message}")
         return
     action := ep.httpHandler.buildGameAction(client.playerId, actionType, normalized)

@@ -64,7 +64,7 @@ func ChosenToActionMap(action: ChosenAction) map of string to any
                 "data": empty map of string to any,
             }
 
-func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs: reference GameState, playerId: types.PlayerID) optional reference ChosenAction
+func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs: optional reference GameState, playerId: types.PlayerID) optional reference ChosenAction
     if actions is empty
         return empty
 
@@ -82,14 +82,18 @@ func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs:
 func chooseRandom(actions: list of ActionResponse) ChosenAction
     return resolveAction(random.Choice of ActionResponse from actions)
 
-func chooseAggressive(actions: list of ActionResponse, gs: reference GameState, playerId: types.PlayerID) ChosenAction
+func chooseAggressive(actions: list of ActionResponse, gs: optional reference GameState, playerId: types.PlayerID) ChosenAction
     attacks := filterAttacks(actions)
     if attacks isnt empty
         return bestAttack(attacks)
 
     moves := filterMoves(actions)
-    if moves isnt empty
+    if moves isnt empty and gs isnt empty
         return bestMove(moves, gs, playerId, false)
+    if moves isnt empty
+        mv := random.Choice of MoveAction from moves
+        if mv.ValidDestinations isnt empty
+            return ChosenMove{TokenID: mv.TokenID, Destination: mv.ValidDestinations[0]}
 
     deploys := filterDeploys(actions)
     if deploys isnt empty
@@ -97,14 +101,18 @@ func chooseAggressive(actions: list of ActionResponse, gs: reference GameState, 
 
     return ChosenEndTurn{}
 
-func chooseDefensive(actions: list of ActionResponse, gs: reference GameState, playerId: types.PlayerID) ChosenAction
+func chooseDefensive(actions: list of ActionResponse, gs: optional reference GameState, playerId: types.PlayerID) ChosenAction
     deploys := filterDeploys(actions)
     if deploys isnt empty and random.Int(0, 2) equals 1
         return bestDeploy(deploys)
 
     moves := filterMoves(actions)
-    if moves isnt empty
+    if moves isnt empty and gs isnt empty
         return bestMove(moves, gs, playerId, true)
+    if moves isnt empty
+        mv := random.Choice of MoveAction from moves
+        if mv.ValidDestinations isnt empty
+            return ChosenMove{TokenID: mv.TokenID, Destination: mv.ValidDestinations[0]}
 
     attacks := filterAttacks(actions)
     if attacks isnt empty and random.Int(0, 10) > 7
