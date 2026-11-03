@@ -67,12 +67,14 @@ func FailureResult(msg: string) ActionResult
 func NewEmptyResultData() ActionResultData
     return NoData{}
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateGamePhase on gs: reference GameState optional reference ValidationResult
     if gs.phase isnt enums.PLAYING
         r := InvalidResult("ACTION_FAILED: wrong_game_phase | current={gs.phase} | required=PLAYING")
         return reference of r
     return empty
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidatePlayerTurn on gs: reference GameState(playerId: types.PlayerID) optional reference ValidationResult
     if gs.currentTurnPlayerId isnt playerId
         r := InvalidResult(
@@ -81,6 +83,7 @@ func ValidatePlayerTurn on gs: reference GameState(playerId: types.PlayerID) opt
         return reference of r
     return empty
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateTurnPhase on gs: reference GameState(required: enums.TurnPhase, actionName: string) optional reference ValidationResult
     if gs.turnPhase isnt required
         r := InvalidResult(
@@ -89,6 +92,7 @@ func ValidateTurnPhase on gs: reference GameState(required: enums.TurnPhase, act
         return reference of r
     return empty
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateTokenExists on gs: reference GameState(TokenID: types.TokenID, actionName: string) (ValidationResult, optional reference Token)
     tok := gs.GetToken(TokenID)
     if tok is empty
@@ -96,11 +100,13 @@ func ValidateTokenExists on gs: reference GameState(TokenID: types.TokenID, acti
         return r, empty
     return ValidResult(""), tok
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateTokenOwnership(tok: reference Token, playerId: types.PlayerID, actionName: string) ValidationResult
     if tok.playerId isnt playerId
         return InvalidResult("{actionName}_FAILED: not_owner | token_id={tok.id} | owner={tok.playerId}")
     return ValidResult("")
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateTokenDeployed(tok: reference Token, actionName: string) ValidationResult
     if not tok.isDeployed
         return InvalidResult(
@@ -108,11 +114,13 @@ func ValidateTokenDeployed(tok: reference Token, actionName: string) ValidationR
         )
     return ValidResult("")
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateTokenAlive(tok: reference Token, actionName: string) ValidationResult
     if not tok.isAlive
         return InvalidResult("{actionName}_FAILED: token_dead | token_id={tok.id}")
     return ValidResult("")
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateAction(action: AIAction, gs: reference GameState, playerId: types.PlayerID) ValidationResult
     phaseResult := gs.ValidateGamePhase()
     if phaseResult isnt empty
@@ -132,6 +140,7 @@ func ValidateAction(action: AIAction, gs: reference GameState, playerId: types.P
         when EndTurn
             return ValidateEndTurn(gs)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateMove(TokenID: types.TokenID, dest: types.Position, gs: reference GameState, playerId: types.PlayerID) ValidationResult
     tpResult := gs.ValidateTurnPhase(enums.MOVEMENT, "MOVE")
     if tpResult isnt empty
@@ -161,6 +170,7 @@ func ValidateMove(TokenID: types.TokenID, dest: types.Position, gs: reference Ga
         )
     return ValidResult("Move is valid")
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: reference GameState, playerId: types.PlayerID) ValidationResult
     tpResult := gs.ValidateTurnPhase(enums.ACTION, "ATTACK")
     if tpResult isnt empty
@@ -205,6 +215,7 @@ func ValidateAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: re
         )
     return ValidResult("Attack is valid")
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameState, playerId: types.PlayerID) ValidationResult
     tpResult := gs.ValidateTurnPhase(enums.MOVEMENT, "DEPLOY")
     if tpResult isnt empty
@@ -237,11 +248,13 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
         return InvalidResult("DEPLOY_FAILED: invalid_position | pos=({pos.X},{pos.Y})")
     return ValidResult("Deployment is valid")
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ValidateEndTurn(gs: reference GameState) ValidationResult
     if gs.turnPhase isnt enums.MOVEMENT and gs.turnPhase isnt enums.ACTION
         return InvalidResult("Cannot end turn: Invalid phase ({gs.turnPhase})")
     return ValidResult("Can end turn")
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ExecuteAction(action: AIAction, gs: reference GameState, playerId: types.PlayerID) ActionResult
     validation := ValidateAction(action, gs, playerId)
     if not validation.IsValid
@@ -257,6 +270,7 @@ func ExecuteAction(action: AIAction, gs: reference GameState, playerId: types.Pl
         when EndTurn
             return ExecuteEndTurn(gs)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference GameState, playerId: types.PlayerID) ActionResult
     tokRef := gs.GetToken(TokenID)
     if tokRef is empty
@@ -315,6 +329,7 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
         NewPosition: list of int{dest.X, dest.Y},
     })
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: reference GameState, playerId: types.PlayerID) ActionResult
     defRef := gs.GetToken(DefenderID)
     if defRef is empty
@@ -347,6 +362,7 @@ func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: ref
         DefenderKilled: o.defenderKilled,
     })
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ExecuteDeploy(HealthValue: int, pos: types.Position, gs: reference GameState, playerId: types.PlayerID) ActionResult
     newTok := gs.DeployToken(playerId, HealthValue, pos)
     if newTok is empty
@@ -369,6 +385,7 @@ func ExecuteDeploy(HealthValue: int, pos: types.Position, gs: reference GameStat
         TokensRemaining: remaining,
     })
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ExecuteEndTurn(gs: reference GameState) ActionResult
     newlyDisabled, crystalCaptured, _ := gs.EndTurnWithObjectiveUpdate()
 

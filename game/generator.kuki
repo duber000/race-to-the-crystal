@@ -31,18 +31,23 @@ func requiredTurns on g: reference Generator int
 func tokenReductionValue on g: reference Generator int
     return constants.GENERATOR_TOKEN_REDUCTION
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Position on g: reference Generator types.Position
     return g.position
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ID on g: reference Generator int
     return g.id
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func CapturingPlayer on g: reference Generator types.PlayerID
     return g.capturingPlayerId
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func TurnsHeld on g: reference Generator int
     return g.turnsHeld
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func IsDisabled on g: reference Generator bool
     return g.isDisabled
 

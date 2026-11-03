@@ -247,9 +247,8 @@ func SyncDesktopState()
         ds.generators = append(ds.generators, dg)
     crystalRef := gs.CrystalInstance()
     if crystalRef isnt empty
-        c := dereference crystalRef
-        ds.crystalPos = DPos(c.Position().X, c.Position().Y)
-        ds.crystalHolder = c.HoldingPlayer() as string
+        ds.crystalPos = DPos(crystalRef.Position().X, crystalRef.Position().Y)
+        ds.crystalHolder = crystalRef.HoldingPlayer() as string
     app.gameState = reference of ds
 
 func RunAiTurns()

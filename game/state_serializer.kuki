@@ -147,6 +147,7 @@ func orderedPlayerIds on gs: reference GameState list of types.PlayerID
 # truth for the "color_index" field in the client state dict — the mapping
 # must never depend on map iteration order, or a player's colour would
 # change between broadcasts.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func PlayerColorIndexes on gs: reference GameState map of string to int
     result := empty map of string to int
     idx := 0
@@ -156,6 +157,7 @@ func PlayerColorIndexes on gs: reference GameState map of string to int
     return result
 
 # Colour index of a single player, or -1 if the player does not exist.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func PlayerColorIndex on gs: reference GameState(playerId: types.PlayerID) int
     indexes := gs.PlayerColorIndexes()
     idx, has := indexes[playerId as string]
@@ -165,6 +167,7 @@ func PlayerColorIndex on gs: reference GameState(playerId: types.PlayerID) int
 
 # Full client-facing state dict. `perspective` is the game player id
 # ("player_0") to annotate the state with; pass "" to omit.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ClientStateDict on gs: reference GameState(perspective: string) StateDict
     playersMap := empty map of string to StateDict
     # `gs.players` is a map, so iterating it directly assigns colour indices

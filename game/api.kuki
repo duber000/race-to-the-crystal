@@ -7,40 +7,48 @@ type GameAPI
     gameState: reference GameState
     playerId: types.PlayerID
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func NewGameAPI(gs: reference GameState, pid: types.PlayerID) GameAPI
     return GameAPI{gameState: gs, playerId: pid}
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Observe on api: reference GameAPI string
     if api.gameState is empty
         return ""
     return getSituationReport(api.gameState, api.playerId)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Actions on api: reference GameAPI list of ActionResponse
     if api.gameState is empty
         return empty list of ActionResponse
     result := listAvailableActions(api.gameState, api.playerId)
     return result.Actions
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ActionsWithPhase on api: reference GameAPI AvailableActionsResponse
     if api.gameState is empty
         return AvailableActionsResponse{Phase: "NOT_PLAYING", Actions: empty list of ActionResponse}
     return listAvailableActions(api.gameState, api.playerId)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func BoardMap on api: reference GameAPI string
     if api.gameState is empty
         return ""
     return getBoardMap(api.gameState, api.playerId)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Describe on api: reference GameAPI string
     if api.gameState is empty
         return ""
     return describeGameState(api.gameState, api.playerId)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func VictoryConditions on api: reference GameAPI string
     if api.gameState is empty
         return ""
     return explainVictoryConditions(api.gameState)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Move on api: reference GameAPI(TokenID: types.TokenID, x: int, y: int) ActionResult
     if api.gameState is empty
         return FailureResult("No game state")
@@ -48,12 +56,14 @@ func Move on api: reference GameAPI(TokenID: types.TokenID, x: int, y: int) Acti
     action := Move{TokenID: TokenID, Destination: dest}
     return ExecuteAction(action, api.gameState, api.playerId)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Attack on api: reference GameAPI(AttackerID: types.TokenID, DefenderID: types.TokenID) ActionResult
     if api.gameState is empty
         return FailureResult("No game state")
     action := Attack{AttackerID: AttackerID, DefenderID: DefenderID}
     return ExecuteAction(action, api.gameState, api.playerId)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Deploy on api: reference GameAPI(HealthValue: int, x: int, y: int) ActionResult
     if api.gameState is empty
         return FailureResult("No game state")
@@ -61,22 +71,26 @@ func Deploy on api: reference GameAPI(HealthValue: int, x: int, y: int) ActionRe
     action := Deploy{HealthValue: HealthValue, Position: pos}
     return ExecuteAction(action, api.gameState, api.playerId)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func EndTurn on api: reference GameAPI ActionResult
     if api.gameState is empty
         return FailureResult("No game state")
     action := EndTurn{}
     return ExecuteAction(action, api.gameState, api.playerId)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func DoAction on api: reference GameAPI(action: AIAction) ActionResult
     if api.gameState is empty
         return FailureResult("No game state")
     return ExecuteAction(action, api.gameState, api.playerId)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func IsMyTurn on api: reference GameAPI bool
     if api.gameState is empty
         return false
     return api.gameState.currentTurnPlayerId equals api.playerId
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetPhase on api: reference GameAPI string
     if api.gameState is empty
         return "NOT_PLAYING"
@@ -85,6 +99,7 @@ func GetPhase on api: reference GameAPI string
         return "{gs.phase}"
     return "{gs.turnPhase}"
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetReserveCounts on api: reference GameAPI map of int to int
     if api.gameState is empty
         return empty map of int to int

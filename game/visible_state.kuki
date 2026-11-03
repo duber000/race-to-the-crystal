@@ -187,6 +187,7 @@ func threatMap on gs: reference GameState(viewer: types.PlayerID, cells: map of 
 #
 # An empty viewer means "no perspective" — a spectator, or an internal
 # caller — and gets the unmasked state.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func VisibleStateDict on gs: reference GameState(viewer: types.PlayerID) StateDict
     if viewer is empty
         return gs.ClientStateDict("")
@@ -265,6 +266,7 @@ func VisibleStateDict on gs: reference GameState(viewer: types.PlayerID) StateDi
 #
 # The viewer sees an event when at least one participant is visible to
 # them; any participant they cannot see is stripped out of it.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func FilterEventForViewer on gs: reference GameState(e: GameEvent, viewer: types.PlayerID) list of GameEvent
     if viewer is empty
         return list of GameEvent{e}

@@ -70,8 +70,7 @@ func HandleBoardClick(gs: reference gamepkg.GameState, cellX: int, cellY: int)
     if clicked >= 0
         tokRef := gs.GetToken(types.TokenID(clicked))
         if tokRef isnt empty
-            tok := dereference tokRef
-            if tok.PlayerID() equals app.humanPlayer
+            if tokRef.PlayerID() equals app.humanPlayer
                 if app.selectedTokenId equals clicked
                     deselect()
                 else
@@ -94,8 +93,7 @@ func ComputeValidMoves(tokenId: int) list of DesktopPos
     result := empty list of DesktopPos
     if app.realApi is empty
         return result
-    api := dereference app.realApi
-    for a in api.Actions()
+    for a in app.realApi.Actions()
         switch a as v
             when gamepkg.MoveAction
                 if v.TokenID as int equals tokenId
@@ -109,8 +107,7 @@ func ComputeValidAttacks(tokenId: int) list of DesktopPos
     result := empty list of DesktopPos
     if app.realApi is empty
         return result
-    api := dereference app.realApi
-    for a in api.Actions()
+    for a in app.realApi.Actions()
         switch a as v
             when gamepkg.AttackAction
                 if v.AttackerID as int equals tokenId
@@ -124,23 +121,22 @@ func TryMove(cellX: int, cellY: int) bool
         if mv.X equals cellX and mv.Y equals cellY
             if app.realApi is empty
                 return false
-            api := dereference app.realApi
-            result := api.Move(types.TokenID(app.selectedTokenId), cellX, cellY)
+            result := app.realApi.Move(types.TokenID(app.selectedTokenId), cellX, cellY)
             app.message = result.Message
             deselect()
             return true
     return false
 
 func TryAttack(cellX: int, cellY: int) bool
-    if app.realApi is empty
+    apiRef := app.realApi
+    if apiRef is empty
         return false
-    api := dereference app.realApi
-    for a in api.Actions()
+    for a in apiRef.Actions()
         switch a as v
             when gamepkg.AttackAction
                 if v.AttackerID as int equals app.selectedTokenId
                     if v.DefenderPosition[0] equals cellX and v.DefenderPosition[1] equals cellY
-                        result := api.Attack(types.TokenID(app.selectedTokenId), v.DefenderID)
+                        result := apiRef.Attack(types.TokenID(app.selectedTokenId), v.DefenderID)
                         app.message = result.Message
                         deselect()
                         return true
@@ -151,8 +147,7 @@ func TryAttack(cellX: int, cellY: int) bool
 func EndHumanTurn()
     if app.realApi is empty
         return
-    api := dereference app.realApi
-    result := api.EndTurn()
+    result := app.realApi.EndTurn()
     if not result.Success
         app.message = result.Message
     deselect()

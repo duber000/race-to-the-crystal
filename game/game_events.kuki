@@ -199,6 +199,7 @@ func winnerNameOf(gs: reference GameState) string
 
 # The events produced by a successful action. `gs` is the game state
 # *after* the action has been applied.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func EventsForAction(gs: reference GameState, data: ActionResultData) list of GameEvent
     switch data
         when MoveData
@@ -295,6 +296,7 @@ func findGeneratorState(gens: list of GeneratorState, generatorId: int) optional
     return empty
 
 # Capture the current objective state.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ObjectiveStateOf(gs: reference GameState) ObjectiveState
     gens := empty list of GeneratorState
     for g in gs.generators
@@ -313,12 +315,11 @@ func ObjectiveStateOf(gs: reference GameState) ObjectiveState
         IsContested: false,
     }
     if gs.crystalInstance isnt empty
-        crys := dereference gs.crystalInstance
         crystal = CrystalState{
-            Position: list of int{crys.position.X, crys.position.Y},
-            HoldingPlayerID: crys.holdingPlayerId,
-            TurnsHeld: crys.turnsHeld,
-            IsContested: crys.isContested(),
+            Position: list of int{gs.crystalInstance.position.X, gs.crystalInstance.position.Y},
+            HoldingPlayerID: gs.crystalInstance.holdingPlayerId,
+            TurnsHeld: gs.crystalInstance.turnsHeld,
+            IsContested: gs.crystalInstance.isContested(),
         }
 
     return ObjectiveState{Generators: gens, Crystal: crystal}

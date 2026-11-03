@@ -204,16 +204,16 @@ func appendGeneratorInfo(lines: list of string, gs: reference GameState) list of
     return lines
 
 func appendCrystalInfo(lines: list of string, gs: reference GameState) list of string
-    if gs.crystalInstance is empty
+    crystalRef := gs.crystalInstance
+    if crystalRef is empty
         lines = append(lines, "CRYSTAL: (not available)")
         lines = append(lines, "")
         return lines
-    crys := dereference gs.crystalInstance
     disabledCount := countDisabledGenerators(gs.generators)
-    tokensRequired := crys.getTokensRequired(disabledCount)
+    tokensRequired := crystalRef.getTokensRequired(disabledCount)
 
     lines = append(lines, "CRYSTAL:")
-    lines = append(lines, "  Location: ({crys.position.X},{crys.position.Y})")
+    lines = append(lines, "  Location: ({crystalRef.position.X},{crystalRef.position.Y})")
     lines = append(lines, "  Tokens needed to capture: {tokensRequired}")
     if disabledCount > 0
         lines = append(
@@ -221,7 +221,7 @@ func appendCrystalInfo(lines: list of string, gs: reference GameState) list of s
             "  (Base: {constants.CRYSTAL_BASE_TOKENS_REQUIRED}, reduced by {disabledCount} disabled generator(s))",
         )
 
-    holders := crystalHolders(reference of crys, gs)
+    holders := crystalHolders(crystalRef, gs)
     if holders isnt empty
         lines = append(lines, "  Current holders:")
         for pid, count in holders

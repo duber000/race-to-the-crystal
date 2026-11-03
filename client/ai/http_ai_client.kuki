@@ -23,23 +23,23 @@ func NewSession(baseUrl: string) Session
     return Session{baseUrl: strings.TrimRight(baseUrl, "/"), active: true}
 
 type createRequest
-    gameName: string
-    playerName: string
+    gameName: string as "game_name"
+    playerName: string as "player_name"
 
 type joinRequest
-    playerName: string
+    playerName: string as "player_name"
 
 type playerSessionData
-    playerId: string
-    playerName: string
-    token: string
-    gameId: string
-    sseUrl: string
+    playerId: string as "player_id"
+    playerName: string as "player_name"
+    token: string as "token"
+    gameId: string as "game_id"
+    sseUrl: string as "sse_url"
 
 type createJoinAPIResponse
-    success: bool
-    message: string
-    data: playerSessionData
+    success: bool as "success"
+    message: string as "message"
+    data: playerSessionData as "data"
 
 func fillSessionFromData on s: reference Session(d: playerSessionData)
     if d.playerId isnt empty
@@ -152,18 +152,18 @@ func FetchState on s: reference Session Payload
     return empty Payload
 
 type mapResponse
-    success: bool
-    message: string
-    data: any
+    success: bool as "success"
+    message: string as "message"
+    data: any as "data"
 
 type actionsData
-    phase: string
-    actions: list of any
+    phase: string as "phase"
+    actions: list of any as "actions"
 
 type actionsAPIResponse
-    success: bool
-    message: string
-    data: actionsData
+    success: bool as "success"
+    message: string as "message"
+    data: actionsData as "data"
 
 func FetchActions on s: reference Session Payload
     url := "{s.baseUrl}/api/game/{s.gameId}/actions"
@@ -274,7 +274,7 @@ func TryAutoStart on s: reference Session bool
     return s.StartGame()
 
 type readyRequest
-    ready: bool
+    ready: bool as "ready"
 
 func SetReady on s: reference Session(ready: bool) bool
     url := "{s.baseUrl}/api/game/{s.gameId}/ready"
@@ -318,12 +318,12 @@ func StartGame on s: reference Session bool
     return true
 
 type lobbiesData
-    games: list of any
+    games: list of any as "games"
 
 type lobbiesAPIResponse
-    success: bool
-    message: string
-    data: lobbiesData
+    success: bool as "success"
+    message: string as "message"
+    data: lobbiesData as "data"
 
 func ListLobbies on s: reference Session list of Payload
     url := "{s.baseUrl}/api/games"

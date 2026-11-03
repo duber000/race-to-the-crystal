@@ -27,12 +27,15 @@ func NewCrystal(position: types.Position) Crystal
 func turnsRequired on c: reference Crystal int
     return constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Position on c: reference Crystal types.Position
     return c.position
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func HoldingPlayer on c: reference Crystal types.PlayerID
     return c.holdingPlayerId
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func TurnsHeld on c: reference Crystal int
     return c.turnsHeld
 

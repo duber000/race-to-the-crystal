@@ -52,6 +52,7 @@ func NewSimulation(cfg: Config) Simulation
 
 # Run plays the game until someone wins, the AI gives up, or the turn
 # budget runs out. Your play function is called once per learner turn.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Run on s: reference Simulation(play: func(reference LearnerAPI)) Result
     s.game.StartGame()
     api := NewLearnerAPI(s.game, s.learnerId)

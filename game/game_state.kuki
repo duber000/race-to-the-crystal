@@ -69,12 +69,15 @@ func addPlayer on gs: reference GameState(playerId: types.PlayerID, name: string
 func removePlayer on gs: reference GameState(playerId: types.PlayerID)
     delete gs.players[playerId]
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetPlayer on gs: reference GameState(playerId: types.PlayerID) optional reference Player
     return gs.players[playerId]
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetCurrentPlayer on gs: reference GameState optional reference Player
     return gs.GetPlayer(gs.currentTurnPlayerId)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetToken on gs: reference GameState(tokenId: types.TokenID) optional reference Token
     return gs.tokens[tokenId]
 
@@ -95,6 +98,7 @@ func createTokensForPlayer on gs: reference GameState(playerId: types.PlayerID)
             pRef.addToken(tid)
             gs.nextTokenId = gs.nextTokenId + 1
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetPlayerTokens on gs: reference GameState(playerId: types.PlayerID) list of Token
     result := empty list of Token
     pRef := gs.GetPlayer(playerId)
@@ -109,6 +113,7 @@ func GetPlayerTokens on gs: reference GameState(playerId: types.PlayerID) list o
                 result = append(result, t)
     return result
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetReserveTokens on gs: reference GameState(playerId: types.PlayerID) list of Token
     result := empty list of Token
     pRef := gs.GetPlayer(playerId)
@@ -123,6 +128,7 @@ func GetReserveTokens on gs: reference GameState(playerId: types.PlayerID) list 
                 result = append(result, t)
     return result
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetReserveTokenCounts on gs: reference GameState(playerId: types.PlayerID) map of int to int
     counts := empty map of int to int
     for hv in constants.TOKEN_HEALTH_VALUES
@@ -132,6 +138,7 @@ func GetReserveTokenCounts on gs: reference GameState(playerId: types.PlayerID) 
         counts[t.maxHealth] = counts[t.maxHealth] + 1
     return counts
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func DeployToken on gs: reference GameState(playerId: types.PlayerID, healthValue: int, position: types.Position) optional reference Token
     reserve := gs.GetReserveTokens(playerId)
     for i from 0 to len(reserve)
@@ -145,6 +152,7 @@ func DeployToken on gs: reference GameState(playerId: types.PlayerID, healthValu
             return tRef
     return empty
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetTokensAtPosition on gs: reference GameState(pos: types.Position) list of Token
     result := empty list of Token
     for _, t in gs.tokens
@@ -153,6 +161,7 @@ func GetTokensAtPosition on gs: reference GameState(pos: types.Position) list of
             result = append(result, d)
     return result
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetTokenMovementRange on gs: reference GameState(tok: reference Token) int
     base := tok.movementRange()
     pe := gs.crystalEffects.getPlayerEffects(tok.playerId)
@@ -160,6 +169,7 @@ func GetTokenMovementRange on gs: reference GameState(tok: reference Token) int
         return base + constants.CRYSTAL_SPEED_BOOST_AMOUNT
     return base
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func MoveToken on gs: reference GameState(tokenId: types.TokenID, newPos: types.Position) bool
     tRef := gs.GetToken(tokenId)
     if tRef is empty
@@ -184,6 +194,7 @@ func removeToken on gs: reference GameState(tokenId: types.TokenID)
 
     tRef.isAlive = false
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func AttackToken on gs: reference GameState(attackerId: types.TokenID, defenderId: types.TokenID) optional reference CombatOutcome
     aRef := gs.GetToken(attackerId)
     if aRef is empty
@@ -247,6 +258,7 @@ func _auto_deploy_starting_tokens on gs: reference GameState(playerId: types.Pla
 func sortSlice(tokens: list of Token)
     sort.ByKeyDesc of Token(tokens, (t: Token) => t.maxHealth)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func StartGame on gs: reference GameState
     if gs.phase isnt enums.SETUP
         return
@@ -271,6 +283,7 @@ func StartGame on gs: reference GameState
     gs.phase = enums.PLAYING
     gs.turnNumber = 1
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func EndTurn on gs: reference GameState
     if gs.currentTurnPlayerId is empty
         return
@@ -374,6 +387,7 @@ func dominantTokensOnCell on gs: reference GameState(pos: types.Position) (types
 #
 # The client draws the crystal's capture progress from this, so it must
 # come from the rules rather than being computed in the browser.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func CrystalTokensRequired on gs: reference GameState int
     crys := gs.crystalInstance
     if crys is empty
@@ -408,6 +422,7 @@ func updateGeneratorsAndCrystal on gs: reference GameState() (list of int, bool)
 
     return newlyDisabled, crystalCaptured
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func EndTurnWithObjectiveUpdate on gs: reference GameState() (list of int, bool, bool)
     newlyDisabled, crystalCaptured := gs.updateGeneratorsAndCrystal()
     gs.EndTurn()
@@ -435,24 +450,31 @@ func TurnNumber on gs: GameState int
 func TurnPhase on gs: GameState enums.TurnPhase
     return gs.turnPhase
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Players on gs: reference GameState map of types.PlayerID to reference Player
     return gs.players
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Tokens on gs: reference GameState map of types.TokenID to reference Token
     return gs.tokens
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Generators on gs: reference GameState list of Generator
     return gs.generators
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func CrystalInstance on gs: reference GameState optional reference Crystal
     return gs.crystalInstance
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func BoardWidth on gs: reference GameState int
     return gs.board.width
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func BoardHeight on gs: reference GameState int
     return gs.board.height
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ToDict on gs: reference GameState map of string to any
     result := empty map of string to any
     result["phase"] = "{gs.phase}"

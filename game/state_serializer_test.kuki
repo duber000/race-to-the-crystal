@@ -47,6 +47,5 @@ func TestPlayerSetName(t: reference testing.T)
     pRef := gs.GetPlayer(types.PlayerID("player_0"))
     if pRef is empty
         return
-    p := dereference pRef
-    p.SetName("Alice")
-    test.AssertEqual(t, p.Name(), "Alice")
+    pRef.SetName("Alice")
+    test.AssertEqual(t, pRef.Name(), "Alice")

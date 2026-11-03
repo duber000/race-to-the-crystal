@@ -32,30 +32,37 @@ func NewPlayer(id: types.PlayerID, name: string, color: enums.PlayerColor) Playe
 func tokenCount on p: reference Player int
     return len(p.tokenIds)
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Name on p: reference Player string
     return p.name
 
 # Set the player's display name. The server uses this to carry the lobby
 # name (e.g. "Alice", or an agent's model name) into the match, so the HUD
 # and the agent comms show real names instead of "Player 1".
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func SetName on p: reference Player(playerName: string)
     p.name = playerName
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ID on p: reference Player types.PlayerID
     return p.id
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Color on p: reference Player enums.PlayerColor
     return p.color
 
 # How long this player has to complete a turn, in seconds.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func TurnTimeout on p: reference Player int
     return p.turnTimeoutSeconds
 
 # Set the turn timeout. The server sets it from the player's client type.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func SetTurnTimeout on p: reference Player(seconds: int)
     if seconds > 0
         p.turnTimeoutSeconds = seconds
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func IsActive on p: reference Player bool
     return p.isActive
 

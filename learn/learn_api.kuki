@@ -43,6 +43,7 @@ type LearnerAPI
     history: list of string
     memo: map of string to string
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func NewLearnerAPI(gs: reference gamepkg.GameState, playerId: types.PlayerID) LearnerAPI
     return LearnerAPI{
         api: gamepkg.NewGameAPI(gs, playerId),
@@ -53,54 +54,66 @@ func NewLearnerAPI(gs: reference gamepkg.GameState, playerId: types.PlayerID) Le
     }
 
 # Say prints a message to the terminal and records it in your history.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Say on api: reference LearnerAPI(msg: string)
     print(msg)
     api.history = append(api.history, msg)
 
 # Board returns the ASCII map of the 24x24 grid from your point of view.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Board on api: reference LearnerAPI string
     return api.api.BoardMap()
 
 # Observe returns the full situation report: tokens, generators, crystal,
 # available actions, victory conditions.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Observe on api: reference LearnerAPI string
     return api.api.Observe()
 
 # Victory returns the victory conditions and current crystal progress.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Victory on api: reference LearnerAPI string
     return api.api.VictoryConditions()
 
 # Reserve returns how many tokens of each health value remain undeployed.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Reserve on api: reference LearnerAPI map of int to int
     return api.api.GetReserveCounts()
 
 # Tokens returns a text description of your deployed tokens.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Tokens on api: reference LearnerAPI string
     return api.api.Describe()
 
 # MyTurn reports whether it is your turn right now.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func MyTurn on api: reference LearnerAPI bool
     return api.api.IsMyTurn()
 
 # Phase reports the current game phase (MOVEMENT, ACTION, ...).
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Phase on api: reference LearnerAPI string
     return api.api.GetPhase()
 
 # TurnNumber reports the current turn number.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func TurnNumber on api: reference LearnerAPI int
     return api.game.TurnNumber()
 
 # GameOver reports whether the game has ended.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GameOver on api: reference LearnerAPI bool
     return api.game.Phase() equals enums.ENDED
 
 # Actions returns the typed list of actions available to you right now
 # (MoveAction, AttackAction, DeployAction, EndTurnAction).
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Actions on api: reference LearnerAPI list of gamepkg.ActionResponse
     return api.api.Actions()
 
 # TokenPosition returns the board position of one of your tokens.
 # Returns (-1, -1) if the token does not exist.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func TokenPosition on api: reference LearnerAPI(tokenId: int) types.Position
     tRef := api.game.GetToken(types.TokenID(tokenId))
     if tRef is empty
@@ -108,6 +121,7 @@ func TokenPosition on api: reference LearnerAPI(tokenId: int) types.Position
     return tRef.Position()
 
 # MyTokens returns the ids of all your deployed, alive tokens.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func MyTokens on api: reference LearnerAPI list of int
     result := empty list of int
     tokens := api.game.GetPlayerTokens(api.playerId)
@@ -117,28 +131,34 @@ func MyTokens on api: reference LearnerAPI list of int
 
 # Place deploys a token of the given health (10, 8, 6, or 4) from your
 # reserve onto your deployment corner at (x, y). Valid during MOVEMENT.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Place on api: reference LearnerAPI(health: int, x: int, y: int) gamepkg.ActionResult
     return api.narrate(api.api.Deploy(health, x, y))
 
 # Move moves your token to (x, y). Valid during MOVEMENT.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Move on api: reference LearnerAPI(tokenId: int, x: int, y: int) gamepkg.ActionResult
     return api.narrate(api.api.Move(types.TokenID(tokenId), x, y))
 
 # Attack hits the defender token with your attacker token. Valid during ACTION.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Attack on api: reference LearnerAPI(attackerId: int, defenderId: int) gamepkg.ActionResult
     return api.narrate(api.api.Attack(types.TokenID(attackerId), types.TokenID(defenderId)))
 
 # Done ends your turn (generators and crystal are checked at this point).
 # You do not need to call it: the simulation ends your turn automatically
 # when your PlayTurn function returns.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Done on api: reference LearnerAPI gamepkg.ActionResult
     return api.narrate(api.api.EndTurn())
 
 # Memo remembers a value for you across turns (like a small notebook).
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Memo on api: reference LearnerAPI(key: string, value: string)
     api.memo[key] = value
 
 # Recall reads back a value you remembered with Memo.
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Recall on api: reference LearnerAPI(key: string) string
     return api.memo[key]
 

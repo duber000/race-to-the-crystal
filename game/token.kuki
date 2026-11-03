@@ -38,24 +38,31 @@ func movementRange on t: reference Token int
         return 2
     return 1
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Position on t: reference Token types.Position
     return t.position
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ID on t: reference Token types.TokenID
     return t.id
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func PlayerID on t: reference Token types.PlayerID
     return t.playerId
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Health on t: reference Token int
     return t.health
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func MaxHealth on t: reference Token int
     return t.maxHealth
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func IsAlive on t: reference Token bool
     return t.isAlive
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func IsDeployed on t: reference Token bool
     return t.isDeployed
 
