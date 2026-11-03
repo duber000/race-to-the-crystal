@@ -335,3 +335,35 @@ func TestTypedToolFailures(t *testing.T) {
 		test.AssertTrue(t, strings.Contains(result.Text, "missing path"))
 	})
 }
+
+// --- TestZeroValueHandlesReturnError ---
+func TestZeroValueHandlesReturnError(t *testing.T) {
+	bg := context.Background()
+	check := func(label string, err error) {
+		t.Run(label, func(t *testing.T) {
+			test.AssertError(t, err)
+			test.AssertContains(t, err.Error(), "not initialized")
+		})
+	}
+	var zeroClient mcppkg.Client
+	client := &zeroClient
+	_, err := client.ConnectWith(bg, "http://127.0.0.1:1", nil)
+	check("Client.ConnectWith", err)
+	var zeroSession mcppkg.ClientSession
+	session := &zeroSession
+	check("Close", mcppkg.Close(session))
+	_, err = mcppkg.ListTools(bg, session)
+	check("ListTools", err)
+	_, err = mcppkg.CallTool(bg, session, "t", map[string]any{})
+	check("CallTool", err)
+	_, err = mcppkg.ListResources(bg, session)
+	check("ListResources", err)
+	_, err = mcppkg.ListResourceTemplates(bg, session)
+	check("ListResourceTemplates", err)
+	_, err = mcppkg.ReadResource(bg, session, "file:///x")
+	check("ReadResource", err)
+	_, err = mcppkg.ListPrompts(bg, session)
+	check("ListPrompts", err)
+	_, err = mcppkg.GetPrompt(bg, session, "p", map[string]string{})
+	check("GetPrompt", err)
+}

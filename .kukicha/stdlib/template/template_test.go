@@ -77,3 +77,15 @@ func TestCompileParseError(t *testing.T) {
 	_, err := template.Compile("bad", `{{`)
 	test.AssertError(t, err)
 }
+
+// --- TestZeroValueTemplatesReturnError ---
+func TestZeroValueTemplatesReturnError(t *testing.T) {
+	tmpl := template.Template{}
+	_, err := tmpl.Render(nil)
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "not initialized")
+	htmlTmpl := template.HTMLTemplate{}
+	_, err = htmlTmpl.Render(nil)
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "not initialized")
+}

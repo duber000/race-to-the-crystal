@@ -21,19 +21,27 @@ package template
 
 import (
 	"bytes"
+	"errors"
 	htmltmpl "html/template"
 	texttmpl "text/template"
 )
 
+// errUninitializedTemplate is returned by Render on a zero-value Template{}
+// or HTMLTemplate{} — composes with onerr instead of nil-panicking.
+var errUninitializedTemplate = errors.New("template: template is not initialized")
+
 // Template is a parsed text/template ready for repeated rendering.
 // Construct with template.Compile(name, src). Method: Render(data).
+// A zero-value Template{} is uninitialized: Render returns
+// errUninitializedTemplate.
 type Template struct {
 	inner *texttmpl.Template
 }
 
 // HTMLTemplate is a parsed html/template — values substituted via {{ }} are
 // auto-escaped to prevent XSS. Construct with template.CompileHTML(name, src).
-// Method: Render(data).
+// Method: Render(data). A zero-value HTMLTemplate{} is uninitialized:
+// Render returns errUninitializedTemplate.
 type HTMLTemplate struct {
 	inner *htmltmpl.Template
 }
@@ -98,8 +106,12 @@ func CompileHTML(name string, src string) (HTMLTemplate, error) {
 // Render executes the parsed template with data and returns the rendered string.
 // Example: out := tmpl.Render(data) onerr return
 func (t Template) Render(data any) (string, error) {
+	inner := t.inner
+	if inner == nil {
+		return "", errUninitializedTemplate
+	}
 	buf := bytes.Buffer{}
-	err := t.inner.Execute(&buf, data)
+	err := inner.Execute(&buf, data)
 	if err != nil {
 		return "", err
 	}
@@ -110,8 +122,12 @@ func (t Template) Render(data any) (string, error) {
 // string. {{ }} values are auto-escaped.
 // Example: out := page.Render(data)
 func (t HTMLTemplate) Render(data any) (string, error) {
+	inner := t.inner
+	if inner == nil {
+		return "", errUninitializedTemplate
+	}
 	buf := bytes.Buffer{}
-	err := t.inner.Execute(&buf, data)
+	err := inner.Execute(&buf, data)
 	if err != nil {
 		return "", err
 	}

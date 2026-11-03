@@ -9,6 +9,7 @@ import (
 	"fmt"
 	_ "github.com/ncruces/go-sqlite3/driver"
 	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
+	"kukicha.org/kukicha/stdlib/datetime"
 	"kukicha.org/kukicha/stdlib/db"
 	"kukicha.org/kukicha/stdlib/test"
 	"testing"
@@ -630,4 +631,255 @@ func TestScanAcronymFields(t *testing.T) {
 	test.AssertEqual(t, row.SourceURL, "https://example.com")
 	test.AssertEqual(t, row.APIKey, "k-1")
 	test.AssertEqual(t, row.PlainText, "note")
+}
+
+// Regression: zero-value db.Pool / db.Row / db.Rows / db.Tx (such as a test
+// serverDeps{cfg: cfg} omitting pool) must return a clean error that composes
+// with onerr instead of nil-deref panicking.
+func TestZeroValueHandlesReturnError(t *testing.T) {
+	zeroPool := db.Pool{}
+	zeroRow := db.Row{}
+	zeroRows := db.Rows{}
+	zeroTx := db.Tx{}
+	h := ctxpkg.Background()
+	_, qErr := db.Query(zeroPool, "SELECT 1")
+	test.AssertError(t, qErr)
+	_, qCtxErr := db.QueryCtx(h, zeroPool, "SELECT 1")
+	test.AssertError(t, qCtxErr)
+	_, sRowErr := db.ScanRow[User](db.QueryRow(zeroPool, "SELECT 1"))
+	test.AssertError(t, sRowErr)
+	_, sZeroRowErr := db.ScanRow[User](zeroRow)
+	test.AssertError(t, sZeroRowErr)
+	_, sAllErr := db.ScanAll[User](zeroRows)
+	test.AssertError(t, sAllErr)
+	_, sOneErr := db.ScanOne[User](zeroRows)
+	test.AssertError(t, sOneErr)
+	_, eErr := db.Exec(zeroPool, "DELETE FROM users")
+	test.AssertError(t, eErr)
+	_, eCtxErr := db.ExecCtx(h, zeroPool, "DELETE FROM users")
+	test.AssertError(t, eCtxErr)
+	_, idErr := db.LastInsertId(zeroPool, "INSERT INTO users (name) VALUES (?)", "x")
+	test.AssertError(t, idErr)
+	_, cErr := db.Count(zeroPool, "SELECT COUNT(*) FROM users")
+	test.AssertError(t, cErr)
+	_, exErr := db.Exists(zeroPool, "SELECT 1 FROM users")
+	test.AssertError(t, exErr)
+	pErr := db.Ping(zeroPool)
+	test.AssertError(t, pErr)
+	clErr := db.Close(zeroPool)
+	test.AssertError(t, clErr)
+	crErr := db.CloseRows(zeroRows)
+	test.AssertError(t, crErr)
+	txErr := db.Transaction(zeroPool, func(_tx db.Tx) error {
+		return nil
+	})
+	test.AssertError(t, txErr)
+	txWithErr := db.TransactionWith(zeroPool, db.TxOptions{}, func(_tx db.Tx) error {
+		return nil
+	})
+	test.AssertError(t, txWithErr)
+	_, txQErr := db.TxQuery(zeroTx, "SELECT 1")
+	test.AssertError(t, txQErr)
+	_, txQRowErr := db.ScanRow[User](db.TxQueryRow(zeroTx, "SELECT 1"))
+	test.AssertError(t, txQRowErr)
+	_, txEErr := db.TxExec(zeroTx, "DELETE FROM users")
+	test.AssertError(t, txEErr)
+}
+
+type UserRole string
+
+func TestScalarScanning(t *testing.T) {
+	pool := setupTestDB(t)
+	defer db.Close(pool)
+	// pipe step 1: db.Query(...)
+	pipe_84, err_85 := db.Query(pool, "SELECT COUNT(*) FROM users")
+	if err_85 != nil {
+		panic(fmt.Sprintf("scan count int: %v", err_85))
+	}
+	// pipe step 2: db.ScanOne(...)
+	countInt, err_87 := db.ScanOne[int](pipe_84)
+	if err_87 != nil {
+		panic(fmt.Sprintf("scan count int: %v", err_87))
+	}
+	test.AssertEqual(t, countInt, 3)
+	// pipe step 1: db.Query(...)
+	pipe_88, err_89 := db.Query(pool, "SELECT COUNT(*) FROM users WHERE id > ?", 1)
+	if err_89 != nil {
+		panic(fmt.Sprintf("scan count int64: %v", err_89))
+	}
+	// pipe step 2: db.ScanOne(...)
+	countInt64, err_91 := db.ScanOne[int64](pipe_88)
+	if err_91 != nil {
+		panic(fmt.Sprintf("scan count int64: %v", err_91))
+	}
+	test.AssertEqual(t, countInt64, int64(2))
+	// pipe step 1: db.Query(...)
+	pipe_92, err_93 := db.Query(pool, "SELECT name FROM users WHERE id = 1")
+	if err_93 != nil {
+		panic(fmt.Sprintf("scan name: %v", err_93))
+	}
+	// pipe step 2: db.ScanOne(...)
+	oneName, err_95 := db.ScanOne[string](pipe_92)
+	if err_95 != nil {
+		panic(fmt.Sprintf("scan name: %v", err_95))
+	}
+	test.AssertEqual(t, oneName, "Alice")
+	// pipe step 1: db.Query(...)
+	pipe_96, err_97 := db.Query(pool, "SELECT 1 FROM users WHERE id = 1")
+	if err_97 != nil {
+		panic(fmt.Sprintf("scan bool: %v", err_97))
+	}
+	// pipe step 2: db.ScanOne(...)
+	oneBool, err_99 := db.ScanOne[bool](pipe_96)
+	if err_99 != nil {
+		panic(fmt.Sprintf("scan bool: %v", err_99))
+	}
+	test.AssertEqual(t, oneBool, true)
+	// pipe step 1: db.Query(...)
+	pipe_100, err_101 := db.Query(pool, "SELECT name FROM users WHERE id = 2")
+	if err_101 != nil {
+		panic(fmt.Sprintf("scan defined string: %v", err_101))
+	}
+	// pipe step 2: db.ScanOne(...)
+	oneRole, err_103 := db.ScanOne[UserRole](pipe_100)
+	if err_103 != nil {
+		panic(fmt.Sprintf("scan defined string: %v", err_103))
+	}
+	test.AssertEqual(t, oneRole, UserRole("Bob"))
+	// pipe step 1: db.ScanRow(...)
+	rowCount, err_105 := db.ScanRow[int](db.QueryRow(pool, "SELECT COUNT(*) FROM users"))
+	if err_105 != nil {
+		panic(fmt.Sprintf("scan row count: %v", err_105))
+	}
+	test.AssertEqual(t, rowCount, 3)
+	// pipe step 1: db.ScanRow(...)
+	rowName, err_107 := db.ScanRow[string](db.QueryRow(pool, "SELECT name FROM users WHERE id = 3"))
+	if err_107 != nil {
+		panic(fmt.Sprintf("scan row name: %v", err_107))
+	}
+	test.AssertEqual(t, rowName, "Charlie")
+	// pipe step 1: db.Query(...)
+	pipe_108, err_109 := db.Query(pool, "SELECT name FROM users ORDER BY id")
+	if err_109 != nil {
+		panic(fmt.Sprintf("scan all names: %v", err_109))
+	}
+	// pipe step 2: db.ScanAll(...)
+	names, err_111 := db.ScanAll[string](pipe_108)
+	if err_111 != nil {
+		panic(fmt.Sprintf("scan all names: %v", err_111))
+	}
+	test.AssertEqual(t, len(names), 3)
+	test.AssertEqual(t, names[0], "Alice")
+	test.AssertEqual(t, names[1], "Bob")
+	test.AssertEqual(t, names[2], "Charlie")
+	// pipe step 1: db.Query(...)
+	pipe_112, err_113 := db.Query(pool, "SELECT id FROM users ORDER BY id")
+	if err_113 != nil {
+		panic(fmt.Sprintf("scan all ids: %v", err_113))
+	}
+	// pipe step 2: db.ScanAll(...)
+	ids, err_115 := db.ScanAll[int](pipe_112)
+	if err_115 != nil {
+		panic(fmt.Sprintf("scan all ids: %v", err_115))
+	}
+	test.AssertEqual(t, len(ids), 3)
+	test.AssertEqual(t, ids[0], 1)
+	test.AssertEqual(t, ids[1], 2)
+	test.AssertEqual(t, ids[2], 3)
+	_, multiOneErr := db.ScanOne[int](func() db.Rows { val, _ := db.Query(pool, "SELECT id, name FROM users WHERE id = 1"); return val }())
+	test.AssertError(t, multiOneErr)
+	_, multiAllErr := db.ScanAll[string](func() db.Rows { val, _ := db.Query(pool, "SELECT id, name FROM users"); return val }())
+	test.AssertError(t, multiAllErr)
+}
+
+// --- TestOptionalAndTimeFieldScanning ---
+type OptionalProfile struct {
+	Id        int64          `json:"id"`
+	Bio       *string        `json:"bio"`
+	Age       *int           `json:"age"`
+	CreatedAt *datetime.Time `json:"created_at"`
+	SeenAt    datetime.Time  `json:"seen_at"`
+}
+
+func TestOptionalAndTimeFieldScanning(t *testing.T) {
+	pool, err_116 := db.Open("sqlite3", ":memory:")
+	if err_116 != nil {
+		panic(fmt.Sprintf("open: %v", err_116))
+	}
+	defer db.Close(pool)
+	_, err_117 := db.Exec(pool, "CREATE TABLE profiles (id INTEGER PRIMARY KEY, bio TEXT, age INTEGER, created_at TEXT, seen_at INTEGER)")
+	if err_117 != nil {
+		panic(fmt.Sprintf("create: %v", err_117))
+	}
+	_, err_118 := db.Exec(pool, "INSERT INTO profiles (id, bio, age, created_at, seen_at) VALUES (?, ?, ?, ?, ?)", 1, "hello", 42, "2026-11-01T12:00:00Z", 1700000000)
+	if err_118 != nil {
+		panic(fmt.Sprintf("insert 1: %v", err_118))
+	}
+	_, err_119 := db.Exec(pool, "INSERT INTO profiles (id, bio, age, created_at, seen_at) VALUES (?, ?, ?, ?, ?)", 2, nil, nil, "2026-11-01 13:30:00", nil)
+	if err_119 != nil {
+		panic(fmt.Sprintf("insert 2: %v", err_119))
+	}
+	// pipe step 1: db.Query(...)
+	pipe_120, err_121 := db.Query(pool, "SELECT id, bio, age, created_at, seen_at FROM profiles ORDER BY id")
+	if err_121 != nil {
+		panic(fmt.Sprintf("scan all: %v", err_121))
+	}
+	// pipe step 2: db.ScanAll(...)
+	profiles, err_123 := db.ScanAll[OptionalProfile](pipe_120)
+	if err_123 != nil {
+		panic(fmt.Sprintf("scan all: %v", err_123))
+	}
+	test.AssertEqual(t, len(profiles), 2)
+	bio := profiles[0].Bio
+	test.AssertTrue(t, bio != nil)
+	if bio != nil {
+		test.AssertEqual(t, *bio, "hello")
+	}
+	age := profiles[0].Age
+	test.AssertTrue(t, age != nil)
+	if age != nil {
+		test.AssertEqual(t, *age, 42)
+	}
+	created := profiles[0].CreatedAt
+	test.AssertTrue(t, created != nil)
+	if created != nil {
+		c := *created
+		test.AssertEqual(t, c.Year(), 2026)
+		test.AssertEqual(t, c.Hour(), 12)
+	}
+	test.AssertEqual(t, profiles[0].SeenAt.Unix(), int64(1700000000))
+	test.AssertTrue(t, profiles[1].Bio == nil)
+	test.AssertTrue(t, profiles[1].Age == nil)
+	created2 := profiles[1].CreatedAt
+	test.AssertTrue(t, created2 != nil)
+	if created2 != nil {
+		test.AssertEqual(t, (*created2).Hour(), 13)
+	}
+	test.AssertTrue(t, profiles[1].SeenAt.IsZero())
+	// pipe step 1: db.Query(...)
+	pipe_124, err_125 := db.Query(pool, "SELECT id, bio, age, created_at, seen_at FROM profiles WHERE id = 1")
+	if err_125 != nil {
+		panic(fmt.Sprintf("scan one: %v", err_125))
+	}
+	// pipe step 2: db.ScanOne(...)
+	one, err_127 := db.ScanOne[OptionalProfile](pipe_124)
+	if err_127 != nil {
+		panic(fmt.Sprintf("scan one: %v", err_127))
+	}
+	test.AssertTrue(t, one.Bio != nil)
+	if one.Bio != nil {
+		test.AssertEqual(t, *one.Bio, "hello")
+	}
+	test.AssertEqual(t, one.SeenAt.Unix(), int64(1700000000))
+	row := db.QueryRow(pool, "SELECT id, bio, age, created_at, seen_at FROM profiles WHERE id = 2")
+	r2, err_128 := db.ScanRow[OptionalProfile](row)
+	if err_128 != nil {
+		panic(fmt.Sprintf("scan row: %v", err_128))
+	}
+	test.AssertTrue(t, r2.Bio == nil)
+	test.AssertTrue(t, r2.CreatedAt != nil)
+	if r2.CreatedAt != nil {
+		test.AssertEqual(t, (*r2.CreatedAt).Hour(), 13)
+	}
+	test.AssertTrue(t, r2.SeenAt.IsZero())
 }

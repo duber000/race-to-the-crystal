@@ -31,10 +31,16 @@ import (
 // under the root. Use `url.CleanPath` and trusted root selection for
 // defense-in-depth.
 // After Close, methods return errors; a second Close also returns an error.
+// A zero-value Root{} (never opened with New) is uninitialized: fallible
+// methods return errUninitializedRoot, and Exists/IsDir/IsFile return false.
 type Root struct {
 	root *os.Root
 	Path string
 }
+
+// errUninitializedRoot is returned by Root methods called on a zero-value
+// Root{} — composes with onerr instead of nil-panicking.
+var errUninitializedRoot = errors.New("sandbox: root is not initialized")
 
 // New creates a new sandboxed Root at the given directory path.
 // The root path must be trusted and non-request-derived; a request-derived
@@ -55,12 +61,20 @@ func New(path string) (Root, error) {
 // subsequent method calls return errors; calling Close again also returns
 // an error.
 func (r Root) Close() error {
-	return r.root.Close()
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
+	return root.Close()
 }
 
 // Read reads the entire contents of a file within the sandbox as bytes.
 func (r Root) Read(path string) ([]byte, error) {
-	data, err_2 := r.root.ReadFile(path)
+	root := r.root
+	if root == nil {
+		return nil, errUninitializedRoot
+	}
+	data, err_2 := root.ReadFile(path)
 	if err_2 != nil {
 		err_2 = fmt.Errorf("sandbox read: %w", err_2)
 		return []byte{}, err_2
@@ -96,7 +110,11 @@ func (r Root) ReadStringOr(path string, defaultValue string) (string, error) {
 
 // WriteString writes a string to a file within the sandbox, creating it if needed.
 func (r Root) WriteString(data string, path string) error {
-	err_4 := r.root.WriteFile(path, []byte(data), 0o644)
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
+	err_4 := root.WriteFile(path, []byte(data), 0o644)
 	if err_4 != nil {
 		err_4 = fmt.Errorf("sandbox write: %w", err_4)
 		return err_4
@@ -107,12 +125,16 @@ func (r Root) WriteString(data string, path string) error {
 // WriteJSON marshals data to JSON and writes it to a file within the sandbox.
 // Example: box.WriteJSON(cfg, "config.json") onerr return
 func (r Root) WriteJSON(data any, path string) error {
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
 	jsonData, err_5 := json.PrettyBytes(data)
 	if err_5 != nil {
 		err_5 = fmt.Errorf("sandbox write json: %w", err_5)
 		return err_5
 	}
-	err_6 := r.root.WriteFile(path, jsonData, 0o644)
+	err_6 := root.WriteFile(path, jsonData, 0o644)
 	if err_6 != nil {
 		err_6 = fmt.Errorf("sandbox write: %w", err_6)
 		return err_6
@@ -136,7 +158,11 @@ func (r Root) ReadJSON[T any](path string) (T, error) {
 // needed. Unlike WriteJSON, this does NOT marshal the data — the bytes are
 // written exactly as given (images, archives, pre-encoded content).
 func (r Root) WriteBytes(data []byte, path string) error {
-	err_8 := r.root.WriteFile(path, data, 0o644)
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
+	err_8 := root.WriteFile(path, data, 0o644)
 	if err_8 != nil {
 		err_8 = fmt.Errorf("sandbox write: %w", err_8)
 		return err_8
@@ -149,8 +175,12 @@ func (r Root) WriteBytes(data []byte, path string) error {
 // Use "." for the entire sandbox tree.
 // Example: files := box.ListRecursive("assets/") onerr return
 func (r Root) ListRecursive(path string) ([]string, error) {
+	root := r.root
+	if root == nil {
+		return nil, errUninitializedRoot
+	}
 	result := []string{}
-	walkErr := fs.WalkDir(r.root.FS(), path, func(p string, d fs.DirEntry, err error) error {
+	walkErr := fs.WalkDir(root.FS(), path, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -167,7 +197,11 @@ func (r Root) ListRecursive(path string) ([]string, error) {
 
 // AppendString appends a string to a file within the sandbox, creating it if needed.
 func (r Root) AppendString(data string, path string) error {
-	f, err_9 := r.root.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
+	f, err_9 := root.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err_9 != nil {
 		err_9 = fmt.Errorf("sandbox append: %w", err_9)
 		return err_9
@@ -184,13 +218,17 @@ func (r Root) AppendString(data string, path string) error {
 // AppendJSON marshals data to JSON and appends it (with newline) to a file
 // within the sandbox — JSONL append log records.
 func (r Root) AppendJSON(data any, path string) error {
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
 	jsonData, err_11 := json.Bytes(data)
 	if err_11 != nil {
 		err_11 = fmt.Errorf("sandbox append json: %w", err_11)
 		return err_11
 	}
 	jsonData = append(jsonData, '\n')
-	f, err_12 := r.root.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	f, err_12 := root.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err_12 != nil {
 		err_12 = fmt.Errorf("sandbox append: %w", err_12)
 		return err_12
@@ -206,7 +244,11 @@ func (r Root) AppendJSON(data any, path string) error {
 
 // MkDir creates a directory within the sandbox.
 func (r Root) MkDir(path string) error {
-	err_14 := r.root.Mkdir(path, 0o755)
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
+	err_14 := root.Mkdir(path, 0o755)
 	if err_14 != nil {
 		err_14 = fmt.Errorf("sandbox mkdir: %w", err_14)
 		return err_14
@@ -216,7 +258,11 @@ func (r Root) MkDir(path string) error {
 
 // MkDirAll creates a directory and all necessary parents within the sandbox.
 func (r Root) MkDirAll(path string) error {
-	err_15 := r.root.MkdirAll(path, 0o755)
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
+	err_15 := root.MkdirAll(path, 0o755)
 	if err_15 != nil {
 		err_15 = fmt.Errorf("sandbox mkdirall: %w", err_15)
 		return err_15
@@ -226,7 +272,11 @@ func (r Root) MkDirAll(path string) error {
 
 // List returns the names of files and directories within a directory in the sandbox.
 func (r Root) List(path string) ([]string, error) {
-	f, err_16 := r.root.Open(path)
+	root := r.root
+	if root == nil {
+		return nil, errUninitializedRoot
+	}
+	f, err_16 := root.Open(path)
 	if err_16 != nil {
 		err_16 = fmt.Errorf("sandbox list: %w", err_16)
 		return []string{}, err_16
@@ -246,13 +296,13 @@ func (r Root) List(path string) ([]string, error) {
 
 // Exists checks if a file or directory exists within the sandbox.
 func (r Root) Exists(path string) bool {
-	_, err := r.root.Stat(path)
+	_, err := r.Stat(path)
 	return err == nil
 }
 
 // IsDir checks if a path is a directory within the sandbox.
 func (r Root) IsDir(path string) bool {
-	info, err_18 := r.root.Stat(path)
+	info, err_18 := r.Stat(path)
 	if err_18 != nil {
 		return false
 	}
@@ -261,7 +311,7 @@ func (r Root) IsDir(path string) bool {
 
 // IsFile checks if a path is a regular file within the sandbox.
 func (r Root) IsFile(path string) bool {
-	info, err_19 := r.root.Stat(path)
+	info, err_19 := r.Stat(path)
 	if err_19 != nil {
 		return false
 	}
@@ -270,7 +320,11 @@ func (r Root) IsFile(path string) bool {
 
 // Stat returns file info for a path within the sandbox.
 func (r Root) Stat(path string) (os.FileInfo, error) {
-	info, err_20 := r.root.Stat(path)
+	root := r.root
+	if root == nil {
+		return nil, errUninitializedRoot
+	}
+	info, err_20 := root.Stat(path)
 	if err_20 != nil {
 		err_20 = fmt.Errorf("sandbox stat: %w", err_20)
 		return nil, err_20
@@ -280,7 +334,11 @@ func (r Root) Stat(path string) (os.FileInfo, error) {
 
 // Delete removes a file or empty directory within the sandbox.
 func (r Root) Delete(path string) error {
-	err_21 := r.root.Remove(path)
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
+	err_21 := root.Remove(path)
 	if err_21 != nil {
 		err_21 = fmt.Errorf("sandbox delete: %w", err_21)
 		return err_21
@@ -290,7 +348,11 @@ func (r Root) Delete(path string) error {
 
 // DeleteAll removes a file or directory tree within the sandbox.
 func (r Root) DeleteAll(path string) error {
-	err_22 := r.root.RemoveAll(path)
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
+	err_22 := root.RemoveAll(path)
 	if err_22 != nil {
 		err_22 = fmt.Errorf("sandbox deleteall: %w", err_22)
 		return err_22
@@ -300,7 +362,11 @@ func (r Root) DeleteAll(path string) error {
 
 // Move renames (moves) a file or directory within the sandbox.
 func (r Root) Move(src string, dst string) error {
-	err_23 := r.root.Rename(src, dst)
+	root := r.root
+	if root == nil {
+		return errUninitializedRoot
+	}
+	err_23 := root.Rename(src, dst)
 	if err_23 != nil {
 		err_23 = fmt.Errorf("sandbox move: %w", err_23)
 		return err_23
@@ -309,6 +375,10 @@ func (r Root) Move(src string, dst string) error {
 }
 
 // FS returns an fs.FS scoped to the sandbox root for use with Go stdlib.
+// A zero-value Root{} yields an empty (nil) fs.FS.
 func (r Root) FS() fs.FS {
+	if r.root == nil {
+		return nil
+	}
 	return r.root.FS()
 }

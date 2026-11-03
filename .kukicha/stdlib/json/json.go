@@ -65,6 +65,9 @@ func WithPrefix(enc Encoder, prefix string) Encoder {
 // Uses jsonv2.MarshalWrite for direct io.Writer support
 // Example: response |> json.NewEncoder() |> json.Encode(todo) onerr return
 func Encode(enc Encoder, value any) error {
+	if enc.writer == nil {
+		return kukierrors.New("json.Encode: encoder writer is not initialized")
+	}
 	ok, data, cerr := marshalWithCaptured(value)
 	if ok {
 		if cerr != nil {
@@ -103,6 +106,9 @@ func Encode(enc Encoder, value any) error {
 // Returns a Decoder for reading JSON from a stream
 // Example: request.Body |> json.NewDecoder() |> json.Decode(reference of result)
 func NewDecoder(reader io.Reader) Decoder {
+	if reader == nil {
+		return Decoder{reader: nil, jsond: nil}
+	}
 	dec := Decoder{reader: reader, jsond: jsontext.NewDecoder(reader)}
 	return dec
 }
@@ -111,10 +117,25 @@ func NewDecoder(reader io.Reader) Decoder {
 // Target must be a pointer (use "reference of" in Kukicha).
 // Supports `as ",unknown"` capture fields and multi-document/NDJSON streams.
 // Example: body |> json.NewDecoder() |> json.Decode(reference of todo) onerr return
-func Decode(dec Decoder, target any) error {
+// activeDecoder returns the decoder's live jsontext.Decoder, lazily building
+// one from reader. A zero-value Decoder{} (no jsond, no reader) yields an
+// error instead of nil-panicking inside jsontext.NewDecoder(nil).
+func activeDecoder(dec Decoder) (*jsontext.Decoder, error) {
 	jsond := dec.jsond
-	if jsond == nil {
-		jsond = jsontext.NewDecoder(dec.reader)
+	if jsond != nil {
+		return jsond, nil
+	}
+	reader := dec.reader
+	if reader == nil {
+		return nil, kukierrors.New("json.Decode: decoder is not initialized")
+	}
+	return jsontext.NewDecoder(reader), nil
+}
+
+func Decode(dec Decoder, target any) error {
+	jsond, err := activeDecoder(dec)
+	if err != nil {
+		return err
 	}
 	if hasUnknownCaptureTarget(target) {
 		raw, err_2 := jsond.ReadValue()

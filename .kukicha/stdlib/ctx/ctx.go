@@ -20,10 +20,32 @@ import (
 
 // Handle bundles a context with its cancel function so callers can treat
 // the (ctx, cancel) pair as one value. Access the wrapped context via
-// h.Ctx and release resources via h.Cancel().
+// h.Ctx and release resources via h.Cancel() (or the safe ctx.Cancel func).
+// A zero-value Handle{} behaves like Background(): child contexts derive
+// from context.Background() instead of panicking on a nil parent, and
+// ctx.Cancel is a no-op.
 type Handle struct {
 	Ctx    context.Context
 	Cancel func()
+}
+
+// baseCtx returns the handle's context, falling back to
+// context.Background() for a zero-value Handle{} so child contexts never
+// panic with "cannot create context from nil parent".
+func baseCtx(h Handle) context.Context {
+	if h.Ctx == nil {
+		return context.Background()
+	}
+	return h.Ctx
+}
+
+// Cancel releases the handle's resources. It is a safe no-op on a
+// zero-value Handle{} (or any handle with an empty Cancel), so callers
+// can always `defer ctx.Cancel(h)` without a nil check.
+func Cancel(h Handle) {
+	if h.Cancel != nil {
+		h.Cancel()
+	}
 }
 
 // noop is Background's no-op cancel so callers can always `defer h.Cancel()`
@@ -41,6 +63,9 @@ func Background() Handle {
 // needs to pass it to a function that accepts a Handle — the caller still
 // owns cancellation of the original context.
 func FromContext(c context.Context) Handle {
+	if c == nil {
+		c = context.Background()
+	}
 	return Handle{Ctx: c, Cancel: noop}
 }
 
@@ -49,14 +74,14 @@ func FromContext(c context.Context) Handle {
 // Pipe form: parent |> ctx.WithTimeout(5 * time.Second)
 // Example: h := ctx.WithTimeout(ctx.Background(), 5 * time.Second)
 func WithTimeout(parent Handle, timeout time.Duration) Handle {
-	child, cancel := context.WithTimeout(parent.Ctx, timeout)
+	child, cancel := context.WithTimeout(baseCtx(parent), timeout)
 	return Handle{Ctx: child, Cancel: cancel}
 }
 
 // WithDeadline creates a child context that auto-cancels at the given time.
 // Always call h.Cancel() when done to avoid resource leaks.
 func WithDeadline(parent Handle, deadline time.Time) Handle {
-	child, cancel := context.WithDeadline(parent.Ctx, deadline)
+	child, cancel := context.WithDeadline(baseCtx(parent), deadline)
 	return Handle{Ctx: child, Cancel: cancel}
 }
 
@@ -65,7 +90,7 @@ func WithDeadline(parent Handle, deadline time.Time) Handle {
 // Pipe form: parent |> ctx.WithCancel()
 // Example: h := ctx.WithCancel(parent)
 func WithCancel(parent Handle) Handle {
-	child, cancel := context.WithCancel(parent.Ctx)
+	child, cancel := context.WithCancel(baseCtx(parent))
 	return Handle{Ctx: child, Cancel: cancel}
 }
 
@@ -76,7 +101,7 @@ func WithCancel(parent Handle) Handle {
 // Pipe form: parent |> ctx.WithValue(userIDKey{}, id)
 // Example: h := ctx.WithValue(parent, userIDKey{}, id)
 func WithValue(parent Handle, key any, value any) Handle {
-	child := context.WithValue(parent.Ctx, key, value)
+	child := context.WithValue(baseCtx(parent), key, value)
 	return Handle{Ctx: child, Cancel: noop}
 }
 
@@ -85,5 +110,5 @@ func WithValue(parent Handle, key any, value any) Handle {
 // passed to WithValue. The result is `any` — narrow it with `is` at the
 // call site.
 func GetValue(h Handle, key any) any {
-	return h.Ctx.Value(key)
+	return baseCtx(h).Value(key)
 }

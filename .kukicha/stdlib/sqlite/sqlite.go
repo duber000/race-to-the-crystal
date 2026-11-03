@@ -109,20 +109,26 @@ func OpenWithExtensions(path string, pragmas map[string]string, registrars ...Re
 	return OpenWith(path, pragmas)
 }
 
+// rawPool returns the pool's underlying *sql.DB for operations that need raw
+// access (backup, introspection loops, function registration). Unlike
+// db.RawDB — which panics on a zero-value db.Pool{} because its signature is
+// infallible — it returns db's "not initialized" error instead, so every
+// fallible function composes with onerr.
+func rawPool(pool db.Pool) (*sql.DB, error) {
+	err := db.Ping(pool)
+	if err != nil {
+		return nil, err
+	}
+	return db.RawDB(pool), nil
+}
+
 // Pragma returns the current value of a SQLite pragma.
 // Example: mode := sqlite.Pragma(pool, "journal_mode") onerr panic "{error}"
 func Pragma(pool db.Pool, name string) (string, error) {
 	if !isValidPragmaName(name) {
 		return "", fmt.Errorf("sqlite.Pragma: invalid pragma name: %v", name)
 	}
-	rawDB := db.RawDB(pool)
-	row := rawDB.QueryRow(fmt.Sprintf("PRAGMA %v", name))
-	value := ""
-	err_2 := row.Scan(&value)
-	if err_2 != nil {
-		return "", err_2
-	}
-	return value, nil
+	return db.ScanRow[string](db.QueryRow(pool, fmt.Sprintf("PRAGMA %v", name)))
 }
 
 // SetPragma sets a SQLite pragma value.
@@ -134,16 +140,16 @@ func SetPragma(pool db.Pool, name string, value string) error {
 	if !isValidPragmaValue(value) {
 		return fmt.Errorf("sqlite.SetPragma: invalid pragma value: %v", value)
 	}
-	db.RawDB(pool).Exec(fmt.Sprintf("PRAGMA %v = %v", name, value))
-	return nil
+	_, err := db.Exec(pool, fmt.Sprintf("PRAGMA %v = %v", name, value))
+	return err
 }
 
 // PragmaInt returns the current value of a SQLite pragma as an integer.
 // Example: size := sqlite.PragmaInt(pool, "cache_size") onerr panic "{error}"
 func PragmaInt(pool db.Pool, name string) (int, error) {
-	val, err_3 := Pragma(pool, name)
-	if err_3 != nil {
-		return 0, err_3
+	val, err := Pragma(pool, name)
+	if err != nil {
+		return 0, err
 	}
 	result, err := cast.ToInt(val)
 	if err != nil {
@@ -161,9 +167,9 @@ func SetPragmaInt(pool db.Pool, name string, value int) error {
 // PragmaBool returns the current value of a SQLite pragma as a boolean.
 // Example: on := sqlite.PragmaBool(pool, "foreign_keys") onerr panic "{error}"
 func PragmaBool(pool db.Pool, name string) (bool, error) {
-	val, err_4 := Pragma(pool, name)
-	if err_4 != nil {
-		return false, err_4
+	val, err := Pragma(pool, name)
+	if err != nil {
+		return false, err
 	}
 	if val == "1" || val == "ON" || val == "on" || val == "true" {
 		return true, nil
@@ -187,26 +193,17 @@ func SetPragmaBool(pool db.Pool, name string, value bool) error {
 // Excludes internal SQLite tables (sqlite_*).
 // Example: tables := sqlite.Tables(pool) onerr panic "{error}"
 func Tables(pool db.Pool) ([]string, error) {
-	rawDB := db.RawDB(pool)
-	rows, err_5 := rawDB.Query("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+	// pipe step 1: db.Query(...)
+	pipe_2, err_3 := db.Query(pool, "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+	if err_3 != nil {
+		return []string{}, err_3
+	}
+	// pipe step 2: db.ScanAll(...)
+	pipe_4, err_5 := db.ScanAll[string](pipe_2)
 	if err_5 != nil {
 		return []string{}, err_5
 	}
-	defer rows.Close()
-	names := []string{}
-	for rows.Next() {
-		name := ""
-		err_6 := rows.Scan(&name)
-		if err_6 != nil {
-			return []string{}, err_6
-		}
-		names = append(names, name)
-	}
-	err_7 := rows.Err()
-	if err_7 != nil {
-		return []string{}, err_7
-	}
-	return names, nil
+	return pipe_4, nil
 }
 
 // TableExists checks whether a table exists in the database.
@@ -219,12 +216,9 @@ func TableExists(pool db.Pool, name string) (bool, error) {
 // database is corrupt. Returns nil when the database is healthy.
 // Example: sqlite.IntegrityCheck(pool) onerr panic "database corrupt: {error}"
 func IntegrityCheck(pool db.Pool) error {
-	rawDB := db.RawDB(pool)
-	row := rawDB.QueryRow("PRAGMA integrity_check")
-	result := ""
-	err_8 := row.Scan(&result)
-	if err_8 != nil {
-		return err_8
+	result, err := db.ScanRow[string](db.QueryRow(pool, "PRAGMA integrity_check"))
+	if err != nil {
+		return err
 	}
 	if result != "ok" {
 		return fmt.Errorf("sqlite.IntegrityCheck: %v", result)
@@ -235,18 +229,21 @@ func IntegrityCheck(pool db.Pool) error {
 // Vacuum reclaims unused disk space by rebuilding the database file.
 // Example: sqlite.Vacuum(pool) onerr panic "{error}"
 func Vacuum(pool db.Pool) error {
-	db.Exec(pool, "VACUUM")
-	return nil
+	_, err := db.Exec(pool, "VACUUM")
+	return err
 }
 
 // Backup creates an online backup of the database to the given file path.
 // Uses SQLite's built-in backup API for a consistent snapshot.
 // Example: sqlite.Backup(pool, "/tmp/backup.db") onerr panic "{error}"
 func Backup(pool db.Pool, destPath string) error {
-	rawDB := db.RawDB(pool)
-	sqlConn, err_9 := rawDB.Conn(context.Background())
-	if err_9 != nil {
-		return err_9
+	rawDB, err := rawPool(pool)
+	if err != nil {
+		return err
+	}
+	sqlConn, err_6 := rawDB.Conn(context.Background())
+	if err_6 != nil {
+		return err_6
 	}
 	defer sqlConn.Close()
 	return sqlConn.Raw(makeBackupFunc(destPath))
@@ -255,14 +252,7 @@ func Backup(pool db.Pool, destPath string) error {
 // Version returns the SQLite library version string (e.g., "3.46.0").
 // Example: v := sqlite.Version(pool) onerr panic "{error}"
 func Version(pool db.Pool) (string, error) {
-	rawDB := db.RawDB(pool)
-	row := rawDB.QueryRow("SELECT sqlite_version()")
-	version := ""
-	err_10 := row.Scan(&version)
-	if err_10 != nil {
-		return "", err_10
-	}
-	return version, nil
+	return db.ScanRow[string](db.QueryRow(pool, "SELECT sqlite_version()"))
 }
 
 // Column describes a single column in a table, as returned by PRAGMA table_info.
@@ -313,10 +303,13 @@ func Columns(pool db.Pool, table string) ([]Column, error) {
 	if !isValidPragmaName(table) {
 		return []Column{}, fmt.Errorf("sqlite.Columns: invalid table name: %v", table)
 	}
-	rawDB := db.RawDB(pool)
-	rows, err_11 := rawDB.Query(fmt.Sprintf("PRAGMA table_info(%v)", db.QuoteIdentifier(table)))
-	if err_11 != nil {
-		return []Column{}, err_11
+	rawDB, err := rawPool(pool)
+	if err != nil {
+		return []Column{}, err
+	}
+	rows, err_7 := rawDB.Query(fmt.Sprintf("PRAGMA table_info(%v)", db.QuoteIdentifier(table)))
+	if err_7 != nil {
+		return []Column{}, err_7
 	}
 	defer rows.Close()
 	cols := []Column{}
@@ -327,15 +320,15 @@ func Columns(pool db.Pool, table string) ([]Column, error) {
 		notnull := 0
 		defaultVal := sql.NullString{}
 		pk := 0
-		err_12 := rows.Scan(&cid, &name, &colType, &notnull, &defaultVal, &pk)
-		if err_12 != nil {
-			return []Column{}, err_12
+		err_8 := rows.Scan(&cid, &name, &colType, &notnull, &defaultVal, &pk)
+		if err_8 != nil {
+			return []Column{}, err_8
 		}
 		cols = append(cols, Column{CID: cid, Name: name, Type: colType, NotNull: notnull == 1, Default: defaultVal.String, PrimaryKey: pk})
 	}
-	err_13 := rows.Err()
-	if err_13 != nil {
-		return []Column{}, err_13
+	err_9 := rows.Err()
+	if err_9 != nil {
+		return []Column{}, err_9
 	}
 	return cols, nil
 }
@@ -363,10 +356,13 @@ func Indexes(pool db.Pool, table string) ([]Index, error) {
 	if !isValidPragmaName(table) {
 		return []Index{}, fmt.Errorf("sqlite.Indexes: invalid table name: %v", table)
 	}
-	rawDB := db.RawDB(pool)
-	idxRows, err_14 := rawDB.Query(fmt.Sprintf("PRAGMA index_list(%v)", db.QuoteIdentifier(table)))
-	if err_14 != nil {
-		return []Index{}, err_14
+	rawDB, err := rawPool(pool)
+	if err != nil {
+		return []Index{}, err
+	}
+	idxRows, err_10 := rawDB.Query(fmt.Sprintf("PRAGMA index_list(%v)", db.QuoteIdentifier(table)))
+	if err_10 != nil {
+		return []Index{}, err_10
 	}
 	metas := []indexMeta{}
 	for idxRows.Next() {
@@ -375,25 +371,25 @@ func Indexes(pool db.Pool, table string) ([]Index, error) {
 		unique := 0
 		origin := ""
 		partial := 0
-		err_15 := idxRows.Scan(&seq, &name, &unique, &origin, &partial)
-		if err_15 != nil {
-			return []Index{}, err_15
+		err_11 := idxRows.Scan(&seq, &name, &unique, &origin, &partial)
+		if err_11 != nil {
+			return []Index{}, err_11
 		}
 		metas = append(metas, indexMeta{name: name, unique: unique == 1})
 	}
-	err_16 := idxRows.Err()
-	if err_16 != nil {
-		return []Index{}, err_16
+	err_12 := idxRows.Err()
+	if err_12 != nil {
+		return []Index{}, err_12
 	}
-	err_17 := idxRows.Close()
-	if err_17 != nil {
-		return []Index{}, err_17
+	err_13 := idxRows.Close()
+	if err_13 != nil {
+		return []Index{}, err_13
 	}
 	idxs := []Index{}
 	for _, meta := range metas {
-		cols, err_18 := indexColumns(rawDB, meta.name)
-		if err_18 != nil {
-			return []Index{}, err_18
+		cols, err_14 := indexColumns(rawDB, meta.name)
+		if err_14 != nil {
+			return []Index{}, err_14
 		}
 		idxs = append(idxs, Index{Name: meta.name, Table: table, Unique: meta.unique, Columns: cols})
 	}
@@ -401,9 +397,9 @@ func Indexes(pool db.Pool, table string) ([]Index, error) {
 }
 
 func indexColumns(rawDB *sql.DB, indexName string) ([]string, error) {
-	colRows, err_19 := rawDB.Query(fmt.Sprintf("PRAGMA index_info(%v)", db.QuoteIdentifier(indexName)))
-	if err_19 != nil {
-		return []string{}, err_19
+	colRows, err_15 := rawDB.Query(fmt.Sprintf("PRAGMA index_info(%v)", db.QuoteIdentifier(indexName)))
+	if err_15 != nil {
+		return []string{}, err_15
 	}
 	defer colRows.Close()
 	cols := []string{}
@@ -411,15 +407,15 @@ func indexColumns(rawDB *sql.DB, indexName string) ([]string, error) {
 		seqno := 0
 		cid := 0
 		colName := sql.NullString{}
-		err_20 := colRows.Scan(&seqno, &cid, &colName)
-		if err_20 != nil {
-			return []string{}, err_20
+		err_16 := colRows.Scan(&seqno, &cid, &colName)
+		if err_16 != nil {
+			return []string{}, err_16
 		}
 		cols = append(cols, colName.String)
 	}
-	err_21 := colRows.Err()
-	if err_21 != nil {
-		return []string{}, err_21
+	err_17 := colRows.Err()
+	if err_17 != nil {
+		return []string{}, err_17
 	}
 	return cols, nil
 }
@@ -433,10 +429,13 @@ func ForeignKeys(pool db.Pool, table string) ([]ForeignKey, error) {
 	if !isValidPragmaName(table) {
 		return []ForeignKey{}, fmt.Errorf("sqlite.ForeignKeys: invalid table name: %v", table)
 	}
-	rawDB := db.RawDB(pool)
-	fkRows, err_22 := rawDB.Query(fmt.Sprintf("PRAGMA foreign_key_list(%v)", db.QuoteIdentifier(table)))
-	if err_22 != nil {
-		return []ForeignKey{}, err_22
+	rawDB, err := rawPool(pool)
+	if err != nil {
+		return []ForeignKey{}, err
+	}
+	fkRows, err_18 := rawDB.Query(fmt.Sprintf("PRAGMA foreign_key_list(%v)", db.QuoteIdentifier(table)))
+	if err_18 != nil {
+		return []ForeignKey{}, err_18
 	}
 	defer fkRows.Close()
 	fks := []ForeignKey{}
@@ -449,15 +448,15 @@ func ForeignKeys(pool db.Pool, table string) ([]ForeignKey, error) {
 		onUpdate := ""
 		onDelete := ""
 		match := ""
-		err_23 := fkRows.Scan(&id, &seq, &refTable, &fromCol, &toCol, &onUpdate, &onDelete, &match)
-		if err_23 != nil {
-			return []ForeignKey{}, err_23
+		err_19 := fkRows.Scan(&id, &seq, &refTable, &fromCol, &toCol, &onUpdate, &onDelete, &match)
+		if err_19 != nil {
+			return []ForeignKey{}, err_19
 		}
 		fks = append(fks, ForeignKey{ID: id, Seq: seq, Table: refTable, From: fromCol, To: toCol.String, OnUpdate: onUpdate, OnDelete: onDelete})
 	}
-	err_24 := fkRows.Err()
-	if err_24 != nil {
-		return []ForeignKey{}, err_24
+	err_20 := fkRows.Err()
+	if err_20 != nil {
+		return []ForeignKey{}, err_20
 	}
 	return fks, nil
 }
@@ -469,8 +468,8 @@ func AddNotNull(pool db.Pool, table string, column string) error {
 	if !isValidPragmaName(table) || !isValidPragmaName(column) {
 		return goerrors.New("sqlite.AddNotNull: invalid table or column name")
 	}
-	db.RawDB(pool).Exec(fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v SET NOT NULL", db.QuoteIdentifier(table), db.QuoteIdentifier(column)))
-	return nil
+	_, err := db.Exec(pool, fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v SET NOT NULL", db.QuoteIdentifier(table), db.QuoteIdentifier(column)))
+	return err
 }
 
 // DropNotNull removes a NOT NULL constraint from an existing column.
@@ -480,8 +479,8 @@ func DropNotNull(pool db.Pool, table string, column string) error {
 	if !isValidPragmaName(table) || !isValidPragmaName(column) {
 		return goerrors.New("sqlite.DropNotNull: invalid table or column name")
 	}
-	db.RawDB(pool).Exec(fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v DROP NOT NULL", db.QuoteIdentifier(table), db.QuoteIdentifier(column)))
-	return nil
+	_, err := db.Exec(pool, fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v DROP NOT NULL", db.QuoteIdentifier(table), db.QuoteIdentifier(column)))
+	return err
 }
 
 // AddCheck adds a CHECK constraint to an existing table.
@@ -495,8 +494,8 @@ func AddCheck(pool db.Pool, table string, expr string) error {
 	if len(expr) == 0 {
 		return goerrors.New("sqlite.AddCheck: empty check expression")
 	}
-	db.RawDB(pool).Exec(fmt.Sprintf("ALTER TABLE %v ADD CHECK (%v)", db.QuoteIdentifier(table), expr))
-	return nil
+	_, err := db.Exec(pool, fmt.Sprintf("ALTER TABLE %v ADD CHECK (%v)", db.QuoteIdentifier(table), expr))
+	return err
 }
 
 // DropCheck removes a named CHECK constraint from an existing table.
@@ -508,8 +507,8 @@ func DropCheck(pool db.Pool, table string, constraintName string) error {
 	if !isValidPragmaName(table) || !isValidPragmaName(constraintName) {
 		return goerrors.New("sqlite.DropCheck: invalid table or constraint name")
 	}
-	db.RawDB(pool).Exec(fmt.Sprintf("ALTER TABLE %v DROP CONSTRAINT %v", db.QuoteIdentifier(table), constraintName))
-	return nil
+	_, err := db.Exec(pool, fmt.Sprintf("ALTER TABLE %v DROP CONSTRAINT %v", db.QuoteIdentifier(table), constraintName))
+	return err
 }
 
 // ReindexExpressions rebuilds all expression indexes on the database,
@@ -517,8 +516,8 @@ func DropCheck(pool db.Pool, table string, constraintName string) error {
 // Requires SQLite 3.53.0 or later.
 // Example: sqlite.ReindexExpressions(pool) onerr panic "{error}"
 func ReindexExpressions(pool db.Pool) error {
-	db.Exec(pool, "REINDEX EXPRESSIONS")
-	return nil
+	_, err := db.Exec(pool, "REINDEX EXPRESSIONS")
+	return err
 }
 
 // DropIndex drops an index by name.
@@ -536,15 +535,15 @@ func DropIndexWithIgnore(pool db.Pool, name string, ignore bool) error {
 		return fmt.Errorf("sqlite.DropIndex: invalid index name: %v", name)
 	}
 	if ignore {
-		exists, err_25 := db.Exists(pool, "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?", name)
-		if err_25 != nil {
-			return err_25
+		exists, err := db.Exists(pool, "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?", name)
+		if err != nil {
+			return err
 		}
 		if !exists {
 			return nil
 		}
 	}
-	_, err := db.RawDB(pool).Exec(fmt.Sprintf("DROP INDEX %v", db.QuoteIdentifier(name)))
+	_, err := db.Exec(pool, fmt.Sprintf("DROP INDEX %v", db.QuoteIdentifier(name)))
 	return err
 }
 
@@ -734,11 +733,14 @@ func UnpackVector64(b []byte) ([]float64, error) {
 // variants. Sets MaxOpenConns(1) so the registered function is visible to every
 // subsequent query on this pool.
 func registerScalarFunction(pool db.Pool, name string, nArgs int, sfn sqlite3.ScalarFunction) error {
-	rawDB := db.RawDB(pool)
+	rawDB, err := rawPool(pool)
+	if err != nil {
+		return err
+	}
 	rawDB.SetMaxOpenConns(1)
-	sqlConn, err_26 := rawDB.Conn(context.Background())
-	if err_26 != nil {
-		return err_26
+	sqlConn, err_21 := rawDB.Conn(context.Background())
+	if err_21 != nil {
+		return err_21
 	}
 	defer sqlConn.Close()
 	return sqlConn.Raw(makeRegisterFuncCallback(name, nArgs, sfn))
@@ -845,46 +847,46 @@ func blobArgs(args []sqlite3.Value) [][]byte {
 func Dump(pool db.Pool) (string, error) {
 	rawDB := db.RawDB(pool)
 	b := strings.Builder{}
-	schemaRows, err_27 := rawDB.Query("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL ORDER BY CASE type WHEN 'table' THEN 1 WHEN 'view' THEN 2 WHEN 'index' THEN 3 WHEN 'trigger' THEN 4 END")
-	if err_27 != nil {
-		return "", err_27
+	schemaRows, err_22 := rawDB.Query("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL ORDER BY CASE type WHEN 'table' THEN 1 WHEN 'view' THEN 2 WHEN 'index' THEN 3 WHEN 'trigger' THEN 4 END")
+	if err_22 != nil {
+		return "", err_22
 	}
 	defer schemaRows.Close()
 	for schemaRows.Next() {
 		sqlText := ""
-		err_28 := schemaRows.Scan(&sqlText)
-		if err_28 != nil {
-			return "", err_28
+		err_23 := schemaRows.Scan(&sqlText)
+		if err_23 != nil {
+			return "", err_23
 		}
 		b.WriteString(sqlText)
 		b.WriteString(";\n")
 	}
-	err_29 := schemaRows.Err()
-	if err_29 != nil {
-		return "", err_29
+	err_24 := schemaRows.Err()
+	if err_24 != nil {
+		return "", err_24
 	}
-	tables, err_30 := Tables(pool)
-	if err_30 != nil {
-		return "", err_30
+	tables, err_25 := Tables(pool)
+	if err_25 != nil {
+		return "", err_25
 	}
 	for _, table := range tables {
-		err_31 := dumpTable(rawDB, &b, table)
-		if err_31 != nil {
-			return "", err_31
+		err_26 := dumpTable(rawDB, &b, table)
+		if err_26 != nil {
+			return "", err_26
 		}
 	}
 	return b.String(), nil
 }
 
 func dumpTable(rawDB *sql.DB, b *strings.Builder, table string) error {
-	dataRows, err_32 := rawDB.Query(fmt.Sprintf("SELECT * FROM %v", db.QuoteIdentifier(table)))
-	if err_32 != nil {
-		return err_32
+	dataRows, err_27 := rawDB.Query(fmt.Sprintf("SELECT * FROM %v", db.QuoteIdentifier(table)))
+	if err_27 != nil {
+		return err_27
 	}
 	defer dataRows.Close()
-	columns, err_33 := dataRows.Columns()
-	if err_33 != nil {
-		return err_33
+	columns, err_28 := dataRows.Columns()
+	if err_28 != nil {
+		return err_28
 	}
 	for dataRows.Next() {
 		values := make([]any, len(columns))
@@ -892,9 +894,9 @@ func dumpTable(rawDB *sql.DB, b *strings.Builder, table string) error {
 		for i := range len(values) {
 			ptrs[i] = &values[i]
 		}
-		err_34 := dataRows.Scan(ptrs...)
-		if err_34 != nil {
-			return err_34
+		err_29 := dataRows.Scan(ptrs...)
+		if err_29 != nil {
+			return err_29
 		}
 		b.WriteString(fmt.Sprintf("INSERT INTO %v VALUES(", db.QuoteIdentifier(table)))
 		for i, v := range values {

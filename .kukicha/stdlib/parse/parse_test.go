@@ -354,3 +354,43 @@ func TestWriteYAML(t *testing.T) {
 		test.AssertEqual(t, back.Email, "carol@example.com")
 	})
 }
+
+// --- TestFormTagsDurationAndList ---
+type TaggedConfig struct {
+	UserName string        `json:"user_name"`
+	Timeout  time.Duration `json:"timeout"`
+	Tags     []string      `json:"tags"`
+	Nick     string        `json:"nick" env:"NICKNAME"`
+}
+
+func TestFormTagsDurationAndList(t *testing.T) {
+	values := url.Values{}
+	values.Set("user_name", "ada")
+	values.Set("timeout", "5s")
+	values.Add("tags", "a")
+	values.Add("tags", "b")
+	result := parse.Form[TaggedConfig](values)
+	if p, _isOk := result.(parse.Parsed[TaggedConfig]); _isOk {
+		test.AssertEqual(t, p.Value.UserName, "ada")
+		test.AssertEqual(t, p.Value.Timeout, 5*time.Second)
+		test.AssertEqual(t, p.Value.Tags, []string{"a", "b"})
+	} else {
+		t.Fatalf("expected Parsed, got Malformed")
+	}
+}
+
+func TestEnvTagsDurationAndList(t *testing.T) {
+	t.Setenv("APP_USER_NAME", "ada")
+	t.Setenv("APP_TIMEOUT", "250ms")
+	t.Setenv("APP_TAGS", "x, y ,z")
+	t.Setenv("APP_NICKNAME", "ace")
+	result := parse.Env[TaggedConfig]("APP")
+	if p, _isOk := result.(parse.Parsed[TaggedConfig]); _isOk {
+		test.AssertEqual(t, p.Value.UserName, "ada")
+		test.AssertEqual(t, p.Value.Timeout, 250*time.Millisecond)
+		test.AssertEqual(t, p.Value.Tags, []string{"x", "y", "z"})
+		test.AssertEqual(t, p.Value.Nick, "ace")
+	} else {
+		t.Fatalf("expected Parsed, got Malformed")
+	}
+}

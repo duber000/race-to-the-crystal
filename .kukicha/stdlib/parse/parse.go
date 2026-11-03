@@ -26,6 +26,7 @@ import (
 	"sort"
 	"strconv"
 	"time"
+	"unicode"
 )
 
 // CSVRows is the shape of CSV-record collections (one map per row, header → cell).
@@ -67,9 +68,12 @@ func ValidateJSON[T any](data string) ParseResult[T] {
 }
 
 // Form parses url.Values into a typed struct, then runs validation if the
-// value satisfies validate.Validatable. Each exported field is set from
-// values.Get(fieldName) (case-sensitive). Strings, ints, uints, floats, and
-// bools are supported; unsupported field kinds and parse failures produce a
+// value satisfies validate.Validatable. Each exported field is set from the
+// form key resolved by formKey: the `form` tag, else the `json` tag's primary
+// name (the `as "..."` alias), else the Go field name (case-sensitive). Strings,
+// ints, uints, floats, bools, time.Duration ("5s"), and list of string fields
+// are supported; a list of string field with multiple values under one key
+// collects them all. Unsupported field kinds and parse failures produce a
 // FieldError on that field's path. A non-struct target type returns Malformed;
 // otherwise Parsed with any accumulated errors.
 // Example: u, errs := parse.Form of LoginForm from request.Form
@@ -88,11 +92,22 @@ func Form[T any](values url.Values) ParseResult[T] {
 		if !field.IsExported() {
 			continue
 		}
-		if !values.Has(field.Name) {
+		key := formKey(field)
+		if !values.Has(key) {
 			continue
 		}
-		raw := values.Get(field.Name)
-		setErr := assignString(elem.Field(i), raw)
+		fv := elem.Field(i)
+		if isStringSlice(fv) {
+			all := values[key]
+			strs := make([]string, len(all))
+			for j, v := range all {
+				strs[j] = v
+			}
+			fv.Set(reflect.ValueOf(strs))
+			continue
+		}
+		raw := values.Get(key)
+		setErr := assignString(fv, raw)
 		if setErr != nil {
 			errs = append(errs, validate.FieldError{Path: field.Name, Rule: validate.RuleParse, Message: setErr.Error()})
 		}
@@ -103,9 +118,13 @@ func Form[T any](values url.Values) ParseResult[T] {
 }
 
 // Env reads environment variables into a typed struct. Each exported field
-// maps to PREFIX_FIELDNAME (both uppercased; "_" separator; empty prefix
-// allowed). Missing vars leave the zero value. Strings, ints, uints, floats,
-// and bools are supported; parse failures produce a FieldError on that field.
+// maps to a key resolved by envFieldKey: the `env` tag (exact, "-" skips the
+// field), else the `json` tag's primary name normalized to UPPER_SNAKE, else
+// the Go field name — all in PREFIX_KEY form (both uppercased; "_" separator;
+// empty prefix allowed). Missing vars leave the zero value. Strings, ints,
+// uints, floats, bools, time.Duration ("5s"), and list of string
+// (comma-separated, trimmed — matching env.GetListOr) are supported; parse
+// failures produce a FieldError on that field.
 // A non-struct target type returns Malformed; otherwise Parsed.
 // Example: parse.Env of Config from "APP"
 func Env[T any](prefix string) ParseResult[T] {
@@ -123,7 +142,10 @@ func Env[T any](prefix string) ParseResult[T] {
 		if !field.IsExported() {
 			continue
 		}
-		key := envKey(prefix, field.Name)
+		key := envFieldKey(prefix, field)
+		if len(key) == 0 {
+			continue
+		}
 		raw, present := os.LookupEnv(key)
 		if !present {
 			continue
@@ -146,42 +168,118 @@ func envKey(prefix string, name string) string {
 	return kukistring.ToUpper(prefix) + "_" + upperName
 }
 
+// formKey resolves the form key for a struct field: the `form` tag, else the
+// `json` tag's primary name (before any comma, unless "-"), else the Go field
+// name.
+func formKey(field reflect.StructField) string {
+	tag := field.Tag.Get("form")
+	if tag != "" && tag != "-" {
+		name, _, _ := kukistring.Cut(tag, ",")
+		return name
+	}
+	tag = field.Tag.Get("json")
+	if tag != "" && tag != "-" {
+		name, _, _ := kukistring.Cut(tag, ",")
+		if name != "" {
+			return name
+		}
+	}
+	return field.Name
+}
+
+// envFieldKey resolves the environment variable key for a struct field: the
+// `env` tag (exact name; "-" skips the field, returned as ""), else the
+// `json` tag's primary name normalized to UPPER_SNAKE, else the Go field name
+// — all folded into PREFIX_KEY form by envKey.
+func envFieldKey(prefix string, field reflect.StructField) string {
+	tag := field.Tag.Get("env")
+	if tag != "" {
+		if tag == "-" {
+			return ""
+		}
+		return envKey(prefix, tag)
+	}
+	tag = field.Tag.Get("json")
+	if tag != "" && tag != "-" {
+		name, _, _ := kukistring.Cut(tag, ",")
+		if name != "" {
+			return envKey(prefix, upperSnake(name))
+		}
+	}
+	return envKey(prefix, field.Name)
+}
+
+// upperSnake converts a camelCase or snake_case name to UPPER_SNAKE.
+func upperSnake(s string) string {
+	runes := []rune(s)
+	out := ""
+	for i, r := range runes {
+		if unicode.IsUpper(r) && i > 0 && (unicode.IsLower(runes[i-1]) || unicode.IsDigit(runes[i-1])) {
+			out = out + "_"
+		}
+		out = out + kukistring.ToUpper(string(r))
+	}
+	return out
+}
+
+// isStringSlice reports whether fv is a list of string field.
+func isStringSlice(fv reflect.Value) bool {
+	return fv.Kind() == reflect.Slice && fv.Type().Elem().Kind() == reflect.String
+}
+
 // assignString writes raw into fv, parsing it according to fv's reflect.Kind.
 // Returns an error when the kind isn't supported or strconv parsing fails.
 func assignString(fv reflect.Value, raw string) error {
 	kind := fv.Kind()
+	if fv.Type() == reflect.TypeFor[time.Duration]() {
+		d, err_1 := time.ParseDuration(raw)
+		if err_1 != nil {
+			return err_1
+		}
+		fv.SetInt(int64(d))
+		return nil
+	}
+	if isStringSlice(fv) {
+		parts := kukistring.Split(raw, ",")
+		out := make([]string, len(parts))
+		for i, p := range parts {
+			out[i] = kukistring.TrimSpace(p)
+		}
+		fv.Set(reflect.ValueOf(out))
+		return nil
+	}
 	if kind == reflect.String {
 		fv.SetString(raw)
 		return nil
 	}
 	if kind == reflect.Bool {
-		b, err_1 := strconv.ParseBool(raw)
-		if err_1 != nil {
-			return err_1
+		b, err_2 := strconv.ParseBool(raw)
+		if err_2 != nil {
+			return err_2
 		}
 		fv.SetBool(b)
 		return nil
 	}
 	if kind == reflect.Int || kind == reflect.Int8 || kind == reflect.Int16 || kind == reflect.Int32 || kind == reflect.Int64 {
-		n, err_2 := strconv.ParseInt(raw, 10, 64)
-		if err_2 != nil {
-			return err_2
+		n, err_3 := strconv.ParseInt(raw, 10, 64)
+		if err_3 != nil {
+			return err_3
 		}
 		fv.SetInt(n)
 		return nil
 	}
 	if kind == reflect.Uint || kind == reflect.Uint8 || kind == reflect.Uint16 || kind == reflect.Uint32 || kind == reflect.Uint64 {
-		n, err_3 := strconv.ParseUint(raw, 10, 64)
-		if err_3 != nil {
-			return err_3
+		n, err_4 := strconv.ParseUint(raw, 10, 64)
+		if err_4 != nil {
+			return err_4
 		}
 		fv.SetUint(n)
 		return nil
 	}
 	if kind == reflect.Float32 || kind == reflect.Float64 {
-		f, err_4 := strconv.ParseFloat(raw, 64)
-		if err_4 != nil {
-			return err_4
+		f, err_5 := strconv.ParseFloat(raw, 64)
+		if err_5 != nil {
+			return err_5
 		}
 		fv.SetFloat(f)
 		return nil
@@ -232,9 +330,9 @@ func YAML[T any](data string) (T, error) {
 // form.
 // Example: out := parse.WriteYAML(cfg) onerr return
 func WriteYAML[T any](value T) (string, error) {
-	data, err_5 := yaml.Marshal(value)
-	if err_5 != nil {
-		return "", err_5
+	data, err_6 := yaml.Marshal(value)
+	if err_6 != nil {
+		return "", err_6
 	}
 	return string(data), nil
 }
@@ -247,9 +345,9 @@ func readAllCSV(reader *csv.Reader) ([][]string, error) {
 // Example: rows := csvText |> parse.CSV() onerr return
 func CSV(data string) ([][]string, error) {
 	// pipe step 1: readAllCSV(...)
-	records, err_7 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
-	if err_7 != nil {
-		return [][]string{}, err_7
+	records, err_8 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
+	if err_8 != nil {
+		return [][]string{}, err_8
 	}
 	return records, nil
 }
@@ -259,10 +357,10 @@ func CSV(data string) ([][]string, error) {
 // Example: rows := csvText |> parse.CSVRecords() onerr return
 func CSVRecords(data string) (CSVRows, error) {
 	// pipe step 1: readAllCSV(...)
-	records, err_9 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
-	if err_9 != nil {
+	records, err_10 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
+	if err_10 != nil {
 		var _zero0 CSVRows
-		return _zero0, err_9
+		return _zero0, err_10
 	}
 	if len(records) == 0 {
 		return nil, errors.New("no data in CSV")
@@ -300,15 +398,15 @@ func CSVRecords(data string) (CSVRows, error) {
 //
 // Example: rows |> parse.WriteCSVTo("users.csv") onerr return
 func WriteCSVTo(rows [][]string, path string) error {
-	f, err_10 := os.Create(path)
-	if err_10 != nil {
-		return err_10
+	f, err_11 := os.Create(path)
+	if err_11 != nil {
+		return err_11
 	}
 	defer f.Close()
 	w := csv.NewWriter(f)
-	err_11 := w.WriteAll(rows)
-	if err_11 != nil {
-		return err_11
+	err_12 := w.WriteAll(rows)
+	if err_12 != nil {
+		return err_12
 	}
 	return w.Error()
 }
@@ -359,9 +457,9 @@ func splitNonEmpty(data string) []string {
 // IntOr to swallow present-but-malformed config (env.GetInt errors on that).
 // Example: n := parse.Int("42") onerr return
 func Int(s string) (int, error) {
-	n, err_12 := strconv.Atoi(s)
-	if err_12 != nil {
-		return 0, err_12
+	n, err_13 := strconv.Atoi(s)
+	if err_13 != nil {
+		return 0, err_13
 	}
 	return n, nil
 }
@@ -371,8 +469,8 @@ func Int(s string) (int, error) {
 // env var is a configuration error — read those with env.GetInt and report it.
 // Example: retries := parse.IntOr(os.Getenv("RETRIES"), 3)
 func IntOr(s string, defaultValue int) int {
-	n, err_13 := Int(s)
-	if err_13 != nil {
+	n, err_14 := Int(s)
+	if err_14 != nil {
 		return defaultValue
 	}
 	return n
@@ -381,9 +479,9 @@ func IntOr(s string, defaultValue int) int {
 // Float64 parses a decimal floating-point string.
 // Example: f := parse.Float64("3.14") onerr 0.0
 func Float64(s string) (float64, error) {
-	f, err_14 := strconv.ParseFloat(s, 64)
-	if err_14 != nil {
-		return 0, err_14
+	f, err_15 := strconv.ParseFloat(s, 64)
+	if err_15 != nil {
+		return 0, err_15
 	}
 	return f, nil
 }
@@ -391,8 +489,8 @@ func Float64(s string) (float64, error) {
 // Float64Or parses a float, returning defaultValue on malformed input.
 // Example: ratio := parse.Float64Or(raw, 1.0)
 func Float64Or(s string, defaultValue float64) float64 {
-	f, err_15 := Float64(s)
-	if err_15 != nil {
+	f, err_16 := Float64(s)
+	if err_16 != nil {
 		return defaultValue
 	}
 	return f
@@ -408,8 +506,8 @@ func Duration(s string) (datetime.Duration, error) {
 // DurationOr parses a duration, returning defaultValue on malformed input.
 // Example: ttl := parse.DurationOr(raw, 30 * time.Second)
 func DurationOr(s string, defaultValue datetime.Duration) datetime.Duration {
-	d, err_16 := Duration(s)
-	if err_16 != nil {
+	d, err_17 := Duration(s)
+	if err_17 != nil {
 		return defaultValue
 	}
 	return d
@@ -434,8 +532,8 @@ func Bool(s string) (bool, error) {
 // BoolOr parses a boolean, returning defaultValue on malformed input.
 // Example: verbose := parse.BoolOr(raw, false)
 func BoolOr(s string, defaultValue bool) bool {
-	b, err_17 := Bool(s)
-	if err_17 != nil {
+	b, err_18 := Bool(s)
+	if err_18 != nil {
 		return defaultValue
 	}
 	return b
@@ -446,9 +544,9 @@ func BoolOr(s string, defaultValue bool) bool {
 // case, use url.Parse and read .Params instead.
 // Example: params := parse.Query("name=ada&age=30") onerr return
 func Query(s string) (map[string][]string, error) {
-	v, err_18 := url.ParseQuery(s)
-	if err_18 != nil {
-		return map[string][]string{}, err_18
+	v, err_19 := url.ParseQuery(s)
+	if err_19 != nil {
+		return map[string][]string{}, err_19
 	}
 	return maps.Clone(map[string][]string(v)), nil
 }

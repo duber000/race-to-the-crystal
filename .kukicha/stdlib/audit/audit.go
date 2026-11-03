@@ -180,9 +180,16 @@ type logState struct {
 }
 
 // Log is the handle returned by Open. Pass it to Record/Query/Close.
+// A zero-value Log{} (never opened) is uninitialized: fallible functions
+// return errUninitializedLog, Tail returns a zero TailInfo, and
+// SetCheckpointInterval is a no-op.
 type Log struct {
 	state *logState
 }
+
+// errUninitializedLog is returned by Log functions called on a zero-value
+// Log{} — composes with onerr instead of nil-panicking.
+var errUninitializedLog = errors.New("audit: log is not initialized")
 
 // Entry is one row returned by Query: the seq+timestamp metadata, the
 // original Event, and the KeyID of the signer that wrote it. The genesis
@@ -269,6 +276,9 @@ func OpenWithSigner(dbPath string, signer Signer) (Log, error) {
 // Close releases the database pool. The Signer is not closed — callers own
 // its lifecycle.
 func Close(log Log) error {
+	if log.state == nil {
+		return errUninitializedLog
+	}
 	return db.Close(log.state.pool)
 }
 
@@ -277,6 +287,9 @@ func Close(log Log) error {
 // event_extra foreign key. Use after a migration or on startup to catch a
 // corrupted or partially-applied schema before Record writes into it.
 func VerifySchema(log Log) error {
+	if log.state == nil {
+		return errUninitializedLog
+	}
 	pool := log.state.pool
 	eventCols, err_9 := sqlite.Columns(pool, "events")
 	if err_9 != nil {
@@ -347,6 +360,9 @@ func VerifySchema(log Log) error {
 // (synchronous=FULL). Returns an error if the DB write or signature fails;
 // on success the in-memory tail is advanced.
 func Record(log Log, event Event) error {
+	if log.state == nil {
+		return errUninitializedLog
+	}
 	log.state.mu.Lock()
 	defer log.state.mu.Unlock()
 	if !acquireWriterLock(log.state.pool) {
@@ -414,6 +430,9 @@ type TailInfo struct {
 // Tail returns the log's current TailInfo (latest seq + chain hash). Useful for
 // tests and for callers building external integrity checks.
 func Tail(log Log) TailInfo {
+	if log.state == nil {
+		return TailInfo{}
+	}
 	log.state.mu.Lock()
 	defer log.state.mu.Unlock()
 	return TailInfo{Seq: log.state.lastSeq, Hash: log.state.lastHash}
@@ -424,6 +443,9 @@ func Tail(log Log) TailInfo {
 // returned — it carries an internal Genesis outcome that isn't part of the
 // public Outcome variant. Extras are loaded into Entry.Event.Extra.
 func Query(log Log, filter Filter) ([]Entry, error) {
+	if log.state == nil {
+		return nil, errUninitializedLog
+	}
 	where := "WHERE seq > 0"
 	args := []any{}
 	if filter.Actor != "" {
@@ -498,6 +520,9 @@ func Query(log Log, filter Filter) ([]Entry, error) {
 // Returns the first inconsistency found; success means the on-disk log
 // matches what Record wrote.
 func Verify(log Log) error {
+	if log.state == nil {
+		return errUninitializedLog
+	}
 	cutoffs, err_23 := loadVacuumCutoffs(log)
 	if err_23 != nil {
 		return err_23
@@ -581,6 +606,9 @@ func Verify(log Log) error {
 // walks across the resulting gap by matching surviving rows' prev_hash
 // against the Vacuumed payload's hashAtCutoff.
 func Vacuum(log Log, before time.Time) error {
+	if log.state == nil {
+		return errUninitializedLog
+	}
 	log.state.mu.Lock()
 	defer log.state.mu.Unlock()
 	if !acquireWriterLock(log.state.pool) {
@@ -656,6 +684,9 @@ func Vacuum(log Log, before time.Time) error {
 // can still be called explicitly). Intended for tests and operators who
 // want a different write-side cost / verify-time tradeoff.
 func SetCheckpointInterval(log Log, n int64) {
+	if log.state == nil {
+		return
+	}
 	log.state.mu.Lock()
 	defer log.state.mu.Unlock()
 	log.state.checkpointInterval = n
@@ -666,6 +697,9 @@ func SetCheckpointInterval(log Log, n int64) {
 // call at any time; Record auto-checkpoints every defaultCheckpointInterval
 // rows by default so most callers never need this.
 func Checkpoint(log Log) error {
+	if log.state == nil {
+		return errUninitializedLog
+	}
 	log.state.mu.Lock()
 	defer log.state.mu.Unlock()
 	if log.state.lastSeq < 0 {
@@ -686,6 +720,9 @@ func Checkpoint(log Log) error {
 // Use this on a cron — Verify is the "did anyone touch this database?"
 // answer; VerifyIncremental is the "is the recent tail intact?" answer.
 func VerifyIncremental(log Log) error {
+	if log.state == nil {
+		return errUninitializedLog
+	}
 	cutoffs, err_36 := loadVacuumCutoffs(log)
 	if err_36 != nil {
 		return err_36
@@ -791,6 +828,9 @@ func VerifyIncremental(log Log) error {
 // chain gap produced by Vacuum: a surviving row's prev_hash that matches
 // a known cutoff is the expected boundary between deleted and kept rows.
 func loadVacuumCutoffs(log Log) (map[string]bool, error) {
+	if log.state == nil {
+		return nil, errUninitializedLog
+	}
 	out := map[string]bool{}
 	rows, err_45 := db.RawDB(log.state.pool).Query("SELECT outcome_json FROM events WHERE outcome = ?", "Vacuumed")
 	if err_45 != nil {
@@ -823,6 +863,9 @@ func loadVacuumCutoffs(log Log) (map[string]bool, error) {
 
 // loadExtras fetches the event_extra rows for one event as a string map.
 func loadExtras(log Log, seq int64) (map[string]string, error) {
+	if log.state == nil {
+		return nil, errUninitializedLog
+	}
 	rows, err_49 := db.RawDB(log.state.pool).Query("SELECT key, value FROM event_extra WHERE seq = ? ORDER BY key ASC", seq)
 	if err_49 != nil {
 		err_49 = fmt.Errorf("audit: load extras: %w", err_49)
@@ -853,6 +896,9 @@ func loadExtras(log Log, seq int64) (map[string]string, error) {
 // DB rather than the in-memory map means Verify exercises the storage
 // round-trip, which is the whole point.
 func loadExtraCanonical(log Log, seq int64) (string, error) {
+	if log.state == nil {
+		return "", errUninitializedLog
+	}
 	extras, err_52 := loadExtras(log, seq)
 	if err_52 != nil {
 		return "", err_52
@@ -944,6 +990,9 @@ func schemaStatements() []string {
 // fresh DB. The outcome_json records the schema version so future
 // migrations can detect old logs without breaking the chain.
 func insertGenesis(log Log) error {
+	if log.state == nil {
+		return errUninitializedLog
+	}
 	seq := int64(0)
 	ts := time.Now().UnixNano()
 	keyID := log.state.signer.KeyID()
@@ -1002,6 +1051,9 @@ func releaseWriterLock(pool db.Pool) {
 // loadTail reads the most recent (seq, hash) so subsequent Record calls
 // can chain off it without scanning the whole table.
 func loadTail(log Log) error {
+	if log.state == nil {
+		return errUninitializedLog
+	}
 	if !acquireWriterLock(log.state.pool) {
 		return errors.New("audit: writer lock not acquired during tail load")
 	}

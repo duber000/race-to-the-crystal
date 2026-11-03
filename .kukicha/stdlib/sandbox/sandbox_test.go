@@ -144,3 +144,41 @@ func TestSandboxListRecursive(t *testing.T) {
 	_, missingErr := box.ListRecursive("nope/")
 	test.AssertError(t, missingErr)
 }
+
+// --- TestZeroValueRootReturnsError ---
+func TestZeroValueRootReturnsError(t *testing.T) {
+	box := sandbox.Root{}
+	check := func(label string, err error) {
+		t.Run(label, func(t *testing.T) {
+			test.AssertError(t, err)
+			test.AssertContains(t, err.Error(), "not initialized")
+		})
+	}
+	check("Close", box.Close())
+	_, err := box.Read("a.txt")
+	check("Read", err)
+	_, err = box.ReadString("a.txt")
+	check("ReadString", err)
+	_, err = box.ReadStringOr("a.txt", "dflt")
+	check("ReadStringOr", err)
+	check("WriteString", box.WriteString("x", "a.txt"))
+	check("WriteJSON", box.WriteJSON(map[string]string{"k": "v"}, "a.json"))
+	check("WriteBytes", box.WriteBytes([]byte{1}, "a.bin"))
+	_, err = box.ListRecursive(".")
+	check("ListRecursive", err)
+	check("AppendString", box.AppendString("x", "a.txt"))
+	check("AppendJSON", box.AppendJSON(1, "a.jsonl"))
+	check("MkDir", box.MkDir("d"))
+	check("MkDirAll", box.MkDirAll("d/e"))
+	_, err = box.List(".")
+	check("List", err)
+	_, err = box.Stat("a.txt")
+	check("Stat", err)
+	check("Delete", box.Delete("a.txt"))
+	check("DeleteAll", box.DeleteAll("d"))
+	check("Move", box.Move("a", "b"))
+	test.AssertFalse(t, box.Exists("a.txt"))
+	test.AssertFalse(t, box.IsDir("a.txt"))
+	test.AssertFalse(t, box.IsFile("a.txt"))
+	test.AssertTrue(t, box.FS() == nil)
+}

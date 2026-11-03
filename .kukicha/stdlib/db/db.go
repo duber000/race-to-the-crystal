@@ -24,6 +24,7 @@ import (
 	strpkg "kukicha.org/kukicha/stdlib/string"
 	"reflect"
 	"sync"
+	"time"
 	"unicode"
 )
 
@@ -46,6 +47,14 @@ type Rows struct {
 type Tx struct {
 	tx *sql.Tx
 }
+
+var errUninitializedPool = errors.New("db: pool is not initialized")
+
+var errUninitializedRow = errors.New("db: row is not initialized")
+
+var errUninitializedRows = errors.New("db: rows is not initialized")
+
+var errUninitializedTx = errors.New("db: transaction is not initialized")
 
 // IsolationLevel selects the transaction isolation level for TransactionWith.
 // Default leaves the choice to the driver (usually read-committed); stronger
@@ -138,12 +147,18 @@ func Open(driver string, connString string) (Pool, error) {
 // Close closes the database connection pool.
 // Example: defer db.Close(pool)
 func Close(pool Pool) error {
+	if pool.conn == nil {
+		return errUninitializedPool
+	}
 	return pool.conn.Close()
 }
 
 // Ping verifies the database connection is still alive.
 // Example: db.Ping(pool) onerr panic "{error}"
 func Ping(pool Pool) error {
+	if pool.conn == nil {
+		return errUninitializedPool
+	}
 	return pool.conn.Ping()
 }
 
@@ -151,6 +166,9 @@ func Ping(pool Pool) error {
 // Use parameter placeholders ($1, $2, ...) for values — never interpolate.
 // Example: rows := db.Query(pool, "SELECT * FROM users WHERE active = $1", true)
 func Query(pool Pool, query string, args ...any) (Rows, error) {
+	if pool.conn == nil {
+		return Rows{rows: nil}, errUninitializedPool
+	}
 	rows, err_3 := pool.conn.Query(query, args...)
 	if err_3 != nil {
 		var _zero0 Rows
@@ -162,6 +180,9 @@ func Query(pool Pool, query string, args ...any) (Rows, error) {
 
 // QueryCtx executes a query with a context.
 func QueryCtx(h ctxpkg.Handle, pool Pool, query string, args ...any) (Rows, error) {
+	if pool.conn == nil {
+		return Rows{rows: nil}, errUninitializedPool
+	}
 	rows, err_4 := pool.conn.QueryContext(h.Ctx, query, args...)
 	if err_4 != nil {
 		var _zero0 Rows
@@ -174,6 +195,9 @@ func QueryCtx(h ctxpkg.Handle, pool Pool, query string, args ...any) (Rows, erro
 // QueryRow executes a query that returns at most one row.
 // Example: row := db.QueryRow(pool, "SELECT * FROM users WHERE id = $1", id)
 func QueryRow(pool Pool, query string, args ...any) Row {
+	if pool.conn == nil {
+		return Row{row: nil}
+	}
 	row := pool.conn.QueryRow(query, args...)
 	return Row{row: row}
 }
@@ -182,6 +206,9 @@ func QueryRow(pool Pool, query string, args ...any) Row {
 // Returns the number of rows affected.
 // Example: n := db.Exec(pool, "DELETE FROM sessions WHERE expired < $1", cutoff) onerr panic "{error}"
 func Exec(pool Pool, query string, args ...any) (int64, error) {
+	if pool.conn == nil {
+		return 0, errUninitializedPool
+	}
 	result, err_5 := pool.conn.Exec(query, args...)
 	if err_5 != nil {
 		return 0, err_5
@@ -196,6 +223,9 @@ func Exec(pool Pool, query string, args ...any) (int64, error) {
 // ExecCtx executes a query with a context.
 // Returns the number of rows affected.
 func ExecCtx(h ctxpkg.Handle, pool Pool, query string, args ...any) (int64, error) {
+	if pool.conn == nil {
+		return 0, errUninitializedPool
+	}
 	result, err_7 := pool.conn.ExecContext(h.Ctx, query, args...)
 	if err_7 != nil {
 		return 0, err_7
@@ -210,6 +240,9 @@ func ExecCtx(h ctxpkg.Handle, pool Pool, query string, args ...any) (int64, erro
 // LastInsertId executes an INSERT query and returns the database-generated ID.
 // Example: id := db.LastInsertId(pool, "INSERT INTO users (name) VALUES ($1)", "Alice") onerr panic "{error}"
 func LastInsertId(pool Pool, query string, args ...any) (int64, error) {
+	if pool.conn == nil {
+		return 0, errUninitializedPool
+	}
 	result, err_9 := pool.conn.Exec(query, args...)
 	if err_9 != nil {
 		return 0, err_9
@@ -221,16 +254,22 @@ func LastInsertId(pool Pool, query string, args ...any) (int64, error) {
 	return id, nil
 }
 
-// ScanAll scans all rows into a slice of structs.
+// ScanAll scans all rows into a slice of structs or single-column scalar values.
 // Automatically closes rows when done.
-// Column-to-field mapping: as "tag" > exact name (case-insensitive) > snake_case.
-// NULL values currently become Go zero values — optional-reference fields
-// lose the NULL distinction. This is a known audit blocker; callers who need
-// explicit NULL handling should scan manually with optional reference types.
+// Column-to-field mapping for structs: as "tag" > exact name (case-insensitive) > snake_case.
+// NULL values become the Go zero value of the field type — for optional-reference
+// fields that is empty, and a non-NULL value allocates the element, so the NULL
+// distinction is preserved. datetime.Time fields accept TEXT timestamps (common
+// SQLite layouts) and INTEGER unix seconds.
 // Example: users := db.Query(pool, "SELECT id, name FROM users") |> db.ScanAll of User onerr panic "{error}"
 func ScanAll[T any](rows Rows) ([]T, error) {
-	defer rows.rows.Close()
-	columns, err_11 := rows.rows.Columns()
+	sqlRows := rows.rows
+	if sqlRows == nil {
+		var _zero0 []T
+		return _zero0, errUninitializedRows
+	}
+	defer sqlRows.Close()
+	columns, err_11 := sqlRows.Columns()
 	if err_11 != nil {
 		return []T{}, err_11
 	}
@@ -240,9 +279,29 @@ func ScanAll[T any](rows Rows) ([]T, error) {
 		var _zero0 []T
 		return _zero0, errors.New("db.ScanAll: cannot determine element type (T must not be an interface)")
 	}
+	result := make([]T, 0, 64)
+	if elemType.Kind() != reflect.Struct {
+		if len(columns) != 1 {
+			var _zero0 []T
+			return _zero0, fmt.Errorf("db.ScanAll: scalar destination %v requires 1 column, got %v", elemType, len(columns))
+		}
+		scanner := &nullSafeField{}
+		for sqlRows.Next() {
+			result = append(result, zero)
+			scanner.target = reflect.ValueOf(&result[len(result)-1]).Elem()
+			err_12 := sqlRows.Scan(scanner)
+			if err_12 != nil {
+				return nil, err_12
+			}
+		}
+		err_13 := sqlRows.Err()
+		if err_13 != nil {
+			return []T{}, err_13
+		}
+		return result, nil
+	}
 	maps := loadFieldMaps(elemType)
 	indices := resolveColumns(maps, columns)
-	result := make([]T, 0, 64)
 	scanTargets := make([]any, len(columns))
 	scanners := make([]*nullSafeField, len(columns))
 	throwaway := ""
@@ -254,7 +313,7 @@ func ScanAll[T any](rows Rows) ([]T, error) {
 			scanTargets[ci] = &throwaway
 		}
 	}
-	for rows.rows.Next() {
+	for sqlRows.Next() {
 		result = append(result, zero)
 		elemVal := reflect.ValueOf(&result[len(result)-1]).Elem()
 		for ci := range len(columns) {
@@ -262,76 +321,104 @@ func ScanAll[T any](rows Rows) ([]T, error) {
 				scanners[ci].target = elemVal.Field(indices[ci])
 			}
 		}
-		err_12 := rows.rows.Scan(scanTargets...)
-		if err_12 != nil {
-			return nil, err_12
+		err_14 := sqlRows.Scan(scanTargets...)
+		if err_14 != nil {
+			return nil, err_14
 		}
 	}
-	err_13 := rows.rows.Err()
-	if err_13 != nil {
-		return []T{}, err_13
+	err_15 := sqlRows.Err()
+	if err_15 != nil {
+		return []T{}, err_15
 	}
 	return result, nil
 }
 
-// ScanOne scans exactly one row from the result set.
+// ScanOne scans exactly one row from the result set into a struct or a
+// single-column scalar value.
 // Returns an error if zero or more than one row is returned.
 // Automatically closes rows when done.
 // Example: user := db.Query(pool, "SELECT * FROM users WHERE id = $1", id) |> db.ScanOne of User onerr panic "{error}"
 func ScanOne[T any](rows Rows) (T, error) {
-	defer rows.rows.Close()
-	columns, err_14 := rows.rows.Columns()
-	if err_14 != nil {
-		var _zero0 T
-		return _zero0, err_14
-	}
 	zero := *new(T)
-	elemType := reflect.TypeOf(zero)
-	if elemType == nil {
-		return zero, errors.New("db.ScanOne: cannot determine element type (T must not be an interface)")
+	sqlRows := rows.rows
+	if sqlRows == nil {
+		return zero, errUninitializedRows
 	}
-	if !rows.rows.Next() {
-		err_15 := rows.rows.Err()
-		if err_15 != nil {
-			var _zero0 T
-			return _zero0, err_15
-		}
-		return zero, errors.New("db.ScanOne: no rows returned")
-	}
-	maps := loadFieldMaps(elemType)
-	indices := resolveColumns(maps, columns)
-	elemPtr := reflect.New(elemType)
-	fieldPtrs := buildScanTargets(elemPtr.Elem(), indices)
-	err_16 := rows.rows.Scan(fieldPtrs...)
+	defer sqlRows.Close()
+	columns, err_16 := sqlRows.Columns()
 	if err_16 != nil {
 		var _zero0 T
 		return _zero0, err_16
 	}
-	if rows.rows.Next() {
+	elemType := reflect.TypeOf(zero)
+	if elemType == nil {
+		return zero, errors.New("db.ScanOne: cannot determine element type (T must not be an interface)")
+	}
+	if elemType.Kind() != reflect.Struct && len(columns) != 1 {
+		return zero, fmt.Errorf("db.ScanOne: scalar destination %v requires 1 column, got %v", elemType, len(columns))
+	}
+	if !sqlRows.Next() {
+		err_17 := sqlRows.Err()
+		if err_17 != nil {
+			var _zero0 T
+			return _zero0, err_17
+		}
+		return zero, errors.New("db.ScanOne: no rows returned")
+	}
+	elemPtr := reflect.New(elemType)
+	if elemType.Kind() != reflect.Struct {
+		err_18 := sqlRows.Scan(&nullSafeField{target: elemPtr.Elem()})
+		if err_18 != nil {
+			var _zero0 T
+			return _zero0, err_18
+		}
+	} else {
+		maps := loadFieldMaps(elemType)
+		indices := resolveColumns(maps, columns)
+		fieldPtrs := buildScanTargets(elemPtr.Elem(), indices)
+		err_19 := sqlRows.Scan(fieldPtrs...)
+		if err_19 != nil {
+			var _zero0 T
+			return _zero0, err_19
+		}
+	}
+	if sqlRows.Next() {
 		return zero, errors.New("db.ScanOne: more than one row returned")
 	}
-	err_17 := rows.rows.Err()
-	if err_17 != nil {
+	err_20 := sqlRows.Err()
+	if err_20 != nil {
 		var _zero0 T
-		return _zero0, err_17
+		return _zero0, err_20
 	}
 	return elemPtr.Elem().Interface().(T), nil
 }
 
-// ScanRow scans a single Row (from QueryRow) into a struct.
+// ScanRow scans a single Row (from QueryRow) into a struct or a single-column
+// scalar value.
 // Example: user := db.QueryRow(pool, "SELECT * FROM users WHERE id = $1", id) |> db.ScanRow of User onerr panic "{error}"
 func ScanRow[T any](row Row) (T, error) {
 	zero := *new(T)
+	if row.row == nil {
+		return zero, errUninitializedRow
+	}
 	elemType := reflect.TypeOf(zero)
 	if elemType == nil {
 		return zero, errors.New("db.ScanRow: cannot determine element type (T must not be an interface)")
 	}
 	elemPtr := reflect.New(elemType)
+	if elemType.Kind() != reflect.Struct {
+		err_21 := row.row.Scan(&nullSafeField{target: elemPtr.Elem()})
+		if err_21 != nil {
+			var _zero0 T
+			return _zero0, err_21
+		}
+		return elemPtr.Elem().Interface().(T), nil
+	}
 	scanners := orderedFieldScanners(elemPtr.Elem(), elemType)
-	err_18 := row.row.Scan(scanners...)
-	if err_18 != nil {
+	err_22 := row.row.Scan(scanners...)
+	if err_22 != nil {
 		var _zero0 T
-		return _zero0, err_18
+		return _zero0, err_22
 	}
 	return elemPtr.Elem().Interface().(T), nil
 }
@@ -340,6 +427,9 @@ func ScanRow[T any](row Row) (T, error) {
 // Usually not needed — ScanAll and ScanOne close automatically.
 // Example: defer db.CloseRows(rows)
 func CloseRows(rows Rows) error {
+	if rows.rows == nil {
+		return errUninitializedRows
+	}
 	return rows.rows.Close()
 }
 
@@ -353,9 +443,12 @@ func CloseRows(rows Rows) error {
 //	    return empty
 //	) onerr panic "transfer failed: {error}"
 func Transaction(pool Pool, fn func(Tx) error) error {
-	sqlTx, err_19 := pool.conn.Begin()
-	if err_19 != nil {
-		return err_19
+	if pool.conn == nil {
+		return errUninitializedPool
+	}
+	sqlTx, err_23 := pool.conn.Begin()
+	if err_23 != nil {
+		return err_23
 	}
 	tx := Tx{tx: sqlTx}
 	defer func() {
@@ -366,9 +459,9 @@ func Transaction(pool Pool, fn func(Tx) error) error {
 	}()
 	err := fn(tx)
 	if err != nil {
-		err_20 := sqlTx.Rollback()
-		if err_20 != nil {
-			return err_20
+		err_24 := sqlTx.Rollback()
+		if err_24 != nil {
+			return err_24
 		}
 		return err
 	}
@@ -395,10 +488,13 @@ func toSQLLevel(level IsolationLevel) sql.IsolationLevel {
 // TransactionWith executes fn within a transaction with custom options.
 // Example: db.TransactionWith(pool, db.TxOptions{IsolationLevel: db.IsolationLevel.Serializable}, fn) onerr panic "{error}"
 func TransactionWith(pool Pool, opts TxOptions, fn func(Tx) error) error {
+	if pool.conn == nil {
+		return errUninitializedPool
+	}
 	txOpts := sql.TxOptions{ReadOnly: opts.ReadOnly, Isolation: toSQLLevel(opts.IsolationLevel)}
-	sqlTx, err_21 := pool.conn.BeginTx(ctxpkg.Background().Ctx, &txOpts)
-	if err_21 != nil {
-		return err_21
+	sqlTx, err_25 := pool.conn.BeginTx(ctxpkg.Background().Ctx, &txOpts)
+	if err_25 != nil {
+		return err_25
 	}
 	tx := Tx{tx: sqlTx}
 	defer func() {
@@ -409,9 +505,9 @@ func TransactionWith(pool Pool, opts TxOptions, fn func(Tx) error) error {
 	}()
 	err := fn(tx)
 	if err != nil {
-		err_22 := sqlTx.Rollback()
-		if err_22 != nil {
-			return err_22
+		err_26 := sqlTx.Rollback()
+		if err_26 != nil {
+			return err_26
 		}
 		return err
 	}
@@ -421,10 +517,13 @@ func TransactionWith(pool Pool, opts TxOptions, fn func(Tx) error) error {
 // TxQuery executes a query within a transaction that returns rows.
 // Example: rows := db.TxQuery(tx, "SELECT * FROM users") onerr panic "{error}"
 func TxQuery(tx Tx, query string, args ...any) (Rows, error) {
-	rows, err_23 := tx.tx.Query(query, args...)
-	if err_23 != nil {
+	if tx.tx == nil {
+		return Rows{rows: nil}, errUninitializedTx
+	}
+	rows, err_27 := tx.tx.Query(query, args...)
+	if err_27 != nil {
 		var _zero0 Rows
-		return _zero0, err_23
+		return _zero0, err_27
 	}
 	result := Rows{rows: rows}
 	return result, nil
@@ -433,6 +532,9 @@ func TxQuery(tx Tx, query string, args ...any) (Rows, error) {
 // TxQueryRow executes a query within a transaction that returns at most one row.
 // Example: row := db.TxQueryRow(tx, "SELECT * FROM users WHERE id = $1", id)
 func TxQueryRow(tx Tx, query string, args ...any) Row {
+	if tx.tx == nil {
+		return Row{row: nil}
+	}
 	row := tx.tx.QueryRow(query, args...)
 	return Row{row: row}
 }
@@ -441,13 +543,16 @@ func TxQueryRow(tx Tx, query string, args ...any) Row {
 // Returns the number of rows affected.
 // Example: db.TxExec(tx, "UPDATE users SET active = true WHERE id = $1", id) onerr return
 func TxExec(tx Tx, query string, args ...any) (int64, error) {
-	result, err_24 := tx.tx.Exec(query, args...)
-	if err_24 != nil {
-		return 0, err_24
+	if tx.tx == nil {
+		return 0, errUninitializedTx
 	}
-	affected, err_25 := result.RowsAffected()
-	if err_25 != nil {
-		return 0, err_25
+	result, err_28 := tx.tx.Exec(query, args...)
+	if err_28 != nil {
+		return 0, err_28
+	}
+	affected, err_29 := result.RowsAffected()
+	if err_29 != nil {
+		return 0, err_29
 	}
 	return affected, nil
 }
@@ -455,11 +560,14 @@ func TxExec(tx Tx, query string, args ...any) (int64, error) {
 // Count executes a COUNT query and returns the result as int64.
 // Example: n := db.Count(pool, "SELECT COUNT(*) FROM users WHERE active = $1", true) onerr panic "{error}"
 func Count(pool Pool, query string, args ...any) (int64, error) {
+	if pool.conn == nil {
+		return 0, errUninitializedPool
+	}
 	row := pool.conn.QueryRow(query, args...)
 	n := int64(0)
-	err_26 := row.Scan(&n)
-	if err_26 != nil {
-		return 0, err_26
+	err_30 := row.Scan(&n)
+	if err_30 != nil {
+		return 0, err_30
 	}
 	return n, nil
 }
@@ -467,14 +575,17 @@ func Count(pool Pool, query string, args ...any) (int64, error) {
 // Exists checks whether a query returns at least one row.
 // Example: found := db.Exists(pool, "SELECT 1 FROM users WHERE email = $1", email) onerr panic "{error}"
 func Exists(pool Pool, query string, args ...any) (bool, error) {
+	if pool.conn == nil {
+		return false, errUninitializedPool
+	}
 	row := pool.conn.QueryRow(query, args...)
 	dummy := 0
-	err_27 := row.Scan(&dummy)
-	if err_27 != nil {
-		if errors.Is(err_27, sql.ErrNoRows) {
+	err_31 := row.Scan(&dummy)
+	if err_31 != nil {
+		if errors.Is(err_31, sql.ErrNoRows) {
 			return false, nil
 		}
-		return false, err_27
+		return false, err_31
 	}
 	return true, nil
 }
@@ -482,7 +593,11 @@ func Exists(pool Pool, query string, args ...any) (bool, error) {
 // RawDB returns the underlying *sql.DB for driver-specific operations.
 // Most users should prefer the higher-level db functions.
 func RawDB(pool Pool) *sql.DB {
-	return pool.conn
+	conn := pool.conn
+	if conn != nil {
+		return conn
+	}
+	panic("db.RawDB: pool is not initialized")
 }
 
 // NewPool wraps an existing *sql.DB as a Pool.
@@ -576,13 +691,33 @@ func buildScanTargets(elem reflect.Value, indices []int) []any {
 }
 
 // nullSafeField wraps a struct field for NULL-safe scanning.
-// SQL NULL values become the Go zero value of the target field type.
+// SQL NULL values become the Go zero value of the target field type; for
+// optional-reference (pointer) fields that zero value is empty, so NULL and
+// non-NULL stay distinct.
 type nullSafeField struct {
 	target reflect.Value
 }
 
+// timeType is the reflect.Type of time.Time, matched before the generic
+// ConvertibleTo path because SQLite stores timestamps as TEXT or INTEGER.
+var timeType = reflect.TypeFor[time.Time]()
+
+// timeLayouts are the text layouts SQLite drivers commonly emit for
+// timestamp columns, tried in order when scanning into a time.Time field.
+var timeLayouts = []string{time.RFC3339Nano, time.RFC3339, "2006-01-02 15:04:05.999999999Z07:00", "2006-01-02 15:04:05.999999999", "2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02"}
+
 func (s *nullSafeField) Scan(value any) error {
 	if value == nil {
+		return nil
+	}
+	if s.target.Kind() == reflect.Pointer {
+		elemPtr := reflect.New(s.target.Type().Elem())
+		inner := &nullSafeField{target: elemPtr.Elem()}
+		err_32 := inner.Scan(value)
+		if err_32 != nil {
+			return err_32
+		}
+		s.target.Set(elemPtr)
 		return nil
 	}
 	if s.target.Kind() == reflect.Bool {
@@ -602,6 +737,26 @@ func (s *nullSafeField) Scan(value any) error {
 	if bytes, _isOk := value.([]byte); _isOk {
 		value = append([]byte{}, bytes...)
 	}
+	if s.target.Type() == timeType {
+		if t, _isOk := value.(time.Time); _isOk {
+			s.target.Set(reflect.ValueOf(t))
+			return nil
+		}
+		if n, _isOk := value.(int64); _isOk {
+			s.target.Set(reflect.ValueOf(time.Unix(n, 0).UTC()))
+			return nil
+		}
+		if n, _isOk := value.(int); _isOk {
+			s.target.Set(reflect.ValueOf(time.Unix(int64(n), 0).UTC()))
+			return nil
+		}
+		if str, _isOk := value.(string); _isOk {
+			return scanTimeString(s, str)
+		}
+		if b, _isOk := value.([]byte); _isOk {
+			return scanTimeString(s, string(b))
+		}
+	}
 	src := reflect.ValueOf(value)
 	if src.Type().ConvertibleTo(s.target.Type()) {
 		s.target.Set(src.Convert(s.target.Type()))
@@ -613,6 +768,19 @@ func (s *nullSafeField) Scan(value any) error {
 		}
 	}
 	return nil
+}
+
+// scanTimeString parses str into s.target (a time.Time field) trying each
+// common SQLite timestamp layout in order.
+func scanTimeString(s *nullSafeField, str string) error {
+	for _, layout := range timeLayouts {
+		parsed, err := time.Parse(layout, str)
+		if err == nil {
+			s.target.Set(reflect.ValueOf(parsed))
+			return nil
+		}
+	}
+	return fmt.Errorf("db: cannot parse \"%v\" as time.Time", str)
 }
 
 // orderedFieldScanners creates null-safe scanners for all exported struct fields

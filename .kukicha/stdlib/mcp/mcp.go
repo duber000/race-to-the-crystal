@@ -5,6 +5,7 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"kukicha.org/kukicha/stdlib/content"
@@ -436,7 +437,16 @@ func Tool[T any, R any](server *mcp.Server, name string, description string, sch
 	})
 }
 
+// errUninitializedClient / errUninitializedSession are returned by client and
+// session operations on a nil or zero-value handle — they compose with onerr
+// instead of nil-panicking.
+var errUninitializedClient = errors.New("mcp: client is not initialized")
+
+var errUninitializedSession = errors.New("mcp: session is not initialized")
+
 // Client is a wrapper around mcp.Client for creating MCP client sessions.
+// A zero-value Client{} is uninitialized: Connect/ConnectWith return
+// errUninitializedClient.
 type Client struct {
 	inner *mcp.Client
 }
@@ -456,6 +466,9 @@ func (c *Client) Connect(ctx context.Context, endpoint string) (*ClientSession, 
 // Pass a custom http.Client to inject authentication headers (e.g. via a custom RoundTripper).
 // If httpClient is nil, the default http.Client is used.
 func (c *Client) ConnectWith(ctx context.Context, endpoint string, httpClient *http.Client) (*ClientSession, error) {
+	if c == nil || c.inner == nil {
+		return nil, errUninitializedClient
+	}
 	transport := &mcp.StreamableClientTransport{Endpoint: endpoint, HTTPClient: httpClient}
 	session, err_6 := c.inner.Connect(ctx, transport, nil)
 	if err_6 != nil {
@@ -465,6 +478,8 @@ func (c *Client) ConnectWith(ctx context.Context, endpoint string, httpClient *h
 }
 
 // ClientSession is a wrapper around mcp.ClientSession
+// A nil or zero-value session is uninitialized: every session operation
+// returns errUninitializedSession.
 type ClientSession struct {
 	inner *mcp.ClientSession
 }
@@ -535,11 +550,17 @@ func ConnectFromSession(inner *mcp.ClientSession) *ClientSession {
 
 // Close closes the MCP client session.
 func Close(session *ClientSession) error {
+	if session == nil || session.inner == nil {
+		return errUninitializedSession
+	}
 	return session.inner.Close()
 }
 
 // ListTools retrieves the available tools from the connected MCP server.
 func ListTools(ctx context.Context, session *ClientSession) ([]ClientTool, error) {
+	if session == nil || session.inner == nil {
+		return nil, errUninitializedSession
+	}
 	result, err_8 := session.inner.ListTools(ctx, nil)
 	if err_8 != nil {
 		err_8 = fmt.Errorf("MCP ListTools failed: %w", err_8)
@@ -560,6 +581,9 @@ func ListTools(ctx context.Context, session *ClientSession) ([]ClientTool, error
 // CallTool calls a specific tool by name with arguments.
 // Use the Content field of the result for typed access to response items.
 func CallTool(ctx context.Context, session *ClientSession, name string, args JSONObject) (CallToolResult, error) {
+	if session == nil || session.inner == nil {
+		return CallToolResult{}, errUninitializedSession
+	}
 	params := &mcp.CallToolParams{Name: name, Arguments: args}
 	result, err_9 := session.inner.CallTool(ctx, params)
 	if err_9 != nil {
@@ -799,6 +823,9 @@ type ToolContext struct {
 // inherited from the originating tool call request; if the client did not
 // supply a progress token the call is a no-op (returns nil without sending).
 func (tc *ToolContext) Progress(ctx context.Context, progress float64, total float64, msg string) error {
+	if tc == nil || tc.inner == nil {
+		return errUninitializedSession
+	}
 	if tc.progressToken == nil {
 		return nil
 	}
@@ -810,6 +837,9 @@ func (tc *ToolContext) Progress(ctx context.Context, progress float64, total flo
 // (only valid when action equals ElicitAction.Accept). schema is the JSON schema
 // describing the expected response shape.
 func (tc *ToolContext) Elicit(ctx context.Context, message string, schema any) (ElicitAction, JSONObject, error) {
+	if tc == nil || tc.inner == nil {
+		return ElicitAction(""), nil, errUninitializedSession
+	}
 	result, err := tc.inner.Elicit(ctx, &mcp.ElicitParams{Message: message, RequestedSchema: schema})
 	if err != nil {
 		return ElicitAction(""), nil, err
@@ -914,6 +944,9 @@ type ClientPrompt struct {
 
 // ListResources retrieves the available resources from the connected server.
 func ListResources(ctx context.Context, session *ClientSession) ([]ClientResource, error) {
+	if session == nil || session.inner == nil {
+		return nil, errUninitializedSession
+	}
 	result, err_12 := session.inner.ListResources(ctx, nil)
 	if err_12 != nil {
 		err_12 = fmt.Errorf("MCP ListResources failed: %w", err_12)
@@ -928,6 +961,9 @@ func ListResources(ctx context.Context, session *ClientSession) ([]ClientResourc
 
 // ListResourceTemplates retrieves the resource templates from the server.
 func ListResourceTemplates(ctx context.Context, session *ClientSession) ([]ClientResourceTemplate, error) {
+	if session == nil || session.inner == nil {
+		return nil, errUninitializedSession
+	}
 	result, err_13 := session.inner.ListResourceTemplates(ctx, nil)
 	if err_13 != nil {
 		err_13 = fmt.Errorf("MCP ListResourceTemplates failed: %w", err_13)
@@ -944,6 +980,9 @@ func ListResourceTemplates(ctx context.Context, session *ClientSession) ([]Clien
 // A single resource may have multiple content entries (rare for text, more
 // common for embedded multi-file resources).
 func ReadResource(ctx context.Context, session *ClientSession, uri string) ([]*mcp.ResourceContents, error) {
+	if session == nil || session.inner == nil {
+		return nil, errUninitializedSession
+	}
 	result, err_14 := session.inner.ReadResource(ctx, &mcp.ReadResourceParams{URI: uri})
 	if err_14 != nil {
 		return []*mcp.ResourceContents{}, fmt.Errorf("MCP ReadResource \"%v\" failed: %v", uri, err_14)
@@ -953,6 +992,9 @@ func ReadResource(ctx context.Context, session *ClientSession, uri string) ([]*m
 
 // ListPrompts retrieves the available prompts from the connected server.
 func ListPrompts(ctx context.Context, session *ClientSession) ([]ClientPrompt, error) {
+	if session == nil || session.inner == nil {
+		return nil, errUninitializedSession
+	}
 	result, err_15 := session.inner.ListPrompts(ctx, nil)
 	if err_15 != nil {
 		err_15 = fmt.Errorf("MCP ListPrompts failed: %w", err_15)
@@ -971,6 +1013,9 @@ func ListPrompts(ctx context.Context, session *ClientSession) ([]ClientPrompt, e
 
 // GetPrompt retrieves a prompt by name with the given arguments.
 func GetPrompt(ctx context.Context, session *ClientSession, name string, args PromptArgs) (*mcp.GetPromptResult, error) {
+	if session == nil || session.inner == nil {
+		return nil, errUninitializedSession
+	}
 	return session.inner.GetPrompt(ctx, &mcp.GetPromptParams{Name: name, Arguments: args})
 }
 

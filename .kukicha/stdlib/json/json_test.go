@@ -1684,3 +1684,20 @@ func TestUnknownCapture_CodecInlines(t *testing.T) {
 	}
 	test.AssertEqual(t, string(data), "{\"id\":\"a\",\"action\":\"push\",\"bar\":2,\"foo\":\"x\"}")
 }
+
+// --- TestZeroValueEncoderDecoderReturnError ---
+func TestZeroValueEncoderDecoderReturnError(t *testing.T) {
+	err := json.Encode(json.Encoder{}, map[string]any{"a": 1})
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "not initialized")
+	target := 0
+	err = json.Decode(json.Decoder{}, &target)
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "not initialized")
+	err = json.Encode(json.NewEncoder(nil), 1)
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "not initialized")
+	err = json.Decode(json.NewDecoder(nil), &target)
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "not initialized")
+}

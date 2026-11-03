@@ -57,3 +57,26 @@ func TestGetValueMissing(t *testing.T) {
 	h := ctx.Background()
 	test.AssertEqual(t, ctx.GetValue(h, authKey{}), nil)
 }
+
+// A zero-value Handle{} behaves like Background: child contexts derive from
+// Background instead of panicking on a nil parent, and ctx.Cancel is a no-op.
+func TestZeroValueHandle(t *testing.T) {
+	zero := ctx.Handle{}
+	h := ctx.WithTimeout(zero, 60*time.Second)
+	test.AssertTrue(t, h.Ctx != nil)
+	ctx.Cancel(h)
+	test.AssertNotEqual(t, h.Ctx.Err(), nil)
+	c := ctx.WithCancel(zero)
+	test.AssertTrue(t, c.Ctx != nil)
+	ctx.Cancel(c)
+	test.AssertNotEqual(t, c.Ctx.Err(), nil)
+	d := ctx.WithDeadline(zero, time.Now().Add(time.Hour))
+	test.AssertTrue(t, d.Ctx != nil)
+	v := ctx.WithValue(zero, authKey{}, "x")
+	test.AssertEqual(t, ctx.GetValue(v, authKey{}), "x")
+	test.AssertEqual(t, ctx.GetValue(zero, authKey{}), nil)
+	fromEmpty := ctx.FromContext(nil)
+	test.AssertTrue(t, fromEmpty.Ctx != nil)
+	test.AssertEqual(t, fromEmpty.Ctx.Err(), nil)
+	ctx.Cancel(zero)
+}

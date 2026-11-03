@@ -882,3 +882,26 @@ func openProbe(t *testing.T, path string) db.Pool {
 	}
 	return pool
 }
+
+// --- TestZeroValueLogReturnsError ---
+func TestZeroValueLogReturnsError(t *testing.T) {
+	log := audit.Log{}
+	check := func(label string, err error) {
+		t.Run(label, func(t *testing.T) {
+			test.AssertError(t, err)
+			test.AssertContains(t, err.Error(), "not initialized")
+		})
+	}
+	check("Close", audit.Close(log))
+	check("VerifySchema", audit.VerifySchema(log))
+	check("Record", audit.Record(log, audit.Event{Actor: "a", Action: "b", Outcome: audit.Skipped{Reason: "x"}}))
+	_, err := audit.Query(log, audit.Filter{})
+	check("Query", err)
+	check("Verify", audit.Verify(log))
+	check("VerifyIncremental", audit.VerifyIncremental(log))
+	check("Checkpoint", audit.Checkpoint(log))
+	check("Vacuum", audit.Vacuum(log, time.Now()))
+	audit.SetCheckpointInterval(log, 10)
+	tail := audit.Tail(log)
+	test.AssertEqual(t, tail.Seq, int64(0))
+}
