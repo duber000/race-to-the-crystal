@@ -34,9 +34,11 @@ func NewToken(id: types.TokenID, playerId: types.PlayerID, health: int, maxHealt
     }, empty
 
 func movementRange on t: reference Token int
+    if t.health <= 4
+        return 4
     if t.health <= 6
-        return 2
-    return 1
+        return 3
+    return 2
 
 # kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Position on t: reference Token types.Position
@@ -68,6 +70,9 @@ func IsDeployed on t: reference Token bool
 
 func attackPower on t: reference Token int
     return t.health / 2
+
+func counterAttackPower on t: reference Token int
+    return t.health / 2 / 2
 
 func takeDamage on t: reference Token(damage: int) bool
     t.health = t.health - damage

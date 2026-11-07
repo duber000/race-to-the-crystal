@@ -14,6 +14,7 @@ type Crystal
     holdingTokenIds: list of types.TokenID
     turnsHeld: int
     baseTokensRequired: int
+    charge: map of types.PlayerID to int
 
 func NewCrystal(position: types.Position) Crystal
     return Crystal{
@@ -22,6 +23,7 @@ func NewCrystal(position: types.Position) Crystal
         holdingTokenIds: empty list of types.TokenID,
         turnsHeld: 0,
         baseTokensRequired: constants.CRYSTAL_BASE_TOKENS_REQUIRED,
+        charge: empty map of types.PlayerID to int,
     }
 
 func turnsRequired on c: reference Crystal int
@@ -40,11 +42,17 @@ func TurnsHeld on c: reference Crystal int
     return c.turnsHeld
 
 func getTokensRequired on c: reference Crystal(disabledGenerators: int) int
-    reduction := disabledGenerators * constants.GENERATOR_TOKEN_REDUCTION
-    required := c.baseTokensRequired - reduction
-    if required < 1
-        return 1
-    return required
+    return c.baseTokensRequired
+
+func chargeTarget on c: reference Crystal int
+    return constants.CRYSTAL_CHARGE_TARGET
+
+func chargeFor on c: reference Crystal(playerId: types.PlayerID) int
+    return c.charge[playerId]
+
+func addCharge on c: reference Crystal(playerId: types.PlayerID, amount: int) int
+    c.charge[playerId] = c.charge[playerId] + amount
+    return c.charge[playerId]
 
 func updateCaptureStatus on c: reference Crystal(tokensAtPos: list of TokenAtPos, disabledGenerators: int) CrystalOutcome
     c.holdingTokenIds = empty list of types.TokenID
@@ -54,15 +62,12 @@ func updateCaptureStatus on c: reference Crystal(tokensAtPos: list of TokenAtPos
     requiredTokens := c.getTokensRequired(disabledGenerators)
 
     if found and dominantCount >= requiredTokens
-        if dominantPlayer equals c.holdingPlayerId
-            c.turnsHeld = c.turnsHeld + 1
-            c.holdingTokenIds = counts[dominantPlayer]
-            if c.turnsHeld >= constants.CRYSTAL_CAPTURE_TURNS_REQUIRED
-                return CrystalOutcome{winnerId: dominantPlayer, isWinner: true}
-        else
-            c.holdingPlayerId = dominantPlayer
-            c.turnsHeld = 1
-            c.holdingTokenIds = counts[dominantPlayer]
+        c.holdingPlayerId = dominantPlayer
+        c.holdingTokenIds = counts[dominantPlayer]
+        c.addCharge(dominantPlayer, constants.CRYSTAL_CHARGE_PER_HOLD)
+        newCharge := c.charge[dominantPlayer]
+        if newCharge >= constants.CRYSTAL_CHARGE_TARGET
+            return CrystalOutcome{winnerId: dominantPlayer, isWinner: true}
     else
         c.holdingPlayerId = ""
         c.turnsHeld = 0
@@ -72,6 +77,7 @@ func updateCaptureStatus on c: reference Crystal(tokensAtPos: list of TokenAtPos
 func resetCapture on c: reference Crystal
     c.holdingPlayerId = ""
     c.turnsHeld = 0
+    c.charge = empty map of types.PlayerID to int
     c.holdingTokenIds = empty list of types.TokenID
 
 func getCaptureProgress on c: reference Crystal() (int, int)

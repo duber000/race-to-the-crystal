@@ -30,6 +30,8 @@ enum GameEvent
         DefenderPosition: list of int
         Damage: int
         DefenderKilled: bool
+        CounterDamage: int
+        AttackerKilled: bool
     TokenDeployed
         TokenID: types.TokenID
         HealthValue: int
@@ -67,6 +69,11 @@ enum GameEvent
     GameEnded
         WinnerID: types.PlayerID
         WinnerName: string
+    CrystalCharged
+        PlayerID: types.PlayerID
+        Charge: int
+        ChargeTarget: int
+        Position: list of int
 
 # Wire name of an event, e.g. "TOKEN_MOVED".
 func EventTypeName(e: GameEvent) string
@@ -91,6 +98,8 @@ func EventTypeName(e: GameEvent) string
             return "RADIO_CHATTER"
         when GameEnded
             return "GAME_ENDED"
+        when CrystalCharged
+            return "CRYSTAL_CHARGED"
 
 # Flat JSON representation of an event, with a "type" discriminator. The
 # shape is stable: it is the wire format for the live stream, the battle
@@ -113,6 +122,8 @@ func EventToDict(e: GameEvent) JSONMap
                 "defender_position": e.DefenderPosition,
                 "damage": e.Damage,
                 "defender_killed": e.DefenderKilled,
+                "counter_damage": e.CounterDamage,
+                "attacker_killed": e.AttackerKilled,
             }
         when TokenDeployed
             return JSONMap{
@@ -173,6 +184,14 @@ func EventToDict(e: GameEvent) JSONMap
                 "winner_id": e.WinnerID,
                 "winner_name": e.WinnerName,
             }
+        when CrystalCharged
+            return JSONMap{
+                "type": "CRYSTAL_CHARGED",
+                "player_id": e.PlayerID,
+                "charge": e.Charge,
+                "charge_target": e.ChargeTarget,
+                "position": e.Position,
+            }
 
 # ==========================================================================
 # Deriving events from game state
@@ -226,6 +245,8 @@ func EventsForAction(gs: reference GameState, data: ActionResultData) list of Ga
                     DefenderPosition: tokenPosition(gs, data.DefenderID),
                     Damage: data.DamageDealt,
                     DefenderKilled: data.DefenderKilled,
+                    CounterDamage: data.CounterDamage,
+                    AttackerKilled: data.AttackerKilled,
                 },
             }
         when DeployData

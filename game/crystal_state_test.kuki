@@ -6,11 +6,11 @@ import "race-to-the-crystal/shared/types" as types
 import "stdlib/test"
 import "testing"
 
-# The crystal capture must accumulate across end turns. The unit-level
+# The crystal charge must accumulate across end turns. The unit-level
 # Crystal tests above cover `updateCaptureStatus` in isolation; this one
 # covers the integration path (GameState -> updateGeneratorsAndCrystal ->
 # Crystal), which is where a `dereference` copy silently discarded the
-# capture progress and left the crystal uncapturable.
+# charge progress and left the crystal uncapturable.
 func TestCrystalCaptureProgressesThroughGameState(t: reference testing.T)
     gsRef := reference of CreateGame(2)
     gsRef.StartGame()
@@ -27,13 +27,23 @@ func TestCrystalCaptureProgressesThroughGameState(t: reference testing.T)
 
     gsRef.EndTurnWithObjectiveUpdate()
     test.AssertEqual(t, ci.holdingPlayerId, types.PlayerID("player_0"))
-    test.AssertEqual(t, ci.turnsHeld, 1)
+    test.AssertEqual(t, ci.charge[types.PlayerID("player_0")], 10)
 
     gsRef.EndTurnWithObjectiveUpdate()
-    test.AssertEqual(t, ci.turnsHeld, 2)
+    test.AssertEqual(t, ci.charge[types.PlayerID("player_0")], 20)
 
     gsRef.EndTurnWithObjectiveUpdate()
-    test.AssertEqual(t, ci.turnsHeld, 3)
+    test.AssertEqual(t, ci.charge[types.PlayerID("player_0")], 30)
+    gsRef.EndTurnWithObjectiveUpdate()
+    test.AssertEqual(t, ci.charge[types.PlayerID("player_0")], 40)
+    gsRef.EndTurnWithObjectiveUpdate()
+    test.AssertEqual(t, ci.charge[types.PlayerID("player_0")], 50)
+    gsRef.EndTurnWithObjectiveUpdate()
+    test.AssertEqual(t, ci.charge[types.PlayerID("player_0")], 60)
+    gsRef.EndTurnWithObjectiveUpdate()
+    test.AssertEqual(t, ci.charge[types.PlayerID("player_0")], 70)
+    gsRef.EndTurnWithObjectiveUpdate()
+    test.AssertEqual(t, ci.charge[types.PlayerID("player_0")], 80)
     test.AssertEqual(t, gsRef.phase, enums.ENDED)
     test.AssertEqual(t, gsRef.winnerId, types.PlayerID("player_0"))
 

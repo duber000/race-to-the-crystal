@@ -1,0 +1,95 @@
+petiole game
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types"
+import "stdlib/test"
+import "testing"
+
+func aiChosenToAction(c: ChosenAction) AIAction
+    switch c
+        when ChosenMove
+            dest := types.Pos(c.Destination[0], c.Destination[1])
+            return NewMoveAction(c.TokenID, dest)
+        when ChosenAttack
+            return NewAttackAction(c.AttackerID, c.DefenderID)
+        when ChosenDeploy
+            pos := types.Pos(c.Position[0], c.Position[1])
+            return NewDeployAction(c.HealthValue, pos)
+        default
+            return NewEndTurnAction()
+
+func TestAISimulation4P(t: reference testing.T)
+    gs := reference of CreateGame(4)
+    gs.StartGame()
+    strategies := list of AIStrategyName{
+        AIStrategyName.AGGRESSIVE,
+        AIStrategyName.DEFENSIVE,
+        AIStrategyName.RANDOM,
+        AIStrategyName.AGGRESSIVE,
+    }
+    playerIds := list of types.PlayerID{
+        types.PlayerID("player_0"),
+        types.PlayerID("player_1"),
+        types.PlayerID("player_2"),
+        types.PlayerID("player_3"),
+    }
+    turn := 0
+    maxTurns := 120
+    for turn < maxTurns
+        if gs.Phase() equals enums.ENDED
+            break
+        curr := gs.CurrentTurnPlayerID()
+        idx := 0
+        for i, pid in playerIds
+            if pid equals curr
+                idx = i
+                break
+        strat := strategies[idx]
+        # one AI turn: loop actions until turn advances
+        guard := 0
+        for guard < 40
+            if gs.Phase() isnt enums.PLAYING
+                break
+            if gs.CurrentTurnPlayerID() isnt curr
+                break
+            actions := listAvailableActions(gs, curr)
+            if actions.Actions is empty
+                break
+            chosen := ChooseAction(strat, actions.Actions, gs, curr)
+            if chosen is empty
+                break
+            act := aiChosenToAction(dereference chosen)
+            result := ExecuteAction(act, gs, curr)
+            if not result.Success
+                # force end turn to avoid stall
+                ExecuteAction(NewEndTurnAction(), gs, curr)
+                break
+            guard = guard + 1
+        turn = turn + 1
+
+    # Report — winner or charge leaders
+    cRef := gs.crystalInstance
+    test.AssertNotNil(t, cRef)
+    totalCharge := 0
+    genCap := 0
+    for gen in gs.generators
+        if gen.isDisabled
+            genCap = genCap + 1
+    if cRef isnt empty
+        for _, ch in cRef.charge
+            totalCharge = totalCharge + ch
+    # Must have made progress: someone charged or generator captured
+    test.AssertTrue(t, totalCharge > 0 or genCap > 0 or gs.Phase() equals enums.ENDED)
+    # Must have advanced at least 10 objective updates
+    test.AssertTrue(t, gs.turnNumber > 5)
+    # No panic, all players still have tokens or game ended cleanly
+    t.Logf(
+        "4P SIM: turn=%d phase=%s winner=%s charge_total=%d gens_captured=%d",
+        gs.turnNumber,
+        "{gs.Phase()}",
+        "{gs.WinnerID()}",
+        totalCharge,
+        genCap,
+    )
+    if gs.Phase() equals enums.ENDED
+        t.Logf("WINNER: %s", "{gs.WinnerID()}")

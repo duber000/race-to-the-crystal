@@ -164,6 +164,9 @@ func GetTokensAtPosition on gs: reference GameState(pos: types.Position) list of
 # kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func GetTokenMovementRange on gs: reference GameState(tok: reference Token) int
     base := tok.movementRange()
+    for gen in gs.generators
+        if gen.isDisabled and gen.capturingPlayerId equals tok.playerId and gen.buffType equals enums.MOVE_ENGINE
+            base = base + 1
     pe := gs.crystalEffects.getPlayerEffects(tok.playerId)
     if pe.hasEffect(enums.SPEED_BOOST)
         return base + constants.CRYSTAL_SPEED_BOOST_AMOUNT
@@ -215,6 +218,26 @@ func AttackToken on gs: reference GameState(attackerId: types.TokenID, defenderI
     if wasKilled
         gs.removeToken(defenderId)
 
+    counterDamage := 0
+    attackerKilled := false
+    if not wasKilled and dRef.isAlive
+        counterDamage = dRef.counterAttackPower()
+        cell := gs.board.getCellAt(dRef.position)
+        if cell isnt empty
+            if dereference cell.cellType equals enums.GENERATOR or dereference cell.cellType equals enums.CRYSTAL
+                counterDamage = counterDamage + constants.GENERATOR_COUNTER_BONUS
+        allyCount := 0
+        for _, t in gs.tokens
+            if t.isAlive and t.isDeployed and t.playerId equals aRef.playerId and t.id isnt attackerId
+                if isAdjacent(t.position, dRef.position)
+                    allyCount = allyCount + 1
+        if allyCount >= 2
+            counterDamage = 0
+        if counterDamage > 0
+            attackerKilled = aRef.takeDamage(counterDamage)
+            if attackerKilled
+                gs.removeToken(attackerId)
+
     var result: enums.CombatResult
     if wasKilled
         result = enums.KILLED
@@ -226,6 +249,8 @@ func AttackToken on gs: reference GameState(attackerId: types.TokenID, defenderI
         attackerId: attackerId,
         defenderId: defenderId,
         defenderKilled: wasKilled,
+        counterDamage: counterDamage,
+        attackerKilled: attackerKilled,
     }
     return reference of outcome
 
@@ -406,11 +431,27 @@ func updateGeneratorsAndCrystal on gs: reference GameState() (list of int, bool)
 
     disabledCount := countDisabledGenerators(gs.generators)
 
+    cRef := gs.crystalInstance
+    if cRef isnt empty
+        for gen in gs.generators
+            if gen.isDisabled
+                if gen.capturingPlayerId isnt ""
+                    cRef.addCharge(gen.capturingPlayerId, gen.ChargePerTurn())
+                    if gen.buffType equals enums.FORGE
+                        for _, t in gs.tokens
+                            if t.isAlive and t.isDeployed and t.playerId equals gen.capturingPlayerId
+                                if isAdjacent(t.position, gen.position)
+                                    t.heal(2)
+                    genCharge := cRef.charge[gen.capturingPlayerId]
+                    if genCharge >= constants.CRYSTAL_CHARGE_TARGET
+                        gs.winnerId = gen.capturingPlayerId
+                        gs.phase = enums.ENDED
+                        return newlyDisabled, true
+
     crystalCaptured := false
     # Call through the reference. `dereference` would copy the crystal, and
     # the capture progress (holdingPlayerId, turnsHeld) would be written to
     # the copy -- so the crystal could never be captured.
-    cRef := gs.crystalInstance
     if cRef isnt empty
         crystalPos := cRef.position
         taps := tokensByPos[crystalPos]
@@ -419,6 +460,17 @@ func updateGeneratorsAndCrystal on gs: reference GameState() (list of int, bool)
             gs.winnerId = outcome.winnerId
             gs.phase = enums.ENDED
             crystalCaptured = true
+        for tid in empty list of types.TokenID
+            if tid equals 0
+                continue
+        killed := empty list of types.TokenID
+        for _, t in gs.tokens
+            if t.isAlive and t.isDeployed
+                if isAdjacent(t.position, crystalPos)
+                    if t.takeDamage(constants.CRYSTAL_PULSE_DAMAGE)
+                        killed = append(killed, t.id)
+        for kid in killed
+            gs.removeToken(kid)
 
     return newlyDisabled, crystalCaptured
 

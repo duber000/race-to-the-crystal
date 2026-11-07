@@ -315,6 +315,8 @@ func FilterEventForViewer on gs: reference GameState(e: GameEvent, viewer: types
                         DefenderPosition: empty list of int,
                         Damage: 0,
                         DefenderKilled: false,
+                        CounterDamage: 0,
+                        AttackerKilled: false,
                     },
                 }
             return list of GameEvent{
@@ -325,6 +327,8 @@ func FilterEventForViewer on gs: reference GameState(e: GameEvent, viewer: types
                     DefenderPosition: e.DefenderPosition,
                     Damage: e.Damage,
                     DefenderKilled: e.DefenderKilled,
+                    CounterDamage: 0,
+                    AttackerKilled: false,
                 },
             }
         when GeneratorChanged
@@ -359,4 +363,9 @@ func FilterEventForViewer on gs: reference GameState(e: GameEvent, viewer: types
         when RadioChatter
             return list of GameEvent{e}
         when GameEnded
+            return list of GameEvent{e}
+        when CrystalCharged
+            inView := cellIsVisible(cells, e.Position[0], e.Position[1])
+            if not inView
+                return empty list of GameEvent
             return list of GameEvent{e}

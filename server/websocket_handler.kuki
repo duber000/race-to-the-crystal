@@ -10,7 +10,7 @@ import "sync"
 import "github.com/gorilla/websocket"
 
 # The largest message the server will read from a client. A full state
-# frame for a 24x24 board with 80 tokens is tens of kilobytes, so a
+# frame for a 18x18 board with 80 tokens is tens of kilobytes, so a
 # kilobyte-sized cap would reject legitimate traffic.
 const MAX_MESSAGE_SIZE = 262144
 

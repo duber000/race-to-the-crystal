@@ -115,11 +115,11 @@ func TestCrystalShowsTheCaptureRequirements(t: reference testing.T)
 
     crys := crystalDict(state)
     test.AssertEqual(t, crys["turns_required"], 3)
-    test.AssertEqual(t, crys["tokens_required"], 12)
+    test.AssertEqual(t, crys["tokens_required"], 2)
     test.AssertEqual(t, crys["tokens_present"], 0)
 
-# Every generator that falls takes two tokens off the crystal's
-# requirement, and the client is told the new number.
+# Crystal requirement is fixed at 2 tokens to charge (generators now give
+# charge income directly instead of reducing the token requirement).
 func TestCrystalRequirementFallsWithEachGenerator(t: reference testing.T)
     gs := newObjectiveGame()
     gens := gs.generators
@@ -127,9 +127,9 @@ func TestCrystalRequirementFallsWithEachGenerator(t: reference testing.T)
     for i from 0 to len(gens)
         state := gs.VisibleStateDict(types.PlayerID("player_0"))
         crys := crystalDict(state)
-        test.AssertEqual(t, crys["tokens_required"], 12 - 2 * i)
+        test.AssertEqual(t, crys["tokens_required"], 2)
         gens[i].isDisabled = true
 
     state := gs.VisibleStateDict(types.PlayerID("player_0"))
     crys := crystalDict(state)
-    test.AssertEqual(t, crys["tokens_required"], 4)
+    test.AssertEqual(t, crys["tokens_required"], 2)

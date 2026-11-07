@@ -66,6 +66,6 @@ for exactly this reason).
    *nearest uncontested generator* instead of the crystal. Reuse
    `api.Board()` + the `Distance` helper — or simpler: march toward
    (6,6), the nearest generator to your corner.
-3. Write a `Defender` that keeps one token on the crystal cell
-   (12,12) at all times and re-deploys to replace losses. Does it
+3. Write a `Defender` that keeps two tokens on the crystal cell
+   (9,9) to charge it and re-deploys to replace losses. Does it
    beat your Killer?

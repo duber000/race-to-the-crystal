@@ -1,0 +1,88 @@
+petiole game
+
+import "race-to-the-crystal/shared/enums" as enums
+import "race-to-the-crystal/shared/types" as types
+import "stdlib/test"
+import "testing"
+
+func TestGeneratorStickyProgress(t: reference testing.T)
+    g := NewGenerator(0, types.Pos(4, 4))
+    tokens := list of TokenAtPos{
+        {tokenId: types.TokenID(1), playerId: types.PlayerID("p1")},
+        {tokenId: types.TokenID(2), playerId: types.PlayerID("p1")},
+    }
+    g.updateCaptureStatus(tokens)
+    test.AssertEqual(t, g.turnsHeld, 1)
+    # drop to 1 token: decay by 1 but keep owner (sticky)
+    one := list of TokenAtPos{{tokenId: types.TokenID(1), playerId: types.PlayerID("p1")}}
+    g.updateCaptureStatus(one)
+    test.AssertEqual(t, g.turnsHeld, 0)
+    test.AssertEqual(t, g.capturingPlayerId, types.PlayerID("p1"))
+
+func TestGeneratorRecapture(t: reference testing.T)
+    g := NewGenerator(1, types.Pos(4, 4))
+    tokensP1 := list of TokenAtPos{
+        {tokenId: types.TokenID(1), playerId: types.PlayerID("p1")},
+        {tokenId: types.TokenID(2), playerId: types.PlayerID("p1")},
+    }
+    g.updateCaptureStatus(tokensP1)
+    g.updateCaptureStatus(tokensP1)
+    test.AssertTrue(t, g.isDisabled)
+    tokensP2 := list of TokenAtPos{
+        {tokenId: types.TokenID(3), playerId: types.PlayerID("p2")},
+        {tokenId: types.TokenID(4), playerId: types.PlayerID("p2")},
+    }
+    changed := g.updateCaptureStatus(tokensP2)
+    test.AssertEqual(t, g.capturingPlayerId, types.PlayerID("p2"))
+    test.AssertFalse(t, g.isDisabled)
+    test.AssertEqual(t, g.turnsHeld, 1)
+    test.AssertTrue(t, changed)
+
+func TestCrystalChargeWin(t: reference testing.T)
+    gs := reference of CreateGame(2)
+    gs.StartGame()
+    cRef := gs.crystalInstance
+    test.AssertNotNil(t, cRef)
+    if cRef is empty
+        return
+    cRef.addCharge(types.PlayerID("player_0"), 75)
+    test.AssertEqual(t, cRef.charge[types.PlayerID("player_0")], 75)
+    # one more crystal hold gives 10 -> wins (target 80)
+    pos := cRef.position
+    t1 := gs.GetToken(types.TokenID(0))
+    t2 := gs.GetToken(types.TokenID(1))
+    if (t1 is empty) or (t2 is empty)
+        return
+    t1.position = pos
+    t1.isDeployed = true
+    gs.board.setOccupant(pos, types.TokenID(0))
+    t2.position = pos
+    t2.isDeployed = true
+    gs.board.setOccupant(pos, types.TokenID(1))
+    _, captured := gs.updateGeneratorsAndCrystal()
+    test.AssertTrue(t, captured)
+    test.AssertEqual(t, gs.winnerId, types.PlayerID("player_0"))
+    test.AssertEqual(t, gs.phase, enums.ENDED)
+
+func TestCombatCounterDamage(t: reference testing.T)
+    atk := NewToken(types.TokenID(1), types.PlayerID("p1"), 10, 10, types.Pos(5, 5)) onerr panic error
+    dfd := NewToken(types.TokenID(2), types.PlayerID("p2"), 10, 10, types.Pos(6, 5)) onerr panic error
+    outcome := resolveCombat(reference of atk, reference of dfd)
+    test.AssertEqual(t, outcome.damageDealt, 5)
+    test.AssertEqual(t, outcome.counterDamage, 1)
+    test.AssertFalse(t, outcome.attackerKilled)
+    test.AssertEqual(t, atk.health, 8)
+    test.AssertEqual(t, dfd.health, 4)
+
+func TestMoveEngineBuff(t: reference testing.T)
+    gs := reference of CreateGame(2)
+    gs.StartGame()
+    gs.generators[0].isDisabled = true
+    gs.generators[0].capturingPlayerId = types.PlayerID("player_0")
+    gs.generators[0].buffType = enums.MOVE_ENGINE
+    tRef := gs.GetToken(types.TokenID(0))
+    test.AssertNotNil(t, tRef)
+    if tRef is empty
+        return
+    tRef.health = 10
+    test.AssertEqual(t, gs.GetTokenMovementRange(tRef), 3)

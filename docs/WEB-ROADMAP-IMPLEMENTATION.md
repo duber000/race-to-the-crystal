@@ -170,7 +170,7 @@ at the definition site.
 `createBoard()` left `gridVertical` and `gridCage` pickable, and the crystal's
 `inner_frame` / generator pillars / health labels were pickable too. A click on
 an empty cell resolved to the **cage wireframe**, landing one cell off
-(clicking grid `(12,12)` picked `(13,13)`). Moves to empty cells were therefore
+(clicking grid `(9,9)` picked `(10,10)`). Moves to empty cells were therefore
 rejected as illegal destinations, and the hover indicator tracked the wrong
 cell. Clicking a *token* happened to work because the token mesh is closer to
 the camera.
@@ -293,7 +293,7 @@ The WebSocket path — the one the browser actually uses — had none of them:
   there was no lock.
 
 **Fix:** the size cap is applied and raised to 256 KiB (a full state frame for
-a 24×24 board with 80 tokens is tens of kilobytes); the origin check honours
+an 18×18 board with 80 tokens is tens of kilobytes); the origin check honours
 a `WS_ALLOWED_ORIGINS` allowlist, and a request with no `Origin` header is
 allowed because it cannot come from a browser; the action path shares the
 HTTP rate limiter; and a per-session mutex serialises actions — including the
@@ -577,7 +577,7 @@ it must go through the same `VisibleStateDict` filter to stay fair.
       "current_turn_player_id": "player_0",
       "tokens": {"0":{"player_id":"player_0","health":10,"max_health":10,"position":[0,0],"is_alive":true,"is_deployed":true}},
       "generators": [{"id":1,"position":[5,5],"is_disabled":false,"holding_player_id":"","turns_held":0}],
-      "crystal": {"position":[12,12],"holding_player_id":"","controlling_player_id":"","turns_held":0},
+      "crystal": {"position":[9,9],"holding_player_id":"","controlling_player_id":"","turns_held":0},
       "players": [{"id":"player_0","name":"Gemini","is_active":true,"token_ids":[0,1,2]}]
     }
   ],
@@ -588,7 +588,7 @@ it must go through the same `VisibleStateDict` filter to stay fair.
 }
 ```
 
-Snapshot cadence: **one per turn**, not per action. The board grid (24×24 static terrain) is stored
+Snapshot cadence: **one per turn**, not per action. The board grid (18×18 static terrain) is stored
 once in `final_state`/`snapshots[0]` and reused; per-turn snapshots carry only the mutable layer
 (tokens, generators, crystal, players, turn metadata). That keeps a 200-turn match in the low
 megabytes.
@@ -1297,7 +1297,7 @@ Implementation notes:
   `adjustZoom(steps)`, `moveCamera*()`, and pan via `_panTarget`.
 - **Touch hitboxes:** `scene.pick` on a 32-unit cell is fine on desktop and marginal on a phone.
   Add a pick-radius fallback: if the tap misses the ground mesh, pick against a 2D screen-space
-  grid overlay (project the 24×24 cell centres and find the nearest within a 44 px radius).
+  grid overlay (project the 18×18 cell centres and find the nearest within a 44 px radius).
 
 ### 8.2 Radial action palette
 
@@ -1426,8 +1426,8 @@ Phase 3 ────────────────────────
 3. **Relay hosting.** If Phase 3.2 proceeds, does the stateless relay ship in this repo, or is it a
    separate deployment artifact? A ~100-line relay in `server/` (a second binary) is the simplest
    thing that could work.
-4. **Fog radius and tuning.** `VISIBILITY_RADIUS = 3` is a starting point. The 24×24 board with
-   tokens that move 1–2 cells per turn means a radius of 3 shows a lot. Worth a playtest sweep at
+4. **Fog radius and tuning.** `VISIBILITY_RADIUS = 3` is a starting point. The 18×18 board with
+   tokens that move 2–4 cells per turn means a radius of 3 shows a lot. Worth a playtest sweep at
    2 / 3 / 4 before locking it.
 5. **Should a player's *own* previously-seen enemies stay marked on the board** (a "last known
    position" ghost)? This is a UX call with a real information-leak implication if implemented

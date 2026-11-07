@@ -169,25 +169,38 @@ func bestAttack(attacks: list of AttackAction) ChosenAction
 
     return ChosenAttack{AttackerID: best.AttackerID, DefenderID: best.DefenderID}
 
+func isOnObjective(pos: types.Position, objectives: list of types.Position) bool
+    for obj in objectives
+        if obj equals pos
+            return true
+    return false
+
 func bestMove(moves: list of MoveAction, gs: reference GameState, playerId: types.PlayerID, prioritizeCrystal: bool) ChosenAction
     objectives := getObjectives(gs, playerId, prioritizeCrystal)
 
     bestTid := types.TokenID(0)
     bestDest := list of int{0, 0}
     bestScore := 999999.0
+    found := false
 
     for mv in moves
+        tokRef := gs.GetToken(mv.TokenID)
+        if tokRef isnt empty
+            if isOnObjective(tokRef.position, objectives)
+                continue
         for destList in mv.ValidDestinations
             if len(destList) < 2
                 continue
             dest := types.Pos(destList[0], destList[1])
-            tokRef := gs.GetToken(mv.TokenID)
             score := scoreDestination(dest, objectives, tokRef)
             if score < bestScore
                 bestScore = score
                 bestTid = mv.TokenID
                 bestDest = destList
+                found = true
 
+    if not found
+        return ChosenEndTurn{}
     return ChosenMove{TokenID: bestTid, Destination: bestDest}
 
 func bestDeploy(deploys: list of DeployAction) ChosenAction
@@ -226,11 +239,9 @@ func getObjectives(gs: reference GameState, playerId: types.PlayerID, crystalOnl
         return objectives
 
     for gen in gs.generators
-        if gen.isDisabled
-            continue
         if gen.capturingPlayerId equals playerId
             objectives = append(list of types.Position{gen.position}, many objectives)
-        else
+        else if not gen.isDisabled
             objectives = append(objectives, gen.position)
 
     return objectives

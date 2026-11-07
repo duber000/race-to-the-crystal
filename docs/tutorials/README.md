@@ -36,12 +36,12 @@ Run it with:
 kukicha run learn/examples/01-hello/
 ```
 
-**The rules of the game:** a 24x24 board with the crystal at (12,12),
+**The rules of the game:** an 18x18 board with the crystal at (9,9),
 four generators at the quadrants, and deployment corners for each player.
-You win by holding the crystal with enough tokens for three consecutive
-turns (each disabled generator reduces the requirement by 2). Every
-turn is two phases: MOVEMENT (move or deploy) then ACTION (attack or
-end). The simulation ends your turn for you when `PlayTurn` returns.
+You win by being first to 80 crystal charge: hold the crystal with 2
+tokens for +10 per turn and hold generators for +5 per turn (Reactor
++10). Every turn is two phases: MOVEMENT (move or deploy) then ACTION
+(attack or end). The simulation ends your turn for you when `PlayTurn` returns.
 
 **Two details that will save you time:**
 
@@ -93,7 +93,7 @@ web-app, data-scripting) covers the CLI/scripting side of the language.
 | Call | What it does |
 |------|--------------|
 | `api.Say(msg)` | print a message |
-| `api.Board()` | ASCII map of the 24x24 grid |
+| `api.Board()` | ASCII map of the 18x18 grid |
 | `api.Observe()` | full situation report |
 | `api.Victory()` | victory conditions + crystal progress |
 | `api.Reserve()` | map of health -> tokens remaining |

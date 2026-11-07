@@ -36,6 +36,8 @@ enum ActionResultData
         DefenderID: types.TokenID
         DamageDealt: int
         DefenderKilled: bool
+        CounterDamage: int
+        AttackerKilled: bool
     DeployData
         NewTokenID: types.TokenID
         HealthValue: int
@@ -231,7 +233,7 @@ func ValidateDeploy(HealthValue: int, pos: types.Position, gs: reference GameSta
         return InvalidResult("DEPLOY_FAILED: no_reserve | health={HealthValue}")
 
     if not gs.board.isValidPosition(pos.X, pos.Y)
-        return InvalidResult("DEPLOY_FAILED: out_of_bounds | pos=({pos.X},{pos.Y}) | board_size=24x24")
+        return InvalidResult("DEPLOY_FAILED: out_of_bounds | pos=({pos.X},{pos.Y}) | board_size=18x18")
 
     cell := gs.board.getCellAt(pos)
     if cell isnt empty
@@ -360,6 +362,8 @@ func ExecuteAttack(AttackerID: types.TokenID, DefenderID: types.TokenID, gs: ref
         DefenderID: DefenderID,
         DamageDealt: o.damageDealt,
         DefenderKilled: o.defenderKilled,
+        CounterDamage: o.counterDamage,
+        AttackerKilled: o.attackerKilled,
     })
 
 # kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
@@ -375,8 +379,15 @@ func ExecuteDeploy(HealthValue: int, pos: types.Position, gs: reference GameStat
     remaining := reserveCounts[HealthValue]
     message = message + "\n  {remaining} x {HealthValue}hp tokens remaining in reserve"
 
-    gs.turnPhase = enums.ACTION
-    message = message + "\n  Phase changed to ACTION (you can attack or end turn)"
+    hasDeployArray := false
+    for gen in gs.generators
+        if gen.isDisabled and gen.capturingPlayerId equals playerId and gen.buffType equals enums.DEPLOY_ARRAY
+            hasDeployArray = true
+    if hasDeployArray
+        message = message + "\n  DEPLOY ARRAY: stay in MOVEMENT phase (extra deploy available)"
+    else
+        gs.turnPhase = enums.ACTION
+        message = message + "\n  Phase changed to ACTION (you can attack or end turn)"
 
     return SuccessResult(message, DeployData{
         NewTokenID: t.id,

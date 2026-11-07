@@ -59,7 +59,7 @@ func Say on api: reference LearnerAPI(msg: string)
     print(msg)
     api.history = append(api.history, msg)
 
-# Board returns the ASCII map of the 24x24 grid from your point of view.
+# Board returns the ASCII map of the 18x18 grid from your point of view.
 # kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Board on api: reference LearnerAPI string
     return api.api.BoardMap()

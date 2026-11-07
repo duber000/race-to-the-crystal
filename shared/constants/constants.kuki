@@ -2,17 +2,21 @@ petiole constants
 
 var TOKEN_HEALTH_VALUES = list of int{10, 8, 6, 4}
 
-const BOARD_WIDTH = 24
+const BOARD_WIDTH = 18
 
-const BOARD_HEIGHT = 24
+const BOARD_HEIGHT = 18
 
 const TOKENS_PER_PLAYER = 20
 
 const TOKENS_PER_HEALTH_VALUE = 5
 
-const TOKEN_MOVEMENT_RANGE = 2
+const TOKEN_MOVEMENT_RANGE = 3
 
 const COMBAT_DAMAGE_MULTIPLIER = 0.5
+
+const COMBAT_COUNTER_MULTIPLIER = 0.5
+
+const GENERATOR_COUNTER_BONUS = 1
 
 const GENERATOR_COUNT = 4
 
@@ -22,9 +26,19 @@ const GENERATOR_CAPTURE_TURNS_REQUIRED = 2
 
 const GENERATOR_TOKEN_REDUCTION = 2
 
-const CRYSTAL_BASE_TOKENS_REQUIRED = 12
+const GENERATOR_CHARGE_PER_HOLD = 5
+
+const CRYSTAL_BASE_TOKENS_REQUIRED = 2
 
 const CRYSTAL_CAPTURE_TURNS_REQUIRED = 3
+
+const CRYSTAL_CHARGE_TARGET = 80
+
+const CRYSTAL_CHARGE_PER_HOLD = 10
+
+const CRYSTAL_PULSE_DAMAGE = 1
+
+const SUDDEN_DEATH_TURN = 40
 
 const CRYSTAL_EFFECT_INITIAL_DURATION = 4
 
@@ -50,7 +64,7 @@ const MIN_PLAYERS = 2
 
 const MAX_PLAYERS = 4
 
-const TURN_TIMEOUT_SECONDS = 30
+const TURN_TIMEOUT_SECONDS = 60
 
 # Agents (LLM seats) get longer to move: a model may spend a while thinking
 # before it acts, and a human timeout would punish it unfairly.

@@ -8,7 +8,7 @@ A networked multiplayer strategy game for 2-4 players with Tron/Battlezone-style
 
 ## About
 
-Race to the Crystal is a turn-based strategy game where players compete to capture a central crystal by deploying tokens across a 24x24 grid. Features:
+Race to the Crystal is a turn-based strategy game where players compete to charge a central crystal to 80 by deploying tokens across an 18x18 grid. Features:
 
 - **Web Client**: Browser-based 3D view (JavaScript + Babylon.js) — the networked client
 - **Desktop Client**: 2D top-down view (Kukicha + Ebitengine) — local play only
@@ -125,12 +125,13 @@ provides the same actions as buttons.
 
 ## Game Rules
 
-1. **Win Condition**: Hold the crystal with 12 tokens for 3 consecutive turns
-2. **Movement**: Tokens move 1-2 spaces based on current health
-3. **Combat**: Attack adjacent enemies (damage = attacker HP ÷ 2)
-4. **Generators**: Capture with 2 tokens for 2 turns to reduce crystal requirement
-5. **Mystery Squares**: Random heal or teleport events
-6. **Turn Timer**: You have 30 seconds to complete your turn. The HUD counts
+1. **Win Condition**: First to 80 crystal charge (hold crystal for +10/turn; hold a generator for +5/turn, Reactor +10)
+2. **Movement**: Tokens move 2 spaces (10-8 HP), 3 spaces (6 HP), or 4 spaces (4 HP) — damaged tokens are faster
+3. **Combat**: Attack adjacent enemies (damage = attacker HP ÷ 2). The defender counters for half its attack power; defenders on a generator/crystal get +1. Attacking with 2+ allies adjacent negates the counter (flanking)
+4. **Generators**: Recapturable control points. Hold with 2 tokens for 2 consecutive end-of-turn checks to capture; lose the tokens and you lose the buff. Progress decays by 1 on disruption, not wipes to 0. Each gives a unique buff: MOVE_ENGINE (+1 move), REACTOR (+10 charge/turn), FORGE (+2 heal/turn to adjacent), DEPLOY_ARRAY (extra deploy per turn)
+5. **Crystal Pulse**: 1 damage per end-turn to all tokens adjacent to the crystal
+6. **Mystery Squares**: Random heal or teleport events
+7. **Turn Timer**: You have 60 seconds to complete your turn. The HUD counts
    down, and if the timer runs out your turn is passed on automatically. AI
    players get 120 seconds, since a model may need a while to think.
 7. **Fog of War**: You see the whole board, but only the enemy tokens your own
@@ -148,7 +149,7 @@ The game server and web server are configured through environment variables:
 |---|---|---|---|
 | `HTTP_PORT` | `8080` | game server | HTTP + WebSocket port |
 | `JWT_SECRET_KEY` | random per boot | game server | Token signing key |
-| `TURN_TIMEOUT_SECONDS` | `30` | game server | Seconds a human has to move |
+| `TURN_TIMEOUT_SECONDS` | `60` | game server | Seconds a human has to move |
 | `AGENT_TURN_TIMEOUT_SECONDS` | `120` | game server | Seconds an AI player has to move |
 | `WS_ALLOWED_ORIGINS` | *(any)* | game server | Comma-separated origins allowed to open a WebSocket |
 | `WEB_PORT` | `8000` | web server | Port the web client is served on |

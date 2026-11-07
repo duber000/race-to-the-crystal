@@ -62,7 +62,7 @@ func TestDistantEnemyTokenIsMasked(t: reference testing.T)
     # Put player 0's tokens in one corner and player 1's in the far one.
     placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
     placeToken(gs, types.PlayerID("player_0"), 1, 1, 0)
-    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+    placeToken(gs, types.PlayerID("player_1"), 20, 17, 17)
 
     state := gs.VisibleStateDict(types.PlayerID("player_0"))
     d := stateToken(state, 20)
@@ -99,7 +99,7 @@ func TestFogIsSymmetric(t: reference testing.T)
 
     # Move them apart and both go dark.
     placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
-    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+    placeToken(gs, types.PlayerID("player_1"), 20, 17, 17)
 
     seenByZero2 := stateToken(gs.VisibleStateDict(types.PlayerID("player_0")), 20)
     seenByOne2 := stateToken(gs.VisibleStateDict(types.PlayerID("player_1")), 0)
@@ -112,13 +112,13 @@ func TestFogIsSymmetric(t: reference testing.T)
 func TestMaskedTokenIsNotInCellOccupants(t: reference testing.T)
     gs := newFogGame()
     placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
-    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+    placeToken(gs, types.PlayerID("player_1"), 20, 17, 17)
 
-    occupants := visibleOccupants(gs, types.PlayerID("player_0"), 23, 23)
+    occupants := visibleOccupants(gs, types.PlayerID("player_0"), 17, 17)
     test.AssertEqual(t, len(occupants), 0)
 
     # The owner of the cell can still see their own token there.
-    ownOccupants := visibleOccupants(gs, types.PlayerID("player_1"), 23, 23)
+    ownOccupants := visibleOccupants(gs, types.PlayerID("player_1"), 17, 17)
     test.AssertEqual(t, len(ownOccupants), 1)
     test.AssertEqual(t, ownOccupants[0], 20)
 
@@ -143,7 +143,7 @@ func TestTerrainIsAlwaysVisible(t: reference testing.T)
         gridVal := board["grid"]
         test.AssertNotEqual(t, gridVal, empty)
         # A cell far from any token still reports its type.
-        cellRef := gs.board.getCellAt(types.Pos(23, 23))
+        cellRef := gs.board.getCellAt(types.Pos(17, 17))
         if cellRef isnt empty
             cell := dereference cellRef
             d := visibleCellToDict(cell, gs.visibleTokenIds(
@@ -151,13 +151,13 @@ func TestTerrainIsAlwaysVisible(t: reference testing.T)
                 gs.visibleCells(types.PlayerID("player_0")),
             ))
             test.AssertNotEqual(t, d["cell_type"], empty)
-            test.AssertEqual(t, d["position"], list of int{23, 23})
+            test.AssertEqual(t, d["position"], list of int{17, 17})
 
 # The crystal's position is public; who holds it is not, until it is seen.
 func TestCrystalOwnershipIsMaskedUntilSeen(t: reference testing.T)
     gs := newFogGame()
     placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
-    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+    placeToken(gs, types.PlayerID("player_1"), 20, 17, 17)
 
     crysRef := gs.crystalInstance
     if crysRef is empty
@@ -168,7 +168,7 @@ func TestCrystalOwnershipIsMaskedUntilSeen(t: reference testing.T)
     state := gs.VisibleStateDict(types.PlayerID("player_0"))
     crystalVal := state["crystal"]
     if crystalVal is StateDict as crystal
-        test.AssertEqual(t, crystal["position"], list of int{12, 12})
+        test.AssertEqual(t, crystal["position"], list of int{9, 9})
         test.AssertEqual(t, crystal["holding_player_id"], "")
         test.AssertEqual(t, crystal["turns_held"], 0)
 
@@ -183,7 +183,7 @@ func TestCrystalOwnershipIsMaskedUntilSeen(t: reference testing.T)
 func TestGeneratorOwnershipIsMaskedUntilSeen(t: reference testing.T)
     gs := newFogGame()
     placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
-    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+    placeToken(gs, types.PlayerID("player_1"), 20, 17, 17)
 
     gs.generators[0].capturingPlayerId = types.PlayerID("player_1")
     gs.generators[0].turnsHeld = 1
@@ -200,13 +200,13 @@ func TestGeneratorOwnershipIsMaskedUntilSeen(t: reference testing.T)
 func TestEmptyViewerSeesEverything(t: reference testing.T)
     gs := newFogGame()
     placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
-    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+    placeToken(gs, types.PlayerID("player_1"), 20, 17, 17)
 
     state := gs.VisibleStateDict(types.PlayerID(""))
     d := stateToken(state, 20)
     # The unmasked state carries no "is_visible" key; absent means visible.
     test.AssertEqual(t, d["is_visible"], empty)
-    test.AssertEqual(t, d["position"], list of int{23, 23})
+    test.AssertEqual(t, d["position"], list of int{17, 17})
 
 # --- Event filtering -------------------------------------------------------
 
@@ -214,12 +214,12 @@ func TestEmptyViewerSeesEverything(t: reference testing.T)
 func TestEventForHiddenTokenIsFiltered(t: reference testing.T)
     gs := newFogGame()
     placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
-    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
+    placeToken(gs, types.PlayerID("player_1"), 20, 17, 17)
 
     moved := TokenMoved{
         TokenID: 20,
-        OldPosition: list of int{22, 22},
-        NewPosition: list of int{23, 23},
+        OldPosition: list of int{16, 16},
+        NewPosition: list of int{17, 17},
     }
     hidden := gs.FilterEventForViewer(moved, types.PlayerID("player_0"))
     test.AssertEqual(t, len(hidden), 0)
@@ -232,14 +232,14 @@ func TestCombatBetweenHiddenTokensIsFiltered(t: reference testing.T)
     gs := newFogGame()
     # Both combatants belong to the other player, and both are far away.
     placeToken(gs, types.PlayerID("player_0"), 0, 0, 0)
-    placeToken(gs, types.PlayerID("player_1"), 20, 23, 23)
-    placeToken(gs, types.PlayerID("player_1"), 21, 22, 23)
+    placeToken(gs, types.PlayerID("player_1"), 20, 17, 17)
+    placeToken(gs, types.PlayerID("player_1"), 21, 16, 17)
 
     combat := CombatResolved{
         AttackerID: 20,
-        AttackerPosition: list of int{23, 23},
+        AttackerPosition: list of int{17, 17},
         DefenderID: 21,
-        DefenderPosition: list of int{22, 23},
+        DefenderPosition: list of int{16, 17},
         Damage: 5,
         DefenderKilled: false,
     }
@@ -254,11 +254,11 @@ func TestCombatStripsHiddenParticipant(t: reference testing.T)
     placeToken(gs, types.PlayerID("player_0"), 0, 5, 5)
     placeToken(gs, types.PlayerID("player_1"), 20, 7, 5)
     # ...but the enemy that is attacking is a different, distant token.
-    placeToken(gs, types.PlayerID("player_1"), 21, 23, 23)
+    placeToken(gs, types.PlayerID("player_1"), 21, 17, 17)
 
     combat := CombatResolved{
         AttackerID: 21,
-        AttackerPosition: list of int{23, 23},
+        AttackerPosition: list of int{17, 17},
         DefenderID: 0,
         DefenderPosition: list of int{5, 5},
         Damage: 5,
@@ -293,7 +293,7 @@ func TestMysteryEventOutsideViewIsFiltered(t: reference testing.T)
 
     mystery := MysteryTriggered{
         TokenID: 20,
-        Position: list of int{23, 23},
+        Position: list of int{17, 17},
         Effect: enums.MysteryEffect.HEAL,
     }
     hidden := gs.FilterEventForViewer(mystery, types.PlayerID("player_0"))

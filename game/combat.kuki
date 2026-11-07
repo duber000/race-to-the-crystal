@@ -9,6 +9,8 @@ type CombatOutcome
     attackerId: types.TokenID
     defenderId: types.TokenID
     defenderKilled: bool
+    counterDamage: int
+    attackerKilled: bool
 
 func canAttack(attacker: reference Token, defender: reference Token) bool
     if not attacker.isAlive or not defender.isAlive
@@ -27,10 +29,19 @@ func resolveCombat(attacker: reference Token, defender: reference Token) CombatO
             attackerId: attacker.id,
             defenderId: defender.id,
             defenderKilled: false,
+            counterDamage: 0,
+            attackerKilled: false,
         }
 
     damage := attacker.attackPower()
     wasKilled := defender.takeDamage(damage)
+
+    counterDamage := 0
+    attackerKilled := false
+    if not wasKilled and defender.isAlive
+        counterDamage = defender.counterAttackPower()
+        if counterDamage > 0
+            attackerKilled = attacker.takeDamage(counterDamage)
 
     if wasKilled
         return CombatOutcome{
@@ -39,6 +50,8 @@ func resolveCombat(attacker: reference Token, defender: reference Token) CombatO
             attackerId: attacker.id,
             defenderId: defender.id,
             defenderKilled: true,
+            counterDamage: 0,
+            attackerKilled: false,
         }
     else
         return CombatOutcome{
@@ -47,6 +60,8 @@ func resolveCombat(attacker: reference Token, defender: reference Token) CombatO
             attackerId: attacker.id,
             defenderId: defender.id,
             defenderKilled: false,
+            counterDamage: counterDamage,
+            attackerKilled: attackerKilled,
         }
 
 func wouldKill(attacker: reference Token, defender: reference Token) bool

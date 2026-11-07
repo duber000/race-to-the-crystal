@@ -11,8 +11,16 @@ type Generator
     captureTokenIds: list of types.TokenID
     turnsHeld: int
     isDisabled: bool
+    buffType: enums.GeneratorBuff
 
 func NewGenerator(id: int, position: types.Position) Generator
+    buffs := list of enums.GeneratorBuff{
+        enums.MOVE_ENGINE,
+        enums.REACTOR,
+        enums.FORGE,
+        enums.DEPLOY_ARRAY,
+    }
+    buff := buffs[id % len(buffs)]
     return Generator{
         id: id,
         position: position,
@@ -20,6 +28,7 @@ func NewGenerator(id: int, position: types.Position) Generator
         captureTokenIds: empty list of types.TokenID,
         turnsHeld: 0,
         isDisabled: false,
+        buffType: buff,
     }
 
 func requiredTokens on g: reference Generator int
@@ -51,10 +60,15 @@ func TurnsHeld on g: reference Generator int
 func IsDisabled on g: reference Generator bool
     return g.isDisabled
 
-func updateCaptureStatus on g: reference Generator(tokensAtPos: list of TokenAtPos) bool
-    if g.isDisabled
-        return false
+func Buff on g: reference Generator enums.GeneratorBuff
+    return g.buffType
 
+func ChargePerTurn on g: reference Generator int
+    if g.buffType equals enums.REACTOR
+        return constants.GENERATOR_CHARGE_PER_HOLD + 5
+    return constants.GENERATOR_CHARGE_PER_HOLD
+
+func updateCaptureStatus on g: reference Generator(tokensAtPos: list of TokenAtPos) bool
     g.captureTokenIds = empty list of types.TokenID
 
     counts := countTokensByPlayer(tokensAtPos)
@@ -62,26 +76,46 @@ func updateCaptureStatus on g: reference Generator(tokensAtPos: list of TokenAtP
 
     if found and dominantCount >= constants.GENERATOR_CAPTURE_TOKENS_REQUIRED
         if dominantPlayer equals g.capturingPlayerId
+            if g.isDisabled
+                g.captureTokenIds = counts[dominantPlayer]
+                return false
             g.turnsHeld = g.turnsHeld + 1
             g.captureTokenIds = counts[dominantPlayer]
             if g.turnsHeld >= constants.GENERATOR_CAPTURE_TURNS_REQUIRED
                 g.isDisabled = true
                 return true
         else
+            wasCaptured := g.isDisabled
             g.capturingPlayerId = dominantPlayer
             g.turnsHeld = 1
+            g.isDisabled = false
             g.captureTokenIds = counts[dominantPlayer]
+            if wasCaptured
+                return true
     else
+        if g.capturingPlayerId isnt ""
+            if counts[g.capturingPlayerId] isnt empty
+                if len(counts[g.capturingPlayerId]) >= 1
+                    if g.turnsHeld > 0
+                        g.turnsHeld = g.turnsHeld - 1
+                    g.captureTokenIds = counts[g.capturingPlayerId]
+                    if g.turnsHeld equals 0 and g.isDisabled
+                        g.isDisabled = false
+                        g.capturingPlayerId = ""
+                    return false
+        wasCaptured := g.isDisabled
         g.capturingPlayerId = ""
         g.turnsHeld = 0
+        if wasCaptured
+            return true
 
     return false
 
 func resetCapture on g: reference Generator
-    if not g.isDisabled
-        g.capturingPlayerId = ""
-        g.turnsHeld = 0
-        g.captureTokenIds = empty list of types.TokenID
+    g.capturingPlayerId = ""
+    g.turnsHeld = 0
+    g.isDisabled = false
+    g.captureTokenIds = empty list of types.TokenID
 
 func getCaptureProgress on g: reference Generator() (int, int)
     return g.turnsHeld, constants.GENERATOR_CAPTURE_TURNS_REQUIRED

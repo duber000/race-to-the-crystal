@@ -87,6 +87,9 @@ func crystalToDict(c: reference Crystal) StateDict
     holdingIds := empty list of int
     for tid in c.holdingTokenIds
         holdingIds = append(holdingIds, tid as int)
+    chargeMap := empty map of string to int
+    for pid, ch in c.charge
+        chargeMap[pid as string] = ch
     return StateDict{
         "position": list of int{c.position.X, c.position.Y},
         "holding_player_id": c.holdingPlayerId as string,
@@ -96,6 +99,8 @@ func crystalToDict(c: reference Crystal) StateDict
         "base_tokens_required": c.baseTokensRequired,
         "tokens_present": len(holdingIds),
         "turns_required": c.turnsRequired(),
+        "charge": chargeMap,
+        "charge_target": constants.CRYSTAL_CHARGE_TARGET,
     }
     # How many tokens are on the crystal, and how many turns the
     # capture takes. `tokens_required` is added by the caller: it
@@ -112,6 +117,9 @@ func generatorToDict(g: Generator) StateDict
         "capture_token_ids": capIds,
         "turns_held": g.turnsHeld,
         "is_disabled": g.isDisabled,
+        "is_captured": g.isDisabled,
+        "buff_type": "{g.buffType}",
+        "charge_per_turn": g.ChargePerTurn(),
         "tokens_present": len(capIds),
         "tokens_required": constants.GENERATOR_CAPTURE_TOKENS_REQUIRED,
         "turns_required": constants.GENERATOR_CAPTURE_TURNS_REQUIRED,

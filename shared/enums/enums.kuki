@@ -39,6 +39,13 @@ func PlayerIndex(c: PlayerColor) int
 enum MysteryEffect
     HEAL = 0
     TELEPORT = 1
+    OVERCHARGE = 2
+
+enum GeneratorBuff: string
+    MOVE_ENGINE = "move_engine"
+    FORGE = "forge"
+    REACTOR = "reactor"
+    DEPLOY_ARRAY = "deploy_array"
 
 enum CombatResult
     HIT = 0

@@ -235,7 +235,7 @@ func appendCrystalInfo(lines: list of string, gs: reference GameState) list of s
 
 func getBoardMap(gs: reference GameState, perspective: types.PlayerID) string
     lines := empty list of string
-    lines = append(lines, "BOARD MAP (24x24):")
+    lines = append(lines, "BOARD MAP (18x18):")
     lines = append(lines, "")
 
     boardGrid := createBoardGrid(gs, perspective)
@@ -462,65 +462,33 @@ func explainVictoryConditions(gs: reference GameState) string
     lines = append(lines, "VICTORY CONDITIONS:")
     lines = append(lines, "")
 
-    disabledCount := countDisabledGenerators(gs.generators)
-    tokensRequired := 1
-    reduction := disabledCount * constants.GENERATOR_TOKEN_REDUCTION
-    base := constants.CRYSTAL_BASE_TOKENS_REQUIRED
-    if base - reduction > 0
-        tokensRequired = base - reduction
-
-    lines = append(lines, "Win by holding the crystal with {tokensRequired} tokens for 3 consecutive turns")
-    lines = append(lines, "  Base requirement: {constants.CRYSTAL_BASE_TOKENS_REQUIRED} tokens")
-    if disabledCount > 0
-        lines = append(
-            lines,
-            "  Disabled generators: {disabledCount} (-{disabledCount * constants.GENERATOR_TOKEN_REDUCTION} tokens)",
-        )
+    lines = append(lines, "Win by charging the crystal to {constants.CRYSTAL_CHARGE_TARGET}")
+    lines = append(
+        lines,
+        "  Hold crystal with {constants.CRYSTAL_BASE_TOKENS_REQUIRED} tokens: +{constants.CRYSTAL_CHARGE_PER_HOLD} per turn",
+    )
+    lines = append(
+        lines,
+        "  Hold a generator: +{constants.GENERATOR_CHARGE_PER_HOLD} per turn + unique buff",
+    )
     lines = append(lines, "")
 
     if gs.crystalInstance isnt empty
         crys := dereference gs.crystalInstance
-        holders := crystalHolders(reference of crys, gs)
-        if holders isnt empty
-            lines = append(lines, "Current crystal progress:")
-            for pid, count in holders
-                pRef := gs.GetPlayer(pid)
-                if pRef isnt empty
-                    p := dereference pRef
-                    cn := colorName(p.color)
-                    turnsHeld := 0
-                    if crys.holdingPlayerId equals pid
-                        turnsHeld = crys.turnsHeld
-                    progress := "{count}/{tokensRequired} tokens, held for {turnsHeld}/3 turns"
-                    if count >= tokensRequired and turnsHeld >= 3
-                        lines = append(lines, "  {p.name} ({cn}): {progress} WINNING!")
-                    else if count >= tokensRequired
-                        lines = append(
-                            lines,
-                            "  {p.name} ({cn}): {progress} (needs {3 - turnsHeld} more turn(s))",
-                        )
-                    else
-                        lines = append(
-                            lines,
-                            "  {p.name} ({cn}): {progress} (needs {tokensRequired - count} more token(s))",
-                        )
-        else
-            lines = append(lines, "  No players currently on crystal")
+        lines = append(lines, "Current crystal progress:")
+        for pid, pRef in gs.players
+            p := dereference pRef
+            cn := colorName(p.color)
+            charge := crys.charge[pid]
+            lines = append(lines, "  {p.name} ({cn}): {charge}/{constants.CRYSTAL_CHARGE_TARGET}")
         lines = append(lines, "")
 
-    lines = append(lines, "Generator bonuses:")
-    lines = append(
-        lines,
-        "  Disable generators to reduce crystal requirement (each generator = -{constants.GENERATOR_TOKEN_REDUCTION} tokens)",
-    )
+    lines = append(lines, "Generator buffs (hold to keep):")
     for i from 0 to len(gs.generators)
         genRef := reference of gs.generators[i]
         gen := dereference genRef
-        if gen.isDisabled
-            lines = append(lines, "  Generator {i + 1}: DISABLED")
-        else
-            status := generatorStatus(genRef, gs)
-            lines = append(lines, "  Generator {i + 1}: {status}")
+        status := generatorStatus(genRef, gs)
+        lines = append(lines, "  Generator {i + 1} ({gen.buffType}): {status}")
 
     return joinLines(lines)
 

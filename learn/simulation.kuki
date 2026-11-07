@@ -58,7 +58,7 @@ func Run on s: reference Simulation(play: func(reference LearnerAPI)) Result
     api := NewLearnerAPI(s.game, s.learnerId)
 
     learnerName := s.playerName(s.learnerId)
-    api.Say("Game on! You are {learnerName}. The board is 24x24.")
+    api.Say("Game on! You are {learnerName}. The board is 18x18.")
     api.Say(api.Board())
 
     turn := 0

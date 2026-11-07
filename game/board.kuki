@@ -168,6 +168,8 @@ func getStartingPosition on b: Board(playerIndex: int) types.Position
         return types.Pos(b.width - 1, b.height - 1)
 
 func getDeployablePositions on b: Board(playerIndex: int) list of types.Position
+    w := b.width
+    h := b.height
     if playerIndex equals 0
         return list of types.Position{
             types.Pos(0, 0),
@@ -182,39 +184,39 @@ func getDeployablePositions on b: Board(playerIndex: int) list of types.Position
         }
     else if playerIndex equals 1
         return list of types.Position{
-            types.Pos(21, 0),
-            types.Pos(22, 0),
-            types.Pos(23, 0),
-            types.Pos(21, 1),
-            types.Pos(22, 1),
-            types.Pos(23, 1),
-            types.Pos(21, 2),
-            types.Pos(22, 2),
-            types.Pos(23, 2),
+            types.Pos(w - 3, 0),
+            types.Pos(w - 2, 0),
+            types.Pos(w - 1, 0),
+            types.Pos(w - 3, 1),
+            types.Pos(w - 2, 1),
+            types.Pos(w - 1, 1),
+            types.Pos(w - 3, 2),
+            types.Pos(w - 2, 2),
+            types.Pos(w - 1, 2),
         }
     else if playerIndex equals 2
         return list of types.Position{
-            types.Pos(0, 21),
-            types.Pos(1, 21),
-            types.Pos(2, 21),
-            types.Pos(0, 22),
-            types.Pos(1, 22),
-            types.Pos(2, 22),
-            types.Pos(0, 23),
-            types.Pos(1, 23),
-            types.Pos(2, 23),
+            types.Pos(0, h - 3),
+            types.Pos(1, h - 3),
+            types.Pos(2, h - 3),
+            types.Pos(0, h - 2),
+            types.Pos(1, h - 2),
+            types.Pos(2, h - 2),
+            types.Pos(0, h - 1),
+            types.Pos(1, h - 1),
+            types.Pos(2, h - 1),
         }
     else
         return list of types.Position{
-            types.Pos(21, 21),
-            types.Pos(22, 21),
-            types.Pos(23, 21),
-            types.Pos(21, 22),
-            types.Pos(22, 22),
-            types.Pos(23, 22),
-            types.Pos(21, 23),
-            types.Pos(22, 23),
-            types.Pos(23, 23),
+            types.Pos(w - 3, h - 3),
+            types.Pos(w - 2, h - 3),
+            types.Pos(w - 1, h - 3),
+            types.Pos(w - 3, h - 2),
+            types.Pos(w - 2, h - 2),
+            types.Pos(w - 1, h - 2),
+            types.Pos(w - 3, h - 1),
+            types.Pos(w - 2, h - 1),
+            types.Pos(w - 1, h - 1),
         }
 
 func getCrystalPosition on b: Board types.Position
