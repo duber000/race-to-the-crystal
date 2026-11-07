@@ -1,7 +1,7 @@
 ---
 type: Implementation Plan
 title: Battle Drones-Inspired Roadmap — Implementation Plan for Race to the Crystal
-description: Concrete, sequenced plan for implementing BATTLEDRONE-INSPIRED-ROADPLAN.md against the real codebase, including a blocking Phase 0 baseline repair and unconditional fog-of-war.
+description: Concrete, sequenced plan for the Battle Drones-inspired web roadmap against the real codebase, including a blocking Phase 0 baseline repair and unconditional fog-of-war.
 tags: [roadmap, web, babylonjs, websocket, mcp, replay, touch, fog-of-war]
 generated: { by: opencode/minimax-m3.1-flash, at: 2026-10-21T00:00:00-04:00 }
 verified:
@@ -13,15 +13,17 @@ decisions:
   - D3: acoustic P2P modem is a stretch goal after Phase 4
   - D4: fog-of-war applies to everyone, unconditionally
 sources:
-  - id: roadmap
-    resource: BATTLEDRONE-INSPIRED-ROADPLAN.md
-    title: Battle Drones-Inspired Roadmap
+  - id: repo-tree
+    resource: /
+    title: Repository source tree
 ---
 
 # Battle Drones-Inspired Roadmap — Implementation Plan
 
-This document turns [`BATTLEDRONE-INSPIRED-ROADPLAN.md`](../BATTLEDRONE-INSPIRED-ROADPLAN.md) into an
-executable plan grounded in the *actual* state of this repository.
+This document turns the Battle Drones-inspired roadmap (original
+proposal retired; the decisions and deferred Phase 3 rationale below
+are the surviving record) into an executable plan grounded in the
+*actual* state of this repository at the time it was written.
 
 **Headline finding:** the roadmap assumes a working 3D web client that receives a live game-event
 stream. Neither is true today. The web client's input pipeline is inert, the HUD never updates, and

@@ -27,7 +27,7 @@ Race to the Crystal is a turn-based strategy game where players compete to charg
 
 - **Backend**: Kukicha (compiles to Go) — HTTP/WebSocket + REST API with JWT authentication, built on `stdlib/http`
 - **Desktop Client**: Kukicha + Ebitengine (2D top-down)
-- **Web Client**: Babylon.js 8. The WebSocket carries the full game state and a sequenced event stream; Mercure (SSE) support exists but is **not enabled by default** (see [docs/WEB.md](docs/WEB.md))
+- **Web Client**: Babylon.js 8. The WebSocket carries the full game state and a sequenced event stream; Mercure (SSE) support exists but is **not enabled by default**
 - **Testing**: 94 Kukicha unit tests covering core game logic and the server's action validation
 
 ## Agent / MCP client
@@ -236,7 +236,6 @@ podman build -f Dockerfile.caddy -t localhost/race-caddy:latest ../..
 **Game & Development:**
 - **[docs/GAME.md](docs/GAME.md)** - Complete game rules and mechanics
 - **[docs/3D.md](docs/3D.md)** - Desktop 3D mode camera system and controls
-- **[docs/WEB.md](docs/WEB.md)** - Web client architecture and API
 - **[AGENTS.md](AGENTS.md)** - Repository guide for agents and contributors
 
 > **Note**: `docs/NETWORK.md` and the `deployment/` guides predate the
