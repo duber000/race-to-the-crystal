@@ -1,0 +1,32 @@
+petiole main
+
+import "race-to-the-crystal/game" as gamepkg
+import "stdlib/test"
+import "testing"
+
+# A session records an opening snapshot, then one per recorded action, and
+# the battle log bundles snapshots plus the flat event log.
+func TestBattleLogRecordsSnapshots(t: reference testing.T)
+    lm := NewLobbyManager()
+    lobby := lm.createLobby("net_a", "Alpha", "T", ClientTypeWEB_BROWSER, 2)
+    test.AssertNotNil(t, lobby)
+    if lobby is empty
+        return
+    lm.joinLobby(lobby.gameId, "net_b", "Bravo", ClientTypeWEB_BROWSER)
+
+    gc := NewGameCoordinator(600, 600)
+    session := gc.createSession(lobby)
+
+    test.AssertEqual(t, len(session.snapshots), 1)
+
+    ok, message, _, _ := session.executeGameAction("net_a", gamepkg.NewEndTurnAction())
+    test.AssertTrue(t, ok)
+    test.AssertNotEqual(t, message, "")
+    test.AssertEqual(t, len(session.snapshots), 2)
+
+    log := session.battleLog()
+    test.AssertEqual(t, log["game_id"], lobby.gameId)
+    _, hasSnapshots := log["snapshots"]
+    test.AssertTrue(t, hasSnapshots)
+    _, hasEvents := log["events"]
+    test.AssertTrue(t, hasEvents)

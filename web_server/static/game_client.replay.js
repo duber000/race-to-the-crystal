@@ -37,6 +37,12 @@ export class ReplayController {
                         <button id="replay-play">Play</button>
                         <button id="replay-next">&raquo;</button>
                         <button id="replay-exit">Exit</button>
+                        <button id="replay-export">Export&nbsp;&darr;</button>
+                    </div>
+                    <div class="replay-speeds" id="replay-speeds">
+                        <button class="replay-speed active" data-speed="1">1&times;</button>
+                        <button class="replay-speed" data-speed="2">2&times;</button>
+                        <button class="replay-speed" data-speed="5">5&times;</button>
                     </div>
                 </div>`;
             document.body.appendChild(panel);
@@ -71,6 +77,55 @@ export class ReplayController {
         this.panel.querySelector('#replay-next').addEventListener('click', () => this.seek(this.cursor + 1));
         this.panel.querySelector('#replay-play').addEventListener('click', () => this.togglePlay());
         this.panel.querySelector('#replay-exit').addEventListener('click', () => this.exit());
+        const exportBtn = this.panel.querySelector('#replay-export');
+        if (exportBtn) exportBtn.addEventListener('click', () => this.exportBattleLog());
+        for (const btn of this.panel.querySelectorAll('.replay-speed')) {
+            btn.addEventListener('click', () => this.setSpeed(parseInt(btn.dataset.speed, 10)));
+        }
+    }
+
+    setSpeed(n) {
+        if (![1, 2, 5].includes(n)) return;
+        this.speed = n;
+        for (const btn of this.panel.querySelectorAll('.replay-speed')) {
+            btn.classList.toggle('active', parseInt(btn.dataset.speed, 10) === n);
+        }
+        // Restart the timer so the new rate takes effect immediately.
+        if (this.playing) {
+            this.stop();
+            this.togglePlay();
+        }
+    }
+
+    async exportBattleLog() {
+        const gameId = this.gameClient.networkManager && this.gameClient.networkManager.currentGameId;
+        try {
+            if (gameId) {
+                const res = await fetch(`/api/game/${encodeURIComponent(gameId)}/battle`);
+                const json = await res.json();
+                if (!json.success) {
+                    console.warn('[Replay] Battle log unavailable:', json.message);
+                    return;
+                }
+                this.download(json.data, `${gameId}.rttc-battle.json`);
+            } else if (this.snapshots.length) {
+                // No live game (e.g. viewing an imported file): export what
+                // is currently loaded.
+                this.download({ snapshots: this.snapshots }, 'battle.rttc-battle.json');
+            }
+        } catch (e) {
+            console.error('[Replay] Export failed:', e);
+        }
+    }
+
+    download(data, filename) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
     }
 
     loadBattleLog(json) {

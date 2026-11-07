@@ -607,3 +607,28 @@ func HandleSpectate on h: reference HTTPHandler(gameId: string, body: JSONMap, c
             "game_id": gameId,
         },
     }
+
+# The battle log for a finished match, for download as
+# `<game_id>.rttc-battle.json`. Unauthenticated like `/api/games`: the
+# browser client has no JWT, and the log is only served post-match, so
+# there is no fog-of-war leak — mid-match the unfiltered board would
+# reveal hidden tokens.
+func HandleBattle on h: reference HTTPHandler(gameId: string) APIResponse
+    session := h.coordinator.getSession(gameId)
+    if session is empty
+        return APIResponse{
+            success: false,
+            message: "game session not found",
+            data: empty JSONMap,
+        }
+    if not session.isGameOver()
+        return APIResponse{
+            success: false,
+            message: "battle log is available once the game has finished",
+            data: empty JSONMap,
+        }
+    return APIResponse{
+        success: true,
+        message: "ok",
+        data: session.battleLog(),
+    }

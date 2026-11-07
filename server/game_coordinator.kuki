@@ -23,6 +23,13 @@ type GameSession
     apiMap: map of string to gamepkg.GameAPI
     # The event log: every event the session has produced, in order.
     events: list of gamepkg.GameEvent
+    # Battle-log snapshots: the unfiltered state after each recorded action
+    # (plus the opening state). Each snapshot carries the events that
+    # produced it, so the replay viewer can re-emit them into the FX
+    # pipeline. Deliberately unfiltered — this is a local file, not a
+    # network payload served to players, and the spectator exception to
+    # fog-of-war covers it. Only served once the match is finished.
+    snapshots: list of JSONMap
     # Sequence number of the last event produced. This is the log index, not
     # a wire counter.
     eventSeq: int
@@ -64,6 +71,7 @@ func NewGameSession(gameId: string, lobby: reference GameLobby, turnTimeoutSecon
         lastState: empty,
         apiMap: empty map of string to gamepkg.GameAPI,
         events: empty list of gamepkg.GameEvent,
+        snapshots: empty list of JSONMap,
         eventSeq: 0,
         playerEventSeqs: empty map of string to int,
         objectiveState: gamepkg.ObjectiveState{},
@@ -80,6 +88,9 @@ func NewGameSession(gameId: string, lobby: reference GameLobby, turnTimeoutSecon
     # Baseline the objective state so the first action does not report every
     # generator and the crystal as changed.
     session.objectiveState = gamepkg.ObjectiveStateOf(reference of session.gameState)
+    # Opening snapshot: the state the match starts from, so a replay begins
+    # on the initial board rather than after the first action.
+    session.recordSnapshot(empty list of gamepkg.GameEvent)
     # The first turn starts ticking now.
     session.beginTurn(session.getCurrentNetworkPlayerId())
     return session
@@ -213,7 +224,34 @@ func recordEvents on s: reference GameSession(data: gamepkg.ActionResultData, le
 
     for e in events
         s.events = append(s.events, e)
+    s.recordSnapshot(events)
     return events
+
+# Append the current (unfiltered) state plus the events that produced it
+# to the battle-log snapshots.
+func recordSnapshot on s: reference GameSession(events: list of gamepkg.GameEvent)
+    eventDicts := empty list of JSONMap
+    for e in events
+        eventDicts = append(eventDicts, gamepkg.EventToDict(e))
+    s.snapshots = append(s.snapshots, JSONMap{
+        "game_state": s.gameState.ClientStateDict(""),
+        "events": eventDicts,
+        "turn_number": s.gameState.TurnNumber(),
+    })
+
+# The full battle log for one finished match: every snapshot in order and
+# the flat event log. Shape matches the replay viewer's
+# `.rttc-battle.json` import.
+func battleLog on s: reference GameSession JSONMap
+    eventDicts := empty list of JSONMap
+    for e in s.events
+        eventDicts = append(eventDicts, gamepkg.EventToDict(e))
+    return JSONMap{
+        "game_id": s.gameId,
+        "game_name": s.gameName,
+        "snapshots": s.snapshots,
+        "events": eventDicts,
+    }
 
 func getStateDict on s: reference GameSession JSONMap
     return s.gameState.ToDict()

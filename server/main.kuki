@@ -119,6 +119,7 @@ func registerRoutes on gs: reference GameServer(mux: reference http.ServeMux)
     mux.Handle("/api/games", httphelper.Handler(gs.handleListGamesRoute))
     mux.Handle("/api/game/\{game_id\}/say", httphelper.Handler(gs.handleSayRoute))
     mux.Handle("/api/game/\{game_id\}/spectate", httphelper.Handler(gs.handleSpectateRoute))
+    mux.Handle("/api/game/\{game_id\}/battle", httphelper.Handler(gs.handleBattleRoute))
 
 func handleWebSocketRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
     gs.wsEndpoint.HandleWebSocket(response, request)
@@ -304,6 +305,16 @@ func handleSpectateRoute on gs: reference GameServer(response: httphelper.Respon
         body = empty JSONMap
 
     result := gs.httpHandler.HandleSpectate(gameId, body, "")
+    gs.writeAPIResponse(response, result)
+
+func handleBattleRoute on gs: reference GameServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    if not request.IsGet()
+        response.MethodNotAllowed("GET")
+        return
+
+    gameId := request.PathValue("game_id")
+    result := gs.httpHandler.HandleBattle(gameId)
     gs.writeAPIResponse(response, result)
 
 func writeAPIResponse on gs: reference GameServer(response: httphelper.Response, result: APIResponse)
