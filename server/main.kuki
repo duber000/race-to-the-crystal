@@ -156,7 +156,7 @@ func handleCreateGameRoute on gs: reference GameServer(response: httphelper.Resp
     )
     authHeader := request.GetHeader("Authorization")
 
-    body := empty map of string to any
+    body := empty JSONMap
     request.Decode(reference of body) onerr
         response.JSONBadRequest("invalid JSON body")
         return
@@ -177,9 +177,9 @@ func handleJoinGameRoute on gs: reference GameServer(response: httphelper.Respon
         request.GetHeader("X-Real-IP"),
     )
 
-    body := empty map of string to any
+    body := empty JSONMap
     request.Decode(reference of body) onerr
-        body = empty map of string to any
+        body = empty JSONMap
 
     result := gs.httpHandler.HandleJoinGame(gameId, body, ip)
     gs.writeAPIResponse(response, result)
@@ -193,7 +193,7 @@ func handleActionRoute on gs: reference GameServer(response: httphelper.Response
     gameId := request.PathValue("game_id")
     authHeader := request.GetHeader("Authorization")
 
-    body := empty map of string to any
+    body := empty JSONMap
     request.Decode(reference of body) onerr
         response.JSONBadRequest("invalid JSON body")
         return
@@ -246,7 +246,7 @@ func handleReadyRoute on gs: reference GameServer(response: httphelper.Response,
     gameId := request.PathValue("game_id")
     authHeader := request.GetHeader("Authorization")
 
-    body := empty map of string to any
+    body := empty JSONMap
     request.Decode(reference of body) onerr
         log.Debug("Ready endpoint: empty or invalid body, using defaults")
 
@@ -283,7 +283,7 @@ func handleSayRoute on gs: reference GameServer(response: httphelper.Response, r
     gameId := request.PathValue("game_id")
     authHeader := request.GetHeader("Authorization")
 
-    body := empty map of string to any
+    body := empty JSONMap
     request.Decode(reference of body) onerr
         response.JSONBadRequest("invalid JSON body")
         return
@@ -299,9 +299,9 @@ func handleSpectateRoute on gs: reference GameServer(response: httphelper.Respon
 
     gameId := request.PathValue("game_id")
 
-    body := empty map of string to any
+    body := empty JSONMap
     request.Decode(reference of body) onerr
-        body = empty map of string to any
+        body = empty JSONMap
 
     result := gs.httpHandler.HandleSpectate(gameId, body, "")
     gs.writeAPIResponse(response, result)
@@ -311,7 +311,7 @@ func writeAPIResponse on gs: reference GameServer(response: httphelper.Response,
     if not result.success
         status = httphelper.StatusBadRequest
 
-    responseData := map of string to any{
+    responseData := JSONMap{
         "success": result.success,
         "message": result.message,
         "data": result.data,

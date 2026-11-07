@@ -8,6 +8,8 @@ import "stdlib/json" as jsonpkg
 import "stdlib/jsonschema" as jsonschema
 import "stdlib/mcp" as mcpkg
 
+type JSONMap = map of string to any
+
 var serverUrl = env.GetOr("GAME_SERVER_URL", "http://localhost:8080")
 
 var gameToken = env.GetOr("GAME_TOKEN", "")
@@ -33,7 +35,7 @@ type SayArgs
 
 type NoArgs struct {}
 
-func doRequest(method: string, path: string, body: map of string to any) (string, error)
+func doRequest(method: string, path: string, body: JSONMap) (string, error)
     url := "{serverUrl}{path}"
     bodyReader := io.Reader(empty)
     if body isnt empty
@@ -59,15 +61,15 @@ func doRequest(method: string, path: string, body: map of string to any) (string
     return data as string, empty
 
 func getState(args: NoArgs) (any, error)
-    return doRequest("GET", "/api/game/{gameId}/state", empty map of string to any)
+    return doRequest("GET", "/api/game/{gameId}/state", empty JSONMap)
 
 func getActions(args: NoArgs) (any, error)
-    return doRequest("GET", "/api/game/{gameId}/actions", empty map of string to any)
+    return doRequest("GET", "/api/game/{gameId}/actions", empty JSONMap)
 
 func moveToken(args: MoveArgs) (any, error)
-    body := map of string to any{
+    body := JSONMap{
         "type": "MOVE",
-        "data": map of string to any{
+        "data": JSONMap{
             "token_id": args.TokenID,
             "x": args.X,
             "y": args.Y,
@@ -76,9 +78,9 @@ func moveToken(args: MoveArgs) (any, error)
     return doRequest("POST", "/api/game/{gameId}/action", body)
 
 func attack(args: AttackArgs) (any, error)
-    body := map of string to any{
+    body := JSONMap{
         "type": "ATTACK",
-        "data": map of string to any{
+        "data": JSONMap{
             "attacker_id": args.AttackerID,
             "defender_id": args.DefenderID,
         },
@@ -86,9 +88,9 @@ func attack(args: AttackArgs) (any, error)
     return doRequest("POST", "/api/game/{gameId}/action", body)
 
 func deployToken(args: DeployArgs) (any, error)
-    body := map of string to any{
+    body := JSONMap{
         "type": "DEPLOY",
-        "data": map of string to any{
+        "data": JSONMap{
             "health_value": args.HealthValue,
             "x": args.X,
             "y": args.Y,
@@ -97,14 +99,14 @@ func deployToken(args: DeployArgs) (any, error)
     return doRequest("POST", "/api/game/{gameId}/action", body)
 
 func endTurn(args: NoArgs) (any, error)
-    body := map of string to any{
+    body := JSONMap{
         "type": "END_TURN",
-        "data": empty map of string to any,
+        "data": empty JSONMap,
     }
     return doRequest("POST", "/api/game/{gameId}/action", body)
 
 func say(args: SayArgs) (any, error)
-    body := map of string to any{
+    body := JSONMap{
         "text": args.Text,
     }
     return doRequest("POST", "/api/game/{gameId}/say", body)

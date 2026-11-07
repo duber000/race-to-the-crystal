@@ -43,9 +43,9 @@ func IsInGame on c: reference WSClient bool
 
 type WSMessage
     gameId: string
-    data: map of string to any
+    data: JSONMap
 
-func NewWSMessage(gameId: string, data: map of string to any) WSMessage
+func NewWSMessage(gameId: string, data: JSONMap) WSMessage
     return WSMessage{gameId: gameId, data: data}
 
 type WebSocketHandler
@@ -53,7 +53,7 @@ type WebSocketHandler
     gameSessions: map of string to string
     onConnect: optional reference func(string, string, string)
     onDisconnect: optional reference func(string)
-    onMessage: optional reference func(string, string, map of string to any)
+    onMessage: optional reference func(string, string, JSONMap)
 
 func NewWebSocketHandler() WebSocketHandler
     return WebSocketHandler{
@@ -67,7 +67,7 @@ func SetOnConnect on wh: reference WebSocketHandler(handler: reference func(stri
 func SetOnDisconnect on wh: reference WebSocketHandler(handler: reference func(string))
     wh.onDisconnect = handler
 
-func SetOnMessage on wh: reference WebSocketHandler(handler: reference func(string, string, map of string to any))
+func SetOnMessage on wh: reference WebSocketHandler(handler: reference func(string, string, JSONMap))
     wh.onMessage = handler
 
 func RegisterClient on wh: reference WebSocketHandler(client: reference WSClient)
@@ -94,7 +94,7 @@ func UpdateClientPlayerID on wh: reference WebSocketHandler(clientId: string, pl
         client.playerId = playerId
         client.playerName = playerName
 
-func SendToClient on wh: reference WebSocketHandler(clientId: string, data: map of string to any) bool
+func SendToClient on wh: reference WebSocketHandler(clientId: string, data: JSONMap) bool
     client, ok := wh.clients[clientId]
     if not ok
         return false
@@ -120,8 +120,8 @@ func BroadcastToGame on wh: reference WebSocketHandler(gameId: string, data: JSO
             if err isnt empty
                 log.Debug("WebSocket broadcast failed: {err}")
 
-func ProcessMessage on wh: reference WebSocketHandler(clientId: string, rawData: string) map of string to any
-    data := empty map of string to any
+func ProcessMessage on wh: reference WebSocketHandler(clientId: string, rawData: string) JSONMap
+    data := empty JSONMap
     jsonpkg.ParseInto(rawData, reference of data) onerr return data
 
     msgTypeVal, has := data["type"]

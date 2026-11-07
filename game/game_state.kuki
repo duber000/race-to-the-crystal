@@ -527,17 +527,17 @@ func BoardHeight on gs: reference GameState int
     return gs.board.height
 
 # kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
-func ToDict on gs: reference GameState map of string to any
-    result := empty map of string to any
+func ToDict on gs: reference GameState StateDict
+    result := empty StateDict
     result["phase"] = "{gs.phase}"
     result["turn_number"] = gs.turnNumber
     result["current_turn_player_id"] = gs.currentTurnPlayerId as string
     if gs.winnerId isnt empty
         result["winner_id"] = gs.winnerId as string
     result["turn_phase"] = "{gs.turnPhase}"
-    playerList := empty list of map of string to any
+    playerList := empty list of StateDict
     for pid, p in gs.players
-        pd := map of string to any{
+        pd := StateDict{
             "id": pid as string,
             "name": p.name,
             "is_active": p.isActive,

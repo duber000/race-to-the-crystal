@@ -33,20 +33,20 @@ func NewMercurePublisher(config: MercureConfig) MercurePublisher
 func Enabled on mp: MercurePublisher bool
     return mp.enabled
 
-func PublishFullState on mp: reference MercurePublisher(gameId: string, stateDict: map of string to any, private: bool)
+func PublishFullState on mp: reference MercurePublisher(gameId: string, stateDict: JSONMap, private: bool)
     if not mp.enabled
         return
-    data := map of string to any{
+    data := JSONMap{
         "type": "FULL_STATE",
         "game_id": gameId,
         "state": stateDict,
     }
     mp.publishInternal(gameId, data, private)
 
-func PublishStateUpdate on mp: reference MercurePublisher(gameId: string, delta: map of string to any, private: bool)
+func PublishStateUpdate on mp: reference MercurePublisher(gameId: string, delta: JSONMap, private: bool)
     if not mp.enabled
         return
-    data := map of string to any{
+    data := JSONMap{
         "type": "STATE_UPDATE",
         "game_id": gameId,
         "delta": delta,
@@ -56,7 +56,7 @@ func PublishStateUpdate on mp: reference MercurePublisher(gameId: string, delta:
 func PublishTurnChange on mp: reference MercurePublisher(gameId: string, currentPlayerId: string, turnNumber: int, turnPhase: string)
     if not mp.enabled
         return
-    data := map of string to any{
+    data := JSONMap{
         "type": "TURN_CHANGE",
         "game_id": gameId,
         "current_player_id": currentPlayerId,
@@ -68,14 +68,14 @@ func PublishTurnChange on mp: reference MercurePublisher(gameId: string, current
 func PublishGameWon on mp: reference MercurePublisher(gameId: string, winnerId: string)
     if not mp.enabled
         return
-    data := map of string to any{
+    data := JSONMap{
         "type": "GAME_WON",
         "game_id": gameId,
         "winner_id": winnerId,
     }
     mp.publishInternal(gameId, data, false)
 
-func publishInternal on mp: reference MercurePublisher(gameId: string, data: map of string to any, private: bool)
+func publishInternal on mp: reference MercurePublisher(gameId: string, data: JSONMap, private: bool)
     topic := "{mp.config.topicPrefix}/{gameId}"
     jsonBytes := jsonpkg.Bytes(data) onerr return
     encodedData := encpkg.Base64URLEncode(jsonBytes)
@@ -96,8 +96,8 @@ func GeneratePublisherJWT on mp: reference MercurePublisher string
     now := time.Now().Unix()
     headerJson := map of string to string{"alg": "HS256", "typ": "JWT"}
     headerBytes := jsonpkg.Bytes(headerJson) onerr return ""
-    payloadData := map of string to any{
-        "mercure": map of string to any{"publish": list of string{"*"}},
+    payloadData := JSONMap{
+        "mercure": JSONMap{"publish": list of string{"*"}},
         "iat": now,
         "exp": now + 3600,
     }

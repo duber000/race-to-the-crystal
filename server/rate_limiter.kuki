@@ -156,8 +156,8 @@ func CleanupPlayer on rl: reference RateLimiter(playerId: string)
     delete rl.playerActions[playerId]
     delete rl.playerGameCreation[playerId]
 
-func GetStats on rl: reference RateLimiter map of string to any
-    return map of string to any{
+func GetStats on rl: reference RateLimiter JSONMap
+    return JSONMap{
         "active_ips": len(rl.ipConnections),
         "tracked_players": len(rl.playerActions),
     }

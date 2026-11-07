@@ -32,36 +32,36 @@ func ChosenActionName(action: ChosenAction) string
         default
             return "END_TURN"
 
-func ChosenToActionMap(action: ChosenAction) map of string to any
+func ChosenToActionMap(action: ChosenAction) JSONMap
     switch action
         when ChosenMove
-            return map of string to any{
+            return JSONMap{
                 "type": "MOVE",
-                "data": map of string to any{
+                "data": JSONMap{
                     "token_id": action.TokenID,
                     "destination": action.Destination,
                 },
             }
         when ChosenAttack
-            return map of string to any{
+            return JSONMap{
                 "type": "ATTACK",
-                "data": map of string to any{
+                "data": JSONMap{
                     "attacker_id": action.AttackerID,
                     "defender_id": action.DefenderID,
                 },
             }
         when ChosenDeploy
-            return map of string to any{
+            return JSONMap{
                 "type": "DEPLOY",
-                "data": map of string to any{
+                "data": JSONMap{
                     "health_value": action.HealthValue,
                     "position": action.Position,
                 },
             }
         default
-            return map of string to any{
+            return JSONMap{
                 "type": "END_TURN",
-                "data": empty map of string to any,
+                "data": empty JSONMap,
             }
 
 func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs: optional reference GameState, playerId: types.PlayerID) optional reference ChosenAction
@@ -265,10 +265,10 @@ func scoreDestination(dest: types.Position, objectives: list of types.Position, 
 
     return minDist
 
-func ActionResponseToDict(a: ActionResponse) map of string to any
+func ActionResponseToDict(a: ActionResponse) JSONMap
     switch a
         when MoveAction
-            return map of string to any{
+            return JSONMap{
                 "type": "MOVE",
                 "token_id": a.TokenID,
                 "token_position": a.TokenPosition,
@@ -277,7 +277,7 @@ func ActionResponseToDict(a: ActionResponse) map of string to any
                 "description": a.Description,
             }
         when AttackAction
-            return map of string to any{
+            return JSONMap{
                 "type": "ATTACK",
                 "attacker_id": a.AttackerID,
                 "attacker_position": a.AttackerPosition,
@@ -289,7 +289,7 @@ func ActionResponseToDict(a: ActionResponse) map of string to any
                 "description": a.Description,
             }
         when DeployAction
-            return map of string to any{
+            return JSONMap{
                 "type": "DEPLOY",
                 "health_value": a.HealthValue,
                 "positions": a.Positions,
@@ -297,18 +297,18 @@ func ActionResponseToDict(a: ActionResponse) map of string to any
                 "description": a.Description,
             }
         when EndTurnAction
-            return map of string to any{
+            return JSONMap{
                 "type": "END_TURN",
                 "description": a.Description,
             }
 
-func ActionsToDicts(actions: list of ActionResponse) list of map of string to any
-    result := empty list of map of string to any
+func ActionsToDicts(actions: list of ActionResponse) list of JSONMap
+    result := empty list of JSONMap
     for a in actions
         result = append(result, ActionResponseToDict(a))
     return result
 
-func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
+func ActionDictToResponse(d: JSONMap) (ActionResponse, bool)
     typeAny, has := d["type"]
     if not has
         return EndTurnAction{Description: "unknown"}, false
@@ -406,7 +406,7 @@ func ActionDictToResponse(d: map of string to any) (ActionResponse, bool)
             return EndTurnAction{Description: desc}, true
     return EndTurnAction{Description: "unknown"}, false
 
-func ActionsFromDicts(dicts: list of map of string to any) list of ActionResponse
+func ActionsFromDicts(dicts: list of JSONMap) list of ActionResponse
     result := empty list of ActionResponse
     for d in dicts
         r, ok := ActionDictToResponse(d)

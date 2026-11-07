@@ -434,12 +434,12 @@ func NewDeployAction(healthValue: int, pos: types.Position) AIAction
 func NewEndTurnAction() AIAction
     return EndTurn{}
 
-func ActionDataToDict(d: ActionResultData) map of string to any
+func ActionDataToDict(d: ActionResultData) JSONMap
     switch d
         when NoData
-            return map of string to any{"type": "NoData"}
+            return JSONMap{"type": "NoData"}
         when MoveData
-            m := map of string to any{
+            m := JSONMap{
                 "type": "MoveData",
                 "token_id": d.TokenID,
                 "old_position": d.OldPosition,
@@ -450,7 +450,7 @@ func ActionDataToDict(d: ActionResultData) map of string to any
                 m["mystery_effect"] = "{d.MysteryEffect}"
             return m
         when AttackData
-            return map of string to any{
+            return JSONMap{
                 "type": "AttackData",
                 "attacker_id": d.AttackerID,
                 "defender_id": d.DefenderID,
@@ -458,7 +458,7 @@ func ActionDataToDict(d: ActionResultData) map of string to any
                 "defender_killed": d.DefenderKilled,
             }
         when DeployData
-            return map of string to any{
+            return JSONMap{
                 "type": "DeployData",
                 "new_token_id": d.NewTokenID,
                 "health_value": d.HealthValue,
@@ -466,7 +466,7 @@ func ActionDataToDict(d: ActionResultData) map of string to any
                 "tokens_remaining": d.TokensRemaining,
             }
         when TurnEndData
-            return map of string to any{
+            return JSONMap{
                 "type": "TurnEndData",
                 "turn_number": d.TurnNumber,
                 "next_player_id": d.NextPlayerID,
