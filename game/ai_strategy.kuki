@@ -249,13 +249,7 @@ func getObjectives(gs: reference GameState, playerId: types.PlayerID, crystalOnl
 func scoreDestination(dest: types.Position, objectives: list of types.Position, tok: optional reference Token) float64
     minDist := 999999.0
     for obj in objectives
-        dx := dest.X - obj.X
-        if dx < 0
-            dx = -dx
-        dy := dest.Y - obj.Y
-        if dy < 0
-            dy = -dy
-        dist := (dx + dy) as float64
+        dist := getDistance(dest, obj) as float64
         if dist < minDist
             minDist = dist
 
