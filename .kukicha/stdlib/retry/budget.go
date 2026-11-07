@@ -16,8 +16,8 @@
 package retry
 
 import (
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/datetime"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/datetime"
 	"sync"
 	"time"
 )

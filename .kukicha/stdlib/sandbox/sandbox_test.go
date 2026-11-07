@@ -5,9 +5,9 @@ package sandbox_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/files"
-	"kukicha.org/kukicha/stdlib/sandbox"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/files"
+	"kukicha.org/stdlib/sandbox"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

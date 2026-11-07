@@ -4,8 +4,8 @@
 package ctx_test
 
 import (
-	"kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/test"
 	"testing"
 	"time"
 )

@@ -5,8 +5,8 @@ package signal_test
 
 import (
 	"context"
-	"kukicha.org/kukicha/stdlib/signal"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/signal"
+	"kukicha.org/stdlib/test"
 	"os"
 	"sync"
 	"syscall"

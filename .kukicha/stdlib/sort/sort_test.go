@@ -4,9 +4,9 @@
 package sort_test
 
 import (
-	"kukicha.org/kukicha/stdlib/datetime"
-	"kukicha.org/kukicha/stdlib/sort"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/datetime"
+	"kukicha.org/stdlib/sort"
+	"kukicha.org/stdlib/test"
 	"testing"
 	"time"
 )

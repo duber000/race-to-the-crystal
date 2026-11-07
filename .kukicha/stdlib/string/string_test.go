@@ -5,8 +5,8 @@ package string_test
 
 import (
 	"fmt"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"math"
 	"testing"
 )

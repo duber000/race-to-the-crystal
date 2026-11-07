@@ -4,8 +4,8 @@
 package template_test
 
 import (
-	"kukicha.org/kukicha/stdlib/template"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/template"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

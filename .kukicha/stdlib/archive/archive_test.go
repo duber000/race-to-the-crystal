@@ -4,10 +4,10 @@
 package archive_test
 
 import (
-	"kukicha.org/kukicha/stdlib/archive"
-	"kukicha.org/kukicha/stdlib/files"
-	strpkg "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/archive"
+	"kukicha.org/stdlib/files"
+	strpkg "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"os"
 	"path/filepath"
 	"testing"

@@ -13,12 +13,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"kukicha.org/kukicha/stdlib/color"
-	"kukicha.org/kukicha/stdlib/json"
-	"kukicha.org/kukicha/stdlib/parse"
-	"kukicha.org/kukicha/stdlib/signal"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/term"
+	"kukicha.org/stdlib/color"
+	"kukicha.org/stdlib/json"
+	"kukicha.org/stdlib/parse"
+	"kukicha.org/stdlib/signal"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/term"
 	"os"
 )
 

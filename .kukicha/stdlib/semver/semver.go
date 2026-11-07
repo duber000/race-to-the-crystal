@@ -15,10 +15,10 @@ package semver
 import (
 	"errors"
 	"fmt"
-	"kukicha.org/kukicha/stdlib/parse"
-	"kukicha.org/kukicha/stdlib/slice"
-	"kukicha.org/kukicha/stdlib/sort"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/stdlib/parse"
+	"kukicha.org/stdlib/slice"
+	"kukicha.org/stdlib/sort"
+	kukistring "kukicha.org/stdlib/string"
 )
 
 // Level is the closed set of bump levels: major, minor, or patch.

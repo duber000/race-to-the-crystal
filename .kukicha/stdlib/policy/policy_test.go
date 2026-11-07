@@ -5,9 +5,9 @@ package policy_test
 
 import (
 	"context"
-	"kukicha.org/kukicha/stdlib/cast"
-	"kukicha.org/kukicha/stdlib/policy"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/cast"
+	"kukicha.org/stdlib/policy"
+	"kukicha.org/stdlib/test"
 	"testing"
 	"time"
 )

@@ -5,10 +5,10 @@ package log_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/log"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/term"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/log"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/term"
+	"kukicha.org/stdlib/test"
 	"os"
 	"testing"
 )

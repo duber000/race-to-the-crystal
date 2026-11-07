@@ -4,9 +4,9 @@
 package shell_test
 
 import (
-	"kukicha.org/kukicha/stdlib/shell"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/shell"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"strings"
 	"testing"
 )

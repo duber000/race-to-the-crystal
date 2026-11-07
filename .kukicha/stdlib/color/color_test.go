@@ -5,9 +5,9 @@ package color_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/color"
-	"kukicha.org/kukicha/stdlib/term"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/color"
+	"kukicha.org/stdlib/term"
+	"kukicha.org/stdlib/test"
 	"os"
 	"testing"
 )

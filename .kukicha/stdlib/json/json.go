@@ -11,10 +11,10 @@ import (
 	kukierrors "errors"
 	"fmt"
 	"io"
-	errs "kukicha.org/kukicha/stdlib/errors"
-	"kukicha.org/kukicha/stdlib/maps"
-	"kukicha.org/kukicha/stdlib/sort"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	errs "kukicha.org/stdlib/errors"
+	"kukicha.org/stdlib/maps"
+	"kukicha.org/stdlib/sort"
+	kukistring "kukicha.org/stdlib/string"
 	"math/big"
 	"os"
 	"reflect"
@@ -271,8 +271,8 @@ func WriteOutput(v any) error {
 }
 
 // Read reads JSON from an io.Reader into a typed value.
-// Matching is case-insensitive on untagged fields (v1-style), so a
-// snake_case key decodes into a Go-case field; `as "..."` tags stay exact.
+// Matching is case-insensitive (v1-style) on every field — untagged AND
+// tagged (see the Parse invariant note above, issue #387).
 // Example: input := json.Read of ShortenRequest from request.Body onerr ...
 func Read[T any](reader io.Reader) (T, error) {
 	data := *new(T)
@@ -288,8 +288,8 @@ func Read[T any](reader io.Reader) (T, error) {
 }
 
 // ParseBytes parses JSON bytes into a typed value.
-// Matching is case-insensitive on untagged fields (v1-style), so a
-// snake_case key decodes into a Go-case field; `as "..."` tags stay exact.
+// Matching is case-insensitive (v1-style) on every field — untagged AND
+// tagged (see the Parse invariant note above, issue #387).
 // Example: cfg := json.ParseBytes of Config from data onerr return
 func ParseBytes[T any](data []byte) (T, error) {
 	out := *new(T)
@@ -303,8 +303,23 @@ func ParseBytes[T any](data []byte) (T, error) {
 }
 
 // Parse parses a JSON string into a typed value.
-// Matching is case-insensitive on untagged fields (v1-style), so a
-// snake_case key decodes into a Go-case field; `as "..."` tags stay exact.
+// Matching is case-insensitive (v1-style) on every field — untagged AND
+// tagged: an `as "id"` field accepts "id"/"ID" (a fold-variant of a known
+// member never leaks into an `as ",unknown"` capture).
+//
+// Invariant (issue #387): the case-insensitive default is only safe
+// because duplicate-name rejection is fold-aware — {"admin":false,
+// "Admin":true} and {"userStatus":"a","user_status":"b"} are rejected as
+// duplicate member names when a field claims the folded name (the
+// CVE-2017-12635 key-smuggling residue is a case variant of a field the
+// program trusts; the engine's rejection is claim-driven — fold-dups of
+// members no field claims are two separate unknowns, not a typed-field
+// override). That holds because no entry point here ever passes
+// jsontext.AllowDuplicateNames(true), and the typed decode runs the full
+// jsontext parse before capture. Relaxing AllowDuplicateNames anywhere
+// while matching names insensitively recreates that CVE pairing;
+// TestParseRejectsFoldVariantDuplicateKeys pins it per
+// decode-entry-point family, capture-aware paths included.
 // Example: v := json.Parse of Verdict from reply onerr return
 func Parse[T any](data string) (T, error) {
 	out := *new(T)

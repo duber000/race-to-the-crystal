@@ -31,12 +31,12 @@ import (
 	"encoding/json/jsontext"
 	"errors"
 	"fmt"
-	"kukicha.org/kukicha/stdlib/content"
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/fetch"
-	"kukicha.org/kukicha/stdlib/json"
-	"kukicha.org/kukicha/stdlib/llm"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/stdlib/content"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/fetch"
+	"kukicha.org/stdlib/json"
+	"kukicha.org/stdlib/llm"
+	kukistring "kukicha.org/stdlib/string"
 )
 
 // rawContentBlock is the wire-format content block decoded from Anthropic's

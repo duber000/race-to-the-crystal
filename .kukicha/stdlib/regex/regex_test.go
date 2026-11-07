@@ -5,9 +5,9 @@ package regex_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/cast"
-	"kukicha.org/kukicha/stdlib/regex"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/cast"
+	"kukicha.org/stdlib/regex"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

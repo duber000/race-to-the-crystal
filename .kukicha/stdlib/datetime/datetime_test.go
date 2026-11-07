@@ -5,9 +5,9 @@ package datetime_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/datetime"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/datetime"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"testing"
 	"time"
 )

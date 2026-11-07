@@ -5,9 +5,9 @@ package random_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/random"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/random"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"math"
 	"slices"
 	"testing"

@@ -4,8 +4,8 @@
 package math_test
 
 import (
-	"kukicha.org/kukicha/stdlib/math"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/math"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

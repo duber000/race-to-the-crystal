@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
+	ctxpkg "kukicha.org/stdlib/ctx"
 	"os"
 	gosignal "os/signal"
 	"syscall"

@@ -22,8 +22,8 @@ package color
 
 import (
 	"fmt"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/term"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/term"
 	"os"
 )
 

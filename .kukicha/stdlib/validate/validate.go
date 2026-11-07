@@ -8,9 +8,9 @@ package validate
 import (
 	"errors"
 	"fmt"
-	"kukicha.org/kukicha/stdlib/regex"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/url"
+	"kukicha.org/stdlib/regex"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/url"
 	"path/filepath"
 	"slices"
 	"strconv"

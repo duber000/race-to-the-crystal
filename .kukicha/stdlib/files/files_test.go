@@ -4,8 +4,8 @@
 package files_test
 
 import (
-	"kukicha.org/kukicha/stdlib/files"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/files"
+	"kukicha.org/stdlib/test"
 	"os"
 	"path/filepath"
 	"testing"

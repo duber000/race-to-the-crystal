@@ -24,10 +24,10 @@ package retry
 
 import (
 	"fmt"
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/datetime"
-	"kukicha.org/kukicha/stdlib/math"
-	"kukicha.org/kukicha/stdlib/random"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/datetime"
+	"kukicha.org/stdlib/math"
+	"kukicha.org/stdlib/random"
 	"time"
 )
 

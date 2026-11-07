@@ -4,9 +4,9 @@
 package encoding_test
 
 import (
-	"kukicha.org/kukicha/stdlib/encoding"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/encoding"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

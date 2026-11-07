@@ -31,12 +31,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/encoding"
-	"kukicha.org/kukicha/stdlib/fetch"
-	jsonpkg "kukicha.org/kukicha/stdlib/json"
-	"kukicha.org/kukicha/stdlib/llm"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/encoding"
+	"kukicha.org/stdlib/fetch"
+	jsonpkg "kukicha.org/stdlib/json"
+	"kukicha.org/stdlib/llm"
+	kukistring "kukicha.org/stdlib/string"
 	"strings"
 )
 

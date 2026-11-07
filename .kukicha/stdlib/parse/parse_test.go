@@ -4,9 +4,9 @@
 package parse_test
 
 import (
-	"kukicha.org/kukicha/stdlib/parse"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/parse"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"net/url"
 	"os"
 	"path/filepath"

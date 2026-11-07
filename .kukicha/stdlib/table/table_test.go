@@ -4,9 +4,9 @@
 package table_test
 
 import (
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/table"
-	"kukicha.org/kukicha/stdlib/test"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/table"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

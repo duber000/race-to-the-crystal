@@ -10,7 +10,7 @@ package validate
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/regex"
+	"kukicha.org/stdlib/regex"
 	"slices"
 )
 

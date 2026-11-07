@@ -4,8 +4,8 @@
 package concurrent
 
 import (
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/errors"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/errors"
 	"sync"
 )
 

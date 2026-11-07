@@ -7,8 +7,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"kukicha.org/kukicha/stdlib/html"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/html"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

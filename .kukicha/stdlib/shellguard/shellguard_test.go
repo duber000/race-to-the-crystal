@@ -5,9 +5,9 @@ package shellguard_test
 
 import (
 	"errors"
-	"kukicha.org/kukicha/stdlib/shellguard"
-	"kukicha.org/kukicha/stdlib/slice"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/shellguard"
+	"kukicha.org/stdlib/slice"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

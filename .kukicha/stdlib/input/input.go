@@ -9,9 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/term"
-	"kukicha.org/kukicha/stdlib/parse"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	termpkg "kukicha.org/kukicha/stdlib/term"
+	"kukicha.org/stdlib/parse"
+	kukistring "kukicha.org/stdlib/string"
+	termpkg "kukicha.org/stdlib/term"
 	"os"
 )
 

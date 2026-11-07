@@ -19,9 +19,9 @@ package table
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/slice"
-	strpkg "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/term"
+	"kukicha.org/stdlib/slice"
+	strpkg "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/term"
 	"strings"
 )
 

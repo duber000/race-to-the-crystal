@@ -6,9 +6,9 @@ package iterator_test
 import (
 	"fmt"
 	"iter"
-	"kukicha.org/kukicha/stdlib/iterator"
-	strpkg "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/iterator"
+	strpkg "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"strings"
 	"testing"
 )

@@ -20,9 +20,9 @@ package git
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/shell"
-	"kukicha.org/kukicha/stdlib/slice"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/stdlib/shell"
+	"kukicha.org/stdlib/slice"
+	kukistring "kukicha.org/stdlib/string"
 	"strings"
 )
 

@@ -7,9 +7,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"kukicha.org/kukicha/stdlib/json"
-	"kukicha.org/kukicha/stdlib/maps"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/json"
+	"kukicha.org/stdlib/maps"
+	"kukicha.org/stdlib/test"
 	"strings"
 	"testing"
 )
@@ -1700,4 +1700,283 @@ func TestZeroValueEncoderDecoderReturnError(t *testing.T) {
 	err = json.Decode(json.NewDecoder(nil), &target)
 	test.AssertError(t, err)
 	test.AssertContains(t, err.Error(), "not initialized")
+}
+
+type FoldDupTarget struct {
+	Admin      bool   `json:"admin"`
+	UserStatus string `json:"userStatus"`
+}
+
+type FoldDupCapture struct {
+	Admin bool           `json:"admin"`
+	Extra map[string]any `json:",unknown"`
+}
+
+type FoldDupCaptureUser struct {
+	UserStatus string         `json:"userStatus"`
+	Extra      map[string]any `json:",unknown"`
+}
+
+// assertFoldDup asserts a rejected doc failed specifically with the
+// jsontext duplicate-name sentinel, not an unrelated type or strictness
+// error. The sentinel is asserted by message text rather than errors.Is
+// because this test package cannot import encoding/json/v2 directly (the
+// aliased-jsonv2-import poisoning noted at
+// TestUnknownCapture_StrictRejectsNestedUnknown, issue 3mxmzovz7s422).
+func assertFoldDup(t *testing.T, family string, err error) {
+	if err == nil {
+		t.Errorf("family %v: a fold-variant duplicate document must be rejected", family)
+		return
+	}
+	if !strings.Contains(err.Error(), "duplicate object member name") {
+		t.Errorf("family %v: expected jsontext duplicate-name rejection, got: %v", family, err)
+	}
+}
+
+// Under the case-insensitive default, v2's duplicate-name rejection is
+// fold-aware: two members whose names fold equal — case variants
+// ("admin"/"Admin") or delimiter variants ("userStatus"/"user_status") —
+// are duplicates even when neither spelling literally repeats. This is the
+// security backstop keeping case-insensitive matching safe (the
+// CVE-2017-12635 key-smuggling family); it holds because no entry point
+// ever passes jsontext.AllowDuplicateNames(true). Every decode
+// entry-point family inherits the policy — pinned one spot-check per
+// shape, capture-aware paths included.
+func TestParseRejectsFoldVariantDuplicateKeys(t *testing.T) {
+	dups := []string{"{\"admin\":false,\"Admin\":true}", "{\"userStatus\":\"a\",\"user_status\":\"b\"}"}
+	for _, doc := range dups {
+		_, err := json.Parse[FoldDupTarget](doc)
+		assertFoldDup(t, "Parse of T", err)
+		_, err = json.ParseStrict[FoldDupTarget](doc)
+		assertFoldDup(t, "ParseStrict of T", err)
+		_, err = json.ParseBytes[FoldDupTarget]([]byte(doc))
+		assertFoldDup(t, "ParseBytes of T", err)
+		_, err = json.ParseBytesStrict[FoldDupTarget]([]byte(doc))
+		assertFoldDup(t, "ParseBytesStrict of T", err)
+		_, err = json.Read[FoldDupTarget](strings.NewReader(doc))
+		assertFoldDup(t, "Read of T", err)
+		_, err = json.ReadStrict[FoldDupTarget](strings.NewReader(doc))
+		assertFoldDup(t, "ReadStrict of T", err)
+		var into FoldDupTarget
+		err = json.ParseInto(doc, &into)
+		assertFoldDup(t, "ParseInto", err)
+		err = json.ParseBytesInto([]byte(doc), &into)
+		assertFoldDup(t, "ParseBytesInto", err)
+		err = json.ReadInto(strings.NewReader(doc), &into)
+		assertFoldDup(t, "ReadInto", err)
+		err = json.ParseIntoStrict(doc, &into)
+		assertFoldDup(t, "ParseIntoStrict", err)
+		err = json.ParseBytesIntoStrict([]byte(doc), &into)
+		assertFoldDup(t, "ParseBytesIntoStrict", err)
+		err = json.ReadIntoStrict(strings.NewReader(doc), &into)
+		assertFoldDup(t, "ReadIntoStrict", err)
+		err = json.Decode(json.NewDecoder(strings.NewReader(doc)), &into)
+		assertFoldDup(t, "Decode", err)
+	}
+	_, err := json.Parse[FoldDupCapture](dups[0])
+	assertFoldDup(t, "Parse of T (capture)", err)
+	_, err = json.ParseStrict[FoldDupCapture](dups[0])
+	assertFoldDup(t, "ParseStrict of T (capture)", err)
+	_, err = json.Parse[FoldDupCaptureUser](dups[1])
+	assertFoldDup(t, "Parse of T (capture, delimiter variant)", err)
+	_, err = json.ParseStrict[FoldDupCaptureUser](dups[1])
+	assertFoldDup(t, "ParseStrict of T (capture, delimiter variant)", err)
+	ctrl, err := json.Parse[FoldDupTarget]("{\"admin\":false,\"UserStatus\":\"a\"}")
+	test.AssertNoError(t, err)
+	if ctrl.Admin {
+		t.Error("control: admin must decode false")
+	}
+	if ctrl.UserStatus != "a" {
+		t.Error("control: the case-variant userStatus member must decode")
+	}
+}
+
+type FoldClaimStatus struct {
+	Status string `json:"status"`
+}
+
+// foldClaimDoc builds {"<name>":"marked"} — quote characters are spliced
+// via a single-character raw string because escaped-quote JSON inside an
+// interpolated string is a syntax/interp-escaped-quote-json error (the
+// interpolation and the JSON quoting both want the double quote).
+func foldClaimDoc(name string) string {
+	q := "\""
+	return "{" + q + name + q + ":" + q + "marked" + q + "}"
+}
+
+type FoldClaimStatusCap struct {
+	Status string         `json:"status"`
+	Extra  map[string]any `json:",unknown"`
+}
+
+// Case-family corpus against a field tagged "status": ASCII case variants
+// and the Unicode simple-fold variant ſ (U+017F LATIN SMALL LETTER LONG S
+// folds to S — strings.ToUpper and jsonv2's fold agree). The unclaimed
+// neighbors must stay unclaimed on BOTH sides (stra(ss)e deliberately
+// does NOT fold to strasse).
+func TestFoldClaimParity_CaseVariants(t *testing.T) {
+	for _, name := range []string{"status", "Status", "STATUS", "ſtatus"} {
+		doc := foldClaimDoc(name)
+		a, aErr := json.Parse[FoldClaimStatus](doc)
+		test.AssertNoError(t, aErr)
+		b, bErr := json.Parse[FoldClaimStatusCap](doc)
+		test.AssertNoError(t, bErr)
+		if a.Status == "marked" != !(maps.Contains(b.Extra, name)) {
+			t.Errorf("fold-claim disagreement on %v: jsonv2 claimed it, the walker did not (extras: %v)", name, b.Extra)
+		}
+		_, strictErr := json.ParseStrict[FoldClaimStatus](doc)
+		v2Claims := a.Status == "marked"
+		if v2Claims && strictErr != nil {
+			t.Errorf("strict walker rejected a member jsonv2 claims: %v (%v)", name, strictErr)
+		}
+		if !v2Claims && (strictErr == nil) {
+			t.Errorf("strict walker accepted unclaimed member %v that jsonv2 does not decode", name)
+		}
+	}
+	for _, name := range []string{"stat", "ssstatus", "straße", "Strasse", "İ"} {
+		doc := foldClaimDoc(name)
+		a, aErr := json.Parse[FoldClaimStatus](doc)
+		test.AssertNoError(t, aErr)
+		b, bErr := json.Parse[FoldClaimStatusCap](doc)
+		test.AssertNoError(t, bErr)
+		if len(a.Status) != 0 {
+			t.Errorf("jsonv2 unexpectedly claims unclaimed neighbor %v", name)
+		}
+		if maps.Contains(b.Extra, name) != true {
+			t.Errorf("capture walker must treat unclaimed neighbor %v as unknown", name)
+		}
+		_, strictErr := json.ParseStrict[FoldClaimStatus](doc)
+		if strictErr == nil {
+			t.Errorf("strict must reject unclaimed neighbor %v", name)
+		}
+	}
+}
+
+type FoldClaimUser struct {
+	UserStatus string `json:"userStatus"`
+}
+
+type FoldClaimUserCap struct {
+	UserStatus string         `json:"userStatus"`
+	Extra      map[string]any `json:",unknown"`
+}
+
+// Delimiter-family corpus against a field tagged "userStatus": -/_/space
+// and case all fold together. Unclaimed neighbors ("user", "statusUser",
+// the different name "user status report") must stay unclaimed on both
+// sides.
+func TestFoldClaimParity_DelimiterVariants(t *testing.T) {
+	for _, name := range []string{"userStatus", "user_status", "user-status", "USERSTATUS"} {
+		doc := foldClaimDoc(name)
+		a, aErr := json.Parse[FoldClaimUser](doc)
+		test.AssertNoError(t, aErr)
+		b, bErr := json.Parse[FoldClaimUserCap](doc)
+		test.AssertNoError(t, bErr)
+		if a.UserStatus == "marked" != !(maps.Contains(b.Extra, name)) {
+			t.Errorf("fold-claim disagreement on %v: jsonv2 and the walker disagree (extras: %v)", name, b.Extra)
+		}
+		_, strictErr := json.ParseStrict[FoldClaimUser](doc)
+		if a.UserStatus != "marked" || strictErr != nil {
+			t.Errorf("strict must accept a member both sides claim: %v (%v)", name, strictErr)
+		}
+	}
+	for _, name := range []string{"user", "statusUser", "userStatusReport"} {
+		doc := foldClaimDoc(name)
+		b, bErr := json.Parse[FoldClaimUserCap](doc)
+		test.AssertNoError(t, bErr)
+		if maps.Contains(b.Extra, name) != true {
+			t.Errorf("capture walker must treat unclaimed neighbor %v as unknown", name)
+		}
+		_, strictErr := json.ParseStrict[FoldClaimUser](doc)
+		if strictErr == nil {
+			t.Errorf("strict must reject unclaimed neighbor %v", name)
+		}
+	}
+}
+
+// Structural claims: embedded promotion, ignored fields, and fold-equal
+// tags on two fields. Each is asserted through the same two-sided
+// observation — jsonv2's typed decode claims the member exactly when the
+// capture/strict walker does.
+type FoldClaimInner struct {
+	Level   string `json:"level"`
+	Skipped string `json:"-"`
+}
+
+type FoldClaimEmbedded struct {
+	FoldClaimInner
+	Top   string         `json:"top"`
+	Extra map[string]any `json:",unknown"`
+}
+
+type FoldAmbiguous struct {
+	A     int            `json:"user_id"`
+	B     int            `json:"userId"`
+	Extra map[string]any `json:",unknown"`
+}
+
+// FoldClaimBase mirrors FoldClaimEmbedded without the capture field, so
+// the jsonv2 side of the embedded-parity check decodes the same members
+// into promoted fields.
+type FoldClaimBase struct {
+	FoldClaimInner
+	Top string `json:"top"`
+}
+
+func TestFoldClaimParity_EmbeddedBothSides(t *testing.T) {
+	for _, name := range []string{"level", "Level", "LEVEL", "top"} {
+		doc := foldClaimDoc(name)
+		a, aErr := json.Parse[FoldClaimBase](doc)
+		test.AssertNoError(t, aErr)
+		b, bErr := json.Parse[FoldClaimEmbedded](doc)
+		test.AssertNoError(t, bErr)
+		claimed := a.Level == "marked" || a.Top == "marked"
+		if claimed != !(maps.Contains(b.Extra, name)) {
+			t.Errorf("embedded fold-claim disagreement on %v: jsonv2 claimed it, the walker did not (extras: %v)", name, b.Extra)
+		}
+	}
+}
+
+// A field tagged "-" claims nothing: the member stays unknown to jsonv2
+// AND to the walker (captured, strict-rejected) — the ignore must agree
+// across both implementations, not silently drop only on one side.
+func TestFoldClaimParity_IgnoredField(t *testing.T) {
+	doc := "{\"Skipped\":\"x\",\"SKIPPED\":\"y\"}"
+	var a FoldClaimBase
+	aErr := json.ParseInto(doc, &a)
+	if aErr != nil {
+		t.Errorf("non-strict decode ignores unclaimed members: %v", aErr)
+	}
+	if len(a.Skipped) != 0 || len(a.Level) != 0 {
+		t.Error("the '-' tag must claim nothing on either side")
+	}
+	_, strictErr := json.ParseStrict[FoldClaimBase](doc)
+	if strictErr == nil {
+		t.Error("strict must reject members for an ignored field (unclaimed on both sides)")
+	}
+	b, bErr := json.Parse[FoldClaimEmbedded]("{\"Skipped\":\"x\"}")
+	test.AssertNoError(t, bErr)
+	if maps.Contains(b.Extra, "Skipped") != true {
+		t.Error("the walker must treat a member for an ignored field as unknown (captured)")
+	}
+}
+
+// Two fields whose tags fold equal are BOTH claimed by the walker's
+// fold (the folded key is shared) — jsonv2 resolves the collision in
+// favor of the later field, but the member never becomes unknown to
+// either side.
+func TestFoldClaimParity_FoldEqualTags(t *testing.T) {
+	b, bErr := json.Parse[FoldAmbiguous]("{\"userId\":5}")
+	test.AssertNoError(t, bErr)
+	if _, ok_58 := b.Extra["userId"]; ok_58 {
+		t.Errorf("a member claimed by fold-equal tags must not leak into extras (extras: %v)", b.Extra)
+	}
+	if b.B != 5 {
+		t.Error("jsonv2 assigns the fold-collision to the later field; the pin keeps that observable")
+	}
+	b, bErr = json.Parse[FoldAmbiguous]("{\"user_id\":5}")
+	test.AssertNoError(t, bErr)
+	if _, ok_59 := b.Extra["user_id"]; ok_59 {
+		t.Errorf("both spellings are claimed: the fold-equal tag pair claims user_id too (extras: %v)", b.Extra)
+	}
 }

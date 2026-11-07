@@ -19,8 +19,8 @@ package shellguard
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/shell"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/stdlib/shell"
+	kukistring "kukicha.org/stdlib/string"
 )
 
 // Rule describes the permissions for one binary.

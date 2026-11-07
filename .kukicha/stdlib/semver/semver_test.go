@@ -5,8 +5,8 @@ package semver_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/semver"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/semver"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

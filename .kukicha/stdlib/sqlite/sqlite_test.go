@@ -6,9 +6,9 @@ package sqlite_test
 import (
 	"fmt"
 	regexpext "github.com/ncruces/go-sqlite3/ext/regexp"
-	"kukicha.org/kukicha/stdlib/db"
-	"kukicha.org/kukicha/stdlib/sqlite"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/db"
+	"kukicha.org/stdlib/sqlite"
+	"kukicha.org/stdlib/test"
 	"os"
 	"path/filepath"
 	strpkg "strings"

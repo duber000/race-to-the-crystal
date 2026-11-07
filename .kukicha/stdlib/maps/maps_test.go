@@ -5,9 +5,9 @@ package maps_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/maps"
-	"kukicha.org/kukicha/stdlib/slice"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/maps"
+	"kukicha.org/stdlib/slice"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

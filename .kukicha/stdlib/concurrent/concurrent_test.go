@@ -5,9 +5,9 @@ package concurrent_test
 
 import (
 	"errors"
-	"kukicha.org/kukicha/stdlib/concurrent"
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/concurrent"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/test"
 	"sync"
 	"sync/atomic"
 	"testing"

@@ -3,10 +3,10 @@
 package era_test
 
 import (
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/llm/era"
-	"kukicha.org/kukicha/stdlib/shell"
-	"kukicha.org/kukicha/stdlib/test"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/llm/era"
+	"kukicha.org/stdlib/shell"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

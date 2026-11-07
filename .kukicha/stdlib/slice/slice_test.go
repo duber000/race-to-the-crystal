@@ -5,8 +5,8 @@ package slice_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/slice"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/slice"
+	"kukicha.org/stdlib/test"
 	"math"
 	"sync"
 	"testing"

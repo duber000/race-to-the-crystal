@@ -7,7 +7,7 @@ package test
 import (
 	"errors"
 	"fmt"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	kukistring "kukicha.org/stdlib/string"
 	"reflect"
 	"testing"
 )

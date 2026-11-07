@@ -16,7 +16,7 @@
 package random
 
 import (
-	"kukicha.org/kukicha/stdlib/slice"
+	"kukicha.org/stdlib/slice"
 	"math/rand"
 )
 

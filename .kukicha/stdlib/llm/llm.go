@@ -23,9 +23,9 @@
 package llm
 
 import (
-	"kukicha.org/kukicha/stdlib/content"
-	"kukicha.org/kukicha/stdlib/env"
-	"kukicha.org/kukicha/stdlib/maps"
+	"kukicha.org/stdlib/content"
+	"kukicha.org/stdlib/env"
+	"kukicha.org/stdlib/maps"
 )
 
 // providerTable maps each provider name to its API-key env var and default

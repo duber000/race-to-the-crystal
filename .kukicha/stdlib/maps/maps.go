@@ -12,7 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"iter"
-	"kukicha.org/kukicha/stdlib/cast"
+	"kukicha.org/stdlib/cast"
 	gomaps "maps"
 	"reflect"
 	"slices"

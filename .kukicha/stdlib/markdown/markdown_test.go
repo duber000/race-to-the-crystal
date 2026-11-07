@@ -4,9 +4,9 @@
 package markdown_test
 
 import (
-	"kukicha.org/kukicha/stdlib/markdown"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/markdown"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 
@@ -69,6 +69,7 @@ func TestGFMPresetFlags(t *testing.T) {
 	test.AssertFalse(t, opts.Typographer)
 	test.AssertFalse(t, opts.SimpleDelimiters)
 	test.AssertFalse(t, opts.XHTML)
+	test.AssertFalse(t, opts.MermaidFences)
 }
 
 func TestToHTMLWithTypographer(t *testing.T) {
@@ -101,4 +102,64 @@ func TestGFMPresetMatchesTryToHTML(t *testing.T) {
 	got, err := conv.Render(src)
 	test.AssertNoError(t, err)
 	test.AssertEqual(t, got, markdown.ToHTML(src))
+}
+
+type SchemeCase struct {
+	name string
+	md   string
+	want string
+}
+
+func TestDangerousSchemesDropped(t *testing.T) {
+	cases := []SchemeCase{SchemeCase{name: "javascript", md: "[x](javascript:alert(1))", want: `<a href="">x</a>`}, SchemeCase{name: "case-insensitive", md: "[x](JAVAscript:alert(1))", want: `<a href="">x</a>`}, SchemeCase{name: "vbscript", md: "[x](vbscript:msg)", want: `<a href="">x</a>`}, SchemeCase{name: "file", md: "[x](file:///etc/passwd)", want: `<a href="">x</a>`}, SchemeCase{name: "data:text/html", md: "[x](data:text/html;base64,x)", want: `<a href="">x</a>`}, SchemeCase{name: "data:image/svg dropped", md: "![i](data:image/svg+xml;base64,PHN2Zz4=)", want: `<img src="" alt="i">`}, SchemeCase{name: "data:image/png passes", md: "![i](data:image/png;base64,iVBOR)", want: `<img src="data:image/png;base64,iVBOR" alt="i">`}, SchemeCase{name: "https passes", md: "[x](https://ok.example)", want: `<a href="https://ok.example">x</a>`}, SchemeCase{name: "tel passes", md: "[x](tel:12)", want: `<a href="tel:12">x</a>`}, SchemeCase{name: "mailto passes", md: "[x](mailto:a@b)", want: `<a href="mailto:a@b">x</a>`}}
+	for _, tc := range cases {
+		t.Run(tc.name, func(st *testing.T) {
+			out := markdown.ToHTMLWith(tc.md, markdown.GFM())
+			test.AssertContains(st, out, tc.want)
+		})
+	}
+}
+
+func TestRawHTMLIsOmittedNotEscaped(t *testing.T) {
+	out := markdown.ToHTML("<script>alert(1)</script>")
+	test.AssertFalse(t, kukistring.Contains(out, "<script"))
+	test.AssertContains(t, out, "raw HTML omitted")
+}
+
+func TestAllowRawHTMLDisablesBothGuards(t *testing.T) {
+	out := markdown.ToHTMLWith("[x](javascript:alert(1))\n\n<script>alert(1)</script>", markdown.Options{AllowRawHTML: true})
+	test.AssertContains(t, out, `<a href="javascript:alert(1)">x</a>`)
+	test.AssertContains(t, out, "<script>alert(1)</script>")
+}
+
+func TestMermaidFencesRenderAsPreMermaid(t *testing.T) {
+	src := "```mermaid\ngraph TD\nA --> B\n```"
+	out := markdown.ToHTMLWith(src, markdown.Options{MermaidFences: true})
+	test.AssertContains(t, out, "<pre class=\"mermaid\">graph TD\nA --&gt; B\n</pre>")
+}
+
+func TestMermaidFencesOffByDefault(t *testing.T) {
+	src := "```mermaid\ngraph TD\n```"
+	for _, out := range []string{markdown.ToHTML(src), markdown.ToHTMLWith(src, markdown.GFM())} {
+		test.AssertContains(t, out, `<pre><code class="language-mermaid">`)
+		test.AssertFalse(t, kukistring.Contains(out, `<pre class="mermaid">`))
+	}
+}
+
+func TestMermaidFencesLeaveOtherBlocksAlone(t *testing.T) {
+	src := "```go\nfmt.Println(\"hi\")\n```\n\n```mermaid\ngraph TD\n```\n\n    indented code"
+	out := markdown.ToHTMLWith(src, markdown.Options{MermaidFences: true})
+	test.AssertContains(t, out, "<pre><code class=\"language-go\">fmt.Println(&quot;hi&quot;)\n</code></pre>")
+	test.AssertContains(t, out, "<pre class=\"mermaid\">graph TD\n</pre>")
+	test.AssertContains(t, out, "<pre><code>indented code\n</code></pre>")
+	out2 := markdown.ToHTMLWith("```Mermaid\ngraph TD\n```", markdown.Options{MermaidFences: true})
+	test.AssertContains(t, out2, `<pre><code class="language-Mermaid">`)
+}
+
+func TestMermaidFencesEscapeHTMLInsideDiagram(t *testing.T) {
+	src := "```mermaid\ngraph TD\nA[</pre><script>alert(1)</script>] --> B\n```"
+	out := markdown.ToHTMLWith(src, markdown.Options{MermaidFences: true})
+	test.AssertContains(t, out, "<pre class=\"mermaid\">graph TD\n")
+	test.AssertFalse(t, kukistring.Contains(out, "<script>alert"))
+	test.AssertContains(t, out, "&lt;/pre&gt;&lt;script&gt;")
 }

@@ -16,8 +16,8 @@
 package term
 
 import (
-	"kukicha.org/kukicha/stdlib/env"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/stdlib/env"
+	kukistring "kukicha.org/stdlib/string"
 	"os"
 	"unicode/utf8"
 )

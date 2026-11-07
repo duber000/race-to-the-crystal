@@ -7,10 +7,10 @@ package git_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/git"
-	"kukicha.org/kukicha/stdlib/shell"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/git"
+	"kukicha.org/stdlib/shell"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"os/exec"
 	"testing"
 )

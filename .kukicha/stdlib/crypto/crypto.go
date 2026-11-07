@@ -21,8 +21,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
-	"kukicha.org/kukicha/stdlib/encoding"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/stdlib/encoding"
+	kukistring "kukicha.org/stdlib/string"
 	"strconv"
 )
 

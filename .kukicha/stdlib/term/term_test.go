@@ -4,8 +4,8 @@
 package term_test
 
 import (
-	"kukicha.org/kukicha/stdlib/term"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/term"
+	"kukicha.org/stdlib/test"
 	"os"
 	"testing"
 )

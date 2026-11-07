@@ -4,9 +4,9 @@
 package must_test
 
 import (
-	"kukicha.org/kukicha/stdlib/must"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/must"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

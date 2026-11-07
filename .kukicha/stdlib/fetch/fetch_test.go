@@ -6,12 +6,12 @@ package fetch_test
 import (
 	"fmt"
 	"io"
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/fetch"
-	"kukicha.org/kukicha/stdlib/json"
-	"kukicha.org/kukicha/stdlib/netguard"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/fetch"
+	"kukicha.org/stdlib/json"
+	"kukicha.org/stdlib/netguard"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -865,9 +865,10 @@ func TestAllHTTPMethodOrder(t *testing.T) {
 // client's ephemeral port can be reused by the OS for a fresh connection, so
 // the remote address alone does not tell a reused connection from a new one.
 type fetchConnRecorder struct {
-	mu    sync.Mutex
-	conns int
-	reqs  int
+	mu       sync.Mutex
+	conns    int
+	reqs     int
+	released int
 }
 
 // Record notes one accepted connection.
@@ -881,6 +882,15 @@ func (r *fetchConnRecorder) Record() {
 func (r *fetchConnRecorder) Request() {
 	r.mu.Lock()
 	r.reqs += 1
+	r.mu.Unlock()
+}
+
+// Release notes one connection reaching a terminal ConnState (Idle or
+// Closed) — the signal that the client gave the connection back instead of
+// holding it.
+func (r *fetchConnRecorder) Release() {
+	r.mu.Lock()
+	r.released += 1
 	r.mu.Unlock()
 }
 
@@ -898,10 +908,23 @@ func (r *fetchConnRecorder) Requests() int {
 	return r.reqs
 }
 
+// Releases returns how many connections reached a terminal ConnState.
+func (r *fetchConnRecorder) Releases() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.released
+}
+
 // TestGetStatusReleasesConnection pins the status-only contract: a response
-// whose body is never read still has to be closed, or the connection is never
-// returned to the pool. GetStatus closes it, so two status-only calls share
-// one connection.
+// whose body is never read still has to be closed, or the connection is
+// never returned to the pool. The pin is the connection reaching a terminal
+// ConnState (Idle — pooled, or Closed — refused reuse) after a single call.
+// A stricter "two calls share one connection" count assertion is not
+// assertable deterministically: when the transport's Close races ahead of the
+// still-in-flight body bytes, Go legally refuses reuse and re-dials (hit on
+// the CI spindle, reproduced locally with -race -count=200), so re-dialing
+// does not prove the close is missing — a connection that never reaches a
+// terminal state does.
 func TestGetStatusReleasesConnection(t *testing.T) {
 	recorder := &fetchConnRecorder{}
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -912,15 +935,26 @@ func TestGetStatusReleasesConnection(t *testing.T) {
 		if state == http.StateNew {
 			recorder.Record()
 		}
+		if state == http.StateIdle {
+			recorder.Release()
+		}
+		if state == http.StateClosed {
+			recorder.Release()
+		}
 	}
 	server.Start()
 	defer server.Close()
-	for range 2 {
-		code, err := fetch.GetStatus(server.URL)
-		test.AssertNoError(t, err)
-		test.AssertEqual(t, code, http.StatusOK)
-	}
+	code, err := fetch.GetStatus(server.URL)
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, code, http.StatusOK)
 	test.AssertEqual(t, recorder.Count(), 1)
+	for range 200 {
+		if recorder.Releases() > 0 {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Errorf("status-only GetStatus must release the connection within 2s (conns: %v, released: %v)", recorder.Count(), recorder.Releases())
 }
 
 // TestGuardedRequestsReuseConnection pins the SSRF-guarded path: the guarded

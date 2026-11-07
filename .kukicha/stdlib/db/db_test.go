@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/ncruces/go-sqlite3/driver"
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/datetime"
-	"kukicha.org/kukicha/stdlib/db"
-	"kukicha.org/kukicha/stdlib/test"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/datetime"
+	"kukicha.org/stdlib/db"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

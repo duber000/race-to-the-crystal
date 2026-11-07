@@ -4,11 +4,11 @@
 package set_test
 
 import (
-	"kukicha.org/kukicha/stdlib/iterator"
-	"kukicha.org/kukicha/stdlib/set"
-	"kukicha.org/kukicha/stdlib/slice"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/iterator"
+	"kukicha.org/stdlib/set"
+	"kukicha.org/stdlib/slice"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"math"
 	"testing"
 )

@@ -6,9 +6,9 @@ package input_test
 import (
 	"errors"
 	"fmt"
-	"kukicha.org/kukicha/stdlib/input"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/input"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"os"
 	"testing"
 )

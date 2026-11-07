@@ -5,9 +5,9 @@ package audit_test
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/audit"
-	"kukicha.org/kukicha/stdlib/db"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/audit"
+	"kukicha.org/stdlib/db"
+	"kukicha.org/stdlib/test"
 	"os"
 	"path/filepath"
 	"sync"

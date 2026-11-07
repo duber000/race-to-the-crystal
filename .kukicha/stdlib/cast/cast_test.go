@@ -4,7 +4,7 @@
 package cast_test
 
 import (
-	"kukicha.org/kukicha/stdlib/cast"
+	"kukicha.org/stdlib/cast"
 	"testing"
 )
 

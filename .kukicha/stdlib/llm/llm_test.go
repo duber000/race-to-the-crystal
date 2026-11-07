@@ -4,12 +4,12 @@
 package llm_test
 
 import (
-	"kukicha.org/kukicha/stdlib/content"
-	"kukicha.org/kukicha/stdlib/llm"
-	"kukicha.org/kukicha/stdlib/llm/anthropic"
-	"kukicha.org/kukicha/stdlib/llm/chat"
-	"kukicha.org/kukicha/stdlib/llm/llmresponses"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/content"
+	"kukicha.org/stdlib/llm"
+	"kukicha.org/stdlib/llm/anthropic"
+	"kukicha.org/stdlib/llm/chat"
+	"kukicha.org/stdlib/llm/llmresponses"
+	"kukicha.org/stdlib/test"
 	"os"
 	"testing"
 )

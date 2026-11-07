@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"kukicha.org/kukicha/stdlib/cli"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/cli"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"os"
 	"testing"
 )

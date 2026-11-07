@@ -2,13 +2,10 @@ module race-to-the-crystal
 
 go 1.27.3
 
-replace kukicha.org/kukicha/stdlib => ./.kukicha/stdlib
-
 require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hajimehoshi/bitmapfont/v4 v4.2.0
 	github.com/hajimehoshi/ebiten/v2 v2.10.5
-	kukicha.org/kukicha/stdlib v0.86.4
 )
 
 require (
@@ -30,4 +27,7 @@ require (
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	kukicha.org/stdlib v0.86.7
 )
+
+replace kukicha.org/stdlib => ./.kukicha/stdlib

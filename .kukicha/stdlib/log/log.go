@@ -36,13 +36,13 @@ package log
 
 import (
 	"fmt"
-	"kukicha.org/kukicha/stdlib/color"
-	"kukicha.org/kukicha/stdlib/datetime"
-	"kukicha.org/kukicha/stdlib/json"
-	"kukicha.org/kukicha/stdlib/random"
-	"kukicha.org/kukicha/stdlib/slice"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/term"
+	"kukicha.org/stdlib/color"
+	"kukicha.org/stdlib/datetime"
+	"kukicha.org/stdlib/json"
+	"kukicha.org/stdlib/random"
+	"kukicha.org/stdlib/slice"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/term"
 	"os"
 	"strings"
 )

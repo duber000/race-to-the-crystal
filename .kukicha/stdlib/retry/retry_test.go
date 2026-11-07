@@ -5,9 +5,9 @@ package retry_test
 
 import (
 	"errors"
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/retry"
-	"kukicha.org/kukicha/stdlib/test"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/retry"
+	"kukicha.org/stdlib/test"
 	"testing"
 	"time"
 )

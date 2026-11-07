@@ -1,11 +1,11 @@
-module kukicha.org/kukicha/stdlib
+module kukicha.org/stdlib
 
 go 1.27.3
 
 require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/ncruces/go-sqlite3 v0.36.0
-	github.com/yuin/goldmark/v2 v2.1.13
+	github.com/yuin/goldmark/v2 v2.1.15
 	golang.org/x/sys v0.49.0
 	golang.org/x/term v0.47.0
 	golang.org/x/text v0.43.0

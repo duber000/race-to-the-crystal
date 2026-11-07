@@ -4,7 +4,7 @@
 package validate_test
 
 import (
-	"kukicha.org/kukicha/stdlib/validate"
+	"kukicha.org/stdlib/validate"
 	"testing"
 )
 

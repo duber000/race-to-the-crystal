@@ -45,7 +45,7 @@ package safe
 
 import (
 	"fmt"
-	strpkg "kukicha.org/kukicha/stdlib/string"
+	strpkg "kukicha.org/stdlib/string"
 )
 
 // UntrustedPreamble is the standard wording prepended by Frame to mark

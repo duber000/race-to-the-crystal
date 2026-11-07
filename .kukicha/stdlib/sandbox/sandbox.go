@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"kukicha.org/kukicha/stdlib/json"
+	"kukicha.org/stdlib/json"
 	"os"
 )
 

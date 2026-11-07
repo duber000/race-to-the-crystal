@@ -16,9 +16,9 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"kukicha.org/kukicha/stdlib/slice"
-	"kukicha.org/kukicha/stdlib/sort"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	"kukicha.org/stdlib/slice"
+	"kukicha.org/stdlib/sort"
+	kukistring "kukicha.org/stdlib/string"
 	"net/http"
 )
 

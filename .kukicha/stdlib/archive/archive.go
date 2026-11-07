@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	kukistring "kukicha.org/kukicha/stdlib/string"
+	kukistring "kukicha.org/stdlib/string"
 	"os"
 	"path/filepath"
 	"time"

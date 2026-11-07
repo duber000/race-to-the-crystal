@@ -4,9 +4,9 @@
 package url_test
 
 import (
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
-	"kukicha.org/kukicha/stdlib/url"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
+	"kukicha.org/stdlib/url"
 	"testing"
 )
 

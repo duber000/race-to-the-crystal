@@ -45,13 +45,13 @@ package era
 
 import (
 	"fmt"
-	ctxpkg "kukicha.org/kukicha/stdlib/ctx"
-	"kukicha.org/kukicha/stdlib/files"
-	"kukicha.org/kukicha/stdlib/llm/safe"
-	"kukicha.org/kukicha/stdlib/parse"
-	"kukicha.org/kukicha/stdlib/shell"
-	"kukicha.org/kukicha/stdlib/sort"
-	strpkg "kukicha.org/kukicha/stdlib/string"
+	ctxpkg "kukicha.org/stdlib/ctx"
+	"kukicha.org/stdlib/files"
+	"kukicha.org/stdlib/llm/safe"
+	"kukicha.org/stdlib/parse"
+	"kukicha.org/stdlib/shell"
+	"kukicha.org/stdlib/sort"
+	strpkg "kukicha.org/stdlib/string"
 	"math"
 	"math/rand"
 )

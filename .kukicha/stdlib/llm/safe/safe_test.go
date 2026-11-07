@@ -4,9 +4,9 @@
 package safe_test
 
 import (
-	"kukicha.org/kukicha/stdlib/llm/safe"
-	strpkg "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/llm/safe"
+	strpkg "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 

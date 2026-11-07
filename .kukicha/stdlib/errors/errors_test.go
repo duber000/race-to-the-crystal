@@ -6,9 +6,9 @@ package errors_test
 import (
 	goerrors "errors"
 	"fmt"
-	"kukicha.org/kukicha/stdlib/errors"
-	kukistring "kukicha.org/kukicha/stdlib/string"
-	"kukicha.org/kukicha/stdlib/test"
+	"kukicha.org/stdlib/errors"
+	kukistring "kukicha.org/stdlib/string"
+	"kukicha.org/stdlib/test"
 	"testing"
 )
 
