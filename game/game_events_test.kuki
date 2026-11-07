@@ -103,6 +103,7 @@ func TestEventToDictCoversEveryType(t: reference testing.T)
             PlayerID: types.PlayerID("player_1"),
             PlayerName: "Bob",
             Text: "Holding the east generator.",
+            Tone: "confident",
         },
         GameEnded{WinnerID: types.PlayerID("player_1"), WinnerName: "Bob"},
     }

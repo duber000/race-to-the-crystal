@@ -568,10 +568,17 @@ func HandleSay on h: reference HTTPHandler(gameId: string, authHeader: string, b
     if playerName is empty
         playerName = payload.playerId
 
+    # The comms sidebar keys its tone indicator off this field. Unknown
+    # tones fall back to neutral rather than inventing a new badge.
+    tone := maps.StringOr(body, "tone", "neutral")
+    if tone isnt "confident" and tone isnt "aggressive" and tone isnt "cautious" and tone isnt "neutral"
+        tone = "neutral"
+
     event := gamepkg.RadioChatter{
         PlayerID: types.PlayerID(payload.playerId),
         PlayerName: playerName,
         Text: text,
+        Tone: tone,
     }
     session.events = append(session.events, event)
     h.wsHandler.BroadcastSessionEvents(session, list of gamepkg.GameEvent{event})

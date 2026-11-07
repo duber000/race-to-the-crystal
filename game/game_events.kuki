@@ -66,6 +66,7 @@ enum GameEvent
         PlayerID: types.PlayerID
         PlayerName: string
         Text: string
+        Tone: string
     GameEnded
         WinnerID: types.PlayerID
         WinnerName: string
@@ -177,6 +178,7 @@ func EventToDict(e: GameEvent) JSONMap
                 "player_id": e.PlayerID,
                 "player_name": e.PlayerName,
                 "text": e.Text,
+                "tone": e.Tone,
             }
         when GameEnded
             return JSONMap{
