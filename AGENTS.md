@@ -4,9 +4,9 @@ title: AGENTS.md — race-to-the-crystal repository guide
 description: Architecture, commands, conventions, and vendored stdlib notes for agents working in race-to-the-crystal.
 tags: [agents, conventions, kukicha, ebitengine, game, babylonjs, websocket, events]
 generated: { by: antigravity/gemini-3.8-flash, at: 2026-09-26T12:55:00-04:00 }
-updated: { by: opencode/minimax-m3.1-flash, at: 2026-10-21T20:20:00-04:00 }
+updated: { by: vibe/mistral, at: 2026-11-07T16:13:59Z }
 verified:
-stale_after: 2026-12-26T00:00:00Z
+stale_after: 2027-02-08T00:00:00Z
 status: stable
 sources:
   - id: repo-tree
@@ -225,37 +225,52 @@ event.
   is generated randomly (mystery squares land in the deployment corner), so
   find a free cell at runtime instead.
 
-#### Known compiler issues
-Both are filed upstream; work around them rather than rediscovering them.
+#### Check caveats
 
-- **`empty <TypeName>` lowers to a nil map.** `empty map of K to V` lowers to
-  an allocated map, but the same form applied to a user-defined map type
-  (alias or named) lowers to `*new(T)` — a nil map. Writing to it panics with
-  `assignment to entry in nil map`. Use `make(<TypeName>)`, which is correct
-  and lint-clean.
-- **`kukicha check` accepts `append(list, list)`,** which Go rejects. The
-  failure shows up as a compile error at `go build` time, not at check time.
+- **Check errors cascade to the importer, not the culprit.** An `undefined
+  type X in package gamepkg` reported against `client/ai/` or `learn/` (both
+  import `race-to-the-crystal/game` as `gamepkg`) usually means a syntax
+  error in `game/` itself — one broken `.kuki` file hides every symbol the
+  petiole exports, and importers only see the missing type. Fix `game/`
+  first (`kukicha check ./game`), then re-run and the importers clear.
 
 #### Kukicha language traps
-The full language reference is the `kukicha` skill — read it before writing
-`.kuki` code. The ones this codebase has actually hit:
+The full language reference is the `kukicha` skill (`.agents/skills/kukicha/`,
+plus the generated Kukicha block at the bottom of this file) — read it before
+writing `.kuki` code. The fastest correction for a Go-trained writer is the
+symbol table: Kukicha rejects Go's C-style forms outright, so never write
+these in `.kuki` files:
 
+| Go (rejected in .kuki) | Kukicha (write this) |
+|---|---|
+| `a == b` / `a != b` | `a equals b` / `a isnt b` — operator keywords, not methods: `a.equals(b)` fails to parse |
+| `a && b` / `a \|\| b` / `!x` | `a and b` / `a or b` / `not x` |
+| `nil` | `empty` — `x is empty` / `x isnt empty` |
+| `x == ""` (strings, ID types) | `x is empty` / `x isnt empty` — the `equals ""` form is only advisory lint, so it survives plain `kukicha check` |
+| `*T` / `&x` / `*x` | `reference T` / `reference of x` / `dereference x` — `dereference` copies, see below |
+| `x += 1` (and `-=` etc.) | `x = x + 1` (`x++` / `x--` are fine) |
+
+The ones this codebase has actually hit, beyond the table:
+
+- **`reference T` is non-null; Go's `*T` is `optional reference T`.** If a
+  value can be absent (lookup, first match), declare `optional reference` and
+  narrow with `if x isnt empty` before field access or method calls. Field
+  access and method calls on a reference auto-dereference — write `p.name`,
+  `p.SetName()`, never `(dereference p).SetName()` (next bullet).
+- **Free functions are not methods.** Check the signature before adding a
+  dot: `ChooseAction(strategy, actions, gs, pid)` and
+  `listAvailableActions(gs, pid)` take `gs` directly (`optional reference
+  GameState` / `reference GameState`), not `reference of gs` — and
+  `gs.ListAvailableActions(pid)` is an unknown-method error.
 - **`dereference` copies.** `p := dereference pRef` copies the struct, so
   `p.SetName(...)` mutates the copy and the change is silently lost. Call
   the method on the reference instead (`pRef.SetName(...)`); Kukicha
   auto-dereferences for field access and method calls.
-- **`is` narrowing does not apply to concrete map types.** Narrow through a
-  typed local instead, and read scalars with `cast.ToIntOr` or a typed
-  helper. Note that in the `game` package `map of string to any` and the
-  `StateDict` alias are the *same* type, so `is map of string to any` is
-  rejected there while `is map of string to StateDict` is accepted.
-- **A variant enum cannot be a method receiver, and cannot be taken by
-  pointer.** `*GameEvent` is a pointer to an interface. Pass such values as
-  lists, not as `optional reference`.
-- **Empty `when` arms are not allowed** — give the arm a body.
-- **Each `*_test.kuki` file is checked on its own.** A helper defined in one
-  test file is not visible from another, so test files cannot share
-  utilities.
+- **A variant enum cannot be a method receiver** (`semantic/method-receiver-invalid` —
+  it lowers to a Go interface). Declare methods on a case type, or use a free
+  function.
+- **Empty `when` arms are not allowed** (`syntax/empty-arm`) — give the arm a
+  body.
 
 #### Go version
 Requires Go 1.27+. See `go.mod` for the current version.
@@ -284,7 +299,7 @@ The game server and web server read their configuration from the environment:
 |---|---|---|
 | `HTTP_PORT` | `8080` | Game server HTTP + WebSocket port |
 | `JWT_SECRET_KEY` | random per boot | Token signing key |
-| `TURN_TIMEOUT_SECONDS` | `30` | Seconds a human has to move |
+| `TURN_TIMEOUT_SECONDS` | `60` | Seconds a human has to move |
 | `AGENT_TURN_TIMEOUT_SECONDS` | `120` | Seconds an AI player has to move |
 | `WS_ALLOWED_ORIGINS` | *(any)* | Comma-separated origins allowed to open a WebSocket |
 | `WEB_PORT` | `8000` | Web client port |
