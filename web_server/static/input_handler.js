@@ -508,6 +508,37 @@ class InputHandler {
     }
 
     /**
+     * Tap pick with a 44px fallback: when the exact point misses every
+     * pickable mesh (a near miss on a small screen), sample points in
+     * expanding rings up to 44px away and take the first hit. Taps only —
+     * the mouse's exact pick should never snap to a neighbouring cell.
+     * @param {number} screenX - Canvas-relative X coordinate
+     * @param {number} screenY - Canvas-relative Y coordinate
+     * @returns {{gridX: number, gridY: number}|null}
+     */
+    pickGridCellWithFallback(screenX, screenY) {
+        const exact = this.pickGridCell(screenX, screenY);
+        if (exact) return exact;
+
+        const MAX_RADIUS = 44;
+        const STEP = 11;
+        const offsets = [];
+        for (let dx = -MAX_RADIUS; dx <= MAX_RADIUS; dx += STEP) {
+            for (let dy = -MAX_RADIUS; dy <= MAX_RADIUS; dy += STEP) {
+                if (dx === 0 && dy === 0) continue;
+                offsets.push({ dx, dy, dist: Math.hypot(dx, dy) });
+            }
+        }
+        // Nearest first, so a near miss snaps to the closest cell.
+        offsets.sort((a, b) => a.dist - b.dist);
+        for (const o of offsets) {
+            const cell = this.pickGridCell(screenX + o.dx, screenY + o.dy);
+            if (cell) return cell;
+        }
+        return null;
+    }
+
+    /**
      * Handle mouse click event.
      * Converts screen coordinates to grid coordinates and emits click event.
      * @param {MouseEvent} event - Mouse event
@@ -538,12 +569,13 @@ class InputHandler {
      * @param {Touch} touch - Touch object
      */
     handleTap(touch) {
-        // Convert touch coordinates to grid coordinates
+        // Convert touch coordinates to grid coordinates. Fingertips are
+        // imprecise, so allow a 44px snap radius around the exact point.
         const rect = this.canvas.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
-        
-        const cell = this.pickGridCell(x, y);
+
+        const cell = this.pickGridCellWithFallback(x, y);
         if (cell) {
             // Emit click event (treat tap as click)
             this.emit('click', { gridX: cell.gridX, gridY: cell.gridY });
