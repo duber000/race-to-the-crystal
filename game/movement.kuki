@@ -43,7 +43,7 @@ func getValidMoves(tok: reference Token, brd: reference Board, maxRange: int, to
 
     for queue isnt empty
         item := queue[0]
-        queue = queue[1:]
+        queue = slice.Skip(queue, 1)
         x := item.pos.X
         y := item.pos.Y
         distance := item.dist
@@ -99,7 +99,7 @@ func findPath(start: types.Position, end: types.Position, brd: reference Board, 
 
     for queue isnt empty
         item := queue[0]
-        queue = queue[1:]
+        queue = slice.Skip(queue, 1)
         x := item.pos.X
         y := item.pos.Y
 

@@ -55,25 +55,22 @@ func CreateGame on s: reference Session(gameName: string, playerName: string) bo
         gameName: gameName,
         playerName: playerName,
     }
-    resp := fetch.New(url)
+    data := createJoinAPIResponse{}
+    req := fetch.New(url)
         |> fetch.Method("POST")
         |> fetch.Header("Content-Type", "application/json")
         |> fetch.Body(body)
         |> fetch.Retry(3, 500)
-        |> fetch.Do() onerr
-            log.Error("CreateGame: {error}")
-            return false
+        |> fetch.OnSuccess of createJoinAPIResponse from reference of data
+    resp := fetch.Do(req) onerr
+        log.Error("CreateGame: {error}")
+        return false
 
     defer resp.Close()
 
     status := resp.StatusCode
     if status isnt 200
         log.Error("CreateGame: status {resp.StatusCode}")
-        return false
-
-    data := createJoinAPIResponse{}
-    fetch.Decode(resp, reference of data) onerr
-        log.Error("CreateGame: decode failed: {error}")
         return false
 
     if not data.success
@@ -87,25 +84,22 @@ func JoinGame on s: reference Session(gameId: string, playerName: string) bool
     url := "{s.baseUrl}/api/game/{gameId}/join"
     body := joinRequest{playerName: playerName}
 
-    resp := fetch.New(url)
+    data := createJoinAPIResponse{}
+    req := fetch.New(url)
         |> fetch.Method("POST")
         |> fetch.Header("Content-Type", "application/json")
         |> fetch.Body(body)
         |> fetch.Retry(3, 500)
-        |> fetch.Do() onerr
-            log.Error("JoinGame: {error}")
-            return false
+        |> fetch.OnSuccess of createJoinAPIResponse from reference of data
+    resp := fetch.Do(req) onerr
+        log.Error("JoinGame: {error}")
+        return false
 
     defer resp.Close()
 
     status := resp.StatusCode
     if status isnt 200
         log.Error("JoinGame: status {resp.StatusCode}")
-        return false
-
-    data := createJoinAPIResponse{}
-    fetch.Decode(resp, reference of data) onerr
-        log.Error("JoinGame: decode failed: {error}")
         return false
 
     if not data.success
@@ -117,13 +111,15 @@ func JoinGame on s: reference Session(gameId: string, playerName: string) bool
 
 func FetchState on s: reference Session Payload
     url := "{s.baseUrl}/api/game/{s.gameId}/state"
-    resp := fetch.New(url)
+    wrapper := mapResponse{}
+    req := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Header("Authorization", "Bearer {s.token}")
         |> fetch.Retry(3, 500)
-        |> fetch.Do() onerr
-            log.Error("FetchState: {error}")
-            return empty Payload
+        |> fetch.OnSuccess of mapResponse from reference of wrapper
+    resp := fetch.Do(req) onerr
+        log.Error("FetchState: {error}")
+        return empty Payload
 
     defer resp.Close()
 
@@ -132,11 +128,6 @@ func FetchState on s: reference Session Payload
         return empty Payload
     if status isnt 200
         log.Error("FetchState: status {resp.StatusCode}")
-        return empty Payload
-
-    wrapper := mapResponse{}
-    fetch.Decode(resp, reference of wrapper) onerr
-        log.Error("FetchState: decode failed: {error}")
         return empty Payload
 
     if wrapper.data is Payload as state
@@ -159,13 +150,15 @@ type actionsAPIResponse
 
 func FetchActions on s: reference Session Payload
     url := "{s.baseUrl}/api/game/{s.gameId}/actions"
-    resp := fetch.New(url)
+    wrapper := actionsAPIResponse{}
+    req := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Header("Authorization", "Bearer {s.token}")
         |> fetch.Retry(3, 500)
-        |> fetch.Do() onerr
-            log.Error("FetchActions: {error}")
-            return empty Payload
+        |> fetch.OnSuccess of actionsAPIResponse from reference of wrapper
+    resp := fetch.Do(req) onerr
+        log.Error("FetchActions: {error}")
+        return empty Payload
 
     defer resp.Close()
 
@@ -174,11 +167,6 @@ func FetchActions on s: reference Session Payload
         return empty Payload
     if status isnt 200
         log.Error("FetchActions: status {resp.StatusCode}")
-        return empty Payload
-
-    wrapper := actionsAPIResponse{}
-    fetch.Decode(resp, reference of wrapper) onerr
-        log.Error("FetchActions: decode failed: {error}")
         return empty Payload
 
     result := make(Payload)
@@ -190,22 +178,19 @@ func SendAction on s: reference Session(action: gamepkg.ChosenAction) Payload
     url := "{s.baseUrl}/api/game/{s.gameId}/action"
     body := gamepkg.ChosenToActionMap(action)
 
-    resp := fetch.New(url)
+    wrapper := make(Payload)
+    req := fetch.New(url)
         |> fetch.Method("POST")
         |> fetch.Header("Content-Type", "application/json")
         |> fetch.Header("Authorization", "Bearer {s.token}")
         |> fetch.Body(body)
         |> fetch.Retry(3, 500)
-        |> fetch.Do() onerr
-            log.Error("SendAction: {error}")
-            return empty Payload
+        |> fetch.OnSuccess of Payload from reference of wrapper
+    resp := fetch.Do(req) onerr
+        log.Error("SendAction: {error}")
+        return empty Payload
 
     defer resp.Close()
-
-    wrapper := make(Payload)
-    fetch.Decode(resp, reference of wrapper) onerr
-        log.Error("SendAction: decode failed: {error}")
-        return empty Payload
 
     return wrapper
 
@@ -319,21 +304,19 @@ type lobbiesAPIResponse
 
 func ListLobbies on s: reference Session list of Payload
     url := "{s.baseUrl}/api/games"
-    resp := fetch.New(url)
+    wrapper := lobbiesAPIResponse{}
+    req := fetch.New(url)
         |> fetch.Method("GET")
         |> fetch.Retry(3, 500)
-        |> fetch.Do() onerr
-            log.Error("ListLobbies: {error}")
-            return empty list of Payload
+        |> fetch.OnSuccess of lobbiesAPIResponse from reference of wrapper
+    resp := fetch.Do(req) onerr
+        log.Error("ListLobbies: {error}")
+        return empty list of Payload
 
     defer resp.Close()
 
     status := resp.StatusCode
     if status isnt 200
-        return empty list of Payload
-
-    wrapper := lobbiesAPIResponse{}
-    fetch.Decode(resp, reference of wrapper) onerr
         return empty list of Payload
 
     result := empty list of Payload
@@ -385,4 +368,3 @@ func PickAction(actions: list of Payload, strategy: gamepkg.AIStrategyName) game
     if chosenRef is empty
         return gamepkg.ChosenEndTurn
     return dereference chosenRef
-
