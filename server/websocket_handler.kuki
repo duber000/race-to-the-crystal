@@ -54,6 +54,11 @@ type WebSocketHandler
     onConnect: optional reference func(string, string, string)
     onDisconnect: optional reference func(string)
     onMessage: optional reference func(string, string, JSONMap)
+    # Guards `clients` and `gameSessions`. Every WebSocket connection runs
+    # its own read loop on its own goroutine, and Go maps are not safe
+    # for concurrent read/write — without this, one disconnect racing a
+    # broadcast can kill the whole process.
+    mu: sync.Mutex
 
 func NewWebSocketHandler() WebSocketHandler
     return WebSocketHandler{
@@ -71,31 +76,63 @@ func SetOnMessage on wh: reference WebSocketHandler(handler: reference func(stri
     wh.onMessage = handler
 
 func RegisterClient on wh: reference WebSocketHandler(client: reference WSClient)
+    wh.mu.Lock()
     wh.clients[client.clientId] = client
     wh.gameSessions[client.clientId] = client.gameId
+    wh.mu.Unlock()
     if wh.onConnect isnt empty
         wh.onConnect(client.clientId, client.playerId, client.gameId)
 
 func UnregisterClient on wh: reference WebSocketHandler(clientId: string)
+    wh.mu.Lock()
     delete wh.clients[clientId]
     delete wh.gameSessions[clientId]
+    wh.mu.Unlock()
     if wh.onDisconnect isnt empty
         wh.onDisconnect(clientId)
 
-func UpdateClientGameID on wh: reference WebSocketHandler(clientId: string, gameId: string)
-    client, ok := wh.clients[clientId]
-    if ok
-        client.gameId = gameId
-        wh.gameSessions[clientId] = gameId
-
-func UpdateClientPlayerID on wh: reference WebSocketHandler(clientId: string, playerId: string, playerName: string)
+func SetClientIdentity on wh: reference WebSocketHandler(clientId: string, playerId: string, playerName: string, clientType: ClientType)
+    wh.mu.Lock()
     client, ok := wh.clients[clientId]
     if ok
         client.playerId = playerId
         client.playerName = playerName
+        client.clientType = clientType
+    wh.mu.Unlock()
+
+# Read the fields a disconnect path needs, under one lock hold.
+func ClientSnapshot on wh: reference WebSocketHandler(clientId: string) (string, string, string)
+    wh.mu.Lock()
+    client, ok := wh.clients[clientId]
+    if not ok
+        wh.mu.Unlock()
+        return "", "", ""
+    gameId := client.gameId
+    playerId := client.playerId
+    playerName := client.playerName
+    wh.mu.Unlock()
+    return gameId, playerId, playerName
+
+func UpdateClientGameID on wh: reference WebSocketHandler(clientId: string, gameId: string)
+    wh.mu.Lock()
+    client, ok := wh.clients[clientId]
+    if ok
+        client.gameId = gameId
+        wh.gameSessions[clientId] = gameId
+    wh.mu.Unlock()
+
+func UpdateClientPlayerID on wh: reference WebSocketHandler(clientId: string, playerId: string, playerName: string)
+    wh.mu.Lock()
+    client, ok := wh.clients[clientId]
+    if ok
+        client.playerId = playerId
+        client.playerName = playerName
+    wh.mu.Unlock()
 
 func SendToClient on wh: reference WebSocketHandler(clientId: string, data: JSONMap) bool
+    wh.mu.Lock()
     client, ok := wh.clients[clientId]
+    wh.mu.Unlock()
     if not ok
         return false
     if client.conn is empty
@@ -112,13 +149,22 @@ func SendToClient on wh: reference WebSocketHandler(clientId: string, data: JSON
 func BroadcastToGame on wh: reference WebSocketHandler(gameId: string, data: JSONMap)
     jsonBytes := jsonpkg.Bytes(data) onerr return
     log.Debug("Broadcasting to game {gameId}: {jsonBytes as string}")
+    # Snapshot the target clients under the lock, then write outside it —
+    # the write takes the per-client lock and may block on the network.
+    wh.mu.Lock()
+    matches := empty list of reference WSClient
     for _client_id, client in wh.clients
         if client.gameId equals gameId and client.conn isnt empty
-            client.writeMu.Lock()
-            var err: error = client.conn.WriteMessage(websocket.TextMessage, jsonBytes)
-            client.writeMu.Unlock()
-            if err isnt empty
-                log.Debug("WebSocket broadcast failed: {err}")
+            matches = append(matches, client)
+    wh.mu.Unlock()
+    for client in matches
+        if client.conn is empty
+            continue
+        client.writeMu.Lock()
+        var err: error = client.conn.WriteMessage(websocket.TextMessage, jsonBytes)
+        client.writeMu.Unlock()
+        if err isnt empty
+            log.Debug("WebSocket broadcast failed: {err}")
 
 func ProcessMessage on wh: reference WebSocketHandler(clientId: string, rawData: string) JSONMap
     data := empty JSONMap
@@ -138,9 +184,13 @@ func ProcessMessage on wh: reference WebSocketHandler(clientId: string, rawData:
     return normalized
 
 func GetClientCount on wh: reference WebSocketHandler int
+    wh.mu.Lock()
+    defer wh.mu.Unlock()
     return len(wh.clients)
 
 func GetClientsInGame on wh: reference WebSocketHandler(gameId: string) list of string
+    wh.mu.Lock()
+    defer wh.mu.Unlock()
     result := empty list of string
     for _client_id, client in wh.clients
         if client.gameId equals gameId and client.playerId isnt empty
@@ -148,10 +198,40 @@ func GetClientsInGame on wh: reference WebSocketHandler(gameId: string) list of 
     return result
 
 func GetClientByID on wh: reference WebSocketHandler(clientId: string) optional reference WSClient
+    wh.mu.Lock()
+    defer wh.mu.Unlock()
     client, ok := wh.clients[clientId]
     if ok
         return client
     return empty
+
+# Assemble the FULL_STATE payload for everyone in the session. Caller must
+# hold the session broadcast lock. Returns the recipients in order.
+func buildStateFrames on wh: reference WebSocketHandler(session: reference GameSession) (list of string, list of JSONMap)
+    sends := empty list of string
+    payloads := empty list of JSONMap
+    for nid, gamePid in session.networkToGameId
+        state := session.gameState.VisibleStateDict(types.PlayerID(gamePid))
+        payloads = append(payloads, JSONMap{
+            "type": "FULL_STATE",
+            "game_id": session.gameId,
+            "game_state": state,
+            "event_seq": session.playerEventSeqs[nid],
+        })
+        sends = append(sends, nid)
+
+    # Spectators (read-only) receive the unfiltered state.
+    for specId, _ in session.spectators
+        if _, ok := session.playerEventSeqs[specId]; not ok
+            session.playerEventSeqs[specId] = 0
+        payloads = append(payloads, JSONMap{
+            "type": "FULL_STATE",
+            "game_id": session.gameId,
+            "game_state": session.gameState.ClientStateDict(""),
+            "event_seq": session.playerEventSeqs[specId],
+        })
+        sends = append(sends, specId)
+    return sends, payloads
 
 # Broadcast the per-player full state to everyone in the session.
 #
@@ -159,36 +239,27 @@ func GetClientByID on wh: reference WebSocketHandler(clientId: string) optional 
 # see. Both the WebSocket and the HTTP action paths use this, so a client
 # sees the same state shape whichever transport submitted the action.
 func BroadcastSessionState on wh: reference WebSocketHandler(session: reference GameSession)
-    for nid, gamePid in session.networkToGameId
-        state := session.gameState.VisibleStateDict(types.PlayerID(gamePid))
-        wh.SendToClient(nid, JSONMap{
-            "type": "FULL_STATE",
-            "game_id": session.gameId,
-            "game_state": state,
-            "event_seq": session.playerEventSeqs[nid],
-        })
-        # This player's own event counter, so a resync repairs it.
+    session.broadcastMu.Lock()
+    sends, payloads := wh.buildStateFrames(session)
+    session.broadcastMu.Unlock()
+    # This player's own event counter, so a resync repairs it.
+    for i, clientId in sends
+        wh.SendToClient(clientId, payloads[i])
 
-    # Spectators (read-only) receive the unfiltered state.
-    for specId, _ in session.spectators
-        if _, ok := session.playerEventSeqs[specId]; not ok
-            session.playerEventSeqs[specId] = 0
-        wh.SendToClient(specId, JSONMap{
-            "type": "FULL_STATE",
-            "game_id": session.gameId,
-            "game_state": session.gameState.ClientStateDict(""),
-            "event_seq": session.playerEventSeqs[specId],
-        })
+# Same as BroadcastSessionState, for callers that already hold the session
+# broadcast lock (e.g. timeOutTurn). Do NOT call the locked variant with
+# the lock already held — sync.Mutex does not nest.
+func BroadcastSessionStateLocked on wh: reference WebSocketHandler(session: reference GameSession)
+    sends, payloads := wh.buildStateFrames(session)
+    for i, clientId in sends
+        wh.SendToClient(clientId, payloads[i])
 
-# Broadcast event frames to the players in the session.
-#
-# Each frame carries a sequence number, so a client can detect a gap in the
-# stream and resynchronise. The counter is *per player*: the fog hides some
-# events from some players, and a shared counter would show them a gap for
-# every hidden event.
-func BroadcastSessionEvents on wh: reference WebSocketHandler(session: reference GameSession, events: list of gamepkg.GameEvent)
-    if events is empty
-        return
+# Build the per-viewer frames for the given events. Caller must hold the
+# session broadcast lock — the fog filter and the sequence counters read
+# and write the session here.
+func buildEventFrames on wh: reference WebSocketHandler(session: reference GameSession, events: list of gamepkg.GameEvent) (list of string, list of JSONMap)
+    sends := empty list of string
+    payloads := empty list of JSONMap
     for e in events
         session.eventSeq = session.eventSeq + 1
         for nid, gamePid in session.networkToGameId
@@ -198,7 +269,8 @@ func BroadcastSessionEvents on wh: reference WebSocketHandler(session: reference
                 continue
             seq := session.playerEventSeqs[nid] + 1
             session.playerEventSeqs[nid] = seq
-            wh.SendToClient(nid, JSONMap{
+            sends = append(sends, nid)
+            payloads = append(payloads, JSONMap{
                 "type": "EVENT",
                 "game_id": session.gameId,
                 "seq": seq,
@@ -211,9 +283,36 @@ func BroadcastSessionEvents on wh: reference WebSocketHandler(session: reference
                 session.playerEventSeqs[specId] = 0
             seq := session.playerEventSeqs[specId] + 1
             session.playerEventSeqs[specId] = seq
-            wh.SendToClient(specId, JSONMap{
+            sends = append(sends, specId)
+            payloads = append(payloads, JSONMap{
                 "type": "EVENT",
                 "game_id": session.gameId,
                 "seq": seq,
                 "event": gamepkg.EventToDict(e),
             })
+    return sends, payloads
+
+# Broadcast event frames to the players in the session.
+#
+# Each frame carries a sequence number, so a client can detect a gap in the
+# stream and resynchronise. The counter is *per player*: the fog hides some
+# events from some players, and a shared counter would show them a gap for
+# every hidden event.
+func BroadcastSessionEvents on wh: reference WebSocketHandler(session: reference GameSession, events: list of gamepkg.GameEvent)
+    if events is empty
+        return
+    session.broadcastMu.Lock()
+    sends, payloads := wh.buildEventFrames(session, events)
+    session.broadcastMu.Unlock()
+    for i, clientId in sends
+        wh.SendToClient(clientId, payloads[i])
+
+# Same as BroadcastSessionEvents, for callers that already hold the session
+# broadcast lock (e.g. timeOutTurn). Do NOT call the locked variant with
+# the lock already held — sync.Mutex does not nest.
+func BroadcastSessionEventsLocked on wh: reference WebSocketHandler(session: reference GameSession, events: list of gamepkg.GameEvent)
+    if events is empty
+        return
+    sends, payloads := wh.buildEventFrames(session, events)
+    for i, clientId in sends
+        wh.SendToClient(clientId, payloads[i])

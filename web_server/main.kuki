@@ -3,9 +3,13 @@ petiole main
 import "net/http"
 import "net/http/httputil"
 import "net/url"
+import "path/filepath"
 import "stdlib/env"
+import "stdlib/http" as httphelper
 import "stdlib/log"
 import "stdlib/signal"
+import "strings"
+import "time"
 
 type WebServerConfig
     port: int
@@ -33,11 +37,8 @@ func NewWebServer(config: WebServerConfig) (WebServer, error)
 
 func Start on ws: reference WebServer
     mux := http.NewServeMux()
-    mux.HandleFunc(`GET /{$}`, ws.handleRoot)
-    mux.Handle(
-        "GET /static/",
-        http.StripPrefix("/static/", http.FileServer(http.Dir(ws.config.staticDir))),
-    )
+    mux.Handle(`GET /{$}`, httphelper.Handler(ws.handleRoot))
+    mux.Handle("GET /static/", httphelper.Handler(ws.handleStatic))
     proxy := ws.proxy
     if proxy isnt empty
         mux.Handle("/api/", proxy)
@@ -48,8 +49,14 @@ func Start on ws: reference WebServer
     log.Info("Serving static files from {ws.config.staticDir}")
     log.Info("Proxying API to {ws.config.gameServerUrl}")
 
+    server := http.Server{
+        Addr: addr,
+        Handler: mux,
+        ReadHeaderTimeout: 10 * time.Second,
+    }
+
     go
-        err := http.ListenAndServe(addr, mux)
+        err := server.ListenAndServe()
         if err isnt empty
             log.Error("HTTP server error: {err}")
 
@@ -61,8 +68,31 @@ func Start on ws: reference WebServer
 
     receive from ch
 
-func handleRoot on ws: reference WebServer(w: http.ResponseWriter, r: reference http.Request)
-    http.ServeFile(w, r, ws.config.indexPath)
+func handleRoot on ws: reference WebServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    response.ServeFile(request, ws.config.indexPath)
+
+# Serve files from the static root, mirroring the game server's containment
+# check. The static directory is the only filesystem subtree this server
+# may touch.
+func handleStatic on ws: reference WebServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    path := request.URL().Path
+    # Strip the /static/ prefix the mux matched.
+    if not strings.HasPrefix(path, "/static/")
+        response.JSONNotFound("not found") onerr discard
+        return
+    rel := strings.TrimPrefix(path, "/static/")
+    prefix := filepath.Clean(ws.config.staticDir)
+    filePath := filepath.Join(prefix, rel)
+    filePath = filepath.Clean(filePath)
+
+    relPath, relErr := filepath.Rel(prefix, filePath)
+    if relErr isnt empty or relPath equals ".." or strings.HasPrefix(relPath, "../")
+        response.JSONNotFound("not found") onerr discard
+        return
+
+    response.ServeFile(request, filePath)
 
 func main()
     config := WebServerConfigFromEnv()

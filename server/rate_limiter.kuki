@@ -1,5 +1,6 @@
 petiole main
 
+import "sync"
 import "time"
 
 const MAX_CONNECTIONS_PER_IP = 8
@@ -9,6 +10,16 @@ const MAX_ACTIONS_PER_SECOND = 5
 const MAX_GAMES_CREATED_PER_HOUR = 10
 
 const CONNECTION_WINDOW_SECONDS = 60
+
+# Hard cap on simultaneously open WebSocket connections, so a single
+# client (or botnet) cannot exhaust file descriptors on the server.
+const MAX_WS_CLIENTS = 512
+
+# Sweep at most once a minute; drop entries idle for over an hour so the
+# limiter's maps cannot grow without bound.
+const SWEEP_INTERVAL_SECONDS = 60
+
+const ENTRY_IDLE_SECONDS = 3600
 
 type TokenBucket
     capacity: int
@@ -83,6 +94,10 @@ type RateLimiter
     playerActions: map of string to reference TokenBucket
     playerGameCreation: map of string to reference SlidingWindowCounter
     activeConnections: map of string to int
+    # Guards every map and counter above — handlers on many goroutines
+    # hit this on every action and every join.
+    mu: sync.Mutex
+    lastSweep: float64
 
 func NewRateLimiter() RateLimiter
     return RateLimiter{
@@ -90,9 +105,41 @@ func NewRateLimiter() RateLimiter
         playerActions: empty map of string to reference TokenBucket,
         playerGameCreation: empty map of string to reference SlidingWindowCounter,
         activeConnections: empty map of string to int,
+        lastSweep: 0.0,
     }
 
+# Drop entries that have been idle past ENTRY_IDLE_SECONDS, so the map
+# cannot grow without bound. Caller must hold rl.mu.
+func sweepLocked on rl: reference RateLimiter
+    now := time.Now().UnixNano() as float64 / 1e9
+    if rl.lastSweep > 0.0 and now - rl.lastSweep < SWEEP_INTERVAL_SECONDS as float64
+        return
+    rl.lastSweep = now
+
+    actionCutoff := now - ENTRY_IDLE_SECONDS as float64
+    for playerId, bucket in rl.playerActions
+        if bucket.lastRefill < actionCutoff and bucket.tokens >= bucket.capacity as float64
+            delete rl.playerActions[playerId]
+
+    for ip, counter in rl.ipConnections
+        counter.pruneBefore(now - CONNECTION_WINDOW_SECONDS as float64)
+        if counter.events is empty
+            delete rl.ipConnections[ip]
+
+    for id, counter in rl.playerGameCreation
+        counter.pruneBefore(now - 3600.0)
+        if counter.events is empty
+            delete rl.playerGameCreation[id]
+
+func pruneBefore on sw: reference SlidingWindowCounter(cutoff: float64)
+    kept := empty list of TimedEvent
+    for evt in sw.events
+        if evt.timestamp >= cutoff
+            kept = append(kept, evt)
+    sw.events = kept
+
 func getIpCounter on rl: reference RateLimiter(ip: string) reference SlidingWindowCounter
+    rl.sweepLocked()
     counter := rl.ipConnections[ip]
     if counter isnt empty
         return counter
@@ -101,6 +148,7 @@ func getIpCounter on rl: reference RateLimiter(ip: string) reference SlidingWind
     return newCounter
 
 func getActionBucket on rl: reference RateLimiter(playerId: string) reference TokenBucket
+    rl.sweepLocked()
     bucket := rl.playerActions[playerId]
     if bucket isnt empty
         return bucket
@@ -109,6 +157,7 @@ func getActionBucket on rl: reference RateLimiter(playerId: string) reference To
     return newBucket
 
 func getGameCreationCounter on rl: reference RateLimiter(playerId: string) reference SlidingWindowCounter
+    rl.sweepLocked()
     counter := rl.playerGameCreation[playerId]
     if counter isnt empty
         return counter
@@ -117,46 +166,61 @@ func getGameCreationCounter on rl: reference RateLimiter(playerId: string) refer
     return newCounter
 
 func CheckConnection on rl: reference RateLimiter(ipAddress: string) bool
+    rl.mu.Lock()
+    defer rl.mu.Unlock()
     counter := rl.getIpCounter(ipAddress)
     if not counter.TryEvent()
         return false
+    return true
+
+# Per-IP cap on simultaneously open WebSocket connections. Returns false
+# when the cap is reached.
+func AcquireWsConnection on rl: reference RateLimiter(ipAddress: string) bool
+    rl.mu.Lock()
+    defer rl.mu.Unlock()
     current := 0
     count, has := rl.activeConnections[ipAddress]
     if has
         current = count
     if current >= MAX_CONNECTIONS_PER_IP
         return false
+    rl.activeConnections[ipAddress] = current + 1
     return true
 
-func ReleaseConnection on rl: reference RateLimiter(ipAddress: string)
+func ReleaseWsConnection on rl: reference RateLimiter(ipAddress: string)
+    rl.mu.Lock()
+    defer rl.mu.Unlock()
     count, has := rl.activeConnections[ipAddress]
-    if has and count > 0
+    if has and count > 1
         rl.activeConnections[ipAddress] = count - 1
-
-func RecordConnection on rl: reference RateLimiter(ipAddress: string)
-    count, has := rl.activeConnections[ipAddress]
-    if has
-        rl.activeConnections[ipAddress] = count + 1
     else
-        rl.activeConnections[ipAddress] = 1
+        delete rl.activeConnections[ipAddress]
 
 func CheckAction on rl: reference RateLimiter(playerId: string) bool
+    rl.mu.Lock()
+    defer rl.mu.Unlock()
     bucket := rl.getActionBucket(playerId)
     if not bucket.Consume(1)
         return false
     return true
 
 func CheckGameCreation on rl: reference RateLimiter(playerId: string) bool
+    rl.mu.Lock()
+    defer rl.mu.Unlock()
     counter := rl.getGameCreationCounter(playerId)
     if not counter.TryEvent()
         return false
     return true
 
 func CleanupPlayer on rl: reference RateLimiter(playerId: string)
+    rl.mu.Lock()
+    defer rl.mu.Unlock()
     delete rl.playerActions[playerId]
     delete rl.playerGameCreation[playerId]
 
 func GetStats on rl: reference RateLimiter JSONMap
+    rl.mu.Lock()
+    defer rl.mu.Unlock()
     return JSONMap{
         "active_ips": len(rl.ipConnections),
         "tracked_players": len(rl.playerActions),

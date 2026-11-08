@@ -23,10 +23,10 @@ your-domain.com:8880 {
 
     # Security headers
     header {
+        # HSTS — the site is HTTPS-only
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
         # Prevent clickjacking
         X-Frame-Options "SAMEORIGIN"
-        # XSS protection
-        X-XSS-Protection "1; mode=block"
         # Prevent MIME sniffing
         X-Content-Type-Options "nosniff"
         # Referrer policy

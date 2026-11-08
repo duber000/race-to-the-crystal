@@ -13,6 +13,10 @@ import "strings"
 
 type JSONMap = map of string to any
 
+# The maximum length of a radio-chatter message. Anything longer is almost
+# certainly an attempt to amplify broadcast traffic or memory usage.
+const MAX_RADIO_TEXT_LENGTH = 280
+
 type HTTPHandler
     coordinator: reference GameCoordinator
     lobbyMgr: reference LobbyManager
@@ -64,7 +68,7 @@ func HandleJoinGame on h: reference HTTPHandler(gameId: string, body: JSONMap, c
     lobby := h.lobbyMgr.getLobby(gameId)
     if lobby is empty
         return APIResponse{success: false, message: "game not found", data: empty JSONMap}
-    if lobby.status isnt GameStatus.WAITING
+    if lobby.statusOf() isnt GameStatus.WAITING
         return APIResponse{
             success: false,
             message: "game is not accepting new players",
@@ -94,12 +98,7 @@ func HandleJoinGame on h: reference HTTPHandler(gameId: string, body: JSONMap, c
     if hasA
         if aVal is string as akv
             agentKind = akv
-    info, exists := lobby.players[playerId]
-    if exists
-        info.isAgent = true
-        info.model = model
-        info.agentKind = agentKind
-        lobby.players[playerId] = info
+    lobby.setAgentInfo(playerId, model, agentKind)
 
     h.lobbyMgr.setReady(gameId, playerId, true)
     # No WebSocket registration: an HTTP client has no connection, so it
@@ -195,8 +194,13 @@ func HandleAction on h: reference HTTPHandler(gameId: string, authHeader: string
         # stream, then the per-player full state.
         h.wsHandler.BroadcastSessionEvents(session, events)
         h.wsHandler.BroadcastSessionState(session)
-        if session.isGameOver()
-            winnerId := session.getWinnerNetworkId()
+        session.broadcastMu.Lock()
+        over := session.isGameOver()
+        winnerId := ""
+        if over
+            winnerId = session.getWinnerNetworkId()
+        session.broadcastMu.Unlock()
+        if over
             h.wsHandler.BroadcastToGame(gameId, JSONMap{
                 "type": "GAME_OVER",
                 "game_id": gameId,
@@ -220,6 +224,12 @@ func HandleGetState on h: reference HTTPHandler(gameId: string, authHeader: stri
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
     if payload is empty
         return APIResponse{success: false, message: "invalid token", data: empty JSONMap}
+    if not ValidateTokenForGame(payload, gameId)
+        return APIResponse{
+            success: false,
+            message: "token not valid for this game",
+            data: empty JSONMap,
+        }
 
     session := h.coordinator.getSession(gameId)
     if session is empty
@@ -233,6 +243,7 @@ func HandleGetState on h: reference HTTPHandler(gameId: string, authHeader: stri
     # The slim dict has no board, tokens or generators, so a polling client
     # could never render the game from it. It is fogged like the WebSocket
     # path: a client only sees what its own tokens can see.
+    session.broadcastMu.Lock()
     state := empty JSONMap
     # Spectators see everything (no fog).
     if _, isSpec := session.spectators[payload.playerId]; isSpec
@@ -243,6 +254,7 @@ func HandleGetState on h: reference HTTPHandler(gameId: string, authHeader: stri
         if hasPid
             gamePid = pidVal
         state = session.gameState.VisibleStateDict(types.PlayerID(gamePid))
+    session.broadcastMu.Unlock()
 
     return APIResponse{success: true, message: "ok", data: state}
 
@@ -254,6 +266,12 @@ func HandleGetActions on h: reference HTTPHandler(gameId: string, authHeader: st
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
     if payload is empty
         return APIResponse{success: false, message: "invalid token", data: empty JSONMap}
+    if not ValidateTokenForGame(payload, gameId)
+        return APIResponse{
+            success: false,
+            message: "token not valid for this game",
+            data: empty JSONMap,
+        }
 
     session := h.coordinator.getSession(gameId)
     if session is empty
@@ -263,8 +281,10 @@ func HandleGetActions on h: reference HTTPHandler(gameId: string, authHeader: st
             data: empty JSONMap,
         }
 
+    session.broadcastMu.Lock()
     api, apiHas := session.apiMap[payload.playerId]
     if not apiHas
+        session.broadcastMu.Unlock()
         return APIResponse{
             success: false,
             message: "no api for player",
@@ -272,6 +292,7 @@ func HandleGetActions on h: reference HTTPHandler(gameId: string, authHeader: st
         }
 
     phaseResp := api.ActionsWithPhase()
+    session.broadcastMu.Unlock()
     return APIResponse{
         success: true,
         message: "ok",
@@ -283,9 +304,8 @@ func HandleGetActions on h: reference HTTPHandler(gameId: string, authHeader: st
 
 func HandleListGames on h: reference HTTPHandler APIResponse
     lobbies := h.lobbyMgr.listAvailableLobbies()
-    for _gid, lob in h.lobbyMgr.lobbies
-        if lob.status equals GameStatus.IN_PROGRESS
-            lobbies = append(lobbies, lob.toDict())
+    for g in h.lobbyMgr.listInProgress()
+        lobbies = append(lobbies, g)
     return APIResponse{success: true, message: "ok", data: JSONMap{"games": lobbies}}
 
 func HandleCreateGame on h: reference HTTPHandler(authHeader: string, body: JSONMap, clientIp: string) APIResponse
@@ -353,12 +373,7 @@ func HandleCreateGame on h: reference HTTPHandler(authHeader: string, body: JSON
     if hasA
         if aVal is string as akv
             agentKind = akv
-    info, exists := lobby.players[playerId]
-    if exists
-        info.isAgent = true
-        info.model = model
-        info.agentKind = agentKind
-        lobby.players[playerId] = info
+    lobby.setAgentInfo(playerId, model, agentKind)
 
     token := CreatePlayerToken(playerId, lobby.gameId, h.jwtSecret, 24)
 
@@ -381,6 +396,12 @@ func HandleLeaveGame on h: reference HTTPHandler(gameId: string, authHeader: str
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
     if payload is empty
         return APIResponse{success: false, message: "invalid token", data: empty JSONMap}
+    if not ValidateTokenForGame(payload, gameId)
+        return APIResponse{
+            success: false,
+            message: "token not valid for this game",
+            data: empty JSONMap,
+        }
 
     playerId := payload.playerId
     h.lobbyMgr.leaveLobby(gameId, playerId)
@@ -395,6 +416,12 @@ func HandleReady on h: reference HTTPHandler(gameId: string, authHeader: string,
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
     if payload is empty
         return APIResponse{success: false, message: "invalid token", data: empty JSONMap}
+    if not ValidateTokenForGame(payload, gameId)
+        return APIResponse{
+            success: false,
+            message: "token not valid for this game",
+            data: empty JSONMap,
+        }
 
     playerId := payload.playerId
 
@@ -428,6 +455,12 @@ func HandleStartGame on h: reference HTTPHandler(gameId: string, authHeader: str
     payload := VerifyPlayerToken(tokenStr, h.jwtSecret)
     if payload is empty
         return APIResponse{success: false, message: "invalid token", data: empty JSONMap}
+    if not ValidateTokenForGame(payload, gameId)
+        return APIResponse{
+            success: false,
+            message: "token not valid for this game",
+            data: empty JSONMap,
+        }
 
     playerId := payload.playerId
 
@@ -435,20 +468,16 @@ func HandleStartGame on h: reference HTTPHandler(gameId: string, authHeader: str
     if lobby is empty
         return APIResponse{success: false, message: "game not found", data: empty JSONMap}
 
-    if lobby.hostPlayerId isnt playerId
+    if lobby.hostPlayerIdOf() isnt playerId
         return APIResponse{
             success: false,
             message: "only the host can start the game",
             data: empty JSONMap,
         }
 
-    if not lobby.canStart()
-        return APIResponse{
-            success: false,
-            message: "game cannot start yet",
-            data: empty JSONMap,
-        }
-
+    # The atomic can-start check lives in `lobbyMgr.startGame` (tryStart):
+    # a lobby that is not ready, or was caught by a racing start, returns
+    # empty here.
     startResult := h.lobbyMgr.startGame(gameId)
     if startResult is empty
         return APIResponse{
@@ -477,6 +506,13 @@ func HandleStartGame on h: reference HTTPHandler(gameId: string, authHeader: str
         },
     }
 
+# Returns the client address for rate limiting. In the supported deployment
+# the edge proxy (Caddy) overwrites X-Forwarded-For with the true remote
+# host, and the web server appends only the immediate upstream — so the
+# FIRST entry is the real client. NEVER publish port 8080 directly to
+# clients: without that edge hop the header is fully client-controlled and
+# the per-IP rate limits are trivially bypassed. Taking the first entry
+# without a trusted-proxy configuration is only safe behind that edge.
 func GetClientIP on h: reference HTTPHandler(remoteAddr: string, xff: string, realIp: string) string
     if xff isnt empty
         parts := strings.Split(xff, ",")
@@ -560,10 +596,23 @@ func HandleSay on h: reference HTTPHandler(gameId: string, authHeader: string, b
     text := maps.StringOr(body, "text", "")
     if text is empty
         return APIResponse{success: false, message: "missing text", data: empty JSONMap}
+    if len(text) > MAX_RADIO_TEXT_LENGTH
+        return APIResponse{
+            success: false,
+            message: "radio message too long (max {MAX_RADIO_TEXT_LENGTH} characters)",
+            data: empty JSONMap,
+        }
 
-    playerName := maps.StringOr(body, "player_name", "")
-    if playerName is empty
-        playerName = payload.playerId
+    # The display name always comes from the session — a client-supplied
+    # player_name could impersonate another player.
+    playerName := "Unknown"
+    session.broadcastMu.Lock()
+    gpVal, hasGp := session.networkToGameId[payload.playerId]
+    if hasGp
+        pRef := session.gameState.GetPlayer(types.PlayerID(gpVal))
+        if pRef isnt empty
+            playerName = pRef.Name()
+    session.broadcastMu.Unlock()
 
     # The comms sidebar keys its tone indicator off this field. Unknown
     # tones fall back to neutral rather than inventing a new badge.
@@ -577,7 +626,9 @@ func HandleSay on h: reference HTTPHandler(gameId: string, authHeader: string, b
         Text: text,
         Tone: tone,
     }
+    session.broadcastMu.Lock()
     session.events = append(session.events, event)
+    session.broadcastMu.Unlock()
     h.wsHandler.BroadcastSessionEvents(session, list of gamepkg.GameEvent{event})
 
     return APIResponse{
@@ -596,9 +647,11 @@ func HandleSpectate on h: reference HTTPHandler(gameId: string, body: JSONMap, c
         }
 
     spectatorId := random.String(16)
+    session.broadcastMu.Lock()
     session.spectators[spectatorId] = true
     if _, ok := session.playerEventSeqs[spectatorId]; not ok
         session.playerEventSeqs[spectatorId] = 0
+    session.broadcastMu.Unlock()
 
     token := CreatePlayerToken(spectatorId, gameId, h.jwtSecret, 24)
 
@@ -625,7 +678,10 @@ func HandleBattle on h: reference HTTPHandler(gameId: string) APIResponse
             message: "game session not found",
             data: empty JSONMap,
         }
-    if not session.isGameOver()
+    session.broadcastMu.Lock()
+    finished := session.isGameOver()
+    session.broadcastMu.Unlock()
+    if not finished
         return APIResponse{
             success: false,
             message: "battle log is available once the game has finished",

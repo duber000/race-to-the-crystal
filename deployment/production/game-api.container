@@ -11,6 +11,10 @@ Network=game-net.network
 
 # Environment configuration (non-sensitive)
 Environment=HTTP_PORT=8080
+# Only accept WebSocket connections from the public origin — never leave
+# this unset in production (the code default allows every origin). Replace
+# with your domain, matching the Caddyfile.
+Environment=WS_ALLOWED_ORIGINS=https://your-domain.com:8880
 
 # Secrets loaded from file (created during deployment)
 # File should contain: JWT_SECRET_KEY=<secret>

@@ -56,9 +56,17 @@ type GameSession
     # fast client, or the watchdog ending a stalled turn while a player
     # acts) must not interleave on the shared game state.
     actionMu: sync.Mutex
+    # Guards everything that reads or writes the session, the event log,
+    # the snapshot list and the per-player counters — in particular every
+    # read of the game state maps (tokens, players, generators), which
+    # would otherwise race an action in flight and crash the process with
+    # a concurrent map access. Always taken AFTER actionMu, never before,
+    # so there is no lock-order cycle.
+    broadcastMu: sync.Mutex
 
 func NewGameSession(gameId: string, lobby: reference GameLobby, turnTimeoutSeconds: int, agentTurnTimeoutSeconds: int) reference GameSession
-    gs := gamepkg.CreateGame(len(lobby.players))
+    seatCount := len(lobby.orderedPlayers())
+    gs := gamepkg.CreateGame(seatCount)
     # Built as a reference from the start: the session holds a mutex, and
     # copying the struct would copy the lock.
     session := reference of GameSession{
@@ -153,6 +161,11 @@ func executeGameAction on s: reference GameSession(networkPlayerId: string, acti
     # Serialise: two actions must not interleave on the shared game state.
     s.actionMu.Lock()
     defer s.actionMu.Unlock()
+    # Also hold the broadcast lock for the whole mutation, so a concurrent
+    # broadcast can never iterate the game state maps mid-action. Lock
+    # order is always actionMu then broadcastMu.
+    s.broadcastMu.Lock()
+    defer s.broadcastMu.Unlock()
 
     _, has := s.networkToGameId[networkPlayerId]
     if not has
@@ -182,6 +195,8 @@ func executeGameAction on s: reference GameSession(networkPlayerId: string, acti
 # The event announcing the first turn of the match, so a client knows the
 # turn clock and the timeout before the first action is taken.
 func recordStartEvents on s: reference GameSession list of gamepkg.GameEvent
+    s.broadcastMu.Lock()
+    defer s.broadcastMu.Unlock()
     gamePid := s.getCurrentNetworkPlayerId()
     if gamePid is empty
         return empty list of gamepkg.GameEvent
@@ -208,6 +223,9 @@ func recordStartEvents on s: reference GameSession list of gamepkg.GameEvent
 #
 # `leading` is an optional list of events to record before the derived ones
 # — the server uses it to mark a turn that timed out.
+# Caller must hold `broadcastMu` (via executeGameAction's critical section);
+# the lock is NOT taken here, and the function must never be called with it
+# already held twice — sync.Mutex does not nest.
 func recordEvents on s: reference GameSession(data: gamepkg.ActionResultData, leading: list of gamepkg.GameEvent) list of gamepkg.GameEvent
     events := empty list of gamepkg.GameEvent
 
@@ -243,6 +261,8 @@ func recordSnapshot on s: reference GameSession(events: list of gamepkg.GameEven
 # the flat event log. Shape matches the replay viewer's
 # `.rttc-battle.json` import.
 func battleLog on s: reference GameSession JSONMap
+    s.broadcastMu.Lock()
+    defer s.broadcastMu.Unlock()
     eventDicts := empty list of JSONMap
     for e in s.events
         eventDicts = append(eventDicts, gamepkg.EventToDict(e))
@@ -280,6 +300,10 @@ func getCurrentNetworkPlayerId on s: reference GameSession string
 type GameCoordinator
     activeGames: map of string to reference GameSession
     playerToGame: map of string to string
+    # Guards both maps above. Handlers run on many goroutines (one per
+    # WebSocket connection plus the HTTP workers), and Go maps are not
+    # safe for concurrent read/write.
+    mu: sync.Mutex
     # Turn timeouts handed to each new session.
     turnTimeoutSeconds: int
     agentTurnTimeoutSeconds: int
@@ -295,19 +319,25 @@ func NewGameCoordinator(turnTimeoutSeconds: int, agentTurnTimeoutSeconds: int) G
 func createSession on gc: reference GameCoordinator(lobby: reference GameLobby) reference GameSession
     gameId := lobby.gameId
     session := NewGameSession(gameId, lobby, gc.turnTimeoutSeconds, gc.agentTurnTimeoutSeconds)
-    gc.activeGames[gameId] = session
     players := lobby.getPlayerList()
+    gc.mu.Lock()
+    gc.activeGames[gameId] = session
     for info in players
         pidStr := maps.StringOr(info, "player_id", "")
         if pidStr isnt empty
             gc.playerToGame[pidStr] = gameId
-    return gc.activeGames[gameId]
+    gc.mu.Unlock()
+    return session
 
 func getSession on gc: reference GameCoordinator(gameId: string) optional reference GameSession
+    gc.mu.Lock()
+    defer gc.mu.Unlock()
     return gc.activeGames[gameId]
 
 func getPlayerSession on gc: reference GameCoordinator(playerId: string) optional reference GameSession
+    gc.mu.Lock()
     gameId, has := gc.playerToGame[playerId]
+    gc.mu.Unlock()
     if not has
         return empty
     return gc.getSession(gameId)
@@ -316,35 +346,69 @@ func endSession on gc: reference GameCoordinator(gameId: string) bool
     session := gc.getSession(gameId)
     if session is empty
         return false
+    session.broadcastMu.Lock()
     nids := empty list of string
     for nid, _game_id in session.networkToGameId
         nids = append(nids, nid)
+    session.broadcastMu.Unlock()
+    gc.mu.Lock()
     for nid in nids
         delete gc.playerToGame[nid]
     delete gc.activeGames[gameId]
+    gc.mu.Unlock()
     return true
 
 func removePlayer on gc: reference GameCoordinator(playerId: string) string
+    gc.mu.Lock()
     gameId, has := gc.playerToGame[playerId]
     if not has
+        gc.mu.Unlock()
         return ""
     delete gc.playerToGame[playerId]
+    gc.mu.Unlock()
     session := gc.getSession(gameId)
     if session isnt empty
+        session.broadcastMu.Lock()
         delete session.networkToGameId[playerId]
+        # Also retire the per-player sequence counter so broadcasts stop
+        # allocating for a departed player.
+        delete session.playerEventSeqs[playerId]
+        # If this id was spectating the game (HTTP spectate), drop that too.
+        delete session.spectators[playerId]
+        session.broadcastMu.Unlock()
     return gameId
 
+# Snapshot the ids of the live sessions, so a watchdog goroutine can range
+# them without holding the coordinator lock for the whole scan.
+func activeGameIds on gc: reference GameCoordinator list of string
+    gc.mu.Lock()
+    defer gc.mu.Unlock()
+    ids := empty list of string
+    for gameId, _session in gc.activeGames
+        ids = append(ids, gameId)
+    return ids
+
 func getActiveGameCount on gc: reference GameCoordinator int
+    gc.mu.Lock()
+    defer gc.mu.Unlock()
     return len(gc.activeGames)
 
 func listActiveGames on gc: reference GameCoordinator list of JSONMap
+    gc.mu.Lock()
+    defer gc.mu.Unlock()
     result := empty list of JSONMap
     for _game_id, session in gc.activeGames
+        turnNumber := 0
+        isFinished := false
+        session.broadcastMu.Lock()
+        turnNumber = session.gameState.TurnNumber()
+        isFinished = session.isGameOver()
+        session.broadcastMu.Unlock()
         entry := JSONMap{
             "id": session.gameId,
             "name": session.gameName,
-            "turn": session.gameState.TurnNumber(),
-            "is_finished": session.gameState.Phase() equals enums.ENDED,
+            "turn": turnNumber,
+            "is_finished": isFinished,
         }
         result = append(result, entry)
     return result

@@ -80,12 +80,22 @@ func startTurnWatchdog on ep: reference WebSocketEndpoint
 # Pass on any turn that has run out of time.
 func checkTurnTimeouts on ep: reference WebSocketEndpoint
     now := time.Now().UnixNano() as float64 / 1e9
-    for _gameId, session in ep.coordinator.activeGames
-        if session.gameState.Phase() isnt enums.PLAYING
+    # Snapshot the session ids under the coordinator lock; the sessions
+    # themselves are ranged without it.
+    gameIds := ep.coordinator.activeGameIds()
+    for gid in gameIds
+        session := ep.coordinator.getSession(gid)
+        if session is empty
+            continue
+        session.broadcastMu.Lock()
+        isPlaying := session.gameState.Phase() equals enums.PLAYING
+        remaining := session.turnSecondsRemaining(now)
+        session.broadcastMu.Unlock()
+        if not isPlaying
             continue
         # turnSecondsRemaining returns 0 only when the time is up, and -1
         # when the turn is not being timed at all.
-        if session.turnSecondsRemaining(now) isnt 0
+        if remaining isnt 0
             continue
         ep.timeOutTurn(session)
 
@@ -95,6 +105,10 @@ func timeOutTurn on ep: reference WebSocketEndpoint(session: reference GameSessi
     # action must not interleave on the shared game state.
     session.actionMu.Lock()
     defer session.actionMu.Unlock()
+    # Match the action path: nothing may read the game state maps while
+    # the watchdog mutates them either.
+    session.broadcastMu.Lock()
+    defer session.broadcastMu.Unlock()
 
     # Re-check under the lock: the player may have acted while we waited
     # for it.
@@ -129,8 +143,10 @@ func timeOutTurn on ep: reference WebSocketEndpoint(session: reference GameSessi
         TimeoutSeconds: session.currentTurnTimeoutSeconds,
     }
     events := session.recordEvents(result.Data, list of gamepkg.GameEvent{timeoutEvent})
-    ep.wsHandler.BroadcastSessionEvents(session, events)
-    ep.wsHandler.BroadcastSessionState(session)
+    # The caller holds the broadcast lock — build the frames without
+    # re-taking it.
+    ep.wsHandler.BroadcastSessionEventsLocked(session, events)
+    ep.wsHandler.BroadcastSessionStateLocked(session)
 
     # The turn passed to the next player; start their clock.
     currentNetwork := session.getCurrentNetworkPlayerId()
@@ -138,13 +154,33 @@ func timeOutTurn on ep: reference WebSocketEndpoint(session: reference GameSessi
         session.beginTurn(currentNetwork)
 
     if session.isGameOver()
-        ep.broadcastGameWon(session)
+        ep.broadcastGameWonLocked(session)
         ep.lobbyMgr.finishGame(session.gameId)
 
 func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Response, request: httphelper.Request)
+    # Hard cap on total WebSocket clients, and a per-IP cap, checked
+    # before the upgrade is accepted.
+    if ep.wsHandler.GetClientCount() >= MAX_WS_CLIENTS
+        log.Warn("Rejecting WebSocket client: server is full ({MAX_WS_CLIENTS} clients)")
+        response.JSONError("server is full, try again later", httphelper.StatusServiceUnavailable) onerr discard
+        return
+    ip := ep.httpHandler.GetClientIP(
+        request.RemoteAddr(),
+        request.GetHeader("X-Forwarded-For"),
+        request.GetHeader("X-Real-IP"),
+    )
+    if not ep.httpHandler.rateLimiter.AcquireWsConnection(ip)
+        log.Warn("Rejecting WebSocket client from {ip}: too many connections")
+        response.JSONError(
+            "too many connections from your address",
+            httphelper.StatusServiceUnavailable,
+        ) onerr discard
+        return
+
     conn, err := wsUpgrader.Upgrade(response.Raw(), request.Raw(), empty)
     upgradeErr := err as error
     if upgradeErr isnt empty
+        ep.httpHandler.rateLimiter.ReleaseWsConnection(ip)
         log.Warn("WebSocket upgrade failed: {upgradeErr}")
         return
     # Enforce a cap on the messages a client may send. Without it a client
@@ -153,6 +189,7 @@ func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Res
     clientId := random.String(16)
     client := NewWSClient(clientId)
     client.conn = conn
+    client.ipAddress = ip
     ep.wsHandler.RegisterClient(reference of client)
     log.Info("WebSocket client connected: {clientId}")
     defer conn.Close()
@@ -162,6 +199,7 @@ func HandleWebSocket on ep: reference WebSocketEndpoint(response: httphelper.Res
         if readErr isnt empty
             break
         ep.handleClientMessage(clientId, raw as string)
+    ep.httpHandler.rateLimiter.ReleaseWsConnection(ip)
     ep.handleClientDisconnect(clientId)
 
 func handleClientMessage on ep: reference WebSocketEndpoint(clientId: string, rawData: string)
@@ -199,7 +237,10 @@ func handleClientMessage on ep: reference WebSocketEndpoint(clientId: string, ra
         when "spectate"
             ep.handleSpectate(clientId, data)
         when "disconnect"
-            ep.handleClientDisconnect(clientId)
+            # Closing the TCP connection ends the read loop, which runs the
+            # disconnect cleanup exactly once. Handling it here as well
+            # would double-broadcast PLAYER_DISCONNECTED.
+            return
         default
             ep.sendError(clientId, "Unknown message type: {msgType}")
 
@@ -213,9 +254,13 @@ func handleConnect on ep: reference WebSocketEndpoint(clientId: string, data: JS
         if pnVal is string as pn
             if pn isnt empty
                 playerName = pn
-    client.playerId = clientId
-    client.playerName = playerName
-    client.clientType = ClientType.WEB_BROWSER
+    # The browser path must satisfy the same name rules as the HTTP agent
+    # path — the name is stored, broadcast and shown to other players.
+    nameErr := ValidatePlayerName(playerName)
+    if nameErr isnt empty
+        ep.sendError(clientId, "invalid player_name: {nameErr}")
+        return
+    ep.wsHandler.SetClientIdentity(clientId, clientId, playerName, ClientType.WEB_BROWSER)
     ep.wsHandler.SendToClient(clientId, JSONMap{
         "type": "CONNECT_ACK",
         "player_id": clientId,
@@ -233,11 +278,8 @@ func handleListGames on ep: reference WebSocketEndpoint(clientId: string)
     })
 
 func handleCreateGame on ep: reference WebSocketEndpoint(clientId: string, data: JSONMap)
-    client := ep.wsHandler.GetClientByID(clientId)
-    if client is empty
-        ep.sendError(clientId, "Not connected")
-        return
-    if client.playerId is empty
+    _gameId, playerId, playerName := ep.wsHandler.ClientSnapshot(clientId)
+    if playerId is empty
         ep.sendError(clientId, "Not connected")
         return
     gameName := "Game"
@@ -255,35 +297,18 @@ func handleCreateGame on ep: reference WebSocketEndpoint(clientId: string, data:
         maxPlayers = 2
     if maxPlayers > 4
         maxPlayers = 4
-    lobby := ep.lobbyMgr.createLobby(
-        client.playerId,
-        client.playerName,
-        gameName,
-        ClientType.WEB_BROWSER,
-        maxPlayers,
-    )
+    lobby := ep.lobbyMgr.createLobby(playerId, playerName, gameName, ClientType.WEB_BROWSER, maxPlayers)
     if lobby is empty
         ep.sendError(clientId, "Failed to create game")
         return
-    client.gameId = lobby.gameId
-    ep.wsHandler.UpdateClientGameID(clientId, client.gameId)
-    ep.wsHandler.SendToClient(clientId, JSONMap{
-        "type": "CREATE_GAME",
-        "game_id": lobby.gameId,
-        "game_name": lobby.gameName,
-        "host_player_id": lobby.hostPlayerId,
-        "max_players": lobby.maxPlayers,
-        "current_players": len(lobby.players),
-        "status": lobby.status.String(),
-        "players": lobby.getPlayerList(),
-    })
+    ep.wsHandler.UpdateClientGameID(clientId, lobby.gameId)
+    summary := lobby.summaryDict()
+    summary["type"] = "CREATE_GAME"
+    ep.wsHandler.SendToClient(clientId, summary)
 
 func handleJoinGame on ep: reference WebSocketEndpoint(clientId: string, data: JSONMap)
-    client := ep.wsHandler.GetClientByID(clientId)
-    if client is empty
-        ep.sendError(clientId, "Not connected")
-        return
-    if client.playerId is empty
+    _gameId, playerId, playerName := ep.wsHandler.ClientSnapshot(clientId)
+    if playerId is empty
         ep.sendError(clientId, "Not connected")
         return
     gameId := ""
@@ -294,42 +319,34 @@ func handleJoinGame on ep: reference WebSocketEndpoint(clientId: string, data: J
     if gameId is empty
         ep.sendError(clientId, "No game_id provided")
         return
-    lobby := ep.lobbyMgr.joinLobby(gameId, client.playerId, client.playerName, ClientType.WEB_BROWSER)
+    lobby := ep.lobbyMgr.joinLobby(gameId, playerId, playerName, ClientType.WEB_BROWSER)
     if lobby is empty
         ep.sendError(clientId, "Cannot join game")
         return
-    client.gameId = gameId
     ep.wsHandler.UpdateClientGameID(clientId, gameId)
-    ep.wsHandler.SendToClient(clientId, JSONMap{
-        "type": "JOIN_GAME",
-        "game_id": lobby.gameId,
-        "game_name": lobby.gameName,
-        "host_player_id": lobby.hostPlayerId,
-        "max_players": lobby.maxPlayers,
-        "current_players": len(lobby.players),
-        "status": lobby.status.String(),
-        "players": lobby.getPlayerList(),
-    })
+    summary := lobby.summaryDict()
+    summary["type"] = "JOIN_GAME"
+    ep.wsHandler.SendToClient(clientId, summary)
     ep.wsHandler.BroadcastToGame(gameId, JSONMap{
         "type": "PLAYER_JOINED",
         "game_id": gameId,
-        "player_id": client.playerId,
-        "player_name": client.playerName,
+        "player_id": playerId,
+        "player_name": playerName,
         "lobby": lobby.toDict(),
     })
 
 func handleLeaveGame on ep: reference WebSocketEndpoint(clientId: string, data: JSONMap)
-    client := ep.wsHandler.GetClientByID(clientId)
-    if client is empty
+    gameId, playerId, _playerName := ep.wsHandler.ClientSnapshot(clientId)
+    if (playerId is empty) or (gameId is empty)
         return
-    if client.gameId is empty
-        return
-    gameId := client.gameId
-    playerId := client.playerId
-    ep.lobbyMgr.leaveLobby(gameId, playerId)
-    client.gameId = ""
+    left := ep.lobbyMgr.leaveLobby(gameId, playerId)
     ep.wsHandler.UpdateClientGameID(clientId, "")
     ep.wsHandler.SendToClient(clientId, JSONMap{"type": "LEAVE_GAME", "game_id": gameId})
+    # Only broadcast a leave for someone who was actually in the lobby —
+    # spectators share this path and would otherwise fan out a phantom
+    # PLAYER_LEFT to everyone in the game.
+    if not left
+        return
     lobby := ep.lobbyMgr.getLobby(gameId)
     if lobby isnt empty
         ep.wsHandler.BroadcastToGame(gameId, JSONMap{
@@ -340,11 +357,8 @@ func handleLeaveGame on ep: reference WebSocketEndpoint(clientId: string, data: 
         })
 
 func handleReady on ep: reference WebSocketEndpoint(clientId: string, data: JSONMap)
-    client := ep.wsHandler.GetClientByID(clientId)
-    if client is empty
-        ep.sendError(clientId, "Not in a game")
-        return
-    if client.gameId is empty
+    gameId, playerId, _playerName := ep.wsHandler.ClientSnapshot(clientId)
+    if (playerId is empty) or (gameId is empty)
         ep.sendError(clientId, "Not in a game")
         return
     ready := true
@@ -352,30 +366,27 @@ func handleReady on ep: reference WebSocketEndpoint(clientId: string, data: JSON
     if hasRdy
         if rdyVal is bool as rdy
             ready = rdy
-    ep.lobbyMgr.setReady(client.gameId, client.playerId, ready)
-    lobby := ep.lobbyMgr.getLobby(client.gameId)
+    ep.lobbyMgr.setReady(gameId, playerId, ready)
+    lobby := ep.lobbyMgr.getLobby(gameId)
     if lobby isnt empty
-        ep.wsHandler.BroadcastToGame(client.gameId, JSONMap{
+        ep.wsHandler.BroadcastToGame(gameId, JSONMap{
             "type": "READY",
-            "game_id": client.gameId,
-            "player_id": client.playerId,
+            "game_id": gameId,
+            "player_id": playerId,
             "ready": ready,
             "lobby": lobby.toDict(),
         })
 
 func handleStartGame on ep: reference WebSocketEndpoint(clientId: string, data: JSONMap)
-    client := ep.wsHandler.GetClientByID(clientId)
-    if client is empty
+    _gameId, playerId, _playerName := ep.wsHandler.ClientSnapshot(clientId)
+    if playerId is empty
         ep.sendError(clientId, "Not connected")
         return
-    if client.playerId is empty
-        ep.sendError(clientId, "Not connected")
-        return
-    lobby := ep.lobbyMgr.getPlayerLobby(client.playerId)
+    lobby := ep.lobbyMgr.getPlayerLobby(playerId)
     if lobby is empty
         ep.sendError(clientId, "Not in a lobby")
         return
-    if lobby.hostPlayerId isnt client.playerId
+    if lobby.hostPlayerIdOf() isnt playerId
         ep.sendError(clientId, "Only the host can start the game")
         return
     startResult := ep.lobbyMgr.startGame(lobby.gameId)
@@ -394,21 +405,18 @@ func handleStartGame on ep: reference WebSocketEndpoint(clientId: string, data: 
     })
 
 func handleGameAction on ep: reference WebSocketEndpoint(clientId: string, msgType: string, data: JSONMap)
-    client := ep.wsHandler.GetClientByID(clientId)
-    if client is empty
+    _gameId, playerId, _playerName := ep.wsHandler.ClientSnapshot(clientId)
+    if playerId is empty
         ep.sendError(clientId, "Not connected")
         return
-    if client.playerId is empty
-        ep.sendError(clientId, "Not connected")
-        return
-    session := ep.coordinator.getPlayerSession(client.playerId)
+    session := ep.coordinator.getPlayerSession(playerId)
     if session is empty
         ep.sendError(clientId, "Not in a game")
         return
 
     # The WebSocket path was unlimited while the HTTP path was rate
     # limited, so a client could flood the server with actions.
-    actionAllowed := ep.httpHandler.rateLimiter.CheckAction(client.playerId)
+    actionAllowed := ep.httpHandler.rateLimiter.CheckAction(playerId)
     if not actionAllowed
         ep.sendInvalidAction(clientId, msgType, "rate limit exceeded")
         return
@@ -422,15 +430,19 @@ func handleGameAction on ep: reference WebSocketEndpoint(clientId: string, msgTy
     if validationErr isnt empty
         ep.sendInvalidAction(clientId, msgType, "validation failed: {validationErr.message}")
         return
-    action := ep.httpHandler.buildGameAction(client.playerId, actionType, normalized)
-    success, message, _result_data, events := session.executeGameAction(client.playerId, action)
+    action := ep.httpHandler.buildGameAction(playerId, actionType, normalized)
+    success, message, _result_data, events := session.executeGameAction(playerId, action)
     if not success
         ep.sendInvalidAction(clientId, msgType, message)
         return
     ep.broadcastEvents(session, events)
     ep.broadcastState(session)
-    if session.isGameOver()
-        ep.broadcastGameWon(session)
+    session.broadcastMu.Lock()
+    over := session.isGameOver()
+    if over
+        ep.broadcastGameWonLocked(session)
+    session.broadcastMu.Unlock()
+    if over
         ep.lobbyMgr.finishGame(session.gameId)
 
 func handleSpectate on ep: reference WebSocketEndpoint(clientId: string, data: JSONMap)
@@ -449,12 +461,13 @@ func handleSpectate on ep: reference WebSocketEndpoint(clientId: string, data: J
     if session is empty
         ep.sendError(clientId, "game session not found")
         return
-    client.gameId = gameId
     ep.wsHandler.UpdateClientGameID(clientId, gameId)
+    session.broadcastMu.Lock()
     if _, ok := session.spectators[clientId]; not ok
         session.spectators[clientId] = true
     if _, ok := session.playerEventSeqs[clientId]; not ok
         session.playerEventSeqs[clientId] = 0
+    session.broadcastMu.Unlock()
     ep.wsHandler.SendToClient(clientId, JSONMap{
         "type": "SPECTATE_ACK",
         "game_id": gameId,
@@ -463,47 +476,60 @@ func handleSpectate on ep: reference WebSocketEndpoint(clientId: string, data: J
     ep.wsHandler.BroadcastSessionState(session)
 
 func handleStateRequest on ep: reference WebSocketEndpoint(clientId: string)
-    client := ep.wsHandler.GetClientByID(clientId)
-    if client is empty
+    gameId, playerId, _playerName := ep.wsHandler.ClientSnapshot(clientId)
+    if (playerId is empty) or (gameId is empty)
         return
-    if client.gameId is empty
-        return
-    session := ep.coordinator.getSession(client.gameId)
+    session := ep.coordinator.getSession(gameId)
     if session is empty
         return
+    session.broadcastMu.Lock()
     gamePid := ""
-    gpVal, hasGp := session.networkToGameId[client.playerId]
+    gpVal, hasGp := session.networkToGameId[playerId]
     if hasGp
         gamePid = gpVal
     state := session.gameState.VisibleStateDict(types.PlayerID(gamePid))
+    eventSeq := session.playerEventSeqs[playerId]
+    session.broadcastMu.Unlock()
     ep.wsHandler.SendToClient(clientId, JSONMap{
         "type": "FULL_STATE",
         "game_id": session.gameId,
         "game_state": state,
-        "event_seq": session.playerEventSeqs[client.playerId],
+        "event_seq": eventSeq,
     })
     # This client's own event counter, so the resync also repairs it.
 
 func handleClientDisconnect on ep: reference WebSocketEndpoint(clientId: string)
-    client := ep.wsHandler.GetClientByID(clientId)
-    if client is empty
+    gameId, playerId, playerName := ep.wsHandler.ClientSnapshot(clientId)
+    if playerId is empty
+        ep.wsHandler.UnregisterClient(clientId)
         return
-    gameId := client.gameId
-    playerId := client.playerId
-    playerName := client.playerName
     ep.lobbyMgr.removePlayerFromAll(playerId)
     ep.coordinator.removePlayer(playerId)
+    # Drop the departing client from its session's spectator/counter maps
+    # too — otherwise a disconnect leaks the entries forever and every
+    # broadcast iterates dead ids. (Removing a player from the seat map
+    # is handled by coordinator.removePlayer.)
+    if gameId isnt empty
+        session := ep.coordinator.getSession(gameId)
+        if session isnt empty
+            session.broadcastMu.Lock()
+            delete session.spectators[clientId]
+            delete session.playerEventSeqs[clientId]
+            session.broadcastMu.Unlock()
     ep.wsHandler.UnregisterClient(clientId)
     if gameId isnt empty
+        # Only seated players get a PLAYER_DISCONNECTED broadcast —
+        # spectators share this path and are not in the lobby.
         lobby := ep.lobbyMgr.getLobby(gameId)
         if lobby isnt empty
-            ep.wsHandler.BroadcastToGame(gameId, JSONMap{
-                "type": "PLAYER_DISCONNECTED",
-                "game_id": gameId,
-                "player_id": playerId,
-                "player_name": playerName,
-                "lobby": lobby.toDict(),
-            })
+            if lobby.hasPlayer(playerId)
+                ep.wsHandler.BroadcastToGame(gameId, JSONMap{
+                    "type": "PLAYER_DISCONNECTED",
+                    "game_id": gameId,
+                    "player_id": playerId,
+                    "player_name": playerName,
+                    "lobby": lobby.toDict(),
+                })
     log.Info("WebSocket client disconnected: {clientId}")
 
 func sendError on ep: reference WebSocketEndpoint(clientId: string, message: string)
@@ -523,7 +549,8 @@ func broadcastEvents on ep: reference WebSocketEndpoint(session: reference GameS
 func broadcastState on ep: reference WebSocketEndpoint(session: reference GameSession)
     ep.wsHandler.BroadcastSessionState(session)
 
-func broadcastGameWon on ep: reference WebSocketEndpoint(session: reference GameSession)
+# Caller must hold the session broadcast lock (timeOutTurn does).
+func broadcastGameWonLocked on ep: reference WebSocketEndpoint(session: reference GameSession)
     winnerNetworkId := session.getWinnerNetworkId()
     winnerName := "Unknown"
     wid := session.gameState.WinnerID()

@@ -72,8 +72,7 @@ func moveToken(args: MoveArgs) (any, error)
         "type": "MOVE",
         "data": JSONMap{
             "token_id": args.TokenID,
-            "x": args.X,
-            "y": args.Y,
+            "destination": list of int{args.X, args.Y},
         },
     }
     return doRequest("POST", "/api/game/{gameId}/action", body)
@@ -93,8 +92,7 @@ func deployToken(args: DeployArgs) (any, error)
         "type": "DEPLOY",
         "data": JSONMap{
             "health_value": args.HealthValue,
-            "x": args.X,
-            "y": args.Y,
+            "position": list of int{args.X, args.Y},
         },
     }
     return doRequest("POST", "/api/game/{gameId}/action", body)

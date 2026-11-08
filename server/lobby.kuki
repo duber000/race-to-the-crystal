@@ -4,6 +4,7 @@ import "stdlib/random"
 import "stdlib/regex"
 import "stdlib/sort"
 import "stdlib/string" as strpkg
+import "sync"
 
 const MAX_GAME_NAME_LENGTH = 50
 
@@ -93,6 +94,11 @@ type GameLobby
     minPlayers: int
     players: map of string to PlayerInfo
     status: GameStatus
+    # Guards every field above. Handlers on many goroutines read and
+    # mutate lobbies (join/ready/leave/broadcast lobby.toDict()). Do not
+    # take this and then call back into LobbyManager — lock order is
+    # always manager then lobby, never the reverse.
+    mu: sync.Mutex
 
 func NewGameLobby(gameId: string, gameName: string, hostPlayerId: string, maxPlayers: int) GameLobby
     return GameLobby{
@@ -110,6 +116,8 @@ func addPlayer on l: reference GameLobby(playerId: string, playerName: string, c
     if err isnt empty
         return false
 
+    l.mu.Lock()
+    defer l.mu.Unlock()
     _, exists := l.players[playerId]
     if exists
         return false
@@ -123,6 +131,8 @@ func addPlayer on l: reference GameLobby(playerId: string, playerName: string, c
     return true
 
 func removePlayer on l: reference GameLobby(playerId: string) bool
+    l.mu.Lock()
+    defer l.mu.Unlock()
     _, exists := l.players[playerId]
     if not exists
         return false
@@ -133,10 +143,12 @@ func removePlayer on l: reference GameLobby(playerId: string) bool
             l.hostPlayerId = pid
             break
 
-    l.reassignColors()
+    l.reassignColorsLocked()
     return true
 
 func setPlayerReady on l: reference GameLobby(playerId: string, isReady: bool) bool
+    l.mu.Lock()
+    defer l.mu.Unlock()
     info, exists := l.players[playerId]
     if not exists
         return false
@@ -144,7 +156,74 @@ func setPlayerReady on l: reference GameLobby(playerId: string, isReady: bool) b
     l.players[playerId] = info
     return true
 
-func allPlayersReady on l: reference GameLobby bool
+func playerCount on l: reference GameLobby int
+    l.mu.Lock()
+    defer l.mu.Unlock()
+    return len(l.players)
+
+func hostPlayerIdOf on l: reference GameLobby string
+    l.mu.Lock()
+    defer l.mu.Unlock()
+    return l.hostPlayerId
+
+# Update agent metadata for a seat, atomically. Used right after joining —
+# the HTTP create/join paths label their seats as agent seats.
+func setAgentInfo on l: reference GameLobby(playerId: string, model: string, agentKind: string)
+    l.mu.Lock()
+    defer l.mu.Unlock()
+    info, exists := l.players[playerId]
+    if not exists
+        return
+    info.isAgent = true
+    info.model = model
+    info.agentKind = agentKind
+    l.players[playerId] = info
+
+# The lobby summary the create/join protocol returns. Built under one lock
+# hold so every field is consistent.
+func summaryDict on l: reference GameLobby JSONMap
+    l.mu.Lock()
+    defer l.mu.Unlock()
+    statusStr := l.status.String()
+    return JSONMap{
+        "game_id": l.gameId,
+        "game_name": l.gameName,
+        "host_player_id": l.hostPlayerId,
+        "max_players": l.maxPlayers,
+        "current_players": len(l.players),
+        "status": statusStr,
+        "players": l.getPlayerListLocked(),
+    }
+
+# Expects the caller to hold `l.mu`.
+func getPlayerListLocked on l: reference GameLobby list of JSONMap
+    result := empty list of JSONMap
+    for info in l.orderedPlayersLocked()
+        result = append(result, info.toDict())
+    return result
+
+func hasPlayer on l: reference GameLobby(playerId: string) bool
+    l.mu.Lock()
+    defer l.mu.Unlock()
+    _, exists := l.players[playerId]
+    return exists
+
+func isEmpty on l: reference GameLobby bool
+    l.mu.Lock()
+    defer l.mu.Unlock()
+    return l.players is empty
+
+func setStatus on l: reference GameLobby(status: GameStatus)
+    l.mu.Lock()
+    l.status = status
+    l.mu.Unlock()
+
+func statusOf on l: reference GameLobby GameStatus
+    l.mu.Lock()
+    defer l.mu.Unlock()
+    return l.status
+
+func allPlayersReadyLocked on l: reference GameLobby bool
     if len(l.players) < l.minPlayers
         return false
     for _, info in l.players
@@ -152,19 +231,32 @@ func allPlayersReady on l: reference GameLobby bool
             return false
     return true
 
-func canStart on l: reference GameLobby bool
-    return l.status equals GameStatus.WAITING and l.allPlayersReady() and len(l.players) >= l.minPlayers
+func canStartLocked on l: reference GameLobby bool
+    return l.status equals GameStatus.WAITING and l.allPlayersReadyLocked() and len(l.players) >= l.minPlayers
 
-func getAiNeededCount on l: reference GameLobby int
+# Atomically checks the lobby can start and flips it to STARTING, so two
+# racing "start game" messages cannot both win and spawn two sessions for
+# the same lobby.
+func tryStart on l: reference GameLobby bool
+    l.mu.Lock()
+    defer l.mu.Unlock()
+    if not l.canStartLocked()
+        return false
+    l.status = GameStatus.STARTING
+    return true
+
+func getAiNeededCountLocked on l: reference GameLobby int
     if len(l.players) >= l.maxPlayers
         return 0
     return l.maxPlayers - len(l.players)
 
-func reassignColors on l: reference GameLobby
+# Callers must hold `l.mu` — this mutates the colour index of every player
+# in the lobby.
+func reassignColorsLocked on l: reference GameLobby
     # Players are stored in a map, so iteration order is random. Sort by the
     # current colour index (which tracks join order) before re-indexing, or
     # seats and colours shuffle on every call.
-    ordered := l.orderedPlayers()
+    ordered := l.orderedPlayersLocked()
     idx := 0
     for info in ordered
         updated := info
@@ -174,20 +266,27 @@ func reassignColors on l: reference GameLobby
 
 # Players in stable join order (by colour index). `l.players` is a map, so
 # raw iteration order is random — never iterate it directly for anything
-# order-dependent.
-func orderedPlayers on l: reference GameLobby list of PlayerInfo
+# order-dependent. Expects the caller to hold `l.mu`.
+func orderedPlayersLocked on l: reference GameLobby list of PlayerInfo
     infos := empty list of PlayerInfo
     for _, info in l.players
         infos = append(infos, info)
     return sort.ByKey(infos, (p: PlayerInfo) => p.colorIndex)
 
-func getPlayerList on l: reference GameLobby list of JSONMap
-    result := empty list of JSONMap
-    for info in l.orderedPlayers()
-        result = append(result, info.toDict())
-    return result
+# Variant taking the lock — use it from outside the lobby.
+func orderedPlayers on l: reference GameLobby list of PlayerInfo
+    l.mu.Lock()
+    defer l.mu.Unlock()
+    return l.orderedPlayersLocked()
 
-func toDict on l: GameLobby JSONMap
+func getPlayerList on l: reference GameLobby list of JSONMap
+    l.mu.Lock()
+    defer l.mu.Unlock()
+    return l.getPlayerListLocked()
+
+func toDict on l: reference GameLobby JSONMap
+    l.mu.Lock()
+    defer l.mu.Unlock()
     statusStr := l.status.String()
     return JSONMap{
         "game_id": l.gameId,
@@ -197,11 +296,15 @@ func toDict on l: GameLobby JSONMap
         "min_players": l.minPlayers,
         "current_players": len(l.players),
         "status": statusStr,
-        "players": l.getPlayerList(),
+        "players": l.getPlayerListLocked(),
     }
 
 type LobbyManager
     lobbies: map of string to reference GameLobby
+    # Guards the `lobbies` map. Lobbies themselves have their own `mu`;
+    # this guards the map of lobbies. Lock order is manager then lobby,
+    # never the reverse.
+    mu: sync.Mutex
 
 func NewLobbyManager() LobbyManager
     return LobbyManager{lobbies: empty map of string to reference GameLobby}
@@ -221,37 +324,49 @@ func createLobby on lm: reference LobbyManager(playerId: string, playerName: str
 
     gameId := random.String(16)
     lobby := NewGameLobby(gameId, gameName, playerId, maxPlayers)
+    lobby.addPlayer(playerId, playerName, clientType)
+    lobRef := reference of lobby
+    lm.mu.Lock()
     # A player belongs to one lobby at a time. Leaving any previous lobby
     # keeps `getPlayerLobby` unambiguous — otherwise a stale lobby can
     # block the new one from starting.
-    lm.removePlayerFromAll(playerId)
-    lobby.addPlayer(playerId, playerName, clientType)
-    lm.lobbies[gameId] = reference of lobby
-    return lm.lobbies[gameId]
+    lm.removePlayerFromAllLocked(playerId)
+    lm.lobbies[gameId] = lobRef
+    lm.mu.Unlock()
+    return lobRef
 
 func getLobby on lm: reference LobbyManager(gameId: string) optional reference GameLobby
+    lm.mu.Lock()
+    defer lm.mu.Unlock()
     return lm.lobbies[gameId]
 
 func joinLobby on lm: reference LobbyManager(gameId: string, playerId: string, playerName: string, clientType: ClientType) optional reference GameLobby
-    lobby := lm.getLobby(gameId)
+    lm.mu.Lock()
+    defer lm.mu.Unlock()
+    lobby := lm.lobbies[gameId]
     if lobby is empty
         return empty
-    if lobby.status isnt GameStatus.WAITING
+    if lobby.statusOf() isnt GameStatus.WAITING
         return empty
     # A player belongs to one lobby at a time — leaving any previous lobby
     # keeps `getPlayerLobby` unambiguous.
-    lm.removePlayerFromAll(playerId)
+    lm.removePlayerFromAllLocked(playerId)
     success := lobby.addPlayer(playerId, playerName, clientType)
     if not success
         return empty
     return lobby
 
 func leaveLobby on lm: reference LobbyManager(gameId: string, playerId: string) bool
-    lobby := lm.getLobby(gameId)
+    lm.mu.Lock()
+    defer lm.mu.Unlock()
+    return lm.leaveLobbyLocked(gameId, playerId)
+
+func leaveLobbyLocked on lm: reference LobbyManager(gameId: string, playerId: string) bool
+    lobby := lm.lobbies[gameId]
     if lobby is empty
         return false
     success := lobby.removePlayer(playerId)
-    if lobby.players is empty
+    if lobby.isEmpty()
         delete lm.lobbies[gameId]
     return success
 
@@ -261,33 +376,48 @@ func setReady on lm: reference LobbyManager(gameId: string, playerId: string, is
         return false
     return lobby.setPlayerReady(playerId, isReady)
 
+# Atomically validates that the lobby may start and flips it to STARTING,
+# so two racing start messages cannot both proceed.
 func startGame on lm: reference LobbyManager(gameId: string) optional reference GameLobby
-    lobby := lm.getLobby(gameId)
+    lm.mu.Lock()
+    lobby := lm.lobbies[gameId]
+    lm.mu.Unlock()
     if lobby is empty
         return empty
-    if not lobby.canStart()
+    if not lobby.tryStart()
         return empty
-    lobby.status = GameStatus.STARTING
     return lobby
 
 func setGameInProgress on lm: reference LobbyManager(gameId: string) bool
     lobby := lm.getLobby(gameId)
     if lobby is empty
         return false
-    lobby.status = GameStatus.IN_PROGRESS
+    lobby.setStatus(GameStatus.IN_PROGRESS)
     return true
 
 func finishGame on lm: reference LobbyManager(gameId: string) bool
     lobby := lm.getLobby(gameId)
     if lobby is empty
         return false
-    lobby.status = GameStatus.FINISHED
+    lobby.setStatus(GameStatus.FINISHED)
     return true
 
 func listAvailableLobbies on lm: reference LobbyManager list of JSONMap
+    lm.mu.Lock()
+    defer lm.mu.Unlock()
     result := empty list of JSONMap
     for _, lobby in lm.lobbies
-        if lobby.status equals GameStatus.WAITING and len(lobby.players) < lobby.maxPlayers
+        if lobby.statusOf() equals GameStatus.WAITING and lobby.playerCount() < lobby.maxPlayers
+            result = append(result, lobby.toDict())
+    return result
+
+# In-progress games, for the (public) games list endpoint.
+func listInProgress on lm: reference LobbyManager list of JSONMap
+    lm.mu.Lock()
+    defer lm.mu.Unlock()
+    result := empty list of JSONMap
+    for _, lobby in lm.lobbies
+        if lobby.statusOf() equals GameStatus.IN_PROGRESS
             result = append(result, lobby.toDict())
     return result
 
@@ -295,22 +425,32 @@ func getPlayerLobby on lm: reference LobbyManager(playerId: string) optional ref
     # A player can be in more than one lobby — for example after a match
     # ends without a leave. Prefer a lobby that is still joinable, so that
     # ready/start act on the right one.
+    lm.mu.Lock()
+    defer lm.mu.Unlock()
     for _gameId, lobby in lm.lobbies
-        _, exists := lobby.players[playerId]
-        if not exists
+        if not lobby.hasPlayer(playerId)
             continue
-        if lobby.status equals GameStatus.WAITING or lobby.status equals GameStatus.STARTING
+        status := lobby.statusOf()
+        if status equals GameStatus.WAITING or status equals GameStatus.STARTING
             return lobby
 
     # Otherwise fall back to any lobby the player is in.
     for _gameId, lobby in lm.lobbies
-        _, exists := lobby.players[playerId]
-        if exists
+        if lobby.hasPlayer(playerId)
             return lobby
     return empty
 
 func removePlayerFromAll on lm: reference LobbyManager(playerId: string)
-    for _gameId, lobby in lm.lobbies
-        _, exists := lobby.players[playerId]
-        if exists
-            lm.leaveLobby(lobby.gameId, playerId)
+    lm.mu.Lock()
+    defer lm.mu.Unlock()
+    lm.removePlayerFromAllLocked(playerId)
+
+# Caller must hold `lm.mu`. Collects the affected lobby ids first so the
+# map is never mutated while it is being ranged.
+func removePlayerFromAllLocked on lm: reference LobbyManager(playerId: string)
+    gameIds := empty list of string
+    for gid, lobby in lm.lobbies
+        if lobby.hasPlayer(playerId)
+            gameIds = append(gameIds, gid)
+    for gid in gameIds
+        lm.leaveLobbyLocked(gid, playerId)

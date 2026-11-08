@@ -1,5 +1,6 @@
 petiole main
 
+import "crypto/subtle"
 import "stdlib/crypto"
 import "stdlib/encoding" as encpkg
 import "stdlib/json" as jsonpkg
@@ -34,7 +35,10 @@ func CreatePlayerToken(playerId: string, gameId: string, secretKey: string, expi
     headerB64 := encpkg.Base64URLNoPadEncode(headerBytes)
     payloadB64 := encpkg.Base64URLNoPadEncode(payloadBytes)
     signingInput := "{headerB64}.{payloadB64}"
-    signature := crypto.HMAC(secretKey, signingInput)
+    # crypto.HMAC(data, key): the signing input is the message, the secret
+    # key is the key. Reversing these makes the public header+payload the
+    # HMAC key and the secret the message — see the security review.
+    signature := crypto.HMAC(signingInput, secretKey)
     sigBytes := signature as list of byte
     signatureB64 := encpkg.Base64URLNoPadEncode(sigBytes)
     return "{headerB64}.{payloadB64}.{signatureB64}"
@@ -54,11 +58,25 @@ func VerifyPlayerToken(tokenStr: string, secretKey: string) optional reference T
     payloadB64 := parts[1]
     signatureB64 := parts[2]
 
+    # Validate the header before doing any crypto work: the token must declare
+    # the algorithm we always use. Defense in depth — the signature covers the
+    # header, but an unknown alg should be rejected outright.
+    headerBytes := encpkg.Base64URLNoPadDecodeOr(headerB64, empty list of byte)
+    if headerBytes is empty
+        return empty
+    headerClaims := empty map of string to string
+    jsonpkg.ParseBytesInto(headerBytes, reference of headerClaims) onerr return empty
+    algVal, hasAlg := headerClaims["alg"]
+    if not hasAlg or algVal isnt "HS256"
+        return empty
+
     signingInput := "{headerB64}.{payloadB64}"
-    expectedSig := crypto.HMAC(secretKey, signingInput)
+    expectedSig := crypto.HMAC(signingInput, secretKey)
     expectedSigB64 := encpkg.Base64URLNoPadEncode(expectedSig as list of byte)
 
-    if signatureB64 isnt expectedSigB64
+    # Constant-time compare: a timing signal on the signature would let an
+    # attacker forge tokens byte by byte.
+    if subtle.ConstantTimeCompare(signatureB64 as list of byte, expectedSigB64 as list of byte) isnt 1
         return empty
 
     payloadBytes := encpkg.Base64URLNoPadDecodeOr(payloadB64, empty list of byte)
