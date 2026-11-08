@@ -116,7 +116,7 @@ in-process against the `game` package and has no network path.
 | `/api/games` | GET | list waiting/in-progress games |
 | `/api/game/create` | POST | create a game (HTTP seats are labelled `HTTP_AI`) |
 | `/api/game/{id}/join` | POST | join a waiting game (returns a JWT) |
-| `/api/game/{id}/spectate` | POST | read-only spectator token |
+| `/api/game/{id}/spectate` | POST | spectator token — see seat-cam note below |
 | `/api/game/{id}/ready` | POST | toggle ready |
 | `/api/game/{id}/start` | POST | start the game |
 | `/api/game/{id}/state` | GET | per-player (or spectator) state |
@@ -127,6 +127,18 @@ in-process against the `game` package and has no network path.
 
 Authenticated endpoints expect `Authorization: Bearer <jwt>` from the
 create/join/spectate response.
+
+### Spectating (seat-cam)
+
+Spectating is open to anyone, but the spectator never sees through fog of
+war. A spectator follows exactly one seat — chosen with the optional
+`follow` field (`player_0`, `player_1`, ...) in the spectate request, or a
+random seat if omitted. Every state frame, resync and event the spectator
+receives is fog-filtered from that seat's point of view, so a spectator
+sees precisely what that player can see, nothing more. The follow binding
+is fixed for the spectate session; `SPECTATE_ACK` reports back
+`{ "follow": "player_0", "follow_name": "..." }`. The web client shows a
+"SPECTATING — following &lt;name&gt;" banner while spectating.
 
 ## WebSocket Protocol
 
@@ -151,7 +163,7 @@ The server responds with `CONNECT_ACK` and a connection-scoped `player_id`.
 | `START_GAME` | host starts the game |
 | `MOVE` / `ATTACK` / `DEPLOY` / `END_TURN` | game actions |
 | `RESYNC_STATE` | ask the server to resend the current state |
-| `SPECTATE` | spectate a game |
+| `SPECTATE` | spectate a game (optional `follow`: seat id, e.g. `player_0`) |
 | `DISCONNECT` | leave gracefully |
 
 ### Server → Client
@@ -166,6 +178,7 @@ The server responds with `CONNECT_ACK` and a connection-scoped `player_id`.
 | `START_GAME` | game is starting |
 | `FULL_STATE` | complete per-player state (carries `event_seq`) |
 | `EVENT` | one game event (sound/animation/camera feedback) |
+| `SPECTATE_ACK` | spectator bound to a seat (`follow`, `follow_name`) |
 | `GAME_WON` | the match is over; names the winner |
 | `INVALID_ACTION` | action validation failed |
 | `ERROR` | server-side error |

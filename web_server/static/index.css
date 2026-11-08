@@ -1393,3 +1393,95 @@ body {
     font-weight: 600;
     color: #7ec8ff;
 }
+
+/* Spectate seat-cam chooser */
+.spectate-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.spectate-card {
+    background: #141d2b;
+    border: 1px solid rgba(126, 200, 255, 0.35);
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    max-width: 22rem;
+    width: 90%;
+    color: #e8e8e8;
+    box-shadow: 0 0 24px rgba(126, 200, 255, 0.15);
+}
+.spectate-card h3 {
+    margin: 0 0 0.25rem 0;
+    color: #7ec8ff;
+    font-size: 1.05rem;
+}
+.spectate-card p {
+    margin: 0 0 0.8rem 0;
+    font-size: 0.85rem;
+    color: #b9c4d4;
+}
+.spectate-seats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.spectate-seat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #e8e8e8;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.9rem;
+}
+.spectate-seat:hover {
+    border-color: #7ec8ff;
+    background: rgba(126, 200, 255, 0.12);
+}
+.spectate-seat small {
+    color: #8fa3bb;
+    margin-left: auto;
+}
+.spectate-random,
+.spectate-cancel {
+    margin-top: 0.5rem;
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.spectate-random {
+    background: #1d3a56;
+    color: #7ec8ff;
+}
+.spectate-cancel {
+    background: transparent;
+    color: #b9c4d4;
+}
+
+/* "You are spectating" banner */
+.spectate-banner {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(126, 200, 255, 0.45);
+    background: rgba(20, 29, 43, 0.9);
+    color: #7ec8ff;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+}

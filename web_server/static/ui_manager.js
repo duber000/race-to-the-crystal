@@ -344,11 +344,15 @@ class UIManager {
                 btn.className = 'spectate-btn';
                 btn.onclick = (e) => {
                     e.stopPropagation();
-                    if (this.onSpectateGame) this.onSpectateGame(id);
+                    this.showSpectateSeatChooser(game, (follow) => {
+                        if (this.onSpectateGame) this.onSpectateGame(id, follow);
+                    });
                 };
                 item.appendChild(btn);
                 item.onclick = () => {
-                    if (this.onSpectateGame) this.onSpectateGame(id);
+                    this.showSpectateSeatChooser(game, (follow) => {
+                        if (this.onSpectateGame) this.onSpectateGame(id, follow);
+                    });
                 };
             } else {
                 item.onclick = () => {
@@ -740,6 +744,102 @@ class UIManager {
         el.classList.remove("hidden");
         el.textContent = `${remaining}s`;
         el.classList.toggle("turn-timer-urgent", remaining <= 10 && total > 0);
+    }
+
+    /**
+     * Seat-cam picker for spectators. The spectator chooses which seat to
+     * follow; they will see exactly what that player can see (fog-filtered
+     * by the server). With no picker data (e.g. a malformed game list),
+     * falls back to a random seat.
+     */
+    showSpectateSeatChooser(game, onPick) {
+        const gameName = (game && (game.game_name || game.name)) || 'this game';
+        const players = (game && Array.isArray(game.players)) ? game.players : [];
+
+        if (players.length === 0) {
+            onPick("");
+            return;
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'spectate-overlay';
+
+        const card = document.createElement('div');
+        card.className = 'spectate-card';
+
+        const title = document.createElement('h3');
+        title.textContent = `Spectate ${gameName}`;
+        card.appendChild(title);
+
+        const blurb = document.createElement('p');
+        blurb.textContent = 'Choose your view. You see exactly what they see — hidden units stay hidden.';
+        card.appendChild(blurb);
+
+        const seats = document.createElement('div');
+        seats.className = 'spectate-seats';
+
+        players.forEach((player, idx) => {
+            // Seats are player_{color_index} — the server assigns seats in
+            // join (colour index) order, matching getPlayerList ordering.
+            // Trust color_index over the array position when present.
+            const seatIdx = Number.isInteger(player.color_index) ? player.color_index : idx;
+            const seat = `player_${seatIdx}`;
+            const btn = document.createElement('button');
+            btn.className = 'spectate-seat';
+            const name = player.player_name || player.name || `Seat ${idx + 1}`;
+            const label = document.createElement('span');
+            label.textContent = name;
+            const kind = document.createElement('small');
+            kind.textContent = player.client_type || '';
+            btn.appendChild(label);
+            btn.appendChild(kind);
+            btn.onclick = () => {
+                overlay.remove();
+                onPick(seat);
+            };
+            seats.appendChild(btn);
+        });
+
+        card.appendChild(seats);
+
+        const random = document.createElement('button');
+        random.className = 'spectate-random';
+        random.textContent = 'Random seat';
+        random.onclick = () => {
+            overlay.remove();
+            onPick("");
+        };
+        card.appendChild(random);
+
+        const cancel = document.createElement('button');
+        cancel.className = 'spectate-cancel';
+        cancel.textContent = 'Cancel';
+        cancel.onclick = () => overlay.remove();
+        card.appendChild(cancel);
+
+        overlay.appendChild(card);
+        overlay.onclick = (e) => {
+            if (e.target === overlay) overlay.remove();
+        };
+        document.body.appendChild(overlay);
+    }
+
+    /**
+     * Persistent banner for spectators: shows which seat they are
+     * following.
+     */
+    showSpectateBanner(followName) {
+        this.hideSpectateBanner();
+        const banner = document.createElement('div');
+        banner.id = 'spectate-banner';
+        banner.className = 'spectate-banner';
+        banner.textContent = `SPECTATING — following ${followName}`;
+        document.body.appendChild(banner);
+    }
+
+    hideSpectateBanner() {
+        const existing = document.getElementById('spectate-banner');
+        if (existing) existing.remove();
     }
 
     setCanvas(canvas) {

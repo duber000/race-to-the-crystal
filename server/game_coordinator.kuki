@@ -7,6 +7,7 @@ import "race-to-the-crystal/shared/types"
 import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "stdlib/maps"
+import "stdlib/random"
 import "sync"
 import "time"
 
@@ -16,9 +17,11 @@ type GameSession
     gameState: gamepkg.GameState
     networkToGameId: map of string to string
     gameToNetworkId: map of string to string
-    # Spectator network ids (not seated players). They receive the
-    # unfiltered state and every event.
-    spectators: map of string to bool
+    # Spectator network ids (not seated players) mapped to the seat they
+    # follow ("player_0", "player_1", ...). They receive the fog-filtered
+    # state and events of the seat they follow — same visibility as that
+    # player, never the unfiltered board.
+    spectators: map of string to string
     lastState: optional reference JSONMap
     apiMap: map of string to gamepkg.GameAPI
     # The event log: every event the session has produced, in order.
@@ -75,7 +78,7 @@ func NewGameSession(gameId: string, lobby: reference GameLobby, turnTimeoutSecon
         gameState: gs,
         networkToGameId: empty map of string to string,
         gameToNetworkId: empty map of string to string,
-        spectators: empty map of string to bool,
+        spectators: empty map of string to string,
         lastState: empty,
         apiMap: empty map of string to gamepkg.GameAPI,
         events: empty list of gamepkg.GameEvent,
@@ -272,6 +275,53 @@ func battleLog on s: reference GameSession JSONMap
         "snapshots": s.snapshots,
         "events": eventDicts,
     }
+
+# The seat id a spectator request should follow, given the requested
+# `follow` value ("player_0", ...). Empty follow means "random seat".
+# Returns (seatPid, seatName, ok). Caller must NOT hold broadcastMu.
+func bindSpectator on s: reference GameSession(spectatorId: string, follow: string) (string, string, bool)
+    s.broadcastMu.Lock()
+    defer s.broadcastMu.Unlock()
+
+    seats := empty list of string
+    seatNames := empty map of string to string
+    for _nid, seat in s.networkToGameId
+        seats = append(seats, seat)
+        pref := s.gameState.GetPlayer(types.PlayerID(seat))
+        name := seat
+        if pref isnt empty
+            name = pref.Name()
+        seatNames[seat] = name
+
+    if seats is empty
+        return "", "", false
+
+    seat := follow
+    if seat is empty
+        seat = seats[random.Int(0, len(seats))]
+    else
+        found := false
+        for candidate in seats
+            if candidate equals seat
+                found = true
+                break
+        if not found
+            return "", "", false
+
+    s.spectators[spectatorId] = seat
+    if _, ok := s.playerEventSeqs[spectatorId]; not ok
+        s.playerEventSeqs[spectatorId] = 0
+
+    return seat, seatNames[seat], true
+
+# The valid spectate seats in this session, for error messages.
+func validSpectatorSeats on s: reference GameSession list of string
+    s.broadcastMu.Lock()
+    defer s.broadcastMu.Unlock()
+    seats := empty list of string
+    for _nid, seat in s.networkToGameId
+        seats = append(seats, seat)
+    return seats
 
 func getStateDict on s: reference GameSession JSONMap
     return s.gameState.ToDict()

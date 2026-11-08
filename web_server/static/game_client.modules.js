@@ -39,8 +39,10 @@ class ConnectionManager {
             this.gameClient.uiManager.playerId = data.player_id || data.playerId;
             if (this.pendingSpectateGameId) {
                 const gid = this.pendingSpectateGameId;
+                const follow = this.pendingSpectateFollow || "";
                 this.pendingSpectateGameId = null;
-                this.networkManager.send({ type: 'SPECTATE', game_id: gid });
+                this.pendingSpectateFollow = null;
+                this.networkManager.send({ type: 'SPECTATE', game_id: gid, follow });
                 return;
             }
             this.gameClient.updateUIState(STATE.CONNECTED);
@@ -48,9 +50,18 @@ class ConnectionManager {
         });
 
         this.networkManager.on("game_list", (data) => {
+            this.gameClient.isSpectator = false;
+            if (this.gameClient.uiManager.hideSpectateBanner) {
+                this.gameClient.uiManager.hideSpectateBanner();
+            }
             this.gameClient.uiManager.renderGameList(data.games || []);
         });
         this.networkManager.on("spectate_ack", (data) => {
+            this.gameClient.isSpectator = true;
+            this.gameClient.spectatingFollowing = data && data.follow_name ? data.follow_name : null;
+            if (this.gameClient.uiManager.showSpectateBanner) {
+                this.gameClient.uiManager.showSpectateBanner(this.gameClient.spectatingFollowing || 'seat');
+            }
             this.gameClient.updateUIState(STATE.IN_GAME);
         });
 
@@ -383,12 +394,16 @@ class ConnectionManager {
         return this.networkManager ? this.networkManager.getConnectionState() : STATE.DISCONNECTED;
     }
 
-    spectateGame(gameId) {
+    spectateGame(gameId, follow) {
         this.gameClient.isSpectator = true;
         this.pendingSpectateGameId = gameId;
+        this.pendingSpectateFollow = follow || "";
         if (!this.networkManager) this.init();
         if (this.networkManager.connectionState === STATE.CONNECTED) {
-            this.networkManager.send({ type: 'SPECTATE', game_id: gameId });
+            const followNow = this.pendingSpectateFollow;
+            this.pendingSpectateGameId = null;
+            this.pendingSpectateFollow = null;
+            this.networkManager.send({ type: 'SPECTATE', game_id: gameId, follow: followNow });
         } else {
             // reuse default connection inputs
             const host = (document.getElementById('server-host-input')?.value || 'localhost').trim();
@@ -1127,11 +1142,11 @@ class UIController {
                 }
                 this.gameClient.networkManager.disconnect();
             },
-            (gameId) => {
+            (gameId, follow) => {
                 if (!this.gameClient.connectionManager) {
                     return;
                 }
-                this.gameClient.connectionManager.spectateGame(gameId);
+                this.gameClient.connectionManager.spectateGame(gameId, follow);
             },
         );
     }

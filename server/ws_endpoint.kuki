@@ -461,16 +461,23 @@ func handleSpectate on ep: reference WebSocketEndpoint(clientId: string, data: J
     if session is empty
         ep.sendError(clientId, "game session not found")
         return
+    follow := ""
+    fv, hasFollow := data["follow"]
+    if hasFollow
+        if fv is string as fs
+            follow = fs
     ep.wsHandler.UpdateClientGameID(clientId, gameId)
-    session.broadcastMu.Lock()
-    if _, ok := session.spectators[clientId]; not ok
-        session.spectators[clientId] = true
-    if _, ok := session.playerEventSeqs[clientId]; not ok
-        session.playerEventSeqs[clientId] = 0
-    session.broadcastMu.Unlock()
+    seatPid, seatName, ok := session.bindSpectator(clientId, follow)
+    if not ok
+        valid := session.validSpectatorSeats()
+        ep.sendError(clientId, "invalid follow seat (valid: {valid})")
+        ep.wsHandler.UpdateClientGameID(clientId, "")
+        return
     ep.wsHandler.SendToClient(clientId, JSONMap{
         "type": "SPECTATE_ACK",
         "game_id": gameId,
+        "follow": seatPid,
+        "follow_name": seatName,
     })
     # Push a fresh state to the spectator.
     ep.wsHandler.BroadcastSessionState(session)
@@ -484,9 +491,15 @@ func handleStateRequest on ep: reference WebSocketEndpoint(clientId: string)
         return
     session.broadcastMu.Lock()
     gamePid := ""
-    gpVal, hasGp := session.networkToGameId[playerId]
-    if hasGp
-        gamePid = gpVal
+    seatPid, isSpec := session.spectators[playerId]
+    if isSpec and seatPid isnt empty
+        # Spectators see exactly the fog-filtered state of the seat they
+        # follow — the same view that player gets.
+        gamePid = seatPid
+    else
+        gpVal, hasGp := session.networkToGameId[playerId]
+        if hasGp
+            gamePid = gpVal
     state := session.gameState.VisibleStateDict(types.PlayerID(gamePid))
     eventSeq := session.playerEventSeqs[playerId]
     session.broadcastMu.Unlock()

@@ -220,14 +220,18 @@ func buildStateFrames on wh: reference WebSocketHandler(session: reference GameS
         })
         sends = append(sends, nid)
 
-    # Spectators (read-only) receive the unfiltered state.
-    for specId, _ in session.spectators
+    # Spectators receive the fog-filtered state of the seat they follow —
+    # never the unfiltered board.
+    for specId, seatPid in session.spectators
+        if seatPid is empty
+            continue
         if _, ok := session.playerEventSeqs[specId]; not ok
             session.playerEventSeqs[specId] = 0
+        state := session.gameState.VisibleStateDict(types.PlayerID(seatPid))
         payloads = append(payloads, JSONMap{
             "type": "FULL_STATE",
             "game_id": session.gameId,
-            "game_state": session.gameState.ClientStateDict(""),
+            "game_state": state,
             "event_seq": session.playerEventSeqs[specId],
         })
         sends = append(sends, specId)
@@ -260,10 +264,23 @@ func BroadcastSessionStateLocked on wh: reference WebSocketHandler(session: refe
 func buildEventFrames on wh: reference WebSocketHandler(session: reference GameSession, events: list of gamepkg.GameEvent) (list of string, list of JSONMap)
     sends := empty list of string
     payloads := empty list of JSONMap
+    # Every viewer — seated players and spectators alike — is fogged to the
+    # seat they follow. Build one viewer list so players and spectators go
+    # through the exact same filter.
+    viewers := empty list of string
+    viewerSeats := empty list of string
+    for nid, gamePid in session.networkToGameId
+        viewers = append(viewers, nid)
+        viewerSeats = append(viewerSeats, gamePid)
+    for specId, seatPid in session.spectators
+        if seatPid is empty
+            continue
+        viewers = append(viewers, specId)
+        viewerSeats = append(viewerSeats, seatPid)
     for e in events
         session.eventSeq = session.eventSeq + 1
-        for nid, gamePid in session.networkToGameId
-            viewer := types.PlayerID(gamePid)
+        for i, nid in viewers
+            viewer := types.PlayerID(viewerSeats[i])
             visible := session.gameState.FilterEventForViewer(e, viewer)
             if visible is empty
                 continue
@@ -275,20 +292,6 @@ func buildEventFrames on wh: reference WebSocketHandler(session: reference GameS
                 "game_id": session.gameId,
                 "seq": seq,
                 "event": gamepkg.EventToDict(visible[0]),
-            })
-
-        # Spectators receive every event unfiltered.
-        for specId, _ in session.spectators
-            if _, ok := session.playerEventSeqs[specId]; not ok
-                session.playerEventSeqs[specId] = 0
-            seq := session.playerEventSeqs[specId] + 1
-            session.playerEventSeqs[specId] = seq
-            sends = append(sends, specId)
-            payloads = append(payloads, JSONMap{
-                "type": "EVENT",
-                "game_id": session.gameId,
-                "seq": seq,
-                "event": gamepkg.EventToDict(e),
             })
     return sends, payloads
 

@@ -245,9 +245,12 @@ func HandleGetState on h: reference HTTPHandler(gameId: string, authHeader: stri
     # path: a client only sees what its own tokens can see.
     session.broadcastMu.Lock()
     state := empty JSONMap
-    # Spectators see everything (no fog).
-    if _, isSpec := session.spectators[payload.playerId]; isSpec
-        state = session.gameState.ClientStateDict("")
+    # Spectators see exactly what the seat they follow can see.
+    if seatPid, isSpec := session.spectators[payload.playerId]; isSpec
+        if seatPid isnt empty
+            state = session.gameState.VisibleStateDict(types.PlayerID(seatPid))
+        else
+            state = session.gameState.VisibleStateDict(types.PlayerID(""))
     else
         gamePid := ""
         pidVal, hasPid := session.networkToGameId[payload.playerId]
@@ -647,12 +650,19 @@ func HandleSpectate on h: reference HTTPHandler(gameId: string, body: JSONMap, c
         }
 
     spectatorId := random.String(16)
-    session.broadcastMu.Lock()
-    session.spectators[spectatorId] = true
-    if _, ok := session.playerEventSeqs[spectatorId]; not ok
-        session.playerEventSeqs[spectatorId] = 0
-    session.broadcastMu.Unlock()
-
+    follow := ""
+    fv, hasFollow := body["follow"]
+    if hasFollow
+        if fv is string as fs
+            follow = fs
+    seatPid, seatName, ok := session.bindSpectator(spectatorId, follow)
+    if not ok
+        valid := session.validSpectatorSeats()
+        return APIResponse{
+            success: false,
+            message: "invalid follow seat (valid: {valid})",
+            data: empty JSONMap,
+        }
     token := CreatePlayerToken(spectatorId, gameId, h.jwtSecret, 24)
 
     return APIResponse{
@@ -662,6 +672,8 @@ func HandleSpectate on h: reference HTTPHandler(gameId: string, body: JSONMap, c
             "spectator_id": spectatorId,
             "token": token,
             "game_id": gameId,
+            "follow": seatPid,
+            "follow_name": seatName,
         },
     }
 
