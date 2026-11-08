@@ -57,15 +57,13 @@ type WebSocketEndpoint
     coordinator: reference GameCoordinator
     lobbyMgr: reference LobbyManager
     wsHandler: reference WebSocketHandler
-    mercure: reference MercurePublisher
     httpHandler: reference HTTPHandler
 
-func NewWebSocketEndpoint(coordinator: reference GameCoordinator, lobbyMgr: reference LobbyManager, wsHandler: reference WebSocketHandler, mercure: reference MercurePublisher, httpHandler: reference HTTPHandler) WebSocketEndpoint
+func NewWebSocketEndpoint(coordinator: reference GameCoordinator, lobbyMgr: reference LobbyManager, wsHandler: reference WebSocketHandler, httpHandler: reference HTTPHandler) WebSocketEndpoint
     return WebSocketEndpoint{
         coordinator: coordinator,
         lobbyMgr: lobbyMgr,
         wsHandler: wsHandler,
-        mercure: mercure,
         httpHandler: httpHandler,
     }
 
@@ -196,7 +194,7 @@ func handleClientMessage on ep: reference WebSocketEndpoint(clientId: string, ra
             ep.handleStartGame(clientId, data)
         when "move", "attack", "deploy", "end_turn"
             ep.handleGameAction(clientId, msgType, data)
-        when "sse_fallback_request", "resync_state"
+        when "resync_state"
             ep.handleStateRequest(clientId)
         when "spectate"
             ep.handleSpectate(clientId, data)

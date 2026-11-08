@@ -1,11 +1,7 @@
-# Race to the Crystal - Caddy with Mercure
-# Uses custom Caddy binary with mercure plugin
+# Race to the Crystal - Caddy reverse proxy
+# Stock Caddy: no custom modules required
 
 FROM caddy:2-alpine
-
-# Copy custom Caddy binary and make executable
-COPY caddy /usr/bin/caddy
-RUN chmod +x /usr/bin/caddy
 
 # Copy Caddyfile configuration
 COPY Caddyfile /etc/caddy/Caddyfile

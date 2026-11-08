@@ -54,14 +54,14 @@ The differences:
 | `api.Place(10, x, y)` | `{"type": "DEPLOY", "data": {"health_value": 10, "position": [x, y]}}` |
 | `api.Actions()` | `GET .../actions` (same four variants, as JSON) |
 | `api.MyTokens()` | state's `tokens` + your `player_id` |
-| turn pushed to your function | you poll `state` / subscribe to SSE |
+| turn pushed to your function | you poll `GET .../state` until it is your turn |
 | `api.Memo` | your program's own state (or a database) |
 
 ## The shape of a live strategy
 
 ```
 while game not over:
-    wait for your turn (poll state, or SSE push)
+    wait for your turn (poll state)
     actions := fetch actions
     decision := YourStrategy(actions)   # the code you wrote in ch. 9
     send decision
@@ -73,9 +73,8 @@ implementation.
 
 ## Your turn
 
-1. Run the game server (`kukicha build ./server` then
-   `./server/server`), create a game, and connect the bundled AI
-   client: `./race-ai-client --create "test" --strategy random`.
+1. Run the game server (`make server-run`), create a game, and connect the
+   bundled AI client: `./race-ai-client poll --create "test" --strategy random`.
 2. Reimplement your chapter-9 `BestAttack` against the live API:
    fetch `/actions`, pick the `ATTACK` with `will_kill: true`, and
    POST it. The JSON shapes are the same four variants you switched

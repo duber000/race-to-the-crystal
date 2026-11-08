@@ -17,6 +17,7 @@ Race to the Crystal can be deployed in two modes:
 # Build containers
 cd deployment/dockerfiles
 podman build -f Dockerfile -t localhost/race-to-the-crystal:latest ../..
+podman build -f Dockerfile.web-server -t localhost/race-web-server:latest ../..
 podman build -f Dockerfile.caddy -t localhost/race-caddy:latest ../..
 
 # Deploy development configuration
@@ -25,7 +26,7 @@ cp Caddyfile ~/.config/containers/systemd/
 
 # Start services
 systemctl --user daemon-reload
-systemctl --user start game-api.service caddy.service
+systemctl --user start game-api.service web-server.service caddy.service
 
 # Access at http://localhost:8880
 ```
@@ -40,19 +41,26 @@ See [Production Deployment](#production-deployment) section below for complete p
 ┌─────────────────────────────────────────────────┐
 │  Caddy (race-caddy)                             │
 │  - HTTPS with Let's Encrypt                     │
-│  - Embedded Mercure hub (SSE)                   │
-│  - Reverse proxy to game API                    │
+│  - Reverse proxy to the web server              │
 │  Ports: 8880 (HTTP/HTTPS), 8444 (future)        │
 └─────────────────┬───────────────────────────────┘
                   │
                   │ Internal network (game-net)
                   │
 ┌─────────────────▼───────────────────────────────┐
+│  Web Server (race-web-server)                   │
+│  - Serves the web client (Babylon.js)           │
+│  - Reverse-proxies /api + /ws to the game API   │
+│  Port: 8000                                     │
+└─────────────────┬───────────────────────────────┘
+                  │
+                  │ Internal network (game-net)
+                  │
+┌─────────────────▼───────────────────────────────┐
 │  Game API (race-game-api)                       │
-│  - Unified server (TCP + HTTP/WebSocket)        │
-│  - Desktop clients: TCP port 8888               │
-│  - Web clients: HTTP/WebSocket port 8080        │
-│  - Mercure publisher integration                │
+│  - Kukicha game server (Go)                     │
+│  - HTTP REST API + WebSocket, port 8080         │
+│  - JWT auth, per-player (fog of war) state      │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -71,8 +79,10 @@ cd deployment/dockerfiles
 # Build game server
 podman build -f Dockerfile -t localhost/race-to-the-crystal:latest ../..
 
-# Build Caddy with Mercure plugin
-chmod +x ../../caddy  # Ensure binary is executable
+# Build web server
+podman build -f Dockerfile.web-server -t localhost/race-web-server:latest ../..
+
+# Build Caddy reverse proxy
 podman build -f Dockerfile.caddy -t localhost/race-caddy:latest ../..
 
 # Verify images
@@ -92,14 +102,14 @@ cp Caddyfile ~/.config/containers/systemd/
 
 # Reload and start
 systemctl --user daemon-reload
-systemctl --user start game-api.service caddy.service
+systemctl --user start game-api.service web-server.service caddy.service
 ```
 
 ### Verify
 
 ```bash
 # Check status
-systemctl --user status game-api.service caddy.service
+systemctl --user status game-api.service web-server.service caddy.service
 
 # Check containers
 podman ps
@@ -122,7 +132,7 @@ journalctl --user -u caddy.service -f
 systemctl --user restart game-api.service
 
 # Stop services
-systemctl --user stop game-api.service caddy.service
+systemctl --user stop game-api.service web-server.service caddy.service
 ```
 
 ### Update Code
@@ -201,9 +211,11 @@ su - gameuser
 git clone <repo-url> ~/race-to-the-crystal
 cd ~/race-to-the-crystal/deployment/dockerfiles
 
-# Build Caddy image (includes Mercure plugin)
-chmod +x ../../caddy
+# Build Caddy image
 podman build -f Dockerfile.caddy -t localhost/race-caddy:latest ../..
+
+# Build web server image
+podman build -f Dockerfile.web-server -t localhost/race-web-server:latest ../..
 
 # Build game API image
 podman build -f Dockerfile -t localhost/race-to-the-crystal:latest ../..
@@ -216,18 +228,16 @@ podman images | grep race
 
 #### Step 1: Generate Secrets
 
-Generate strong random JWT secrets for Mercure:
+Generate a strong random JWT signing secret for the game server:
 
 ```bash
-# Generate secrets
-PUBLISHER_JWT=$(openssl rand -base64 32)
-SUBSCRIBER_JWT=$(openssl rand -base64 32)
+# Generate the secret
+JWT_SECRET_KEY=$(openssl rand -base64 32)
 
 # Create secrets file
 mkdir -p ~/.config/containers/systemd
 cat > ~/.config/containers/systemd/race-secrets.env <<EOF
-MERCURE_PUBLISHER_JWT=$PUBLISHER_JWT
-MERCURE_SUBSCRIBER_JWT=$SUBSCRIBER_JWT
+JWT_SECRET_KEY=$JWT_SECRET_KEY
 EOF
 
 # Secure the file
@@ -246,10 +256,7 @@ Update configuration files with your domain:
 ```bash
 cd ~/race-to-the-crystal
 
-# Update game-api.container
-sed -i 's/your-domain.com/example.com/g' deployment/production/game-api.container
-
-# Update Caddyfile
+# Update Caddyfile (the only file that carries the domain)
 sed -i 's/your-domain.com/example.com/g' deployment/production/Caddyfile
 
 # Replace example.com with your actual domain
@@ -277,7 +284,7 @@ ls -la ~/.config/containers/systemd/
 systemctl --user daemon-reload
 
 # Start services
-systemctl --user start game-api.service caddy.service
+systemctl --user start game-api.service web-server.service caddy.service
 
 # Check status
 systemctl --user status game-api.service
@@ -334,7 +341,7 @@ curl -I https://your-domain.com:8880/
 
 ```bash
 # Watch container resource usage
-podman stats race-game-api race-caddy
+podman stats race-game-api race-web-server race-caddy
 
 # Check configured limits
 podman inspect race-game-api | grep -A 5 Memory
@@ -377,18 +384,16 @@ systemctl --user status caddy.service
 ### Rotate Secrets
 
 ```bash
-# Generate new secrets
-NEW_PUBLISHER_JWT=$(openssl rand -base64 32)
-NEW_SUBSCRIBER_JWT=$(openssl rand -base64 32)
+# Generate a new signing secret (invalidates all existing player tokens)
+NEW_JWT_SECRET_KEY=$(openssl rand -base64 32)
 
 # Update secrets file
 cat > ~/.config/containers/systemd/race-secrets.env <<EOF
-MERCURE_PUBLISHER_JWT=$NEW_PUBLISHER_JWT
-MERCURE_SUBSCRIBER_JWT=$NEW_SUBSCRIBER_JWT
+JWT_SECRET_KEY=$NEW_JWT_SECRET_KEY
 EOF
 
-# Restart both services (must use matching secrets)
-systemctl --user restart game-api.service caddy.service
+# Restart the game server to pick it up
+systemctl --user restart game-api.service
 ```
 
 ### View Logs
@@ -453,16 +458,13 @@ journalctl --user -u caddy.service | grep -i error
 curl -I https://your-domain.com:8880/ws
 
 # Check browser console for errors (CORS, connection refused)
-
-# Verify Mercure endpoint
-curl https://your-domain.com:8880/.well-known/mercure
 ```
 
 ### High Resource Usage
 
 ```bash
 # View resource usage
-podman stats race-game-api race-caddy
+podman stats race-game-api race-web-server race-caddy
 
 # Increase limits if needed
 vim ~/.config/containers/systemd/game-api.container
@@ -484,19 +486,16 @@ If web client shows old code after updates:
 
 Production deployment includes:
 
-- ✅ Strong JWT secrets (32+ bytes random)
+- ✅ Strong JWT signing secret (32+ bytes random)
 - ✅ Secrets stored in file (not inline)
 - ✅ File permissions secure (600)
 - ✅ HTTPS enabled with auto certificates
-- ✅ CORS restricted to production domain
 - ✅ Security headers enabled
+- ✅ WebSocket origins restricted (set `WS_ALLOWED_ORIGINS` on the game server)
 - ✅ Resource limits configured
 - ✅ Rate limiting implemented
 - ✅ Input validation implemented
 - ✅ Rootless containers (non-root user)
-- ⚠️ TCP port 8888 internal-only (desktop clients via VPN)
-
-**See [MERCURE.md](MERCURE.md) for Mercure-specific security configuration.**
 
 ## Rollback Procedure
 
@@ -504,10 +503,11 @@ If deployment fails:
 
 ```bash
 # Stop services
-systemctl --user stop game-api.service caddy.service
+systemctl --user stop game-api.service web-server.service caddy.service
 
 # Remove production configs
 rm ~/.config/containers/systemd/game-api.container
+rm ~/.config/containers/systemd/web-server.container
 rm ~/.config/containers/systemd/caddy.container
 rm ~/.config/containers/systemd/Caddyfile
 
@@ -518,48 +518,47 @@ cp Caddyfile ~/.config/containers/systemd/
 
 # Reload and restart
 systemctl --user daemon-reload
-systemctl --user start game-api.service caddy.service
+systemctl --user start game-api.service web-server.service caddy.service
 ```
 
 ## Production Endpoints
 
 - **Web Client:** https://your-domain.com:8880/
 - **WebSocket:** wss://your-domain.com:8880/ws
-- **Mercure Hub:** https://your-domain.com:8880/.well-known/mercure
 - **Static Files:** https://your-domain.com:8880/static/
-- **TCP Desktop Clients:** Internal only (port 8888, not exposed)
 
 ## Configuration Files
 
 **Development:**
 - `deployment/development/game-api.container` - Game server (dev mode)
 - `deployment/development/caddy.container` - Caddy proxy (dev mode)
+- `deployment/development/web-server.container` - Web server (dev mode)
 - `deployment/development/game-net.network` - Podman network
 
 **Production:**
 - `deployment/production/game-api.container` - Game server (production)
 - `deployment/production/caddy.container` - Caddy proxy (production)
+- `deployment/production/web-server.container` - Web server (production)
 - `deployment/production/Caddyfile` - Caddy configuration with HTTPS
 - `deployment/production/game-net.network` - Podman network
 - `deployment/production/race-secrets.env.template` - Secrets template
 
 **Dockerfiles:**
 - `deployment/dockerfiles/Dockerfile` - Game server image
-- `deployment/dockerfiles/Dockerfile.caddy` - Caddy image with Mercure
+- `deployment/dockerfiles/Dockerfile.web-server` - Web server image
+- `deployment/dockerfiles/Dockerfile.caddy` - Caddy reverse proxy image
 
 ## Notes
 
 - **Port 8880:** Used instead of 443 for rootless podman (no privileged port binding)
 - **Certificates:** Caddy manages Let's Encrypt certificates automatically
 - **Renewal:** Caddy renews certificates before expiration
-- **TCP Port:** Desktop client port 8888 remains internal-only for security
 - **User Services:** Running as regular user (not root)
 - **Lingering:** User services persist after logout (enabled in prerequisites)
 
 ## Support
 
 For issues or questions:
-- Check logs: `journalctl --user -u game-api.service -u caddy.service`
-- Review [MERCURE.md](MERCURE.md) for Mercure configuration
+- Check logs: `journalctl --user -u game-api.service -u web-server.service -u caddy.service`
 - Check container status: `podman ps -a --filter "name=race-"`
 - See troubleshooting section above

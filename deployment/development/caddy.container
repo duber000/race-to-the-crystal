@@ -1,5 +1,5 @@
 [Unit]
-Description=Caddy Web Server with Mercure Support
+Description=Caddy Web Server
 Documentation=https://caddyserver.com
 After=network-online.target game-api.service
 Wants=network-online.target
@@ -13,10 +13,6 @@ Network=game-net.network
 # Publish ports on host (use non-privileged ports for rootless podman)
 PublishPort=8880:80
 PublishPort=8444:443
-
-# Environment for Mercure JWTs
-Environment=MERCURE_PUBLISHER_JWT=dev_secret_key
-Environment=MERCURE_SUBSCRIBER_JWT=dev_secret_key
 
 # Mount Caddyfile configuration (user home directory)
 Volume=%h/.config/containers/systemd/Caddyfile:/etc/caddy/Caddyfile:ro,Z

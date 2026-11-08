@@ -107,12 +107,8 @@ export const INPUT_CONFIG = {
 
 // Timeout configuration
 export const TIMEOUT_CONFIG = {
-    SSE_SILENCE_MS: 30000,
-    SSE_CHECK_INTERVAL_MS: 5000,
     ERROR_TIMEOUT_MS: 3000,
     MAX_ERRORS: 5,
-    RECONNECT_MAX_DELAY_MS: 30000,
-    RECONNECT_MAX_ATTEMPTS: 4
 };
 
 // Backward compatibility aliases

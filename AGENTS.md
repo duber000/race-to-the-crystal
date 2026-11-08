@@ -84,7 +84,7 @@ The project is split into strictly separated layers:
 - **`game/`** – Pure game logic with zero rendering or network dependencies. `GameState` (struct in `game/game_state.kuki`) is the central state container. `GameAPI` (`game/api.kuki`) is the high-level façade used by AI clients and the server coordinator. `schemas.kuki` defines all action/response types. `game_events.kuki` defines the **game event vocabulary** (see below).
 - **`learn/`** – Learn-to-program layer. `LearnerAPI` (`learn/learn_api.kuki`) is the teaching façade over `GameAPI` (friendlier names, narrated actions, `Memo`/`Recall`). `Simulation` (`learn/simulation.kuki`) runs a full game in-process: the learner plays `player_0`, other players use the AI strategies. Runnable example scripts live in `learn/examples/` (course: `docs/tutorials/`).
 - **`shared/`** – Cross-cutting primitives: `enums/` (all game enums), `constants/` (all numeric constants), `types/` (`TokenID`, `PlayerID`, `Position` type aliases), `errs/` (standardized error definitions).
-- **`server/`** – Server built on Go net/http + gorilla/websocket. `GameCoordinator` manages `GameSession` instances, each wrapping a `GameState`. JWT auth for the HTTP API is in `server/auth.kuki`. `WebSocketHandler` owns the client registry and the shared per-session broadcasters. Mercure SSE publishing is in `server/mercure_publisher.kuki`.
+- **`server/`** – Server built on Go net/http + gorilla/websocket. `GameCoordinator` manages `GameSession` instances, each wrapping a `GameState`. JWT auth for the HTTP API is in `server/auth.kuki`. `WebSocketHandler` owns the client registry and the shared per-session broadcasters.
 - **`mcp/`** – Thin stdio MCP proxy exposing the agent seat (no game logic; proxies to the game server's REST API)
 - **`client/`** – Desktop client using Ebitengine. `renderer_2d.kuki` and UI views in `ui/` implement the game views. **The desktop client is local-only** — it imports the `game` package directly and has no networking; its "Network Game" menu entry is a stub. `ai/ai_client.kuki` is the AI player (HTTP); `ai/http_ai_client.kuki` is a helper in the same package.
 - **`web_server/`** – Serves the Babylon.js web frontend and reverse-proxies `/api` and `/ws` to the game server. Web clients receive state and events over WebSocket.
@@ -141,12 +141,8 @@ earlier Python implementation, still described in `docs/NETWORK.md`.
 
 The browser connects to `ws://<web-host>:<web-port>/ws`, which the web
 server proxies to the game server. The game server therefore sees the
-browser's `Origin` header, not the proxy's.
-
-Mercure/SSE exists (`server/mercure_publisher.kuki`) but the publisher is
-never called and the topics are per-game rather than per-player, so it is
-**not** a working state path. The client falls back to the WebSocket, which
-carries everything.
+browser's `Origin` header, not the proxy's. The WebSocket is the only
+state path — it carries both the full state and the event stream.
 
 ### Key Conventions
 

@@ -1,3 +1,8 @@
+> **Note**: This document describes the earlier Python implementation and its
+> test suite. The current implementation lives in `game/crystal_effects.kuki`;
+> the command examples (`uv run pytest …`) are obsolete. Kept for historical
+> design reference.
+
 # Crystal Effects System
 
 The crystal effects system adds strategic buff and debuff mechanics to Race to the Crystal. Every 5 rounds, all players are affected by the same randomly selected crystal effect.

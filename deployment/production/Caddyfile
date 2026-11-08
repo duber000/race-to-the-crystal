@@ -1,7 +1,3 @@
-{
-    order mercure before respond
-}
-
 # Production configuration
 # Replace "your-domain.com" with your actual domain before deployment
 # Uses ports 8880/8444 for rootless podman (no privileged port binding needed)
@@ -15,19 +11,6 @@ your-domain.com:8880 {
     #     dns hetzner {env.YOUR_HETZNER_AUTH_API_TOKEN}
     #     propagation_delay 30s
     # }
-
-    # Embedded Mercure Hub configuration
-    mercure {
-        # JWT authentication keys from environment variables
-        publisher_jwt {env.MERCURE_PUBLISHER_JWT}
-        subscriber_jwt {env.MERCURE_SUBSCRIBER_JWT}
-
-        # Allow anonymous subscribers (public game state updates)
-        anonymous
-
-        # CORS restricted to production domain only
-        cors_origins https://your-domain.com:8880
-    }
 
     # Proxy to the web server (serves the frontend and proxies /api + /ws to the game API)
     reverse_proxy race-web-server:8000 {

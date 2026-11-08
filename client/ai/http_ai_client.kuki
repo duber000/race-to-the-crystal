@@ -1,10 +1,8 @@
 petiole main
 
-import "bufio"
 import "race-to-the-crystal/game" as gamepkg
 import "stdlib/cast"
 import "stdlib/fetch"
-import "stdlib/json" as jsonpkg
 import "stdlib/log"
 import "strings"
 
@@ -16,7 +14,6 @@ type Session
     playerName: string
     token: string
     gameId: string
-    sseUrl: string
     active: bool
 
 func NewSession(baseUrl: string) Session
@@ -34,7 +31,6 @@ type playerSessionData
     playerName: string as "player_name"
     token: string as "token"
     gameId: string as "game_id"
-    sseUrl: string as "sse_url"
 
 type createJoinAPIResponse
     success: bool as "success"
@@ -50,12 +46,8 @@ func fillSessionFromData on s: reference Session(d: playerSessionData)
         s.token = d.token
     if d.gameId isnt empty
         s.gameId = d.gameId
-    if d.sseUrl isnt empty
-        s.sseUrl = d.sseUrl
 
     log.Info("Authenticated as {s.playerName} (player_id={s.playerId}, game_id={s.gameId})")
-    if s.sseUrl isnt empty
-        log.Info("SSE URL: {s.sseUrl}")
 
 func CreateGame on s: reference Session(gameName: string, playerName: string) bool
     url := "{s.baseUrl}/api/game/create"
@@ -385,17 +377,6 @@ func IsGameOver(state: Payload) bool
         phaseStr = pv
     return phaseStr equals "ENDED"
 
-func IsGameActive(state: Payload) bool
-    if state is empty
-        return false
-    phase, has := state["phase"]
-    if not has
-        return false
-    phaseStr := ""
-    if phase is string as pv
-        phaseStr = pv
-    return phaseStr equals "PLAYING"
-
 func PickAction(actions: list of Payload, strategy: gamepkg.AIStrategyName) gamepkg.ChosenAction
     actionsTyped := gamepkg.ActionsFromDicts(actions)
     if actionsTyped is empty
@@ -405,81 +386,3 @@ func PickAction(actions: list of Payload, strategy: gamepkg.AIStrategyName) game
         return gamepkg.ChosenEndTurn
     return dereference chosenRef
 
-type SSEEvent
-    eventType: string
-    data: string
-
-# Connect to the Mercure SSE stream and feed events to the handler.
-#
-# The server does not currently publish to Mercure — the game state and the
-# event stream both travel over the WebSocket, and the state is per-player
-# (fog of war) while a Mercure topic is per-game. The SSE mode is kept for
-# when a publisher is wired up, but it reports whether it actually connected
-# so the caller can fall back to polling.
-#
-# Returns true if the stream was established.
-func ConnectSSE on s: reference Session(handler: func(SSEEvent) bool) bool
-    if s.sseUrl is empty
-        log.Warn("ConnectSSE: no SSE URL configured")
-        return false
-
-    resp := fetch.New(s.sseUrl)
-        |> fetch.Method("GET")
-        |> fetch.Header("Authorization", "Bearer {s.token}")
-        |> fetch.Header("Accept", "text/event-stream")
-        |> fetch.Retry(3, 500)
-        |> fetch.Do() onerr
-            log.Error("SSE connect failed: {error}")
-            return false
-
-    raw := resp.Raw()
-    if raw is empty
-        log.Error("SSE raw empty")
-        return false
-    defer raw.Body.Close()
-    body := raw.Body
-    scanner := bufio.NewScanner(body)
-    scanner.Buffer(make(list of byte, 0, 64 * 1024), 1024 * 1024)
-
-    currentEvent := "message"
-    dataBuf := strings.Builder{}
-
-    for scanner.Scan()
-        line := scanner.Text()
-
-        if line is empty
-            if dataBuf.Len() > 0
-                ev := SSEEvent{eventType: currentEvent, data: dataBuf.String()}
-                keepGoing := handler(ev)
-                dataBuf.Reset()
-                currentEvent = "message"
-                if not keepGoing
-                    return true
-        else if strings.HasPrefix(line, "event:")
-            currentEvent = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
-        else if strings.HasPrefix(line, "data:")
-            chunk := strings.TrimPrefix(line, "data:")
-            if dataBuf.Len() > 0
-                dataBuf.WriteString("\n") onerr discard
-            dataBuf.WriteString(strings.TrimLeft(chunk, " ")) onerr discard
-
-    err := scanner.Err()
-    if err isnt empty
-        log.Error("SSE scan error: {err}")
-    return true
-
-func ExtractStateFromSSE(ev: SSEEvent) Payload
-    parsed := make(Payload)
-    jsonpkg.ParseInto(ev.data, reference of parsed) onerr return empty Payload
-
-    stateAny, hasState := parsed["state"]
-    if hasState
-        if stateAny is Payload as state
-            return state
-
-    gsAny, hasGs := parsed["game_state"]
-    if hasGs
-        if gsAny is Payload as gs
-            return gs
-
-    return parsed

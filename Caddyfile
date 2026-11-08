@@ -1,22 +1,5 @@
-{
-    order mercure before respond
-}
-
 # Development/local configuration
 http://:80 {
-    # Embedded Mercure Hub configuration
-    mercure {
-        # JWT authentication keys from environment variables
-        publisher_jwt {env.MERCURE_PUBLISHER_JWT}
-        subscriber_jwt {env.MERCURE_SUBSCRIBER_JWT}
-
-        # Allow anonymous subscribers (public updates)
-        anonymous
-
-        # CORS configuration
-        cors_origins *
-    }
-
     # Proxy to the web server (serves the frontend and proxies /api + /ws to the game API)
     reverse_proxy race-web-server:8000 {
         # Preserve original host header

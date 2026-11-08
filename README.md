@@ -27,7 +27,7 @@ Race to the Crystal is a turn-based strategy game where players compete to charg
 
 - **Backend**: Kukicha (compiles to Go) — HTTP/WebSocket + REST API with JWT authentication, built on `stdlib/http`
 - **Desktop Client**: Kukicha + Ebitengine (2D top-down)
-- **Web Client**: Babylon.js 8. The WebSocket carries the full game state and a sequenced event stream; Mercure (SSE) support exists but is **not enabled by default**
+- **Web Client**: Babylon.js 8. The WebSocket carries the full game state and a sequenced event stream
 - **Testing**: 94 Kukicha unit tests covering core game logic and the server's action validation
 
 ## Agent / MCP client
@@ -89,8 +89,8 @@ by game ID or from the lobby browser.
 ### 3. AI Players
 
 The AI client is a Kukicha program (`client/ai/`) that speaks the same HTTP
-API as the browser. It has two subcommands: `poll` (asks the server for the
-state on a timer) and `sse`.
+API as the browser. It runs the `poll` subcommand, which asks the server for
+the state on a timer.
 
 ```bash
 make ai-client        # builds ./race-ai-client
@@ -227,6 +227,7 @@ cat deployment/docs/DEPLOYMENT.md
 # Quick: Development deployment (localhost)
 cd deployment/dockerfiles
 podman build -f Dockerfile -t localhost/race-to-the-crystal:latest ../..
+podman build -f Dockerfile.web-server -t localhost/race-web-server:latest ../..
 podman build -f Dockerfile.caddy -t localhost/race-caddy:latest ../..
 # Deploy quadlets from deployment/development/
 ```
@@ -236,17 +237,11 @@ podman build -f Dockerfile.caddy -t localhost/race-caddy:latest ../..
 **Game & Development:**
 - **[docs/GAME.md](docs/GAME.md)** - Complete game rules and mechanics
 - **[docs/3D.md](docs/3D.md)** - Desktop 3D mode camera system and controls
+- **[docs/NETWORK.md](docs/NETWORK.md)** - Network architecture and protocol
 - **[AGENTS.md](AGENTS.md)** - Repository guide for agents and contributors
-
-> **Note**: `docs/NETWORK.md` and the `deployment/` guides predate the
-> Go/Kukicha rewrite and still describe the earlier Python implementation
-> (a TCP server on port 8888 with length-prefixed framing). They are being
-> updated; for the current protocol, see [AGENTS.md](AGENTS.md) and
-> `server/ws_endpoint.kuki`.
 
 **Deployment:**
 - **[deployment/docs/DEPLOYMENT.md](deployment/docs/DEPLOYMENT.md)** - Container deployment guide
-- **[deployment/docs/MERCURE.md](deployment/docs/MERCURE.md)** - Mercure SSE configuration
 
 ## License
 

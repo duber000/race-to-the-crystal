@@ -17,7 +17,6 @@ type HTTPHandler
     coordinator: reference GameCoordinator
     lobbyMgr: reference LobbyManager
     wsHandler: reference WebSocketHandler
-    mercureCfg: MercureConfig
     jwtSecret: string
     rateLimiter: RateLimiter
     staticDir: string
@@ -27,12 +26,11 @@ type APIResponse
     message: string
     data: JSONMap
 
-func NewHTTPHandler(coord: reference GameCoordinator, lobbyMgr: reference LobbyManager, wsHandler: reference WebSocketHandler, mercureCfg: MercureConfig, jwtSecret: string, staticDir: string) HTTPHandler
+func NewHTTPHandler(coord: reference GameCoordinator, lobbyMgr: reference LobbyManager, wsHandler: reference WebSocketHandler, jwtSecret: string, staticDir: string) HTTPHandler
     return HTTPHandler{
         coordinator: coord,
         lobbyMgr: lobbyMgr,
         wsHandler: wsHandler,
-        mercureCfg: mercureCfg,
         jwtSecret: jwtSecret,
         rateLimiter: NewRateLimiter(),
         staticDir: staticDir,
@@ -119,7 +117,6 @@ func HandleJoinGame on h: reference HTTPHandler(gameId: string, body: JSONMap, c
             "token": token,
             "game_id": gameId,
             "player_name": playerName,
-            "sse_url": "{h.mercureCfg.hubUrl}?topic={h.mercureCfg.topicPrefix}/{gameId}",
         },
     }
 

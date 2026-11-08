@@ -19,8 +19,6 @@ type Mode
 
 const POLL = "poll"
 
-const SSE = "sse"
-
 func parseStrategy(s: string) gamepkg.AIStrategyName
     name := gamepkg.ParseAIStrategyName(s) onerr gamepkg.AIStrategyNameRANDOM
     return name
@@ -147,90 +145,6 @@ func runPoll(args: cli.Args) error
 
     return empty
 
-func runSSE(args: cli.Args) error
-    sess := openSession(args)
-    strategy := parseStrategy(cli.GetStringOr(args, "strategy", "random"))
-
-    log.Info("Subscribing to SSE stream with strategy {strategy}")
-
-    connected := sess.ConnectSSE((ev: SSEEvent) =>
-        evtType := ev.eventType
-        if (evtType is empty) or evtType equals "message"
-            evtType = "message"
-
-        if evtType equals "GAME_WON" or evtType equals "GAME_OVER"
-            log.Info("Game over event received")
-            sess.active = false
-            return false
-
-        state := ExtractStateFromSSE(ev)
-        if state is empty
-            return true
-
-        if IsGameOver(state)
-            log.Info("Game over (state)")
-            sess.active = false
-            return false
-
-        perspective, hasP := state["perspective_player_id"]
-        var myGameId: string
-        if hasP
-            if perspective is string as p
-                myGameId = p
-
-        if myGameId is empty
-            return true
-
-        cur, has := state["current_turn_player_id"]
-        if not has
-            return true
-        var curStr: string
-        if cur is string as s
-            curStr = s
-        if curStr isnt myGameId
-            return true
-
-        if not IsGameActive(state)
-            return true
-
-        log.Info("Our turn (turn {cast.ToIntOr(state["turnNumber"], 0)})")
-        time.Sleep((DEFAULT_THINK_MS * 1000000) as time.Duration)
-
-        payload := sess.FetchActions()
-        if payload is empty
-            return true
-
-        actionsAny, hasActions := payload["actions"]
-        if not hasActions
-            return true
-
-        if actionsAny is list of any as actionsRaw
-            actions := empty list of Payload
-            for item in actionsRaw
-                if item is Payload as m
-                    actions = append(actions, m)
-            if actions isnt empty
-                chosen := PickAction(actions, strategy)
-                log.Info("Sending {gamepkg.ChosenActionName(chosen)}")
-                result := sess.SendAction(chosen)
-                if result isnt empty
-                    if msg, hasMsg := result["message"]; hasMsg
-                        var msgStr: string
-                        if msg is string as s
-                            msgStr = s
-                        log.Debug("Server: {msgStr}")
-
-        return true
-    )
-
-    # The server does not publish to Mercure today, so the stream usually
-    # cannot be established. Fall back to polling rather than hanging.
-    if not connected
-        log.Warn("SSE stream unavailable - falling back to polling")
-        return runPoll(args)
-
-    return empty
-
 func main()
     pollCmd := cli.NewCommand(POLL, "Polling-based AI client (GET /state on timer)")
         |> .StringFlag("server", "Game server URL", DEFAULT_BASE_URL)
@@ -242,18 +156,9 @@ func main()
         |> .BoolFlag("debug", "Enable debug logging", false)
         |> .ActionE(runPoll)
 
-    sseCmd := cli.NewCommand(SSE, "SSE-based AI client (subscribe to Mercure stream)")
-        |> .StringFlag("server", "Game server URL", DEFAULT_BASE_URL)
-        |> .StringFlag("join", "Game ID to join", "")
-        |> .StringFlag("create", "Game name to create", "")
-        |> .StringFlag("name", "AI player name", "")
-        |> .StringFlag("strategy", "AI strategy (random|aggressive|defensive)", "random")
-        |> .BoolFlag("debug", "Enable debug logging", false)
-        |> .ActionE(runSSE)
-
     app := cli.New("race-ai-client")
         |> cli.Description("AI player for Race to the Crystal")
         |> cli.Version("1.0.0")
-        |> cli.WithCommands(pollCmd, sseCmd)
+        |> cli.WithCommands(pollCmd)
 
     cli.Run(app)

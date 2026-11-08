@@ -41,12 +41,10 @@ type GameServer
     coordinator: GameCoordinator
     lobbyMgr: LobbyManager
     wsHandler: WebSocketHandler
-    mercure: MercurePublisher
     httpHandler: HTTPHandler
     wsEndpoint: WebSocketEndpoint
 
 func NewGameServer(config: ServerConfig) (GameServer, error)
-    mercureCfg := MercureConfigFromEnv()
     if config.jwtSecret is empty
         sk, err := GenerateSecretKey()
         if err isnt empty
@@ -57,14 +55,12 @@ func NewGameServer(config: ServerConfig) (GameServer, error)
         config: config,
         lobbyMgr: NewLobbyManager(),
         wsHandler: NewWebSocketHandler(),
-        mercure: NewMercurePublisher(mercureCfg),
     }
     gs.coordinator = NewGameCoordinator(config.turnTimeoutSeconds, config.agentTurnTimeoutSeconds)
     gs.httpHandler = NewHTTPHandler(
         reference of gs.coordinator,
         reference of gs.lobbyMgr,
         reference of gs.wsHandler,
-        mercureCfg,
         config.jwtSecret,
         config.staticDir,
     )
@@ -75,7 +71,6 @@ func Start on gs: reference GameServer
         reference of gs.coordinator,
         reference of gs.lobbyMgr,
         reference of gs.wsHandler,
-        reference of gs.mercure,
         reference of gs.httpHandler,
     )
     # Pass on turns that run out of time, so a stalled player cannot block
