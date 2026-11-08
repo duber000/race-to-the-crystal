@@ -188,6 +188,14 @@ stream. Both are applied on **every** path that leaves the server.
 The `learn/` layer is deliberately exempt and stays omniscient — it is a
 teaching tool, and its `Actions()` is computed from the true state.
 
+**Spectating is deliberately NOT fog-safe.** Spectators are open,
+unauthenticated per-connection identities bound to one seat each
+(seat-cam, see `docs/NETWORK.md`), but one connection per seat reconstructs
+the union of all players' vision — including a seated player spectating
+their own match or an AI wallhacking itself. This is accepted for casual
+play; it is not a bug to "fix" within the current anonymous design, and
+seat-cam must not be presented as an integrity boundary.
+
 Two things are easy to get wrong:
 
 - **A masked token's id must not appear in its cell's occupant list.** Masking

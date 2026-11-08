@@ -140,6 +140,21 @@ is fixed for the spectate session; `SPECTATE_ACK` reports back
 `{ "follow": "player_0", "follow_name": "..." }`. The web client shows a
 "SPECTATING — following &lt;name&gt;" banner while spectating.
 
+### Honest limits of spectator fog
+
+Spectator fog is a politeness, **not** an integrity boundary. A spectator
+follows exactly one seat per connection, but nothing stops a viewer from
+opening one connection per seat and reconstructing the union of every
+player's information — near-complete map knowledge. This includes a
+seated player spectating the game they are playing, and includes AI
+clients (the HTTP AI players and the MCP agent can do it trivially).
+Per-connection spectators are anonymous — the server cannot distinguish a
+seated player from a stranger — so this cannot be closed without an
+identity system. It is accepted deliberately for casual play. If you need
+spectating without the union leak, don't allow it live: watch the match
+after it ends via the battle log, or gate spectate behind an invite. Do
+not treat the seat binding as protection against a determined adversary.
+
 ## WebSocket Protocol
 
 Connect to `/ws`, then send a `CONNECT` message:
