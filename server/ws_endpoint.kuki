@@ -293,6 +293,10 @@ func handleCreateGame on ep: reference WebSocketEndpoint(clientId: string, data:
     if hasMp
         if mpVal is int as mpParsed
             maxPlayers = mpParsed
+        else if mpVal is int64 as mpParsed64
+            maxPlayers = mpParsed64 as int
+        else if mpVal is float64 as mpFloat
+            maxPlayers = mpFloat as int
     if maxPlayers < 2
         maxPlayers = 2
     if maxPlayers > 4

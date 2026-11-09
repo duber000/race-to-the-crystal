@@ -350,6 +350,10 @@ func HandleCreateGame on h: reference HTTPHandler(authHeader: string, body: JSON
     if hasMp
         if mpVal is int as mpParsed
             maxPlayers = mpParsed
+        else if mpVal is int64 as mpParsed64
+            maxPlayers = mpParsed64 as int
+        else if mpVal is float64 as mpFloat
+            maxPlayers = mpFloat as int
     if maxPlayers < 2
         maxPlayers = 2
     if maxPlayers > 4

@@ -2,6 +2,7 @@ petiole game
 
 import "race-to-the-crystal/shared/constants" as constants
 import "race-to-the-crystal/shared/types" as types
+import "stdlib/cast"
 import "stdlib/random"
 
 enum AIStrategyName: string
@@ -221,11 +222,17 @@ func bestDeploy(deploys: list of DeployAction) ChosenAction
 func resolveAction(action: ActionResponse) ChosenAction
     switch action
         when MoveAction
+            if action.ValidDestinations is empty
+                return ChosenEndTurn{}
             dest := action.ValidDestinations[0]
             return ChosenMove{TokenID: action.TokenID, Destination: dest}
         when AttackAction
             return ChosenAttack{AttackerID: action.AttackerID, DefenderID: action.DefenderID}
         when DeployAction
+            # An empty DeployAction (no legal cells left for this strength)
+            # must not crash the client — end the turn instead.
+            if action.Positions is empty
+                return ChosenEndTurn{}
             pos := random.Choice of list of int from action.Positions
             return ChosenDeploy{HealthValue: action.HealthValue, Position: pos}
         default
@@ -302,6 +309,32 @@ func ActionsToDicts(actions: list of ActionResponse) list of JSONMap
         result = append(result, ActionResponseToDict(a))
     return result
 
+# Wire payloads decode numbers as float64 and arrays as []any (jsonv2
+# decodes into `any`). Never assert a nested slice type — the decoder
+# never produces one — so walk one level at a time.
+func numToInt(v: any) int
+    return cast.ToIntOr(v, 0)
+
+func numList(v: any) list of int
+    result := empty list of int
+    if v is list of int as xs
+        return xs
+    if v is list of any as xs
+        for x in xs
+            result = append(result, cast.ToIntOr(x, 0))
+        return result
+    return result
+
+func numListList(v: any) list of list of int
+    result := empty list of list of int
+    if v is list of list of int as xs
+        return xs
+    if v is list of any as outer
+        for x in outer
+            result = append(result, numList(x))
+        return result
+    return result
+
 func ActionDictToResponse(d: JSONMap) (ActionResponse, bool)
     typeAny, has := d["type"]
     if not has
@@ -313,83 +346,49 @@ func ActionDictToResponse(d: JSONMap) (ActionResponse, bool)
         return EndTurnAction{Description: "unknown"}, false
     switch typeStr
         when "MOVE"
-            tokId := 0
-            tidAny, hasTid := d["token_id"]
-            if hasTid
-                if tidAny is int as tidVal
-                    tokId = tidVal
-            dests := empty list of list of int
-            destsAny, hasD := d["valid_destinations"]
-            if hasD
-                if destsAny is list of list of int as destsVal
-                    dests = destsVal
             health := ""
             if d["token_health"] is string as h
                 health = h
-            tpos := empty list of int
-            if d["token_position"] is list of int as tp
-                tpos = tp
             desc := ""
             if d["description"] is string as ds
                 desc = ds
             return MoveAction{
-                TokenID: types.TokenID(tokId),
-                TokenPosition: tpos,
+                TokenID: types.TokenID(numToInt(d["token_id"])),
+                TokenPosition: numList(d["token_position"]),
                 TokenHealth: health,
-                ValidDestinations: dests,
+                ValidDestinations: numListList(d["valid_destinations"]),
                 Description: desc,
             }, true
         when "ATTACK"
-            aid := 0
-            if d["attacker_id"] is int as aidVal
-                aid = aidVal
-            did := 0
-            if d["defender_id"] is int as didVal
-                did = didVal
-            atkPos := empty list of int
-            if d["attacker_position"] is list of int as ap
-                atkPos = ap
-            defPos := empty list of int
-            if d["defender_position"] is list of int as dp
-                defPos = dp
+            atkPos := numList(d["attacker_position"])
+            defPos := numList(d["defender_position"])
             owner := ""
             if d["defender_owner"] is string as ow
                 owner = ow
-            dmg := 0
-            if d["damage"] is int as dmgVal
-                dmg = dmgVal
-            wk := false
-            if d["will_kill"] is bool as wkVal
-                wk = wkVal
             desc := ""
             if d["description"] is string as ds
                 desc = ds
+            willKill := false
+            if d["will_kill"] is bool as wkVal
+                willKill = wkVal
             return AttackAction{
-                AttackerID: types.TokenID(aid),
+                AttackerID: types.TokenID(numToInt(d["attacker_id"])),
                 AttackerPosition: atkPos,
-                DefenderID: types.TokenID(did),
+                DefenderID: types.TokenID(numToInt(d["defender_id"])),
                 DefenderPosition: defPos,
                 DefenderOwner: owner,
-                Damage: dmg,
-                WillKill: wk,
+                Damage: numToInt(d["damage"]),
+                WillKill: willKill,
                 Description: desc,
             }, true
         when "DEPLOY"
-            hv := 0
-            if d["health_value"] is int as hvVal
-                hv = hvVal
-            positions := empty list of list of int
-            if d["positions"] is list of list of int as ps
-                positions = ps
-            rem := 0
-            if d["remaining"] is int as remVal
-                rem = remVal
+            rem := numToInt(d["remaining"])
             desc := ""
             if d["description"] is string as ds
                 desc = ds
             return DeployAction{
-                HealthValue: hv,
-                Positions: positions,
+                HealthValue: numToInt(d["health_value"]),
+                Positions: numListList(d["positions"]),
                 Remaining: rem,
                 Description: desc,
             }, true
