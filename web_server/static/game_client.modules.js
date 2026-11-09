@@ -6,7 +6,14 @@ import { NetworkManager } from './network_manager.js';
 import { CameraController } from './camera_controller.js';
 import { InputHandler } from './input_handler.js';
 import { Renderer3D } from './game_client.renderer.js';
+import { VanillaRenderer3D } from './webgl2/webgl2_renderer.js';
+import { CameraController as VanillaCameraController } from './webgl2/webgl2_camera.js';
 import { STATE, TurnPhase, BOARD_CONFIG, BOARD_WIDTH, BOARD_HEIGHT, CELL_SIZE, WALL_HEIGHT } from './game_client.constants.js';
+
+// Opt-in to the vanilla WebGL2 renderer with ?renderer=webgl2. When absent or
+// set to anything else, the Babylon.js renderer is used. When the WebGL2
+// path fails to initialise, we fall back to Babylon.js.
+const VANILLA_RENDERER = new URLSearchParams(window.location.search).get('renderer') === 'webgl2';
 
 /**
  * Connection Manager - Handles network connection and state synchronization
@@ -1177,13 +1184,53 @@ class UIController {
     }
 
     initGameModules() {
+        // Guard against double initialization (STATE.IN_GAME fires more than once).
+        if (this.gameClient.renderer) return;
+
+        const useVanilla = VANILLA_RENDERER;
+        const RendererImpl = useVanilla ? VanillaRenderer3D : Renderer3D;
+        const CameraImpl = useVanilla ? VanillaCameraController : CameraController;
+        if (useVanilla) {
+            console.info('[initGameModules] Using vanilla WebGL2 renderer (?renderer=webgl2)');
+        }
+
+        try {
+            this._initGameModulesWith(RendererImpl, CameraImpl);
+            if (useVanilla) {
+                this.gameClient.vanillaRenderer = true;
+            }
+        } catch (err) {
+            if (RendererImpl === Renderer3D) {
+                console.error('[initGameModules] Renderer setup failed:', err);
+                return;
+            }
+            console.warn('[initGameModules] WebGL2 renderer failed; falling back to Babylon.js:', err);
+            // Tear down any partial WebGL2 state and retry with Babylon.
+            try {
+                if (this.gameClient.renderer && typeof this.gameClient.renderer.dispose === 'function') {
+                    this.gameClient.renderer.dispose();
+                }
+            } catch (disposeErr) {
+                console.warn('[initGameModules] WebGL2 renderer dispose failed:', disposeErr);
+            }
+            this.gameClient.renderer = null;
+            this.gameClient.cameraController = null;
+            try {
+                this._initGameModulesWith(Renderer3D, CameraController);
+            } catch (fallbackErr) {
+                console.error('[initGameModules] Babylon.js fallback also failed:', fallbackErr);
+            }
+        }
+    }
+
+    _initGameModulesWith(RendererImpl, CameraImpl) {
         // Initialize renderer with device capabilities
-        this.gameClient.renderer = new Renderer3D(this.gameClient.canvas, this.gameClient.deviceCapabilities);
+        this.gameClient.renderer = new RendererImpl(this.gameClient.canvas, this.gameClient.deviceCapabilities);
         this.gameClient.renderer.initScene();
         this.gameClient.renderer.loadSounds();
 
         // Initialize camera controller with device capabilities
-        this.gameClient.cameraController = new CameraController(
+        this.gameClient.cameraController = new CameraImpl(
             this.gameClient.renderer.scene,
             this.gameClient.canvas,
             BOARD_WIDTH,
