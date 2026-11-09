@@ -316,6 +316,7 @@ class NetworkManager {
       case "PLAYER_LEFT":
       case "PLAYER_DISCONNECTED":
       case "PLAYER_RECONNECTED":
+      case "LOBBY_UPDATE":
       case "lobby_updated":
         this.handleLobbyUpdated(data);
         break;

@@ -65,13 +65,10 @@ Renderer3D.prototype.createSpecialCells = function(gameState) {
     frameMat.albedoColor = new BABYLON.Color3(1.0, 0.766, 0.336);
     frameMat.metallic = 1.0;
     frameMat.roughness = 0.2;
-
-    if (!this.scene.environmentTexture) {
-        this.scene.environmentTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(
-            "https://playground.babylonjs.com/textures/environment.env",
-            this.scene
-        );
-    }
+    // No environment map: we deliberately do not ship a dependency on a
+    // third-party CDN texture (playground.babylonjs.com). The emissive
+    // below stands in for the IBL ambient so the gold still reads.
+    frameMat.emissiveColor = new BABYLON.Color3(0.28, 0.19, 0.07);
 
     frame.material = frameMat;
     frame.material.wireframe = true;
@@ -99,6 +96,7 @@ Renderer3D.prototype.createSpecialCells = function(gameState) {
     shardMat.alpha = 0.2;
     shardMat.metallic = 0;
     shardMat.roughness = 0.1;
+    shardMat.emissiveColor = new BABYLON.Color3(0.12, 0.12, 0.14);
     shardMat.subSurface.isRefractionEnabled = true;
     shardMat.subSurface.indexOfRefraction = 1.458;
     shardMat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
@@ -124,10 +122,17 @@ Renderer3D.prototype.createSpecialCells = function(gameState) {
             pillar.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
 
             const hitParticles = new BABYLON.ParticleSystem(`hitParticles_${index}`, 200, this.scene);
-            hitParticles.particleTexture = new BABYLON.Texture(
-                "https://playground.babylonjs.com/textures/flare.png",
-                this.scene
-            );
+            // Radial-gradient point sprite generated locally — no network fetch.
+            const flare = new BABYLON.DynamicTexture(`flare_${index}`, { width: 64, height: 64 }, this.scene, true);
+            const fctx = flare.getContext();
+            const gradient = fctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, "rgba(255,255,255,1)");
+            gradient.addColorStop(0.35, "rgba(255,255,255,0.55)");
+            gradient.addColorStop(1, "rgba(255,255,255,0)");
+            fctx.fillStyle = gradient;
+            fctx.fillRect(0, 0, 64, 64);
+            flare.update();
+            hitParticles.particleTexture = flare;
             hitParticles.emitter = pillar.position.clone();
             hitParticles.minEmitBox = new BABYLON.Vector3(-1, 0, -1);
             hitParticles.maxEmitBox = new BABYLON.Vector3(1, 2, 1);

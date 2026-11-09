@@ -168,6 +168,12 @@ Renderer3D.prototype.checkCrystalEffectTrigger = function(gameState) {
     if (!gameState.crystal) return;
 
     const [affectedPlayerId, effectType] = gameState.last_triggered_crystal_effect;
+    // The server's last_triggered_crystal_effect persists until the next
+    // effect fires, so it replays on every state echo without a guard —
+    // which spams the sound and log. Only replay on change.
+    const effectKey = `${affectedPlayerId}:${effectType}`;
+    if (this.lastProcessedCrystalEffect === effectKey) return;
+    this.lastProcessedCrystalEffect = effectKey;
 
     let affectedTokens = [];
     if (effectType === CRYSTAL_EFFECT.DAMAGE_BOOST) {

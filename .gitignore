@@ -36,8 +36,6 @@ race-server
 learn/learn
 *.go
 web_server/static/babylon.js
-web_server/static/babylonjs.loaders.min.js
-web_server/static/babylon.gui.min.js
 .agents/skills/kukicha/SKILL.md
 /ai
 /enums

@@ -3,9 +3,12 @@
 // ==========================================================================
 
 // Board configuration
+// WIDTH and HEIGHT MUST match the server's shared/constants (BOARD_WIDTH
+// and BOARD_HEIGHT = 18) — the state grid is 18x18 and the cells are
+// placed for that size. The desktop renderer framed the 3D view off this.
 export const BOARD_CONFIG = {
-    WIDTH: 24,
-    HEIGHT: 24,
+    WIDTH: 18,
+    HEIGHT: 18,
     CELL_SIZE: 32,
     WALL_HEIGHT: 40,
     TOKEN_HEIGHT: 20

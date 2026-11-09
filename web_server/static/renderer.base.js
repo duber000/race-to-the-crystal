@@ -59,6 +59,7 @@ class Renderer3D {
         this.animationTime = 0;
         this.animationCallbacks = new Map();
         this.lastProcessedMysteryEvent = null;
+        this.lastProcessedCrystalEffect = null;
         this.crystalEffectAnimator = null;
 
         this.audioManager = new AudioManager();
