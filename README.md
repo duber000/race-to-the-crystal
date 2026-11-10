@@ -10,7 +10,7 @@ A networked multiplayer strategy game for 2-4 players with Tron/Battlezone-style
 
 Race to the Crystal is a turn-based strategy game where players compete to charge a central crystal to 80 by deploying tokens across an 18x18 grid. Features:
 
-- **Web Client**: Browser-based 3D view (JavaScript + Babylon.js) — the networked client
+- **Web Client**: Browser-based 3D view (JavaScript + Babylon.js; a dependency-free vanilla WebGL2 renderer is available behind `?renderer=webgl2` — see [docs/VANILLA-JS.md](docs/VANILLA-JS.md)) — the networked client
 - **Desktop Client**: 2D top-down view (Kukicha + Ebitengine) — local play only
 - **Network Multiplayer**: Web clients and AI clients play together on the same server
 - **Fog of War**: You see the terrain, but only the enemy tokens your own tokens are near
@@ -27,7 +27,7 @@ Race to the Crystal is a turn-based strategy game where players compete to charg
 
 - **Backend**: Kukicha (compiles to Go) — HTTP/WebSocket + REST API with JWT authentication, built on `stdlib/http`
 - **Desktop Client**: Kukicha + Ebitengine (2D top-down)
-- **Web Client**: Babylon.js 8. The WebSocket carries the full game state and a sequenced event stream
+- **Web Client**: Babylon.js 8 by default, or a vanilla WebGL2 renderer behind `?renderer=webgl2` (no libraries, ~4,600 lines — [docs/VANILLA-JS.md](docs/VANILLA-JS.md)). The WebSocket carries the full game state and a sequenced event stream
 - **Testing**: 94 Kukicha unit tests covering core game logic and the server's action validation
 
 ## Agent / MCP client
@@ -61,6 +61,9 @@ make web-server-run
 ```
 
 Then open **http://localhost:8000** in your browser, enter a name and connect.
+The web client ships an experimental dependency-free WebGL2 renderer — open
+**http://localhost:8000/?renderer=webgl2** to try it (Babylon.js remains the
+default; see [docs/VANILLA-JS.md](docs/VANILLA-JS.md)).
 
 To play locally on the desktop instead:
 
@@ -168,7 +171,10 @@ race-to-the-crystal/
 │   └── examples/  # Runnable learner scripts (01-hello … 10-strategy-ladder)
 ├── client/        # Desktop client (Kukicha + Ebitengine) and the AI client
 ├── server/        # Game server (HTTP/WebSocket + REST, JWT auth)
-├── web_server/    # Web client host (Babylon.js frontend + reverse proxy)
+├── web_server/    # Web client host (web frontend + reverse proxy)
+│   │              #   Babylon.js by default; vanilla WebGL2 behind ?renderer=webgl2
+│   ├── static/    # The web client (no build step)
+│   │   └── webgl2/  #   Vanilla WebGL2 renderer (opt-in)
 ├── shared/        # Constants, enums, types and error codes
 ├── deployment/    # Container deployment configs
 └── docs/          # Detailed documentation
@@ -210,7 +216,13 @@ make learn-test                # run the learn package tests
 make test              # Transpile the test sources, then run `go test ./...`
 make test-verbose      # Same, with verbose output
 make lint              # Check Kukicha formatting (kukicha fmt --check)
+make smoke             # Headless boot/render gate for the vanilla WebGL2 path
 ```
+
+`make smoke` (Playwright + SwiftShader WebGL2, `tools/smoke/smoke.mjs`) spawns
+side servers on 8081/8001, drives a two-context lobby flow, and asserts a
+clean boot and a non-trivial render per seat — a gate, not a behavioral
+suite. First run needs `npm install` and `npx playwright install chromium`.
 
 `make test` runs `kukicha brew` first, which is what turns `*_test.kuki` into
 the `*_test.go` files `go test` compiles. Running `go test ./...` on its own
@@ -238,6 +250,7 @@ podman build -f Dockerfile.caddy -t localhost/race-caddy:latest ../..
 - **[docs/GAME.md](docs/GAME.md)** - Complete game rules and mechanics
 - **[docs/3D.md](docs/3D.md)** - Desktop 3D mode camera system and controls
 - **[docs/NETWORK.md](docs/NETWORK.md)** - Network architecture and protocol
+- **[docs/VANILLA-JS.md](docs/VANILLA-JS.md)** - Vanilla WebGL2 renderer: dropping Babylon.js (phases, gotchas, decision gate)
 - **[AGENTS.md](AGENTS.md)** - Repository guide for agents and contributors
 
 **Deployment:**

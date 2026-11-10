@@ -2,9 +2,9 @@
 type: Agent Instructions
 title: AGENTS.md — race-to-the-crystal repository guide
 description: Architecture, commands, conventions, and vendored stdlib notes for agents working in race-to-the-crystal.
-tags: [agents, conventions, kukicha, ebitengine, game, babylonjs, websocket, events]
+tags: [agents, conventions, kukicha, ebitengine, game, babylonjs, webgl2, websocket, events]
 generated: { by: antigravity/gemini-3.8-flash, at: 2026-09-26T12:55:00-04:00 }
-updated: { by: vibe/mistral, at: 2026-11-07T16:13:59Z }
+updated: { by: opencode/inkling-2-small, at: 2026-11-09T21:52:00-04:00 }
 verified:
 stale_after: 2027-02-08T00:00:00Z
 status: stable
@@ -64,6 +64,9 @@ make learn-run NAME=01-hello   # run a learner example
 make learn-check               # type-check the learn package + all examples
 make learn-test                # run the learn package tests
 
+# Headless boot/render gate for the vanilla WebGL2 web client
+make smoke                     # spawns side servers on 8081/8001, runs, tears down
+
 # Remove only the generated .go files
 make clean-generated
 
@@ -87,7 +90,7 @@ The project is split into strictly separated layers:
 - **`server/`** – Server built on Go net/http + gorilla/websocket. `GameCoordinator` manages `GameSession` instances, each wrapping a `GameState`. JWT auth for the HTTP API is in `server/auth.kuki`. `WebSocketHandler` owns the client registry and the shared per-session broadcasters.
 - **`mcp/`** – Thin stdio MCP proxy exposing the agent seat (no game logic; proxies to the game server's REST API)
 - **`client/`** – Desktop client using Ebitengine. `renderer_2d.kuki` and UI views in `ui/` implement the game views. **The desktop client is local-only** — it imports the `game` package directly and has no networking; its "Network Game" menu entry is a stub. `ai/ai_client.kuki` is the AI player (HTTP); `ai/http_ai_client.kuki` is a helper in the same package.
-- **`web_server/`** – Serves the Babylon.js web frontend and reverse-proxies `/api` and `/ws` to the game server. Web clients receive state and events over WebSocket.
+- **`web_server/`** – Serves the web frontend and reverse-proxies `/api` and `/ws` to the game server. The frontend ships in two renderers: the Babylon.js default, and a dependency-free vanilla WebGL2 path behind `?renderer=webgl2` (`web_server/static/webgl2/`, ~4.6k lines, no libraries; Phase 2 complete and verified in-browser). The full record — phases, gotchas, tuned defaults, remaining verification items, and the open default-flip decision — lives in `docs/VANILLA-JS.md`; treat it as the source of truth for web-client rendering work. The `make smoke` gate boots this path headless (see Testing below). Web clients receive state and events over WebSocket.
 - **Test files** – `*_test.kuki` files co-located with the modules they test (e.g., `game/game_state_test.kuki`, `game/game_events_test.kuki`, `server/action_validation_test.kuki`).
 
 ### The game event stream
@@ -209,6 +212,26 @@ The event sequence number is **per player**: the fog hides some events from
 some players, so a shared counter would show them a gap for every hidden
 event.
 
+#### End-of-game announcement
+Ending a match is announced twice over the wire: a `GAME_ENDED` event on
+the event stream (drives the client's victory effect via
+`handleGameEnded` → `triggerVictoryOnce`) and a `GAME_WON` message carrying
+the winner's name (drives `handleGameWon` → the announcement/`alert()`).
+Both the WebSocket and the HTTP action paths broadcast one shared frame —
+`session.winnerBroadcastFrame()` in `server/game_coordinator.kuki`. Do not
+add a third shape: an earlier `GAME_OVER` frame emitted only by the HTTP
+path was silently dropped by every client with `Unknown message type`.
+
+#### AI-vs-AI matches never conclude
+Unattended `random`/`aggressive`/`defensive` AI-vs-AI play converges on the
+crystal and annihilates both armies — zero generator captures across
+consecutive observed matches, no charge ever banks, and the server has no
+turn cap, so the match idles in PLAYING forever. If you need a real
+`GAME_WON` (e.g. to verify the victory path), use a scripted HTTP_AI seat
+(the HTTP create path returns a host token; the scripted player can drive
+capture/charge directly) or wait for a human seat. Do not wait for an AI
+duel to finish — it will not.
+
 #### Game logic entry points
 - To modify or extend game rules: work inside `game/` (no rendering or network imports allowed)
 - To expose a new action to AI/server: add it to `game/ai_actions.kuki`, then expose via `GameAPI` in `game/api.kuki`
@@ -228,6 +251,13 @@ event.
 - A test that fixes a board position must not assume a fixed cell: the board
   is generated randomly (mystery squares land in the deployment corner), so
   find a free cell at runtime instead.
+- **`make smoke`** is the headless boot/render gate for the vanilla WebGL2
+  web client (`?renderer=webgl2`): Playwright + SwiftShader WebGL2, vendored
+  at `tools/smoke/smoke.mjs`, spawns side servers on 8081/8001, drives a
+  two-context lobby flow and asserts per seat (vanilla renderer up, zero
+  console errors, non-trivial frame). It is a gate, not a behavioral suite —
+  pick → move, deploy, end-turn and perf remain manual. First run needs
+  `npm install` and `npx playwright install chromium`.
 
 #### Browser verification (Chrome DevTools MCP)
 - **Inline screenshots from the DevTools `take_screenshot` tool are
