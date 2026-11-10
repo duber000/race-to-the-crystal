@@ -271,6 +271,27 @@ try {
 
     const aState = await readState(a.page);
     const bState = await readState(b.page);
+
+    // The overview camera sits behind the local player's deployment corner
+    // (SEAT_ALPHAS in webgl2_camera.js) — pin it so the seat-relative pose
+    // cannot silently regress.
+    const SEAT_ALPHAS = {
+      player_0: Math.PI * 5 / 4,
+      player_1: Math.PI * 3 / 4,
+      player_2: Math.PI * 7 / 4,
+      player_3: Math.PI / 4,
+    };
+    for (const [label, client] of [['A', a], ['B', b]]) {
+      const view = await client.page.evaluate(() => ({
+        seat: window.gameClient?.localPlayerId ?? null,
+        alpha: window.gameClient?.cameraController?.camera?.alpha ?? null,
+      }));
+      const expected = SEAT_ALPHAS[view.seat];
+      check(`${label}: overview camera behind own seat (${view.seat})`,
+        expected !== undefined && view.alpha !== null && Math.abs(view.alpha - expected) < 1e-6,
+        `alpha=${view.alpha}`);
+    }
+
     const seatFor = (state, label) => (state && state.localPlayerId === state.currentTurnPlayerId
       ? { client: label === 'A' ? a : b, state } : null);
     const actor = seatFor(aState, 'A') ?? seatFor(bState, 'B');

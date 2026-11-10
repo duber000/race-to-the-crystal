@@ -832,6 +832,10 @@ body {
     font-size: 11px;
     line-height: 1.5;
     color: #0aa;
+    /* Keep the panel narrow: without a cap the single unbroken blurb
+       sets #controls almost as wide as the viewport (~1140px), which
+       pushes the deployment corner behind it at the default pose. */
+    max-width: 480px;
 }
 
 /* Player count stepper in create-game dialog */

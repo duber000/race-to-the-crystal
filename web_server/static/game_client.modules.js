@@ -9,6 +9,18 @@ import { CameraController as VanillaCameraController } from './webgl2/webgl2_cam
 import { STATE, TurnPhase, BOARD_CONFIG, BOARD_WIDTH, BOARD_HEIGHT, CELL_SIZE, WALL_HEIGHT } from './game_client.constants.js';
 
 /**
+ * Parse "player_N" into the seat index N (0-based) the deployment corners
+ * and the overview camera azimuth are keyed off. Returns null when the id
+ * is missing or unrecognized (e.g. spectator without a followed seat).
+ */
+function seatIndexFromId(playerId) {
+    const match = /^player_(\d+)$/.exec(playerId || '');
+    if (!match) return null;
+    const seat = parseInt(match[1], 10);
+    return Number.isInteger(seat) && seat >= 0 && seat <= 3 ? seat : null;
+}
+
+/**
  * Connection Manager - Handles network connection and state synchronization
  */
 class ConnectionManager {
@@ -181,14 +193,19 @@ class ConnectionManager {
 
     handleFullState(data) {
         if (this.gameClient.replayMode) return;
-        // Initialize game modules on first FULL_STATE
-        if (!this.gameClient.gameInitialized) {
+        // Apply the state before the IN_GAME transition so the seat
+        // (perspective_player_id) is known when the renderer and camera
+        // construct — the overview azimuth is seat-relative.
+        this.stateManager.setFullState(data);
+        const firstFullState = !this.gameClient.gameInitialized;
+        if (firstFullState) {
             this.gameClient.gameInitialized = true;
             this.networkManager.connectionState = STATE.IN_GAME;
             this.gameClient.updateUIState(STATE.IN_GAME);
+            // The state-change notification fired before the modules above
+            // were constructed — push the just-applied state into them.
+            this.updateGameState(this.gameClient.gameState);
         }
-
-        this.stateManager.setFullState(data);
 
         if (data.last_action && this.gameClient.renderer) {
             this.gameClient.renderer.playSound(data.last_action);
@@ -1208,6 +1225,7 @@ class UIController {
             CELL_SIZE,
             WALL_HEIGHT,
             this.gameClient.deviceCapabilities,
+            seatIndexFromId(this.gameClient.localPlayerId),
         );
         if (this.gameClient.renderer) {
             this.gameClient.renderer.cameraController = this.gameClient.cameraController;

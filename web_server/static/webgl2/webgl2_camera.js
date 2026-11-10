@@ -26,6 +26,21 @@ const FP_PITCH_MIN = -85;
 const FP_PITCH_MAX = 60;
 const FP_LOOK_DISTANCE = 200;
 const FP_SMOOTHING = 14;          // exponential follow speed (1/s)
+
+/**
+ * Overview azimuth per seat — the camera sits behind the player's own
+ * deployment corner so your tokens are always near-side (never hidden
+ * behind the crystal silhouette, a HUD panel, or the board's far edge).
+ * Seats: 0 = NW, 1 = NE, 2 = SW, 3 = SE (grid coords, y grows downward).
+ * Matches the deployment corners in game/board.kuki (getStartingPosition).
+ */
+const SEAT_ALPHAS = [
+    Math.PI * 5 / 4,  // player_0 — NW corner
+    Math.PI * 3 / 4,  // player_1 — NE corner
+    Math.PI * 7 / 4,  // player_2 — SW corner
+    Math.PI / 4,      // player_3 — SE corner
+];
+const OVERVIEW_ALPHA_DEFAULT = Math.PI / 4;
 const TRANSITION_DURATION = 0.45; // seconds for overview ↔ FP camera moves
 
 const UP = new Vec3(0, 1, 0);
@@ -42,8 +57,11 @@ class CameraController {
      * @param {number} cellSize - Cell size in world units
      * @param {number} wallHeight - Wall height in world units
      * @param {Object} deviceCapabilities - Device capabilities object
+     * @param {number|null} localPlayerSeat - Seat index 0-3 (player_N). The
+     *   overview azimuth sits behind this seat's deployment corner; null
+     *   (unknown/spectator without a followed seat) falls back to the SE pose.
      */
-    constructor(scene, canvas, boardWidth, boardHeight, cellSize, wallHeight, deviceCapabilities) {
+    constructor(scene, canvas, boardWidth, boardHeight, cellSize, wallHeight, deviceCapabilities, localPlayerSeat) {
         this.scene = scene;
         this.canvas = canvas;
         this.boardWidth = boardWidth;
@@ -51,6 +69,9 @@ class CameraController {
         this.cellSize = cellSize;
         this.wallHeight = wallHeight;
         this.deviceCapabilities = deviceCapabilities;
+        this._seat = Number.isInteger(localPlayerSeat)
+            ? ((localPlayerSeat % SEAT_ALPHAS.length) + SEAT_ALPHAS.length) % SEAT_ALPHAS.length
+            : null;
 
         this._cameraMode = "overview";
         this.controlledTokenId = null;
@@ -133,19 +154,28 @@ class CameraController {
         this.camera.upperBetaLimit = Math.PI - 0.01;
     }
 
+    /** Overview azimuth for the local seat (falls back to the SE pose). */
+    _seatAlpha() {
+        return this._seat === null ? OVERVIEW_ALPHA_DEFAULT : SEAT_ALPHAS[this._seat];
+    }
+
     /**
      * Standard overview pose (spherical position + target).
      * @private
      * @returns {Object} { position, target, alpha, beta, radius }
+     *
+     * Framed for the 18x18 board at a 40-degree vertical FOV: radius
+     * 1.1x the board diagonal keeps every seat's deployment corner
+     * inside the frame with margin above and below the HUD columns.
      */
     _overviewPose() {
         const boardRealWidth = this.boardWidth * this.cellSize;
         const boardRealHeight = this.boardHeight * this.cellSize;
         const target = new Vec3(boardRealWidth / 2, 0, boardRealHeight / 2);
         const boardDiagonal = Math.sqrt(boardRealWidth * boardRealWidth + boardRealHeight * boardRealHeight);
-        const alpha = Math.PI / 4;
+        const alpha = this._seatAlpha();
         const beta = Math.PI / 3;
-        const radius = boardDiagonal * 0.8;
+        const radius = boardDiagonal * 1.1;
         const position = new Vec3(
             target.x + radius * Math.sin(alpha) * Math.sin(beta),
             radius * Math.cos(beta),
@@ -283,7 +313,8 @@ class CameraController {
             return;
         }
         const target = new Vec3(wx, 0, wz);
-        const alpha = Math.PI / 4;
+        // Frame from the player's own side, matching the overview azimuth.
+        const alpha = this._seatAlpha();
         const beta = Math.PI / 3;
         const position = new Vec3(
             target.x + radius * Math.sin(alpha) * Math.sin(beta),
