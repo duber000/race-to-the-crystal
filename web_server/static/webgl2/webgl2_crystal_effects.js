@@ -210,7 +210,10 @@ class WebGL2CrystalEffectAnimator {
                 // at the origin are depth-occluded by it and never seen.
                 distance: 42,
                 speed: CRYSTAL_EFFECT_ANIMATION.FOG_SPREAD_SPEED + (Math.random() - 0.5) * 40,
-                size: 42 + Math.random() * 38,
+                // Nominal sizes; _drawBillboard renders them at nominal
+                // scale (before the billboard size fix, halves of these
+                // values were what was actually shown).
+                size: 21 + Math.random() * 19,
                 alpha: 0.85,
                 x: origin.x,
                 y: origin.y,

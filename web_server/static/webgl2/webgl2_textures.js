@@ -64,6 +64,16 @@ export function createGridTexture(gl, boardWidth) {
     return uploadCanvasTexture(gl, canvas);
 }
 
+function roundedRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
 /** "9hp" text texture for the floating health labels. Cached per value. */
 const healthLabelCache = new Map();
 
@@ -72,9 +82,16 @@ export function createHealthLabelTexture(gl, text, isPhantom) {
     if (healthLabelCache.has(key)) return healthLabelCache.get(key);
 
     const { canvas, ctx } = makeCanvas(256, 128);
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, 256, 128);
-    ctx.font = 'bold 80px monospace';
+    // Rounded pill background with a thin cool-white stroke: reads as a
+    // deliberate HUD chip on any board backdrop (including a white selected
+    // token) instead of a hard black rectangle.
+    ctx.fillStyle = 'rgba(8, 10, 14, 0.92)';
+    roundedRect(ctx, 10, 18, 236, 92, 34);
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(150, 225, 255, 0.5)';
+    ctx.stroke();
+    ctx.font = 'bold 78px monospace';
     ctx.fillStyle = isPhantom ? 'rgba(255, 255, 255, 0.7)' : 'white';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

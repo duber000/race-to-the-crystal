@@ -660,8 +660,10 @@ class VanillaRenderer3D {
         const right = new Vec3(0, 1, 0).cross(viewDir).normalize();
         const up = viewDir.cross(right);
 
-        const sx = (obj.width || 1) / 2;
-        const sy = (obj.height || 1) / 2;
+        // buildQuad(1,1) spans ±0.5, so scaling by width/height (not width/2)
+        // draws the billboard at its nominal size.
+        const sx = obj.width || 1;
+        const sy = obj.height || 1;
 
         const model = new Float32Array([
             right.x * sx, right.y * sx, right.z * sx, 0,
@@ -1732,23 +1734,23 @@ class VanillaRenderer3D {
         const centerY = WALL_HEIGHT * 0.6 + 6;
 
         const { makeCanvas, uploadCanvasTexture } = this._textures();
-        const { canvas, ctx } = makeCanvas(256, 64);
-        ctx.clearRect(0, 0, 256, 64);
-        ctx.font = 'bold 40px sans-serif';
+        const { canvas, ctx } = makeCanvas(256, 128);
+        ctx.clearRect(0, 0, 256, 128);
+        ctx.font = 'bold 88px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 9;
         ctx.strokeStyle = 'rgba(0,0,0,0.85)';
         ctx.fillStyle = colorHex || '#ff4444';
-        ctx.strokeText(String(text), 128, 32);
-        ctx.fillText(String(text), 128, 32);
+        ctx.strokeText(String(text), 128, 64);
+        ctx.fillText(String(text), 128, 64);
         const texture = uploadCanvasTexture(this.gl, canvas);
         this.textures.push(texture);
 
         this.floatingTexts.push({
             pos: { x: centerX, y: centerY, z: centerZ },
-            width: 14,
-            height: 3.5,
+            width: 13,
+            height: 6.5,
             texture,
             alpha: 1,
             life: 1.2,
