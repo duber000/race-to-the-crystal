@@ -705,7 +705,7 @@ class InputController {
         const newTokenId = this.gameClient.cameraController.cycleControlledToken(
             this.getAliveTokens(),
         );
-        if (newTokenId) {
+        if (newTokenId !== null && newTokenId !== undefined) {
             this.gameClient.controlledTokenId = newTokenId;
             const token = this.gameClient.gameState?.tokens?.[this.gameClient.controlledTokenId];
             if (token) {
@@ -1016,7 +1016,8 @@ class InputController {
         const newTokenId = this.gameClient.cameraController.cycleControlledToken(
             this.getAliveTokens(),
         );
-        if (!newTokenId) return;
+        // Token ids are numbers and id 0 is falsy — check for null/undefined.
+        if (newTokenId === null || newTokenId === undefined) return;
 
         this.gameClient.controlledTokenId = newTokenId;
         const token = this.gameClient.gameState?.tokens?.[newTokenId];

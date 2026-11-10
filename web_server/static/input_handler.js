@@ -404,7 +404,6 @@ class InputHandler {
             case 'escape':
                 this.emit('keydown', { key: 'cancel' });
                 break;
-            case 'd':
             case 'r':
                 this.emit('keydown', { key: 'deploy' });
                 break;
@@ -433,6 +432,7 @@ class InputHandler {
                 this.emit('keydown', { key: 'move_token_left' });
                 break;
             case 'arrowright':
+            case 'd':
                 this.emit('keydown', { key: 'move_token_right' });
                 break;
             case 'm':
