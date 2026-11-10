@@ -338,7 +338,8 @@ fog-of-war opponent filtering, and the AI seat all behave.
   but the rays add two half-res passes (radial accumulate + H/V soften)
   and the composite reads a third texture — worth a frame-time check on
   a low-end device before the default flip, together with the existing
-  bloom question.
+  bloom question. *(Done — see fifth pass below: vsync-locked at 6x CPU
+  throttle, bloom+rays below timing noise.)*
 
 **Verification notes (fourth pass — cosmetics tuning, November 2026):**
 
@@ -370,6 +371,35 @@ fog-of-war opponent filtering, and the AI seat all behave.
   gets the new constants (the renderer only constructs after joining a
   game, so the check was done against the served files, not a live
   `bloomPass`).
+
+**Verification notes (fifth pass — low-end frame time, 2026-11-10):**
+
+- Steady-state rAF frame times measured on the host seat of a headless
+  2-player game (side instances on 8081/8001, Playwright-driven, 10 s
+  samples), hardware GL via ANGLE→Vulkan on Mesa ANV (Intel MTL iGPU).
+  **Headless Chromium defaults to SwiftShader — it had to be forced off**
+  (`--use-gl=angle --use-angle=vulkan`); left alone, every run reports a
+  ~350 ms frame and looks like a low-end disaster (see below), which is
+  the software rasterizer, not the device. CPU throttled 6x via CDP
+  `Emulation.setCPUThrottlingRate` (the Lighthouse-style low-end stand-in;
+  CDP cannot throttle the GPU).
+- **60 fps vsync-locked in all three configs** (bloom+rays default,
+  `rays=0`, `bloom=0`) at both 1x and 6x CPU, zero frames > 33.3 ms, zero
+  reported long tasks — and still locked at **2000×1125 (2.25 MP)**, so the
+  passes are not fill-bound at this scene's complexity either. Bloom/rays
+  overhead is below vsync quantization noise: p99 differs by ≤ 0.5 ms
+  between configs (19.2 / 19.6 / 19.1 ms at 6x). JS thread is not the
+  bottleneck even at 6x.
+- **Software-GL floor** (SwiftShader, first probe): default 353 ms,
+  `rays=0` 232 ms, `bloom=0` 40 ms. Bloom is the expensive pass; god rays
+  are the second. Both are imperceptible on hardware GL at this
+  resolution, but if a genuinely weak GPU ever needs it, `?bloom=0` exists.
+- Caveats: idle steady-state scene (ambient particles / crystal pulse
+  animate; no camera input or token easing during sampling); vsync hides
+  sub-frame headroom; Intel MTL is a modest iGPU, not a low-end phone SoC
+  — but nothing here suggests bloom needs to come off the default.
+  `make smoke` remains on SwiftShader and is unaffected (it asserts boot,
+  not frame rate).
 
 ---
 
@@ -580,8 +610,26 @@ Make the call once parity is close:
   instance instead of spawning side servers.
   Note: both players auto-deploy before turn 1 (game starts directly in
   PLAYING/MOVEMENT) — expected server behavior, not a renderer issue.
-  Still manual-only: the interactive/perf checks (toggle bloom at
-  runtime, pick → move through the real event path, deploy flow).
+  Interaction is now automated too (2026-11-10): the smoke test samples
+  each page's own ray-plane pick (`inputHandler.pickGridCell`, ~4 px
+  grid) to turn canvas CSS pixels into grid cells — no camera math of
+  its own — then, for whichever seat holds the turn: selects a token,
+  asserts valid moves are surfaced, clicks a valid destination, waits
+  for the server to accept the move (position flips in `gameState`),
+  and ends the turn from both seats (Space/Enter) checking
+  `current_turn_player_id` flips each time. Renderer-agnostic — the same
+  steps work over the Babylon fallback. Set `SMOKE_INTERACT=0` to skip.
+  Still manual-only: the deployment phase (unreachable in an
+  auto-deployed fresh game), attacks (no adjacent enemies on turn 1),
+  first-person WASD/TAB, toggle-bloom-at-runtime, mobile/touch.
+- ~~Frame-time check on a low-end stand-in~~ — **done (2026-11-10).**
+  Headless probe (rAF sampling on the host seat during a PLAYING match,
+  hardware GL via ANGLE→Vulkan/Mesa ANV, 6x CPU throttle via CDP):
+  60 fps vsync-locked for bloom+rays at 1354×728 and 2000×1125, zero
+  >33 ms frames, zero long tasks; bloom/rays overhead below vsync timing
+  noise. SwiftShader (software floor) confirms bloom is the expensive
+  pass if ever needed (`?bloom=0`). Caveat: idle scene, isolated GPU
+  not phone-class. Details in §2, fifth verification pass.
 - Mobile/touch: tap-to-select, tap-to-move, pinch zoom, two-finger pan,
   health labels at small viewport sizes.
 - Mid-game first-person toggle (V) works; WASD with a controlled token,
@@ -615,9 +663,11 @@ Make the call once parity is close:
 ## 5. Open questions
 
 - **Bloom or no bloom?** Decided for now: on by default, half-res,
-  `?bloom=0` as the escape hatch. Still worth an INP/frame-time check on
-  a low-end device — the composite pass is cheap, but the half-float
-  scene FBO write at full res is not free.
+  `?bloom=0` as the escape hatch. Frame-time check on a low-end stand-in
+  now done (fifth pass in §2): 60 fps vsync-locked at 6x CPU throttle,
+  bloom+rays below timing noise, not fill-bound at 2.25 MP. An INP check
+  is all that remains of the perf question — no frame-time reason to hold
+  bloom back.
 - **Overview framing is tight on square-ish viewports.** The overview pose
   (beta 60°, radius 0.8 × board diagonal, 40° fov) crops the deployment
   corners off-screen at ~1:1 aspect — my tokens at (0,0)-(2,0) sat pinned
@@ -630,12 +680,14 @@ Make the call once parity is close:
 - **Test suite?** Answered in part: `make smoke` now runs a headless
   smoke test of the vanilla path (Playwright + SwiftShader WebGL2,
   vendored at `tools/smoke/smoke.mjs` — the repo's first Node tooling,
-  root `package.json`, Playwright pinned). It is a boot/render gate, not
-  a behavioral suite: it verifies page load → lobby → game start → scene
-  renders with zero console errors, once per seat. Still missing before
-  the default flip: any automated coverage of interaction (pick → move,
-  deploy, end-turn) and rendering correctness beyond "frame is
-  non-trivial". The Babylon path is likewise untested.
+  root `package.json`, Playwright pinned). As of 2026-11-10 it is a
+  behavioral gate too: after boot it plays a real move over the wire
+  (cells resolved by sampling the page's own ray-plane pick — no camera
+  math in the test) and ends the turn from both seats. Still missing
+  before the default flip: deploy-phase coverage (auto-deploy hides it
+  in fresh games), attacks, first-person interactions, mobile/touch, and
+  rendering correctness beyond "frame is non-trivial". The Babylon path
+  is likewise untested.
 - **Babylon version bump?** If we keep Babylon during transition: 8.45.3 is
   pinned; 9.35.0 is current. Don't upgrade unless forced.
 - **`main.kuki` cache headers** — the web server sets no cache headers and

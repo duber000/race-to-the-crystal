@@ -3,9 +3,14 @@
 // Drives a full lobby flow with two browser contexts (two human seats)
 // against side instances of the game server (HTTP_PORT=8081) and the web
 // proxy (WEB_PORT=8001), then asserts the vanilla renderer came up and
-// the scene renders without console errors. The side instances are
-// spawned and torn down by this script; the live 8080/8000 servers are
-// never touched.
+// the scene renders without console errors — and, as a behavioral gate,
+// plays a real move over the wire: cells are resolved by sampling the
+// page's own ray-plane pick (~4 px grid, renderer-agnostic), a token is
+// selected and its valid moves asserted, a valid destination is clicked
+// and confirmed accepted by the server, and the turn is ended from both
+// seats. The side instances are spawned and torn down by this script;
+// the live 8080/8000 servers are never touched. Skip the interaction
+// phase with SMOKE_INTERACT=0.
 //
 // Prerequisites:
 //   1. Built binaries: `make build` (or at least `race-server` and
@@ -191,6 +196,144 @@ try {
     const shotPath = join(outDir, `shot-${label.startsWith('A') ? 'a' : 'b'}.jpg`);
     writeFileSync(shotPath, shot);
     check(`${label}: scene has non-trivial content`, shot.length > 30_000, `${Math.round(shot.length / 1024)} KB screenshot -> ${shotPath}`);
+  }
+
+  // --- interaction: select → move → end turn, both seats -------------------
+  // Skip with SMOKE_INTERACT=0. Uses each page's own ray-plane picking to
+  // resolve canvas CSS pixel → grid cell (works for the vanilla WebGL2 path
+  // and, via scene.pick, the Babylon fallback), so the test needs no
+  // camera/projection math of its own.
+  if (process.env.SMOKE_INTERACT !== '0') {
+    console.log('INFO  interaction checks');
+    const readState = (page) => page.evaluate(() => {
+      const gc = window.gameClient;
+      const gs = gc?.gameState;
+      if (!gs) return null;
+      return {
+        localPlayerId: gc.localPlayerId ?? null,
+        currentTurnPlayerId: gs.current_turn_player_id ?? null,
+        turnPhase: gs.turn_phase ?? null,
+        tokens: Object.values(gs.tokens ?? {}).map((t) => ({
+          id: t.id,
+          playerId: t.player_id,
+          position: t.position,
+          health: t.health,
+        })),
+      };
+    });
+    const buildCellMap = (page) => page.evaluate(() => {
+      const ih = window.gameClient?.inputHandler;
+      const canvas = document.getElementById('renderCanvas');
+      if (!ih || !canvas) throw new Error('inputHandler/canvas unavailable');
+      const rect = canvas.getBoundingClientRect();
+      const acc = new Map();
+      for (let y = 0; y < rect.height; y += 4) {
+        for (let x = 0; x < rect.width; x += 4) {
+          const c = ih.pickGridCell(x, y);
+          if (!c) continue;
+          const key = `${c.gridX},${c.gridY}`;
+          let e = acc.get(key);
+          if (!e) { e = { sx: 0, sy: 0, n: 0 }; acc.set(key, e); }
+          e.sx += x; e.sy += y; e.n += 1;
+        }
+      }
+      const map = {};
+      for (const [k, v] of acc) map[k] = { x: rect.left + v.sx / v.n, y: rect.top + v.sy / v.n };
+      return map;
+    });
+    const readSelection = (page) => page.evaluate(() => ({
+      selectedTokenId: window.gameClient?.selectedTokenId ?? null,
+      validMoves: [...(window.gameClient?.validMoves ?? [])],
+    }));
+    const clickCell = async (page, map, gx, gy) => {
+      const pt = map[`${gx},${gy}`];
+      if (!pt) throw new Error(`cell ${gx},${gy} has no pickable screen point`);
+      await page.mouse.click(pt.x, pt.y, { delay: 40 });
+    };
+
+    const aState = await readState(a.page);
+    const bState = await readState(b.page);
+    const seatFor = (state, label) => (state && state.localPlayerId === state.currentTurnPlayerId
+      ? { client: label === 'A' ? a : b, state } : null);
+    const actor = seatFor(aState, 'A') ?? seatFor(bState, 'B');
+    check('a seat holds the turn at game start', !!actor,
+      actor ? `${actor.state.localPlayerId} to move` : `A: ${aState?.currentTurnPlayerId} / B: ${bState?.currentTurnPlayerId}`);
+
+    if (actor) {
+      const { client } = actor;
+      const opponent = client === a ? b : a;
+      const cellMap = await buildCellMap(client.page);
+      const ours = actor.state.tokens
+        .filter((t) => t.playerId === actor.state.localPlayerId && t.position)
+        .sort((t1, t2) => t1.id - t2.id);
+      check('own tokens visible', ours.length > 0, `${ours.length} tokens`);
+
+      // Select each of our tokens in turn; keep the first that yields moves.
+      let chosen = null;
+      for (const token of ours) {
+        await clickCell(client.page, cellMap, token.position[0], token.position[1]);
+        await client.page.waitForTimeout(250);
+        const sel = await readSelection(client.page);
+        if (sel.selectedTokenId !== null && sel.validMoves.length > 0) {
+          chosen = { token, sel };
+          break;
+        }
+        await client.page.keyboard.press('Escape'); // deselect, try the next token
+        await client.page.waitForTimeout(100);
+      }
+      check('selecting a token shows valid moves', !!chosen,
+        chosen ? `token ${chosen.token.id} → ${chosen.sel.validMoves.length} move(s)` : 'no token yielded moves');
+
+      if (chosen) {
+        const moveKey = chosen.sel.validMoves[0];
+        const [mx, my] = moveKey.split(',').map(Number);
+        await clickCell(client.page, cellMap, mx, my);
+        const moved = await client.page
+          .waitForFunction(
+            ({ id, x, y }) => {
+              const t = window.gameClient?.gameState?.tokens?.[id];
+              return !!t && Array.isArray(t.position) && t.position[0] === x && t.position[1] === y;
+            },
+            { id: chosen.token.id, x: mx, y: my },
+            { timeout: 8000 },
+          )
+          .then(() => true)
+          .catch(() => false);
+        check('clicking a valid destination moves the token (server accepted)', moved,
+          `token ${chosen.token.id} → ${mx},${my}`);
+      }
+
+      // End the turn from the keyboard path (Space/Enter is the binding).
+      await client.page.keyboard.press('Enter');
+      const flipped = await client.page
+        .waitForFunction(
+          (me) => window.gameClient?.gameState?.current_turn_player_id
+            && window.gameClient.gameState.current_turn_player_id !== me,
+          actor.state.localPlayerId,
+          { timeout: 8000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      check('end turn flips current player', flipped);
+
+      // The other seat ends their turn too; turn returns to the first player.
+      await opponent.page.keyboard.press('Enter');
+      const flippedBack = await opponent.page
+        .waitForFunction(
+          (them) => window.gameClient?.gameState?.current_turn_player_id === them,
+          actor.state.localPlayerId,
+          { timeout: 8000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      check('second seat ends turn; turn returns to first player', flippedBack);
+
+      for (const [label, client2] of [['A', a], ['B', b]]) {
+        check(`no console errors after interaction (${label})`, client2.consoleErrors.length === 0,
+          client2.consoleErrors.slice(0, 3).join(' | '));
+      }
+    }
+    console.log('INFO  not yet automated: deployment phase (auto-deployed in fresh games), attacks (no adjacent enemies on turn 1), first-person WASD/TAB, mobile/touch');
   }
 
   // HUD should show a running game phase for a fresh match

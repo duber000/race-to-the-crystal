@@ -64,7 +64,7 @@ make learn-run NAME=01-hello   # run a learner example
 make learn-check               # type-check the learn package + all examples
 make learn-test                # run the learn package tests
 
-# Headless boot/render gate for the vanilla WebGL2 web client
+# Headless gate for the vanilla WebGL2 web client (boot + interaction)
 make smoke                     # spawns side servers on 8081/8001, runs, tears down
 
 # Remove only the generated .go files
@@ -251,13 +251,16 @@ duel to finish — it will not.
 - A test that fixes a board position must not assume a fixed cell: the board
   is generated randomly (mystery squares land in the deployment corner), so
   find a free cell at runtime instead.
-- **`make smoke`** is the headless boot/render gate for the vanilla WebGL2
-  web client (`?renderer=webgl2`): Playwright + SwiftShader WebGL2, vendored
-  at `tools/smoke/smoke.mjs`, spawns side servers on 8081/8001, drives a
+- **`make smoke`** is the headless gate for the vanilla WebGL2 web client
+  (`?renderer=webgl2`): Playwright + SwiftShader WebGL2, vendored at
+  `tools/smoke/smoke.mjs`, spawns side servers on 8081/8001, drives a
   two-context lobby flow and asserts per seat (vanilla renderer up, zero
-  console errors, non-trivial frame). It is a gate, not a behavioral suite —
-  pick → move, deploy, end-turn and perf remain manual. First run needs
-  `npm install` and `npx playwright install chromium`.
+  console errors, non-trivial frame). It also plays a real move over the
+  wire (cells resolved by sampling the page's own ray-plane pick — no
+  camera math in the test) and ends the turn from both seats. Skip the
+  interaction phase with `SMOKE_INTERACT=0`. Still manual-only: deploy
+  phase, attacks, first-person, mobile/touch, perf (toggle bloom at
+  runtime). First run needs `npm install` and `npx playwright install chromium`.
 
 #### Browser verification (Chrome DevTools MCP)
 - **Inline screenshots from the DevTools `take_screenshot` tool are
