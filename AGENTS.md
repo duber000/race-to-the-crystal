@@ -229,6 +229,31 @@ event.
   is generated randomly (mystery squares land in the deployment corner), so
   find a free cell at runtime instead.
 
+#### Browser verification (Chrome DevTools MCP)
+- **Inline screenshots from the DevTools `take_screenshot` tool are
+  ~3.5 MB PNGs at this repo's DPR.** The canvas is 728×629 CSS pixels at
+  DPR 1.667 (→ 1213×1048 device pixels); a handful of full-page PNGs
+  exceeds the 32 MB inline-media budget for the model context and every
+  subsequent upstream call dies with `airlock_error: inlined media exceeds
+  the 33554432 byte total limit`. Save shots to disk with `filePath` and
+  use `format: "jpeg"` (quality 60 ≈ 100 KB, quality 25 ≈ 55 KB) — never
+  return them inline. Prefer `take_snapshot` (text a11y tree) and
+  `list_console_messages`; screenshot only what you must eyeball.
+- **Synthetic input goes in CSS pixels, not device pixels.** CSS 728×629 ≠
+  screenshot 1213×1048 (DPR 1.667). The input handler binds
+  `mousedown`/`mouseup` (not PointerEvents) — dispatch those on the
+  canvas element. Picking is ray-plane, so `pickGridCell(x, y)` maps
+  canvas CSS pixels directly to grid cells.
+- **WS lobbies and the HTTP API share one lobby manager, but full lobbies
+  vanish from the lists.** `/api/games` and WS `GAME_LIST` only
+  show joinable (WAITING + free seat) or in-progress lobbies, and the
+  HTTP join then answers a bare `400 failed to join game`. A timed-out
+  foreground `./race-ai-client poll --join …` usually outlives its shell
+  and keeps its seat, making a 1/2 lobby actually 2/2. Check the lobby
+  roster (WS `LOBBY_UPDATE` / host screen), not the HTTP status.
+- See `docs/VANILLA-JS.md` §3 for the full list of traps from the web
+  client's vanilla-WebGL2 bring-up.
+
 #### Check caveats
 
 - **Check errors cascade to the importer, not the culprit.** An `undefined

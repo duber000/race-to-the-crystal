@@ -29,6 +29,19 @@ export function uploadCanvasTexture(gl, canvas) {
     return texture;
 }
 
+/** Soft radial white blob — tinted per-draw for smoke/ghost/glow billboards. */
+export function createSoftCircleTexture(gl, size = 128) {
+    const { canvas, ctx } = makeCanvas(size, size);
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.35, 'rgba(255,255,255,0.8)');
+    g.addColorStop(0.7, 'rgba(255,255,255,0.25)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+    return uploadCanvasTexture(gl, canvas);
+}
+
 /** Faint cyan grid on black — the board's ground texture. */
 export function createGridTexture(gl, boardWidth) {
     const { canvas, ctx } = makeCanvas(1024, 1024);

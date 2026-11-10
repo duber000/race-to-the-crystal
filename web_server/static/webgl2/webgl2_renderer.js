@@ -5,14 +5,16 @@
  * same public interface (duck-typed) so the rest of the client works
  * unchanged. Opt in with ?renderer=webgl2.
  *
- * Deliberately out of scope for this module (Phase 2 parity list):
- *  - bloom/glow post-processing, chromatic aberration, film grain, sharpen
- *  - god rays (volumetric light scattering)
- *  - true PBR / image-based lighting (materials here are Lambert + Blinn-Phong)
- *  - crystal fog/lightning/ghost effect visuals (sounds still play)
+ * Bloom (half-res separable gaussian + composite with vignette/grain) is
+ * on by default; ?bloom=0 falls back to direct rendering. Not implemented
+ * (documented decisions, see docs/VANILLA-JS.md): god rays, chromatic
+ * aberration/sharpen, true PBR/IBL, shard-pillar refraction.
  *
  * Phase 1 goals: board, tokens, generators, crystal, indicators, camera,
  * picking, particles, health labels — playable end to end.
+ * Phase 2 adds: bloom post-processing and the crystal effect animator
+ * (fog/ghosts/lightning/whirlwind) — see webgl2_bloom.js and
+ * webgl2_crystal_effects.js.
  */
 
 import {
@@ -35,6 +37,8 @@ import {
 import {
     createGridTexture, createHealthLabelTexture,
 } from './webgl2_textures.js';
+import { BloomPass } from './webgl2_bloom.js';
+import { WebGL2CrystalEffectAnimator } from './webgl2_crystal_effects.js';
 
 const TOKEN_CENTER_Y = Math.max(TOKEN_HEIGHT / 2, WALL_HEIGHT - TOKEN_HEIGHT / 2);
 const GENERATOR_HEIGHT = Math.min(60, WALL_HEIGHT * 0.9);
@@ -109,7 +113,7 @@ void main() {
 
 const VERT_UNLIT = `${GLSL_VERSION}
 layout(location = 0) in vec3 aPosition;
-layout(location = 1) in vec2 aUV;
+layout(location = 2) in vec2 aUV;   // location 1 is the normal (unused here)
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProj;
@@ -205,14 +209,10 @@ class VanillaRenderer3D {
         this.audioManager = new AudioManager();
         this.cleanupCallbacks = [];
 
-        // Crystal effect animator stub — same surface the Babylon renderer
-        // drives, minus the visuals (Phase 2). Sounds still play.
-        this.crystalEffectAnimator = {
-            update: () => {},
-            startEffect: (effectType, position, tokens) => {
-                console.info(`[webgl2] crystal effect ${effectType} at`, position, `(${(tokens || []).length} tokens)`);
-            },
-        };
+        // Crystal effect animator — WebGL2 port of the Babylon animator
+        // (webgl2_crystal_effects.js). Same interface; visuals spawn through
+        // this renderer's particle system and transparent draw list.
+        this.crystalEffectAnimator = new WebGL2CrystalEffectAnimator(this);
 
         // Scene facade for InputHandler compatibility: picking against the
         // ground plane. Decoration was never pickable in Babylon either.
@@ -225,6 +225,11 @@ class VanillaRenderer3D {
         this.cameraController = null;
         this.meshCache = new Map();
         this.textures = [];
+
+        // Post-processing: half-res bloom + composite (vignette, grain).
+        // ?bloom=0 disables it entirely and renders straight to the canvas.
+        this.bloomEnabled = new URLSearchParams(window.location.search).get('bloom') !== '0';
+        this.bloomPass = null;
     }
 
     // --- Setup ---------------------------------------------------------------
@@ -251,6 +256,15 @@ class VanillaRenderer3D {
         this._createBoard();
         this._createSkybox();
         this._createParticles();
+
+        if (this.bloomEnabled) {
+            try {
+                this.bloomPass = new BloomPass(gl);
+            } catch (error) {
+                console.warn('[webgl2] bloom pass failed to initialize; continuing without post-processing.', error);
+                this.bloomPass = null;
+            }
+        }
         return this.scene;
     }
 
@@ -1204,8 +1218,12 @@ class VanillaRenderer3D {
             const centerX = gridX * CELL_SIZE + CELL_SIZE / 2;
             const centerZ = gridY * CELL_SIZE + CELL_SIZE / 2;
 
+            // Additive fill: additive blending makes the marker read as a
+            // glow rather than a paint swatch, so a modest alpha works.
             const fill = this._makeFlatCell(CELL_SIZE * 0.8, color, alphaFill, 1.0);
             fill.pos = { x: centerX, y: 1.0, z: centerZ };
+            fill.additive = true;
+            fill.brightness = 1.8;
             list.push(fill);
 
             const outline = {
@@ -1224,11 +1242,11 @@ class VanillaRenderer3D {
     }
 
     updateValidMoveIndicators(moves) {
-        this._updateCellIndicators(this.validMoveMeshes, moves, GREEN_GLOW, 0.16, 0.75);
+        this._updateCellIndicators(this.validMoveMeshes, moves, GREEN_GLOW, 0.35, 0.8);
     }
 
     updateValidAttackIndicators(attacks) {
-        this._updateCellIndicators(this.validAttackMeshes, attacks, RED_GLOW, 0.16, 0.75);
+        this._updateCellIndicators(this.validAttackMeshes, attacks, RED_GLOW, 0.35, 0.8);
     }
 
     updateThreatIndicators() {
@@ -1243,7 +1261,9 @@ class VanillaRenderer3D {
         if (!tokenIds || tokenIds.length === 0) return;
 
         // The cell under the pointer is dangerous.
-        const square = this._makeFlatCell(CELL_SIZE * 0.8, RED_GLOW, 0.22, 2.5);
+        const square = this._makeFlatCell(CELL_SIZE * 0.8, RED_GLOW, 0.3, 2.5);
+        square.additive = true;
+        square.brightness = 1.8;
         square.pos = {
             x: this.hoveredCell.gridX * CELL_SIZE + CELL_SIZE / 2,
             y: 2.5,
@@ -1682,6 +1702,9 @@ class VanillaRenderer3D {
                 gl.bindTexture(gl.TEXTURE_2D, texture);
                 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+                // Restore the default — this global leaks into later texture
+                // uploads and flips them upside down.
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -1919,6 +1942,15 @@ class VanillaRenderer3D {
         const eyePos = cam.position;
         const t = this.animationTime;
 
+        // Render into the bloom scene FBO when post-processing is active.
+        const bloomActive = this.bloomPass
+            ? this.bloomPass.beginScene(this.canvas.width, this.canvas.height)
+            : false;
+        if (!bloomActive) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        }
+
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // --- Star field (static points, additive, no depth writes) ---
@@ -2041,6 +2073,12 @@ class VanillaRenderer3D {
                 alpha: f.alpha,
             });
         }
+        // Crystal effect objects (fog puffs, ghosts, lightning bolts/flashes).
+        if (this.crystalEffectAnimator && this.crystalEffectAnimator.renderObjects) {
+            for (const obj of this.crystalEffectAnimator.renderObjects()) {
+                transparent.push(obj);
+            }
+        }
 
         // Sort transparent back-to-front.
         transparent.sort((a, b) => {
@@ -2090,6 +2128,11 @@ class VanillaRenderer3D {
 
         // --- Particles (additive points) ---
         this._drawParticles(gl, view, proj);
+
+        // --- Resolve to canvas: bloom + vignette + grain (or direct pass) ---
+        if (bloomActive) {
+            this.bloomPass.endScene(this.animationTime);
+        }
     }
 
     _drawBeam(gl, obj, view, proj) {
@@ -2115,11 +2158,16 @@ class VanillaRenderer3D {
     dispose() {        if (this._rafId) cancelAnimationFrame(this._rafId);
         this._rafId = null;
         if (this._resizeHandler) window.removeEventListener('resize', this._resizeHandler);
+        if (this.crystalEffectAnimator) this.crystalEffectAnimator.cleanup();
 
         if (this.audioManager) {
             this.audioManager.cleanup();
         }
         const gl = this.gl;
+        if (this.bloomPass) {
+            this.bloomPass.dispose();
+            this.bloomPass = null;
+        }
         if (gl) {
             for (const mesh of this.meshCache.values()) {
                 if (mesh.dispose) mesh.dispose();

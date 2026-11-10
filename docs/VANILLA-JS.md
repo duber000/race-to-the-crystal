@@ -1,8 +1,11 @@
 # Vanilla JavaScript + WebGL2 for the Web Client
 
-> **Status**: Phase 0 and Phase 1 are complete. The vanilla WebGL2 renderer
-> ships behind an opt-in flag (`?renderer=webgl2`); Babylon.js remains the
-> default. Phase 2 (visual parity) and the default-flip decision are open.
+> **Status**: Phase 0 and Phase 1 are complete, and Phase 2 is under way —
+> bloom, the crystal-effect animator and the marker-readability bump are
+> built and verified in-browser. The vanilla WebGL2 renderer ships behind
+> an opt-in flag (`?renderer=webgl2`); Babylon.js remains the default.
+> The rest of Phase 2 (god rays, PBR/IBL) and the default-flip decision
+> are open.
 > Nothing in this document has been merged into a release — everything below
 > was validated locally, in the browser, against a live game server.
 
@@ -105,7 +108,7 @@ stage it, keep Babylon as fallback, gate on a decision point.
 
 ### Phase 1 — vanilla WebGL2 spike, opt-in (done)
 
-New `web_server/static/webgl2/` (~3,634 lines, ~31 KB gzip), wired in with
+New `web_server/static/webgl2/` (~4,378 lines after Phase 2, ~38 KB gzip), wired in with
 `?renderer=webgl2`:
 
 | File | Lines | Role |
@@ -114,8 +117,12 @@ New `web_server/static/webgl2/` (~3,634 lines, ~31 KB gzip), wired in with
 | `webgl2_core.js` | 170 | context, program/attrib management, VAO mesh builders (triangles/lines/points) |
 | `webgl2_geometry.js` | 368 | ground/box/cylinder/UV/ico sphere/torus/quad/circle/square builders |
 | `webgl2_camera.js` | 644 | spherical orbit overview + first person, wheel zoom, two-finger pinch/pan, focus/transition/FP smoothing |
-| `webgl2_renderer.js` | 2,152 | `VanillaRenderer3D` — drop-in for `Renderer3D` (duck-typed), same public interface |
-| `webgl2_textures.js` | 72 | canvas-generated textures (grid, health labels) |
+| `webgl2_renderer.js` | 2,200 | `VanillaRenderer3D` — drop-in for `Renderer3D` (duck-typed), same public interface |
+| `webgl2_textures.js` | 85 | canvas-generated textures (grid, health labels, soft-circle billboards) |
+| `webgl2_bloom.js` | 313 | half-res bloom + composite (vignette, grain) — Phase 2 |
+| `webgl2_crystal_effects.js` | 370 | fog/ghosts/lightning/whirlwind animator — Phase 2 |
+
+Total ~4,378 lines (Phase 2 adds ~683, about 7 KB gzip).
 
 Reached via `game_client.modules.js` → `VANILLA_RENDERER` const; falls back
 to Babylon automatically if the vanilla renderer throws during init.
@@ -137,7 +144,8 @@ to Babylon automatically if the vanilla renderer throws during init.
 
 **Not yet verified:** the game-over overlay and victory effects firing live
 (no match has reached GAME_WON yet; the code path is renderer-agnostic and
-wired, but unproven visually).
+wired, but unproven visually), and a crystal effect firing through the
+full wire path (see Phase 2 — the animator itself is verified).
 
 **Two silent white-box renderer bugs found and fixed:**
 
@@ -168,6 +176,50 @@ be fixed for the AI to function at all (see §3 for the shared cause):
 `kukicha check ./game ./server ./client/ai` passes; `make test` passes;
 `kukicha fmt --check .` clean. (Note: `game/main.go` et al. are
 gitignored; `make test` regenerated everything it needed.)
+
+### Phase 2 — visual parity (partial; built and verified in-browser)
+
+Built since the Phase 1 spike, including the verification pass in Chrome
+(November 2026):
+
+- **Bloom** (`webgl2_bloom.js`) — half-res separable gaussian (9 taps,
+  two ping-pong iterations) composited additively over the scene, plus a
+  soft vignette and a whisper of film grain in the same pass. The scene
+  renders into a full-res FBO (RGBA16F where `EXT_color_buffer_float` is
+  available — it is, in Chrome — RGBA8 otherwise) with a depth
+  renderbuffer. `?bloom=0` opts out entirely and draws straight to the
+  canvas, identical to the Phase 1 path. Verified live: toggling
+  `renderer.bloomPass` off at runtime flattens the beams and generators
+  visibly; the FBO comes up complete, no shader or link errors are
+  logged.
+- **Crystal-effect animator** (`webgl2_crystal_effects.js`) — the Babylon
+  `CrystalEffectAnimator` ported against the vanilla renderer's
+  primitives. Exercised in-browser, all four effects: fog (16 radial
+  smoke billboards — seen hazing the whole board), whirlwind (8 spiral
+  point emitters — cyan spiral streams seen spreading), damage boost
+  (jagged sky→token bolt + additive flash sphere + spark burst — a forced
+  strike renders, the flash sphere catches the bloom knee), phantom
+  enemies (5 ghost billboards — object emission verified: correct
+  alpha/color/texture; hard to make out at overview distance). The
+  trigger path itself (`checkCrystalEffectTrigger`) is unchanged and
+  replay-guarded; not yet observed firing end-to-end from the wire — the
+  "whoosh" heard during verification was the selection sound, not an
+  effect. Sounds flow through the unchanged `AudioManager`.
+- **Marker readability** — valid-move/attack fill quads raised from 0.16
+  to 0.35 alpha, drawn additively with brightness 1.8; threat-hover
+  squares bumped to match. Still to be judged at zoom on a busy board.
+- **Two more silent white-box bugs found by reading, then fixed:**
+  3. `VERT_UNLIT` declared `aUV` at location 1 — the *normal* attribute's
+     location (fixed VAO layout is 0=position, 1=normal, 2=UV), so every
+     unlit draw read the normal vector as its UVs. `aUV` is now location 2.
+  4. The floating-text texture upload leaked `UNPACK_FLIP_Y_WEBGL`
+     (same global-state trap as the Phase 1 health-label bug). Each
+     upload now flips then restores.
+
+Re-verified after the changes: page loads clean, full match plays, pick →
+select works through the real event path (valid moves populate, the
+"MOVEMENT • 3 targets" hint appears, selection glow shows), turn timer,
+fog-of-war opponent filtering, and the AI seat all behave.
 
 ---
 
@@ -233,6 +285,24 @@ Rules for this codebase:
 - Spectator is seat-cam: one seat per connection, union-of-vision across
   seats can reconstruct the board. Fine for casual play; not an integrity
   boundary.
+- **Full-res screenshots blow the upstream media budget.** The canvas is
+  devicePixelRatio-scaled (e.g. 728×629 CSS at DPR 1.667 → 1213×1048
+  device pixels), and Chrome DevTools screenshots of it saved as inline
+  PNG run ~3.5 MB each. Ten of those in one session exceed the
+  `airlock_error: inlined media exceeds the 33554432 byte total limit`
+  budget, and every subsequent upstream call then fails. Take them with
+  `format: "jpeg"`, `quality: 60` and an explicit `filePath` (~100 KB), or
+  quality 25 for a quick check (~55 KB); prefer text snapshots over images
+  otherwise. This error ended an earlier Phase 2 session.
+- **A full lobby is invisible to the list endpoints, and join 400s with no
+  explanation.** `/api/games` and WS `GAME_LIST` only show lobbies with a
+  free seat (WAITING) or already in progress. A full WAITING lobby (2/2)
+  simply disappears, and `JOIN_GAME` → the HTTP join endpoint both return
+  a bare `failed to join game`. The trap: a timed-out foreground
+  `./race-ai-client poll --join …` usually survives its shell, keeps its
+  seat, and readies itself — the lobby then looks 1/2 from anywhere but
+  is actually 2/2, and your second join attempt 400s. Check the lobby
+  roster (WS `LOBBY_UPDATE` / the host screen), not the HTTP status.
 
 ### WebGL2 specifics worth remembering
 
@@ -251,24 +321,19 @@ Rules for this codebase:
 
 ## 4. The next phase
 
-### Phase 2 — visual parity (not started)
+### Phase 2 — visual parity (in progress)
 
-Parity work, roughly in order of value:
-
-1. **Bump the marker readability**: valid-move/attack fill quads are alpha
-   0.16 — often invisible against the dark board. Raise fill alpha, or add
-   a second additive pulse.
-2. **Bloom / glow** — Babylon's `GlowLayer` (intensity 1.5) + bloom pipeline
-   produced the "neon cage" look. Candidate: half-res bloom pass with a
-   separable gaussian, additive over the opaque pass. Alternative: skip
-   bloom and keep emissive-only; looks acceptable, arguably cleaner.
+1. ~~Bump the marker readability~~ — **done**: fills 0.16 → 0.35 alpha,
+   additive, brightness 1.8. Judged at playing distance; worth one more
+   pass at zoom on a busy board.
+2. ~~Bloom / glow~~ — **done** (`webgl2_bloom.js`; threshold 0.55, strength
+   0.9, half-res, `?bloom=0` escape hatch). See §2.
 3. **God rays** — Babylon's `VolumetricLightScatteringPostProcess`. Emulate
    with a radial-blur pass from the crystal's screen position, or delete
    outright (crystal already breathes/pulses).
-4. **Crystal effects** — the stub animator logs and plays sounds but spawns
-   no fog/lightning/ghosts/whirlwind. The Babylon `CrystalEffectAnimator`
-   is ~400 lines and has particle spawners for all four — portable as-is.
-   Effects are the main juice this scene has, so this is high value.
+4. ~~Crystal effects~~ — **done** (`webgl2_crystal_effects.js`, all four);
+   see §2. First-choice follow-up is a wire-path (not forced) trigger
+   observed in-browser.
 5. **PBR/IBL** — currently Lambert + Blinn-Phong. True PBR (GGX) + a small
    procedural environment (or baked gradient cube) would restore the gold
    and gems to full richness. This is also the moment to decide on the
@@ -277,7 +342,9 @@ Parity work, roughly in order of value:
 6. **Floating text / health labels** — verify at zoom, check flip_y and
    readability.
 7. **Chroma aberration / film grain / sharpen** — optional cosmetics from
-   the Babylon pipeline; reimplement as cheap fullscreen passes or delete.
+   the Babylon pipeline. The composite pass already carries a static-hash
+   film grain and a vignette at trivial cost; chromatic aberration and
+   sharpen are still undecided.
 
 ### Decision gate
 
@@ -316,10 +383,10 @@ Make the call once parity is close:
 | Particles (explosions, confetti, ambient dust) | ✓ | ✓ |
 | Camera (overview + first-person) | ✓ | ✓ |
 | Picking | ✓ `scene.pick` | ✓ ray-plane (equivalent for grid cells) |
-| Bloom / glow layer | ✓ | ✗ (emissive-only) |
-| Chromatic aberration / grain / sharpen | ✓ | ✗ |
+| Bloom / glow layer | ✓ | ✓ (half-res gaussian + composite bloom/vignette/grain) |
+| Chromatic aberration / sharpen | ✓ | ✗ (but: vignette + film grain in the composite pass) |
 | God rays | ✓ | ✗ |
-| Crystal effects (fog/ghost/lightning/whirlwind) | ✓ | ✗ (stub; sounds play) |
+| Crystal effects (fog/ghost/lightning/whirlwind) | ✓ | ✓ (stub replaced; verified in-browser) |
 | PBR / IBL | ✓ | ~Lambert/Blinn-Phong |
 | Refraction (shard pillars) | ✓ | ✗ |
 
@@ -327,8 +394,16 @@ Make the call once parity is close:
 
 ## 5. Open questions
 
-- **Bloom or no bloom?** The honest answer depends on how the neon-cage look
-  reads on a low-end device without it. Try both; measure INP, not just vibes.
+- **Bloom or no bloom?** Decided for now: on by default, half-res,
+  `?bloom=0` as the escape hatch. Still worth an INP/frame-time check on
+  a low-end device — the composite pass is cheap, but the half-float
+  scene FBO write at full res is not free.
+- **Overview framing is tight on square-ish viewports.** The overview pose
+  (beta 60°, radius 0.8 × board diagonal, 40° fov) crops the deployment
+  corners off-screen at ~1:1 aspect — my tokens at (0,0)-(2,0) sat pinned
+  to the top edge. It matches the Babylon defaults, so it's not a
+  regression, but consider raising the radius multiplier (or fov, or
+  clamping by aspect ratio) before the default flip.
 - **Keep Babylon in-repo as fallback forever?** Cost of keeping is one file
   + scripts; keeping it means we can flip back cheaply. Recommendation:
   keep it until the default-flip ships, then delete.
@@ -349,8 +424,15 @@ make server-run          # game server, http://localhost:8080
 make web-server-run      # web client + reverse proxy, http://localhost:8000
 ```
 
-Then `http://localhost:8000/?renderer=webgl2` (hard-reload once). Create a
+Then `http://localhost:8000/?renderer=webgl2` (hard-reload once). Add
+`&bloom=0` to compare against the pre-bloom direct path. Create a
 2-player game, add an AI with `./race-ai-client poll --join <game-id>
 --name AI --strategy aggressive` next to your seat, ready both, start.
 
-Compare against the Babylon path by dropping the flag.
+Launch the AI client **detached** (background), not in a foreground shell
+with a timeout — see §3, "a full lobby is invisible … join 400s". Compare
+against the Babylon path by dropping the flag.
+
+When verifying in Chrome DevTools, take screenshots with `filePath` +
+`format: "jpeg"` (see §3) — inline full-page PNGs at DPR 1.667 each run
+~3.5 MB and kill the session.
