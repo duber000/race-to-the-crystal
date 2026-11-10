@@ -21,6 +21,7 @@ class UIUtils {
     const messageEl = document.createElement("div");
     messageEl.className = className;
     messageEl.textContent = message;
+    messageEl.setAttribute("role", "alert");
     container.appendChild(messageEl);
 
     if (delayMs > 0) {
@@ -223,6 +224,7 @@ class UIUtils {
     
     errorDiv.className = className;
     errorDiv.textContent = message;
+    errorDiv.setAttribute("role", "alert");
     return errorDiv;
   }
 }

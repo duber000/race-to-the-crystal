@@ -6,12 +6,13 @@
     <!-- Viewport: allow pinch-zoom for accessibility; rely on touch-action/CSS to
          suppress unwanted gestures on the game canvas rather than blocking zoom globally. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="dark">
 
     <!-- PWA and mobile meta tags -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#05080f">
     <meta name="format-detection" content="telephone=no">
 
     <!-- Favicon -->
@@ -38,21 +39,22 @@
 <body>
     <!-- Connection Screen -->
     <div id="connection-screen">
+        <div class="brand-crystal" aria-hidden="true"></div>
         <h2>RACE TO THE CRYSTAL</h2>
         <div>
-            <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="20">
+            <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="20" autocomplete="off" aria-label="Player name">
         </div>
         <div>
-            <input type="text" id="server-host-input" placeholder="Server host">
+            <input type="text" id="server-host-input" placeholder="Server host" autocomplete="off" spellcheck="false" aria-label="Game server host">
         </div>
         <div>
-            <input type="text" id="server-port-input" placeholder="Server port">
+            <input type="text" id="server-port-input" placeholder="Server port" inputmode="numeric" autocomplete="off" aria-label="Game server port">
         </div>
         <div class="button-container">
             <button id="connect-btn">Connect</button>
         </div>
-        <div id="connection-status-msg"></div>
-        <div id="connection-error"></div>
+        <div id="connection-status-msg" role="status" aria-live="polite"></div>
+        <div id="connection-error" role="alert"></div>
     </div>
 
     <!-- Lobby Browser Screen -->
@@ -64,7 +66,7 @@
             <h3 class="join-by-id-title">Join by Game ID:</h3>
             <div class="join-by-id-row">
                 <input type="text" id="join-game-id-input" placeholder="Enter game ID or short ID"
-                    class="join-by-id-input">
+                    class="join-by-id-input" autocomplete="off" spellcheck="false" aria-label="Game ID or short ID">
                 <button id="join-by-id-btn" class="join-by-id-button">Join</button>
             </div>
         </div>
@@ -72,13 +74,13 @@
         <!-- Create Game Section -->
         <div id="create-game-section" class="hidden">
             <h3 class="lobby-browse-title">Create a new game:</h3>
-            <input type="text" id="create-game-name-input" placeholder="Game name" maxlength="30">
+            <input type="text" id="create-game-name-input" placeholder="Game name" maxlength="30" aria-label="Game name">
             <div class="player-count-row">
-                <label class="player-count-label">Players (2-4):</label>
+                <label class="player-count-label" for="create-game-players-input">Players (2-4):</label>
                 <div class="player-count-stepper">
-                    <button type="button" id="players-decrement-btn">−</button>
-                    <input type="text" id="create-game-players-input" value="4" readonly>
-                    <button type="button" id="players-increment-btn">+</button>
+                    <button type="button" id="players-decrement-btn" aria-label="Decrease players">−</button>
+                    <input type="text" id="create-game-players-input" value="4" readonly aria-label="Number of players">
+                    <button type="button" id="players-increment-btn" aria-label="Increase players">+</button>
                 </div>
             </div>
             <div class="button-container">
@@ -95,7 +97,7 @@
             <button id="refresh-games-btn">Refresh</button>
             <button id="disconnect-btn">Disconnect</button>
         </div>
-        <div id="lobby-error"></div>
+        <div id="lobby-error" role="alert"></div>
     </div>
 
     <!-- Waiting Room Screen -->
@@ -112,7 +114,7 @@
         </div>
     </div>
 
-    <canvas id="renderCanvas" class="hidden"></canvas>
+    <canvas id="renderCanvas" class="hidden" role="img" aria-label="3D game board"></canvas>
 
     <details id="hud" open>
         <summary>

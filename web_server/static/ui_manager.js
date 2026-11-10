@@ -95,7 +95,11 @@ class UIManager {
     }
 
     showConnectionError(message) {
-        UIUtils.showTemporaryMessage(null, "connection-error", message, 0);
+        const errorMsg = document.getElementById("connection-error");
+        if (errorMsg) {
+            errorMsg.textContent = message;
+            setTimeout(() => { errorMsg.textContent = ""; }, 3000);
+        }
     }
 
     showLobbyError(message) {
@@ -110,6 +114,7 @@ class UIManager {
         const errorDiv = document.createElement("div");
         errorDiv.className = "action-error";
         errorDiv.textContent = message;
+        errorDiv.setAttribute("role", "alert");
 
         document.body.appendChild(errorDiv);
         
@@ -435,8 +440,7 @@ class UIManager {
                 nameSpan.textContent = name;
 
                 const statusSpan = document.createElement("span");
-                statusSpan.className = "player-status";
-                statusSpan.style.color = ready ? '#0f0' : '#f80';
+                statusSpan.className = `player-status ${ready ? 'is-ready' : 'is-not-ready'}`;
                 statusSpan.textContent = ready ? "Ready!" : "Not ready";
 
                 item.appendChild(nameSpan);

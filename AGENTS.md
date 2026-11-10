@@ -4,7 +4,7 @@ title: AGENTS.md — race-to-the-crystal repository guide
 description: Architecture, commands, conventions, and vendored stdlib notes for agents working in race-to-the-crystal.
 tags: [agents, conventions, kukicha, ebitengine, game, webgl2, websocket, events]
 generated: { by: antigravity/gemini-3.8-flash, at: 2026-09-26T12:55:00-04:00 }
-updated: { by: opencode/inkling-2-small, at: 2026-11-10T10:30:00-04:00 }
+updated: { by: opencode/inkling-2-small-free, at: 2026-11-10T18:35:00-04:00 }
 verified:
 stale_after: 2027-02-08T00:00:00Z
 status: stable
@@ -90,7 +90,7 @@ The project is split into strictly separated layers:
 - **`server/`** – Server built on Go net/http + gorilla/websocket. `GameCoordinator` manages `GameSession` instances, each wrapping a `GameState`. JWT auth for the HTTP API is in `server/auth.kuki`. `WebSocketHandler` owns the client registry and the shared per-session broadcasters.
 - **`mcp/`** – Thin stdio MCP proxy exposing the agent seat (no game logic; proxies to the game server's REST API)
 - **`client/`** – Desktop client using Ebitengine. `renderer_2d.kuki` and UI views in `ui/` implement the game views. **The desktop client is local-only** — it imports the `game` package directly and has no networking; its "Network Game" menu entry is a stub. `ai/ai_client.kuki` is the AI player (HTTP); `ai/http_ai_client.kuki` is a helper in the same package.
-- **`web_server/`** – Serves the web frontend and reverse-proxies `/api` and `/ws` to the game server. The frontend is the dependency-free vanilla WebGL2 path (`web_server/static/webgl2/`, ~4.6k lines, no libraries) — **the only renderer since 2026-11-10** (Babylon.js 8 was deleted the same day). Static assets are served with `Cache-Control: no-cache` (revalidate every load, 304s; see `web_server/main.kuki`). The full record — phases, gotchas, tuned defaults, and remaining verification items — lives in `docs/VANILLA-JS.md`; treat it as the source of truth for web-client rendering work. The `make smoke` gate checks the default path headless (see Testing below). Web clients receive state and events over WebSocket.
+- **`web_server/`** – Serves the web frontend and reverse-proxies `/api` and `/ws` to the game server. The frontend is the dependency-free vanilla WebGL2 path (`web_server/static/webgl2/`, ~4.6k lines, no libraries) — **the only renderer since 2026-11-10** (Babylon.js 8 was deleted the same day). Static assets are served with `Cache-Control: no-cache` (revalidate every load, 304s; see `web_server/main.kuki`). The full record — phases, gotchas, tuned defaults, and remaining verification items — lives in `docs/VANILLA-JS.md`; treat it as the source of truth for web-client rendering work. The `make smoke` gate checks the default path headless (see Testing below). Web clients receive state and events over WebSocket. Lobby/HUD chrome conventions live under Key Conventions ("Web client UI") below.
 - **Test files** – `*_test.kuki` files co-located with the modules they test (e.g., `game/game_state_test.kuki`, `game/game_events_test.kuki`, `server/action_validation_test.kuki`).
 
 ### The game event stream
@@ -231,6 +231,53 @@ turn cap, so the match idles in PLAYING forever. If you need a real
 (the HTTP create path returns a host token; the scripted player can drive
 capture/charge directly) or wait for a human seat. Do not wait for an AI
 duel to finish — it will not.
+
+#### Web client UI (`web_server/templates/index.html` + `web_server/static/index.css`)
+
+The vanilla WebGL2 client's chrome (lobby screens, HUD, panels, mobile bar)
+was modernized 2026-11-10. Rules of the road for future web-UI work:
+
+- **CSP is `default-src 'self'`.** No inline `<style>`, no `data:` URIs in
+  CSS, no external fonts or images — CSS gradients and system font stacks
+  only. Setting `element.style.x = ...` from JS is fine; `<style>` elements
+  and `setAttribute("style", …)` are not.
+- **Markup and CSS must use the same names.** IDs in the HTML
+  (`#deployment-menu`, `#tactical-comms`, `#replay-controls`) are styled
+  with `#id` selectors; classes created by JS at runtime (`.player-status.is-ready`,
+  `.spectate-*`, `.comms-*`, `.replay-*`, `.radial-*`, `.action-error`) must
+  match the CSS exactly. A mismatch fails silently — the element renders
+  with no styles (this is how the deploy menu shipped unstyled for a while).
+- **`index.css` is cascade-layered** (`reset, tokens, base, components,
+  utilities`). `.hidden` lives in `utilities` and beats component `display`
+  rules through layer order — never add `!important` to win against it.
+  Shared/default rules are written with `:where()` (zero specificity) so
+  feature styles and one-off overrides win naturally; keep that discipline
+  when extending it.
+- **Tokens first.** Colors, radii and recurring shadows are custom
+  properties on `:root` (literal tier `--ink-*`/`--accent`, semantic tier
+  `--color-*`, `--line` for borders). Don't hardcode hex values in new
+  component rules. Any new text color needs ≥ 4.5:1 contrast; any border
+  that delimits a control needs ≥ 3:1 (the old `#066` cyan failed at ≈ 2.7:1).
+- **Accessibility invariants:** `role="alert"`/`role="status"` on
+  JS-created messages (they must be announced), a single `:focus-visible`
+  outline treatment, ≥ 2.75rem touch targets on coarse pointers, persistent
+  animations only inside `@media (prefers-reduced-motion: no-preference)`,
+  and a working `@media (forced-colors: active)` path — borders must carry
+  the meaning when shadows, gradients, and color are stripped.
+- **Panels use translucent glass chrome** (`backdrop-filter: blur()` over a
+  near-black ink background with a faint CSS-gradient Tron grid). Test new
+  panels over the canvas, not on a flat background.
+- **Verify visually, not just with `make smoke`** (smoke only catches
+  boot/interaction regressions). For layout work, run a side instance
+  (`HTTP_PORT=8081 ./race-server` +
+  `WEB_PORT=8001 GAME_SERVER_URL=http://localhost:8081 ./web_server/web_server`),
+  drive two browser pages through connect → lobby → ready → start, and
+  screenshot to disk as JPEG (see "Browser verification" below). Check the
+  ≤ 768px and ≤ 480px breakpoints — the lobby screens become fixed
+  fullscreen sheets there and several in-game panels move.
+- **`theme-color` and `color-scheme: dark` are load-bearing** (`#05080f`,
+  matching `--color-bg`); keep them in sync with the background token or
+  the page flashes lighter than the game.
 
 #### Game logic entry points
 - To modify or extend game rules: work inside `game/` (no rendering or network imports allowed)
