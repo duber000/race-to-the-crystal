@@ -313,6 +313,8 @@ class VanillaRenderer3D {
         // ?bloom=0 disables it entirely and renders straight to the canvas.
         this.bloomEnabled = new URLSearchParams(window.location.search).get('bloom') !== '0';
         this.raysEnabled = new URLSearchParams(window.location.search).get('rays') !== '0';
+        this.chromaEnabled = new URLSearchParams(window.location.search).get('chroma') !== '0';
+        this.sharpenEnabled = new URLSearchParams(window.location.search).get('sharpen') !== '0';
         this.bloomPass = null;
     }
 
@@ -344,6 +346,8 @@ class VanillaRenderer3D {
         if (this.bloomEnabled) {
             try {
                 this.bloomPass = new BloomPass(gl);
+                this.bloomPass.chroma = this.chromaEnabled ? 0.006 : 0;
+                this.bloomPass.sharpen = this.sharpenEnabled ? 0.25 : 0;
             } catch (error) {
                 console.warn('[webgl2] bloom pass failed to initialize; continuing without post-processing.', error);
                 this.bloomPass = null;

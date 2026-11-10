@@ -1,10 +1,9 @@
 # Vanilla JavaScript + WebGL2 for the Web Client
 
 > **Status**: Phase 0 and Phase 1 are complete. Phase 2 is nearly done —
-> bloom, the crystal-effect animator, the marker-readability bump, god rays
-> and GGX PBR with an analytic IBL are built and verified in-browser; only
-> the optional cosmetics (chromatic aberration / sharpen) and the
-> default-flip decision are open.
+> bloom, the crystal-effect animator, the marker-readability bump, god rays,
+> GGX PBR with an analytic IBL, and the composite-pass cosmetics are built and
+> verified in-browser; only the default-flip decision is open.
 > The vanilla WebGL2 renderer ships behind an opt-in flag (`?renderer=webgl2`);
 > Babylon.js remains the default.
 > Nothing in this document has been merged into a release — everything below
@@ -256,6 +255,14 @@ Built since the Phase 1 spike, including the verification pass in Chrome
   4. The floating-text texture upload leaked `UNPACK_FLIP_Y_WEBGL`
      (same global-state trap as the Phase 1 health-label bug). Each
      upload now flips then restores.
+- **Cosmetics (chromatic aberration + unsharp mask)** — both live in the
+  composite pass of `webgl2_bloom.js`: radial CA (R/B shift against G,
+  quadratic toward the corners, `?chroma=0` to disable, default 0.006) and a
+  4-tap unsharp mask (`?sharpen=0` to disable, default **0.25** — lowered
+  from 0.4 on 2026-11-09; 0.4 accentuated the 1–2px neon grid lines).
+  Film grain (0.045) and the vignette (0.55) have been in the same pass
+  since the bloom landed. Decision recorded in the fourth verification
+  pass, below.
 
 Re-verified after the changes: page loads clean, full match plays, pick →
 select works through the real event path (valid moves populate, the
@@ -325,6 +332,37 @@ fog-of-war opponent filtering, and the AI seat all behave.
   and the composite reads a third texture — worth a frame-time check on
   a low-end device before the default flip, together with the existing
   bloom question.
+
+**Verification notes (fourth pass — cosmetics tuning, November 2026):**
+
+- Side-instance flow again (8081 game server + 8001 web proxy) against the
+  `CosmeticVerify2` game, `?renderer=webgl2&nocache=5`; `bloomPass.sharpen`
+  / `bloomPass.chroma` flipped live from the console between screenshots.
+  Full-page JPEGs (q60, ~270–290 KB at this 2257×1214 viewport) and small
+  crops (10–46 KB) stayed far under the inline-media budget; no full-size
+  PNGs were read. (The session that preceded this one ended on
+  `airlock_error: inlined media exceeds the 33554432 byte total limit`
+  after inline PNGs + three full reads — see §3.)
+- **Sharpen A/B** (chroma held at 0.006): 0 / 0.25 / 0.4 screenshotted and
+  compared on a thin-grid crop. Grid-line Laplacian p99: **0 → 159,
+  0.25 → 180, 0.4 → 191**; 0.4 visibly accentuates the thin neon lines
+  ("slightly too crisp for thin lines"), 0 flattens the micro-contrast.
+  **Decision: ship 0.25** (`webgl2_renderer.js` + `webgl2_bloom.js`;
+  `?sharpen=0` remains the opt-out).
+- **Chroma A/B** (sharpen held at 0.25, 0 vs 0.006): the corner regions are
+  behind the DOM HUD (unaffected, as expected — HUD text never touches the
+  composite); the only visible split is a faint ~1–2px R/B fringe on
+  sub-pixel stars at the frame periphery. Beam/generator crops are
+  indistinguishable by eye, and bright mid-edge pixels skew ≤2.5% in
+  R−B (|R−B| 140.8 → 144.4) — nothing the cyan board can show.
+  **Decision: keep 0.006** — it matches the Babylon DefaultRenderingPipeline
+  look and the grain/vignette photo-vibe, and costs two scene fetches in a
+  pass that already runs. `?chroma=0` remains the opt-out.
+- The new persisted defaults (chroma 0.006, sharpen 0.25) were confirmed on
+  the wire from both :8000 and the :8001 side instance — a fresh page load
+  gets the new constants (the renderer only constructs after joining a
+  game, so the check was done against the served files, not a live
+  `bloomPass`).
 
 ---
 
@@ -396,9 +434,16 @@ Rules for this codebase:
   PNG run ~3.5 MB each. Ten of those in one session exceed the
   `airlock_error: inlined media exceeds the 33554432 byte total limit`
   budget, and every subsequent upstream call then fails. Take them with
-  `format: "jpeg"`, `quality: 60` and an explicit `filePath` (~100 KB), or
-  quality 25 for a quick check (~55 KB); prefer text snapshots over images
-  otherwise. This error ended an earlier Phase 2 session.
+  `format: "jpeg"`, `quality: 60` and an explicit `filePath`, or
+  quality 25 for a quick check; prefer text snapshots over images
+  otherwise. This error ended two Phase 2 sessions. Note the budget is
+  cumulative across the whole session, not per image: the second one
+  tripped right after reading two ~280 KB JPEGs on top of an already-large
+  transcript — so even q60 JPEGs are only safe while the running total is
+  well under 32 MB, and small crops (10–46 KB) are the robust pattern
+  for A/B comparisons. Cropping out a HUD or grid region and upscaling it
+  (`magick in.jpeg -crop ... +repage -resize ... out.jpeg`) is enough
+  fidelity for tuning calls and costs kilobytes.
 - **A full lobby is invisible to the list endpoints, and join 400s with no
   explanation.** `/api/games` and WS `GAME_LIST` only show lobbies with a
   free seat (WAITING) or already in progress. A full WAITING lobby (2/2)
@@ -426,7 +471,7 @@ Rules for this codebase:
 
 ## 4. The next phase
 
-### Phase 2 — visual parity (complete except optional cosmetics)
+### Phase 2 — visual parity (complete)
 
 1. ~~Bump the marker readability~~ — **done**: fills 0.16 → 0.35 alpha,
    additive, brightness 1.8. Judged at playing distance; worth one more
@@ -449,10 +494,12 @@ Rules for this codebase:
    glow look is on-brand; see §2.
 6. **Floating text / health labels** — verify at zoom, check flip_y and
    readability.
-7. **Chroma aberration / film grain / sharpen** — optional cosmetics from
-   the Babylon pipeline. The composite pass already carries a static-hash
-   film grain and a vignette at trivial cost; chromatic aberration and
-   sharpen are still undecided.
+7. ~~**Chroma aberration / film grain / sharpen**~~ — **done and tuned**:
+   the composite pass carries a static-hash grain (0.045), a soft vignette
+   (0.55), radial chromatic aberration (0.006, quadratic toward the
+   corners, `?chroma=0`) and a 4-tap unsharp mask (**0.25**, `?sharpen=0`;
+   lowered from 0.4 after the A/B — 0.4 accentuated the 1–2px neon grid
+   lines). Verified in-browser; see §2, fourth pass.
 
 ### Decision gate
 
@@ -517,7 +564,7 @@ Make the call once parity is close:
 | Camera (overview + first-person) | ✓ | ✓ |
 | Picking | ✓ `scene.pick` | ✓ ray-plane (equivalent for grid cells) |
 | Bloom / glow layer | ✓ | ✓ (half-res gaussian + composite bloom/vignette/grain) |
-| Chromatic aberration / sharpen | ✓ | ✗ (but: vignette + film grain in the composite pass) |
+| Chromatic aberration / sharpen | ✓ | ✓ (CA 0.006 radial + unsharp mask 0.25; grain + vignette always on in the composite) |
 | God rays | ✓ | ✓ (radial blur from the crystal's screen pos, softened; additive — no ray occlusion) |
 | Crystal effects (fog/ghost/lightning/whirlwind) | ✓ | ✓ (stub replaced; verified in-browser) |
 | PBR / IBL | ✓ | ✓ (GGX/Smith/Schlick + analytic sky IBL; no env texture) |
@@ -564,8 +611,9 @@ make web-server-run      # web client + reverse proxy, http://localhost:8000
 ```
 
 Then `http://localhost:8000/?renderer=webgl2` (hard-reload once). Add
-`&bloom=0` to compare against the pre-bloom direct path, or `&rays=0` to
-compare against bloom-without-god-rays. Create a
+`&bloom=0` to compare against the pre-bloom direct path, `&rays=0` to
+compare against bloom-without-god-rays, or `&chroma=0` / `&sharpen=0` to
+see the composite without the corner CA or the unsharp mask. Create a
 2-player game, add an AI with `./race-ai-client poll --join <game-id>
 --name AI --strategy aggressive` next to your seat, ready both, start.
 

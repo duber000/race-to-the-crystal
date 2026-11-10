@@ -10,9 +10,16 @@
  * Half-res god rays: when the caller passes the crystal's UV-space position
  * to endScene(), a radial blur of the bright pass (48 taps toward the
  * crystal, exponential decay) is accumulated into a separate half-res
- * texture and added additively in the same composite step — the stand-in
- * for Babylon's VolumetricLightScatteringPostProcess. Pass null to skip.
- * Opt out with ?rays=0 (renderer-side flag).
+ * texture, softened with a 9-tap blur, and added additively in the same
+ * composite step — the stand-in for Babylon's
+ * VolumetricLightScatteringPostProcess. Pass null to skip. Opt out with
+ * ?rays=0 (renderer-side flag).
+ *
+ * The composite also carries the pipeline's optional cosmetics (all live in
+ * the same shader, all zero-cost on the direct path): static-hash film
+ * grain, a soft vignette, radial chromatic aberration (R/B shifted against
+ * G, growing quadratically toward the corners — ?chroma=0 to disable) and a
+ * 4-tap unsharp mask (?sharpen=0 to disable).
  *
  * Opt out of the whole path with ?bloom=0 — the renderer then draws straight
  * to the canvas, identical to the Phase 1 path.
@@ -99,15 +106,41 @@ uniform float uRaysStrength;
 uniform float uTimeSeed;
 uniform float uGrain;
 uniform float uVignette;
+uniform float uChroma;    // UV shift at the corner for R/B channels (0 disables)
+uniform float uSharpen;   // unsharp-mask amount (0 disables)
+uniform vec2 uTexel;      // 1/width, 1/height of the scene target
 out vec4 fragColor;
 void main() {
-    vec3 scene = texture(uScene, vUV).rgb;
+    vec2 d = vUV - 0.5;
+    float r2 = dot(d, d);   // 0 at center → 0.5 at the corners
+
+    // --- Chromatic aberration: R shifts outward, B inward, G stays ---
+    vec2 chromaOff = d * (uChroma * (r2 / 0.5));
+    vec3 scene;
+    if (uChroma > 0.0) {
+        scene = vec3(
+            texture(uScene, vUV + chromaOff).r,
+            texture(uScene, vUV).g,
+            texture(uScene, vUV - chromaOff).b);
+    } else {
+        scene = texture(uScene, vUV).rgb;
+    }
+
+    // --- Unsharp mask: push the scene away from a 4-tap cross blur ---
+    if (uSharpen > 0.0) {
+        vec3 cross4 = (
+            texture(uScene, vUV + vec2(uTexel.x, 0.0)).rgb +
+            texture(uScene, vUV - vec2(uTexel.x, 0.0)).rgb +
+            texture(uScene, vUV + vec2(0.0, uTexel.y)).rgb +
+            texture(uScene, vUV - vec2(0.0, uTexel.y)).rgb) * 0.25;
+        scene += (scene - cross4) * uSharpen;
+    }
+
     vec3 bloom = texture(uBloom, vUV).rgb;
     vec3 rays = texture(uRays, vUV).rgb;
     vec3 color = scene + bloom * uBloomStrength + rays * uRaysStrength;
 
     // Soft vignette — keeps the eye on the board center.
-    vec2 d = vUV - 0.5;
     color *= 1.0 - dot(d, d) * uVignette;
 
     // Static-hash film grain, amplitude ~ a few 8-bit steps.
@@ -174,7 +207,8 @@ class BloomPass {
         this.blurProgram = createProgram(gl, VERT_FULLSCREEN, FRAG_BLUR, ['uTexture', 'uDirection']);
         this.raysProgram = createProgram(gl, VERT_FULLSCREEN, FRAG_GODRAYS, ['uBright', 'uLightPos', 'uDecay']);
         this.compositeProgram = createProgram(gl, VERT_FULLSCREEN, FRAG_COMPOSITE,
-            ['uScene', 'uBloom', 'uRays', 'uBloomStrength', 'uRaysStrength', 'uTimeSeed', 'uGrain', 'uVignette']);
+            ['uScene', 'uBloom', 'uRays', 'uBloomStrength', 'uRaysStrength',
+             'uTimeSeed', 'uGrain', 'uVignette', 'uChroma', 'uSharpen', 'uTexel']);
 
         // Fullscreen triangle (covers the viewport with one primitive).
         this.vao = gl.createVertexArray();
@@ -207,6 +241,8 @@ class BloomPass {
         this.raysStrength = 0.9;
         this.grain = 0.045;
         this.vignette = 0.55;
+        this.chroma = 0.006;    // UV shift at the corner; 0 to disable (?chroma=0)
+        this.sharpen = 0.25;    // unsharp amount; 0 to disable (?sharpen=0)
     }
 
     /** Allocate/resize targets. Returns true if the scene FBO is usable. */
@@ -370,6 +406,9 @@ class BloomPass {
         gl.uniform1f(this.compositeProgram.uniforms.uTimeSeed, (timeSeconds * 61.7) + 11.3);
         gl.uniform1f(this.compositeProgram.uniforms.uGrain, this.grain);
         gl.uniform1f(this.compositeProgram.uniforms.uVignette, this.vignette);
+        gl.uniform1f(this.compositeProgram.uniforms.uChroma, this.chroma);
+        gl.uniform1f(this.compositeProgram.uniforms.uSharpen, this.sharpen);
+        gl.uniform2f(this.compositeProgram.uniforms.uTexel, 1.0 / this.width, 1.0 / this.height);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
 
         gl.activeTexture(gl.TEXTURE0);
