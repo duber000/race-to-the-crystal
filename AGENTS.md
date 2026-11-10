@@ -90,7 +90,7 @@ The project is split into strictly separated layers:
 - **`server/`** – Server built on Go net/http + gorilla/websocket. `GameCoordinator` manages `GameSession` instances, each wrapping a `GameState`. JWT auth for the HTTP API is in `server/auth.kuki`. `WebSocketHandler` owns the client registry and the shared per-session broadcasters.
 - **`mcp/`** – Thin stdio MCP proxy exposing the agent seat (no game logic; proxies to the game server's REST API)
 - **`client/`** – Desktop client using Ebitengine. `renderer_2d.kuki` and UI views in `ui/` implement the game views. **The desktop client is local-only** — it imports the `game` package directly and has no networking; its "Network Game" menu entry is a stub. `ai/ai_client.kuki` is the AI player (HTTP); `ai/http_ai_client.kuki` is a helper in the same package.
-- **`web_server/`** – Serves the web frontend and reverse-proxies `/api` and `/ws` to the game server. The frontend ships in two renderers: the Babylon.js default, and a dependency-free vanilla WebGL2 path behind `?renderer=webgl2` (`web_server/static/webgl2/`, ~4.6k lines, no libraries; Phase 2 complete and verified in-browser). The full record — phases, gotchas, tuned defaults, remaining verification items, and the open default-flip decision — lives in `docs/VANILLA-JS.md`; treat it as the source of truth for web-client rendering work. The `make smoke` gate boots this path headless (see Testing below). Web clients receive state and events over WebSocket.
+- **`web_server/`** – Serves the web frontend and reverse-proxies `/api` and `/ws` to the game server. The frontend ships in two renderers: the dependency-free vanilla WebGL2 path (`web_server/static/webgl2/`, ~4.6k lines, no libraries) is the **default since 2026-11-10** (`?renderer=babylon` opts out for one release); Babylon.js 8 remains as the rollback hatch until Babylon is deleted after the first clean release. The full record — phases, gotchas, tuned defaults, and remaining verification items — lives in `docs/VANILLA-JS.md`; treat it as the source of truth for web-client rendering work. The `make smoke` gate checks the default path headless (see Testing below). Web clients receive state and events over WebSocket.
 - **Test files** – `*_test.kuki` files co-located with the modules they test (e.g., `game/game_state_test.kuki`, `game/game_events_test.kuki`, `server/action_validation_test.kuki`).
 
 ### The game event stream
@@ -252,7 +252,7 @@ duel to finish — it will not.
   is generated randomly (mystery squares land in the deployment corner), so
   find a free cell at runtime instead.
 - **`make smoke`** is the headless gate for the vanilla WebGL2 web client
-  (`?renderer=webgl2`): Playwright + SwiftShader WebGL2, vendored at
+  (loads the default page, no flag): Playwright + SwiftShader WebGL2, vendored at
   `tools/smoke/smoke.mjs`, spawns side servers on 8081/8001, drives a
   two-context lobby flow and asserts per seat (vanilla renderer up, zero
   console errors, non-trivial frame). It also plays a real move over the

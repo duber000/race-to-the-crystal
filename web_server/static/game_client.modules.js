@@ -10,10 +10,10 @@ import { VanillaRenderer3D } from './webgl2/webgl2_renderer.js';
 import { CameraController as VanillaCameraController } from './webgl2/webgl2_camera.js';
 import { STATE, TurnPhase, BOARD_CONFIG, BOARD_WIDTH, BOARD_HEIGHT, CELL_SIZE, WALL_HEIGHT } from './game_client.constants.js';
 
-// Opt-in to the vanilla WebGL2 renderer with ?renderer=webgl2. When absent or
-// set to anything else, the Babylon.js renderer is used. When the WebGL2
-// path fails to initialise, we fall back to Babylon.js.
-const VANILLA_RENDERER = new URLSearchParams(window.location.search).get('renderer') === 'webgl2';
+// The vanilla WebGL2 renderer is the default as of 2026-11-10. `?renderer=babylon`
+// opts out for one release as the rollback hatch; `?renderer=webgl2` stays as a
+// no-op alias. When the WebGL2 path fails to initialise we still fall back to Babylon.js.
+const VANILLA_RENDERER = new URLSearchParams(window.location.search).get('renderer') !== 'babylon';
 
 /**
  * Connection Manager - Handles network connection and state synchronization
@@ -1191,7 +1191,7 @@ class UIController {
         const RendererImpl = useVanilla ? VanillaRenderer3D : Renderer3D;
         const CameraImpl = useVanilla ? VanillaCameraController : CameraController;
         if (useVanilla) {
-            console.info('[initGameModules] Using vanilla WebGL2 renderer (?renderer=webgl2)');
+            console.info('[initGameModules] Using vanilla WebGL2 renderer (default; ?renderer=babylon to opt out)');
         }
 
         try {

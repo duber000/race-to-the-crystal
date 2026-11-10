@@ -10,7 +10,7 @@ A networked multiplayer strategy game for 2-4 players with Tron/Battlezone-style
 
 Race to the Crystal is a turn-based strategy game where players compete to charge a central crystal to 80 by deploying tokens across an 18x18 grid. Features:
 
-- **Web Client**: Browser-based 3D view (JavaScript + Babylon.js; a dependency-free vanilla WebGL2 renderer is available behind `?renderer=webgl2` — see [docs/VANILLA-JS.md](docs/VANILLA-JS.md)) — the networked client
+- **Web Client**: Browser-based 3D view (dependency-free vanilla WebGL2 by default; Babylon.js 8 available behind `?renderer=babylon` for one release — see [docs/VANILLA-JS.md](docs/VANILLA-JS.md)) — the networked client
 - **Desktop Client**: 2D top-down view (Kukicha + Ebitengine) — local play only
 - **Network Multiplayer**: Web clients and AI clients play together on the same server
 - **Fog of War**: You see the terrain, but only the enemy tokens your own tokens are near
@@ -27,7 +27,7 @@ Race to the Crystal is a turn-based strategy game where players compete to charg
 
 - **Backend**: Kukicha (compiles to Go) — HTTP/WebSocket + REST API with JWT authentication, built on `stdlib/http`
 - **Desktop Client**: Kukicha + Ebitengine (2D top-down)
-- **Web Client**: Babylon.js 8 by default, or a vanilla WebGL2 renderer behind `?renderer=webgl2` (no libraries, ~4,600 lines — [docs/VANILLA-JS.md](docs/VANILLA-JS.md)). The WebSocket carries the full game state and a sequenced event stream
+- **Web Client**: vanilla WebGL2 by default (no libraries, ~4,600 lines — [docs/VANILLA-JS.md](docs/VANILLA-JS.md)); Babylon.js 8 behind `?renderer=babylon` as a one-release rollback hatch. The WebSocket carries the full game state and a sequenced event stream
 - **Testing**: 94 Kukicha unit tests covering core game logic and the server's action validation
 
 ## Agent / MCP client
@@ -61,9 +61,9 @@ make web-server-run
 ```
 
 Then open **http://localhost:8000** in your browser, enter a name and connect.
-The web client ships an experimental dependency-free WebGL2 renderer — open
-**http://localhost:8000/?renderer=webgl2** to try it (Babylon.js remains the
-default; see [docs/VANILLA-JS.md](docs/VANILLA-JS.md)).
+The web client renders with its dependency-free WebGL2 renderer by default
+(since 2026-11-10); to fall back to Babylon.js for one release, open
+**http://localhost:8000/?renderer=babylon** (see [docs/VANILLA-JS.md](docs/VANILLA-JS.md)).
 
 To play locally on the desktop instead:
 
@@ -172,9 +172,9 @@ race-to-the-crystal/
 ├── client/        # Desktop client (Kukicha + Ebitengine) and the AI client
 ├── server/        # Game server (HTTP/WebSocket + REST, JWT auth)
 ├── web_server/    # Web client host (web frontend + reverse proxy)
-│   │              #   Babylon.js by default; vanilla WebGL2 behind ?renderer=webgl2
+│   │              #   Vanilla WebGL2 by default; Babylon.js behind ?renderer=babylon (one release)
 │   ├── static/    # The web client (no build step)
-│   │   └── webgl2/  #   Vanilla WebGL2 renderer (opt-in)
+│   │   └── webgl2/  #   Vanilla WebGL2 renderer (default since 2026-11-10)
 ├── shared/        # Constants, enums, types and error codes
 ├── deployment/    # Container deployment configs
 └── docs/          # Detailed documentation

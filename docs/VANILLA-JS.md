@@ -1,11 +1,13 @@
 # Vanilla JavaScript + WebGL2 for the Web Client
 
-> **Status**: Phase 0 and Phase 1 are complete. Phase 2 is nearly done —
+> **Status**: Phase 0 and Phase 1 are complete. Phase 2 is complete —
 > bloom, the crystal-effect animator, the marker-readability bump, god rays,
 > GGX PBR with an analytic IBL, and the composite-pass cosmetics are built and
-> verified in-browser; only the default-flip decision is open.
-> The vanilla WebGL2 renderer ships behind an opt-in flag (`?renderer=webgl2`);
-> Babylon.js remains the default.
+> verified in-browser.
+> **The default flip shipped 2026-11-10 (decision gate, option A):** the
+> vanilla WebGL2 renderer is the default; `?renderer=babylon` opts out for
+> one release as the rollback hatch (`?renderer=webgl2` remains a no-op
+> alias). Babylon.js deletion after the first clean release is still open.
 > Nothing in this document has been merged into a release — everything below
 > was validated locally, in the browser, against a live game server.
 
@@ -106,10 +108,11 @@ stage it, keep Babylon as fallback, gate on a decision point.
   effect changes (`lastProcessedCrystalEffect`, like the mystery-event
   path).
 
-### Phase 1 — vanilla WebGL2 spike, opt-in (done)
+### Phase 1 — vanilla WebGL2 spike, opt-in (done; since then flipped to default)
 
 New `web_server/static/webgl2/` (~4,577 lines after the Phase 2 god-ray/PBR
-pass, ~40 KB gzip), wired in with `?renderer=webgl2`:
+pass, ~40 KB gzip), originally wired in behind `?renderer=webgl2`
+(2026-11-10: vanilla became the default, see the decision gate in §4):
 
 | File | Lines | Role |
 |---|---|---|
@@ -124,8 +127,10 @@ pass, ~40 KB gzip), wired in with `?renderer=webgl2`:
 
 Total ~4,577 lines (Phase 2 total ~882 lines over the Phase 1 spike).
 
-Reached via `game_client.modules.js` → `VANILLA_RENDERER` const; falls back
-to Babylon automatically if the vanilla renderer throws during init.
+Reached via `game_client.modules.js` → `VANILLA_RENDERER` const (vanilla
+default since 2026-11-10; `?renderer=babylon` opts out, one release);
+falls back to Babylon automatically if the vanilla renderer throws during
+init.
 
 **Verified in-browser (Chrome), page by page:**
 
@@ -565,19 +570,26 @@ Rules for this codebase:
    lowered from 0.4 after the A/B — 0.4 accentuated the 1–2px neon grid
    lines). Verified in-browser; see §2, fourth pass.
 
-### Decision gate
+### Decision gate — **decided 2026-11-10: option A**
 
-Make the call once parity is close:
-
-- **A — Default vanilla.** `?renderer=` becomes the normal path; Babylon
-  dropped (delete the 1.66 MB, the two `<script>` tags, `game_client.renderer.js`,
-  `renderer.*.js`, `camera_controller.js`, `renderer.special.js` env map).
-  Payload: ~85 KB gzip total for the whole client.
-- **B — Keep Babylon default.** Only if parity stalls. In that case still
-  consider tree-shaking `@babylonjs/core` (drops the 1.66 MB to maybe
-  300–600 KB), accepting the new build step.
-- **C — Ship both, flag-selected.** Current state; defensible only as a
-  transition.
+- **A — Default vanilla. ← chosen 2026-11-10.** Vanilla is the default
+  (`VANILLA_RENDERER` in `game_client.modules.js`: default unless
+  `?renderer=babylon`; `?renderer=webgl2` kept as a no-op alias).
+  Babylon stays in-repo for exactly one release as the rollback hatch.
+  Deletion after the first clean release: remove `babylon.js` (the
+  1.66 MB), the two `<script>` tags in `web_server/templates/index.html`,
+  `game_client.renderer.js`, `renderer.*.js`, `camera_controller.js`,
+  `renderer.special.js`, and the fallback path in `initGameModules`.
+  Payload then reads ~85 KB gzip total for the whole client.
+  Verified after the flip: `make smoke` (which loads the bare URL, no
+  flag) passes boot + interaction; the Babylon path itself is unchanged
+  and untested since the flip.
+- **B — Keep Babylon default.** Not taken. Only if parity had stalled;
+  tree-shaking `@babylonjs/core` (1.66 MB → maybe 300–600 KB) would
+  accept a new build step for no parity gain.
+- **C — Ship both, flag-selected.** Was the pre-flip state; defensible
+  only as a transition. Superseded by A (now flag-inverted, not
+  flag-selected).
 
 ### Testing backlog (blocks calling it done)
 
@@ -673,10 +685,13 @@ Make the call once parity is close:
   corners off-screen at ~1:1 aspect — my tokens at (0,0)-(2,0) sat pinned
   to the top edge. It matches the Babylon defaults, so it's not a
   regression, but consider raising the radius multiplier (or fov, or
-  clamping by aspect ratio) before the default flip.
-- **Keep Babylon in-repo as fallback forever?** Cost of keeping is one file
-  + scripts; keeping it means we can flip back cheaply. Recommendation:
-  keep it until the default-flip ships, then delete.
+  clamping by aspect ratio) — worth a decision before Babylon is deleted
+  (the Babylon path shares these defaults, so changing them affects
+  both).
+- **Keep Babylon in-repo as fallback forever?** Decided 2026-11-10 with
+  the default flip: keep it for exactly one release as the `?renderer=babylon`
+  rollback hatch, then delete (see "Decision gate" in §4). No longer an
+  open question — only the deletion is pending.
 - **Test suite?** Answered in part: `make smoke` now runs a headless
   smoke test of the vanilla path (Playwright + SwiftShader WebGL2,
   vendored at `tools/smoke/smoke.mjs` — the repo's first Node tooling,
@@ -692,8 +707,10 @@ Make the call once parity is close:
   pinned; 9.35.0 is current. Don't upgrade unless forced.
 - **`main.kuki` cache headers** — the web server sets no cache headers and
   no content hashing, so every deploy is a hard reload for first-time
-  visitors anyway. Consider content hashes + immutable static paths if we
-  flip the vanilla default.
+  visitors anyway. Corollary of the 2026-11-10 default flip: the whole
+  client is now ~85 KB gzip of first-party JS; content hashes + immutable
+  static paths would let browsers hold all of it. Worth doing at the same
+  time as Babylon deletion.
 
 ## 6. Reproducing
 
@@ -702,16 +719,18 @@ make server-run          # game server, http://localhost:8080
 make web-server-run      # web client + reverse proxy, http://localhost:8000
 ```
 
-Then `http://localhost:8000/?renderer=webgl2` (hard-reload once). Add
-`&bloom=0` to compare against the pre-bloom direct path, `&rays=0` to
-compare against bloom-without-god-rays, or `&chroma=0` / `&sharpen=0` to
-see the composite without the corner CA or the unsharp mask. Create a
+Then open `http://localhost:8000/` — vanilla WebGL2 is the default as of
+2026-11-10 (hard-reload once). Add `&bloom=0` to compare against the
+pre-bloom direct path, `&rays=0` to compare against bloom-without-god-rays,
+or `&chroma=0` / `&sharpen=0` to see the composite without the corner CA or
+the unsharp mask. Create a
 2-player game, add an AI with `./race-ai-client poll --join <game-id>
 --name AI --strategy aggressive` next to your seat, ready both, start.
 
 Launch the AI client **detached** (background), not in a foreground shell
 with a timeout — see §3, "a full lobby is invisible … join 400s". Compare
-against the Babylon path by dropping the flag.
+against the Babylon path with `?renderer=babylon` (rollback hatch, one
+release only).
 
 Headless verification (no GPU, no human seats):
 
@@ -721,9 +740,11 @@ npx playwright install chromium   # once
 make smoke               # spawns side servers on 8081/8001, runs, tears down
 ```
 
-`make smoke` exercises page load → connect → create/join → ready → start
-→ vanilla renderer boot + render, asserting zero console errors and a
-non-trivial scene per seat. Screenshots land in `tools/smoke/out/`.
+`make smoke` exercises page load (default renderer, no flag) → connect →
+create/join → ready → start → vanilla renderer boot + render, asserting
+zero console errors and a non-trivial scene per seat — and the behavioral
+gate plays a real move over the wire (select → click destination → server
+accepts; end turn from both seats). Screenshots land in `tools/smoke/out/`.
 Requires the built binaries (`race-server`, `web_server/web_server`) —
 run `make build` first on a fresh checkout. Set `SMOKE_BASE_URL` to aim
 at an already-running instance instead of spawning side servers.

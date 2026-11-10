@@ -3,12 +3,13 @@
  *
  * A drop-in replacement for the Babylon.js Renderer3D, written against the
  * same public interface (duck-typed) so the rest of the client works
- * unchanged. Opt in with ?renderer=webgl2.
+ * unchanged. The default renderer as of 2026-11-10 (?renderer=babylon opts
+ * out for one release).
  *
- * Bloom (half-res separable gaussian + composite with vignette/grain) is
- * on by default; ?bloom=0 falls back to direct rendering. Not implemented
- * (documented decisions, see docs/VANILLA-JS.md): god rays, chromatic
- * aberration/sharpen, true PBR/IBL, shard-pillar refraction.
+ * The bloom/god-ray/PBR/cosmetics stack is on by default (see
+ * docs/VANILLA-JS.md); ?bloom=0 / ?rays=0 / ?chroma=0 / ?sharpen=0 are the
+ * opt-outs. Not implemented (documented decisions, see docs/VANILLA-JS.md):
+ * shard-pillar refraction.
  *
  * Phase 1 goals: board, tokens, generators, crystal, indicators, camera,
  * picking, particles, health labels — playable end to end.

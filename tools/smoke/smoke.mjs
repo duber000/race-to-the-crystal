@@ -9,8 +9,10 @@
 // selected and its valid moves asserted, a valid destination is clicked
 // and confirmed accepted by the server, and the turn is ended from both
 // seats. The side instances are spawned and torn down by this script;
-// the live 8080/8000 servers are never touched. Skip the interaction
-// phase with SMOKE_INTERACT=0.
+// the live 8080/8000 servers are never touched. The page is loaded with
+// no query params — vanilla is the default renderer since 2026-11-10;
+// `?renderer=webgl2` remains a no-op alias, `?renderer=babylon` opts out.
+// Skip the interaction phase with SMOKE_INTERACT=0.
 //
 // Prerequisites:
 //   1. Built binaries: `make build` (or at least `race-server` and
@@ -130,7 +132,8 @@ try {
       if (msg.type() === 'warning') consoleWarnings.push(msg.text());
     });
     page.on('pageerror', (err) => consoleErrors.push(String(err)));
-    await page.goto(`${base}/?renderer=webgl2`, { waitUntil: 'load' });
+    // Default page load: vanilla is the default renderer as of 2026-11-10.
+    await page.goto(`${base}/`, { waitUntil: 'load' });
     await page.fill('#player-name-input', name);
     await page.click('#connect-btn');
     await page.waitForSelector('#lobby-browser-screen:not(.hidden)', { timeout: 10000 });
