@@ -338,6 +338,25 @@ func getWinnerNetworkId on s: reference GameSession string
         return nid
     return ""
 
+# Shared winner announcement frame used by both end-of-game broadcasts —
+# the WebSocket path (broadcastGameWonLocked) and the HTTP action path.
+# Every client, whichever transport carried the final action, receives the
+# same GAME_WON frame.
+func winnerBroadcastFrame on s: reference GameSession JSONMap
+    winnerNetworkId := s.getWinnerNetworkId()
+    winnerName := "Unknown"
+    wid := s.gameState.WinnerID()
+    if wid isnt empty
+        player := s.gameState.GetPlayer(wid)
+        if player isnt empty
+            winnerName = player.Name()
+    return JSONMap{
+        "type": "GAME_WON",
+        "game_id": s.gameId,
+        "winner_id": winnerNetworkId,
+        "winner_name": winnerName,
+    }
+
 func getCurrentNetworkPlayerId on s: reference GameSession string
     cpid := s.gameState.CurrentTurnPlayerID()
     if cpid is empty

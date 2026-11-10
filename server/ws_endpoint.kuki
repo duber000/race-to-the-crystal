@@ -572,16 +572,4 @@ func broadcastState on ep: reference WebSocketEndpoint(session: reference GameSe
 
 # Caller must hold the session broadcast lock (timeOutTurn does).
 func broadcastGameWonLocked on ep: reference WebSocketEndpoint(session: reference GameSession)
-    winnerNetworkId := session.getWinnerNetworkId()
-    winnerName := "Unknown"
-    wid := session.gameState.WinnerID()
-    if wid isnt empty
-        player := session.gameState.GetPlayer(wid)
-        if player isnt empty
-            winnerName = player.Name()
-    ep.wsHandler.BroadcastToGame(session.gameId, JSONMap{
-        "type": "GAME_WON",
-        "game_id": session.gameId,
-        "winner_id": winnerNetworkId,
-        "winner_name": winnerName,
-    })
+    ep.wsHandler.BroadcastToGame(session.gameId, session.winnerBroadcastFrame())

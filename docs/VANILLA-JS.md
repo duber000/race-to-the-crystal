@@ -142,11 +142,18 @@ to Babylon automatically if the vanilla renderer throws during init.
 - Multi-turn AI-vs-AI play: combat, deployments, turn timer, crystal effect
   triggers, all flowing correctly.
 
-**Not yet observed:** a natural GAME_WON arriving over the wire (no match
-has concluded yet). The victory path is verified otherwise: "triggerVictoryOnce()"
-(confetti burst, camera trauma, crystal burst, the crystal sound) was
-exercised and renders, and the alert() path is unmodified browser-native
-code. Crystal effects were observed firing over the wire once (see Phase 2).
+**Observed (2026-11-09): a win over the wire end-to-end.** A scripted
+HTTP_AI seat won a side-instance match by disabling a generator and banking
+crystal charge to 80/80 at turn 23 of `SpectateScripted2` (verified two
+ways: the HTTP action response itself returned
+`GAME OVER - ScriptedAI2 won the race to the crystal!`, and the spectator
+client logged `Game won by ScriptedAI2`), the `GAME_ENDED` event fired and
+the vanilla renderer played the victory effect (confetti burst + crystal
+pulse — screenshotted), and the browser-native `alert()` fired and was
+accepted. Prerequisite find: the HTTP action path broadcast a `GAME_OVER`
+frame the client does not handle, so the winner announcement silently
+dropped for HTTP-driven seats — see §3. Crystal effects observed firing
+over the wire twice (see Phase 2).
 
 **Two silent white-box renderer bugs found and fixed:**
 
@@ -408,6 +415,33 @@ Rules for this codebase:
 - Tests are `*_test.kuki` and are only transpiled by `kukicha brew`
   (`make test`). `go test ./...` alone runs stale generated code.
 
+### End-of-game wire messages
+
+- **The end of a match is announced twice — a `GAME_ENDED` event on the
+  event stream, and a `GAME_WON` message with the winner's name.** Both are
+  required: the client's victory effect keys off the event
+  (`handleGameEnded → triggerVictoryOnce`), and the announcement/`alert()`
+  keys off the message (`handleGameWon`). This was nearly missed: the
+  **HTTP action path** used to broadcast a different message entirely —
+  `{"type":"GAME_OVER","winner":…}` with no name — which every client
+  (vanilla and Babylon alike) dropped with `Unknown message type:
+  GAME_OVER`, so HTTP-driven seats (all AI clients, and any scripted HTTP
+  player) got the confetti but never the winner announcement. Fixed
+  2026-11-09: both end-of-game paths now broadcast one shared frame via
+  `session.winnerBroadcastFrame()` (`server/game_coordinator.kuki`). WS
+  and HTTP seat behaviour is now identical; the alert() path is verified
+  live. If you touch end-of-game broadcasting, keep both paths identical.
+- **Unattended AI-vs-AI matches never conclude.** All three bundled AI
+  strategies converge on the crystal and annihilate both armies; no
+  generator is ever captured (zero captures across three consecutive
+  aggressive/defensive matches, incl. one to turn 76 with 0 tokens alive
+  on both sides), nothing banks charge, and the server has no turn cap —
+  the match idles forever in PLAYING. Expect this whenever you wait for a
+  GAME_WON: it will not come from AI-vs-AI alone. The verification pass
+  used a scripted HTTP_AI seat (a Python driver parked two tokens on a
+  generator and held it until charge hit 80/80) to force a real,
+  over-the-wire win.
+
 ### The web client
 
 - **No build step, no bundler, no cache headers or hash busting.** Every
@@ -517,10 +551,16 @@ Make the call once parity is close:
 
 ### Testing backlog (blocks calling it done)
 
-- Game-over screen seen live from an actual GAME_WON. The confetti/trauma/
-  crystal-burst path is verified (forced `triggerVictoryOnce()` renders;
-  alert() unverified); no match has concluded yet — spectate the AI match
-  with `SPECTATE` + `follow=<seat>` (see §2).
+- ~~Game-over screen seen live from an actual GAME_WON~~ — **done
+  (2026-11-09).** A scripted HTTP_AI seat won a side-instance match by
+  capturing a generator and banking charge to 80/80 at turn 23
+  (`SpectateScripted2`); the spectator client rendered the victory effect
+  (confetti + crystal pulse, screenshotted), the browser-native `alert()`
+  fired and was accepted, and the server-side winner frame now works over
+  both transports (HTTP path used to broadcast an unhandled `GAME_OVER`
+  message — see §3). Required a scripted seat: unattended AI-vs-AI matches
+  never conclude (§3, second gotcha). `triggerVictoryOnce()` stays
+  idempotent across the double announcement (event stream + GAME_WON).
 - ~~Headless smoke test before the default flip~~ — **done and vendored
   as of 2026-11-10.** `tools/smoke/smoke.mjs` (Playwright + SwiftShader
   WebGL2; the repo's first Node tooling — `package.json` at the root,

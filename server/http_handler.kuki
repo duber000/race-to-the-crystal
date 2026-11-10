@@ -196,16 +196,9 @@ func HandleAction on h: reference HTTPHandler(gameId: string, authHeader: string
         h.wsHandler.BroadcastSessionState(session)
         session.broadcastMu.Lock()
         over := session.isGameOver()
-        winnerId := ""
-        if over
-            winnerId = session.getWinnerNetworkId()
         session.broadcastMu.Unlock()
         if over
-            h.wsHandler.BroadcastToGame(gameId, JSONMap{
-                "type": "GAME_OVER",
-                "game_id": gameId,
-                "winner": winnerId,
-            })
+            h.wsHandler.BroadcastToGame(gameId, session.winnerBroadcastFrame())
             h.lobbyMgr.finishGame(gameId)
 
     resultAny := actionResultDataToMap(resultData)
