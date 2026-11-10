@@ -226,3 +226,12 @@ export function mat4ComposeTRS(translation, rotationEuler, scale) {
     );
     return mat4Multiply(t, mat4Multiply(r, s));
 }
+
+/** Transform a world-space point by a column-major mat4; returns x/y/z/w. */
+export function mat4TransformPoint(m, p) {
+    const x = m[0] * p.x + m[4] * p.y + m[8] * p.z + m[12];
+    const y = m[1] * p.x + m[5] * p.y + m[9] * p.z + m[13];
+    const z = m[2] * p.x + m[6] * p.y + m[10] * p.z + m[14];
+    const w = m[3] * p.x + m[7] * p.y + m[11] * p.z + m[15];
+    return { x, y, z, w };
+}

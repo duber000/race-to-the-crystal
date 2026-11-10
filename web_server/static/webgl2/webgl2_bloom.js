@@ -7,8 +7,15 @@
  * soft vignette and a whisper of film grain — both are nearly free in the
  * same shader and recover the Babylon DefaultRenderingPipeline's polish.
  *
- * Opt out with ?bloom=0 — the renderer then draws straight to the canvas,
- * identical to the Phase 1 path.
+ * Half-res god rays: when the caller passes the crystal's UV-space position
+ * to endScene(), a radial blur of the bright pass (48 taps toward the
+ * crystal, exponential decay) is accumulated into a separate half-res
+ * texture and added additively in the same composite step — the stand-in
+ * for Babylon's VolumetricLightScatteringPostProcess. Pass null to skip.
+ * Opt out with ?rays=0 (renderer-side flag).
+ *
+ * Opt out of the whole path with ?bloom=0 — the renderer then draws straight
+ * to the canvas, identical to the Phase 1 path.
  *
  * Render targets:
  *  - sceneFBO: full-res scene color (RGBA16F if the EXT_color_buffer_float
@@ -58,12 +65,37 @@ void main() {
     fragColor = vec4(result, 1.0);
 }`;
 
+const FRAG_GODRAYS = `${GLSL_VERSION}
+precision highp float;
+in vec2 vUV;
+uniform sampler2D uBright;     // half-res bright pass output (pre-blur)
+uniform vec2 uLightPos;        // UV space, bottom-left origin
+uniform float uDecay;          // energy kept per tap (0.9..0.97)
+out vec4 fragColor;
+void main() {
+    const int SAMPLES = 48;
+    vec2 delta = vUV - uLightPos;
+    vec2 sampleStep = (-delta) * (1.0 / float(SAMPLES));
+    vec2 uv = vUV;
+    float illumination = 1.0;
+    vec3 accum = vec3(0.0);
+    for (int i = 0; i < SAMPLES; i++) {
+        uv += sampleStep;
+        accum += texture(uBright, uv).rgb * illumination;
+        illumination *= uDecay;
+    }
+    // Compensate for the tap count and the decay tail.
+    fragColor = vec4(accum * (2.4 / float(SAMPLES)), 1.0);
+}`;
+
 const FRAG_COMPOSITE = `${GLSL_VERSION}
 precision highp float;
 in vec2 vUV;
 uniform sampler2D uScene;
 uniform sampler2D uBloom;
+uniform sampler2D uRays;
 uniform float uBloomStrength;
+uniform float uRaysStrength;
 uniform float uTimeSeed;
 uniform float uGrain;
 uniform float uVignette;
@@ -71,7 +103,8 @@ out vec4 fragColor;
 void main() {
     vec3 scene = texture(uScene, vUV).rgb;
     vec3 bloom = texture(uBloom, vUV).rgb;
-    vec3 color = scene + bloom * uBloomStrength;
+    vec3 rays = texture(uRays, vUV).rgb;
+    vec3 color = scene + bloom * uBloomStrength + rays * uRaysStrength;
 
     // Soft vignette — keeps the eye on the board center.
     vec2 d = vUV - 0.5;
@@ -139,8 +172,9 @@ class BloomPass {
 
         this.brightProgram = createProgram(gl, VERT_FULLSCREEN, FRAG_BRIGHT, ['uScene', 'uThreshold']);
         this.blurProgram = createProgram(gl, VERT_FULLSCREEN, FRAG_BLUR, ['uTexture', 'uDirection']);
+        this.raysProgram = createProgram(gl, VERT_FULLSCREEN, FRAG_GODRAYS, ['uBright', 'uLightPos', 'uDecay']);
         this.compositeProgram = createProgram(gl, VERT_FULLSCREEN, FRAG_COMPOSITE,
-            ['uScene', 'uBloom', 'uBloomStrength', 'uTimeSeed', 'uGrain', 'uVignette']);
+            ['uScene', 'uBloom', 'uRays', 'uBloomStrength', 'uRaysStrength', 'uTimeSeed', 'uGrain', 'uVignette']);
 
         // Fullscreen triangle (covers the viewport with one primitive).
         this.vao = gl.createVertexArray();
@@ -163,8 +197,14 @@ class BloomPass {
         this.blurA_FBO = gl.createFramebuffer();
         this.blurB_FBO = gl.createFramebuffer();
 
+        // Half-res god-ray accumulation (filled by FRAG_GODRAYS, read by the
+        // composite). Kept separate from the bloom ping-pong.
+        this.rayTex = null;
+        this.rayFBO = gl.createFramebuffer();
+
         this.bloomThreshold = 0.55;
         this.bloomStrength = 0.9;
+        this.raysStrength = 0.9;
         this.grain = 0.045;
         this.vignette = 0.55;
     }
@@ -182,6 +222,7 @@ class BloomPass {
         if (this.sceneColor) gl.deleteTexture(this.sceneColor);
         if (this.blurA) gl.deleteTexture(this.blurA);
         if (this.blurB) gl.deleteTexture(this.blurB);
+        if (this.rayTex) gl.deleteTexture(this.rayTex);
 
         this.sceneColor = createColorTexture(gl, width, height, this.sceneInternalFormat, gl.RGBA, this.sceneType);
         gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthBuffer);
@@ -195,10 +236,13 @@ class BloomPass {
         const bf = gl.RGBA16F === this.sceneInternalFormat ? [gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT] : [gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE];
         this.blurA = createColorTexture(gl, bw, bh, bf[0], bf[1], bf[2]);
         this.blurB = createColorTexture(gl, bw, bh, bf[0], bf[1], bf[2]);
+        this.rayTex = createColorTexture(gl, bw, bh, bf[0], bf[1], bf[2]);
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.blurA_FBO);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.blurA, 0);
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.blurB_FBO);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.blurB, 0);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.rayFBO);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.rayTex, 0);
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -210,9 +254,11 @@ class BloomPass {
         const blurAOK = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.blurB_FBO);
         const blurBOK = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.rayFBO);
+        const rayOK = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-        this.available = sceneOK && blurAOK && blurBOK;
+        this.available = sceneOK && blurAOK && blurBOK && rayOK;
         if (!this.available) {
             console.warn('[webgl2] bloom disabled: framebuffer incomplete (scene/half-float target unsupported?)');
         }
@@ -228,10 +274,15 @@ class BloomPass {
     }
 
     /**
-     * Resolve the scene to the canvas with bloom, vignette and grain.
+     * Resolve the scene to the canvas with bloom, god rays, vignette and grain.
      * Call after all scene draws have completed.
+     *
+     * @param {number} timeSeconds
+     * @param {{x: number, y: number} | null} rayLightPos
+     *   Crystal position in UV space (bottom-left origin), or null to skip
+     *   the god-ray pass (behind camera / disabled / no crystal).
      */
-    endScene(timeSeconds) {
+    endScene(timeSeconds, rayLightPos = null) {
         const gl = this.gl;
         const bw = Math.max(1, this.width >> 1);
         const bh = Math.max(1, this.height >> 1);
@@ -250,6 +301,37 @@ class BloomPass {
         gl.uniform1i(this.brightProgram.uniforms.uScene, 0);
         gl.uniform1f(this.brightProgram.uniforms.uThreshold, this.bloomThreshold);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+        // --- God rays: radial blur of the bright pass toward the crystal ---
+        // Accumulate raw rays, then soften with the same 9-tap blur as the
+        // bloom pass so the shafts read as light, not as angular wedges.
+        // Blur rides via blurB -> rayTex and never touches bloom's chain.
+        const raysOn = !!rayLightPos;
+        if (raysOn) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.rayFBO);
+            gl.viewport(0, 0, bw, bh);
+            gl.useProgram(this.raysProgram.program);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this.blurA);
+            gl.uniform1i(this.raysProgram.uniforms.uBright, 0);
+            gl.uniform2f(this.raysProgram.uniforms.uLightPos, rayLightPos.x, rayLightPos.y);
+            gl.uniform1f(this.raysProgram.uniforms.uDecay, 0.955);
+            gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+            gl.useProgram(this.blurProgram.program);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.blurB_FBO);
+            gl.viewport(0, 0, bw, bh);
+            gl.bindTexture(gl.TEXTURE_2D, this.rayTex);
+            gl.uniform1i(this.blurProgram.uniforms.uTexture, 0);
+            gl.uniform2f(this.blurProgram.uniforms.uDirection, 1.0 / bw, 0.0);
+            gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.rayFBO);
+            gl.viewport(0, 0, bw, bh);
+            gl.bindTexture(gl.TEXTURE_2D, this.blurB);
+            gl.uniform2f(this.blurProgram.uniforms.uDirection, 0.0, 1.0 / bh);
+            gl.drawArrays(gl.TRIANGLES, 0, 3);
+        }
 
         // --- Blur: two ping-pong iterations (horizontal then vertical) ---
         for (let i = 0; i < 2; i++) {
@@ -270,7 +352,7 @@ class BloomPass {
             gl.drawArrays(gl.TRIANGLES, 0, 3);
         }
 
-        // --- Composite: scene + bloom -> canvas ---
+        // --- Composite: scene + bloom + god rays -> canvas ---
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, this.width, this.height);
         gl.useProgram(this.compositeProgram.program);
@@ -280,7 +362,11 @@ class BloomPass {
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, this.blurA);
         gl.uniform1i(this.compositeProgram.uniforms.uBloom, 1);
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, raysOn ? this.rayTex : this.blurA); // blurA as a cheap dummy when off
+        gl.uniform1i(this.compositeProgram.uniforms.uRays, 2);
         gl.uniform1f(this.compositeProgram.uniforms.uBloomStrength, this.bloomStrength);
+        gl.uniform1f(this.compositeProgram.uniforms.uRaysStrength, raysOn ? this.raysStrength : 0);
         gl.uniform1f(this.compositeProgram.uniforms.uTimeSeed, (timeSeconds * 61.7) + 11.3);
         gl.uniform1f(this.compositeProgram.uniforms.uGrain, this.grain);
         gl.uniform1f(this.compositeProgram.uniforms.uVignette, this.vignette);
@@ -297,14 +383,17 @@ class BloomPass {
         if (this.sceneColor) gl.deleteTexture(this.sceneColor);
         if (this.blurA) gl.deleteTexture(this.blurA);
         if (this.blurB) gl.deleteTexture(this.blurB);
+        if (this.rayTex) gl.deleteTexture(this.rayTex);
         gl.deleteFramebuffer(this.sceneFBO);
         gl.deleteFramebuffer(this.blurA_FBO);
         gl.deleteFramebuffer(this.blurB_FBO);
+        gl.deleteFramebuffer(this.rayFBO);
         gl.deleteRenderbuffer(this.depthBuffer);
         gl.deleteBuffer(this.triangleBuffer);
         gl.deleteVertexArray(this.vao);
         gl.deleteProgram(this.brightProgram.program);
         gl.deleteProgram(this.blurProgram.program);
+        gl.deleteProgram(this.raysProgram.program);
         gl.deleteProgram(this.compositeProgram.program);
         this.available = false;
     }

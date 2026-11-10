@@ -1,11 +1,12 @@
 # Vanilla JavaScript + WebGL2 for the Web Client
 
-> **Status**: Phase 0 and Phase 1 are complete, and Phase 2 is under way —
-> bloom, the crystal-effect animator and the marker-readability bump are
-> built and verified in-browser. The vanilla WebGL2 renderer ships behind
-> an opt-in flag (`?renderer=webgl2`); Babylon.js remains the default.
-> The rest of Phase 2 (god rays, PBR/IBL) and the default-flip decision
-> are open.
+> **Status**: Phase 0 and Phase 1 are complete. Phase 2 is nearly done —
+> bloom, the crystal-effect animator, the marker-readability bump, god rays
+> and GGX PBR with an analytic IBL are built and verified in-browser; only
+> the optional cosmetics (chromatic aberration / sharpen) and the
+> default-flip decision are open.
+> The vanilla WebGL2 renderer ships behind an opt-in flag (`?renderer=webgl2`);
+> Babylon.js remains the default.
 > Nothing in this document has been merged into a release — everything below
 > was validated locally, in the browser, against a live game server.
 
@@ -108,21 +109,21 @@ stage it, keep Babylon as fallback, gate on a decision point.
 
 ### Phase 1 — vanilla WebGL2 spike, opt-in (done)
 
-New `web_server/static/webgl2/` (~4,378 lines after Phase 2, ~38 KB gzip), wired in with
-`?renderer=webgl2`:
+New `web_server/static/webgl2/` (~4,577 lines after the Phase 2 god-ray/PBR
+pass, ~40 KB gzip), wired in with `?renderer=webgl2`:
 
 | File | Lines | Role |
 |---|---|---|
-| `glmath.js` | 228 | vec3 + column-major mat4 (perspective/lookAt/multiply/invert/TRS) |
+| `glmath.js` | 237 | vec3 + column-major mat4 (perspective/lookAt/multiply/invert/TRS + mat4TransformPoint) |
 | `webgl2_core.js` | 170 | context, program/attrib management, VAO mesh builders (triangles/lines/points) |
 | `webgl2_geometry.js` | 368 | ground/box/cylinder/UV/ico sphere/torus/quad/circle/square builders |
 | `webgl2_camera.js` | 644 | spherical orbit overview + first person, wheel zoom, two-finger pinch/pan, focus/transition/FP smoothing |
-| `webgl2_renderer.js` | 2,200 | `VanillaRenderer3D` — drop-in for `Renderer3D` (duck-typed), same public interface |
+| `webgl2_renderer.js` | 2,301 | `VanillaRenderer3D` — drop-in for `Renderer3D` (duck-typed), same public interface |
 | `webgl2_textures.js` | 85 | canvas-generated textures (grid, health labels, soft-circle billboards) |
-| `webgl2_bloom.js` | 313 | half-res bloom + composite (vignette, grain) — Phase 2 |
+| `webgl2_bloom.js` | 402 | half-res bloom + god rays + composite (vignette, grain) — Phase 2 |
 | `webgl2_crystal_effects.js` | 370 | fog/ghosts/lightning/whirlwind animator — Phase 2 |
 
-Total ~4,378 lines (Phase 2 adds ~683, about 7 KB gzip).
+Total ~4,577 lines (Phase 2 total ~882 lines over the Phase 1 spike).
 
 Reached via `game_client.modules.js` → `VANILLA_RENDERER` const; falls back
 to Babylon automatically if the vanilla renderer throws during init.
@@ -178,7 +179,7 @@ be fixed for the AI to function at all (see §3 for the shared cause):
 `kukicha fmt --check .` clean. (Note: `game/main.go` et al. are
 gitignored; `make test` regenerated everything it needed.)
 
-### Phase 2 — visual parity (partial; built and verified in-browser)
+### Phase 2 — visual parity (built and verified in-browser)
 
 Built since the Phase 1 spike, including the verification pass in Chrome
 (November 2026):
@@ -209,6 +210,45 @@ Built since the Phase 1 spike, including the verification pass in Chrome
 - **Marker readability** — valid-move/attack fill quads raised from 0.16
   to 0.35 alpha, drawn additively with brightness 1.8; threat-hover
   squares bumped to match. Still to be judged at zoom on a busy board.
+- **God rays** (`webgl2_bloom.js` → `FRAG_GODRAYS`) — the stand-in for
+  Babylon's `VolumetricLightScatteringPostProcess`. When the crystal is
+  visible, the bright pass (no extra render) is radially blurred toward
+  the crystal's screen-space position (48 taps, decay 0.955, quadratic
+  falloff comes from the decay) into a half-res texture, then softened
+  with the same separable 9-tap blur bloom uses, and added additively in
+  the composite. The crystal's UV-space position comes from projecting
+  the hub world position through `mat4TransformPoint(proj*view, …)`;
+  skipped (strength 0, dummy texture bound) when the crystal is behind
+  the camera, off-screen by a wide margin, absent, or `?rays=0`. Both
+  toggle and strength are live-tweakable from the console
+  (`renderer.bloomPass.raysStrength`, default 0.9). Verified in-browser:
+  shafts fan out from the crystal across the board and sky; raw radial
+  accumulation read as harsh angular wedges before the extra blur, and
+  0.6 read as too subtle — 0.9 is the settled default. NOTE: the rays
+  are uniform along a shaft (occlusion is not modelled — no depth
+  texture exists on the scene FBO), which is acceptable at this scene
+  scale; foreground geometry does not cast ray shadows.
+- **GGX PBR + analytic IBL** (`webgl2_renderer.js` → `FRAG_LIT`) —
+  Lambert/Blinn-Phong replaced with GGX/Smith/Schlick direct lighting
+  and an environment computed per-fragment from an analytic sky (warm
+  dusty horizon, deep-blue zenith, near-black nadir, sun disk + forward
+  scatter lobe, warm horizon band on the sun's azimuth). No environment
+  texture, no cube map, nothing fetched. Diffuse IBL samples a
+  sun-softened gradient (`skyAmbient`); specular IBL uses
+  `skyColor(reflect(-v, n), roughness)` with roughness-blurred sun
+  (`focus = mix(600, 5, roughness)`) and a Schlick-roughness Fresnel.
+  Materials are now `metallic`/`roughness`: generators 0.85/0.3, tokens
+  0.55/0.38, phantoms 0.3/0.5. The old emissive-heavy look survives —
+  the generators' orange emissive is kept on top of the metal (it reads
+  as "hot coil", and the bloom knee loves it). **Decision on the gold:
+  kept the emissive fake.** The cage is additive line geometry, not a
+  lit metal, so PBR would not have touched it anyway; the warm horizon
+  band does wonders on the generators and tokens, but the cage lines
+  with their emissive gold stay exactly as they were. Verified
+  in-browser: generator pillars pick up a proper warm/cool gradient and
+  sun streak instead of flat orange; tokens read as shaded hex solids;
+  zero shader compile/link errors in Chrome or SwiftShader, and
+  `make smoke` passes (the boot gate now exercises both new shaders).
 - **Two more silent white-box bugs found by reading, then fixed:**
   3. `VERT_UNLIT` declared `aUV` at location 1 — the *normal* attribute's
      location (fixed VAO layout is 0=position, 1=normal, 2=UV), so every
@@ -260,6 +300,31 @@ fog-of-war opponent filtering, and the AI seat all behave.
   the page's CSP (`default-src 'self'`) blocks a :8000 page from opening
   `ws://localhost:8081` directly, so side-instance verification must go
   through a side web proxy, not a direct port.
+
+**Verification notes (third pass — god rays + PBR/IBL, November 2026):**
+
+- Side-instance flow again (8081 game server + 8001 web proxy). Fresh
+  2-player game against a detached `aggressive` AI on the side server;
+  the human started PLAYING with auto-deployed tokens. Console clean:
+  no shader compile/link errors, no fallback warning — the new `FRAG_LIT`
+  and `FRAG_GODRAYS` come up on the first paint in Chrome and under
+  SwiftShader (`make smoke` re-run for the fallback path).
+- **God rays A/B.** `?rays=0` vs default vs live-tuned
+  `renderer.bloomPass.raysStrength` (0.6 / 0.9 / 1.1). Raw accumulation
+  (no softening blur) produced hard angular wedges — rejected; 0.6 with
+  the extra 9-tap H/V soften read as "mystery haze", not rays — too
+  subtle; **0.9 ships** as the default. The rays are most legible over
+  the sky above the crystal, fanning up-out from it; they do not
+  re-light the board.
+- **PBR look.** Generator pillars read as polished warm-orange metal
+  (sun streak + horizon gradient reflect); tokens read as shaded hex
+  solids rather than flat player-color slabs; the crystal and cage are
+  unchanged (unlit/line geometry, deliberately). The emissive terms stay.
+- **No perf red flags observed** at 1354×728 (high-performance profile),
+  but the rays add two half-res passes (radial accumulate + H/V soften)
+  and the composite reads a third texture — worth a frame-time check on
+  a low-end device before the default flip, together with the existing
+  bloom question.
 
 ---
 
@@ -361,24 +426,27 @@ Rules for this codebase:
 
 ## 4. The next phase
 
-### Phase 2 — visual parity (in progress)
+### Phase 2 — visual parity (complete except optional cosmetics)
 
 1. ~~Bump the marker readability~~ — **done**: fills 0.16 → 0.35 alpha,
    additive, brightness 1.8. Judged at playing distance; worth one more
    pass at zoom on a busy board.
 2. ~~Bloom / glow~~ — **done** (`webgl2_bloom.js`; threshold 0.55, strength
    0.9, half-res, `?bloom=0` escape hatch). See §2.
-3. **God rays** — Babylon's `VolumetricLightScatteringPostProcess`. Emulate
-   with a radial-blur pass from the crystal's screen position, or delete
-   outright (crystal already breathes/pulses).
+3. ~~**God rays**~~ — **done** (`FRAG_GODRAYS`, half-res radial blur from
+   the crystal's screen position, 48 taps, softened with a 9-tap H+V blur,
+   additive in the composite; `?rays=0` opt-out; verified in-browser).
+   See §2.
 4. ~~Crystal effects~~ — **done** (`webgl2_crystal_effects.js`, all four);
    see §2. First-choice follow-up is a wire-path (not forced) trigger
    observed in-browser.
-5. **PBR/IBL** — currently Lambert + Blinn-Phong. True PBR (GGX) + a small
-   procedural environment (or baked gradient cube) would restore the gold
-   and gems to full richness. This is also the moment to decide on the
-   gold: keep the current emissive fake (free, moody) or pay the shader
-   rewrite.
+5. ~~**PBR/IBL**~~ — **done** (`FRAG_LIT` rewritten: GGX/Smith/Schlick
+   direct light + per-fragment analytic sky for both diffuse irradiance
+   and roughness-blurred specular reflections; no environment texture.
+   Generator pillars read as polished metal with a warm/cool gradient;
+   tokens are shaded hex solids). Gold decision: keep the emissive fake —
+   the cage is additive line geometry PBR would never touch, and the
+   glow look is on-brand; see §2.
 6. **Floating text / health labels** — verify at zoom, check flip_y and
    readability.
 7. **Chroma aberration / film grain / sharpen** — optional cosmetics from
@@ -450,9 +518,9 @@ Make the call once parity is close:
 | Picking | ✓ `scene.pick` | ✓ ray-plane (equivalent for grid cells) |
 | Bloom / glow layer | ✓ | ✓ (half-res gaussian + composite bloom/vignette/grain) |
 | Chromatic aberration / sharpen | ✓ | ✗ (but: vignette + film grain in the composite pass) |
-| God rays | ✓ | ✗ |
+| God rays | ✓ | ✓ (radial blur from the crystal's screen pos, softened; additive — no ray occlusion) |
 | Crystal effects (fog/ghost/lightning/whirlwind) | ✓ | ✓ (stub replaced; verified in-browser) |
-| PBR / IBL | ✓ | ~Lambert/Blinn-Phong |
+| PBR / IBL | ✓ | ✓ (GGX/Smith/Schlick + analytic sky IBL; no env texture) |
 | Refraction (shard pillars) | ✓ | ✗ |
 
 ---
@@ -496,7 +564,8 @@ make web-server-run      # web client + reverse proxy, http://localhost:8000
 ```
 
 Then `http://localhost:8000/?renderer=webgl2` (hard-reload once). Add
-`&bloom=0` to compare against the pre-bloom direct path. Create a
+`&bloom=0` to compare against the pre-bloom direct path, or `&rays=0` to
+compare against bloom-without-god-rays. Create a
 2-player game, add an AI with `./race-ai-client poll --join <game-id>
 --name AI --strategy aggressive` next to your seat, ready both, start.
 

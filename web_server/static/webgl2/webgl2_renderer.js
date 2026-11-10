@@ -25,7 +25,7 @@ import { AudioManager } from '../audio_manager.js';
 import {
     Vec3, mat4Identity, mat4Multiply, mat4Perspective, mat4LookAt, mat4Invert,
     mat4Translation, mat4Scaling, mat4RotationX, mat4RotationY, mat4RotationZ,
-    mat4ComposeTRS,
+    mat4ComposeTRS, mat4TransformPoint,
 } from './glmath.js';
 import {
     getWebGL2Context, createProgram, createMesh, createLineMesh, createPointMesh,
@@ -90,24 +90,107 @@ in vec2 vUV;
 uniform vec3 uColor;
 uniform vec3 uEmissive;
 uniform float uAlpha;
-uniform vec3 uDirLightDir;
+uniform vec3 uDirLightDir;      // points from the light toward the scene (legacy convention)
 uniform vec3 uDirLightColor;
-uniform vec3 uAmbientColor;
-uniform float uSpecStrength;
-uniform float uShininess;
+uniform float uMetallic;
+uniform float uRoughness;
 uniform vec3 uEyePos;
 out vec4 fragColor;
+
+// Analytic environment — a warm-dusty horizon, a deep-blue zenith and a
+// near-black nadir, plus the sun. No environment texture; everything is
+// evaluated per fragment, which is cheap at this scene size and removes
+// the load-time IBL fetch entirely.
+vec3 skyAmbient(vec3 d) {
+    float y = d.y;
+    vec3 zen = vec3(0.045, 0.062, 0.135);
+    vec3 hor = vec3(0.46, 0.30, 0.185);
+    vec3 gnd = vec3(0.022, 0.026, 0.043);
+    vec3 col = mix(hor, zen, smoothstep(0.0, 0.7, y));
+    col = mix(col, gnd, smoothstep(0.0, 0.5, -y));
+    // Sun-side warmth, soft — no hard disk (that's the specular term's job).
+    vec3 toSun = normalize(-uDirLightDir);
+    col += uDirLightColor * pow(max(dot(d, toSun), 0.0), 2.5) * 0.18;
+    return col;
+}
+
+vec3 skyColor(vec3 d, float roughness) {
+    float y = d.y;
+    vec3 zen = vec3(0.045, 0.062, 0.135);
+    vec3 hor = vec3(0.46, 0.30, 0.185);
+    vec3 gnd = vec3(0.022, 0.026, 0.043);
+    vec3 col = mix(hor, zen, smoothstep(0.0, 0.7, y));
+    col = mix(col, gnd, smoothstep(0.0, 0.5, -y));
+
+    vec3 toSun = normalize(-uDirLightDir);
+    float s = max(dot(d, toSun), 0.0);
+    // Sun disk and tight halo, blurring away as roughness grows.
+    float focus = mix(600.0, 5.0, roughness);
+    col += uDirLightColor * pow(s, focus) * mix(18.0, 0.55, roughness);
+    // Wide atmospheric forward-scatter lobe.
+    col += uDirLightColor * pow(s, 3.0) * 0.22 * (1.0 - roughness * 0.6);
+    // Warm band hugging the horizon on the sun's side.
+    vec2 azD = normalize(d.xz + vec2(1e-5));
+    vec2 azS = normalize(toSun.xz + vec2(1e-5));
+    col += uDirLightColor * pow(max(dot(azD, azS), 0.0), 5.0) * exp(-abs(y) * 8.0) * 0.4;
+    return col;
+}
+
+float distributionGGX(vec3 n, vec3 h, float roughness) {
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float ndh = max(dot(n, h), 0.0);
+    float d = ndh * ndh * (a2 - 1.0) + 1.0;
+    return a2 / (3.14159265 * d * d);
+}
+
+float geometrySchlickGGX(float ndv, float roughness) {
+    float r = roughness + 1.0;
+    float k = (r * r) / 8.0;
+    return ndv / (ndv * (1.0 - k) + k);
+}
+
+float geometrySmith(vec3 n, vec3 v, vec3 l, float roughness) {
+    return geometrySchlickGGX(max(dot(n, v), 0.0), roughness)
+         * geometrySchlickGGX(max(dot(n, l), 0.0), roughness);
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 f0) {
+    return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 f0, float roughness) {
+    vec3 f90 = max(vec3(1.0 - roughness), f0);
+    return f0 + (f90 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 void main() {
     vec3 n = normalize(vNormal);
-    vec3 lightDir = normalize(-uDirLightDir);
-    float diff = max(dot(n, lightDir), 0.0);
-    vec3 color = uColor * (uAmbientColor + diff * uDirLightColor) + uEmissive;
-    if (uSpecStrength > 0.0) {
-        vec3 viewDir = normalize(uEyePos - vWorldPos);
-        vec3 halfVec = normalize(lightDir + viewDir);
-        float spec = pow(max(dot(n, halfVec), 0.0), uShininess);
-        color += uDirLightColor * spec * uSpecStrength;
-    }
+    vec3 v = normalize(uEyePos - vWorldPos);
+    vec3 l = normalize(-uDirLightDir);
+    vec3 h = normalize(l + v);
+
+    float roughness = clamp(uRoughness, 0.05, 1.0);
+    float metallic = clamp(uMetallic, 0.0, 1.0);
+    vec3 f0 = mix(vec3(0.04), uColor, metallic);
+
+    // --- Direct key light (GGX / Smith / Schlick) ---
+    float ndl = max(dot(n, l), 0.0);
+    float ndv = max(dot(n, v), 0.0);
+    float ndf = distributionGGX(n, h, roughness);
+    float geo = geometrySmith(n, v, l, roughness);
+    vec3 f = fresnelSchlick(max(dot(h, v), 0.0), f0);
+    vec3 spec = (ndf * geo * f) / (4.0 * ndv * ndl + 0.001);
+    vec3 kD = (1.0 - f) * (1.0 - metallic);
+    vec3 Lo = (kD * uColor / 3.14159265 + spec) * uDirLightColor * ndl;
+
+    // --- Image-based lighting from the analytic sky ---
+    vec3 fibl = fresnelSchlickRoughness(ndv, f0, roughness);
+    vec3 kD2 = (1.0 - fibl) * (1.0 - metallic);
+    vec3 diffuseIBL = skyAmbient(n) * uColor * kD2;
+    vec3 specularIBL = skyColor(reflect(-v, n), roughness) * fibl;
+
+    vec3 color = Lo + diffuseIBL + specularIBL + uEmissive;
     fragColor = vec4(color, uAlpha);
 }`;
 
@@ -229,6 +312,7 @@ class VanillaRenderer3D {
         // Post-processing: half-res bloom + composite (vignette, grain).
         // ?bloom=0 disables it entirely and renders straight to the canvas.
         this.bloomEnabled = new URLSearchParams(window.location.search).get('bloom') !== '0';
+        this.raysEnabled = new URLSearchParams(window.location.search).get('rays') !== '0';
         this.bloomPass = null;
     }
 
@@ -273,7 +357,7 @@ class VanillaRenderer3D {
         this.programs = {
             lit: createProgram(gl, VERT_LIT, FRAG_LIT, [
                 'uModel', 'uView', 'uProj', 'uColor', 'uEmissive', 'uAlpha',
-                'uDirLightDir', 'uDirLightColor', 'uAmbientColor', 'uSpecStrength', 'uShininess', 'uEyePos',
+                'uDirLightDir', 'uDirLightColor', 'uMetallic', 'uRoughness', 'uEyePos',
             ]),
             unlit: createProgram(gl, VERT_UNLIT, FRAG_UNLIT, [
                 'uModel', 'uView', 'uProj', 'uColor', 'uAlpha', 'uBrightness', 'uUseMap', 'uMap',
@@ -284,7 +368,6 @@ class VanillaRenderer3D {
         };
         // Static light parameters (warm key light + cool ambient).
         this.lightDir = new Vec3(-0.5, -1.4, -0.35).normalize();
-        this.ambientColor = new Vec3(0.25, 0.25, 0.32);
         this.dirLightColor = new Vec3(0.9, 0.9, 0.85);
 
         gl.useProgram(this.programs.unlit.program);
@@ -526,10 +609,8 @@ class VanillaRenderer3D {
             [this.lightDir.x, this.lightDir.y, this.lightDir.z]);
         gl.uniform3fv(program.uniforms.uDirLightColor,
             [this.dirLightColor.x, this.dirLightColor.y, this.dirLightColor.z]);
-        gl.uniform3fv(program.uniforms.uAmbientColor,
-            [this.ambientColor.x, this.ambientColor.y, this.ambientColor.z]);
-        gl.uniform1f(program.uniforms.uSpecStrength, obj.specStrength !== undefined ? obj.specStrength : 0.35);
-        gl.uniform1f(program.uniforms.uShininess, obj.shininess !== undefined ? obj.shininess : 24);
+        gl.uniform1f(program.uniforms.uMetallic, obj.metallic !== undefined ? obj.metallic : 0.0);
+        gl.uniform1f(program.uniforms.uRoughness, obj.roughness !== undefined ? obj.roughness : 0.5);
         gl.uniform3fv(program.uniforms.uEyePos, [eyePos.x, eyePos.y, eyePos.z]);
         obj.mesh.draw();
     }
@@ -674,12 +755,14 @@ class VanillaRenderer3D {
         this.generatorLineMeshes = [];
         this.crystalFrames = [];
         this.crystalMesh = null;
+        this.crystalWorldPos = null;
         this.mysteryRings = [];
 
         if (!gameState.crystal) return;
 
         const centerX = gameState.crystal.position[0] * CELL_SIZE + CELL_SIZE / 2;
         const centerZ = gameState.crystal.position[1] * CELL_SIZE + CELL_SIZE / 2;
+        this.crystalWorldPos = { x: centerX, y: CRYSTAL_HUB_Y, z: centerZ };
 
         const hub = {
             kind: 'unlit',
@@ -735,8 +818,8 @@ class VanillaRenderer3D {
                     color: [0.9, 0.92, 0.98],
                     emissive: ORANGE_GLOW.slice(),
                     alpha: 0.85,
-                    specStrength: 0.4,
-                    shininess: 40,
+                    metallic: 0.85,
+                    roughness: 0.3,
                     genKey: `${gen.position[0]},${gen.position[1]}`,
                 };
                 this.specialCellObjects.push(pillar);
@@ -1069,8 +1152,8 @@ class VanillaRenderer3D {
             color: [0.0, 0.0, 0.0],
             emissive: playerColor.slice(),
             alpha: 0.95,
-            specStrength: 0.6,
-            shininess: 32,
+            metallic: 0.55,
+            roughness: 0.38,
             colorKey: playerColor.join(','),
             token,
             hidden: false,
@@ -1102,8 +1185,8 @@ class VanillaRenderer3D {
             color: [0.0, 0.0, 0.0],
             emissive: playerColor.slice(),
             alpha: 0.4,
-            specStrength: 0.2,
-            shininess: 16,
+            metallic: 0.3,
+            roughness: 0.5,
             phantom: true,
             flickerPhase: Math.random() * Math.PI * 2,
             label: {
@@ -2011,8 +2094,8 @@ class VanillaRenderer3D {
                 color: record.color,
                 emissive: record.emissive,
                 alpha,
-                specStrength: record.specStrength,
-                shininess: record.shininess,
+                metallic: record.metallic,
+                roughness: record.roughness,
             };
             if (alpha < 1) transparent.push(entry); else opaque.push(entry);
             // Health label floats above the token, faces the camera.
@@ -2038,8 +2121,8 @@ class VanillaRenderer3D {
                     color: record.color,
                     emissive: record.emissive,
                     alpha: record.alpha,
-                    specStrength: record.specStrength,
-                    shininess: record.shininess,
+                    metallic: record.metallic,
+                    roughness: record.roughness,
                 });
                 transparent.push({
                     billboard: true,
@@ -2129,10 +2212,28 @@ class VanillaRenderer3D {
         // --- Particles (additive points) ---
         this._drawParticles(gl, view, proj);
 
-        // --- Resolve to canvas: bloom + vignette + grain (or direct pass) ---
+        // --- Resolve to canvas: bloom + god rays + vignette + grain (or direct) ---
         if (bloomActive) {
-            this.bloomPass.endScene(this.animationTime);
+            this.bloomPass.endScene(this.animationTime, this._rayLightPos(proj, view));
         }
+    }
+
+    /**
+     * Screen-space position (UV, bottom-left origin) of the crystal — the
+     * god-ray light the composite pass radially blurs toward. Returns null
+     * when the crystal is behind the camera, rays are disabled, or there is
+     * no crystal in the state.
+     */
+    _rayLightPos(proj, view) {
+        const cp = this.crystalWorldPos;
+        if (!this.raysEnabled || !cp) return null;
+        const clip = mat4TransformPoint(mat4Multiply(proj, view), cp);
+        if (clip.w <= 0.001) return null; // behind the camera
+        const ndcX = clip.x / clip.w;
+        const ndcY = clip.y / clip.w;
+        // Light slightly off-screen still throws rays; far outside just smears.
+        if (Math.abs(ndcX) > 2.5 || Math.abs(ndcY) > 2.5) return null;
+        return { x: ndcX * 0.5 + 0.5, y: ndcY * 0.5 + 0.5 };
     }
 
     _drawBeam(gl, obj, view, proj) {
