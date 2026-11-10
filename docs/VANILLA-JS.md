@@ -23,6 +23,17 @@
 > the maintainer is holding the release until the §4 testing backlog is
 > further along; everything below was validated locally, in the browser,
 > against a live game server.
+> **2026-11-10 (eighth verification):** first-person mode verified
+> in-browser — V toggle, TAB cycle (incl. wrap to token 0), W/S/A/D
+> moves, Q/E rotate. Found and fixed a real defect in the pass:
+> token id 0 is falsy, and two truthiness checks in
+> `web_server/static/game_client.modules.js` left a fresh first-person
+> entry with no controlled token (camera parked, own token rendered)
+> and silently desynced TAB-wrap to token 0. Pointer-lock mouse-look
+> wiring is verified but the lock grant needs a real browser. `D` was
+> not bound to move-right (it deployed); fixed same day — `R` keeps
+> deploy, `D` joins `arrowright` as move-right (verified live). See
+> §2, eighth pass.
 > **2026-11-10 (doc sync):** line counts and gzip sizes re-measured
 > against the working tree (~4,673 lines, ~42 KB gzip total);
 > `make smoke` re-run and passes; the "Babylon version bump" open
@@ -178,8 +189,9 @@ the vanilla renderer played the victory effect (confetti burst + crystal
 pulse — screenshotted), and the browser-native `alert()` fired and was
 accepted. Prerequisite find: the HTTP action path broadcast a `GAME_OVER`
 frame the client does not handle, so the winner announcement silently
-dropped for HTTP-driven seats — see §3. Crystal effects observed firing
-over the wire twice (see Phase 2).
+dropped for HTTP-driven seats — see §3. Crystal effects fired over the
+wire as the persisted-effect replay on spectator connect, twice
+(see Phase 2).
 
 **Two silent white-box renderer bugs found and fixed:**
 
@@ -236,9 +248,14 @@ Built since the Phase 1 spike, including the verification pass in Chrome
   enemies (5 ghost billboards — object emission verified: correct
   alpha/color/texture; hard to make out at overview distance). The
   trigger path itself (`checkCrystalEffectTrigger`) is unchanged and
-  replay-guarded; not yet observed firing end-to-end from the wire — the
-  "whoosh" heard during verification was the selection sound, not an
-  effect. Sounds flow through the unchanged `AudioManager`.
+  replay-guarded. What has been observed over the wire is the
+  **persisted-effect replay** — on spectator connect the fresh client
+  logs `Crystal effect triggered: 3` and replays the damage boost once,
+  replay-guard intact (twice in the SpectateScripted2 win match). A
+  **natural first-time trigger** observed mid-match has not been
+  captured; the "whoosh" heard during verification was the selection
+  sound, not an effect. Sounds flow through the unchanged
+  `AudioManager`.
 - **Marker readability** — valid-move/attack fill quads raised from 0.16
   to 0.35 alpha, drawn additively with brightness 1.8; threat-hover
   squares bumped to match. Judged at zoom 2026-11-10 (sixth pass):
@@ -326,7 +343,8 @@ fog-of-war opponent filtering, and the AI seat all behave.
   client logged `Crystal effect triggered: 3 for player player_0` (damage
   boost replayed once from the persisted `last_triggered_crystal_effect`,
   replay-guard intact) and played the matching sound. The forced-trigger
-  path was already proven; this closes the loop.
+  path was already proven; this closes the *replay* loop. A natural
+  first-time trigger firing mid-match has still not been captured.
 - **Zoom is glued to the board center.** Wheel dollies the radius but the
   target never leaves the crystal — past ~radius 110 the crystal fills the
   frame. Pan/drag moves it (map-style grab pan), and direct spherical edits
@@ -337,7 +355,8 @@ fog-of-war opponent filtering, and the AI seat all behave.
 - **First-person mode toggles (V) and survives WASD**: with no controlled
   token, `W` prints the "No token controlled! Press TAB to cycle tokens"
   banner. WASD movement with a controlled token and TAB cycling remain
-  untested.
+  untested. *(Superseded 2026-11-10 by the eighth pass in §2: both are
+  now verified, and the id-0 falsy bug behind this banner was fixed.)*
 - **Health labels are crisp quads** — glyph legibility at zoom verified
   2026-11-10 (sixth pass): upright, crisp at radius ≥ 150; unreadable at
   full-board radius (by design). Superseded same day by the nominal-size
@@ -535,6 +554,62 @@ fog-of-war opponent filtering, and the AI seat all behave.
   same accepted trade-off as the neon grid). Console clean;
   `make smoke` passes end-to-end (move + end-turn gates, zero errors).
 
+**Verification notes (eighth pass — first-person mode, 2026-11-10):**
+
+- Side instance again (8081 game server + 8001 web proxy); fresh
+  2-player game `FPVerify2` as player_0 vs a detached `aggressive` AI.
+  Fresh games start the local seat's turn in MOVEMENT (auto-deploy).
+- **Defect found and fixed (`web_server/static/game_client.modules.js`).**
+  Token id 0 is falsy. `initializeFirstPersonMode()` did
+  `if (!newTokenId) return;`, so entering first person in a fresh game
+  set `cameraMode = "firstperson"` but left `gameClient.controlledTokenId`
+  null — the camera never snapped to the token (parked at the overview
+  pose), the frame callback found `!== null` false and tracked no token,
+  the controlled token rendered at eye level, and `W` printed
+  "No token controlled! Press TAB to cycle tokens."
+  `cycleControlledToken()` had the same truthiness bug — TAB-wrapping
+  back to token 0 advanced `cameraController.controlledTokenId` to 0
+  while leaving `stateManager.controlledTokenId` at 1: the camera would
+  show token 0's eye pose while WASD moved token 1. Both now
+  null/undefined-check. `make smoke` re-run clean after the fix (boot,
+  two-seat move + end turn, zero console errors).
+- **Verified end-to-end in a fresh page load:** `V` enters first person
+  (FOV 0.9, camera snaps to the token's eye pose — token 0 at world
+  (16, 30, 16) for cell [0,0]); the controlled token's mesh and health
+  label hide at eye level; `W` issues a MOVE the server accepts
+  (token 0 [0,0] → [0,1], the camera followed, z 16 → 48); `S` after
+  the token moved is correctly silent; `TAB` cycles 0 → 1 → 2 → 0 with
+  stateManager and cameraController in agreement on the wrap-to-zero
+  path; `Q`/`E` rotate the view in 15° steps (`tokenRotation` tracked
+  across presses); `V` again returns to overview, clearing the
+  controlled id in both layers. `applyMouseLook` yaw/pitch math and the
+  ±[−85°, 60°] pitch clamps verified directly on the controller
+  (`mouseLookSensitivity = 0.3` units per pixel of mouse movement).
+- **Not verified — pointer lock.** The click →
+  `canvas.requestPointerLock()` wiring fires exactly once in first
+  person (handler probed via monkeypatch; the promise rejection is
+  swallowed by design), but headless Chromium would not grant the
+  lock — `document.pointerLockElement` stays null — so the raw
+  mouse-look path (pointerlockchange + movementX/Y) is still
+  unverified. Needs a human at a real browser.
+- **`D` is now a move key (maintainer decision, same day).**
+  `input_handler.js` originally mapped `d` to the deploy action
+  (alongside `r`), contradicting the "WASD/arrows steer the controlled
+  token" comments; only `arrowright` worked for move-right. Per the
+  maintainer's call — `R` keeps deploy, `D` joins `a` on the left and
+  `w`/`s` — `d` now emits `move_token_right` (identical to
+  `arrowright`, including the overview-mode camera pan). Verified
+  live on a fresh match: in first person `D` moved the controlled
+  token one cell toward the camera-relative right (token 1 [1,0] →
+  [2,1] — straight right was occupied by own token, so the scoring
+  picked the forward-diagonal, and the server accepted, TOKEN_MOVED
+  broadcast, console clean). The "More Controls" HUD section already
+  documents "WASD / Arrow Keys", so no help text needed to change.
+- Idle observation: while verifying, the turn timer fired
+  (`TURN_TIMED_OUT`) and the turn passed to the AI seat and back —
+  the turn round-trip works with first person toggled on and off
+  mid-match.
+
 ---
 
 ## 3. Gotchas
@@ -693,8 +768,9 @@ Rules for this codebase:
    additive in the composite; `?rays=0` opt-out; verified in-browser).
    See §2.
 4. ~~Crystal effects~~ — **done** (`webgl2_crystal_effects.js`, all four);
-   see §2. First-choice follow-up is a wire-path (not forced) trigger
-   observed in-browser.
+   see §2. Remaining follow-up: capture a natural first-time trigger
+   firing mid-match (the replay-on-connect path is verified, see the
+   second verification pass).
 5. ~~**PBR/IBL**~~ — **done** (`FRAG_LIT` rewritten: GGX/Smith/Schlick
    direct light + per-fragment analytic sky for both diffuse irradiance
    and roughness-blurred specular reflections; no environment texture.
@@ -795,9 +871,17 @@ Rules for this codebase:
   not phone-class. Details in §2, fifth verification pass.
 - Mobile/touch: tap-to-select, tap-to-move, pinch zoom, two-finger pan,
   health labels at small viewport sizes.
-- Mid-game first-person toggle (V) works; WASD with a controlled token,
-  TAB token cycle, and pointer-lock look remain untested.
-- First-person pointer lock look.
+- ~~Mid-game first-person mode~~ — **verified in-browser 2026-11-10
+  (eighth pass).** V toggle, TAB cycle (including wrap to token 0),
+  W/S/A/D token moves, Q/E rotate, camera-follow after moves — all
+  work. Found and fixed the token-id-0 falsy bug along the way (see
+  §2, eighth pass). Not covered: pointer lock on a real browser
+  (wiring verified, grant not), on-screen FP hint text for players.
+- ~~First-person pointer lock look~~ — partially verified: the
+  click → `requestPointerLock()` wiring fires correctly in first
+  person, but headless Chromium would not grant the lock, so raw
+  mouse-look via `pointerlockchange`/`movementX/Y` remains unobserved.
+  Needs a human at a real browser (see §2, eighth pass).
 - Long-match stability (memory: the mesh/material caches grow per
   `updateGameState`; watch for leaks across many turns).
 - The lobby's live member list with three players; AI reconnection flow.
