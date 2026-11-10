@@ -271,7 +271,11 @@ func handleConnect on ep: reference WebSocketEndpoint(clientId: string, data: JS
     log.Info("WebSocket player connected: {playerName} ({clientId})")
 
 func handleListGames on ep: reference WebSocketEndpoint(clientId: string)
+    # Match the HTTP /api/games list: joinable lobbies first, then
+    # in-progress games so the browser's Spectate button renders for them.
     games := ep.lobbyMgr.listAvailableLobbies()
+    for g in ep.lobbyMgr.listInProgress()
+        games = append(games, g)
     ep.wsHandler.SendToClient(clientId, JSONMap{
         "type": "GAME_LIST",
         "games": games,

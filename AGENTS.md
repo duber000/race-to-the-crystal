@@ -251,6 +251,13 @@ event.
   foreground `./race-ai-client poll --join …` usually outlives its shell
   and keeps its seat, making a 1/2 lobby actually 2/2. Check the lobby
   roster (WS `LOBBY_UPDATE` / host screen), not the HTTP status.
+- **The page's CSP is `default-src 'self'`** — a page served from :8000
+  cannot open `ws://localhost:<other-port>` directly. To verify against a
+  side instance without touching the live servers, run both sides:
+  `HTTP_PORT=8081 ./race-server` and
+  `WEB_PORT=8001 GAME_SERVER_URL=http://localhost:8081 ./web_server/web_server`,
+  then browse :8001. Pointing the tab at another port fails with
+  "Connection failed" and no network-level error worth reading.
 - See `docs/VANILLA-JS.md` §3 for the full list of traps from the web
   client's vanilla-WebGL2 bring-up.
 

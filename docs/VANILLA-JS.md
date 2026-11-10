@@ -142,10 +142,11 @@ to Babylon automatically if the vanilla renderer throws during init.
 - Multi-turn AI-vs-AI play: combat, deployments, turn timer, crystal effect
   triggers, all flowing correctly.
 
-**Not yet verified:** the game-over overlay and victory effects firing live
-(no match has reached GAME_WON yet; the code path is renderer-agnostic and
-wired, but unproven visually), and a crystal effect firing through the
-full wire path (see Phase 2 — the animator itself is verified).
+**Not yet observed:** a natural GAME_WON arriving over the wire (no match
+has concluded yet). The victory path is verified otherwise: "triggerVictoryOnce()"
+(confetti burst, camera trauma, crystal burst, the crystal sound) was
+exercised and renders, and the alert() path is unmodified browser-native
+code. Crystal effects were observed firing over the wire once (see Phase 2).
 
 **Two silent white-box renderer bugs found and fixed:**
 
@@ -220,6 +221,45 @@ Re-verified after the changes: page loads clean, full match plays, pick →
 select works through the real event path (valid moves populate, the
 "MOVEMENT • 3 targets" hint appears, selection glow shows), turn timer,
 fog-of-war opponent filtering, and the AI seat all behave.
+
+**Verification notes (second pass, as a spectator):**
+
+- **Seat-cam spectating works end-to-end.** `SPECTATE` with `follow=player_0`
+  binds the connection, the vanilla renderer comes up, and the fog-filtered
+  stream flows. Nice trick for watching a match conclude without a seat.
+- **A crystal effect observed firing over the wire**: on connect, the fresh
+  client logged `Crystal effect triggered: 3 for player player_0` (damage
+  boost replayed once from the persisted `last_triggered_crystal_effect`,
+  replay-guard intact) and played the matching sound. The forced-trigger
+  path was already proven; this closes the loop.
+- **Zoom is glued to the board center.** Wheel dollies the radius but the
+  target never leaves the crystal — past ~radius 110 the crystal fills the
+  frame. Pan/drag moves it (map-style grab pan), and direct spherical edits
+  (`camera.target/alpha/beta/radius`) work for a precise camera. Noted, not
+  changed: this matches the Babylon overview design.
+- **First-person mode toggles (V) and survives WASD**: with no controlled
+  token, `W` prints the "No token controlled! Press TAB to cycle tokens"
+  banner. WASD movement with a controlled token and TAB cycling remain
+  untested.
+- **Health labels are crisp quads but glyph legibility at zoom is
+  unverified** (fog of war masks enemy tokens; friendly tokens sit far
+  away in the deployment corner). The flip_y leak is fixed; verify
+  readability on a zoomed-in board next.
+- **In-browser spectating is wired end-to-end (fixed and verified).** Two
+  defects stood between the lobby browser and the seat-cam view, both
+  fixed: (1) WS `LIST_GAMES` returned only joinable lobbies, so the
+  `IN_PROGRESS` Spectate button never rendered — it now mirrors the HTTP
+  `/api/games` list (available + in-progress); (2) the seat-chooser overlay
+  sat at a lower z-index than the always-on-top HUD (100) and then the
+  fixed lobby panel (2000), so clicks hit those layers instead of the
+  seat buttons — now 2100, below the victory modal (3000) and toast
+  (9999). Verified with a side instance (`HTTP_PORT=8081` game server +
+  `WEB_PORT=8001 GAME_SERVER_URL=http://localhost:8081` web proxy):
+  lobby browser lists the IN_PROGRESS match → SPECTATE → seat chooser →
+  click "VerifyAI HTTP_AI" → spectator view streams for that seat. Note:
+  the page's CSP (`default-src 'self'`) blocks a :8000 page from opening
+  `ws://localhost:8081` directly, so side-instance verification must go
+  through a side web proxy, not a direct port.
 
 ---
 
@@ -362,10 +402,14 @@ Make the call once parity is close:
 
 ### Testing backlog (blocks calling it done)
 
-- Game-over screen + victory effect seen live (confetti, alert, sound).
+- Game-over screen seen live from an actual GAME_WON. The confetti/trauma/
+  crystal-burst path is verified (forced `triggerVictoryOnce()` renders;
+  alert() unverified); no match has concluded yet — spectate the AI match
+  with `SPECTATE` + `follow=<seat>` (see §2).
 - Mobile/touch: tap-to-select, tap-to-move, pinch zoom, two-finger pan,
   health labels at small viewport sizes.
-- Mid-game first-person toggle (V), WASD movement, TAB cycle.
+- Mid-game first-person toggle (V) works; WASD with a controlled token,
+  TAB token cycle, and pointer-lock look remain untested.
 - First-person pointer lock look.
 - Long-match stability (memory: the mesh/material caches grow per
   `updateGameState`; watch for leaks across many turns).
