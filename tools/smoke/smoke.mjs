@@ -10,9 +10,8 @@
 // and confirmed accepted by the server, and the turn is ended from both
 // seats. The side instances are spawned and torn down by this script;
 // the live 8080/8000 servers are never touched. The page is loaded with
-// no query params — vanilla is the default renderer since 2026-11-10;
-// `?renderer=webgl2` remains a no-op alias, `?renderer=babylon` opts out.
-// Skip the interaction phase with SMOKE_INTERACT=0.
+// no query params — the vanilla WebGL2 renderer is the only renderer
+// (since 2026-11-10). Skip the interaction phase with SMOKE_INTERACT=0.
 //
 // Prerequisites:
 //   1. Built binaries: `make build` (or at least `race-server` and
@@ -126,18 +125,21 @@ try {
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     const page = await context.newPage();
     const consoleErrors = [];
-    const consoleWarnings = [];
+    const dialogs = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
-      if (msg.type() === 'warning') consoleWarnings.push(msg.text());
     });
     page.on('pageerror', (err) => consoleErrors.push(String(err)));
-    // Default page load: vanilla is the default renderer as of 2026-11-10.
+    page.on('dialog', (dialog) => {
+      dialogs.push(dialog.message());
+      dialog.accept().catch(() => {});
+    });
+    // Default page load: vanilla WebGL2, the only renderer since 2026-11-10.
     await page.goto(`${base}/`, { waitUntil: 'load' });
     await page.fill('#player-name-input', name);
     await page.click('#connect-btn');
     await page.waitForSelector('#lobby-browser-screen:not(.hidden)', { timeout: 10000 });
-    return { context, page, consoleErrors, consoleWarnings };
+    return { context, page, consoleErrors, dialogs };
   }
 
   const a = await newClient('SmokeA');
@@ -191,9 +193,9 @@ try {
       client.consoleErrors.slice(0, 3).join(' | ')
     );
     check(
-      `${label}: no WebGL2 fallback warning`,
-      !client.consoleWarnings.some((w) => w.includes('falling back to Babylon')),
-      client.consoleWarnings.slice(0, 3).join(' | ')
+      `${label}: no blocking dialog (renderer failure path)`,
+      client.dialogs.length === 0,
+      client.dialogs.join(' | ')
     );
     const shot = await client.page.screenshot({ type: 'jpeg', quality: 60 });
     const shotPath = join(outDir, `shot-${label.startsWith('A') ? 'a' : 'b'}.jpg`);
@@ -201,11 +203,24 @@ try {
     check(`${label}: scene has non-trivial content`, shot.length > 30_000, `${Math.round(shot.length / 1024)} KB screenshot -> ${shotPath}`);
   }
 
+  // --- cache policy (web_server/main.kuki): HTML + static revalidate --------
+  try {
+    const rootRes = await a.context.request.get(`${base}/`);
+    const jsRes = await a.context.request.get(`${base}/static/game_client.js`);
+    check('cache-control no-cache on HTML shell',
+      (rootRes.headers()['cache-control'] ?? '').includes('no-cache'),
+      rootRes.headers()['cache-control'] ?? '(none)');
+    check('cache-control no-cache on static JS',
+      (jsRes.headers()['cache-control'] ?? '').includes('no-cache'),
+      jsRes.headers()['cache-control'] ?? '(none)');
+  } catch (err) {
+    check('cache-control headers readable', false, String(err));
+  }
+
   // --- interaction: select → move → end turn, both seats -------------------
   // Skip with SMOKE_INTERACT=0. Uses each page's own ray-plane picking to
-  // resolve canvas CSS pixel → grid cell (works for the vanilla WebGL2 path
-  // and, via scene.pick, the Babylon fallback), so the test needs no
-  // camera/projection math of its own.
+  // resolve canvas CSS pixel → grid cell (no camera/projection math in the
+  // test itself).
   if (process.env.SMOKE_INTERACT !== '0') {
     console.log('INFO  interaction checks');
     const readState = (page) => page.evaluate(() => {

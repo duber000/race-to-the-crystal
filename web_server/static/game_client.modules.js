@@ -3,17 +3,10 @@
 // ==========================================================================
 
 import { NetworkManager } from './network_manager.js';
-import { CameraController } from './camera_controller.js';
 import { InputHandler } from './input_handler.js';
-import { Renderer3D } from './game_client.renderer.js';
 import { VanillaRenderer3D } from './webgl2/webgl2_renderer.js';
 import { CameraController as VanillaCameraController } from './webgl2/webgl2_camera.js';
 import { STATE, TurnPhase, BOARD_CONFIG, BOARD_WIDTH, BOARD_HEIGHT, CELL_SIZE, WALL_HEIGHT } from './game_client.constants.js';
-
-// The vanilla WebGL2 renderer is the default as of 2026-11-10. `?renderer=babylon`
-// opts out for one release as the rollback hatch; `?renderer=webgl2` stays as a
-// no-op alias. When the WebGL2 path fails to initialise we still fall back to Babylon.js.
-const VANILLA_RENDERER = new URLSearchParams(window.location.search).get('renderer') !== 'babylon';
 
 /**
  * Connection Manager - Handles network connection and state synchronization
@@ -1187,39 +1180,16 @@ class UIController {
         // Guard against double initialization (STATE.IN_GAME fires more than once).
         if (this.gameClient.renderer) return;
 
-        const useVanilla = VANILLA_RENDERER;
-        const RendererImpl = useVanilla ? VanillaRenderer3D : Renderer3D;
-        const CameraImpl = useVanilla ? VanillaCameraController : CameraController;
-        if (useVanilla) {
-            console.info('[initGameModules] Using vanilla WebGL2 renderer (default; ?renderer=babylon to opt out)');
-        }
+        console.info('[initGameModules] Using the vanilla WebGL2 renderer');
 
         try {
-            this._initGameModulesWith(RendererImpl, CameraImpl);
-            if (useVanilla) {
-                this.gameClient.vanillaRenderer = true;
-            }
+            this._initGameModulesWith(VanillaRenderer3D, VanillaCameraController);
+            this.gameClient.vanillaRenderer = true;
         } catch (err) {
-            if (RendererImpl === Renderer3D) {
-                console.error('[initGameModules] Renderer setup failed:', err);
-                return;
-            }
-            console.warn('[initGameModules] WebGL2 renderer failed; falling back to Babylon.js:', err);
-            // Tear down any partial WebGL2 state and retry with Babylon.
-            try {
-                if (this.gameClient.renderer && typeof this.gameClient.renderer.dispose === 'function') {
-                    this.gameClient.renderer.dispose();
-                }
-            } catch (disposeErr) {
-                console.warn('[initGameModules] WebGL2 renderer dispose failed:', disposeErr);
-            }
-            this.gameClient.renderer = null;
-            this.gameClient.cameraController = null;
-            try {
-                this._initGameModulesWith(Renderer3D, CameraController);
-            } catch (fallbackErr) {
-                console.error('[initGameModules] Babylon.js fallback also failed:', fallbackErr);
-            }
+            // No fallback renderer remains (Babylon.js was removed 2026-11-10);
+            // surface a fatal, user-visible error instead of a blank canvas.
+            console.error('[initGameModules] Renderer setup failed:', err);
+            alert('This browser cannot start the 3D view (WebGL2 is required). See the console for details.');
         }
     }
 

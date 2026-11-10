@@ -1,4 +1,4 @@
-# Race to the Crystal - Web Server (Babylon.js frontend + API/WS proxy)
+# Race to the Crystal - Web Server (vanilla WebGL2 frontend + API/WS proxy)
 # Multi-stage build: transpile Kukicha → Go, compile static binary, copy to slim runtime
 
 FROM golang:1.27rc3-bookworm AS builder

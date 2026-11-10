@@ -14,24 +14,6 @@ export const BOARD_CONFIG = {
     TOKEN_HEIGHT: 20
 };
 
-// Player colors — lazy to avoid BABYLON global access at module parse time
-let _playerColors = null;
-export function getPlayerColors() {
-    if (!_playerColors) {
-        _playerColors = [
-            new BABYLON.Color3(0, 1, 1),     // Cyan
-            new BABYLON.Color3(1, 0, 1),     // Magenta
-            new BABYLON.Color3(1, 1, 0),     // Yellow
-            new BABYLON.Color3(0, 1, 0)      // Green
-        ];
-    }
-    return _playerColors;
-}
-// Backward-compat alias (only safe to use after BABYLON loads)
-export const PLAYER_COLORS = new Proxy([], {
-    get(_, prop) { return getPlayerColors()[prop]; }
-});
-
 // Game phases
 //
 // These MUST match the wire format produced by the server's state serializer
@@ -71,26 +53,6 @@ export const CRYSTAL_EFFECT_ANIMATION = {
     LIGHTNING_FLASH_DURATION: 0.1, // seconds
     WHIRLWIND_COUNT: 8
 };
-
-// Glow colors — lazy to avoid BABYLON global access at module parse time
-let _glowColors = null;
-export function getGlowColors() {
-    if (!_glowColors) {
-        _glowColors = {
-            CYAN:    new BABYLON.Color3(0, 0.78, 0.78),
-            ORANGE:  new BABYLON.Color3(1, 0.65, 0),
-            MAGENTA: new BABYLON.Color3(1, 0, 1),
-            WHITE:   new BABYLON.Color3(1, 1, 1),
-            GREEN:   new BABYLON.Color3(0, 1, 0),
-            RED:     new BABYLON.Color3(1, 0, 0)
-        };
-    }
-    return _glowColors;
-}
-// Backward-compat alias (only safe to use after BABYLON loads)
-export const GLOW_COLORS = new Proxy({}, {
-    get(_, prop) { return getGlowColors()[prop]; }
-});
 
 // UI states
 export const UI_STATE = {

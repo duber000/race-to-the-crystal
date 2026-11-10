@@ -35,7 +35,6 @@ race-ai-client
 race-server
 learn/learn
 *.go
-web_server/static/babylon.js
 .agents/skills/kukicha/SKILL.md
 /ai
 /enums

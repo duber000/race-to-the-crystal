@@ -26,16 +26,13 @@
     <!-- ES6 modules (loaded via <script type="module">) -->
     <link rel="modulepreload" href="/static/game_client.constants.js">
     <link rel="modulepreload" href="/static/game_client.device.js">
-    <link rel="modulepreload" href="/static/game_client.renderer.js">
+    <link rel="modulepreload" href="/static/webgl2/webgl2_renderer.js">
     <link rel="modulepreload" href="/static/game_client.js">
-    <link rel="modulepreload" href="/static/game_client.crystal_effects.js">
     <!-- Module dependencies (imported by other modules) -->
     <link rel="modulepreload" href="/static/network_manager.js">
     <link rel="modulepreload" href="/static/ui_manager.js">
     <link rel="modulepreload" href="/static/input_handler.js">
-    <link rel="modulepreload" href="/static/renderer.base.js">
     <link rel="modulepreload" href="/static/audio_manager.js">
-    <link rel="modulepreload" href="/static/game_client.crystal_effects.js">
 </head>
 
 <body>
@@ -236,19 +233,13 @@
     <!-- Page glue: hostname autofill, player-count stepper, mobile action-bar wiring -->
     <script src="/static/index.page.js"></script>
 
-    <!-- Babylon.js 8 (cached locally) -->
-    <script src="/static/babylon.js"></script>
-
     <!-- Game constants (ES6 module, imported by renderer modules) -->
     <script type="module" src="/static/game_client.constants.js"></script>
 
     <!-- Device capabilities detection (no imports, can be regular script) -->
     <script type="module" src="/static/game_client.device.js"></script>
 
-    <!-- WebGL/Babylon renderer module (loads all renderer modules) -->
-    <script type="module" src="/static/game_client.renderer.js"></script>
-
-    <!-- Main game client module (imports all dependencies including Renderer3D) -->
+    <!-- Main game client module (imports the vanilla WebGL2 renderer, the only renderer) -->
     <script type="module" src="/static/game_client.js"></script>
 </body>
 

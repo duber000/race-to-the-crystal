@@ -11,12 +11,12 @@ import { CELL_SIZE, INPUT_CONFIG, TIMEOUT_CONFIG } from './game_client.constants
 class InputHandler {
     /**
      * Create an input handler.
-     * @param {BABYLON.Scene} scene - Babylon.js scene
+     * @param {Object} scene - Scene facade with a pick(screenX, screenY) function
      * @param {HTMLCanvasElement} canvas - Canvas element
      * @param {CameraController} cameraController - Camera controller instance
      * @param {Object} gameState - Game state object
      * @param {string} connectionState - Current connection state
-     * @param {BABYLON.Engine} engine - Babylon.js engine
+     * @param {Object} engine - Engine facade ({} for the vanilla WebGL2 renderer)
      * @param {Object} deviceCapabilities - Device capabilities object
      */
     constructor(scene, canvas, cameraController, gameState, connectionState, engine, deviceCapabilities) {
@@ -92,11 +92,6 @@ class InputHandler {
     setupEventListeners() {
         this.setupPointerListeners();
         this.setupKeyboardListeners();
-
-        // Add touch-specific listeners only if touch is supported
-        if (this.deviceCapabilities && this.deviceCapabilities.hasTouch()) {
-            this.setupTouchGestures();
-        }
     }
 
     /**
@@ -176,21 +171,6 @@ class InputHandler {
             this.handleKeyDown(event);
         };
         document.addEventListener('keydown', this.boundKeyDown);
-    }
-
-    /**
-     * Setup touch gestures using Babylon.js built-in support.
-     */
-    setupTouchGestures() {
-        // Setup Babylon.js built-in touch gestures for camera control
-        if (this.cameraController.camera && this.cameraController.camera.inputs) {
-            // Enable pinch-to-zoom and two-finger pan
-            const pointers = this.cameraController.camera.inputs.attached.pointers;
-            if (pointers) {
-                pointers.multiTouchPanning = true;
-                pointers.multiTouchPanAndZoom = true;
-            }
-        }
     }
 
     /**

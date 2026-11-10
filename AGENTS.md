@@ -2,9 +2,9 @@
 type: Agent Instructions
 title: AGENTS.md — race-to-the-crystal repository guide
 description: Architecture, commands, conventions, and vendored stdlib notes for agents working in race-to-the-crystal.
-tags: [agents, conventions, kukicha, ebitengine, game, babylonjs, webgl2, websocket, events]
+tags: [agents, conventions, kukicha, ebitengine, game, webgl2, websocket, events]
 generated: { by: antigravity/gemini-3.8-flash, at: 2026-09-26T12:55:00-04:00 }
-updated: { by: opencode/inkling-2-small, at: 2026-11-09T21:52:00-04:00 }
+updated: { by: opencode/inkling-2-small, at: 2026-11-10T10:30:00-04:00 }
 verified:
 stale_after: 2027-02-08T00:00:00Z
 status: stable
@@ -90,7 +90,7 @@ The project is split into strictly separated layers:
 - **`server/`** – Server built on Go net/http + gorilla/websocket. `GameCoordinator` manages `GameSession` instances, each wrapping a `GameState`. JWT auth for the HTTP API is in `server/auth.kuki`. `WebSocketHandler` owns the client registry and the shared per-session broadcasters.
 - **`mcp/`** – Thin stdio MCP proxy exposing the agent seat (no game logic; proxies to the game server's REST API)
 - **`client/`** – Desktop client using Ebitengine. `renderer_2d.kuki` and UI views in `ui/` implement the game views. **The desktop client is local-only** — it imports the `game` package directly and has no networking; its "Network Game" menu entry is a stub. `ai/ai_client.kuki` is the AI player (HTTP); `ai/http_ai_client.kuki` is a helper in the same package.
-- **`web_server/`** – Serves the web frontend and reverse-proxies `/api` and `/ws` to the game server. The frontend ships in two renderers: the dependency-free vanilla WebGL2 path (`web_server/static/webgl2/`, ~4.6k lines, no libraries) is the **default since 2026-11-10** (`?renderer=babylon` opts out for one release); Babylon.js 8 remains as the rollback hatch until Babylon is deleted after the first clean release. The full record — phases, gotchas, tuned defaults, and remaining verification items — lives in `docs/VANILLA-JS.md`; treat it as the source of truth for web-client rendering work. The `make smoke` gate checks the default path headless (see Testing below). Web clients receive state and events over WebSocket.
+- **`web_server/`** – Serves the web frontend and reverse-proxies `/api` and `/ws` to the game server. The frontend is the dependency-free vanilla WebGL2 path (`web_server/static/webgl2/`, ~4.6k lines, no libraries) — **the only renderer since 2026-11-10** (Babylon.js 8 was deleted the same day). Static assets are served with `Cache-Control: no-cache` (revalidate every load, 304s; see `web_server/main.kuki`). The full record — phases, gotchas, tuned defaults, and remaining verification items — lives in `docs/VANILLA-JS.md`; treat it as the source of truth for web-client rendering work. The `make smoke` gate checks the default path headless (see Testing below). Web clients receive state and events over WebSocket.
 - **Test files** – `*_test.kuki` files co-located with the modules they test (e.g., `game/game_state_test.kuki`, `game/game_events_test.kuki`, `server/action_validation_test.kuki`).
 
 ### The game event stream

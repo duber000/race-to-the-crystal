@@ -2,9 +2,8 @@
  * webgl2_renderer.js - Vanilla WebGL2 Renderer3D
  *
  * A drop-in replacement for the Babylon.js Renderer3D, written against the
- * same public interface (duck-typed) so the rest of the client works
- * unchanged. The default renderer as of 2026-11-10 (?renderer=babylon opts
- * out for one release).
+ * same public interface (duck-typed) as the original Renderer3D. The only
+ * renderer since 2026-11-10 — Babylon.js was removed.
  *
  * The bloom/god-ray/PBR/cosmetics stack is on by default (see
  * docs/VANILLA-JS.md); ?bloom=0 / ?rays=0 / ?chroma=0 / ?sharpen=0 are the

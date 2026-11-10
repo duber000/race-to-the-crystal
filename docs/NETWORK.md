@@ -26,7 +26,7 @@ turn-based gameplay.
 - **Protocol**: JSON messages over WebSocket; JSON over REST for agents
 - **Auth**: JWT bearer tokens for the HTTP API (created/join/spectate); the
   WebSocket lobby flow identifies clients per connection
-- **Clients**: web browser (Babylon.js 3D), AI client (HTTP), desktop client
+- **Clients**: web browser (WebGL2 3D), AI client (HTTP), desktop client
   (local-only, in-process — no network), MCP proxy (agents)
 
 ## Processes and Ports
@@ -34,7 +34,7 @@ turn-based gameplay.
 | Process | Port | Role |
 |---|---|---|
 | `race-server` (`make server-run`) | 8080 | Game server: HTTP REST API + WebSocket |
-| web server (`make web-server-run`) | 8000 | Serves the Babylon.js client; reverse-proxies `/api` and `/ws` to the game server |
+| web server (`make web-server-run`) | 8000 | Serves the WebGL2 client; reverse-proxies `/api` and `/ws` to the game server |
 
 There is **no TCP listener** and no length-prefixed framing. The browser
 connects to `ws://<host>:<web-port>/ws`, which the web server proxies to the
@@ -86,7 +86,7 @@ of the README.
 ```
 ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
 │ Web browser  │   │  AI client   │   │  MCP proxy   │
-│ (Babylon.js) │   │ (HTTP poll)  │   │ (agent seat) │
+│ (WebGL2)     │   │ (HTTP poll)  │   │ (agent seat) │
 └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
        │                  │                  │
        │ ws://…/ws        │ HTTP REST        │ HTTP REST

@@ -49,7 +49,7 @@ See [Production Deployment](#production-deployment) section below for complete p
                   │
 ┌─────────────────▼───────────────────────────────┐
 │  Web Server (race-web-server)                   │
-│  - Serves the web client (Babylon.js)           │
+│  - Serves the web client (vanilla WebGL2)       │
 │  - Reverse-proxies /api + /ws to the game API   │
 │  Port: 8000                                     │
 └─────────────────┬───────────────────────────────┘

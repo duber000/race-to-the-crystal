@@ -68,8 +68,17 @@ func Start on ws: reference WebServer
 
     receive from ch
 
+# Cache policy: every response this server sends is revalidated on each
+# page load. ServeFile sets Last-Modified, so repeat loads get cheap 304s
+# and fresh deploys propagate immediately — correct caching without URL
+# hashing while the web client has no build step.
+func setRevalidateCacheHeaders(response: httphelper.Response)
+    raw := response.Raw()
+    raw.Header().Set("Cache-Control", "no-cache")
+
 func handleRoot on ws: reference WebServer(response: httphelper.Response, request: httphelper.Request)
     response.SetSecureHeaders()
+    setRevalidateCacheHeaders(response)
     response.ServeFile(request, ws.config.indexPath)
 
 # Serve files from the static root, mirroring the game server's containment
@@ -77,6 +86,7 @@ func handleRoot on ws: reference WebServer(response: httphelper.Response, reques
 # may touch.
 func handleStatic on ws: reference WebServer(response: httphelper.Response, request: httphelper.Request)
     response.SetSecureHeaders()
+    setRevalidateCacheHeaders(response)
     path := request.URL().Path
     # Strip the /static/ prefix the mux matched.
     if not strings.HasPrefix(path, "/static/")

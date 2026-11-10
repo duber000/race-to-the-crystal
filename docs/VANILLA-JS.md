@@ -4,10 +4,12 @@
 > bloom, the crystal-effect animator, the marker-readability bump, god rays,
 > GGX PBR with an analytic IBL, and the composite-pass cosmetics are built and
 > verified in-browser.
-> **The default flip shipped 2026-11-10 (decision gate, option A):** the
-> vanilla WebGL2 renderer is the default; `?renderer=babylon` opts out for
-> one release as the rollback hatch (`?renderer=webgl2` remains a no-op
-> alias). Babylon.js deletion after the first clean release is still open.
+> **The default flip shipped 2026-11-10 (decision gate, option A)**, and
+> **Babylon.js was deleted the same day** (per maintainer instruction, ahead
+> of the planned "first clean release" wait — the rollback hatch is gone and
+> was never exercised). The vanilla WebGL2 renderer is the only renderer.
+> **Cache headers shipped the same day** (`Cache-Control: no-cache` + 304
+> revalidation on `/` and `/static/*`).
 > Nothing in this document has been merged into a release — everything below
 > was validated locally, in the browser, against a live game server.
 
@@ -108,11 +110,12 @@ stage it, keep Babylon as fallback, gate on a decision point.
   effect changes (`lastProcessedCrystalEffect`, like the mystery-event
   path).
 
-### Phase 1 — vanilla WebGL2 spike, opt-in (done; since then flipped to default)
+### Phase 1 — vanilla WebGL2 spike, opt-in (done; default flip and deletion followed)
 
 New `web_server/static/webgl2/` (~4,577 lines after the Phase 2 god-ray/PBR
-pass, ~40 KB gzip), originally wired in behind `?renderer=webgl2`
-(2026-11-10: vanilla became the default, see the decision gate in §4):
+pass, ~40 KB gzip), originally wired in behind `?renderer=webgl2`.
+(2026-11-10: vanilla became the default and Babylon.js was deleted the
+same day, see the decision gate in §4.)
 
 | File | Lines | Role |
 |---|---|---|
@@ -127,10 +130,10 @@ pass, ~40 KB gzip), originally wired in behind `?renderer=webgl2`
 
 Total ~4,577 lines (Phase 2 total ~882 lines over the Phase 1 spike).
 
-Reached via `game_client.modules.js` → `VANILLA_RENDERER` const (vanilla
-default since 2026-11-10; `?renderer=babylon` opts out, one release);
-falls back to Babylon automatically if the vanilla renderer throws during
-init.
+Reached via `game_client.modules.js` → always the vanilla path. Since
+2026-11-10 there is no flag and no fallback: if the WebGL2 renderer throws
+during init the client shows a fatal alert (WebGL2 required) instead of
+silently degrading — the Babylon fallback was deleted with Babylon.js.
 
 **Verified in-browser (Chrome), page by page:**
 
@@ -572,24 +575,27 @@ Rules for this codebase:
 
 ### Decision gate — **decided 2026-11-10: option A**
 
-- **A — Default vanilla. ← chosen 2026-11-10.** Vanilla is the default
-  (`VANILLA_RENDERER` in `game_client.modules.js`: default unless
-  `?renderer=babylon`; `?renderer=webgl2` kept as a no-op alias).
-  Babylon stays in-repo for exactly one release as the rollback hatch.
-  Deletion after the first clean release: remove `babylon.js` (the
-  1.66 MB), the two `<script>` tags in `web_server/templates/index.html`,
-  `game_client.renderer.js`, `renderer.*.js`, `camera_controller.js`,
-  `renderer.special.js`, and the fallback path in `initGameModules`.
-  Payload then reads ~85 KB gzip total for the whole client.
-  Verified after the flip: `make smoke` (which loads the bare URL, no
-  flag) passes boot + interaction; the Babylon path itself is unchanged
-  and untested since the flip.
+- **A — Default vanilla. ← chosen 2026-11-10, deletion completed the
+  same day.** Vanilla is the default and is now the **only** renderer:
+  `babylon.js` (1.66 MB gzip — note: it was gitignored, never tracked; the
+  saving is in the served payload, not the repo), the Babylon script tags,
+  `game_client.renderer.js`, `renderer.*.js`, `renderer.tokens.js`,
+  `renderer.indicators.js`, `renderer.special.js`, `renderer.animations.js`,
+  `renderer.colors.js`, `renderer.base.js`, `renderer.fx.js`,
+  `camera_controller.js`, `game_client.crystal_effects.js` (not in the
+  original plan — imported only by `renderer.base.js`), and the
+  `initGameModules` fallback were all deleted. The BABYLON-based color
+  lists in `game_client.constants.js` are gone too (the vanilla path
+  carries its own palettes), as is the Babylon-only `setupTouchGestures`.
+  A renderer-init failure now shows a fatal alert instead of silently
+  degrading. The smoke gate (loads the bare URL) passes end-to-end after
+  the deletion: boot + pick→move + end turn both seats + the two new
+  `Cache-Control: no-cache` assertions.
 - **B — Keep Babylon default.** Not taken. Only if parity had stalled;
   tree-shaking `@babylonjs/core` (1.66 MB → maybe 300–600 KB) would
   accept a new build step for no parity gain.
 - **C — Ship both, flag-selected.** Was the pre-flip state; defensible
-  only as a transition. Superseded by A (now flag-inverted, not
-  flag-selected).
+  only as a transition. Superseded by A.
 
 ### Testing backlog (blocks calling it done)
 
@@ -685,13 +691,11 @@ Rules for this codebase:
   corners off-screen at ~1:1 aspect — my tokens at (0,0)-(2,0) sat pinned
   to the top edge. It matches the Babylon defaults, so it's not a
   regression, but consider raising the radius multiplier (or fov, or
-  clamping by aspect ratio) — worth a decision before Babylon is deleted
-  (the Babylon path shares these defaults, so changing them affects
-  both).
-- **Keep Babylon in-repo as fallback forever?** Decided 2026-11-10 with
-  the default flip: keep it for exactly one release as the `?renderer=babylon`
-  rollback hatch, then delete (see "Decision gate" in §4). No longer an
-  open question — only the deletion is pending.
+  clamping by aspect ratio) before a public release.
+- **Keep Babylon in-repo as fallback forever?** Closed 2026-11-10:
+  deleted the same day (ahead of the planned one-release wait, at the
+  maintainer's instruction; the rollback hatch was never exercised).
+  The web client is vanilla-only.
 - **Test suite?** Answered in part: `make smoke` now runs a headless
   smoke test of the vanilla path (Playwright + SwiftShader WebGL2,
   vendored at `tools/smoke/smoke.mjs` — the repo's first Node tooling,
@@ -705,12 +709,13 @@ Rules for this codebase:
   is likewise untested.
 - **Babylon version bump?** If we keep Babylon during transition: 8.45.3 is
   pinned; 9.35.0 is current. Don't upgrade unless forced.
-- **`main.kuki` cache headers** — the web server sets no cache headers and
-  no content hashing, so every deploy is a hard reload for first-time
-  visitors anyway. Corollary of the 2026-11-10 default flip: the whole
-  client is now ~85 KB gzip of first-party JS; content hashes + immutable
-  static paths would let browsers hold all of it. Worth doing at the same
-  time as Babylon deletion.
+- **`main.kuki` cache headers** — done 2026-11-10. Every response from
+  the web server is now `Cache-Control: no-cache` (revalidate every load);
+  Go's ServeFile sets Last-Modified, so repeat loads get 304s and fresh
+  deploys propagate immediately. No build step needed; the smoke gate
+  asserts the header on `/` and `/static/game_client.js`. Content-hash +
+  immutable paths remain a possible follow-up if 304 round-trips ever
+  matter — they won't at ~85 KB gzip.
 
 ## 6. Reproducing
 
@@ -729,8 +734,7 @@ the unsharp mask. Create a
 
 Launch the AI client **detached** (background), not in a foreground shell
 with a timeout — see §3, "a full lobby is invisible … join 400s". Compare
-against the Babylon path with `?renderer=babylon` (rollback hatch, one
-release only).
+Babylon.js was removed 2026-11-10; there is no renderer flag left.
 
 Headless verification (no GPU, no human seats):
 
@@ -740,11 +744,13 @@ npx playwright install chromium   # once
 make smoke               # spawns side servers on 8081/8001, runs, tears down
 ```
 
-`make smoke` exercises page load (default renderer, no flag) → connect →
-create/join → ready → start → vanilla renderer boot + render, asserting
-zero console errors and a non-trivial scene per seat — and the behavioral
-gate plays a real move over the wire (select → click destination → server
-accepts; end turn from both seats). Screenshots land in `tools/smoke/out/`.
+`make smoke` exercises page load (no renderer flag needed — vanilla is
+the only renderer) → connect → create/join → ready → start → vanilla
+renderer boot + render, asserting zero console errors, a non-trivial
+scene per seat and `Cache-Control: no-cache` on the HTML shell and static
+JS — and the behavioral gate plays a real move over the wire (select →
+click destination → server accepts; end turn from both seats). Screenshots
+land in `tools/smoke/out/`.
 Requires the built binaries (`race-server`, `web_server/web_server`) —
 run `make build` first on a fresh checkout. Set `SMOKE_BASE_URL` to aim
 at an already-running instance instead of spawning side servers.

@@ -21,7 +21,7 @@ import { ConnectionManager, InputController, UIController } from './game_client.
  * - UIManager: All UI screens and HUD
  * - CameraController: Overview and first-person camera modes
  * - InputController: Mouse and keyboard input (refactored from InputHandler)
- * - Renderer3D: Babylon.js 3D rendering
+ * - VanillaRenderer3D: WebGL2 3D rendering (the only renderer)
  *
  * Architecture follows the delegation pattern - each module handles
  * its specific responsibility while the main client coordinates them.
