@@ -10,8 +10,12 @@
 > was never exercised). The vanilla WebGL2 renderer is the only renderer.
 > **Cache headers shipped the same day** (`Cache-Control: no-cache` + 304
 > revalidation on `/` and `/static/*`).
-> Nothing in this document has been merged into a release — everything below
-> was validated locally, in the browser, against a live game server.
+> **2026-11-10 (legibility pass, sixth verification):** floating combat text
+> was rendering at half size (a billboard nominal-size bug, see §2) and is
+> now legible at playing distance; health labels draw at nominal size as
+> rounded pill chips; markers re-judged at zoom. Nothing in this document
+> has been merged into a release — everything below was validated locally,
+> in the browser, against a live game server.
 
 This document records the argument for dropping Babylon.js, what has been
 built and verified so far, the traps hit along the way, and what remains.
@@ -223,7 +227,10 @@ Built since the Phase 1 spike, including the verification pass in Chrome
   effect. Sounds flow through the unchanged `AudioManager`.
 - **Marker readability** — valid-move/attack fill quads raised from 0.16
   to 0.35 alpha, drawn additively with brightness 1.8; threat-hover
-  squares bumped to match. Still to be judged at zoom on a busy board.
+  squares bumped to match. Judged at zoom 2026-11-10 (sixth pass):
+  legible on open canvas; the `0.35` alpha is inert under `ONE/ONE`
+  additive blending (brightness 1.8 drives the fill) — see §2 (sixth
+  pass). HUD-panel occlusion of the deploy corner is a §5 question.
 - **God rays** (`webgl2_bloom.js` → `FRAG_GODRAYS`) — the stand-in for
   Babylon's `VolumetricLightScatteringPostProcess`. When the crystal is
   visible, the bright pass (no extra render) is radially blurred toward
@@ -270,6 +277,18 @@ Built since the Phase 1 spike, including the verification pass in Chrome
   4. The floating-text texture upload leaked `UNPACK_FLIP_Y_WEBGL`
      (same global-state trap as the Phase 1 health-label bug). Each
      upload now flips then restores.
+- **Fifth silent white-box bug found, then fixed (2026-11-10, legibility
+  pass).** `_drawBillboard` scaled the unit quad (±0.5) by `width/2`, so
+  every billboard — health labels, floating combat text, fog puffs,
+  ghosts — drew at **half its nominal size**. The floating damage popup
+  ("-7") read as a ~2-unit speck on the token face at playing distance,
+  invisible past ~150 units out. Fixed by drawing billboards at nominal
+  size; floating text re-canvased (256×128, `bold 88px sans-serif`,
+  9px stroke, quad 13×6.5); health labels became rounded pill chips with a
+  thin cool-white stroke; fog puffs were retuned from 42–80 to 21–40 units
+  (the size they were actually rendering at — the verified fog look is
+  unchanged); ghosts, which were never tuned ("hard to make out at
+  overview distance"), now render at their intended 15 units.
 - **Cosmetics (chromatic aberration + unsharp mask)** — both live in the
   composite pass of `webgl2_bloom.js`: radial CA (R/B shift against G,
   quadratic toward the corners, `?chroma=0` to disable, default 0.006) and a
@@ -303,10 +322,10 @@ fog-of-war opponent filtering, and the AI seat all behave.
   token, `W` prints the "No token controlled! Press TAB to cycle tokens"
   banner. WASD movement with a controlled token and TAB cycling remain
   untested.
-- **Health labels are crisp quads but glyph legibility at zoom is
-  unverified** (fog of war masks enemy tokens; friendly tokens sit far
-  away in the deployment corner). The flip_y leak is fixed; verify
-  readability on a zoomed-in board next.
+- **Health labels are crisp quads** — glyph legibility at zoom verified
+  2026-11-10 (sixth pass): upright, crisp at radius ≥ 150; unreadable at
+  full-board radius (by design). Superseded same day by the nominal-size
+  billboard fix; labels now render 2× larger (see §2, fifth/sixth pass).
 - **In-browser spectating is wired end-to-end (fixed and verified).** Two
   defects stood between the lobby browser and the seat-cam view, both
   fixed: (1) WS `LIST_GAMES` returned only joinable lobbies, so the
@@ -408,6 +427,55 @@ fog-of-war opponent filtering, and the AI seat all behave.
   — but nothing here suggests bloom needs to come off the default.
   `make smoke` remains on SwiftShader and is unaffected (it asserts boot,
   not frame rate).
+
+**Verification notes (sixth pass — legibility at zoom, 2026-11-10):**
+
+- Side instance again (`HTTP_PORT=8081` + `WEB_PORT=8001` proxy), fresh
+  2-player game vs. a detached `aggressive` AI, viewport 1354×728 (canvas
+  2257×1214 at DPR 1.667). Camera posed by direct spherical edit
+  (`cameraController.camera.target/alpha/beta/radius`) — no camera math in
+  the test; grid cells resolved by the page's own `pickGridCell` (the
+  smoke-test pattern). Screenshots taken as q60 JPEGs with `filePath`;
+  crops via `magick` for pixel-level checks.
+- **Health labels**: upright (flip_y fix re-confirmed — glyphs read
+  "10hp" right-side up), crisp at every radius ≥ 150, and now full size
+  (38 % larger than the half-sized billboards of the Phase 2 state). The
+  black square behind the glyphs became a rounded pill with a thin
+  cool-white stroke (`createHealthLabelTexture`) so the selected white
+  token no longer wears a harsh black bar. Unreadable nan-text at
+  full-board radius — by design (labels are a close-up readout).
+- **Floating combat text** (forced via `renderer.showFloatingText(...)`
+  with life pinned — the built-in 1.2 s TTL expires before a DevTools
+  round-trip can screenshot; "-7"/"-12" spawned over cells 0 and 1):
+  **was a ~2-unit speck** before the fifth white-box fix, now a
+  stroke + fill glyph ~4.5 units tall — clearly readable against the
+  cyan token faces and against the crystal backdrop.
+- **Marker readability at zoom (the §4 item 1 follow-up)**: the
+  valid-move green fill + square outline render legibly on open canvas —
+  saturated neon, as tuned. Two findings that are *not* canvas defects:
+  (a) additive draws blend `ONE/ONE`, so the fill's `alpha: 0.35` is a
+  **no-op** — brightness 1.8 is what sets intensity (it clips to saturated
+  green over anything bright); (b) the HUD panels are DOM layers above the
+  canvas — the info panel (`#hud`, `rgba(0,0,0,0.7)`) and `#controls`
+  (`rgba(0,0,0,0.7)`) dim everything beneath them. At 1354×728 the deploy
+  corner (own tokens + their valid-move markers) renders behind the left
+  panel, and one marker (cell `1,1`) sits fully under `#controls` at this
+  camera pose. Marker tuning is sound; the occlusion is a HUD/framing
+  question (see §5). **Resolved same day**: both panels thinned to
+  `rgba(0,0,0,0.45)` (maintainer's choice, option "thin the panels").
+- The fog/ghost billboards were part of the half-size bug; fog was
+  retuned to its previously-rendered effective size (no look change);
+  ghosts now render at nominal 15 units. The lightning bolt (line
+  geometry) was never billboard-sized.
+- **HUD panel thinning (2026-11-10, option chosen by the maintainer):**
+  `#hud` and `#controls` backgrounds lowered from `rgba(0,0,0,0.7)` to
+  `rgba(0,0,0,0.45)` so the board — and the deploy corner with its
+  markers — reads through the panels. Verify HUD text remains legible on
+  your display; the panels are otherwise unchanged (borders, layout,
+  z-index).
+- `make smoke` re-run clean after the fix (own side servers torn down;
+  the gate spawns its own): boot, render, and the two-seat move/end-turn
+  interaction gate all pass with zero console errors.
 
 ---
 
@@ -530,7 +598,15 @@ Rules for this codebase:
 
 - `gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, ...)` is global state and leaks
   into every subsequent texture upload. Flip per-texture, then restore.
-- UNRESOLVED for later: lines are always 1px wide (WebGL ignores
+- **Billboards drew at half nominal size until 2026-11-10** —
+  `_drawBillboard` scaled the ±0.5-spanning unit quad by `width/2`. Fixed
+  by scaling by `width` instead; if you add a billboard, size it at what
+  you want on screen.
+- **Additive draws blend `ONE/ONE`, so `uAlpha` is ignored.** Marker and
+  grid "alpha" values are documentary only — intensity comes from
+  `uBrightness` alone. To make alpha matter for an additive draw you'd
+  need `SRC_ALPHA, ONE`, but that dims every existing additive user
+  (grid, cage, beams); don't change the blend in place.- UNRESOLVED for later: lines are always 1px wide (WebGL ignores
   `lineWidth` on most platforms), which is fine for the neon look here.
 - `antialias: true` on the context + no culling in the spike — tiny scene,
   overdraw irrelevant; revisit if profiling says otherwise.
@@ -546,8 +622,12 @@ Rules for this codebase:
 ### Phase 2 — visual parity (complete)
 
 1. ~~Bump the marker readability~~ — **done**: fills 0.16 → 0.35 alpha,
-   additive, brightness 1.8. Judged at playing distance; worth one more
-   pass at zoom on a busy board.
+   additive, brightness 1.8. Judged at playing distance and re-judged at
+   zoom 2026-11-10 (sixth pass): legible on open canvas. Canvas-side
+   tuning is sound — the two remaining caveats are DOM/HUD occlusion
+   (the panels dim the board beneath them) and the `ONE/ONE` additive
+   blend (the 0.35 alpha is a no-op; brightness 1.8 is what renders).
+   See §2 (sixth pass) and §5.
 2. ~~Bloom / glow~~ — **done** (`webgl2_bloom.js`; threshold 0.55, strength
    0.9, half-res, `?bloom=0` escape hatch). See §2.
 3. ~~**God rays**~~ — **done** (`FRAG_GODRAYS`, half-res radial blur from
@@ -564,8 +644,13 @@ Rules for this codebase:
    tokens are shaded hex solids). Gold decision: keep the emissive fake —
    the cage is additive line geometry PBR would never touch, and the
    glow look is on-brand; see §2.
-6. **Floating text / health labels** — verify at zoom, check flip_y and
-   readability.
+6. ~~**Floating text / health labels**~~ — **done 2026-11-10**: verified at
+   zoom; flip_y fix re-confirmed. Found and fixed a real defect in the
+   pass — `_drawBillboard` drew every billboard at half nominal size
+   (fifth white-box bug, see §2), so floating damage text was a speck;
+   re-canvased and verified legible. Health labels are now full-size
+   pill chips. Mobile/small-viewport labels remain unverified
+   (testing backlog).
 7. ~~**Chroma aberration / film grain / sharpen**~~ — **done and tuned**:
    the composite pass carries a static-hash grain (0.045), a soft vignette
    (0.55), radial chromatic aberration (0.006, quadratic toward the
@@ -691,7 +776,14 @@ Rules for this codebase:
   corners off-screen at ~1:1 aspect — my tokens at (0,0)-(2,0) sat pinned
   to the top edge. It matches the Babylon defaults, so it's not a
   regression, but consider raising the radius multiplier (or fov, or
-  clamping by aspect ratio) before a public release.
+  clamping by aspect ratio) before a public release. Related and now
+  measured (2026-11-10, 1354×728): at the default pose the deployment
+  corner — own tokens and their valid-move markers — renders behind the
+  left info panel, and `#controls` (`rgba(0,0,0,0.7)` at the time) dimmed
+  the bottom of the board. First step shipped the same day: both panels
+  thinned to `rgba(0,0,0,0.45)`. Whether the default pose itself should
+  move off the HUD columns (or panels should collapse by default) before
+  a public release remains open.
 - **Keep Babylon in-repo as fallback forever?** Closed 2026-11-10:
   deleted the same day (ahead of the planned one-release wait, at the
   maintainer's instruction; the rollback hatch was never exercised).
