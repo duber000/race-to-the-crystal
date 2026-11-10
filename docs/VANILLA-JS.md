@@ -19,9 +19,15 @@
 > (α per SEAT_ALPHAS) with radius 1.1x the board diagonal, so no seat's
 > tokens render behind the crystal, a HUD panel, or off-frame. The
 > `#controls` blurb is capped to 480px (the full-width panel covered the
-> bottom strip). Nothing in this document has been merged into a release
-> — everything below was validated locally, in the browser, against a
-> live game server.
+> bottom strip). Nothing in this document has been merged into a release —
+> the maintainer is holding the release until the §4 testing backlog is
+> further along; everything below was validated locally, in the browser,
+> against a live game server.
+> **2026-11-10 (doc sync):** line counts and gzip sizes re-measured
+> against the working tree (~4,673 lines, ~42 KB gzip total);
+> `make smoke` re-run and passes; the "Babylon version bump" open
+> question closed (Babylon was deleted in the flip); stale pre-flip
+> phrasing retired. No release has been cut.
 
 This document records the argument for dropping Babylon.js, what has been
 built and verified so far, the traps hit along the way, and what remains.
@@ -122,8 +128,9 @@ stage it, keep Babylon as fallback, gate on a decision point.
 
 ### Phase 1 — vanilla WebGL2 spike, opt-in (done; default flip and deletion followed)
 
-New `web_server/static/webgl2/` (~4,577 lines after the Phase 2 god-ray/PBR
-pass, ~40 KB gzip), originally wired in behind `?renderer=webgl2`.
+New `web_server/static/webgl2/` (~4,673 lines after the seventh-pass
+camera/legibility changes, ~42 KB gzip), originally wired in behind
+`?renderer=webgl2`.
 (2026-11-10: vanilla became the default and Babylon.js was deleted the
 same day, see the decision gate in §4.)
 
@@ -132,13 +139,14 @@ same day, see the decision gate in §4.)
 | `glmath.js` | 237 | vec3 + column-major mat4 (perspective/lookAt/multiply/invert/TRS + mat4TransformPoint) |
 | `webgl2_core.js` | 170 | context, program/attrib management, VAO mesh builders (triangles/lines/points) |
 | `webgl2_geometry.js` | 368 | ground/box/cylinder/UV/ico sphere/torus/quad/circle/square builders |
-| `webgl2_camera.js` | 644 | spherical orbit overview + first person, wheel zoom, two-finger pinch/pan, focus/transition/FP smoothing |
-| `webgl2_renderer.js` | 2,301 | `VanillaRenderer3D` — drop-in for `Renderer3D` (duck-typed), same public interface |
-| `webgl2_textures.js` | 85 | canvas-generated textures (grid, health labels, soft-circle billboards) |
-| `webgl2_bloom.js` | 402 | half-res bloom + god rays + composite (vignette, grain) — Phase 2 |
-| `webgl2_crystal_effects.js` | 370 | fog/ghosts/lightning/whirlwind animator — Phase 2 |
+| `webgl2_camera.js` | 675 | spherical orbit overview + first person, wheel zoom, two-finger pinch/pan, focus/transition/FP smoothing |
+| `webgl2_renderer.js` | 2,307 | `VanillaRenderer3D` — drop-in for `Renderer3D` (duck-typed), same public interface |
+| `webgl2_textures.js` | 102 | canvas-generated textures (grid, health labels, soft-circle billboards) |
+| `webgl2_bloom.js` | 441 | half-res bloom + god rays + composite (vignette, grain) — Phase 2 |
+| `webgl2_crystal_effects.js` | 373 | fog/ghosts/lightning/whirlwind animator — Phase 2 |
 
-Total ~4,577 lines (Phase 2 total ~882 lines over the Phase 1 spike).
+Total ~4,673 lines (measured 2026-11-10, after the seventh-pass camera and
+legibility work).
 
 Reached via `game_client.modules.js` → always the vanilla path. Since
 2026-11-10 there is no flag and no fallback: if the WebGL2 renderer throws
@@ -754,7 +762,7 @@ Rules for this codebase:
   (host) → join by id (guest) → both ready → host starts), and asserts
   per context: `window.gameClient.vanillaRenderer === true`, renderer +
   camera constructed, `#renderCanvas` visible, turn phase populated, zero
-  console errors/pageerrors, no "falling back to Babylon" warning, and a
+  console errors/pageerrors, and a
   > 30 KB JPEG screenshot (both seats rendered the scene — verified by
   eye: crystal + cage, generators, mystery rings, grid, HUD). Runs clean
   headless via SwiftShader (`--use-angle=swiftshader
@@ -773,8 +781,7 @@ Rules for this codebase:
   `current_turn_player_id` flips each time. It also pins the
   seat-relative overview azimuth per seat (`SEAT_ALPHAS`, camera alpha
   matches the deployment corner the local player sits behind).
-  Renderer-agnostic — the same
-  steps work over the Babylon fallback. Set `SMOKE_INTERACT=0` to skip.
+  Set `SMOKE_INTERACT=0` to skip.
   Still manual-only: the deployment phase (unreachable in an
   auto-deployed fresh game), attacks (no adjacent enemies on turn 1),
   first-person WASD/TAB, toggle-bloom-at-runtime, mobile/touch.
@@ -850,13 +857,13 @@ Rules for this codebase:
   behavioral gate too: after boot it plays a real move over the wire
   (cells resolved by sampling the page's own ray-plane pick — no camera
   math in the test), ends the turn from both seats, and asserts the
-  seat-relative overview azimuth per seat. Still missing
-  before the default flip: deploy-phase coverage (auto-deploy hides it
-  in fresh games), attacks, first-person interactions, mobile/touch, and
-  rendering correctness beyond "frame is non-trivial". The Babylon path
-  is likewise untested.
-- **Babylon version bump?** If we keep Babylon during transition: 8.45.3 is
-  pinned; 9.35.0 is current. Don't upgrade unless forced.
+  seat-relative overview azimuth per seat. Still missing from the
+  automated gate: deploy-phase coverage (auto-deploy hides it in fresh
+  games), attacks, first-person interactions, mobile/touch, and
+  rendering correctness beyond "frame is non-trivial". There is no
+  fallback path left to test.
+- **Babylon version bump?** Closed 2026-11-10: moot. Babylon.js was
+  deleted in the default flip; there is nothing left to bump.
 - **`main.kuki` cache headers** — done 2026-11-10. Every response from
   the web server is now `Cache-Control: no-cache` (revalidate every load);
   Go's ServeFile sets Last-Modified, so repeat loads get 304s and fresh
@@ -881,7 +888,7 @@ the unsharp mask. Create a
 --name AI --strategy aggressive` next to your seat, ready both, start.
 
 Launch the AI client **detached** (background), not in a foreground shell
-with a timeout — see §3, "a full lobby is invisible … join 400s". Compare
+with a timeout — see §3, "a full lobby is invisible … join 400s".
 Babylon.js was removed 2026-11-10; there is no renderer flag left.
 
 Headless verification (no GPU, no human seats):
