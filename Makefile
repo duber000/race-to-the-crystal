@@ -1,4 +1,4 @@
-.PHONY: help check build clean-generated desktop desktop-run server server-run web-server web-server-run test test-verbose test-specific clean lint format learn learn-run learn-check learn-test
+.PHONY: help check build clean-generated desktop desktop-run server server-run web-server web-server-run test test-verbose test-specific clean lint format learn learn-run learn-check learn-test smoke
 
 help: ## Show this help message
 	@echo "Race to the Crystal - Available Commands:"
@@ -92,3 +92,8 @@ lint: ## Check formatting
 
 format: ## Auto-format all Kukicha files
 	kukicha fmt -w .
+
+smoke: ## Headless smoke test of the vanilla WebGL2 renderer (Playwright + SwiftShader; needs built binaries + npm install)
+	npm install
+	npx playwright install chromium
+	node tools/smoke/smoke.mjs

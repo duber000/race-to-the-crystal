@@ -42,3 +42,7 @@ web_server/static/babylon.js
 /errs
 /constants
 /types
+
+# Node tooling (headless smoke tests)
+node_modules/
+tools/smoke/out/

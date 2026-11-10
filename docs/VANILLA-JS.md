@@ -406,6 +406,27 @@ Make the call once parity is close:
   crystal-burst path is verified (forced `triggerVictoryOnce()` renders;
   alert() unverified); no match has concluded yet — spectate the AI match
   with `SPECTATE` + `follow=<seat>` (see §2).
+- ~~Headless smoke test before the default flip~~ — **done and vendored
+  as of 2026-11-10.** `tools/smoke/smoke.mjs` (Playwright + SwiftShader
+  WebGL2; the repo's first Node tooling — `package.json` at the root,
+  Playwright pinned as a dev dependency, driven via `make smoke`) spawns
+  side instances itself (`HTTP_PORT=8081 ./race-server` +
+  `WEB_PORT=8001 GAME_SERVER_URL=http://localhost:8081 ./web_server/web_server`),
+  drives a full two-context lobby flow (connect → create 2-player game
+  (host) → join by id (guest) → both ready → host starts), and asserts
+  per context: `window.gameClient.vanillaRenderer === true`, renderer +
+  camera constructed, `#renderCanvas` visible, turn phase populated, zero
+  console errors/pageerrors, no "falling back to Babylon" warning, and a
+  > 30 KB JPEG screenshot (both seats rendered the scene — verified by
+  eye: crystal + cage, generators, mystery rings, grid, HUD). Runs clean
+  headless via SwiftShader (`--use-angle=swiftshader
+  --enable-unsafe-swiftshader`); screenshots land in `tools/smoke/out/`
+  (gitignored). Set `SMOKE_BASE_URL` to target an already-running web
+  instance instead of spawning side servers.
+  Note: both players auto-deploy before turn 1 (game starts directly in
+  PLAYING/MOVEMENT) — expected server behavior, not a renderer issue.
+  Still manual-only: the interactive/perf checks (toggle bloom at
+  runtime, pick → move through the real event path, deploy flow).
 - Mobile/touch: tap-to-select, tap-to-move, pinch zoom, two-finger pan,
   health labels at small viewport sizes.
 - Mid-game first-person toggle (V) works; WASD with a controlled token,
@@ -451,9 +472,15 @@ Make the call once parity is close:
 - **Keep Babylon in-repo as fallback forever?** Cost of keeping is one file
   + scripts; keeping it means we can flip back cheaply. Recommendation:
   keep it until the default-flip ships, then delete.
-- **Test suite?** There is currently **no automated test for the 3D layer
-  at all.** A headless screenshot/smoke test (playwright-style) before the
-  default-flip would be the first net under the renderer.
+- **Test suite?** Answered in part: `make smoke` now runs a headless
+  smoke test of the vanilla path (Playwright + SwiftShader WebGL2,
+  vendored at `tools/smoke/smoke.mjs` — the repo's first Node tooling,
+  root `package.json`, Playwright pinned). It is a boot/render gate, not
+  a behavioral suite: it verifies page load → lobby → game start → scene
+  renders with zero console errors, once per seat. Still missing before
+  the default flip: any automated coverage of interaction (pick → move,
+  deploy, end-turn) and rendering correctness beyond "frame is
+  non-trivial". The Babylon path is likewise untested.
 - **Babylon version bump?** If we keep Babylon during transition: 8.45.3 is
   pinned; 9.35.0 is current. Don't upgrade unless forced.
 - **`main.kuki` cache headers** — the web server sets no cache headers and
@@ -476,6 +503,21 @@ Then `http://localhost:8000/?renderer=webgl2` (hard-reload once). Add
 Launch the AI client **detached** (background), not in a foreground shell
 with a timeout — see §3, "a full lobby is invisible … join 400s". Compare
 against the Babylon path by dropping the flag.
+
+Headless verification (no GPU, no human seats):
+
+```bash
+npm install              # once; installs Playwright
+npx playwright install chromium   # once
+make smoke               # spawns side servers on 8081/8001, runs, tears down
+```
+
+`make smoke` exercises page load → connect → create/join → ready → start
+→ vanilla renderer boot + render, asserting zero console errors and a
+non-trivial scene per seat. Screenshots land in `tools/smoke/out/`.
+Requires the built binaries (`race-server`, `web_server/web_server`) —
+run `make build` first on a fresh checkout. Set `SMOKE_BASE_URL` to aim
+at an already-running instance instead of spawning side servers.
 
 When verifying in Chrome DevTools, take screenshots with `filePath` +
 `format: "jpeg"` (see §3) — inline full-page PNGs at DPR 1.667 each run
