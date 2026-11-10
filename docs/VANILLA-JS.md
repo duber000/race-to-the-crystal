@@ -13,9 +13,15 @@
 > **2026-11-10 (legibility pass, sixth verification):** floating combat text
 > was rendering at half size (a billboard nominal-size bug, see §2) and is
 > now legible at playing distance; health labels draw at nominal size as
-> rounded pill chips; markers re-judged at zoom. Nothing in this document
-> has been merged into a release — everything below was validated locally,
-> in the browser, against a live game server.
+> rounded pill chips; markers re-judged at zoom.
+> **2026-11-10 (seventh verification):** the overview camera is now
+> seat-relative — it sits behind the local player's deployment corner
+> (α per SEAT_ALPHAS) with radius 1.1x the board diagonal, so no seat's
+> tokens render behind the crystal, a HUD panel, or off-frame. The
+> `#controls` blurb is capped to 480px (the full-width panel covered the
+> bottom strip). Nothing in this document has been merged into a release
+> — everything below was validated locally, in the browser, against a
+> live game server.
 
 This document records the argument for dropping Babylon.js, what has been
 built and verified so far, the traps hit along the way, and what remains.
@@ -316,8 +322,10 @@ fog-of-war opponent filtering, and the AI seat all behave.
 - **Zoom is glued to the board center.** Wheel dollies the radius but the
   target never leaves the crystal — past ~radius 110 the crystal fills the
   frame. Pan/drag moves it (map-style grab pan), and direct spherical edits
-  (`camera.target/alpha/beta/radius`) work for a precise camera. Noted, not
-  changed: this matches the Babylon overview design.
+  (`camera.target/alpha/beta/radius`) work for a precise camera. Noted:
+  the target stays centered on the crystal (by design); the azimuth is
+  now seat-relative instead of the fixed Babylon-matching pose — see the
+  seventh verification pass.
 - **First-person mode toggles (V) and survives WASD**: with no controlled
   token, `W` prints the "No token controlled! Press TAB to cycle tokens"
   banner. WASD movement with a controlled token and TAB cycling remain
@@ -476,6 +484,48 @@ fog-of-war opponent filtering, and the AI seat all behave.
 - `make smoke` re-run clean after the fix (own side servers torn down;
   the gate spawns its own): boot, render, and the two-seat move/end-turn
   interaction gate all pass with zero console errors.
+
+**Verification notes (seventh pass — seat-relative overview camera, 2026-11-10):**
+
+- **The diagnosis had to be measured, not assumed.** The default pose
+  (α = π/4, beta 60°, radius 0.8 × diagonal ≈ 650, fov 40°, target board
+  center) projects the four deployment corners asymmetrically: the P0/P1
+  corners land inside the crystal/cage silhouette (P0 renders *on top of
+  the crystal* — all three host tokens nested in the cage wireframe,
+  confirmed visually), P2 lands behind the info panel (x ≈ 87 px), and
+  P3 lands off the bottom edge (y ≈ 970 px, 240 px past a 728 px canvas)
+  behind `#controls` — a full-width (~1140 px) panel whose unbroken
+  blurb sentence set its width. Only P1 got a clear view. §5 had called
+  the symptom "corners crop at ~1:1 aspect"; at 1354×728 the same
+  asymmetry applies with the corners merely projected, not cropped.
+- **Fix: the overview azimuth is per seat.** The camera sits behind the
+  local player's deployment corner (`SEAT_ALPHAS` in `webgl2_camera.js`:
+  0=NW 225°, 1=NE 135°, 2=SW 315°, 3=SE 45° — matching the corners in
+  `game/board.kuki`). `focusOn` uses the same azimuth. Spectators get
+  the followed seat's azimuth for free (`perspective_player_id` = the
+  followed seat); a missing/unparsable id falls back to the SE pose.
+- **Radius 0.8 → 1.1 × diagonal (≈ 650 → ≈ 896).** The near corner at
+  the 60° tilt needs radius ≈ 900 to enter the frame (it was projected
+  off the bottom for every seat at 0.8 — P3 was unplayable today). At
+  1.1, every seat projects symmetrically: own corner at y ≈ 703, side
+  corners at y ≈ 364, far corner at y ≈ 209, crystal at y ≈ 364 at
+  1354×728. Cost: ~28 % smaller board scale (acceptable; labels and
+  markers were re-verified legible).
+- **`#controls` blurb capped at 480 px** (bottom strip usable below the
+  wrapped text; near corner at x ≈ 677 clears the 480 px panel).
+- **First FULL_STATE ordering**: `handleFullState` now applies the state
+  before dispatching `IN_GAME` (the seat arrives as
+  `perspective_player_id`), with an explicit `updateGameState` push after
+  module init so the freshly built renderer sees the already-applied
+  state. The first rendered frame already uses the seat-relative pose —
+  no camera snap.
+- Verified in-browser on a fresh side instance (2-player game vs. an
+  aggressive `aggressive` AI): player_0 seats at α = 225°, radius 896;
+  own tokens framed bottom-center, fully visible above the capped panel,
+  labels intact; valid-move markers legible (their green outlines alias
+  at glancing near-edge angles — inherent to 1 px line rendering, the
+  same accepted trade-off as the neon grid). Console clean;
+  `make smoke` passes end-to-end (move + end-turn gates, zero errors).
 
 ---
 
@@ -720,7 +770,10 @@ Rules for this codebase:
   asserts valid moves are surfaced, clicks a valid destination, waits
   for the server to accept the move (position flips in `gameState`),
   and ends the turn from both seats (Space/Enter) checking
-  `current_turn_player_id` flips each time. Renderer-agnostic — the same
+  `current_turn_player_id` flips each time. It also pins the
+  seat-relative overview azimuth per seat (`SEAT_ALPHAS`, camera alpha
+  matches the deployment corner the local player sits behind).
+  Renderer-agnostic — the same
   steps work over the Babylon fallback. Set `SMOKE_INTERACT=0` to skip.
   Still manual-only: the deployment phase (unreachable in an
   auto-deployed fresh game), attacks (no adjacent enemies on turn 1),
@@ -752,7 +805,7 @@ Rules for this codebase:
 | Mystery rings | ✓ | ✓ (spin/pulse only, no landing burst) |
 | Indicators (hover/move/attack/threat/pips) | ✓ | ✓ |
 | Particles (explosions, confetti, ambient dust) | ✓ | ✓ |
-| Camera (overview + first-person) | ✓ | ✓ |
+| Camera (overview + first-person; overview azimuth is seat-relative) | ✓ | ✓ |
 | Picking | ✓ `scene.pick` | ✓ ray-plane (equivalent for grid cells) |
 | Bloom / glow layer | ✓ | ✓ (half-res gaussian + composite bloom/vignette/grain) |
 | Chromatic aberration / sharpen | ✓ | ✓ (CA 0.006 radial + unsharp mask 0.25; grain + vignette always on in the composite) |
@@ -771,19 +824,21 @@ Rules for this codebase:
   bloom+rays below timing noise, not fill-bound at 2.25 MP. An INP check
   is all that remains of the perf question — no frame-time reason to hold
   bloom back.
-- **Overview framing is tight on square-ish viewports.** The overview pose
-  (beta 60°, radius 0.8 × board diagonal, 40° fov) crops the deployment
-  corners off-screen at ~1:1 aspect — my tokens at (0,0)-(2,0) sat pinned
-  to the top edge. It matches the Babylon defaults, so it's not a
-  regression, but consider raising the radius multiplier (or fov, or
-  clamping by aspect ratio) before a public release. Related and now
-  measured (2026-11-10, 1354×728): at the default pose the deployment
-  corner — own tokens and their valid-move markers — renders behind the
-  left info panel, and `#controls` (`rgba(0,0,0,0.7)` at the time) dimmed
-  the bottom of the board. First step shipped the same day: both panels
-  thinned to `rgba(0,0,0,0.45)`. Whether the default pose itself should
-  move off the HUD columns (or panels should collapse by default) before
-  a public release remains open.
+- **Overview framing is tight on square-ish viewports.** The overview
+  pose used to be global to all seats (alpha π/4, beta 60°, radius 0.8,
+  fov 40°) and asymmetric: P0 tokens rendered inside the crystal
+  silhouette, P2 behind the info panel, P3 off-frame. **Resolved
+  2026-11-10 (per-seat azimuth, seventh pass in §2)**: the camera now
+  sits behind the local player's deployment corner with radius 1.1x the
+  board diagonal — every seat sees its own corner near-side and
+  in-frame, symmetrically. `#controls`' blurb is capped to 480 px so the
+  bottom strip (where your corner projects) is usable. Spectators get
+  the followed seat's azimuth. Remaining: the pose is still fixed per
+  seat (no aspect-aware zoom clamp for ~1:1 viewports) and the far
+  corner can still overlap the crystal/cage for an opponent at some
+  angles — accepted; pan handles it. The Babylon-matching default is
+  deliberately gone (the seat-relative pose is strictly more readable);
+  the `?renderer=` flag and Babylon are both gone with it.
 - **Keep Babylon in-repo as fallback forever?** Closed 2026-11-10:
   deleted the same day (ahead of the planned one-release wait, at the
   maintainer's instruction; the rollback hatch was never exercised).
@@ -794,7 +849,8 @@ Rules for this codebase:
   root `package.json`, Playwright pinned). As of 2026-11-10 it is a
   behavioral gate too: after boot it plays a real move over the wire
   (cells resolved by sampling the page's own ray-plane pick — no camera
-  math in the test) and ends the turn from both seats. Still missing
+  math in the test), ends the turn from both seats, and asserts the
+  seat-relative overview azimuth per seat. Still missing
   before the default flip: deploy-phase coverage (auto-deploy hides it
   in fresh games), attacks, first-person interactions, mobile/touch, and
   rendering correctness beyond "frame is non-trivial". The Babylon path
