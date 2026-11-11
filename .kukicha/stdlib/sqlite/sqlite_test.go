@@ -1465,3 +1465,207 @@ func TestZeroValuePoolReturnsError(t *testing.T) {
 	check("CreateBlobFunction", sqlite.CreateBlobFunction(pool, "bl", 1, func(args [][]byte) []byte { return args[0] }))
 	check("CreateBlobFunctionFloat", sqlite.CreateBlobFunctionFloat(pool, "blf", 1, func(args [][]byte) float64 { return 2.5 }))
 }
+
+// --- TestTransactionBeginsImmediate ---
+// The SQLite driver takes the transaction write lock up front by default:
+// while the holder connection has a write transaction open, a concurrent
+// db.Transaction on a second connection fails at Begin — its body never
+// runs — instead of beginning deferred and hitting SQLITE_BUSY at the
+// first write. Read-only spans via TransactionWith keep working because
+// the driver begins those deferred.
+// Before the driver's immediate-by-default change, the contender's body
+// ran and the lock error surfaced at its first write instead — the shape
+// this regression test pins.
+func TestTransactionBeginsImmediate(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "immediate.db")
+	zeroTimeout := map[string]string{"busy_timeout": "0"}
+	holder, err_153 := sqlite.OpenWith(path, zeroTimeout)
+	if err_153 != nil {
+		panic(fmt.Sprintf("open holder: %v", err_153))
+	}
+	defer db.Close(holder)
+	contender, err_154 := sqlite.OpenWith(path, zeroTimeout)
+	if err_154 != nil {
+		panic(fmt.Sprintf("open contender: %v", err_154))
+	}
+	defer db.Close(contender)
+	_, err_155 := db.Exec(holder, "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)")
+	if err_155 != nil {
+		panic(fmt.Sprintf("create: %v", err_155))
+	}
+	started := make(chan bool)
+	release := make(chan bool)
+	holderDone := make(chan error, 1)
+	go func() {
+		holderErr := db.Transaction(holder, func(tx db.Tx) error {
+			db.TxExec(tx, "INSERT INTO users (name, email) VALUES (?, ?)", "Carol", "carol@example.com")
+			started <- true
+			<-release
+			return nil
+		})
+		holderDone <- holderErr
+	}()
+	<-started
+	t.Run("concurrent write transaction fails at Begin", func(t *testing.T) {
+		fnRan := false
+		err := db.Transaction(contender, func(tx db.Tx) error {
+			fnRan = true
+			return nil
+		})
+		test.AssertError(t, err)
+		test.AssertFalse(t, fnRan)
+	})
+	t.Run("read-only span begins while a writer holds the lock", func(t *testing.T) {
+		roCount := -int64(1)
+		err := db.TransactionWith(contender, db.TxOptions{ReadOnly: true, IsolationLevel: db.IsolationLevelDefault}, func(tx db.Tx) error {
+			row := db.TxQueryRow(tx, "SELECT count(*) FROM users")
+			n, scanErr := db.ScanRow[int64](row)
+			roCount = n
+			return scanErr
+		})
+		test.AssertNoError(t, err)
+		test.AssertEqual(t, roCount, int64(0))
+	})
+	release <- true
+	test.AssertNoError(t, <-holderDone)
+}
+
+// --- TestTransactionLinearizableExclusive ---
+// db.IsolationLevel.Linearizable maps to the driver's strictest mode, which
+// the SQLite driver opens as BEGIN EXCLUSIVE: in rollback-journal mode it
+// blocks other connections' reads for the transaction's duration, while a
+// Serializable (BEGIN IMMEDIATE) transaction does not.
+func TestTransactionLinearizableExclusive(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "exclusive.db")
+	journals := map[string]string{"journal_mode": "DELETE", "busy_timeout": "0"}
+	holder, err_156 := sqlite.OpenWith(path, journals)
+	if err_156 != nil {
+		panic(fmt.Sprintf("open holder: %v", err_156))
+	}
+	defer db.Close(holder)
+	reader, err_157 := sqlite.OpenWith(path, journals)
+	if err_157 != nil {
+		panic(fmt.Sprintf("open reader: %v", err_157))
+	}
+	defer db.Close(reader)
+	_, err_158 := db.Exec(holder, "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)")
+	if err_158 != nil {
+		panic(fmt.Sprintf("create: %v", err_158))
+	}
+	_, err_159 := db.Exec(holder, "INSERT INTO users (name, email) VALUES (?, ?)", "Alice", "alice@example.com")
+	if err_159 != nil {
+		panic(fmt.Sprintf("seed: %v", err_159))
+	}
+	t.Run("serializable transaction leaves readers free", func(t *testing.T) {
+		started := make(chan bool)
+		release := make(chan bool)
+		holderDone := make(chan error, 1)
+		go func() {
+			holderErr := db.TransactionWith(holder, db.TxOptions{IsolationLevel: db.IsolationLevelSerializable}, func(tx db.Tx) error {
+				db.TxExec(tx, "INSERT INTO users (name, email) VALUES (?, ?)", "Dave", "dave@example.com")
+				started <- true
+				<-release
+				return nil
+			})
+			holderDone <- holderErr
+		}()
+		<-started
+		n, err := db.Count(reader, "SELECT count(*) FROM users")
+		test.AssertNoError(t, err)
+		test.AssertEqual(t, n, int64(1))
+		release <- true
+		test.AssertNoError(t, <-holderDone)
+	})
+	t.Run("linearizable transaction blocks readers", func(t *testing.T) {
+		started := make(chan bool)
+		release := make(chan bool)
+		holderDone := make(chan error, 1)
+		go func() {
+			holderErr := db.TransactionWith(holder, db.TxOptions{IsolationLevel: db.IsolationLevelLinearizable}, func(tx db.Tx) error {
+				db.TxExec(tx, "INSERT INTO users (name, email) VALUES (?, ?)", "Eve", "eve@example.com")
+				started <- true
+				<-release
+				return nil
+			})
+			holderDone <- holderErr
+		}()
+		<-started
+		n, err := db.Count(reader, "SELECT count(*) FROM users")
+		test.AssertError(t, err)
+		test.AssertEqual(t, n, int64(0))
+		release <- true
+		test.AssertNoError(t, <-holderDone)
+	})
+}
+
+// --- TestOpenExisting --- (#407: read-only / no-create open variant)
+func TestOpenExisting_ReadRoundtrip(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "ro.db")
+	seed, err_160 := sqlite.Open(dbPath)
+	if err_160 != nil {
+		panic(fmt.Sprintf("seed open failed: %v", err_160))
+	}
+	_, err_161 := db.Exec(seed, "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
+	if err_161 != nil {
+		panic(fmt.Sprintf("create failed: %v", err_161))
+	}
+	_, err_162 := db.Exec(seed, "INSERT INTO users (name) VALUES ('Alice')")
+	if err_162 != nil {
+		panic(fmt.Sprintf("insert failed: %v", err_162))
+	}
+	_ = db.Close(seed)
+	pool, err_163 := sqlite.OpenExisting(dbPath)
+	if err_163 != nil {
+		panic(fmt.Sprintf("ro open failed: %v", err_163))
+	}
+	defer db.Close(pool)
+	rows, err_164 := db.Query(pool, "SELECT name FROM users WHERE id = 1")
+	if err_164 != nil {
+		panic(fmt.Sprintf("query failed: %v", err_164))
+	}
+	name, err_165 := db.ScanOne[string](rows)
+	if err_165 != nil {
+		panic(fmt.Sprintf("scan failed: %v", err_165))
+	}
+	test.AssertEqual(t, name, "Alice")
+}
+
+func TestOpenExisting_MissingFileFailsAndDoesNotCreate(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "missing", "ro.db")
+	pool, err_166 := sqlite.OpenExisting(dbPath)
+	if err_166 != nil {
+		test.AssertError(t, err_166)
+		return
+	}
+	_ = db.Close(pool)
+	t.Fatal("expected open of a missing file to fail")
+}
+
+func TestOpenExisting_WriteFails(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "ro.db")
+	seed, err_167 := sqlite.Open(dbPath)
+	if err_167 != nil {
+		panic(fmt.Sprintf("seed open failed: %v", err_167))
+	}
+	_, err_168 := db.Exec(seed, "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
+	if err_168 != nil {
+		panic(fmt.Sprintf("create failed: %v", err_168))
+	}
+	_ = db.Close(seed)
+	pool, err_169 := sqlite.OpenExisting(dbPath)
+	if err_169 != nil {
+		panic(fmt.Sprintf("ro open failed: %v", err_169))
+	}
+	defer db.Close(pool)
+	_, err_170 := db.Exec(pool, "INSERT INTO users (name) VALUES ('Eve')")
+	if err_170 != nil {
+		test.AssertError(t, err_170)
+		return
+	}
+	t.Fatal("expected a write on a read-only pool to fail")
+}

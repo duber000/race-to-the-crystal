@@ -60,9 +60,11 @@ func TurnsHeld on g: reference Generator int
 func IsDisabled on g: reference Generator bool
     return g.isDisabled
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func Buff on g: reference Generator enums.GeneratorBuff
     return g.buffType
 
+# kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
 func ChargePerTurn on g: reference Generator int
     if g.buffType equals enums.REACTOR
         return constants.GENERATOR_CHARGE_PER_HOLD + 5
@@ -93,7 +95,7 @@ func updateCaptureStatus on g: reference Generator(tokensAtPos: list of TokenAtP
             if wasCaptured
                 return true
     else
-        if g.capturingPlayerId isnt ""
+        if g.capturingPlayerId isnt empty
             if counts[g.capturingPlayerId] isnt empty
                 if len(counts[g.capturingPlayerId]) >= 1
                     if g.turnsHeld > 0

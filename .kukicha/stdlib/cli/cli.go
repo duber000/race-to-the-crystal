@@ -11,9 +11,10 @@ package cli
 
 import (
 	"context"
-	"errors"
+	goerrors "errors"
 	"fmt"
 	"kukicha.org/stdlib/color"
+	"kukicha.org/stdlib/errors"
 	"kukicha.org/stdlib/json"
 	"kukicha.org/stdlib/parse"
 	"kukicha.org/stdlib/signal"
@@ -65,11 +66,43 @@ type FlagDef struct {
 	Required     bool
 	Kind         FlagKind
 	Aliases      []string
+	EnvVar       string
 }
 
 // Command is the single CLI model: used both for the root application
 // (built by New, where Version/GlobalFlags/DefaultAction apply) and for
 // every nested subcommand (built by NewCommand).
+//
+// lastFlagName/lastFlagGlobal record the most recent flag registration so
+// chained decorators (Env, Short) can bind the flag they follow without
+// local/global-list ambiguity — builder state only, never read by parse.
+// Every flag registration records it, either spelling: all builder
+// methods delegate to their package functions, so a chain can mix
+// cli.X(...) calls and .X(...) stages freely.
+//
+// Method surface — every builder function has a same-named Command method
+// for pipe shorthand, so a chain can stay uniformly method-form where the
+// Go representation allows it (`kukicha context --stdlib` lists both
+// spellings):
+//
+//	any command:     StringFlag, BoolFlag, IntFlag, RequiredFlag,
+//	                 RequiredIntFlag, Env (binds the last-registered
+//	                 flag — local or global — to an env var), Short
+//	                 (aliases the last-registered flag — local or global),
+//	                 Arg, RequiredArg, RestArg, Action, ActionE,
+//	                 WithCommands, Run (the pipe terminal)
+//	root-only
+//	builders:        GlobalFlag, BoolGlobalFlag, IntGlobalFlag,
+//	                 RequiredGlobalFlag
+//	package-only
+//	(field-name
+//	collisions):     Description, Version, DefaultAction, DefaultActionE —
+//	                 Command carries fields of these names and Go cannot
+//	                 hold a method and a field with one name on a type,
+//	                 so these four stay cli.X(app, ...) functions.
+//
+// The root-only builders register flags the root dispatch owns, so
+// registering them on a leaf has no effect at parse time.
 type Command struct {
 	Name           string
 	Description    string
@@ -83,52 +116,91 @@ type Command struct {
 	DefaultAction  func(Args)
 	DefaultActionE func(Args) error
 	RestArgName    string
+	lastFlagName   string
+	lastFlagGlobal bool
 }
 
-// StringFlag adds a string-typed flag to the command.
+// StringFlag adds a string-typed flag to the command. A default of
+// exactly "true"/"false" almost certainly means the typed BoolFlag
+// instead — see BoolFlag for why.
+// Example: cmd |> .StringFlag("model", "Model name", "")
 func (cmd *Command) StringFlag(name string, desc string, defaultValue string) *Command {
-	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
-	return cmd
+	return StringFlag(cmd, name, desc, defaultValue)
 }
 
 // BoolFlag adds a boolean flag to the command. Bool flags never consume the next arg.
 // Example: cmd |> .BoolFlag("verbose", "Enable verbose output", false)
 func (cmd *Command) BoolFlag(name string, desc string, defaultValue bool) *Command {
-	dv := func() string {
-		if defaultValue {
-			return "true"
-		} else {
-			return "false"
-		}
-	}()
-	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: dv, Required: false, Kind: FlagKindBool, Aliases: make([]string, 0)})
-	return cmd
+	return BoolFlag(cmd, name, desc, defaultValue)
 }
 
 // IntFlag adds an integer flag to the command. Int flags always consume the next arg.
 // Example: cmd |> .IntFlag("count", "Number of items", 10)
 func (cmd *Command) IntFlag(name string, desc string, defaultValue int) *Command {
-	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: fmt.Sprintf("%v", defaultValue), Required: false, Kind: FlagKindInt, Aliases: make([]string, 0)})
-	return cmd
+	return IntFlag(cmd, name, desc, defaultValue)
 }
 
-// Short registers a short alias for the most recently added flag on the command.
-// Panics if called before any flag is declared — Short must follow a flag in
-// the builder chain so it knows which flag to alias.
+// Short registers a short alias for the most recently registered flag on the
+// command (the pipe/method form — see the package function for target rules).
 // Example: cmd |> .BoolFlag("verbose", "Verbose output", false) |> .Short("v")
 func (cmd *Command) Short(alias string) *Command {
-	if len(cmd.Flags) == 0 {
-		panic(fmt.Sprintf("cli.Short(%v): no flag to attach alias to — call Short after a StringFlag/BoolFlag/IntFlag/RequiredFlag in the builder chain", alias))
+	return Short(cmd, alias)
+}
+
+// Env binds the most recently registered flag to an environment variable:
+// when the flag is absent from argv, its value falls back to the variable
+// before the default. Precedence: argv flag > env var > default. The
+// binding is shown in help as (env <NAME>). IsSet stays argv-only — an
+// env-resolved value is not an explicit flag. Every flag registration
+// (either spelling) records the last flag, so the target is simply the
+// registration Env follows — local or global alike, in both the
+// cli.X(...) and .X(...) forms. Env itself works in leaf chains too: a
+// subcommand's dispatch resolves its flags' env bindings the same way.
+// Example: cli.GlobalFlag("kukicha", "Compiler binary", "") |> cli.Env("KUKICHA_BIN")
+func Env(app *Command, envVar string) *Command {
+	if len(envVar) == 0 {
+		panic("cli.Env: the environment variable name must not be empty")
 	}
-	last := len(cmd.Flags) - 1
-	cmd.Flags[last].Aliases = append(cmd.Flags[last].Aliases, alias)
-	return cmd
+	if len(app.lastFlagName) == 0 {
+		panic(fmt.Sprintf("cli.Env(%v): no flag to bind — call Env after a flag registration in the builder chain", envVar))
+	}
+	if app.lastFlagGlobal {
+		for i := range len(app.GlobalFlags) {
+			if app.GlobalFlags[i].Name == app.lastFlagName {
+				app.GlobalFlags[i].EnvVar = envVar
+				return app
+			}
+		}
+	} else {
+		for i := range len(app.Flags) {
+			if app.Flags[i].Name == app.lastFlagName {
+				app.Flags[i].EnvVar = envVar
+				return app
+			}
+		}
+	}
+	panic(fmt.Sprintf("cli.Env(%v): no flag named %v in the command's flag lists", envVar, app.lastFlagName))
+}
+
+// Env binds the most recently added flag to an environment variable (the
+// pipe/method form — see the package function for the precedence and
+// target rules).
+// Example: app |> .GlobalFlag("kukicha", "Compiler binary", "") |> .Env("KUKICHA_BIN")
+func (cmd *Command) Env(envVar string) *Command {
+	return Env(cmd, envVar)
 }
 
 // RequiredFlag adds a mandatory flag to the command.
 func (cmd *Command) RequiredFlag(name string, desc string) *Command {
-	cmd.Flags = append(cmd.Flags, FlagDef{Name: name, Description: desc, DefaultValue: "", Required: true, Kind: FlagKindString, Aliases: make([]string, 0)})
-	return cmd
+	return RequiredFlag(cmd, name, desc)
+}
+
+// RequiredIntFlag adds a mandatory integer flag to the command. The
+// default stays empty so a missing flag reads as unset — a "0" default
+// would satisfy the required check and silently make the flag optional.
+// Example: cmd |> .RequiredIntFlag("retries", "Retry count (required)")
+func (cmd *Command) RequiredIntFlag(name string, desc string) *Command {
+	return RequiredIntFlag(cmd, name, desc)
 }
 
 // Arg adds a positional argument to the command.
@@ -181,6 +253,48 @@ func (cmd *Command) WithCommands(subs ...*Command) *Command {
 	return cmd
 }
 
+// GlobalFlag registers a string flag available to all subcommands —
+// optional by construction; required-ness is unsupported here, use
+// cli.RequiredGlobalFlag. A default of exactly "true"/"false" almost
+// certainly means the typed BoolGlobalFlag instead — see BoolFlag for why.
+// Example: app |> .GlobalFlag("region", "Deployment region", "us-east-1")
+func (cmd *Command) GlobalFlag(name string, desc string, defaultValue string) *Command {
+	return GlobalFlag(cmd, name, desc, defaultValue)
+}
+
+// BoolGlobalFlag registers a boolean flag available to all subcommands —
+// the typed form a string "true"/"false" default is almost always reaching
+// for (see BoolFlag). Optional by construction; a required global is
+// cli.RequiredGlobalFlag.
+// Example: app |> .BoolGlobalFlag("json", "Emit JSON output", false)
+func (cmd *Command) BoolGlobalFlag(name string, desc string, defaultValue bool) *Command {
+	return BoolGlobalFlag(cmd, name, desc, defaultValue)
+}
+
+// IntGlobalFlag registers an integer flag available to all subcommands —
+// the typed-global sibling of IntFlag. Optional by construction; a required
+// global is cli.RequiredGlobalFlag.
+// Example: app |> .IntGlobalFlag("limit", "Max results", 10)
+func (cmd *Command) IntGlobalFlag(name string, desc string, defaultValue int) *Command {
+	return IntGlobalFlag(cmd, name, desc, defaultValue)
+}
+
+// RequiredGlobalFlag registers a mandatory string flag available to all
+// subcommands — required-ness is enforced on both parse paths (the root
+// invocation and every subcommand), unlike the plain global family whose
+// flags are optional by construction.
+// Example: app |> .RequiredGlobalFlag("region", "Deployment region (required)")
+func (cmd *Command) RequiredGlobalFlag(name string, desc string) *Command {
+	return RequiredGlobalFlag(cmd, name, desc)
+}
+
+// Run runs the command against os.Args — the terminal stage of a
+// method-shorthand chain, the same engine the package function drives.
+// Example: app |> .ActionE(run) |> .Run()
+func (cmd *Command) Run() {
+	Run(cmd)
+}
+
 // NewCommand creates a standalone subcommand builder. Chain with
 // cli.StringFlag / cli.Arg / cli.Action, then attach to a parent command via
 // cli.WithCommands.
@@ -197,12 +311,17 @@ func NewCommand(name string, desc string) *Command {
 type Args struct {
 	values map[string]string
 	rest   map[string][]string
+	set    map[string]bool
 }
 
 // NewArgs creates an Args from a map of values (useful for testing)
 // Example: args := cli.NewArgs(map of string to string {"key": "val"})
 func NewArgs(values map[string]string) Args {
-	return Args{values: values, rest: map[string][]string{}}
+	set := map[string]bool{}
+	for k := range values {
+		set[k] = true
+	}
+	return Args{values: values, rest: map[string][]string{}, set: set}
 }
 
 // New creates a new CLI application — the root Command.
@@ -238,14 +357,22 @@ func RequiredArg(app *Command, name string, description string) *Command {
 	return app
 }
 
-// StringFlag adds a string-typed flag to the app.
+// StringFlag adds a string-typed flag to the app. A default of exactly
+// "true"/"false" almost certainly means the typed BoolFlag instead — see
+// BoolFlag for why.
 // Example: app |> cli.StringFlag("model", "Model name", "")
 func StringFlag(app *Command, name string, desc string, defaultValue string) *Command {
 	app.Flags = append(app.Flags, FlagDef{Name: name, Description: desc, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
+	app.lastFlagName = name
+	app.lastFlagGlobal = false
 	return app
 }
 
-// BoolFlag adds a boolean flag to the app. Bool flags never consume the next arg.
+// BoolFlag adds a boolean flag to the app. Bool flags never consume the next
+// arg — under the string kind a bare --flag does, swallowing the following
+// token as its value (and string-kind values skip typed validation). That
+// is why a "true"/"false" string default almost always means this typed
+// form instead.
 // Example: app |> cli.BoolFlag("verbose", "Enable verbose output", false)
 func BoolFlag(app *Command, name string, desc string, defaultValue bool) *Command {
 	dv := func() string {
@@ -256,27 +383,47 @@ func BoolFlag(app *Command, name string, desc string, defaultValue bool) *Comman
 		}
 	}()
 	app.Flags = append(app.Flags, FlagDef{Name: name, Description: desc, DefaultValue: dv, Required: false, Kind: FlagKindBool, Aliases: make([]string, 0)})
+	app.lastFlagName = name
+	app.lastFlagGlobal = false
 	return app
 }
 
-// IntFlag adds an integer flag to the app. Int flags always consume the next arg.
+// IntFlag adds an integer flag to the app. Int flags always consume the next
+// arg; its typed-constructor siblings are StringFlag and BoolFlag, and the
+// typed-global sibling is IntGlobalFlag.
 // Example: app |> cli.IntFlag("count", "Number of results", 10)
 func IntFlag(app *Command, name string, desc string, defaultValue int) *Command {
 	app.Flags = append(app.Flags, FlagDef{Name: name, Description: desc, DefaultValue: fmt.Sprintf("%v", defaultValue), Required: false, Kind: FlagKindInt, Aliases: make([]string, 0)})
+	app.lastFlagName = name
+	app.lastFlagGlobal = false
 	return app
 }
 
-// Short registers a short alias for the most recently added flag on the app.
-// Panics if called before any flag is declared — Short must follow a flag in
-// the builder chain so it knows which flag to alias.
+// Short registers a short alias for the most recently registered flag on
+// the command — local or global alike, in both the cli.X(...) and .X(...)
+// forms. Panics if called before any flag registration — Short must follow
+// a flag in the builder chain so it knows which flag to alias.
 // Example: app |> cli.StringFlag("model", "Model name", "") |> cli.Short("m")
 func Short(app *Command, alias string) *Command {
-	if len(app.Flags) == 0 {
-		panic(fmt.Sprintf("cli.Short(%v): no flag to attach alias to — call Short after a Flag/StringFlag/BoolFlag/IntFlag/RequiredFlag in the builder chain", alias))
+	if len(app.lastFlagName) == 0 {
+		panic(fmt.Sprintf("cli.Short(%v): no flag to attach alias to — call Short after a flag registration in the builder chain", alias))
 	}
-	last := len(app.Flags) - 1
-	app.Flags[last].Aliases = append(app.Flags[last].Aliases, alias)
-	return app
+	if app.lastFlagGlobal {
+		for i := range len(app.GlobalFlags) {
+			if app.GlobalFlags[i].Name == app.lastFlagName {
+				app.GlobalFlags[i].Aliases = append(app.GlobalFlags[i].Aliases, alias)
+				return app
+			}
+		}
+	} else {
+		for i := range len(app.Flags) {
+			if app.Flags[i].Name == app.lastFlagName {
+				app.Flags[i].Aliases = append(app.Flags[i].Aliases, alias)
+				return app
+			}
+		}
+	}
+	panic(fmt.Sprintf("cli.Short(%v): no flag named %v in the command's flag lists", alias, app.lastFlagName))
 }
 
 // RestArg declares a variadic rest slot for the app. All positional tokens
@@ -290,6 +437,19 @@ func RestArg(app *Command, name string, description string) *Command {
 // RequiredFlag adds a mandatory flag to the app
 func RequiredFlag(app *Command, name string, description string) *Command {
 	app.Flags = append(app.Flags, FlagDef{Name: name, Description: description, DefaultValue: "", Required: true, Kind: FlagKindString, Aliases: make([]string, 0)})
+	app.lastFlagName = name
+	app.lastFlagGlobal = false
+	return app
+}
+
+// RequiredIntFlag adds a mandatory integer flag to the app. The default
+// stays empty so a missing flag reads as unset — a "0" default would
+// satisfy the required check and silently make the flag optional.
+// Example: app |> cli.RequiredIntFlag("retries", "Retry count (required)")
+func RequiredIntFlag(app *Command, name string, description string) *Command {
+	app.Flags = append(app.Flags, FlagDef{Name: name, Description: description, DefaultValue: "", Required: true, Kind: FlagKindInt, Aliases: make([]string, 0)})
+	app.lastFlagName = name
+	app.lastFlagGlobal = false
 	return app
 }
 
@@ -342,14 +502,21 @@ func WithCommands(app *Command, cmds ...*Command) *Command {
 	return app
 }
 
-// GlobalFlag registers a flag that is available to all subcommands.
-// Example: app |> cli.GlobalFlag("verbose", "Enable verbose output", "false")
+// GlobalFlag registers a flag that is available to all subcommands —
+// optional by construction; required-ness is unsupported here, use
+// cli.RequiredGlobalFlag. The default is a plain string; a default of
+// exactly "true"/"false" almost certainly means the typed BoolGlobalFlag
+// instead — see BoolFlag for why.
+// Example: app |> cli.GlobalFlag("region", "Deployment region", "us-east-1")
 func GlobalFlag(app *Command, name string, desc string, defaultValue string) *Command {
 	app.GlobalFlags = append(app.GlobalFlags, FlagDef{Name: name, Description: desc, DefaultValue: defaultValue, Required: false, Kind: FlagKindString, Aliases: make([]string, 0)})
+	app.lastFlagName = name
+	app.lastFlagGlobal = true
 	return app
 }
 
 // BoolGlobalFlag registers a boolean flag available to all subcommands.
+// Optional by construction; a required global is cli.RequiredGlobalFlag.
 // Example: app |> cli.BoolGlobalFlag("json", "Emit JSON output", false)
 func BoolGlobalFlag(app *Command, name string, desc string, defaultValue bool) *Command {
 	dv := func() string {
@@ -360,13 +527,32 @@ func BoolGlobalFlag(app *Command, name string, desc string, defaultValue bool) *
 		}
 	}()
 	app.GlobalFlags = append(app.GlobalFlags, FlagDef{Name: name, Description: desc, DefaultValue: dv, Required: false, Kind: FlagKindBool, Aliases: make([]string, 0)})
+	app.lastFlagName = name
+	app.lastFlagGlobal = true
 	return app
 }
 
-// IntGlobalFlag registers an integer flag available to all subcommands.
+// IntGlobalFlag registers an integer flag available to all subcommands —
+// the typed-global sibling of IntFlag. Optional by construction; a
+// required global is cli.RequiredGlobalFlag.
 // Example: app |> cli.IntGlobalFlag("limit", "Max results", 10)
 func IntGlobalFlag(app *Command, name string, desc string, defaultValue int) *Command {
 	app.GlobalFlags = append(app.GlobalFlags, FlagDef{Name: name, Description: desc, DefaultValue: fmt.Sprintf("%v", defaultValue), Required: false, Kind: FlagKindInt, Aliases: make([]string, 0)})
+	app.lastFlagName = name
+	app.lastFlagGlobal = true
+	return app
+}
+
+// RequiredGlobalFlag registers a mandatory string flag available to all
+// subcommands. Required-ness on globals is only expressible through this
+// constructor — the plain global family is optional by construction, and
+// the parser validates required globals on both parse paths (the root
+// invocation and every subcommand dispatch).
+// Example: app |> cli.RequiredGlobalFlag("region", "Deployment region (required)")
+func RequiredGlobalFlag(app *Command, name string, desc string) *Command {
+	app.GlobalFlags = append(app.GlobalFlags, FlagDef{Name: name, Description: desc, DefaultValue: "", Required: true, Kind: FlagKindString, Aliases: make([]string, 0)})
+	app.lastFlagName = name
+	app.lastFlagGlobal = true
 	return app
 }
 
@@ -420,6 +606,60 @@ func UsageError(app *Command, reason string) {
 	exitWithCode(2)
 }
 
+// argvRequestsJSON reports whether raw argv or an env-bound json/output flag
+// requests JSON output. On a parse failure the Args map is never reliably
+// populated, so IsJSON cannot run — this is the pre-parse spelling of the
+// same contract (#408, #432). Explicit argv flags (--json=false) take
+// precedence over env bindings.
+func argvRequestsJSON(app *Command, rawArgs []string) bool {
+	for _, a := range rawArgs {
+		if a == "--json" || a == "-json" || a == "--json=true" || a == "-json=true" || a == "--output=json" || a == "-output=json" {
+			return true
+		}
+		if a == "--json=false" || a == "-json=false" {
+			return false
+		}
+	}
+	return envRequestsJSON(app.GlobalFlags) || envRequestsJSON(app.Flags)
+}
+
+func envRequestsJSON(flags []FlagDef) bool {
+	for _, f := range flags {
+		if len(f.EnvVar) == 0 {
+			continue
+		}
+		if f.Name == "json" {
+			val := kukistring.ToLower(os.Getenv(f.EnvVar))
+			if val == "true" || val == "1" || val == "yes" {
+				return true
+			}
+		} else if f.Name == "output" {
+			if os.Getenv(f.EnvVar) == "json" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// UsageErrorJSON is the argv- and env-aware form of UsageError: when raw argv
+// (or an env-bound json/output flag on app) asks for JSON output, the parse
+// failure is reported as `{"error": reason}` on stdout and still exits 2
+// through the SetExitFunc seam — matching the runtime-failure contract Fail,
+// FailArgs, and ActionE already honor (a --json consumer must be able to read
+// every failure as JSON, not just handler errors). Usage text is suppressed
+// in JSON mode: an agent parsing a program's output wants one
+// machine-readable line, not the help text.
+// Example: cli.UsageErrorJSON(app, err.Error(), os.Args)
+func UsageErrorJSON(app *Command, reason string, rawArgs []string) {
+	if argvRequestsJSON(app, rawArgs) {
+		PrintJSON(map[string]any{"error": reason})
+		exitWithCode(2)
+		return
+	}
+	UsageError(app, reason)
+}
+
 // Error prints a message to stderr but does not exit and does not affect
 // the process exit status — a handler that reports a failure only with
 // Error leaves the exit code at 0. To signal a runtime failure, return the
@@ -428,17 +668,34 @@ func Error(msg string) {
 	fmt.Fprintln(os.Stderr, msg)
 }
 
-// Run parses os.Args and executes the corresponding action. Two failure
+// Run parses os.Args and executes the corresponding action. Three failure
 // channels, distinguished by exit code: a failed parse prints the reason
-// plus help to stderr and exits 2 — the usage-error contract; an error
-// returned by a fallible action handler prints `error: <message>` to
-// stderr (or `{"error": "<message>"}` to stdout in JSON mode) and exits 1
-// — the runtime-failure contract. Neither dumps a Go panic. Programs that
-// want custom handling or a testable seam call RunWithArgs, which returns both
-// kinds of error.
+// plus help to stderr and exits 2 — the usage-error contract (or, when raw
+// argv carries --json, `{"error": reason}` on stdout and no help text, via
+// UsageErrorJSON); an error returned by a fallible action handler prints
+// `error: <message>` to stderr (or `{"error": "<message>"}` to stdout in
+// JSON mode) and exits 1 — the runtime-failure contract; an error returned
+// as a cli.UsageFail marker prints `usage error: <reason>` to stderr (or
+// `{"error": "<reason>"}` to stdout in JSON mode) and exits 2 — the
+// in-handler usage lane, a terse usage error detected after parsing
+// (invalid flag combinations) without UsageError's full help dump. The
+// marker is matched through wrapping, so a helper adding context with
+// errors.Wrap still lands in the exit-2 lane.
+// Neither channel dumps a Go panic. Programs that want custom handling or
+// a testable seam call RunWithArgs, which returns all kinds of error.
 func Run(app *Command) {
 	err := RunWithArgs(app, os.Args)
 	if he, _isOk := err.(handlerError); _isOk {
+		uf, isUsageFail := errors.AsType[UsageFailError](he.inner)
+		if isUsageFail {
+			if IsJSON(he.args) {
+				PrintJSON(map[string]any{"error": fmt.Sprintf("%v", uf.Reason)})
+			} else {
+				fmt.Fprintf(os.Stderr, "usage error: %v\n", uf.Reason)
+			}
+			exitWithCode(2)
+			return
+		}
 		if IsJSON(he.args) {
 			PrintJSON(map[string]any{"error": fmt.Sprintf("%v", he.inner)})
 		} else {
@@ -448,7 +705,7 @@ func Run(app *Command) {
 		return
 	}
 	if err != nil {
-		UsageError(app, fmt.Sprintf("%v", err))
+		UsageErrorJSON(app, fmt.Sprintf("%v", err), os.Args)
 	}
 }
 
@@ -486,6 +743,21 @@ type Invalid struct {
 
 func (Invalid) isParseResult() {}
 
+// firstMissingRequiredFlag scans the given flag lists (in order) for the
+// first required flag with no value and returns its reason string, or
+// empty when every required flag is satisfied — the single source of the
+// "flag --X is required" contract shared by every parse path.
+func firstMissingRequiredFlag(values map[string]string, flagLists ...[]FlagDef) string {
+	for _, flags := range flagLists {
+		for _, f := range flags {
+			if f.Required && (len(values[f.Name]) == 0) {
+				return fmt.Sprintf("flag --%v is required", f.Name)
+			}
+		}
+	}
+	return ""
+}
+
 // Parse classifies an argv slice (including the program name at index 0)
 // without executing anything. This is the pure core of Run: help requests,
 // version requests, dispatch targets, validation failures, and root
@@ -493,11 +765,18 @@ func (Invalid) isParseResult() {}
 func Parse(app *Command, args []string) ParseResult {
 	if len(args) < 2 {
 		values := defaultValues(app, nil)
-		rootArgs := Args{values: values, rest: map[string][]string{}}
-		for _, f := range app.Flags {
-			if f.Required && (len(values[f.Name]) == 0) {
-				return Invalid{Reason: fmt.Sprintf("flag --%v is required", f.Name)}
-			}
+		bareSet := map[string]bool{}
+		applyEnvDefaults(app, nil, values, bareSet)
+		bareAllFlagDefs := []FlagDef{}
+		bareAllFlagDefs = append(bareAllFlagDefs, app.GlobalFlags...)
+		bareAllFlagDefs = append(bareAllFlagDefs, app.Flags...)
+		if bad := validateTypedValues(values, bareAllFlagDefs); len(bad) != 0 {
+			return Invalid{Reason: fmt.Sprintf("flag --%v has an invalid value", bad)}
+		}
+		rootArgs := Args{values: values, rest: map[string][]string{}, set: bareSet}
+		missingFlag := firstMissingRequiredFlag(values, app.Flags, app.GlobalFlags)
+		if len(missingFlag) != 0 {
+			return Invalid{Reason: missingFlag}
 		}
 		for _, a := range app.Args {
 			if a.Required && (len(values[a.Name]) == 0) {
@@ -543,6 +822,7 @@ func Parse(app *Command, args []string) ParseResult {
 		rootAction = app.ActionFunc
 	}
 	values := defaultValues(app, nil)
+	setMap := map[string]bool{}
 	positionalNames := []string{}
 	for _, a := range app.Args {
 		positionalNames = append(positionalNames, a.Name)
@@ -551,17 +831,17 @@ func Parse(app *Command, args []string) ParseResult {
 	allFlagDefs = append(allFlagDefs, app.GlobalFlags...)
 	allFlagDefs = append(allFlagDefs, app.Flags...)
 	restMap := map[string][]string{}
-	rootUnknown := parseFlagsAndPositionals(args, 1, values, restMap, positionalNames, allFlagDefs, app.RestArgName)
+	rootUnknown := parseFlagsAndPositionals(args, 1, values, setMap, restMap, positionalNames, allFlagDefs, app.RestArgName)
 	if len(rootUnknown) != 0 {
 		return Invalid{Reason: fmt.Sprintf("unknown flag: --%v", rootUnknown[0])}
 	}
+	applyEnvDefaults(app, nil, values, setMap)
 	if bad := validateTypedValues(values, allFlagDefs); len(bad) != 0 {
 		return Invalid{Reason: fmt.Sprintf("flag --%v has an invalid value", bad)}
 	}
-	for _, f := range app.Flags {
-		if f.Required && (len(values[f.Name]) == 0) {
-			return Invalid{Reason: fmt.Sprintf("flag --%v is required", f.Name)}
-		}
+	missingFlag := firstMissingRequiredFlag(values, app.Flags, app.GlobalFlags)
+	if len(missingFlag) != 0 {
+		return Invalid{Reason: missingFlag}
 	}
 	for _, a := range app.Args {
 		if a.Required && (len(values[a.Name]) == 0) {
@@ -569,10 +849,10 @@ func Parse(app *Command, args []string) ParseResult {
 		}
 	}
 	if rootActionE != nil {
-		return Execute{Handler: nil, HandlerE: rootActionE, Args: Args{values: values, rest: restMap}}
+		return Execute{Handler: nil, HandlerE: rootActionE, Args: Args{values: values, rest: restMap, set: setMap}}
 	}
 	if rootAction != nil {
-		return Execute{Handler: rootAction, Args: Args{values: values, rest: restMap}}
+		return Execute{Handler: rootAction, Args: Args{values: values, rest: restMap, set: setMap}}
 	}
 	return ShowHelp{Cmd: app, Path: []string{}, Root: true}
 }
@@ -611,7 +891,7 @@ func RunWithArgs(app *Command, args []string) error {
 		}
 		return nil
 	case Invalid:
-		return errors.New(oc.Reason)
+		return goerrors.New(oc.Reason)
 	}
 	return nil
 }
@@ -634,6 +914,47 @@ func defaultValues(app *Command, leaf *Command) map[string]string {
 	return values
 }
 
+// applyEnvDefaults fills flags that argv did not set from their bound
+// environment variables: precedence argv flag > env var > default. The
+// `set` map stays argv-only, so cli.IsSet keeps distinguishing an explicit
+// flag from an env-resolved value. Runs after flag parsing and before the
+// required validations, so an env-provided value can satisfy a required
+// flag; the two full-parse paths type-check env values via
+// validateTypedValues immediately after (every parse path that validates
+// typed values does so after this pass).
+func applyEnvDefaults(app *Command, leaf *Command, values map[string]string, set map[string]bool) {
+	for _, f := range app.GlobalFlags {
+		if (len(f.EnvVar) == 0) || set[f.Name] {
+			continue
+		}
+		envVal := os.Getenv(f.EnvVar)
+		if len(envVal) != 0 {
+			values[f.Name] = envVal
+		}
+	}
+	if leaf == nil {
+		for _, f := range app.Flags {
+			if (len(f.EnvVar) == 0) || set[f.Name] {
+				continue
+			}
+			envVal := os.Getenv(f.EnvVar)
+			if len(envVal) != 0 {
+				values[f.Name] = envVal
+			}
+		}
+	} else {
+		for _, f := range leaf.Flags {
+			if (len(f.EnvVar) == 0) || set[f.Name] {
+				continue
+			}
+			envVal := os.Getenv(f.EnvVar)
+			if len(envVal) != 0 {
+				values[f.Name] = envVal
+			}
+		}
+	}
+}
+
 // parseFlagsAndPositionals walks args[start:] populating values with parsed flags
 // and positional arguments. flagDefs is used to build alias and kind maps so
 // that bool flags never swallow positionals, typed flags consume unconditionally,
@@ -643,7 +964,7 @@ func defaultValues(app *Command, leaf *Command) map[string]string {
 // Returns the list of unknown flag names encountered (flags not present in
 // flagDefs or their aliases). Callers that want to reject typos should error
 // on a non-empty return; ParseArgs ignores it for test compatibility.
-func parseFlagsAndPositionals(args []string, start int, values map[string]string, rest map[string][]string, positionalNames []string, flagDefs []FlagDef, restArgName string) []string {
+func parseFlagsAndPositionals(args []string, start int, values map[string]string, set map[string]bool, rest map[string][]string, positionalNames []string, flagDefs []FlagDef, restArgName string) []string {
 	aliasMap := map[string]string{}
 	kindMap := map[string]FlagKind{}
 	known := map[string]bool{}
@@ -669,6 +990,7 @@ func parseFlagsAndPositionals(args []string, start int, values map[string]string
 				unknown = append(unknown, canonical)
 			}
 			values[canonical] = parts[1]
+			set[canonical] = true
 			i += 1
 		} else if kukistring.HasPrefix(arg, "--") {
 			name := kukistring.TrimPrefix(arg, "--")
@@ -678,17 +1000,21 @@ func parseFlagsAndPositionals(args []string, start int, values map[string]string
 			}
 			if kindMap[canonical] == FlagKindBool {
 				values[canonical] = "true"
+				set[canonical] = true
 				i += 1
 			} else if kindMap[canonical] != FlagKindString && i+1 < len(args) {
 				values[canonical] = args[i+1]
+				set[canonical] = true
 				i += 2
 			} else if kindMap[canonical] != FlagKindString {
 				i += 1
 			} else if i+1 < len(args) && !kukistring.HasPrefix(args[i+1], "-") {
 				values[canonical] = args[i+1]
+				set[canonical] = true
 				i += 2
 			} else {
 				values[canonical] = "true"
+				set[canonical] = true
 				i += 1
 			}
 		} else if kukistring.HasPrefix(arg, "-") {
@@ -699,17 +1025,21 @@ func parseFlagsAndPositionals(args []string, start int, values map[string]string
 			}
 			if kindMap[canonical] == FlagKindBool {
 				values[canonical] = "true"
+				set[canonical] = true
 				i += 1
 			} else if kindMap[canonical] != FlagKindString && i+1 < len(args) {
 				values[canonical] = args[i+1]
+				set[canonical] = true
 				i += 2
 			} else if kindMap[canonical] != FlagKindString {
 				i += 1
 			} else if i+1 < len(args) && !kukistring.HasPrefix(args[i+1], "-") {
 				values[canonical] = args[i+1]
+				set[canonical] = true
 				i += 2
 			} else {
 				values[canonical] = "true"
+				set[canonical] = true
 				i += 1
 			}
 		} else {
@@ -772,6 +1102,7 @@ func parseLeaf(app *Command, leaf *Command, args []string, leadingStart int, sub
 		}
 	}
 	values := defaultValues(app, leaf)
+	setMap := map[string]bool{}
 	if subIndex > leadingStart {
 		headSlice := []string{}
 		headSlice = append(headSlice, args[0])
@@ -779,7 +1110,7 @@ func parseLeaf(app *Command, leaf *Command, args []string, leadingStart int, sub
 		globalFlagDefs := []FlagDef{}
 		globalFlagDefs = append(globalFlagDefs, app.GlobalFlags...)
 		emptyRestMap := map[string][]string{}
-		leadingUnknown := parseFlagsAndPositionals(headSlice, 1, values, emptyRestMap, []string{}, globalFlagDefs, "")
+		leadingUnknown := parseFlagsAndPositionals(headSlice, 1, values, setMap, emptyRestMap, []string{}, globalFlagDefs, "")
 		if len(leadingUnknown) != 0 {
 			return Invalid{Reason: fmt.Sprintf("unknown flag: --%v", leadingUnknown[0])}
 		}
@@ -792,17 +1123,17 @@ func parseLeaf(app *Command, leaf *Command, args []string, leadingStart int, sub
 	allFlagDefs = append(allFlagDefs, app.GlobalFlags...)
 	allFlagDefs = append(allFlagDefs, leaf.Flags...)
 	restMap := map[string][]string{}
-	trailingUnknown := parseFlagsAndPositionals(args, leafArgStart, values, restMap, positionalNames, allFlagDefs, leaf.RestArgName)
+	trailingUnknown := parseFlagsAndPositionals(args, leafArgStart, values, setMap, restMap, positionalNames, allFlagDefs, leaf.RestArgName)
 	if len(trailingUnknown) != 0 {
 		return Invalid{Reason: fmt.Sprintf("unknown flag: --%v", trailingUnknown[0])}
 	}
+	applyEnvDefaults(app, leaf, values, setMap)
 	if bad := validateTypedValues(values, allFlagDefs); len(bad) != 0 {
 		return Invalid{Reason: fmt.Sprintf("flag --%v has an invalid value", bad)}
 	}
-	for _, f := range leaf.Flags {
-		if f.Required && (len(values[f.Name]) == 0) {
-			return Invalid{Reason: fmt.Sprintf("flag --%v is required", f.Name)}
-		}
+	missingFlag := firstMissingRequiredFlag(values, leaf.Flags, app.GlobalFlags)
+	if len(missingFlag) != 0 {
+		return Invalid{Reason: missingFlag}
 	}
 	for _, a := range leaf.Args {
 		if a.Required && (len(values[a.Name]) == 0) {
@@ -810,12 +1141,12 @@ func parseLeaf(app *Command, leaf *Command, args []string, leadingStart int, sub
 		}
 	}
 	if leaf.ActionFuncE != nil {
-		return Execute{Handler: nil, HandlerE: leaf.ActionFuncE, Args: Args{values: values, rest: restMap}}
+		return Execute{Handler: nil, HandlerE: leaf.ActionFuncE, Args: Args{values: values, rest: restMap, set: setMap}}
 	}
 	if leaf.ActionFunc == nil {
 		return Invalid{Reason: fmt.Sprintf("no action defined for command %v", leaf.Name)}
 	}
-	return Execute{Handler: leaf.ActionFunc, Args: Args{values: values, rest: restMap}}
+	return Execute{Handler: leaf.ActionFunc, Args: Args{values: values, rest: restMap, set: setMap}}
 }
 
 // findLeaf returns the deepest matching subcommand for args starting at
@@ -920,20 +1251,30 @@ func printHelpTo(w *os.File, app *Command) {
 	}
 	usageLabel := s.Bold("Usage:")
 	nameStyled := s.Cyan(app.Name)
-	out(fmt.Sprintf("%v %v [flags] [subcommand]", usageLabel, nameStyled))
+	if len(app.Subcommands) != 0 {
+		out(fmt.Sprintf("%v %v [flags] [subcommand]", usageLabel, nameStyled))
+	} else {
+		out(fmt.Sprintf("%v %v [flags]", usageLabel, nameStyled))
+	}
 	if len(app.Description) != 0 {
 		out("")
 		out(app.Description)
 	}
 	if len(app.GlobalFlags) != 0 || len(app.Flags) != 0 {
-		out("")
-		out(s.Bold("Flags:"))
 		nameWidth := flagNameWidth(app)
-		for _, f := range app.GlobalFlags {
-			printFlagRowTo(w, s, f, nameWidth)
+		if len(app.GlobalFlags) != 0 {
+			out("")
+			out(s.Bold("Global flags:"))
+			for _, f := range app.GlobalFlags {
+				printFlagRowTo(w, s, f, nameWidth)
+			}
 		}
-		for _, f := range app.Flags {
-			printFlagRowTo(w, s, f, nameWidth)
+		if len(app.Flags) != 0 {
+			out("")
+			out(s.Bold("Flags:"))
+			for _, f := range app.Flags {
+				printFlagRowTo(w, s, f, nameWidth)
+			}
 		}
 	}
 	if len(app.Subcommands) != 0 {
@@ -986,14 +1327,20 @@ func printLeafHelp(app *Command, leaf *Command, path []string) {
 		}
 	}
 	if len(app.GlobalFlags) != 0 || len(leaf.Flags) != 0 {
-		fmt.Println("")
-		fmt.Println(s.Bold("Flags:"))
 		nameWidth := leafFlagNameWidth(app, leaf)
-		for _, f := range app.GlobalFlags {
-			printFlagRow(s, f, nameWidth)
+		if len(app.GlobalFlags) != 0 {
+			fmt.Println("")
+			fmt.Println(s.Bold("Global flags:"))
+			for _, f := range app.GlobalFlags {
+				printFlagRow(s, f, nameWidth)
+			}
 		}
-		for _, f := range leaf.Flags {
-			printFlagRow(s, f, nameWidth)
+		if len(leaf.Flags) != 0 {
+			fmt.Println("")
+			fmt.Println(s.Bold("Flags:"))
+			for _, f := range leaf.Flags {
+				printFlagRow(s, f, nameWidth)
+			}
 		}
 	}
 	if len(leaf.Subcommands) != 0 {
@@ -1058,6 +1405,9 @@ func printFlagRowTo(w *os.File, s color.Styler, f FlagDef, width int) {
 		suffix = " (required)"
 	} else if len(f.DefaultValue) != 0 && f.DefaultValue != "false" {
 		suffix = fmt.Sprintf(" (default: %v)", f.DefaultValue)
+	}
+	if len(f.EnvVar) != 0 {
+		suffix = fmt.Sprintf("%v (env %v)", suffix, f.EnvVar)
 	}
 	fmt.Fprintf(w, "  %v  %v\n", s.Cyan(padded), s.Dim(f.Description+suffix))
 }
@@ -1225,6 +1575,37 @@ func (args Args) Fail(msg string) {
 	FailArgs(args, msg)
 }
 
+// UsageFailError marks an error returned from a fallible handler as a
+// usage failure: Run renders it JSON-mode aware and exits 2 — the
+// usage-error contract — without UsageError's full help dump.
+type UsageFailError struct {
+	Reason string
+}
+
+func (e UsageFailError) Error() string {
+	return e.Reason
+}
+
+// UsageFail returns a usage-failure marker for a fallible ActionE /
+// DefaultActionE handler — the in-handler usage lane. Handlers that
+// detect invalid flag combinations after parsing (a missing required
+// companion flag, a bad value shape) return cli.UsageFail(reason): Run
+// prints `usage error: <reason>` to stderr (or `{"error": "<reason>"}` to
+// stdout in JSON mode) and exits 2 through the SetExitFunc seam — same
+// code as a parse failure, so callers cannot mistake it for a runtime
+// failure (exit 1), and without dumping the whole help text the way
+// cli.UsageError does. Deep helpers can bubble it: any layer of the call
+// stack can return the marker and only Run decides the exit.
+// Example:
+//
+//	func run(args: cli.Args) error
+//	    if cli.GetString(args, "mode") is empty
+//	        return cli.UsageFail("--mode is required with --deploy")
+//	    ...
+func UsageFail(reason string) error {
+	return UsageFailError{Reason: reason}
+}
+
 // ExitCode terminates the process with the given status through the
 // SetExitFunc seam, so tests can intercept the exit. Exiting immediately
 // skips deferred cleanup; prefer ActionE when the handler can return an
@@ -1234,9 +1615,24 @@ func ExitCode(code int) {
 	exitWithCode(code)
 }
 
-// GetString returns the value of a named argument or flag
+// GetString returns the value of a named argument or flag. Values are
+// returned verbatim — flag values are never trimmed, so wrap the read in
+// string.TrimSpace when argv edge whitespace matters.
 func GetString(args Args, name string) string {
 	return args.values[name]
+}
+
+// IsSet reports whether name was EXPLICITLY provided on the command line.
+// Values are seeded with every flag's default, so GetString cannot
+// distinguish `--db ./x.db` from an omitted flag whose default is the same
+// string — IsSet is the provenance predicate (issue #409). Only flags count:
+// an explicit value equal to the default still reports true, and a default
+// that was never overridden reports false.
+// Example: if cli.IsSet(args, "db")
+//
+//	url := args.values["db"]
+func IsSet(args Args, name string) bool {
+	return args.set[name]
 }
 
 // GetStringOr returns the value of a named argument or flag, or defaultVal if absent.
@@ -1319,7 +1715,9 @@ func GetRest(args Args, name string) []string {
 
 // ParseArgs parses an explicit args slice against an app definition and
 // returns the populated Args. Useful for unit-testing CLI handlers without
-// going through os.Args.
+// going through os.Args. Resolves argv only — env bindings are NOT applied
+// here, so handler unit tests stay deterministic against ambient
+// environment variables; the Run/Parse lanes apply them in production.
 // Example: args := cli.ParseArgs(app, list of string{"myapp", "--verbose", "file.txt"})
 func ParseArgs(app *Command, osArgs []string) Args {
 	values := map[string]string{}
@@ -1337,6 +1735,7 @@ func ParseArgs(app *Command, osArgs []string) Args {
 	allFlagDefs = append(allFlagDefs, app.GlobalFlags...)
 	allFlagDefs = append(allFlagDefs, app.Flags...)
 	restMap := map[string][]string{}
+	setMap := map[string]bool{}
 	start := func() int {
 		if len(osArgs) != 0 {
 			return 1
@@ -1344,6 +1743,6 @@ func ParseArgs(app *Command, osArgs []string) Args {
 			return 0
 		}
 	}()
-	parseFlagsAndPositionals(osArgs, start, values, restMap, positionalNames, allFlagDefs, app.RestArgName)
-	return Args{values: values, rest: restMap}
+	parseFlagsAndPositionals(osArgs, start, values, setMap, restMap, positionalNames, allFlagDefs, app.RestArgName)
+	return Args{values: values, rest: restMap, set: setMap}
 }

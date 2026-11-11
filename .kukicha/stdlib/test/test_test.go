@@ -341,3 +341,56 @@ func TestAssertPanicsMessageFailNonStringPanic(t *testing.T) {
 		t.Errorf("bad message: %v", f.Errs)
 	}
 }
+
+// Same numeric value in different kinds must report the kind mismatch as the
+// primary detail, not a bare type mismatch that reads like corrupted data.
+func TestAssertEqualFailNumericKindSameValue(t *testing.T) {
+	f := &FakeTB{}
+	test.AssertEqual(f, int64(0), 0)
+	if len(f.Errs) == 0 {
+		t.Fatalf("expected Errorf to be called")
+	}
+	msg := f.Errs[0]
+	if !kukistring.Contains(msg, "same value, different numeric kind") {
+		t.Errorf("missing numeric-kind hint: %s", msg)
+	}
+	if !kukistring.Contains(msg, "want int, got int64") {
+		t.Errorf("missing kind names: %s", msg)
+	}
+}
+
+// Different numeric values must keep the plain type mismatch (no false
+// "same value" claim).
+func TestAssertEqualFailNumericKindDifferentValue(t *testing.T) {
+	f := &FakeTB{}
+	test.AssertEqual(f, int64(2), 1)
+	if len(f.Errs) == 0 {
+		t.Fatalf("expected Errorf to be called")
+	}
+	msg := f.Errs[0]
+	if kukistring.Contains(msg, "same value") {
+		t.Errorf("must not claim same value for 1 vs 2: %s", msg)
+	}
+	if !kukistring.Contains(msg, "type int64 vs int") {
+		t.Errorf("missing type names: %s", msg)
+	}
+}
+
+// Like-signed integers beyond float64's 2^53 integer precision must compare
+// exactly: routing the same-value decision through float64 folds
+// 2^53+1 and 2^53 into the same float and claims different values are
+// identical. Pin the 2^53 boundary pair in both directions (#420 follow-up).
+func TestAssertEqualFailNumericKindHugeValuesDiffer(t *testing.T) {
+	f := &FakeTB{}
+	test.AssertEqual(f, int64(9007199254740993), 9007199254740992)
+	if len(f.Errs) == 0 {
+		t.Fatalf("expected Errorf to be called")
+	}
+	msg := f.Errs[0]
+	if kukistring.Contains(msg, "same value") {
+		t.Errorf("must not claim same value for 2^53-boundary values: %s", msg)
+	}
+	if !kukistring.Contains(msg, "type int64 vs int") {
+		t.Errorf("missing type names: %s", msg)
+	}
+}

@@ -5,7 +5,6 @@ import "race-to-the-crystal/game" as gamepkg
 import "race-to-the-crystal/shared/types"
 import "stdlib/cast"
 import "stdlib/json" as jsonpkg
-import "stdlib/log"
 import "stdlib/maps"
 import "stdlib/random"
 import "stdlib/string" as strpkg

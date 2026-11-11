@@ -156,9 +156,8 @@ func IsNil(value any) bool {
 // Is reports whether value's dynamic type is T — the runtime predicate `v is T`
 // lowers to in expression position. Instantiate T explicitly when calling by
 // hand (`cast.Is of string from v`); the compiler instantiates it directly when
-// lowering an `is` expression. The comma-ok assertion is the sanctioned
-// guard-style form (two-value `as` casts are rejected in Kukicha, so this is
-// the only spelling that keeps the narrowed check without an `if`).
+// lowering an `is` expression. For a flat guard, `if value isnt T as bound`
+// with a terminating failure body binds the narrowed value on the continuation.
 func Is[T any](value any) bool {
 	_, ok := value.(T)
 	return ok

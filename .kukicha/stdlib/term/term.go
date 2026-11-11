@@ -16,6 +16,7 @@
 package term
 
 import (
+	xterm "golang.org/x/term"
 	"kukicha.org/stdlib/env"
 	kukistring "kukicha.org/stdlib/string"
 	"os"
@@ -26,17 +27,17 @@ var colorOverridden bool
 
 var colorOverrideValue bool
 
-// IsTTY reports whether f is a terminal (character device).
-// Pass os.Stdout, os.Stderr, or any *os.File. Returns false for empty.
+// IsTTY reports whether f is an interactive terminal, via a real isatty(3)
+// check (ioctl TCGETS under the hood) — not a character-device heuristic:
+// /dev/null is a character device and would otherwise report true, flipping
+// interactive prompts on for redirected stdin (#410). Pass os.Stdout,
+// os.Stderr, or any *os.File. Returns false for empty.
 func IsTTY(f *os.File) bool {
 	if f == nil {
 		return false
 	}
-	info, err := f.Stat()
-	if err != nil {
-		return false
-	}
-	return info.Mode()&os.ModeCharDevice != 0
+	fd := f.Fd()
+	return xterm.IsTerminal(int(fd))
 }
 
 // ColorEnabledFor reports whether ANSI color should be emitted to w.
@@ -141,8 +142,8 @@ func PadLeftVisible(s string, n int) string {
 
 // Width returns the terminal column count, falling back to 80.
 // Reads the COLUMNS environment variable. ioctl-based detection is
-// intentionally omitted to keep this package dependency-free; callers that
-// need live resize tracking can wrap golang.org/x/term themselves.
+// intentionally omitted; callers that need live resize tracking can wrap
+// golang.org/x/term themselves (as IsTTY does for its isatty check).
 func Width() int {
 	n, err := env.GetIntOr("COLUMNS", 80)
 	if err != nil {

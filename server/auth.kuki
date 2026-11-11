@@ -38,7 +38,7 @@ func CreatePlayerToken(playerId: string, gameId: string, secretKey: string, expi
     # crypto.HMAC(data, key): the signing input is the message, the secret
     # key is the key. Reversing these makes the public header+payload the
     # HMAC key and the secret the message — see the security review.
-    signature := crypto.HMAC(signingInput, secretKey)
+    signature := crypto.HMAC(signingInput, crypto.HMACKey{Value: secretKey})
     sigBytes := signature as list of byte
     signatureB64 := encpkg.Base64URLNoPadEncode(sigBytes)
     return "{headerB64}.{payloadB64}.{signatureB64}"
@@ -71,7 +71,7 @@ func VerifyPlayerToken(tokenStr: string, secretKey: string) optional reference T
         return empty
 
     signingInput := "{headerB64}.{payloadB64}"
-    expectedSig := crypto.HMAC(signingInput, secretKey)
+    expectedSig := crypto.HMAC(signingInput, crypto.HMACKey{Value: secretKey})
     expectedSigB64 := encpkg.Base64URLNoPadEncode(expectedSig as list of byte)
 
     # Constant-time compare: a timing signal on the signature would let an

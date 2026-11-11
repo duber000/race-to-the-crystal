@@ -132,3 +132,19 @@ func TestPadLeftVisible(t *testing.T) {
 	test.AssertEqual(t, term.PadLeftVisible("\x1b[31mhi\x1b[0m", 5), "   \x1b[31mhi\x1b[0m")
 	test.AssertEqual(t, term.PadLeftVisible("hello", 3), "hello")
 }
+
+// TestIsTTYDevNull pins #410: /dev/null is a character device but not a
+// terminal — the real isatty check must report false where the former
+// ModeCharDevice heuristic reported true. Assert on the OPEN file: a closed
+// file makes even the old heuristic return false (Stat fails) and proves
+// nothing.
+func TestIsTTYDevNull(t *testing.T) {
+	f, err := os.Open("/dev/null")
+	if err != nil {
+		t.Skip("/dev/null not available on this platform")
+		return
+	}
+	got := term.IsTTY(f)
+	_ = f.Close()
+	test.AssertFalse(t, got)
+}

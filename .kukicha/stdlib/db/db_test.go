@@ -883,3 +883,15 @@ func TestOptionalAndTimeFieldScanning(t *testing.T) {
 	}
 	test.AssertTrue(t, r2.SeenAt.IsZero())
 }
+
+// --- TestScanOneErrNoRows --- (#411: exported sentinel matchable with errors.Is)
+func TestScanOneErrNoRows(t *testing.T) {
+	pool := setupTestDB(t)
+	defer db.Close(pool)
+	_, err := db.ScanOne[User](func() db.Rows {
+		val, _ := db.Query(pool, "SELECT id, name, email FROM users WHERE id = 999")
+		return val
+	}())
+	test.AssertError(t, err)
+	test.AssertErrorIs(t, err, db.ErrNoRows)
+}

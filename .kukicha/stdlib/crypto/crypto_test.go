@@ -36,11 +36,11 @@ func TestHMAC(t *testing.T) {
 	cases := []HMACCase{HMACCase{name: "basic hmac"}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			mac1 := crypto.HMAC("message", "key")
-			mac2 := crypto.HMAC("message", "key")
+			mac1 := crypto.HMAC("message", crypto.HMACKey{Value: "key"})
+			mac2 := crypto.HMAC("message", crypto.HMACKey{Value: "key"})
 			test.AssertEqual(t, mac1, mac2)
 			test.AssertEqual(t, len(mac1), 64)
-			mac3 := crypto.HMAC("message", "other-key")
+			mac3 := crypto.HMAC("message", crypto.HMACKey{Value: "other-key"})
 			test.AssertTrue(t, mac1 != mac3)
 		})
 	}
@@ -149,4 +149,19 @@ func TestEqualHex(t *testing.T) {
 			test.AssertEqual(t, crypto.EqualHex(tc.a, tc.b), tc.want)
 		})
 	}
+}
+
+// --- TestHMACTypedKey --- (#412: key slot separation)
+// The data-first pipe form is the blessed spelling, and the typed key keeps
+// the slots sealed: pass the pipe-blessed HMAC through the same key twice.
+func TestHMACTypedKey(t *testing.T) {
+	secret := "shh"
+	body := "header.payload"
+	sigA := crypto.HMAC(body, crypto.HMACKey{Value: secret})
+	sigB := crypto.HMAC(body, crypto.HMACKey{Value: secret})
+	test.AssertEqual(t, sigA, sigB)
+	raw := []byte("raw-secret")
+	bytesA := crypto.HMACBytes([]byte(body), crypto.HMACKeyBytes{Value: raw})
+	bytesB := crypto.HMACBytes([]byte(body), crypto.HMACKeyBytes{Value: raw})
+	test.AssertEqual(t, string(bytesA), string(bytesB))
 }

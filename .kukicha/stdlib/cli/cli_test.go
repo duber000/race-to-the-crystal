@@ -4,10 +4,11 @@
 package cli_test
 
 import (
-	"errors"
+	goerrors "errors"
 	"fmt"
 	"io"
 	"kukicha.org/stdlib/cli"
+	"kukicha.org/stdlib/errors"
 	kukistring "kukicha.org/stdlib/string"
 	"kukicha.org/stdlib/test"
 	"os"
@@ -19,16 +20,16 @@ func handler(args cli.Args) {
 }
 
 func TestCLI(t *testing.T) {
-	app := cli.Action(cli.StringFlag(cli.Description(cli.New("myapp"), "A great tool"), "verbose", "Enable verbose output", "false"), handler)
+	app := cli.Action(cli.BoolFlag(cli.Description(cli.New("myapp"), "A great tool"), "verbose", "Enable verbose output", false), handler)
 	test.AssertEqual(t, app.Name, "myapp")
 	test.AssertEqual(t, app.Description, "A great tool")
 	test.AssertEqual(t, len(app.Flags), 1)
 }
 
 func TestSubcommands(t *testing.T) {
-	listCmd := cli.NewCommand("list", "List items").StringFlag("csv", "CSV output", "false").Action(handler)
+	listCmd := cli.NewCommand("list", "List items").BoolFlag("csv", "CSV output", false).Action(handler)
 	addCmd := cli.NewCommand("add", "Add an item")
-	app := cli.WithCommands(cli.GlobalFlag(cli.Description(cli.New("myapp"), "A great tool"), "verbose", "Enable verbose output", "false"), listCmd, addCmd)
+	app := cli.WithCommands(cli.BoolGlobalFlag(cli.Description(cli.New("myapp"), "A great tool"), "verbose", "Enable verbose output", false), listCmd, addCmd)
 	test.AssertEqual(t, len(app.Subcommands), 2)
 	test.AssertEqual(t, app.Subcommands[0].Name, "list")
 	test.AssertEqual(t, len(app.Subcommands[0].Flags), 1)
@@ -82,6 +83,55 @@ func TestIntFlagNegativeValue(t *testing.T) {
 	test.AssertEqual(t, n, -5)
 }
 
+func TestRootBuilderMethods(t *testing.T) {
+	app := cli.Version(cli.Description(cli.New("myapp"), "A great tool"), "1.2.3").GlobalFlag("region", "Deployment region", "us-east-1").BoolGlobalFlag("json", "Emit JSON output", false).IntGlobalFlag("limit", "Max results", 10).RequiredFlag("modules", "Modules to publish").RequiredIntFlag("retries", "Retry count").Action(handler)
+	test.AssertEqual(t, app.Description, "A great tool")
+	test.AssertEqual(t, app.Version, "1.2.3")
+	test.AssertEqual(t, len(app.GlobalFlags), 3)
+	test.AssertEqual(t, len(app.Flags), 2)
+}
+
+func TestRequiredIntFlagMissing(t *testing.T) {
+	app := cli.Action(cli.RequiredIntFlag(cli.New("myapp"), "retries", "Retry count"), handler)
+	err := cli.RunWithArgs(app, []string{"myapp"})
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "flag --retries is required")
+}
+
+func TestRequiredIntFlagProvided(t *testing.T) {
+	app := cli.Action(cli.RequiredIntFlag(cli.New("myapp"), "retries", "Retry count"), handler)
+	err := cli.RunWithArgs(app, []string{"myapp", "--retries", "3"})
+	test.AssertNoError(t, err)
+}
+
+func TestRequiredGlobalFlagMissingAtRoot(t *testing.T) {
+	app := cli.Action(cli.RequiredGlobalFlag(cli.New("myapp"), "region", "Deployment region"), handler)
+	err := cli.RunWithArgs(app, []string{"myapp"})
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "flag --region is required")
+}
+
+func TestRequiredGlobalFlagProvidedAtRoot(t *testing.T) {
+	app := cli.Action(cli.RequiredGlobalFlag(cli.New("myapp"), "region", "Deployment region"), handler)
+	err := cli.RunWithArgs(app, []string{"myapp", "--region", "us-east-1"})
+	test.AssertNoError(t, err)
+}
+
+func TestRequiredGlobalFlagMissingUnderSubcommand(t *testing.T) {
+	listCmd := cli.NewCommand("list", "List items").Action(handler)
+	app := cli.WithCommands(cli.RequiredGlobalFlag(cli.New("myapp"), "region", "Deployment region"), listCmd)
+	err := cli.RunWithArgs(app, []string{"myapp", "list"})
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "flag --region is required")
+}
+
+func TestRequiredGlobalFlagProvidedUnderSubcommand(t *testing.T) {
+	listCmd := cli.NewCommand("list", "List items").Action(handler)
+	app := cli.WithCommands(cli.RequiredGlobalFlag(cli.New("myapp"), "region", "Deployment region"), listCmd)
+	err := cli.RunWithArgs(app, []string{"myapp", "--region", "eu-west-1", "list"})
+	test.AssertNoError(t, err)
+}
+
 func TestShortAliasLong(t *testing.T) {
 	app := cli.Short(cli.StringFlag(cli.New("myapp"), "model", "Model name", ""), "m")
 	args := cli.ParseArgs(app, []string{"myapp", "--model", "gpt-4"})
@@ -92,6 +142,36 @@ func TestShortAliasShort(t *testing.T) {
 	app := cli.Short(cli.StringFlag(cli.New("myapp"), "model", "Model name", ""), "m")
 	args := cli.ParseArgs(app, []string{"myapp", "-m", "claude-3"})
 	test.AssertEqual(t, cli.GetString(args, "model"), "claude-3")
+}
+
+func TestShortAliasOnGlobalFlag(t *testing.T) {
+	capture = cli.NewArgs(map[string]string{})
+	listCmd := cli.NewCommand("list", "List items").Action(remember)
+	app := cli.WithCommands(cli.Short(cli.GlobalFlag(cli.StringFlag(cli.New("myapp"), "local", "Local flag", ""), "region", "Deployment region", ""), "r"), listCmd)
+	err := cli.RunWithArgs(app, []string{"myapp", "-r", "eu-west-1", "list"})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cli.GetString(capture, "region"), "eu-west-1")
+	test.AssertEqual(t, cli.GetString(capture, "local"), "")
+}
+
+func TestShortAliasMethodFormOnGlobalFlagOnly(t *testing.T) {
+	capture = cli.NewArgs(map[string]string{})
+	app := cli.New("myapp").GlobalFlag("region", "Deployment region", "").Short("r").Action(remember)
+	err := cli.RunWithArgs(app, []string{"myapp", "-r", "ap-south-1"})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cli.GetString(capture, "region"), "ap-south-1")
+}
+
+func TestShortPanicsBeforeAnyFlag(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("expected Short before any flag to panic")
+		}
+		msg := fmt.Sprintf("%v", r)
+		test.AssertContains(t, msg, "call Short after a flag registration in the builder chain")
+	}()
+	cli.Short(cli.New("myapp"), "x")
 }
 
 func TestEqFormLong(t *testing.T) {
@@ -224,7 +304,7 @@ func TestLeadingGlobalFlagEqFormReachesSubcommand(t *testing.T) {
 
 func TestLeadingGlobalFlagPlusLeafFlag(t *testing.T) {
 	capture = cli.NewArgs(map[string]string{})
-	listCmd := cli.NewCommand("list", "List items").StringFlag("csv", "CSV output", "false").Action(remember)
+	listCmd := cli.NewCommand("list", "List items").StringFlag("csv", "CSV output", "").Action(remember)
 	app := cli.WithCommands(cli.GlobalFlag(cli.New("myapp"), "db", "Database path", ""), listCmd)
 	err := cli.RunWithArgs(app, []string{"myapp", "--db", "/tmp/x.db", "list", "--csv", "true"})
 	test.AssertNoError(t, err)
@@ -590,7 +670,7 @@ func TestRunApp_VoidSignature(t *testing.T) {
 // failingAction stands in for a DB-backed handler that reports a runtime
 // failure by returning an error instead of panicking or printing only.
 func failingAction(args cli.Args) error {
-	return errors.New("db open failed")
+	return goerrors.New("db open failed")
 }
 
 // plainAction / fallibleAction record which handler ran for the
@@ -785,6 +865,325 @@ func TestActionE_RunJSON(t *testing.T) {
 	test.AssertContains(t, out, "db open failed")
 }
 
+func usageFailingAction(args cli.Args) error {
+	return cli.UsageFail("--mode is required with --deploy")
+}
+
+func TestUsageFailRunNonJSON(t *testing.T) {
+	oldArgs := os.Args
+	oldStderr := os.Stderr
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stderr = w
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stderr = oldStderr
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	os.Args = []string{"tool"}
+	app := cli.DefaultActionE(cli.BoolGlobalFlag(cli.New("tool"), "json", "json output", false), usageFailingAction)
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 2)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "usage error: --mode is required with --deploy")
+	test.AssertFalse(t, kukistring.Contains(out, "Usage:"))
+}
+
+func TestUsageFailRunJSON(t *testing.T) {
+	oldArgs := os.Args
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stdout = oldStdout
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	os.Args = []string{"tool", "--json"}
+	app := cli.DefaultActionE(cli.BoolGlobalFlag(cli.New("tool"), "json", "json output", false), usageFailingAction)
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 2)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "\"error\"")
+	test.AssertContains(t, out, "--mode is required with --deploy")
+}
+
+func TestEnvBindingFillsAbsentFlag(t *testing.T) {
+	_ = os.Setenv("KUKICHA_TEST_REGION", "eu-north-1")
+	t.Cleanup(func() {
+		_ = os.Unsetenv("KUKICHA_TEST_REGION")
+	})
+	app := cli.Action(cli.Env(cli.GlobalFlag(cli.New("tool"), "region", "Deployment region", ""), "KUKICHA_TEST_REGION"), remember)
+	capture = cli.NewArgs(map[string]string{})
+	err := cli.RunWithArgs(app, []string{"tool"})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cli.GetString(capture, "region"), "eu-north-1")
+	test.AssertFalse(t, cli.IsSet(capture, "region"))
+}
+
+func TestEnvBindingArgvWins(t *testing.T) {
+	_ = os.Setenv("KUKICHA_TEST_REGION", "eu-north-1")
+	t.Cleanup(func() {
+		_ = os.Unsetenv("KUKICHA_TEST_REGION")
+	})
+	app := cli.Action(cli.Env(cli.GlobalFlag(cli.New("tool"), "region", "Deployment region", ""), "KUKICHA_TEST_REGION"), remember)
+	capture = cli.NewArgs(map[string]string{})
+	err := cli.RunWithArgs(app, []string{"tool", "--region", "us-east-1"})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cli.GetString(capture, "region"), "us-east-1")
+	test.AssertTrue(t, cli.IsSet(capture, "region"))
+}
+
+func TestEnvBindingDefaultWhenUnset(t *testing.T) {
+	_ = os.Unsetenv("KUKICHA_TEST_REGION")
+	app := cli.Action(cli.Env(cli.GlobalFlag(cli.New("tool"), "region", "Deployment region", "us-east-1"), "KUKICHA_TEST_REGION"), remember)
+	capture = cli.NewArgs(map[string]string{})
+	err := cli.RunWithArgs(app, []string{"tool"})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cli.GetString(capture, "region"), "us-east-1")
+}
+
+func TestEnvBindingSatisfiesRequiredGlobal(t *testing.T) {
+	_ = os.Setenv("KUKICHA_TEST_REGION", "eu-north-1")
+	t.Cleanup(func() {
+		_ = os.Unsetenv("KUKICHA_TEST_REGION")
+	})
+	app := cli.Action(cli.Env(cli.RequiredGlobalFlag(cli.New("tool"), "region", "Deployment region (required)"), "KUKICHA_TEST_REGION"), remember)
+	capture = cli.NewArgs(map[string]string{})
+	err := cli.RunWithArgs(app, []string{"tool"})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cli.GetString(capture, "region"), "eu-north-1")
+}
+
+func TestEnvBindingAfterMixedRegistrations(t *testing.T) {
+	_ = os.Setenv("KUKICHA_TEST_REGION", "eu-north-1")
+	t.Cleanup(func() {
+		_ = os.Unsetenv("KUKICHA_TEST_REGION")
+	})
+	app := cli.Action(cli.Env(cli.GlobalFlag(cli.RequiredFlag(cli.New("tool"), "modules", "Modules to publish"), "region", "Deployment region", ""), "KUKICHA_TEST_REGION"), remember)
+	capture = cli.NewArgs(map[string]string{})
+	err := cli.RunWithArgs(app, []string{"tool", "--modules", "mod"})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cli.GetString(capture, "region"), "eu-north-1")
+}
+
+func TestEnvBindingAfterMethodFormRegistrations(t *testing.T) {
+	_ = os.Setenv("KUKICHA_TEST_OUT", "/tmp/out")
+	_ = os.Setenv("KUKICHA_TEST_FORCE", "true")
+	_ = os.Setenv("KUKICHA_TEST_LIMIT", "7")
+	_ = os.Setenv("KUKICHA_TEST_MODULES", "mod")
+	_ = os.Setenv("KUKICHA_TEST_RETRIES", "3")
+	t.Cleanup(func() {
+		_ = os.Unsetenv("KUKICHA_TEST_OUT")
+		_ = os.Unsetenv("KUKICHA_TEST_FORCE")
+		_ = os.Unsetenv("KUKICHA_TEST_LIMIT")
+		_ = os.Unsetenv("KUKICHA_TEST_MODULES")
+		_ = os.Unsetenv("KUKICHA_TEST_RETRIES")
+	})
+	app := cli.New("tool").StringFlag("out", "Output path", "").Env("KUKICHA_TEST_OUT").BoolFlag("force", "Force", false).Env("KUKICHA_TEST_FORCE").IntFlag("limit", "Limit", 10).Env("KUKICHA_TEST_LIMIT").RequiredFlag("modules", "Modules to publish").Env("KUKICHA_TEST_MODULES").RequiredIntFlag("retries", "Retry count").Env("KUKICHA_TEST_RETRIES").Action(remember)
+	capture = cli.NewArgs(map[string]string{})
+	err := cli.RunWithArgs(app, []string{"tool"})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cli.GetString(capture, "out"), "/tmp/out")
+	test.AssertTrue(t, cli.GetBool(capture, "force"))
+	limit, limitErr := cli.GetInt(capture, "limit")
+	test.AssertNoError(t, limitErr)
+	test.AssertEqual(t, limit, 7)
+	test.AssertEqual(t, cli.GetString(capture, "modules"), "mod")
+	test.AssertFalse(t, cli.IsSet(capture, "modules"))
+}
+
+func TestEnvBindingMethodFormBindsJustRegisteredFlag(t *testing.T) {
+	_ = os.Setenv("KUKICHA_TEST_MODE", "fast")
+	t.Cleanup(func() {
+		_ = os.Unsetenv("KUKICHA_TEST_MODE")
+	})
+	app := cli.Env(cli.GlobalFlag(cli.New("tool"), "region", "Deployment region", "").StringFlag("mode", "Run mode", ""), "KUKICHA_TEST_MODE").Action(remember)
+	capture = cli.NewArgs(map[string]string{})
+	err := cli.RunWithArgs(app, []string{"tool"})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cli.GetString(capture, "mode"), "fast")
+	test.AssertEqual(t, cli.GetString(capture, "region"), "")
+}
+
+func TestEnvBindingOnLeafUnderSubcommand(t *testing.T) {
+	_ = os.Setenv("KUKICHA_TEST_OUT", "/tmp/out")
+	t.Cleanup(func() {
+		_ = os.Unsetenv("KUKICHA_TEST_OUT")
+	})
+	listCmd := cli.NewCommand("list", "List items").StringFlag("out", "Output path", "").Env("KUKICHA_TEST_OUT").Action(remember)
+	app := cli.WithCommands(cli.New("tool"), listCmd)
+	capture = cli.NewArgs(map[string]string{})
+	err := cli.RunWithArgs(app, []string{"tool", "list"})
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, cli.GetString(capture, "out"), "/tmp/out")
+}
+
+func TestEnvTypedValueValidatedOnBareInvocation(t *testing.T) {
+	_ = os.Setenv("KUKICHA_TEST_PORT", "not-a-number")
+	t.Cleanup(func() {
+		_ = os.Unsetenv("KUKICHA_TEST_PORT")
+	})
+	app := cli.Env(cli.IntFlag(cli.New("tool"), "port", "Port", 8080), "KUKICHA_TEST_PORT").Action(remember)
+	err := cli.RunWithArgs(app, []string{"tool"})
+	test.AssertError(t, err)
+	test.AssertContains(t, err.Error(), "flag --port has an invalid value")
+}
+
+func TestParseArgsIgnoresEnvBindings(t *testing.T) {
+	_ = os.Setenv("KUKICHA_TEST_REGION", "eu-north-1")
+	t.Cleanup(func() {
+		_ = os.Unsetenv("KUKICHA_TEST_REGION")
+	})
+	app := cli.Env(cli.GlobalFlag(cli.New("tool"), "region", "Deployment region", ""), "KUKICHA_TEST_REGION").Action(handler)
+	args := cli.ParseArgs(app, []string{"tool"})
+	test.AssertEqual(t, cli.GetString(args, "region"), "")
+}
+
+func wrappedUsageFailingAction(args cli.Args) error {
+	return errors.Wrap(cli.UsageFail("--mode is required with --deploy"), "deploy")
+}
+
+func TestUsageFailWrappedMarkerStillExit2(t *testing.T) {
+	oldArgs := os.Args
+	oldStderr := os.Stderr
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stderr = w
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stderr = oldStderr
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	os.Args = []string{"tool"}
+	app := cli.DefaultActionE(cli.BoolGlobalFlag(cli.New("tool"), "json", "json output", false), wrappedUsageFailingAction)
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 2)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "usage error: --mode is required with --deploy")
+	test.AssertFalse(t, kukistring.Contains(out, "Usage:"))
+}
+
+func TestUsageFailFromSubcommandActionE(t *testing.T) {
+	oldArgs := os.Args
+	oldStderr := os.Stderr
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stderr = w
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stderr = oldStderr
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	deployCmd := cli.NewCommand("deploy", "Deploy the app").ActionE(usageFailingAction)
+	os.Args = []string{"tool", "deploy"}
+	app := cli.WithCommands(cli.New("tool"), deployCmd)
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 2)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "usage error: --mode is required with --deploy")
+	test.AssertFalse(t, kukistring.Contains(out, "Usage:"))
+}
+
+func TestRequiredGlobalFlagTrailingUnderSubcommand(t *testing.T) {
+	listCmd := cli.NewCommand("list", "List items").Action(handler)
+	app := cli.WithCommands(cli.RequiredGlobalFlag(cli.New("myapp"), "region", "Deployment region"), listCmd)
+	err := cli.RunWithArgs(app, []string{"myapp", "list", "--region", "eu-west-1"})
+	test.AssertNoError(t, err)
+}
+
+func TestLeafHelpSplitsGlobalAndLocalFlags(t *testing.T) {
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Stdout = oldStdout
+	})
+	listCmd := cli.NewCommand("list", "List items").StringFlag("out", "Output path", "").Action(handler)
+	app := cli.WithCommands(cli.Env(cli.GlobalFlag(cli.New("myapp"), "region", "Deployment region", "us-east-1"), "KUKICHA_TEST_REGION"), listCmd)
+	err := cli.RunWithArgs(app, []string{"myapp", "list", "--help"})
+	_ = w.Close()
+	test.AssertNoError(t, err)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "Global flags:")
+	test.AssertContains(t, out, "Flags:")
+	test.AssertContains(t, out, "--region")
+	test.AssertContains(t, out, "--out")
+	test.AssertContains(t, out, "(env KUKICHA_TEST_REGION)")
+}
+
+func TestHelpNoSubcommandsUsageLine(t *testing.T) {
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Stdout = oldStdout
+	})
+	app := cli.Action(cli.StringFlag(cli.New("tool"), "model", "Model name", ""), handler)
+	err := cli.RunWithArgs(app, []string{"tool", "--help"})
+	_ = w.Close()
+	test.AssertNoError(t, err)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertFalse(t, kukistring.Contains(out, "[subcommand]"))
+	test.AssertContains(t, out, "Usage: tool [flags]")
+}
+
+func TestHelpSplitsGlobalAndLocalFlags(t *testing.T) {
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Stdout = oldStdout
+	})
+	app := cli.Action(cli.StringFlag(cli.GlobalFlag(cli.New("tool"), "region", "Deployment region", "us-east-1"), "model", "Model name", ""), handler)
+	err := cli.RunWithArgs(app, []string{"tool", "--help"})
+	_ = w.Close()
+	test.AssertNoError(t, err)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "Global flags:")
+	test.AssertContains(t, out, "Flags:")
+	test.AssertContains(t, out, "--region")
+	test.AssertContains(t, out, "--model")
+}
+
 func TestDefaultActionE_RunJSON(t *testing.T) {
 	oldArgs := os.Args
 	oldStdout := os.Stdout
@@ -810,4 +1209,214 @@ func TestDefaultActionE_RunJSON(t *testing.T) {
 	out := string(outBytes)
 	test.AssertContains(t, out, "\"error\"")
 	test.AssertContains(t, out, "db open failed")
+}
+
+// TestRun_ParseErrorJSON pins the #408 contract: a parse/usage failure (exit
+// 2) honors a --json in raw argv — {"error": reason} on stdout and no usage
+// text, so a --json consumer can parse every failure channel, not just
+// handler errors.
+func TestRun_ParseErrorJSON(t *testing.T) {
+	oldArgs := os.Args
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stdout = oldStdout
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	os.Args = []string{"demo", "--json", "--bogus-flag"}
+	app := cli.BoolGlobalFlag(cli.New("demo"), "json", "json output", false)
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 2)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "\"error\"")
+	test.AssertContains(t, out, "unknown flag: --bogus-flag")
+}
+
+// TestRun_ParseErrorPlainText pins the sibling channel of #408: without --json,
+// a parse failure keeps the human contract — nothing on stdout, reason plus
+// usage on stderr, exit 2.
+func TestRun_ParseErrorPlainText(t *testing.T) {
+	oldArgs := os.Args
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stdout = oldStdout
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	os.Args = []string{"demo", "--bogus-flag"}
+	app := cli.New("demo")
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 2)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	test.AssertEqual(t, string(outBytes), "")
+}
+
+// TestUsageErrorJSON pins the argv-aware usage-error helper end to end: with
+// --json in raw argv it prints {"error": reason} to stdout and exits 2; the
+// plain argv keeps the UsageError contract (nothing on stdout, exit 2).
+func TestUsageErrorJSON(t *testing.T) {
+	t.Run("json argv", func(t *testing.T) {
+		oldStdout := os.Stdout
+		r, w, pipeErr := os.Pipe()
+		test.AssertNoError(t, pipeErr)
+		os.Stdout = w
+		exited := 0
+		cli.SetExitFunc(func(code int) {
+			exited = code
+		})
+		t.Cleanup(func() {
+			os.Stdout = oldStdout
+			cli.SetExitFunc(nil)
+		})
+		app := cli.New("demo")
+		cli.UsageErrorJSON(app, "unknown flag: --bogus-flag", []string{"demo", "--json"})
+		_ = w.Close()
+		test.AssertEqual(t, exited, 2)
+		outBytes, readErr := io.ReadAll(r)
+		test.AssertNoError(t, readErr)
+		out := string(outBytes)
+		test.AssertContains(t, out, "\"error\"")
+		test.AssertContains(t, out, "unknown flag: --bogus-flag")
+	})
+	t.Run("plain argv", func(t *testing.T) {
+		oldStdout := os.Stdout
+		r, w, pipeErr := os.Pipe()
+		test.AssertNoError(t, pipeErr)
+		os.Stdout = w
+		exited := 0
+		cli.SetExitFunc(func(code int) {
+			exited = code
+		})
+		t.Cleanup(func() {
+			os.Stdout = oldStdout
+			cli.SetExitFunc(nil)
+		})
+		app := cli.New("demo")
+		cli.UsageErrorJSON(app, "unknown flag: --bogus-flag", []string{"demo"})
+		_ = w.Close()
+		test.AssertEqual(t, exited, 2)
+		outBytes, readErr := io.ReadAll(r)
+		test.AssertNoError(t, readErr)
+		test.AssertEqual(t, string(outBytes), "")
+	})
+}
+
+func TestRun_ParseErrorEnvBoundJSON(t *testing.T) {
+	oldArgs := os.Args
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stdout = w
+	_ = os.Setenv("KUKICHA_TEST_JSON", "true")
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stdout = oldStdout
+		_ = os.Unsetenv("KUKICHA_TEST_JSON")
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	os.Args = []string{"demo", "--bogus-flag"}
+	app := cli.Env(cli.BoolGlobalFlag(cli.New("demo"), "json", "json output", false), "KUKICHA_TEST_JSON")
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 2)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	out := string(outBytes)
+	test.AssertContains(t, out, "\"error\"")
+	test.AssertContains(t, out, "unknown flag: --bogus-flag")
+}
+
+func TestRun_ParseErrorEnvBoundJSONOverriddenByArgvFalse(t *testing.T) {
+	oldArgs := os.Args
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	test.AssertNoError(t, pipeErr)
+	os.Stdout = w
+	_ = os.Setenv("KUKICHA_TEST_JSON", "true")
+	t.Cleanup(func() {
+		os.Args = oldArgs
+		os.Stdout = oldStdout
+		_ = os.Unsetenv("KUKICHA_TEST_JSON")
+		cli.SetExitFunc(nil)
+	})
+	exited := 0
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	os.Args = []string{"demo", "--json=false", "--bogus-flag"}
+	app := cli.Env(cli.BoolGlobalFlag(cli.New("demo"), "json", "json output", false), "KUKICHA_TEST_JSON")
+	cli.Run(app)
+	_ = w.Close()
+	test.AssertEqual(t, exited, 2)
+	outBytes, readErr := io.ReadAll(r)
+	test.AssertNoError(t, readErr)
+	test.AssertEqual(t, string(outBytes), "")
+}
+
+// TestIsSet pins #409: IsSet distinguishes an explicitly-provided flag from
+// an identical default — including the near-miss (explicit value equal to
+// the default) that GetString cannot tell apart.
+func TestIsSet(t *testing.T) {
+	app := cli.BoolFlag(cli.StringFlag(cli.New("tool"), "db", "path", "/default/db"), "verbose", "log more", false)
+	omitted := cli.ParseArgs(app, []string{"tool"})
+	test.AssertFalse(t, cli.IsSet(omitted, "db"))
+	test.AssertEqual(t, cli.GetString(omitted, "db"), "/default/db")
+	test.AssertTrue(t, cli.GetString(omitted, "db") == "/default/db")
+	explicit := cli.ParseArgs(app, []string{"tool", "--db", "/other/db"})
+	test.AssertTrue(t, cli.IsSet(explicit, "db"))
+	sameAsDefault := cli.ParseArgs(app, []string{"tool", "--db", "/default/db"})
+	test.AssertTrue(t, cli.IsSet(sameAsDefault, "db"))
+	boolExplicit := cli.ParseArgs(app, []string{"tool", "--verbose"})
+	test.AssertTrue(t, cli.IsSet(boolExplicit, "verbose"))
+	test.AssertFalse(t, cli.IsSet(boolExplicit, "db"))
+}
+
+// TestIsSet_SubcommandLeaf pins the leaf-side wiring of #409: flags parsed
+// on a matched subcommand carry provenance too, while global flags left
+// unpassed report false.
+func TestIsSet_SubcommandLeaf(t *testing.T) {
+	workCmd := cli.Action(cli.StringFlag(cli.NewCommand("work", "do work"), "db", "path", "/default/db"), noop)
+	app := cli.WithCommands(cli.BoolGlobalFlag(cli.New("tool"), "verbose", "log more", false), workCmd)
+	result := cli.Parse(app, []string{"tool", "work", "--db", "/leaf/db"})
+	if ex, _isOk := result.(cli.Execute); _isOk {
+		test.AssertTrue(t, cli.IsSet(ex.Args, "db"))
+		test.AssertFalse(t, cli.IsSet(ex.Args, "verbose"))
+	} else {
+		t.Fatal("expected an Execute result for a matched subcommand")
+	}
+}
+
+func noop(args cli.Args) {
+}
+
+// TestIsSet_NewArgs pins the testing-seam semantics: NewArgs marks its
+// provided keys as explicitly set, so tests build Args with the provenance
+// they mean.
+func TestIsSet_NewArgs(t *testing.T) {
+	args := cli.NewArgs(map[string]string{"key": "val"})
+	test.AssertTrue(t, cli.IsSet(args, "key"))
+	test.AssertFalse(t, cli.IsSet(args, "missing"))
 }

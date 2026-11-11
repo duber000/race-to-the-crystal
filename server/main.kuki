@@ -1,10 +1,8 @@
 petiole main
 
 import "net/http"
-import "os"
 import "path/filepath"
 import "race-to-the-crystal/shared/constants" as constants
-import "race-to-the-crystal/shared/types"
 import "stdlib/env"
 import "stdlib/errors" as errs
 import "stdlib/http" as httphelper

@@ -150,6 +150,8 @@ func Has[T comparable](s Set[T], item T) bool {
 
 // Size returns the number of members.
 // English alias for Len.
+// Deprecated: pure alias — same operation, different label. Experimental
+// tier: removable once deprecated per COMPAT.md.
 func Size[T comparable](s Set[T]) int {
 	return Len(s)
 }
@@ -232,6 +234,8 @@ func Subset[T comparable](s Set[T], super Set[T]) bool {
 
 // Superset reports whether every member of sub is also in s.
 // The name follows Go's planned container/set surface.
+// Deprecated: mirror of Subset with the arguments swapped — same boolean,
+// other direction. Experimental tier: removable once deprecated per COMPAT.md.
 func Superset[T comparable](s Set[T], sub Set[T]) bool {
 	return Subset(sub, s)
 }

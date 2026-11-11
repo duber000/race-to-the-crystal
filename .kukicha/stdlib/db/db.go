@@ -28,6 +28,16 @@ import (
 	"unicode"
 )
 
+// ErrNoRows is the sentinel ScanOne (and ScanRow) return when the query
+// matched no rows — the pipeline-usable spelling of database/sql's
+// sql.ErrNoRows, matchable with errors.Is:
+//
+//	_, err := db.ScanOne of int64(rows) onerr
+//	    if errors.Is(err, db.ErrNoRows)
+//	        print("not found")
+//	    return
+var ErrNoRows error = sql.ErrNoRows
+
 // Pool wraps a database/sql connection pool
 type Pool struct {
 	conn *sql.DB
@@ -68,10 +78,14 @@ const (
 	IsolationLevelReadCommitted   IsolationLevel = "read_committed"
 	IsolationLevelRepeatableRead  IsolationLevel = "repeatable_read"
 	IsolationLevelSerializable    IsolationLevel = "serializable"
+	// Linearizable is the strictest level — the SQLite driver maps it to
+	// BEGIN EXCLUSIVE, which additionally blocks other connections while
+	// the transaction is open.
+	IsolationLevelLinearizable IsolationLevel = "linearizable"
 )
 
 func AllIsolationLevel() []IsolationLevel {
-	return []IsolationLevel{IsolationLevelDefault, IsolationLevelReadUncommitted, IsolationLevelReadCommitted, IsolationLevelRepeatableRead, IsolationLevelSerializable}
+	return []IsolationLevel{IsolationLevelDefault, IsolationLevelReadUncommitted, IsolationLevelReadCommitted, IsolationLevelRepeatableRead, IsolationLevelSerializable, IsolationLevelLinearizable}
 }
 
 func ParseIsolationLevel(s string) (IsolationLevel, error) {
@@ -86,6 +100,8 @@ func ParseIsolationLevel(s string) (IsolationLevel, error) {
 		return IsolationLevelRepeatableRead, nil
 	case "serializable":
 		return IsolationLevelSerializable, nil
+	case "linearizable":
+		return IsolationLevelLinearizable, nil
 	}
 	switch s {
 	case "Default":
@@ -98,9 +114,11 @@ func ParseIsolationLevel(s string) (IsolationLevel, error) {
 		return IsolationLevelRepeatableRead, nil
 	case "Serializable":
 		return IsolationLevelSerializable, nil
+	case "Linearizable":
+		return IsolationLevelLinearizable, nil
 	}
 	var zero IsolationLevel
-	return zero, fmt.Errorf("invalid IsolationLevel %q (valid: \"\", \"read_uncommitted\", \"read_committed\", \"repeatable_read\", \"serializable\")", s)
+	return zero, fmt.Errorf("invalid IsolationLevel %q (valid: \"\", \"read_uncommitted\", \"read_committed\", \"repeatable_read\", \"serializable\", \"linearizable\")", s)
 }
 
 func (e IsolationLevel) String() string {
@@ -115,6 +133,8 @@ func (e IsolationLevel) String() string {
 		return "RepeatableRead"
 	case IsolationLevelSerializable:
 		return "Serializable"
+	case IsolationLevelLinearizable:
+		return "Linearizable"
 	default:
 		return string(e)
 	}
@@ -363,7 +383,7 @@ func ScanOne[T any](rows Rows) (T, error) {
 			var _zero0 T
 			return _zero0, err_17
 		}
-		return zero, errors.New("db.ScanOne: no rows returned")
+		return zero, ErrNoRows
 	}
 	elemPtr := reflect.New(elemType)
 	if elemType.Kind() != reflect.Struct {
@@ -481,6 +501,8 @@ func toSQLLevel(level IsolationLevel) sql.IsolationLevel {
 		return sql.LevelRepeatableRead
 	case IsolationLevelSerializable:
 		return sql.LevelSerializable
+	case IsolationLevelLinearizable:
+		return sql.LevelLinearizable
 	}
 	return sql.LevelDefault
 }

@@ -29,6 +29,57 @@ func formatMessage(defaultMsg string, msgAndArgs []any) string {
 	return fmt.Sprintf("%v", msgAndArgs[0])
 }
 
+// isSignedKind reports whether k is a signed integer kind.
+func isSignedKind(k reflect.Kind) bool {
+	return k == reflect.Int || k == reflect.Int8 || k == reflect.Int16 || k == reflect.Int32 || k == reflect.Int64
+}
+
+// isUnsignedKind reports whether k is an unsigned integer kind.
+func isUnsignedKind(k reflect.Kind) bool {
+	return k == reflect.Uint || k == reflect.Uint8 || k == reflect.Uint16 || k == reflect.Uint32 || k == reflect.Uint64 || k == reflect.Uintptr
+}
+
+// isNumericKind reports whether k is an integer or floating-point kind.
+func isNumericKind(k reflect.Kind) bool {
+	return isSignedKind(k) || isUnsignedKind(k) || k == reflect.Float32 || k == reflect.Float64
+}
+
+// sameNumericValue reports whether two differently-kinded numeric values hold
+// the SAME value. Like-signed and like-unsigned integer pairs compare exactly
+// in their own domain — funneling them through float64 folds 2^53 and 2^53+1
+// into the same float, claiming "same value" for different values (#420
+// follow-up). Mixed-sign or floating kinds fall back to the float64
+// compare, where rounding is inherent to the comparison itself.
+func sameNumericValue(gr reflect.Value, wr reflect.Value) (bool, bool) {
+	if isSignedKind(gr.Kind()) && isSignedKind(wr.Kind()) {
+		return gr.Int() == wr.Int(), true
+	}
+	if isUnsignedKind(gr.Kind()) && isUnsignedKind(wr.Kind()) {
+		return gr.Uint() == wr.Uint(), true
+	}
+	gv, gok := numericValue(gr)
+	wv, wok := numericValue(wr)
+	ok := gok && wok
+	return ok && gv == wv, ok
+}
+
+// numericValue renders a numeric reflect.Value as float64. Used only for the
+// floating and mixed-kind fallback in sameNumericValue; integer pairs never
+// reach it.
+func numericValue(v reflect.Value) (float64, bool) {
+	k := v.Kind()
+	if k == reflect.Int || k == reflect.Int8 || k == reflect.Int16 || k == reflect.Int32 || k == reflect.Int64 {
+		return float64(v.Int()), true
+	}
+	if k == reflect.Uint || k == reflect.Uint8 || k == reflect.Uint16 || k == reflect.Uint32 || k == reflect.Uint64 || k == reflect.Uintptr {
+		return float64(v.Uint()), true
+	}
+	if k == reflect.Float32 || k == reflect.Float64 {
+		return v.Float(), true
+	}
+	return 0, false
+}
+
 // diffDetail renders a why-did-they-differ hint for the AssertEqual failure
 // message. Returns "" when no sharper hint applies (caller falls back to the
 // bare got/want rendering) — equal-length slices with a first differing
@@ -37,6 +88,14 @@ func diffDetail(got any, want any) string {
 	gotType := fmt.Sprintf("%T", got)
 	wantType := fmt.Sprintf("%T", want)
 	if gotType != wantType {
+		gr := reflect.ValueOf(got)
+		wr := reflect.ValueOf(want)
+		if isNumericKind(gr.Kind()) && isNumericKind(wr.Kind()) {
+			same, ok := sameNumericValue(gr, wr)
+			if ok && same {
+				return fmt.Sprintf(" (same value, different numeric kind — want %v, got %v)", wantType, gotType)
+			}
+		}
 		return fmt.Sprintf(" (type %v vs %v)", gotType, wantType)
 	}
 	if gs, _isOk := got.(string); _isOk {

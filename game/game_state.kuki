@@ -435,7 +435,7 @@ func updateGeneratorsAndCrystal on gs: reference GameState() (list of int, bool)
     if cRef isnt empty
         for gen in gs.generators
             if gen.isDisabled
-                if gen.capturingPlayerId isnt ""
+                if gen.capturingPlayerId isnt empty
                     cRef.addCharge(gen.capturingPlayerId, gen.ChargePerTurn())
                     if gen.buffType equals enums.FORGE
                         for _, t in gs.tokens

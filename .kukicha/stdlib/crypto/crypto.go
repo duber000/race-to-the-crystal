@@ -11,7 +11,7 @@
 //	hash := crypto.SHA256("hello world")         # hex-encoded SHA-256
 //	stored := crypto.HashPassword("hunter2") onerr panic "{error}"
 //	token := crypto.RandomToken(32) onerr panic "{error}"
-//	mac := crypto.HMAC("message", "secret")
+//	mac := crypto.HMAC("message", crypto.HMACKey{Value: "secret"})
 package crypto
 
 import (
@@ -56,21 +56,49 @@ func SHA256Hex(data []byte) string {
 	return encoding.HexEncode(SHA256Bytes(data))
 }
 
-// HMAC returns the hex-encoded HMAC-SHA256 of data using key.
+// HMACKey is the key type of crypto.HMAC — a secret string wrapped so the
+// key slot cannot accidentally take the public data at a positional call
+// site (#412): `HMAC(data, HMACKey{Value: secret})` type-checks, while the
+// swapped `HMAC(HMACKey{Value: secret}, data)` is a check-time type error,
+// not a silent self-consistent signature. Construct it as a labeled struct
+// literal so the value slot names itself at the call site.
+// Example: sig := crypto.HMAC(body, crypto.HMACKey{Value: secret})
+type HMACKey struct {
+	Value string `json:"value"`
+}
+
+// HMACKeyBytes is the byte-slice key type of crypto.HMACBytes — the same
+// slot separation as HMACKey, for binary pipelines whose key arrives as raw
+// bytes. Construct it as a labeled struct literal.
+// Example: sig := crypto.HMACBytes(body, crypto.HMACKeyBytes{Value: rawKey})
+type HMACKeyBytes struct {
+	Value []byte `json:"value"`
+}
+
+// HMAC returns the hex-encoded HMAC-SHA256 of data keyed with key.
 // Used for API request signing and message authentication.
-// Data comes first so it pipes naturally: `data |> crypto.HMAC(key)`.
-// Example: crypto.HMAC("message-body", "secret-key")
-func HMAC(data string, key string) string {
-	mac := hmac.New(sha256.New, []byte(key))
+// Data comes first so it pipes naturally:
+// `body |> crypto.HMAC(crypto.HMACKey{Value: secret})` — the blessed
+// spelling. The key must be a crypto.HMACKey so the data/key slots cannot
+// be swapped at a positional call site (#412): every other ecosystem HMAC
+// API a writer imports muscle memory from is key-first, and the swapped
+// order is both well-typed and self-consistent without the typed key.
+// Example: sig := crypto.HMAC("message-body", crypto.HMACKey{Value: "secret-key"})
+func HMAC(data string, key HMACKey) string {
+	mac := hmac.New(sha256.New, []byte(key.Value))
 	mac.Write([]byte(data))
 	return encoding.HexEncode(mac.Sum(nil))
 }
 
-// HMACBytes returns the raw HMAC-SHA256 bytes.
+// HMACBytes returns the raw HMAC-SHA256 bytes keyed with key.
 // Use HMAC for hex output; this is for binary pipelines.
-// Data comes first so it pipes: `bytes |> crypto.HMACBytes(key)`.
-func HMACBytes(data []byte, key []byte) []byte {
-	mac := hmac.New(sha256.New, key)
+// Data comes first so it pipes:
+// `bytes |> crypto.HMACBytes(crypto.HMACKeyBytes{Value: rawKey})`.
+// The key must be a crypto.HMACKeyBytes — the raw-bytes twin of the
+// HMACKey slot separation (#412).
+// Example: sig := crypto.HMACBytes(bytes, crypto.HMACKeyBytes{Value: rawKey})
+func HMACBytes(data []byte, key HMACKeyBytes) []byte {
+	mac := hmac.New(sha256.New, key.Value)
 	mac.Write(data)
 	return mac.Sum(nil)
 }
@@ -194,7 +222,7 @@ func Equal(a []byte, b []byte) bool {
 // Malformed hex compares false rather than erroring — verification callers
 // treat undecodable input as "not equal". Case-insensitive, since
 // hex.DecodeString accepts either case.
-// Example: crypto.EqualHex(crypto.HMAC(body, secret), headerMAC)
+// Example: crypto.EqualHex(crypto.HMAC(body, crypto.HMACKey{Value: secret}), headerMAC)
 func EqualHex(a string, b string) bool {
 	aBytes, err := encoding.HexDecode(a)
 	if err != nil {

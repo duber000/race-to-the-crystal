@@ -40,15 +40,19 @@ import (
 // Open opens a SQLite database file with sensible defaults:
 // WAL mode, foreign keys enabled, and 5-second busy timeout.
 // Returns a db.Pool for use with all stdlib/db query functions.
+// The database file is CREATED if it does not exist — use OpenExisting for
+// a read-only open that never creates anything (issue #407).
 // Example: pool := sqlite.Open("/tmp/app.db") onerr panic "{error}"
 func Open(path string) (db.Pool, error) {
-	return openWithPragmas(path, openDefaults())
+	return openWithPragmas(path, openDefaults(), "")
 }
 
 // OpenPath is like Open but first ensures the parent directory exists,
 // creating it (and any missing intermediates) with default permissions.
 // Useful for CLI apps that store their database under a user-supplied path
 // such as ~/.local/share/app/data.db where the directory may not yet exist.
+// The database file is CREATED if it does not exist — use OpenExisting for
+// a read-only open that never creates anything (issue #407).
 // Example: pool := sqlite.OpenPath("~/.local/share/app/data.db") onerr panic "{error}"
 func OpenPath(path string) (db.Pool, error) {
 	err_1 := files.MkDirAll(files.Dirname(path))
@@ -57,6 +61,18 @@ func OpenPath(path string) (db.Pool, error) {
 		return _zero0, err_1
 	}
 	return Open(path)
+}
+
+// OpenExisting opens an existing SQLite database file READ-ONLY. The file
+// must already exist: a missing file surfaces as an open error instead of a
+// silently created empty database, and no parent directory is ever created.
+// Writes and schema changes fail at the SQLite level once the pool is open.
+// Connection pragmas are limited to what a read-only connection can set
+// (foreign keys, busy timeout) — the WAL journal-mode switch is a write
+// operation and would fail on a read-only connection.
+// Example: pool := sqlite.OpenExisting("./beads.db") onerr panic "{error}"
+func OpenExisting(path string) (db.Pool, error) {
+	return openWithPragmas(path, map[string]string{"foreign_keys": "ON", "busy_timeout": "5000"}, "ro")
 }
 
 // OpenMemory opens an in-memory SQLite database with foreign keys enabled.
@@ -82,7 +98,7 @@ func OpenWith(path string, pragmas map[string]string) (db.Pool, error) {
 		}
 		merged[k] = v
 	}
-	return openWithPragmas(path, merged)
+	return openWithPragmas(path, merged, "")
 }
 
 type Registrar = func(*sqlite3.Conn) error
@@ -921,10 +937,15 @@ func openDefaults() map[string]string {
 	return map[string]string{"journal_mode": "WAL", "foreign_keys": "ON", "busy_timeout": "5000"}
 }
 
-// openWithPragmas builds a SQLite URI DSN from a path and an already-validated
-// pragma map.
-func openWithPragmas(path string, pragmas map[string]string) (db.Pool, error) {
-	parts := make([]string, 0, len(pragmas))
+// openWithPragmas builds a SQLite URI DSN from a path, an already-validated
+// pragma map, and an optional URI mode parameter ("ro" for OpenExisting,
+// "" for the read-write opens). The mode parameter comes first in the query
+// string: file:<path>?mode=ro&_pragma=...
+func openWithPragmas(path string, pragmas map[string]string, mode string) (db.Pool, error) {
+	parts := make([]string, 0, len(pragmas)+1)
+	if mode != "" {
+		parts = append(parts, fmt.Sprintf("mode=%v", mode))
+	}
 	for k, v := range pragmas {
 		parts = append(parts, fmt.Sprintf("_pragma=%v(%v)", k, v))
 	}
