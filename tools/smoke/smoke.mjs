@@ -203,16 +203,32 @@ try {
     check(`${label}: scene has non-trivial content`, shot.length > 30_000, `${Math.round(shot.length / 1024)} KB screenshot -> ${shotPath}`);
   }
 
-  // --- cache policy (web_server/main.kuki): HTML + static revalidate --------
+  // --- cache policy (web_server/main.kuki): no-store HTML shell, versioned
+  // --- static assets are immutable; unversioned paths are a no-cache fallback.
   try {
     const rootRes = await a.context.request.get(`${base}/`);
+    const html = await rootRes.text();
     const jsRes = await a.context.request.get(`${base}/static/game_client.js`);
-    check('cache-control no-cache on HTML shell',
-      (rootRes.headers()['cache-control'] ?? '').includes('no-cache'),
+    check('cache-control no-store on HTML shell',
+      (rootRes.headers()['cache-control'] ?? '').includes('no-store'),
       rootRes.headers()['cache-control'] ?? '(none)');
-    check('cache-control no-cache on static JS',
+    check('cache-control no-cache on unversioned static JS',
       (jsRes.headers()['cache-control'] ?? '').includes('no-cache'),
       jsRes.headers()['cache-control'] ?? '(none)');
+    const versionedMatch = html.match(/\/static\/v\/([0-9a-f]{16})\/game_client\.js/);
+    check('HTML shell references a version-hashed game_client.js',
+      versionedMatch !== null,
+      versionedMatch ? versionedMatch[0] : '(no /static/v/<hash>/game_client.js in HTML)');
+    if (versionedMatch) {
+      const versionedRes = await a.context.request.get(`${base}${versionedMatch[0]}`);
+      check('cache-control immutable on versioned static JS',
+        (versionedRes.headers()['cache-control'] ?? '').includes('immutable'),
+        versionedRes.headers()['cache-control'] ?? '(none)');
+      const staleRes = await a.context.request.get(`${base}/static/v/0000000000000000/game_client.js`);
+      check('version-mismatch URLs 404',
+        staleRes.status() === 404,
+        `status ${staleRes.status()}`);
+    }
   } catch (err) {
     check('cache-control headers readable', false, String(err));
   }

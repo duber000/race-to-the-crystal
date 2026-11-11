@@ -1713,6 +1713,27 @@
     }
   }
 
+  /* ===== Fallback for engines without backdrop-filter =====
+     Translucent glass relies on backdrop-filter for legibility; without it,
+     panels fall back to opaque ink surfaces so text keeps >= 4.5:1 contrast
+     against the 3D scene on any backdrop. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :is(#connection-screen, #lobby-browser-screen, #waiting-room-screen,
+        #hud, #controls, #mobile-controls, #tactical-comms, #replay-controls,
+        #deployment-menu, .spectate-card, #mobile-action-bar) {
+      background: var(--ink-850);
+    }
+
+    .radial-palette,
+    #deployment-indicator {
+      background: var(--ink-900);
+    }
+
+    .spectate-overlay {
+      background: rgb(3 6 12 / 88%);
+    }
+  }
+
   /* ===== Forced Colors Mode (Windows High Contrast) ===== */
   @media (forced-colors: active) {
     body {

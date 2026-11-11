@@ -183,7 +183,15 @@ class DeviceCapabilities {
                     antialiasing: true
                 };
             default:
-                return this.getRenderingConfig(); // Fallback to medium
+                // Unknown profile — fall back to medium (previously this
+                // recursed into getRenderingConfig() forever)
+                return {
+                    hardwareScaling: 1.0,
+                    shadowsEnabled: false,
+                    particleMaxCount: 1000,
+                    meshTessellation: 24,
+                    antialiasing: true
+                };
         }
     }
 

@@ -10,6 +10,11 @@
 > was never exercised). The vanilla WebGL2 renderer is the only renderer.
 > **Cache headers shipped the same day** (`Cache-Control: no-cache` + 304
 > revalidation on `/` and `/static/*`).
+> **2026-11-10 (later):** superseded by a content-hash pipeline — the web
+> server computes a SHA-256 tree hash of `web_server/static` at startup,
+> serves assets at `/static/v/<hash>/…` with `Cache-Control: immutable`, and
+> rewrites literal `/static/…` references in served text assets to the
+> versioned URLs. The HTML shell is `Cache-Control: no-store`.
 > **2026-11-10 (legibility pass, sixth verification):** floating combat text
 > was rendering at half size (a billboard nominal-size bug, see §2) and is
 > now legible at playing distance; health labels draw at nominal size as
@@ -683,11 +688,14 @@ Rules for this codebase:
 
 ### The web client
 
-- **No build step, no bundler, no cache headers or hash busting.** Every
-  page load heuristically re-fetches modules, but Chrome's heuristic caching
-  can serve stale JS with no error. If the page behaves like the old code,
-  hard-reload (`ignoreCache: true` in DevTools terms, or Ctrl+Shift+R).
-  Verify with a fresh `?param` if in doubt.
+- **No build step, no bundler** — but the web server (not a bundler)
+  content-hashes `web_server/static` at startup: assets are served at
+  `/static/v/<hash>/…` with `Cache-Control: immutable`, and literal
+  `/static/…` references in served text assets (html/css/js/svg/json/…) are
+  rewritten to the versioned URLs in memory at boot. A fresh deploy rides a
+  new hash; stale-hash URLs 404 instead of serving mismatched content under
+  an immutable cache. The HTML shell is `no-store`. Keep asset references as
+  **literal** `/static/…` strings or the rewrite cannot find them.
 - The game board is **18×18** (server `shared/constants`). Any client that
   assumes otherwise produces an oversized cage and an off-center camera.
 - Fog of war is real: invisible enemy tokens are absent/masked and have
@@ -948,13 +956,17 @@ Rules for this codebase:
   fallback path left to test.
 - **Babylon version bump?** Closed 2026-11-10: moot. Babylon.js was
   deleted in the default flip; there is nothing left to bump.
-- **`main.kuki` cache headers** — done 2026-11-10. Every response from
-  the web server is now `Cache-Control: no-cache` (revalidate every load);
-  Go's ServeFile sets Last-Modified, so repeat loads get 304s and fresh
-  deploys propagate immediately. No build step needed; the smoke gate
-  asserts the header on `/` and `/static/game_client.js`. Content-hash +
-  immutable paths remain a possible follow-up if 304 round-trips ever
-  matter — they won't at ~85 KB gzip.
+- **`main.kuki` cache headers** — done 2026-11-10, upgraded the same day.
+  Phase 1: every response `Cache-Control: no-cache` (revalidate every load,
+  304s via Last-Modified). Phase 2: the web server computes a SHA-256 tree
+  hash of `web_server/static` at boot and serves assets at
+  `/static/v/<hash>/<path>` with `Cache-Control: public, max-age=31536000,
+  immutable`; the index page is substituted in memory (references to
+  `/static/` rewritten to the versioned prefix) and served `no-store`.
+  Version-mismatch URLs 404; unversioned `/static/` stays as a `no-cache`
+  fallback. The smoke gate asserts the `no-store` shell, the `no-cache`
+  fallback, the versioned-URL shape in the served HTML, the `immutable`
+  header on a versioned URL, and the wrong-hash 404.
 
 ## 6. Reproducing
 
@@ -986,10 +998,11 @@ make smoke               # spawns side servers on 8081/8001, runs, tears down
 `make smoke` exercises page load (no renderer flag needed — vanilla is
 the only renderer) → connect → create/join → ready → start → vanilla
 renderer boot + render, asserting zero console errors, a non-trivial
-scene per seat and `Cache-Control: no-cache` on the HTML shell and static
-JS — and the behavioral gate plays a real move over the wire (select →
-click destination → server accepts; end turn from both seats). Screenshots
-land in `tools/smoke/out/`.
+scene per seat, the `no-store` shell, the `no-cache` unversioned fallback,
+the versioned-URL shape in the served HTML, an `immutable` header on a
+versioned URL, and a 404 for a wrong hash — and the behavioral gate plays
+a real move over the wire (select → click destination → server accepts;
+end turn from both seats). Screenshots land in `tools/smoke/out/`.
 Requires the built binaries (`race-server`, `web_server/web_server`) —
 run `make build` first on a fresh checkout. Set `SMOKE_BASE_URL` to aim
 at an already-running instance instead of spawning side servers.

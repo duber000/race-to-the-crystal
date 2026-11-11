@@ -131,7 +131,7 @@ class StateManager {
      * Check if it's the local player's turn
      */
     isLocalPlayerTurn() {
-        return this.gameState && this.gameState.current_turn_player_id === this.localPlayerId;
+        return Boolean(this.gameState) && this.gameState.current_turn_player_id === this.localPlayerId;
     }
 
     /**

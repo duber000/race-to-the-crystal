@@ -34,15 +34,15 @@ export class ReplayController {
                     </div>
                     <div class="replay-buttons">
                         <button id="replay-prev">&laquo;</button>
-                        <button id="replay-play">Play</button>
+                        <button id="replay-play" aria-pressed="false">Play</button>
                         <button id="replay-next">&raquo;</button>
                         <button id="replay-exit">Exit</button>
                         <button id="replay-export">Export&nbsp;&darr;</button>
                     </div>
                     <div class="replay-speeds" id="replay-speeds">
-                        <button class="replay-speed active" data-speed="1">1&times;</button>
-                        <button class="replay-speed" data-speed="2">2&times;</button>
-                        <button class="replay-speed" data-speed="5">5&times;</button>
+                        <button class="replay-speed active" data-speed="1" aria-pressed="true">1&times;</button>
+                        <button class="replay-speed" data-speed="2" aria-pressed="false">2&times;</button>
+                        <button class="replay-speed" data-speed="5" aria-pressed="false">5&times;</button>
                     </div>
                 </div>`;
             document.body.appendChild(panel);
@@ -88,7 +88,10 @@ export class ReplayController {
         if (![1, 2, 5].includes(n)) return;
         this.speed = n;
         for (const btn of this.panel.querySelectorAll('.replay-speed')) {
-            btn.classList.toggle('active', parseInt(btn.dataset.speed, 10) === n);
+            const isActive = parseInt(btn.dataset.speed, 10) === n;
+            btn.classList.toggle('active', isActive);
+            // .active styles it; aria-pressed is what the a11y tree reads.
+            btn.setAttribute('aria-pressed', String(isActive));
         }
         // Restart the timer so the new rate takes effect immediately.
         if (this.playing) {
@@ -208,7 +211,10 @@ export class ReplayController {
     togglePlay() {
         this.playing = !this.playing;
         const btn = this.panel && this.panel.querySelector('#replay-play');
-        if (btn) btn.textContent = this.playing ? 'Pause' : 'Play';
+        if (btn) {
+            btn.textContent = this.playing ? 'Pause' : 'Play';
+            btn.setAttribute('aria-pressed', String(this.playing));
+        }
         if (this.playing) {
             this.timer = setInterval(() => {
                 if (this.cursor >= this.snapshots.length - 1) { this.togglePlay(); return; }

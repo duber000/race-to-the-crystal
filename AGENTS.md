@@ -34,6 +34,9 @@ make test
 # Run tests with verbose output
 make test-verbose
 
+# Run frontend JavaScript unit tests (node:test, no browser)
+make test-js
+
 # Run a specific test package
 make test-specific PKG=./game/...
 
@@ -90,7 +93,7 @@ The project is split into strictly separated layers:
 - **`server/`** – Server built on Go net/http + gorilla/websocket. `GameCoordinator` manages `GameSession` instances, each wrapping a `GameState`. JWT auth for the HTTP API is in `server/auth.kuki`. `WebSocketHandler` owns the client registry and the shared per-session broadcasters.
 - **`mcp/`** – Thin stdio MCP proxy exposing the agent seat (no game logic; proxies to the game server's REST API)
 - **`client/`** – Desktop client using Ebitengine. `renderer_2d.kuki` and UI views in `ui/` implement the game views. **The desktop client is local-only** — it imports the `game` package directly and has no networking; its "Network Game" menu entry is a stub. `ai/ai_client.kuki` is the AI player (HTTP); `ai/http_ai_client.kuki` is a helper in the same package.
-- **`web_server/`** – Serves the web frontend and reverse-proxies `/api` and `/ws` to the game server. The frontend is the dependency-free vanilla WebGL2 path (`web_server/static/webgl2/`, ~4.6k lines, no libraries) — **the only renderer since 2026-11-10** (Babylon.js 8 was deleted the same day). Static assets are served with `Cache-Control: no-cache` (revalidate every load, 304s; see `web_server/main.kuki`). The full record — phases, gotchas, tuned defaults, and remaining verification items — lives in `docs/VANILLA-JS.md`; treat it as the source of truth for web-client rendering work. The `make smoke` gate checks the default path headless (see Testing below). Web clients receive state and events over WebSocket. Lobby/HUD chrome conventions live under Key Conventions ("Web client UI") below.
+- **`web_server/`** – Serves the web frontend and reverse-proxies `/api` and `/ws` to the game server. The frontend is the dependency-free vanilla WebGL2 path (`web_server/static/webgl2/`, ~4.6k lines, no libraries) — **the only renderer since 2026-11-10** (Babylon.js 8 was deleted the same day). Static assets are content-hashed at startup (`/static/v/<tree-hash>/…`, `Cache-Control: immutable`; the HTML shell is `no-store` — see `web_server/main.kuki` and Key Conventions below). The full record — phases, gotchas, tuned defaults, and remaining verification items — lives in `docs/VANILLA-JS.md`; treat it as the source of truth for web-client rendering work. The `make smoke` gate checks the default path headless (see Testing below). Web clients receive state and events over WebSocket. Lobby/HUD chrome conventions live under Key Conventions ("Web client UI") below.
 - **Test files** – `*_test.kuki` files co-located with the modules they test (e.g., `game/game_state_test.kuki`, `game/game_events_test.kuki`, `server/action_validation_test.kuki`).
 
 ### The game event stream
@@ -266,15 +269,57 @@ was modernized 2026-11-10. Rules of the road for future web-UI work:
   the meaning when shadows, gradients, and color are stripped.
 - **Panels use translucent glass chrome** (`backdrop-filter: blur()` over a
   near-black ink background with a faint CSS-gradient Tron grid). Test new
-  panels over the canvas, not on a flat background.
+  panels over the canvas, not on a flat background. Glass relies on
+  backdrop-filter to carry legibility — engines without it get the
+  `@supports not (backdrop-filter: …)` block in `@layer components`, which
+  swaps those surfaces to opaque ink tokens (`--ink-850`, `--ink-900`,
+  `--ink-950`). Keep that fallback in sync when you add a new
+  backdrop-filter surface, and keep dark glass at ≥ ~0.78 alpha — contrast
+  must hold against the worst-case backdrop (bright sky cell), not against
+  the screenshot backdrop.
+- **Static assets are content-hashed at server startup.** The web server
+  computes a SHA-256 tree hash of `web_server/static` once at boot and serves
+  binaries and text assets at `/static/v/<hash>/<path>` with `Cache-Control:
+  public, max-age=31536000, immutable`. Text assets (html/css/js/svg/json/…)
+  have their literal `/static/…` references rewritten to the versioned
+  prefix in memory; the index page rides `Cache-Control: no-store`, so a
+  fresh deploy rides the fresh HTML. Version-mismatch URLs 404 (a stale
+  hash must never serve under an immutable cache); the unversioned
+  `/static/…` path stays as a `no-cache` fallback. Rules: **asset references
+  must stay literal `/static/…` strings** (the rewrite can't see computed
+  URLs) — don't alias or re-concatenate the prefix; and **restart the web
+  server after editing `static/`** — the hash and the substituted bytes are
+  computed at boot. `make smoke` asserts the no-store shell, the
+  `no-cache` fallback, the versioned URL shape, the immutable header, and
+  the wrong-hash 404.
+- **Toggle buttons expose `aria-pressed`** (`#ready-btn`, `#replay-play`,
+  `.replay-speed`). The `.ready`/`.active` classes are visuals only; the
+  AT-facing state rides the attribute, and both are set together in
+  `ui_manager.js` / `game_client.replay.js`. Momentary buttons (mobile
+  action bar, deploy strengths, spectate seats) are not toggles — don't
+  slap `aria-pressed` on them.
+- **No event delegation without `closest()`.** The client binds handlers
+  directly to their button and captures `dataset` at wire time, so an
+  icon/emoji inside a button can never be read as the click target (the
+  town-builder "double-fire from the wrong target" class of bug). If you
+  introduce delegation, the handler must resolve
+  `e.target.closest('button')` and ignore non-matching targets.
+- **Vendored frontend assets must pass the registry hash check** before
+  being committed: `node tools/verify-tarball.mjs <pkg>@<version>
+  [path/to/package.tgz]` downloads/hashes the tarball and compares against
+  the registry-published `dist.integrity` (sha512) — it exits non-zero on
+  mismatch. Cross-check the version pin against `package-lock.json`'s
+  `integrity` (as done for playwright 1.65.0). Don't vendor anything that
+  can't be verified this way.
 - **Verify visually, not just with `make smoke`** (smoke only catches
   boot/interaction regressions). For layout work, run a side instance
   (`HTTP_PORT=8081 ./race-server` +
   `WEB_PORT=8001 GAME_SERVER_URL=http://localhost:8081 ./web_server/web_server`),
   drive two browser pages through connect → lobby → ready → start, and
   screenshot to disk as JPEG (see "Browser verification" below). Check the
-  ≤ 768px and ≤ 480px breakpoints — the lobby screens become fixed
-  fullscreen sheets there and several in-game panels move.
+  ≤ 768px and ≤ 480px breakpoints (via device emulation or a real device —
+  the headless window won't go below ~728px) — the lobby screens become
+  fixed fullscreen sheets there and several in-game panels move.
 - **`theme-color` and `color-scheme: dark` are load-bearing** (`#05080f`,
   matching `--color-bg`); keep them in sync with the background token or
   the page flashes lighter than the game.
@@ -304,10 +349,23 @@ was modernized 2026-11-10. Rules of the road for future web-UI work:
   two-context lobby flow and asserts per seat (vanilla renderer up, zero
   console errors, non-trivial frame). It also plays a real move over the
   wire (cells resolved by sampling the page's own ray-plane pick — no
-  camera math in the test) and ends the turn from both seats. Skip the
+  camera math in the test) and ends the turn from both seats. It also
+  checks the cache policy: `no-store` shell, `no-cache` unversioned
+  fallback, versioned asset URLs in the served HTML, an `immutable`
+  response for a versioned URL, and a 404 for a wrong hash. Skip the
   interaction phase with `SMOKE_INTERACT=0`. Still manual-only: deploy
   phase, attacks, first-person, mobile/touch, perf (toggle bloom at
   runtime). First run needs `npm install` and `npx playwright install chromium`.
+- **`make test-js`** runs the frontend unit tests in `tests/js/*.test.cjs`
+  with `node:test` — no browser required. Modules without import-time
+  browser globals (e.g. `state_manager.js`) are imported directly; modules
+  that touch `window`/`navigator`/`document` at import or construction
+  (`game_client.device.js`, `game_client.replay.js`) are evaluated in a
+  `node:vm` sandbox with minimal DOM stubs, exercising the real module
+  code with only its imports/globals replaced. Add the module's stubs to
+  `createHarness()` when it gains a new global reference. vm-realm objects
+  fail `assert.deepStrictEqual` (different `Object` prototype) — compare
+  by value.
 
 #### Browser verification (Chrome DevTools MCP)
 - **Inline screenshots from the DevTools `take_screenshot` tool are
@@ -319,6 +377,12 @@ was modernized 2026-11-10. Rules of the road for future web-UI work:
   use `format: "jpeg"` (quality 60 ≈ 100 KB, quality 25 ≈ 55 KB) — never
   return them inline. Prefer `take_snapshot` (text a11y tree) and
   `list_console_messages`; screenshot only what you must eyeball.
+- **The headless window reports `innerWidth` ≥ ~728px even for small
+  resize requests.** Phone-only (≤ 576px) rules cannot be verified through
+  the DevTools MCP headless window — the ≤ 768px and ≤ 480px breakpoints
+  need a real device or proper UA/device emulation. The smoke gate is
+  desktop-sized; treat mobile layout checks as device-emulation work, not
+  headless work.
 - **Synthetic input goes in CSS pixels, not device pixels.** CSS 728×629 ≠
   screenshot 1213×1048 (DPR 1.667). The input handler binds
   `mousedown`/`mouseup` (not PointerEvents) — dispatch those on the

@@ -1,13 +1,17 @@
 petiole main
 
+import "bytes"
 import "net/http"
 import "net/http/httputil"
 import "net/url"
 import "path/filepath"
+import "stdlib/crypto"
 import "stdlib/env"
+import "stdlib/files"
 import "stdlib/http" as httphelper
 import "stdlib/log"
 import "stdlib/signal"
+import "stdlib/sort" as sortpkg
 import "strings"
 import "time"
 
@@ -29,15 +33,100 @@ func WebServerConfigFromEnv() WebServerConfig
 type WebServer
     config: WebServerConfig
     proxy: optional reference httputil.ReverseProxy
+    # assetVersion is the SHA-256 tree hash of ./static, computed once at
+    # startup. Versioned asset URLs (/static/v/<hash>/<path>) are cached
+    # immutably; any file change produces a new hash. Empty when hashing
+    # failed — the versioned route is not registered and the page is served
+    # unsubstituted, degrading to plain no-cache revalidation.
+    assetVersion: string
+    # rel path (forward slashes, relative to staticDir) -> file contents
+    # with every "/static/" reference rewritten to the versioned prefix.
+    # Only text assets are held in memory (~0.5 MB); binaries are served
+    # from disk at the versioned path.
+    rewrittenAssets: map of string to list of byte
+    # The index page with asset URLs rewritten to the versioned prefix.
+    indexHTML: list of byte
 
 func NewWebServer(config: WebServerConfig) (WebServer, error)
     target := url.Parse(config.gameServerUrl) onerr return WebServer{}, error "invalid GAME_SERVER_URL"
     proxy := httputil.NewSingleHostReverseProxy(target)
-    return WebServer{config: config, proxy: proxy}, empty
+    return WebServer{config: config, proxy: proxy, rewrittenAssets: empty map of string to list of byte}, empty
+
+func isTextAsset(name: string) bool
+    ext := strings.ToLower(filepath.Ext(name))
+    switch ext
+        when ".html", ".css", ".js", ".mjs", ".svg", ".json", ".txt", ".webmanifest", ".xml"
+            return true
+        default
+            return false
+
+func mimeForText(ext: string) string
+    switch strings.ToLower(ext)
+        when ".html"
+            return "text/html; charset=utf-8"
+        when ".css"
+            return "text/css; charset=utf-8"
+        when ".js", ".mjs"
+            return "text/javascript; charset=utf-8"
+        when ".svg"
+            return "image/svg+xml"
+        when ".json", ".webmanifest"
+            return "application/json"
+        default
+            return "text/plain; charset=utf-8"
+
+# Every asset reference in this project is a literal "/static/..." string
+# (see AGENTS.md — references must stay literal so this rewrite can find
+# them). Substituting once, from the original bytes at startup, cannot
+# double-apply.
+func substituteStaticUrls(content: string, version: string) string
+    return strings.ReplaceAll(content, "/static/", "/static/v/{version}/")
+
+func relSlashPath(staticDir: string, p: string) string
+    prefix := strings.TrimSuffix(filepath.ToSlash(filepath.Clean(staticDir)), "/") + "/"
+    return strings.TrimPrefix(filepath.ToSlash(p), prefix)
+
+func prepareStaticAssets on ws: reference WebServer
+    entries, err := files.ListRecursive(ws.config.staticDir)
+    if err isnt empty
+        log.Error("static assets: cannot list {ws.config.staticDir}: {err}")
+        return
+    entries = sortpkg.Strings(entries)
+    acc := ""
+    for p in entries
+        data, rerr := files.Read(p)
+        if rerr isnt empty
+            log.Error("static assets: cannot read {p}: {rerr}")
+            continue
+        acc = "{acc}{p}:{crypto.SHA256Hex(data)}\n"
+    ws.assetVersion = crypto.SHA256Hex(acc as list of byte)[:16]
+    rewritten := empty map of string to list of byte
+    substituted := 0
+    for p in entries
+        if not isTextAsset(p)
+            continue
+        text, rerr := files.ReadString(p)
+        if rerr isnt empty
+            log.Error("static assets: cannot read {p}: {rerr}")
+            continue
+        rel := relSlashPath(ws.config.staticDir, p)
+        rewritten[rel] = substituteStaticUrls(text, ws.assetVersion) as list of byte
+        substituted = substituted + 1
+    ws.rewrittenAssets = rewritten
+    html, herr := files.ReadString(ws.config.indexPath)
+    if herr isnt empty
+        log.Error("static assets: cannot read {ws.config.indexPath}: {herr}")
+        return
+    ws.indexHTML = substituteStaticUrls(html, ws.assetVersion) as list of byte
+    log.Info("Static asset version: {ws.assetVersion} ({substituted} substituted text assets)")
 
 func Start on ws: reference WebServer
+    ws.prepareStaticAssets()
+
     mux := http.NewServeMux()
     mux.Handle(`GET /{$}`, httphelper.Handler(ws.handleRoot))
+    if ws.assetVersion isnt empty
+        mux.Handle("GET /static/v/\{version\}/", httphelper.Handler(ws.handleVersionedStatic))
     mux.Handle("GET /static/", httphelper.Handler(ws.handleStatic))
     proxy := ws.proxy
     if proxy isnt empty
@@ -68,41 +157,82 @@ func Start on ws: reference WebServer
 
     receive from ch
 
-# Cache policy: every response this server sends is revalidated on each
-# page load. ServeFile sets Last-Modified, so repeat loads get cheap 304s
-# and fresh deploys propagate immediately — correct caching without URL
-# hashing while the web client has no build step.
-func setRevalidateCacheHeaders(response: httphelper.Response)
+func setCacheControl(response: httphelper.Response, value: string)
     raw := response.Raw()
-    raw.Header().Set("Cache-Control", "no-cache")
+    raw.Header().Set("Cache-Control", value)
+
+# HTML is no-store: it is the carrier for the content-hashed asset URLs, so
+# a fresh deploy rides the fresh HTML on every load. Versioned assets are
+# immutable forever (a file change is a new hash); unversioned assets
+# revalidate with cheap 304s and are only a fallback — the substituted page
+# never references them.
+func serveInlineAsset(response: httphelper.Response, request: httphelper.Request, name: string, data: list of byte, cacheControl: string, contentType: string)
+    raw := response.Raw()
+    raw.Header().Set("Content-Type", contentType)
+    setCacheControl(response, cacheControl)
+    http.ServeContent(raw, request.Raw(), name, time.Time{}, bytes.NewReader(data))
+
+func containRelPath(staticDir: string, rel: string) string
+    prefix := filepath.Clean(staticDir)
+    filePath := filepath.Join(prefix, filepath.FromSlash(rel))
+    filePath = filepath.Clean(filePath)
+    relPath, relErr := filepath.Rel(prefix, filePath)
+    if relErr isnt empty or relPath equals ".." or strings.HasPrefix(relPath, "../")
+        return ""
+    return filePath
+
+# Serve an asset by its static-directory-relative path (forward slashes).
+# Text assets come from the substituted in-memory copies; binaries come
+# from disk. The caller picks the cache policy (no-cache fallback vs
+# immutable versioned).
+func serveAsset on ws: reference WebServer(response: httphelper.Response, request: httphelper.Request, rel: string, cacheControl: string)
+    if rel in ws.rewrittenAssets
+        data := ws.rewrittenAssets[rel]
+        serveInlineAsset(response, request, rel, data, cacheControl, mimeForText(filepath.Ext(rel)))
+        return
+    filePath := containRelPath(ws.config.staticDir, rel)
+    if filePath is empty
+        response.JSONNotFound("not found") onerr discard
+        return
+    setCacheControl(response, cacheControl)
+    response.ServeFile(request, filePath)
 
 func handleRoot on ws: reference WebServer(response: httphelper.Response, request: httphelper.Request)
     response.SetSecureHeaders()
-    setRevalidateCacheHeaders(response)
+    if ws.indexHTML isnt empty
+        serveInlineAsset(
+            response,
+            request,
+            "index.html",
+            ws.indexHTML,
+            "no-store",
+            "text/html; charset=utf-8",
+        )
+        return
+    setCacheControl(response, "no-store")
     response.ServeFile(request, ws.config.indexPath)
 
-# Serve files from the static root, mirroring the game server's containment
-# check. The static directory is the only filesystem subtree this server
-# may touch.
+func handleVersionedStatic on ws: reference WebServer(response: httphelper.Response, request: httphelper.Request)
+    response.SetSecureHeaders()
+    # A stale hash must not serve under an immutable cache — 404 it; the
+    # fresh HTML carries the new hash.
+    if request.PathValue("version") isnt ws.assetVersion
+        response.JSONNotFound("not found") onerr discard
+        return
+    rel := strings.TrimPrefix(request.URL().Path, "/static/v/{ws.assetVersion}/")
+    ws.serveAsset(response, request, rel, "public, max-age=31536000, immutable")
+
+# Unversioned fallback (kept for any hardcoded reference): always
+# revalidates, never serves stale content.
 func handleStatic on ws: reference WebServer(response: httphelper.Response, request: httphelper.Request)
     response.SetSecureHeaders()
-    setRevalidateCacheHeaders(response)
     path := request.URL().Path
     # Strip the /static/ prefix the mux matched.
     if not strings.HasPrefix(path, "/static/")
         response.JSONNotFound("not found") onerr discard
         return
     rel := strings.TrimPrefix(path, "/static/")
-    prefix := filepath.Clean(ws.config.staticDir)
-    filePath := filepath.Join(prefix, rel)
-    filePath = filepath.Clean(filePath)
-
-    relPath, relErr := filepath.Rel(prefix, filePath)
-    if relErr isnt empty or relPath equals ".." or strings.HasPrefix(relPath, "../")
-        response.JSONNotFound("not found") onerr discard
-        return
-
-    response.ServeFile(request, filePath)
+    ws.serveAsset(response, request, rel, "no-cache")
 
 func main()
     config := WebServerConfigFromEnv()

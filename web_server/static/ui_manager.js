@@ -181,8 +181,11 @@ class UIManager {
     updateReadyButton(isReady) {
         const button = document.getElementById("ready-btn");
         if (button) {
-            button.textContent = isReady ? "Ready!" : "Ready?";
-            button.classList.toggle("ready", isReady);
+            const pressed = Boolean(isReady);
+            button.textContent = pressed ? "Ready!" : "Ready?";
+            button.classList.toggle("ready", pressed);
+            // .ready styles it; aria-pressed is what the a11y tree reads.
+            button.setAttribute("aria-pressed", String(pressed));
         }
     }
 

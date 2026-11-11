@@ -2,10 +2,13 @@
   "name": "race-to-the-crystal",
   "version": "0.0.0",
   "private": true,
-  "description": "Browser smoke tests for the web client. The game itself has no Node build — this exists solely for tools/smoke.",
+  "type": "module",
+  "description": "Browser smoke tests for the web client. The game itself has no Node build — this exists solely for tools/smoke and tests/js.",
   "scripts": {
     "smoke": "node tools/smoke/smoke.mjs",
-    "smoke:install": "playwright install chromium"
+    "smoke:install": "playwright install chromium",
+    "test:js": "node --test tests/js/",
+    "verify:tarball": "node tools/verify-tarball.mjs"
   },
   "devDependencies": {
     "playwright": "1.65.0"

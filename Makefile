@@ -1,4 +1,4 @@
-.PHONY: help check build clean-generated desktop desktop-run server server-run web-server web-server-run test test-verbose test-specific clean lint format learn learn-run learn-check learn-test smoke
+.PHONY: help check build clean-generated desktop desktop-run server server-run web-server web-server-run test test-verbose test-specific test-js clean lint format learn learn-run learn-check learn-test smoke
 
 help: ## Show this help message
 	@echo "Race to the Crystal - Available Commands:"
@@ -81,6 +81,9 @@ test-verbose: ## Run tests with verbose output
 test-specific: ## Run specific test (usage: make test-specific PKG=./game/...)
 	kukicha brew ./...
 	go test $(PKG)
+
+test-js: ## Run frontend JavaScript unit tests (node:test; no browser needed)
+	npm run test:js
 
 clean: ## Remove build artifacts and empty dirs
 	$(MAKE) clean-generated
