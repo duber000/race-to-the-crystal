@@ -163,8 +163,17 @@ class UIUtils {
           const errorMsg = typeof validationResult === "string" 
             ? validationResult 
             : "Validation failed";
-          // TODO: Show error to user
+          // Show the validation error to the user, mirroring showActionError's
+          // behaviour (role="alert", auto-remove after 3s).
           console.warn("Form validation failed:", errorMsg);
+          // Drop any stale error already shown in this form.
+          const stale = formSection.querySelector(".action-error");
+          if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
+          const errorEl = UIUtils.createErrorElement(errorMsg, "action");
+          formSection.appendChild(errorEl);
+          setTimeout(() => {
+            if (errorEl.parentNode) errorEl.parentNode.removeChild(errorEl);
+          }, 3000);
           return;
         }
       }
