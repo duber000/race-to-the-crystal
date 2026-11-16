@@ -5,11 +5,11 @@ go 1.27.4
 require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/ncruces/go-sqlite3 v0.37.0
-	github.com/yuin/goldmark/v2 v2.1.15
+	github.com/yuin/goldmark/v2 v2.1.16
+	go.yaml.in/yaml/v4 v4.0.0
 	golang.org/x/sys v0.49.0
 	golang.org/x/term v0.47.0
 	golang.org/x/text v0.43.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

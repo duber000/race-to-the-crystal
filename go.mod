@@ -6,7 +6,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hajimehoshi/bitmapfont/v4 v4.2.0
 	github.com/hajimehoshi/ebiten/v2 v2.10.5
-	kukicha.org/stdlib v0.86.9
+	kukicha.org/stdlib v0.86.10
 )
 
 require (
@@ -21,6 +21,7 @@ require (
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
+	go.yaml.in/yaml/v4 v4.0.0 // indirect
 	golang.org/x/image v0.45.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
@@ -28,7 +29,6 @@ require (
 	golang.org/x/term v0.47.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace kukicha.org/stdlib => ./.kukicha/stdlib

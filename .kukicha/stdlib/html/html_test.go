@@ -180,6 +180,50 @@ func TestBoolAttr(t *testing.T) {
 	})
 }
 
+// --- TestAttr ---
+func TestAttr(t *testing.T) {
+	t.Run("yields a leading-space quoted attribute", func(t *testing.T) {
+		f := html.Attr("commandfor", "confirm-dialog")
+		test.AssertEqual(t, html.Embed(f), " commandfor=\"confirm-dialog\"")
+	})
+	t.Run("empty value is a valid empty attribute", func(t *testing.T) {
+		test.AssertEqual(t, html.Embed(html.Attr("value", "")), " value=\"\"")
+	})
+	t.Run("escapes the value, never the name", func(t *testing.T) {
+		test.AssertEqual(t, html.Embed(html.Attr("data-note", "a\"b<c&d")), " data-note=\"a&#34;b&lt;c&amp;d\"")
+	})
+	t.Run("punctuation is permitted in names", func(t *testing.T) {
+		test.AssertEqual(t, html.Embed(html.Attr("data-x:y.z", "v")), " data-x:y.z=\"v\"")
+	})
+	t.Run("on* handler name panics", func(t *testing.T) {
+		test.AssertPanicsMessage(t, "onclick rejected", "event-handler", func() {
+			html.Attr("onclick", "alert(1)")
+		})
+	})
+	t.Run("invalid character panics", func(t *testing.T) {
+		test.AssertPanicsMessage(t, "space rejected", "invalid character", func() {
+			html.Attr("commandfor onload", "x")
+		})
+	})
+	t.Run("empty name panics", func(t *testing.T) {
+		test.AssertPanicsMessage(t, "empty rejected", "must not be empty", func() {
+			html.Attr("", "x")
+		})
+	})
+}
+
+// --- TestAttrInRender ---
+func TestAttrInRender(t *testing.T) {
+	t.Run("inlines the declarative-invoker pair after the tag name", func(t *testing.T) {
+		page := html.Render(fmt.Sprintf("<button type=\"button\"%v command=\"show-modal\">Open</button>", html.Embed(html.Attr("commandfor", "confirm-dialog"))))
+		test.AssertEqual(t, html.Embed(page), "<button type=\"button\" commandfor=\"confirm-dialog\" command=\"show-modal\">Open</button>")
+	})
+	t.Run("value escaping survives interpolation into the sink", func(t *testing.T) {
+		page := html.Render(fmt.Sprintf("<div%v>x</div>", html.Embed(html.Attr("data-x", "<b>"))))
+		test.AssertEqual(t, html.Embed(page), "<div data-x=\"&lt;b&gt;\">x</div>")
+	})
+}
+
 // --- TestBoolAttrInRender ---
 func TestBoolAttrInRender(t *testing.T) {
 	t.Run("inlines right after the tag name without a double space", func(t *testing.T) {
@@ -252,12 +296,12 @@ func TestBuilder(t *testing.T) {
 		b := html.NewBuilder()
 		for _, link := range links {
 			if link.dialogFor != "" {
-				b.Add(html.Render(fmt.Sprintf("<button commandfor=\"%v\">%v</button>", html.Escape(link.dialogFor), html.Escape(link.label))))
+				b.Add(html.Render(fmt.Sprintf("<button type=\"button\"%v>%v</button>", html.Embed(html.Attr("commandfor", link.dialogFor)), html.Escape(link.label))))
 			} else {
 				b.Add(html.Render(fmt.Sprintf("<a href=\"/docs\">%v</a>", html.Escape(link.label))))
 			}
 		}
-		test.AssertEqual(t, html.Embed(b.Fragment()), "<button commandfor=\"modal\">Open</button><a href=\"/docs\">Docs</a>")
+		test.AssertEqual(t, html.Embed(b.Fragment()), "<button type=\"button\" commandfor=\"modal\">Open</button><a href=\"/docs\">Docs</a>")
 	})
 }
 

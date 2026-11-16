@@ -494,6 +494,87 @@ func TestParseResult(t *testing.T) {
 	})
 }
 
+// An app with subcommands but no root action has no use for a bare token:
+// it must surface as Invalid ("unknown subcommand: …" → reason + help on
+// stderr, exit 2), not as a silent root help on stdout with exit 0.
+func TestUnknownSubcommandIsInvalid(t *testing.T) {
+	listCmd := cli.NewCommand("list", "List items").Action(handler)
+	app := cli.WithCommands(cli.New("myapp"), listCmd)
+	t.Run("bare token is unknown subcommand", func(t *testing.T) {
+		outcome := cli.Parse(app, []string{"myapp", "nonsense"})
+		if bad, _isOk := outcome.(cli.Invalid); _isOk {
+			if kukistring.Contains(bad.Reason, "unknown subcommand: nonsense") {
+				return
+			}
+			t.Errorf("unexpected reason: %v", bad.Reason)
+			return
+		}
+		t.Error("expected Invalid for unknown subcommand")
+	})
+	t.Run("bare token after global flag is unknown subcommand", func(t *testing.T) {
+		gapp := cli.WithCommands(cli.BoolGlobalFlag(cli.New("myapp"), "verbose", "Enable verbose output", false), listCmd)
+		outcome := cli.Parse(gapp, []string{"myapp", "--verbose", "nonsense"})
+		if bad, _isOk := outcome.(cli.Invalid); _isOk {
+			if kukistring.Contains(bad.Reason, "unknown subcommand: nonsense") {
+				return
+			}
+			t.Errorf("unexpected reason: %v", bad.Reason)
+			return
+		}
+		t.Error("expected Invalid for unknown subcommand after global flag")
+	})
+	t.Run("bare token after root flag is unknown subcommand", func(t *testing.T) {
+		fapp := cli.WithCommands(cli.BoolFlag(cli.New("myapp"), "verbose", "Enable verbose output", false), listCmd)
+		outcome := cli.Parse(fapp, []string{"myapp", "--verbose", "nonsense"})
+		if bad, _isOk := outcome.(cli.Invalid); _isOk {
+			if kukistring.Contains(bad.Reason, "unknown subcommand: nonsense") {
+				return
+			}
+			t.Errorf("unexpected reason: %v", bad.Reason)
+			return
+		}
+		t.Error("expected Invalid for unknown subcommand after root flag")
+	})
+	t.Run("no token still prints root help", func(t *testing.T) {
+		outcome := cli.Parse(app, []string{"myapp"})
+		if h, _isOk := outcome.(cli.ShowHelp); _isOk {
+			test.AssertTrue(t, h.Root)
+			return
+		}
+		t.Error("expected ShowHelp root for bare invocation")
+	})
+	t.Run("root action still takes bare token as positional", func(t *testing.T) {
+		racc := cli.WithCommands(cli.Action(cli.Arg(cli.New("myapp"), "file", "input file"), handler), listCmd)
+		outcome := cli.Parse(racc, []string{"myapp", "input.txt"})
+		if ex, _isOk := outcome.(cli.Execute); _isOk {
+			test.AssertEqual(t, cli.GetString(ex.Args, "file"), "input.txt")
+			return
+		}
+		t.Error("expected Execute for root action with positional")
+	})
+}
+
+// TestRun_UnknownSubcommandExitsTwo pins the process-level contract of #438:
+// Run funnels an unknown subcommand through the usage-error lane (stderr +
+// exit 2), intercepted here through the SetExitFunc seam.
+func TestRun_UnknownSubcommandExitsTwo(t *testing.T) {
+	cli.SetExitFunc(func(code int) {
+		exited = code
+	})
+	t.Cleanup(func() {
+		cli.SetExitFunc(nil)
+	})
+	oldArgs := os.Args
+	os.Args = []string{"myapp", "nonsense"}
+	t.Cleanup(func() {
+		os.Args = oldArgs
+	})
+	listCmd := cli.NewCommand("list", "List items").Action(handler)
+	app := cli.WithCommands(cli.New("myapp"), listCmd)
+	cli.Run(app)
+	test.AssertEqual(t, exited, 2)
+}
+
 func TestParseBareProgramNameWithRequiredFlag(t *testing.T) {
 	app := cli.RequiredFlag(cli.New("myapp"), "config", "Config file path")
 	outcome := cli.Parse(app, []string{"myapp"})

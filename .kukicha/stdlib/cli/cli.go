@@ -761,7 +761,9 @@ func firstMissingRequiredFlag(values map[string]string, flagLists ...[]FlagDef) 
 // Parse classifies an argv slice (including the program name at index 0)
 // without executing anything. This is the pure core of Run: help requests,
 // version requests, dispatch targets, validation failures, and root
-// fallbacks all come back as explicit outcomes.
+// fallbacks all come back as explicit outcomes. An app with subcommands but
+// no root action treats a bare non-flag token as Invalid ("unknown
+// subcommand: …") — the usage-error lane (exit 2) — not as root help.
 func Parse(app *Command, args []string) ParseResult {
 	if len(args) < 2 {
 		values := defaultValues(app, nil)
@@ -830,6 +832,12 @@ func Parse(app *Command, args []string) ParseResult {
 	allFlagDefs := []FlagDef{}
 	allFlagDefs = append(allFlagDefs, app.GlobalFlags...)
 	allFlagDefs = append(allFlagDefs, app.Flags...)
+	if (rootActionE == nil) && (rootAction == nil) && len(app.Subcommands) != 0 {
+		bare := firstBareToken(args, 1, allFlagDefs)
+		if len(bare) != 0 {
+			return Invalid{Reason: fmt.Sprintf("unknown subcommand: %v", bare)}
+		}
+	}
 	restMap := map[string][]string{}
 	rootUnknown := parseFlagsAndPositionals(args, 1, values, setMap, restMap, positionalNames, allFlagDefs, app.RestArgName)
 	if len(rootUnknown) != 0 {
@@ -953,6 +961,59 @@ func applyEnvDefaults(app *Command, leaf *Command, values map[string]string, set
 			}
 		}
 	}
+}
+
+// firstBareToken returns the first non-flag token in args[start:], skipping
+// known flags and their values with the same consumption rules as
+// parseFlagsAndPositionals (bool flags take no value; int flags consume the
+// next token unconditionally; string flags consume it only when it does not
+// start with '-'; --name=value forms take one token). Unknown flags are
+// skipped as flags — parseFlagsAndPositionals reports them. Returns empty
+// when every token is a flag.
+func firstBareToken(args []string, start int, flagDefs []FlagDef) string {
+	aliasMap := map[string]string{}
+	kindMap := map[string]FlagKind{}
+	known := map[string]bool{}
+	for _, f := range flagDefs {
+		known[f.Name] = true
+		kindMap[f.Name] = f.Kind
+		for _, a := range f.Aliases {
+			aliasMap[a] = f.Name
+			known[a] = true
+		}
+	}
+	i := start
+	for i < len(args) {
+		arg := args[i]
+		if !kukistring.HasPrefix(arg, "-") {
+			return arg
+		}
+		if kukistring.Contains(arg, "=") {
+			i += 1
+			continue
+		}
+		name := kukistring.TrimPrefix(arg, "--")
+		name = kukistring.TrimPrefix(name, "-")
+		canonical := kukistring.Or(aliasMap[name], name)
+		if !known[canonical] {
+			i += 1
+			continue
+		}
+		if kindMap[canonical] == FlagKindBool {
+			i += 1
+		} else if kindMap[canonical] != FlagKindString {
+			if i+1 < len(args) {
+				i += 2
+			} else {
+				i += 1
+			}
+		} else if i+1 < len(args) && !kukistring.HasPrefix(args[i+1], "-") {
+			i += 2
+		} else {
+			i += 1
+		}
+	}
+	return ""
 }
 
 // parseFlagsAndPositionals walks args[start:] populating values with parsed flags

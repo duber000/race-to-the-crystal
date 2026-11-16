@@ -1416,7 +1416,7 @@ func TestVectorPackUnpack(t *testing.T) {
 
 // --- TestZeroValuePoolReturnsError ---
 func TestZeroValuePoolReturnsError(t *testing.T) {
-	pool := db.Pool{}
+	var pool db.Pool
 	check := func(label string, err error) {
 		t.Run(label, func(t *testing.T) {
 			test.AssertError(t, err)

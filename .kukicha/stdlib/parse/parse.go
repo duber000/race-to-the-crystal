@@ -13,7 +13,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
+	yaml "go.yaml.in/yaml/v4"
 	"kukicha.org/stdlib/datetime"
 	"kukicha.org/stdlib/json"
 	"kukicha.org/stdlib/maps"

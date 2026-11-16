@@ -151,6 +151,28 @@ func TestSafeRedirect(t *testing.T) {
 	}
 }
 
+// assertSecureHeaders pins the full header set shared by the SecureHeaders
+// middleware and Response.SetSecureHeaders, including every CSP directive.
+func assertSecureHeaders(t *testing.T, h http.Header, source string) {
+	xcto := h.Get("X-Content-Type-Options")
+	if xcto != "nosniff" {
+		t.Errorf("%v: X-Content-Type-Options = %v, want nosniff", source, xcto)
+	}
+	frame := h.Get("X-Frame-Options")
+	if frame != "DENY" {
+		t.Errorf("%v: X-Frame-Options = %v, want DENY", source, frame)
+	}
+	referrer := h.Get("Referrer-Policy")
+	if referrer != "strict-origin-when-cross-origin" {
+		t.Errorf("%v: Referrer-Policy = %v, want strict-origin-when-cross-origin", source, referrer)
+	}
+	expectedCSP := "default-src 'self'; base-uri 'none'; object-src 'none'"
+	csp := h.Get("Content-Security-Policy")
+	if csp != expectedCSP {
+		t.Errorf("%v: Content-Security-Policy = %v, want %v", source, csp, expectedCSP)
+	}
+}
+
 // Test Method helpers and secure headers
 func TestMethodAndSecurityHelpers(t *testing.T) {
 	req := httptest.NewRequest("POST", "/", nil)
@@ -165,9 +187,13 @@ func TestMethodAndSecurityHelpers(t *testing.T) {
 		res.SetSecureHeaders()
 	})
 	secHandler.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
-	if rec.Header().Get("X-Content-Type-Options") != "nosniff" {
-		t.Errorf("Expected secure headers to be set")
-	}
+	assertSecureHeaders(t, rec.Header(), "Response.SetSecureHeaders")
+	middlewareRec := httptest.NewRecorder()
+	secured := httphelper.SecureHeaders(http.HandlerFunc(func(w http.ResponseWriter, _r *http.Request) {
+		w.WriteHeader(200)
+	}))
+	secured.ServeHTTP(middlewareRec, httptest.NewRequest("GET", "/", nil))
+	assertSecureHeaders(t, middlewareRec.Header(), "SecureHeaders")
 	rec2 := httptest.NewRecorder()
 	mnaHandler := httphelper.Handler(func(res httphelper.Response, _req httphelper.Request) {
 		res.MethodNotAllowed("GET", "POST")
@@ -492,10 +518,11 @@ func recoverSetterPanic(t *testing.T, label string) {
 	}
 }
 
-// The all-zero ServerOpts literal is the unsafe default; ServeWith must reject
+// The all-zero ServerOpts value is the unsafe default; ServeWith must reject
 // it instead of binding a no-timeout server.
 func TestServeWithRejectsZeroValueServerOpts(t *testing.T) {
-	expectServeWithRejects(t, "ServerOpts{} literal", httphelper.ServerOpts{})
+	var zeroOpts httphelper.ServerOpts
+	expectServeWithRejects(t, "zero-value ServerOpts", zeroOpts)
 }
 
 // A ServerOpts built only via setters that all opt out (zero each timeout) is

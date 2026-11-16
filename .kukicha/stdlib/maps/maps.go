@@ -8,14 +8,20 @@
 package maps
 
 import (
+	"bytes"
 	"cmp"
-	"errors"
+	"encoding"
+	"encoding/json/jsontext"
+	jsonv2 "encoding/json/v2"
+	goerrors "errors"
 	"fmt"
 	"iter"
 	"kukicha.org/stdlib/cast"
+	"kukicha.org/stdlib/errors"
 	gomaps "maps"
 	"reflect"
 	"slices"
+	"strconv"
 )
 
 // Keys returns a list of all keys in the map
@@ -169,7 +175,7 @@ func Invert[K comparable, V comparable](m map[K]V) map[V]K {
 // Supports map of string to any, map of any to any, and any map type via reflection.
 func AsMap(v any) (map[string]any, error) {
 	if v == nil || cast.IsNil(v) {
-		return nil, errors.New("value is nil")
+		return nil, goerrors.New("value is nil")
 	}
 	switch m := v.(type) {
 	case map[string]any:
@@ -189,7 +195,7 @@ func AsMap(v any) (map[string]any, error) {
 		}
 		return result, nil
 	}
-	return nil, errors.New("cannot convert to map")
+	return nil, goerrors.New("cannot convert to map")
 }
 
 // AsMapOr converts an untyped value to a map of string to any, or returns defaultValue on failure.
@@ -205,7 +211,7 @@ func AsMapOr(v any, defaultValue map[string]any) map[string]any {
 // Supports list of any, as well as slices or arrays of any element type.
 func AsList(v any) ([]any, error) {
 	if v == nil || cast.IsNil(v) {
-		return []any{}, errors.New("value is nil")
+		return []any{}, goerrors.New("value is nil")
 	}
 	if arr, _isOk := v.([]any); _isOk {
 		return arr, nil
@@ -220,7 +226,7 @@ func AsList(v any) ([]any, error) {
 		}
 		return result, nil
 	}
-	return []any{}, errors.New("cannot convert to list")
+	return []any{}, goerrors.New("cannot convert to list")
 }
 
 // AsListOr converts an untyped value to a list of any, or returns defaultValue on failure.
@@ -470,4 +476,428 @@ func (m FrozenMap[K, V]) All() iter.Seq2[K, V] {
 			}
 		}
 	}
+}
+
+// Entry is one key-value pair in an OrderedMap. Fields are exported so callers
+// can build entries for OrderedFrom/OrderedOf.
+type Entry[K any, V any] struct {
+	Key   K
+	Value V
+}
+
+// orderedState is the shared insertion-order backing store. Unexported so an
+// OrderedMap handle can only be mutated through its mutating methods
+// (Set, Delete, UnmarshalJSON).
+type orderedState[K comparable, V any] struct {
+	index   map[K]int
+	entries []Entry[K, V]
+}
+
+// newOrderedState allocates an empty insertion-order backing store.
+// UnmarshalJSON initializes through it directly rather than relying on Set:
+// Set takes the handle by value, so a first Set on a zero-value handle would
+// attach the fresh state to the receiver copy and silently drop every entry
+// decoded after it.
+func newOrderedState[K comparable, V any]() *orderedState[K, V] {
+	st := orderedState[K, V]{index: map[K]int{}, entries: []Entry[K, V]{}}
+	return &st
+}
+
+// OrderedMap is an insertion-ordered map handle. A zero-value OrderedMap{} is
+// safe to read (Get/Len/Keys return zero values) and Set initializes it, but
+// because the zero value has no state yet, bind the result of that first Set:
+//
+//	var om: maps.OrderedMap of string and int
+//	om = om.Set("k", 1)
+type OrderedMap[K comparable, V any] struct {
+	state *orderedState[K, V]
+	// guard is never set; its function type makes OrderedMap non-comparable.
+	// `equals` on two handles would compare backing identity rather than
+	// contents — a silent-wrong-data trap — so the compiler rejects it instead.
+	guard func()
+}
+
+// NewOrdered returns an empty OrderedMap ready for Set/Delete.
+func NewOrdered[K comparable, V any]() OrderedMap[K, V] {
+	return OrderedMap[K, V]{state: newOrderedState[K, V]()}
+}
+
+// Pair builds one Entry for OrderedFrom/OrderedOf. Both fields are inferred.
+// Example: maps.Pair("build", 120)
+func Pair[K any, V any](key K, value V) Entry[K, V] {
+	return Entry[K, V]{Key: key, Value: value}
+}
+
+// OrderedFrom builds an OrderedMap from a list of entries in list order.
+// Duplicate keys keep their first-seen position and take the last value,
+// matching Python's dict(list-of-pairs) semantics.
+func OrderedFrom[K comparable, V any](entries []Entry[K, V]) OrderedMap[K, V] {
+	result := NewOrdered[K, V]()
+	for _, entry := range entries {
+		result = result.Set(entry.Key, entry.Value)
+	}
+	return result
+}
+
+// OrderedOf builds an OrderedMap from variadic Pair entries with full type
+// inference at the call site.
+// Example: maps.OrderedOf(maps.Pair("a", 1), maps.Pair("b", 2))
+func OrderedOf[K comparable, V any](entries ...Entry[K, V]) OrderedMap[K, V] {
+	return OrderedFrom[K, V](entries)
+}
+
+// Get returns the value associated with k and true, or zero-value and false if
+// k is absent.
+func (m OrderedMap[K, V]) Get(k K) (V, bool) {
+	if m.state == nil {
+		var _zero0 V
+		return _zero0, false
+	}
+	idx, exists := m.state.index[k]
+	if !exists {
+		var _zero0 V
+		return _zero0, false
+	}
+	return m.state.entries[idx].Value, true
+}
+
+// GetOr returns the value associated with k, or defaultValue if k is absent.
+func (m OrderedMap[K, V]) GetOr(k K, defaultValue V) V {
+	value, exists := m.Get(k)
+	if !exists {
+		return defaultValue
+	}
+	return value
+}
+
+// Contains returns true if k exists in the ordered map.
+func (m OrderedMap[K, V]) Contains(k K) bool {
+	if m.state == nil {
+		return false
+	}
+	_, exists := m.state.index[k]
+	return exists
+}
+
+// Len returns the number of key-value pairs.
+func (m OrderedMap[K, V]) Len() int {
+	if m.state == nil {
+		return 0
+	}
+	return len(m.state.entries)
+}
+
+// IsEmpty returns true if the ordered map has no key-value pairs.
+func (m OrderedMap[K, V]) IsEmpty() bool {
+	return m.Len() == 0
+}
+
+// Set inserts or updates k. A new key appends to insertion order; an existing
+// key updates its value in place. Mutates in place and returns the handle for
+// fluent chains. On a zero-value map, bind the result to keep the new state.
+func (m OrderedMap[K, V]) Set(k K, v V) OrderedMap[K, V] {
+	if m.state == nil {
+		st := orderedState[K, V]{index: map[K]int{k: 0}, entries: []Entry[K, V]{Entry[K, V]{Key: k, Value: v}}}
+		m.state = &st
+		return m
+	}
+	idx, exists := m.state.index[k]
+	if exists {
+		m.state.entries[idx].Value = v
+		return m
+	}
+	m.state.index[k] = len(m.state.entries)
+	m.state.entries = append(m.state.entries, Entry[K, V]{Key: k, Value: v})
+	return m
+}
+
+// Delete removes k from insertion order. No-op if k is absent or the map is
+// uninitialized. Re-inserting a deleted key later appends it at the end.
+func (m OrderedMap[K, V]) Delete(k K) OrderedMap[K, V] {
+	if m.state == nil {
+		return m
+	}
+	idx, exists := m.state.index[k]
+	if !exists {
+		return m
+	}
+	delete(m.state.index, k)
+	m.state.entries = append(m.state.entries[:idx], m.state.entries[idx+1:]...)
+	{
+		_iStart, _iEnd := idx, len(m.state.entries)
+		_iStep := _iStart + 1 - _iStart
+		if _iStart > _iEnd {
+			_iStep = -_iStep
+		}
+		for i := _iStart; i != _iEnd; i += _iStep {
+			m.state.index[m.state.entries[i].Key] = i
+		}
+	}
+	return m
+}
+
+// Clone deep-copies the index and entry list into fresh state, so later
+// mutations to either map are isolated. Values themselves are shallow-copied.
+func (m OrderedMap[K, V]) Clone() OrderedMap[K, V] {
+	result := NewOrdered[K, V]()
+	for _, entry := range m.Entries() {
+		result = result.Set(entry.Key, entry.Value)
+	}
+	return result
+}
+
+// Keys returns the keys in insertion order.
+func (m OrderedMap[K, V]) Keys() []K {
+	keys := make([]K, 0, m.Len())
+	for _, entry := range m.Entries() {
+		keys = append(keys, entry.Key)
+	}
+	return keys
+}
+
+// Values returns the values in insertion order.
+func (m OrderedMap[K, V]) Values() []V {
+	values := make([]V, 0, m.Len())
+	for _, entry := range m.Entries() {
+		values = append(values, entry.Value)
+	}
+	return values
+}
+
+// Entries returns a defensive copy of the key-value pairs in insertion order.
+// Mutating the returned list never changes the map.
+func (m OrderedMap[K, V]) Entries() []Entry[K, V] {
+	if m.state == nil {
+		return []Entry[K, V]{}
+	}
+	return slices.Clone(m.state.entries)
+}
+
+// All returns an iterator yielding (key, value) pairs in insertion order. The
+// sequence is a snapshot taken when All is called, so deleting or inserting
+// during iteration cannot panic with an out-of-range index.
+func (m OrderedMap[K, V]) All() iter.Seq2[K, V] {
+	entries := m.Entries()
+	return func(yield func(K, V) bool) {
+		for _, entry := range entries {
+			if !yield(entry.Key, entry.Value) {
+				return
+			}
+		}
+	}
+}
+
+// ToMap returns a plain map containing the same pairs. Useful at Go interop
+// boundaries; the result does not preserve order.
+func (m OrderedMap[K, V]) ToMap() map[K]V {
+	result := make(map[K]V, m.Len())
+	for _, entry := range m.Entries() {
+		result[entry.Key] = entry.Value
+	}
+	return result
+}
+
+// ToFrozen returns a read-only FrozenMap snapshot of the same pairs.
+func (m OrderedMap[K, V]) ToFrozen() FrozenMap[K, V] {
+	return Freeze[K, V](m.ToMap())
+}
+
+// MarshalJSON encodes the ordered map as a JSON object whose keys appear in
+// insertion order. Keys follow encoding/json/v2's map-key rules (the engine
+// stdlib/json uses): encoding.TextMarshaler keys render through MarshalText;
+// other keys must be strings, integers, or booleans and render canonically.
+// An empty or zero-value OrderedMap encodes as {}.
+func (m OrderedMap[K, V]) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	buf.WriteString("{")
+	first := true
+	for _, entry := range m.Entries() {
+		key, err := orderedKeyString(entry.Key)
+		if err != nil {
+			return nil, err
+		}
+		keyJSON, kerr := jsonv2.Marshal(key)
+		if kerr != nil {
+			return nil, errors.Wrap(kerr, fmt.Sprintf("maps.OrderedMap: object key '%v'", key))
+		}
+		valueJSON, verr := jsonv2.Marshal(entry.Value)
+		if verr != nil {
+			return nil, errors.Wrap(verr, fmt.Sprintf("maps.OrderedMap: value for key '%v'", key))
+		}
+		if !first {
+			buf.WriteString(",")
+		}
+		first = false
+		buf.Write(keyJSON)
+		buf.WriteString(":")
+		buf.Write(valueJSON)
+	}
+	buf.WriteString("}")
+	return buf.Bytes(), nil
+}
+
+// UnmarshalJSON decodes a JSON object in wire order into the ordered map,
+// merging into existing state (existing keys keep their position; new keys
+// append). Keys follow encoding/json/v2's map-key rules: TextUnmarshaler keys
+// receive the raw member text; boolean keys must be exactly true or false;
+// integer keys must be canonical decimal within the key type's range.
+// Duplicate member names within one object are rejected like encoding/json/v2
+// map decoding — including names that alias to the same key ("0" and "-0", or
+// two names a TextUnmarshaler maps to one key), which a silent merge would
+// collapse.
+func (m *OrderedMap[K, V]) UnmarshalJSON(data []byte) error {
+	dec := jsontext.NewDecoder(bytes.NewReader(data))
+	tok, err := dec.ReadToken()
+	if err != nil {
+		return err
+	}
+	if tok.Kind() != jsontext.KindBeginObject {
+		return goerrors.New("maps.OrderedMap: JSON value must be an object")
+	}
+	if m.state == nil {
+		m.state = newOrderedState[K, V]()
+	}
+	seen := map[K]bool{}
+	for dec.PeekKind() != jsontext.KindEndObject {
+		keyTok, rerr := dec.ReadToken()
+		if rerr != nil {
+			return rerr
+		}
+		keyText := keyTok.String()
+		keyBytes, kerr := orderedKeyJSON[K](keyText)
+		if kerr != nil {
+			return kerr
+		}
+		var key K
+		if uerr := jsonv2.Unmarshal(keyBytes, &key); uerr != nil {
+			return errors.Wrap(uerr, fmt.Sprintf("maps.OrderedMap: object key '%v'", keyText))
+		}
+		if _, ok_1 := seen[key]; ok_1 {
+			return fmt.Errorf("maps.OrderedMap: duplicate object member name '%v'", keyText)
+		}
+		seen[key] = true
+		var value V
+		if derr := jsonv2.UnmarshalDecode(dec, &value); derr != nil {
+			return errors.Wrap(derr, fmt.Sprintf("maps.OrderedMap: value for key '%v'", keyText))
+		}
+		m.Set(key, value)
+	}
+	_, err_2 := dec.ReadToken()
+	if err_2 != nil {
+		return err_2
+	}
+	return nil
+}
+
+// orderedKeyString renders a map key as the unquoted text a JSON object name
+// needs. TextMarshaler keys render through MarshalText, matching
+// encoding/json/v2's map-key precedence; plain primitive kinds render
+// canonically (booleans as true/false, integers as decimal).
+func orderedKeyString(key any) (string, error) {
+	if tm, _isOk := key.(encoding.TextMarshaler); _isOk {
+		text, err := tm.MarshalText()
+		if err != nil {
+			return "", errors.Wrap(err, fmt.Sprintf("maps.OrderedMap: object key '%v'", key))
+		}
+		return string(text), nil
+	}
+	rv := reflect.ValueOf(key)
+	switch rv.Kind() {
+	case reflect.String:
+		return rv.String(), nil
+	case reflect.Bool:
+		return strconv.FormatBool(rv.Bool()), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(rv.Int(), 10), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return strconv.FormatUint(rv.Uint(), 10), nil
+	}
+	return "", goerrors.New("maps.OrderedMap: JSON object keys must be strings, integers, booleans, or encoding.TextMarshaler values")
+}
+
+// orderedKeyJSON validates a decoded object name against the JSON key grammar
+// Go's map decoding accepts for K's kind and renders the JSON text K's own
+// decoder consumes. Keys whose type implements encoding.TextUnmarshaler
+// receive the raw member text, matching encoding/json/v2; boolean keys must
+// be exactly true or false; integer keys must be canonical decimal within
+// K's range.
+func orderedKeyJSON[K comparable](text string) ([]byte, error) {
+	kt := reflect.TypeFor[K]()
+	if reflect.PointerTo(kt).Implements(reflect.TypeFor[encoding.TextUnmarshaler]()) {
+		return jsonv2.Marshal(text)
+	}
+	switch kt.Kind() {
+	case reflect.String:
+		return jsonv2.Marshal(text)
+	case reflect.Bool:
+		if text == "true" || text == "false" {
+			return []byte(text), nil
+		}
+		return nil, fmt.Errorf("maps.OrderedMap: invalid JSON boolean object key '%v'", text)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		value, err := parseJSONIntKey(text, kt.Bits())
+		if err != nil {
+			return nil, fmt.Errorf("maps.OrderedMap: invalid JSON integer object key '%v'", text)
+		}
+		return []byte(strconv.FormatInt(value, 10)), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		value, err := parseJSONUintKey(text, kt.Bits())
+		if err != nil {
+			return nil, fmt.Errorf("maps.OrderedMap: invalid JSON unsigned integer object key '%v'", text)
+		}
+		return []byte(strconv.FormatUint(value, 10)), nil
+	}
+	return jsonv2.Marshal(text)
+}
+
+// canonicalDigitsOK reports whether digits is a non-empty run of ASCII
+// decimal digits with no leading zero (unless the number is exactly "0") —
+// the canonical JSON integer grammar encoding/json/v2 accepts for map keys.
+// parseJSONIntKey passes the digits after stripping an optional leading '-'.
+func canonicalDigitsOK(digits string) bool {
+	if len(digits) == 0 {
+		return false
+	}
+	if len(digits) > 1 && digits[0] == '0' {
+		return false
+	}
+	for i := range len(digits) {
+		if digits[i] < '0' || digits[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// parseJSONIntKey validates text against the canonical JSON integer grammar
+// Go's map decoding accepts (optional leading '-', then decimal digits — no
+// '+', no leading zeros, no trailing junk; "-0" is legal) and parses it
+// within bits, so out-of-range names fail like Go's own decoder.
+func parseJSONIntKey(text string, bits int) (int64, error) {
+	digits := text
+	if len(text) != 0 && text[0] == '-' {
+		digits = text[1:]
+	}
+	if !canonicalDigitsOK(digits) {
+		return 0, goerrors.New("invalid syntax")
+	}
+	value, err := strconv.ParseInt(text, 10, bits)
+	if err != nil {
+		return 0, err
+	}
+	return value, nil
+}
+
+// parseJSONUintKey validates text against the canonical JSON unsigned-integer
+// grammar Go's map decoding accepts (decimal digits, no sign, no leading
+// zeros) and parses it within bits.
+func parseJSONUintKey(text string, bits int) (uint64, error) {
+	if !canonicalDigitsOK(text) {
+		return 0, goerrors.New("invalid syntax")
+	}
+	value, err := strconv.ParseUint(text, 10, bits)
+	if err != nil {
+		return 0, err
+	}
+	return value, nil
 }

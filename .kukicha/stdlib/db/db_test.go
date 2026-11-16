@@ -637,10 +637,10 @@ func TestScanAcronymFields(t *testing.T) {
 // serverDeps{cfg: cfg} omitting pool) must return a clean error that composes
 // with onerr instead of nil-deref panicking.
 func TestZeroValueHandlesReturnError(t *testing.T) {
-	zeroPool := db.Pool{}
-	zeroRow := db.Row{}
-	zeroRows := db.Rows{}
-	zeroTx := db.Tx{}
+	var zeroPool db.Pool
+	var zeroRow db.Row
+	var zeroRows db.Rows
+	var zeroTx db.Tx
 	h := ctxpkg.Background()
 	_, qErr := db.Query(zeroPool, "SELECT 1")
 	test.AssertError(t, qErr)

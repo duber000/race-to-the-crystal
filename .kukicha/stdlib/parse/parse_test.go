@@ -335,6 +335,27 @@ func TestYAML(t *testing.T) {
 	})
 }
 
+// --- TestWriteYAML byte parity ---
+type YAMLInner struct {
+	Label string `json:"label"`
+	Count int    `json:"count"`
+}
+
+type YAMLOuter struct {
+	Name  string         `json:"name"`
+	Inner YAMLInner      `json:"inner"`
+	Tags  []string       `json:"tags"`
+	Items map[string]int `json:"items"`
+}
+
+func TestWriteYAMLByteParity(t *testing.T) {
+	value := YAMLOuter{Name: "demo", Inner: YAMLInner{Label: "nested", Count: 2}, Tags: []string{"alpha", "beta"}, Items: map[string]int{"zebra": 1, "alpha": 2}}
+	out, err := parse.WriteYAML(value)
+	test.AssertNoError(t, err)
+	want := "name: demo\ninner:\n    label: nested\n    count: 2\ntags:\n    - alpha\n    - beta\nitems:\n    alpha: 2\n    zebra: 1\n"
+	test.AssertEqual(t, out, want)
+}
+
 // --- TestWriteYAML ---
 func TestWriteYAML(t *testing.T) {
 	t.Run("encodes struct fields", func(t *testing.T) {

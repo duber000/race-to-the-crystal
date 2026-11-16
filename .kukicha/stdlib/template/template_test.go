@@ -80,11 +80,11 @@ func TestCompileParseError(t *testing.T) {
 
 // --- TestZeroValueTemplatesReturnError ---
 func TestZeroValueTemplatesReturnError(t *testing.T) {
-	tmpl := template.Template{}
+	var tmpl template.Template
 	_, err := tmpl.Render(nil)
 	test.AssertError(t, err)
 	test.AssertContains(t, err.Error(), "not initialized")
-	htmlTmpl := template.HTMLTemplate{}
+	var htmlTmpl template.HTMLTemplate
 	_, err = htmlTmpl.Render(nil)
 	test.AssertError(t, err)
 	test.AssertContains(t, err.Error(), "not initialized")

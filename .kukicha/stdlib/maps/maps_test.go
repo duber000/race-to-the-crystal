@@ -4,12 +4,51 @@
 package maps_test
 
 import (
+	"errors"
 	"fmt"
+	"kukicha.org/stdlib/json"
 	"kukicha.org/stdlib/maps"
 	"kukicha.org/stdlib/slice"
+	kukistring "kukicha.org/stdlib/string"
 	"kukicha.org/stdlib/test"
 	"testing"
 )
+
+// Type aliases keep `json.Parse of <type> from ...` unambiguous for generic
+// OrderedMap instantiations.
+type StringIntOrdered = maps.OrderedMap[string, int]
+
+type StringIntEntry = maps.Entry[string, int]
+
+type StringOrderedInt = maps.OrderedMap[string, StringIntOrdered]
+
+type IntStringOrdered = maps.OrderedMap[int, string]
+
+type Int8StringOrdered = maps.OrderedMap[int8, string]
+
+type BoolStringOrdered = maps.OrderedMap[bool, string]
+
+type UintStringOrdered = maps.OrderedMap[uint, string]
+
+// Status is a named int key type with a text encoding, the
+// typed-enum-with-MarshalText pattern OrderedMap's JSON key rules must match
+// Go's map handling for.
+type Status int
+
+func (s Status) MarshalText() ([]byte, error) {
+	return []byte(fmt.Sprintf("status-%v", int(s))), nil
+}
+
+func (s *Status) UnmarshalText(data []byte) error {
+	text := string(data)
+	if text == "status-3" || text == "status-03" {
+		*s = Status(3)
+		return nil
+	}
+	return fmt.Errorf("bad status key '%v'", text)
+}
+
+type StatusStringOrdered = maps.OrderedMap[Status, string]
 
 // Test Keys, Values, and Contains helpers
 func TestMapHelpers(t *testing.T) {
@@ -569,4 +608,349 @@ func TestFrozenMapConcurrentReads(t *testing.T) {
 	for _, ch := range done {
 		<-ch
 	}
+}
+
+func TestOrderedMapSetGetAndOverwrite(t *testing.T) {
+	om := maps.NewOrdered[string, int]()
+	test.AssertEqual(t, om.Len(), 0)
+	test.AssertEqual(t, om.IsEmpty(), true)
+	om = om.Set("a", 1).Set("b", 2).Set("c", 3)
+	test.AssertEqual(t, om.Len(), 3)
+	test.AssertEqual(t, om.Keys(), []string{"a", "b", "c"})
+	test.AssertEqual(t, om.Values(), []int{1, 2, 3})
+	om = om.Set("a", 99)
+	test.AssertEqual(t, om.Keys(), []string{"a", "b", "c"})
+	test.AssertEqual(t, om.GetOr("a", 0), 99)
+	value, ok := om.Get("b")
+	test.AssertEqual(t, ok, true)
+	test.AssertEqual(t, value, 2)
+	missing, missingOK := om.Get("zzz")
+	test.AssertEqual(t, missingOK, false)
+	test.AssertEqual(t, missing, 0)
+	test.AssertEqual(t, om.Contains("zzz"), false)
+	test.AssertEqual(t, om.GetOr("zzz", 42), 42)
+}
+
+func TestOrderedMapDeleteAndReinsert(t *testing.T) {
+	om := maps.NewOrdered[string, int]()
+	om = om.Set("k0", 0).Set("k1", 1).Set("k2", 2).Set("k3", 3).Set("k4", 4)
+	om = om.Delete("k1").Delete("k0").Delete("k4")
+	test.AssertEqual(t, om.Keys(), []string{"k2", "k3"})
+	om = om.Set("k2", 22).Set("k3", 33)
+	test.AssertEqual(t, om.Keys(), []string{"k2", "k3"})
+	test.AssertEqual(t, om.GetOr("k2", 0), 22)
+	test.AssertEqual(t, om.GetOr("k3", 0), 33)
+	om = om.Delete("k2")
+	om = om.Set("k2", 200)
+	test.AssertEqual(t, om.Keys(), []string{"k3", "k2"})
+	test.AssertEqual(t, om.GetOr("k2", 0), 200)
+	before := om.Keys()
+	om = om.Delete("absent")
+	test.AssertEqual(t, om.Keys(), before)
+}
+
+func TestOrderedMapConstructorsAndDuplicates(t *testing.T) {
+	entries := []StringIntEntry{}
+	first := StringIntEntry{Key: "x", Value: 1}
+	second := StringIntEntry{Key: "y", Value: 2}
+	third := StringIntEntry{Key: "x", Value: 3}
+	entries = append(entries, first)
+	entries = append(entries, second)
+	entries = append(entries, third)
+	fromEntries := maps.OrderedFrom(entries)
+	test.AssertEqual(t, fromEntries.Keys(), []string{"x", "y"})
+	test.AssertEqual(t, fromEntries.GetOr("x", 0), 3)
+	fromPairs := maps.OrderedOf(maps.Pair("x", 1), maps.Pair("y", 2), maps.Pair("x", 3))
+	test.AssertEqual(t, fromPairs.Keys(), []string{"x", "y"})
+	test.AssertEqual(t, fromPairs.GetOr("x", 0), 3)
+	test.AssertEqual(t, fromPairs.GetOr("y", 0), 2)
+}
+
+func TestOrderedMapZeroValueSafety(t *testing.T) {
+	var zero maps.OrderedMap[string, int]
+	test.AssertEqual(t, zero.Len(), 0)
+	test.AssertEqual(t, zero.IsEmpty(), true)
+	test.AssertEqual(t, zero.Contains("x"), false)
+	test.AssertEqual(t, zero.GetOr("x", 7), 7)
+	value, ok := zero.Get("x")
+	test.AssertEqual(t, ok, false)
+	test.AssertEqual(t, value, 0)
+	test.AssertEqual(t, len(zero.Keys()), 0)
+	test.AssertEqual(t, len(zero.Values()), 0)
+	test.AssertEqual(t, len(zero.Entries()), 0)
+	test.AssertEqual(t, len(zero.ToMap()), 0)
+	test.AssertEqual(t, zero.ToFrozen().Len(), 0)
+	test.AssertEqual(t, zero.Clone().Len(), 0)
+	test.AssertEqual(t, zero.Delete("x").Len(), 0)
+	count := 0
+	for range zero.All() {
+		count += 1
+	}
+	test.AssertEqual(t, count, 0)
+	zero = zero.Set("first", 1)
+	test.AssertEqual(t, zero.Len(), 1)
+	test.AssertEqual(t, zero.GetOr("first", 0), 1)
+	var dropped maps.OrderedMap[string, int]
+	dropped.Set("gone", 1)
+	test.AssertEqual(t, dropped.Len(), 0)
+	test.AssertEqual(t, dropped.Contains("gone"), false)
+}
+
+func TestOrderedMapInPlaceSetWithoutRebinding(t *testing.T) {
+	om := maps.OrderedOf(maps.Pair("a", 1))
+	om.Set("b", 2)
+	test.AssertEqual(t, om.GetOr("b", 0), 2)
+	test.AssertEqual(t, om.Keys(), []string{"a", "b"})
+	om.Delete("a")
+	test.AssertEqual(t, om.Keys(), []string{"b"})
+}
+
+func TestOrderedMapAllIterationAndSnapshot(t *testing.T) {
+	om := maps.OrderedOf(maps.Pair("a", 1), maps.Pair("b", 2), maps.Pair("c", 3))
+	keys := []string{}
+	total := 0
+	for k, v := range om.All() {
+		keys = append(keys, k)
+		total += v
+	}
+	test.AssertEqual(t, keys, []string{"a", "b", "c"})
+	test.AssertEqual(t, total, 6)
+	single := []string{}
+	for k := range om.All() {
+		single = append(single, k)
+	}
+	test.AssertEqual(t, single, []string{"a", "b", "c"})
+	seenBreak := []string{}
+	for k := range om.All() {
+		seenBreak = append(seenBreak, k)
+		break
+	}
+	test.AssertEqual(t, seenBreak, []string{"a"})
+	seen := []string{}
+	for k := range om.All() {
+		seen = append(seen, k)
+		om = om.Delete(k)
+	}
+	test.AssertEqual(t, seen, []string{"a", "b", "c"})
+	test.AssertEqual(t, om.Len(), 0)
+}
+
+func TestOrderedMapCollectionAliasing(t *testing.T) {
+	om := maps.OrderedOf(maps.Pair("a", 1), maps.Pair("b", 2))
+	entries := om.Entries()
+	entries[0].Value = 99
+	test.AssertEqual(t, om.GetOr("a", 0), 1)
+	keys := om.Keys()
+	keys[0] = "mutated"
+	test.AssertEqual(t, om.Keys(), []string{"a", "b"})
+	copy := om.Clone()
+	copy = copy.Set("a", 10).Set("c", 3)
+	test.AssertEqual(t, om.GetOr("a", 0), 1)
+	test.AssertEqual(t, om.Contains("c"), false)
+	test.AssertEqual(t, copy.GetOr("a", 0), 10)
+	test.AssertEqual(t, copy.Keys(), []string{"a", "b", "c"})
+	plain := om.ToMap()
+	test.AssertEqual(t, len(plain), 2)
+	test.AssertEqual(t, plain["a"], 1)
+	test.AssertEqual(t, plain["b"], 2)
+	frozen := om.ToFrozen()
+	test.AssertEqual(t, frozen.Len(), 2)
+	test.AssertEqual(t, frozen.GetOr("b", 0), 2)
+}
+
+func TestOrderedMapJSONRoundTrip(t *testing.T) {
+	om := maps.OrderedOf(maps.Pair("z", 1), maps.Pair("m", 2), maps.Pair("a", 3))
+	text, err := json.String(om)
+	if err != nil {
+		t.Fatalf("marshal ordered map: %v", err)
+	}
+	test.AssertEqual(t, text, `{"z":1,"m":2,"a":3}`)
+	parsed, perr := json.Parse[StringIntOrdered](text)
+	if perr != nil {
+		t.Fatalf("parse ordered map: %v", perr)
+	}
+	test.AssertEqual(t, parsed.Keys(), []string{"z", "m", "a"})
+	test.AssertEqual(t, parsed.GetOr("m", 0), 2)
+	var zero maps.OrderedMap[string, int]
+	emptyText, emptyErr := json.String(zero)
+	if emptyErr != nil {
+		t.Fatalf("marshal zero ordered map: %v", emptyErr)
+	}
+	test.AssertEqual(t, emptyText, "{}")
+}
+
+func TestOrderedMapJSONSpecialCharacters(t *testing.T) {
+	om := maps.OrderedOf(maps.Pair("a\"b", 1), maps.Pair("c\nd", 2))
+	text, err := json.String(om)
+	if err != nil {
+		t.Fatalf("marshal ordered map: %v", err)
+	}
+	parsed, perr := json.Parse[StringIntOrdered](text)
+	if perr != nil {
+		t.Fatalf("parse ordered map: %v", perr)
+	}
+	test.AssertEqual(t, parsed.Keys(), []string{"a\"b", "c\nd"})
+	test.AssertEqual(t, parsed.GetOr("a\"b", 0), 1)
+	test.AssertEqual(t, parsed.GetOr("c\nd", 0), 2)
+}
+
+func TestOrderedMapJSONNested(t *testing.T) {
+	outer := maps.OrderedOf(maps.Pair("z", maps.OrderedOf(maps.Pair("in2", 1), maps.Pair("in1", 2))), maps.Pair("m", maps.OrderedOf(maps.Pair("only", 9))))
+	text, err := json.String(outer)
+	if err != nil {
+		t.Fatalf("marshal nested ordered map: %v", err)
+	}
+	test.AssertEqual(t, text, `{"z":{"in2":1,"in1":2},"m":{"only":9}}`)
+	parsed, perr := json.Parse[StringOrderedInt](text)
+	if perr != nil {
+		t.Fatalf("parse nested ordered map: %v", perr)
+	}
+	var zeroOrdered StringIntOrdered
+	inner := parsed.GetOr("z", zeroOrdered)
+	test.AssertEqual(t, inner.Keys(), []string{"in2", "in1"})
+	test.AssertEqual(t, inner.GetOr("in1", 0), 2)
+	test.AssertEqual(t, parsed.GetOr("m", zeroOrdered).Keys(), []string{"only"})
+}
+
+func TestOrderedMapJSONPrettyString(t *testing.T) {
+	om := maps.OrderedOf(maps.Pair("z", 1), maps.Pair("m", 2), maps.Pair("a", 3))
+	pretty, err := json.PrettyString(om)
+	if err != nil {
+		t.Fatalf("pretty-print ordered map: %v", err)
+	}
+	zi := kukistring.Index(pretty, `"z"`)
+	mi := kukistring.Index(pretty, `"m"`)
+	ai := kukistring.Index(pretty, `"a"`)
+	test.AssertTrue(t, zi >= 0 && mi > zi && ai > mi, fmt.Sprintf("pretty output must keep insertion order, got:\n%v", pretty))
+}
+
+func TestOrderedMapJSONKeyKinds(t *testing.T) {
+	omi := maps.OrderedOf(maps.Pair(3, "three"), maps.Pair(1, "one"))
+	intText, ierr := json.String(omi)
+	if ierr != nil {
+		t.Fatalf("marshal int-keyed ordered map: %v", ierr)
+	}
+	test.AssertEqual(t, intText, `{"3":"three","1":"one"}`)
+	intParsed, iperr := json.Parse[IntStringOrdered](intText)
+	if iperr != nil {
+		t.Fatalf("parse int-keyed ordered map: %v", iperr)
+	}
+	test.AssertEqual(t, intParsed.Keys(), []int{3, 1})
+	test.AssertEqual(t, intParsed.GetOr(3, ""), "three")
+	omb := maps.OrderedOf(maps.Pair(true, "yes"), maps.Pair(false, "no"))
+	boolText, berr := json.String(omb)
+	if berr != nil {
+		t.Fatalf("marshal bool-keyed ordered map: %v", berr)
+	}
+	test.AssertEqual(t, boolText, `{"true":"yes","false":"no"}`)
+	boolParsed, bperr := json.Parse[BoolStringOrdered](boolText)
+	if bperr != nil {
+		t.Fatalf("parse bool-keyed ordered map: %v", bperr)
+	}
+	test.AssertEqual(t, boolParsed.Keys(), []bool{true, false})
+	test.AssertEqual(t, boolParsed.GetOr(false, ""), "no")
+	omu := maps.OrderedOf(maps.Pair(uint(7), "seven"))
+	uintText, uerr := json.String(omu)
+	if uerr != nil {
+		t.Fatalf("marshal uint-keyed ordered map: %v", uerr)
+	}
+	test.AssertEqual(t, uintText, `{"7":"seven"}`)
+	uintParsed, uperr := json.Parse[UintStringOrdered](uintText)
+	if uperr != nil {
+		t.Fatalf("parse uint-keyed ordered map: %v", uperr)
+	}
+	test.AssertEqual(t, uintParsed.GetOr(uint(7), ""), "seven")
+	oms := maps.OrderedOf(maps.Pair(Status(3), "three"))
+	statusText, serr := json.String(oms)
+	if serr != nil {
+		t.Fatalf("marshal status-keyed ordered map: %v", serr)
+	}
+	plain := map[Status]string{Status(3): "three"}
+	plainText, plerr := json.String(plain)
+	if plerr != nil {
+		t.Fatalf("marshal plain status map: %v", plerr)
+	}
+	test.AssertEqual(t, statusText, plainText)
+	test.AssertEqual(t, statusText, `{"status-3":"three"}`)
+	statusParsed, sperr := json.Parse[StatusStringOrdered](statusText)
+	if sperr != nil {
+		t.Fatalf("parse status-keyed ordered map: %v", sperr)
+	}
+	test.AssertEqual(t, statusParsed.Keys(), []Status{Status(3)})
+	test.AssertEqual(t, statusParsed.GetOr(Status(3), ""), "three")
+}
+
+func TestOrderedMapJSONKeyGrammar(t *testing.T) {
+	for _, bad := range []string{"{\"t\":1}", "{\"TRUE\":1}", "{\"1\":1}"} {
+		_, err := json.Parse[BoolStringOrdered](bad)
+		test.AssertError(t, err, fmt.Sprintf("bool key grammar must reject %v", bad))
+		test.AssertContains(t, err.Error(), "invalid JSON boolean object key")
+	}
+	for _, bad := range []string{"{\"+1\":\"a\"}", "{\"007\":\"a\"}", "{\" 1\":\"a\"}", "{\"1x\":\"a\"}"} {
+		_, err := json.Parse[IntStringOrdered](bad)
+		test.AssertError(t, err, fmt.Sprintf("int key grammar must reject %v", bad))
+		test.AssertContains(t, err.Error(), "invalid JSON integer object key")
+	}
+	canon, cerr := json.Parse[IntStringOrdered]("{\"-0\":\"b\"}")
+	if cerr != nil {
+		t.Fatalf("parse canonical '-0' key: %v", cerr)
+	}
+	test.AssertEqual(t, canon.Keys(), []int{0})
+	_, oerr := json.Parse[Int8StringOrdered]("{\"300\":\"a\"}")
+	test.AssertError(t, oerr, "int8 key out of range must error")
+	test.AssertContains(t, oerr.Error(), "'300'")
+	_, terr := json.Parse[StatusStringOrdered]("{\"3\":\"x\"}")
+	test.AssertError(t, terr, "status key grammar must reject '3'")
+	test.AssertContains(t, terr.Error(), "object key '3'")
+	test.AssertContains(t, terr.Error(), "bad status key '3'")
+	_, uerr := json.Parse[UintStringOrdered]("{\"-1\":\"a\"}")
+	test.AssertError(t, uerr, "uint key grammar must reject '-1'")
+	test.AssertContains(t, uerr.Error(), "invalid JSON unsigned integer object key")
+	_, derr := json.Parse[IntStringOrdered]("{\"0\":\"a\",\"-0\":\"b\"}")
+	test.AssertError(t, derr, "aliased duplicate member must error, not merge")
+	test.AssertContains(t, derr.Error(), "duplicate object member name")
+	test.AssertContains(t, derr.Error(), "'-0'")
+	_, aerr := json.Parse[StatusStringOrdered]("{\"status-3\":\"a\",\"status-03\":\"b\"}")
+	test.AssertError(t, aerr, "aliased TextUnmarshaler names must error, not merge")
+	test.AssertContains(t, aerr.Error(), "duplicate object member name")
+	_, rerr := json.Parse[StringIntOrdered]("{\"a\":1,\"a\":2}")
+	test.AssertError(t, rerr, "identical duplicate member names must error")
+}
+
+func TestOrderedMapJSONErrors(t *testing.T) {
+	for _, bad := range []string{"[]", "5", "null", "{bad"} {
+		_, err := json.Parse[StringIntOrdered](bad)
+		test.AssertError(t, err, fmt.Sprintf("expected error for input %v", bad))
+	}
+	_, verr := json.Parse[StringIntOrdered]("{\"a\":\"x\"}")
+	test.AssertError(t, verr, "string value for int slot must error")
+	test.AssertContains(t, verr.Error(), "value for key 'a'")
+}
+
+func TestOrderedMapJSONMergeIntoExisting(t *testing.T) {
+	om := maps.OrderedOf(maps.Pair("b", 2), maps.Pair("a", 3))
+	err := om.UnmarshalJSON([]byte("{\"b\":20,\"z\":5}"))
+	test.AssertNoError(t, err)
+	test.AssertEqual(t, om.Keys(), []string{"b", "a", "z"})
+	test.AssertEqual(t, om.GetOr("b", 0), 20)
+	test.AssertEqual(t, om.GetOr("z", 0), 5)
+}
+
+// BadStatus always fails MarshalText — the marshal error-path pin.
+type BadStatus int
+
+func (s BadStatus) MarshalText() ([]byte, error) {
+	return nil, errors.New("boom")
+}
+
+func TestOrderedMapJSONMarshalErrors(t *testing.T) {
+	omf := maps.OrderedOf(maps.Pair(1.5, "x"))
+	_, ferr := json.String(omf)
+	test.AssertError(t, ferr, "float keys must fail to marshal")
+	test.AssertContains(t, ferr.Error(), "JSON object keys must be strings, integers, booleans, or encoding.TextMarshaler values")
+	omb := maps.OrderedOf(maps.Pair(BadStatus(1), "x"))
+	_, berr := json.String(omb)
+	test.AssertError(t, berr, "failing MarshalText must propagate")
+	test.AssertContains(t, berr.Error(), "maps.OrderedMap: object key")
+	test.AssertContains(t, berr.Error(), "boom")
 }

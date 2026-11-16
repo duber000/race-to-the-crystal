@@ -517,15 +517,26 @@ func ipInAny(ip string, nets []*net.IPNet) bool {
 	return false
 }
 
+// applySecureHeaders sets the shared security response header set used by both
+// the SecureHeaders middleware and Response.SetSecureHeaders, so the two entry
+// points cannot drift. The CSP blocks plugin content (object-src) and <base>-tag
+// hijacking of relative URLs (base-uri, a document directive with no default-src
+// fallback). form-action is deliberately not pinned: it too has no default-src
+// fallback, and 'self' would break legitimate cross-origin form posts (SAML SSO,
+// payment-provider redirects), so apps that want it add their own CSP.
+func applySecureHeaders(w http.ResponseWriter) {
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'none'; object-src 'none'")
+}
+
 // SecureHeaders returns middleware that injects security response headers
 // before delegating to the wrapped handler.
 // Use as: http.Serve(":8080", httphelper.SecureHeaders(mux))
 func SecureHeaders(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'")
+		applySecureHeaders(w)
 		handler.ServeHTTP(w, r)
 	})
 }
@@ -940,10 +951,7 @@ func (res Response) SafeRedirect(redirectURL string, allowedHosts ...string) err
 
 // SetSecureHeaders sets common security response headers.
 func (res Response) SetSecureHeaders() {
-	res.raw.Header().Set("X-Content-Type-Options", "nosniff")
-	res.raw.Header().Set("X-Frame-Options", "DENY")
-	res.raw.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-	res.raw.Header().Set("Content-Security-Policy", "default-src 'self'")
+	applySecureHeaders(res.raw)
 }
 
 // MethodNotAllowed sends a 405 Method Not Allowed response.

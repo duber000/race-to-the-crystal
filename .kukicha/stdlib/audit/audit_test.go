@@ -508,7 +508,8 @@ func TestCrashRecoveryReopensCleanly(t *testing.T) {
 	}
 	before := audit.Tail(log1)
 	test.AssertEqual(t, before.Seq, int64(3))
-	log1 = audit.Log{}
+	var dropped audit.Log
+	log1 = dropped
 	log2, err_54 := audit.OpenWithKey(dbPath, keyPath)
 	if err_54 != nil {
 		t.Fatalf("reopen: %v", err_54)
@@ -885,7 +886,7 @@ func openProbe(t *testing.T, path string) db.Pool {
 
 // --- TestZeroValueLogReturnsError ---
 func TestZeroValueLogReturnsError(t *testing.T) {
-	log := audit.Log{}
+	var log audit.Log
 	check := func(label string, err error) {
 		t.Run(label, func(t *testing.T) {
 			test.AssertError(t, err)

@@ -223,7 +223,7 @@ func JoinList(fragments []Fragment) Fragment {
 //	b := html.NewBuilder()
 //	for link in links
 //	    if link.DialogFor isnt ""
-//	        b.Add(html.Render("<button ...>"))
+//	        b.Add(html.Render("<button type=\"button\"{html.Attr(\"commandfor\", link.DialogFor)}>...</button>"))
 //	    else
 //	        b.Add(html.Render("<a href=\"{html.URLAttr(link.Href)}\">..."))
 //	return b.Fragment()
@@ -340,6 +340,9 @@ func ClassList(classes ...string) string {
 //
 //	html.Render("<button type=\"submit\"{html.BoolAttr(\"disabled\", isDisabled)}>Click</button>")
 //
+// `popover` is enumerated rather than boolean: bare `popover` means
+// `popover="auto"`, so html.BoolAttr("popover", true) is the idiomatic default;
+// reach for html.Attr only for another value (`manual`).
 // The name must be a valid HTML attribute token (ASCII letters, digits, '-',
 // '_', ':', '.') and must not be an `on*` event handler; a malformed or unsafe
 // name panics rather than emitting attribute-injection markup. `html.BoolAttr`
@@ -348,29 +351,53 @@ func BoolAttr(name string, condition bool) Fragment {
 	if !condition {
 		return Fragment{content: ""}
 	}
-	validateBoolAttrName(name)
+	validateAttrName("html.BoolAttr", name)
 	return Fragment{content: " " + name}
 }
 
-// validateBoolAttrName panics when name is not a safe HTML attribute token.
+// Attr renders a valued HTML attribute as ` name="value"`, inlining right
+// after a tag name like BoolAttr. It is the valued sibling of BoolAttr, for
+// the declarative-invoker attributes a no-JS server-rendered stack needs:
+// `commandfor="id"`/`command="show-modal"`, `popovertarget="id"`,
+// `popover="manual"`, `closedby="any"`, `aria-*` values, … Conditionals
+// compose with When/if-expressions, so there is no condition parameter:
+//
+//	html.Render("<button type=\"button\"{html.Attr(\"commandfor\", \"confirm-dialog\")} command=\"show-modal\">Open</button>")
+//
+// The value is HTML-escaped inside Attr: the helper returns a Fragment, which
+// the compiler's auto-escape pass treats as trusted HTML, so Attr owns its
+// escaping boundary (double-quoted attribute context — quotes, '<', '>', and
+// '&' are escaped). Only the value is escaped; the name is validated instead,
+// with the same rules as BoolAttr (ASCII letters, digits, '-', '_', ':',
+// '.'; never `on*`), and a malformed or unsafe name panics rather than
+// emitting attribute-injection markup. `html.Attr` with a literal name is
+// also checked at compile time.
+func Attr(name string, value string) Fragment {
+	validateAttrName("html.Attr", name)
+	return Fragment{content: " " + name + "=\"" + Escape(value) + "\""}
+}
+
+// validateAttrName panics when name is not a safe HTML attribute token, or
+// names an `on*` event handler. helper names the calling stdlib function so
+// the panic points at the API the caller used (html.BoolAttr / html.Attr).
 // Mirrors the compile-time check in the semantic security pass.
-func validateBoolAttrName(name string) {
-	if name == "" {
-		panic("html.BoolAttr: attribute name must not be empty")
+func validateAttrName(helper string, name string) {
+	if len(name) == 0 {
+		panic(fmt.Sprintf("%v: attribute name must not be empty", helper))
 	}
 	if kukistring.HasPrefix(kukistring.ToLower(name), "on") {
-		panic(fmt.Sprintf("html.BoolAttr: refusing event-handler attribute name \"%v\" (on*) — use addEventListener in a static .js file", name))
+		panic(fmt.Sprintf("%v: refusing event-handler attribute name \"%v\" (on*) — use addEventListener in a static .js file", helper, name))
 	}
 	for _, r := range name {
-		if !isBoolAttrNameRune(r) {
-			panic(fmt.Sprintf("html.BoolAttr: invalid character in attribute name \"%v\" (allowed: letters, digits, '-', '_', ':', '.')", name))
+		if !isAttrNameRune(r) {
+			panic(fmt.Sprintf("%v: invalid character in attribute name \"%v\" (allowed: letters, digits, '-', '_', ':', '.')", helper, name))
 		}
 	}
 }
 
-// isBoolAttrNameRune reports whether r is permitted in an HTML attribute name:
+// isAttrNameRune reports whether r is permitted in an HTML attribute name:
 // an ASCII letter, digit, or one of '-', '_', ':', '.'.
-func isBoolAttrNameRune(r rune) bool {
+func isAttrNameRune(r rune) bool {
 	ch := string(r)
 	if kukistring.Contains("abcdefghijklmnopqrstuvwxyz", ch) {
 		return true
