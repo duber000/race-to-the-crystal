@@ -172,8 +172,11 @@ func appendPlayerTokens(lines: list of string, gs: reference GameState, playerId
     return lines
 
 func appendEnemyTokens(lines: list of string, gs: reference GameState, perspective: types.PlayerID) list of string
-    for pid, pRef in gs.players
+    for pid in gs.orderedPlayerIds()
         if pid equals perspective
+            continue
+        pRef := gs.GetPlayer(pid)
+        if pRef is empty
             continue
         enemyDeployed := empty list of Token
         for tid in pRef.tokenIds
@@ -455,7 +458,7 @@ func getAttackableTargets(tok: reference Token, tokensMap: map of types.TokenID 
         if d.isAlive and d.isDeployed and d.playerId isnt tok.playerId
             if tok.isAdjacentTo(d.position)
                 result = append(result, d)
-    return result
+    return sort.ByKey(result, (t: Token) => t.id)
 
 func explainVictoryConditions(gs: reference GameState) string
     lines := empty list of string
@@ -476,7 +479,10 @@ func explainVictoryConditions(gs: reference GameState) string
     if gs.crystalInstance isnt empty
         crys := dereference gs.crystalInstance
         lines = append(lines, "Current crystal progress:")
-        for pid, pRef in gs.players
+        for pid in gs.orderedPlayerIds()
+            pRef := gs.GetPlayer(pid)
+            if pRef is empty
+                continue
             p := dereference pRef
             cn := colorName(p.color)
             charge := crys.charge[pid]

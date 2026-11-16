@@ -536,7 +536,11 @@ func ToDict on gs: reference GameState StateDict
         result["winner_id"] = gs.winnerId as string
     result["turn_phase"] = "{gs.turnPhase}"
     playerList := empty list of StateDict
-    for pid, p in gs.players
+    for pid in gs.orderedPlayerIds()
+        pRef := gs.GetPlayer(pid)
+        if pRef is empty
+            continue
+        p := dereference pRef
         pd := StateDict{
             "id": pid as string,
             "name": p.name,

@@ -139,9 +139,9 @@ func removePlayer on l: reference GameLobby(playerId: string) bool
     delete l.players[playerId]
 
     if playerId equals l.hostPlayerId and l.players isnt empty
-        for pid in l.players
-            l.hostPlayerId = pid
-            break
+        # Hand the host role to the longest-joined remaining player — a raw
+        # map iteration would pick a random successor on every host leave.
+        l.hostPlayerId = l.orderedPlayersLocked()[0].playerId
 
     l.reassignColorsLocked()
     return true
