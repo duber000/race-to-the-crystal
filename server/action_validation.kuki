@@ -22,7 +22,7 @@ func ValidateActionFields(actionType: gamepkg.ActionType, data: JSONMap) optiona
         when gamepkg.END_TURN
             return empty
         default
-            return reference of ValidationResult{
+            return ValidationResult{
                 field: "type",
                 errorCode: "UNKNOWN_ACTION",
                 message: "Unknown action type: {actionType}",
@@ -31,7 +31,7 @@ func ValidateActionFields(actionType: gamepkg.ActionType, data: JSONMap) optiona
 func ValidateMove(data: JSONMap) optional reference ValidationResult
     _, hasTid := data["token_id"]
     if not hasTid
-        return reference of ValidationResult{
+        return ValidationResult{
             field: "token_id",
             errorCode: "MISSING_FIELD",
             message: "MOVE requires token_id",
@@ -41,7 +41,7 @@ func ValidateMove(data: JSONMap) optional reference ValidationResult
     if not hasDest
         destVal, hasDest = data["position"]
     if not hasDest
-        return reference of ValidationResult{
+        return ValidationResult{
             field: "destination",
             errorCode: "MISSING_FIELD",
             message: "MOVE requires destination",
@@ -49,7 +49,7 @@ func ValidateMove(data: JSONMap) optional reference ValidationResult
 
     if isIntegerValue(data["token_id"])
         if not isPositionValue(destVal)
-            return reference of ValidationResult{
+            return ValidationResult{
                 field: "destination",
                 errorCode: "INVALID_TYPE",
                 message: "destination must be [x, y]",
@@ -57,7 +57,7 @@ func ValidateMove(data: JSONMap) optional reference ValidationResult
 
         return empty
     else
-        return reference of ValidationResult{
+        return ValidationResult{
             field: "token_id",
             errorCode: "INVALID_TYPE",
             message: "token_id must be an integer",
@@ -66,7 +66,7 @@ func ValidateMove(data: JSONMap) optional reference ValidationResult
 func ValidateAttack(data: JSONMap) optional reference ValidationResult
     _, hasAtk := data["attacker_id"]
     if not hasAtk
-        return reference of ValidationResult{
+        return ValidationResult{
             field: "attacker_id",
             errorCode: "MISSING_FIELD",
             message: "ATTACK requires attacker_id",
@@ -76,7 +76,7 @@ func ValidateAttack(data: JSONMap) optional reference ValidationResult
     if not hasDef
         defVal, hasDef = data["target_id"]
     if not hasDef
-        return reference of ValidationResult{
+        return ValidationResult{
             field: "defender_id",
             errorCode: "MISSING_FIELD",
             message: "ATTACK requires defender_id",
@@ -86,13 +86,13 @@ func ValidateAttack(data: JSONMap) optional reference ValidationResult
         if isIntegerValue(defVal)
             return empty
         else
-            return reference of ValidationResult{
+            return ValidationResult{
                 field: "defender_id",
                 errorCode: "INVALID_TYPE",
                 message: "defender_id must be an integer",
             }
     else
-        return reference of ValidationResult{
+        return ValidationResult{
             field: "attacker_id",
             errorCode: "INVALID_TYPE",
             message: "attacker_id must be an integer",
@@ -101,7 +101,7 @@ func ValidateAttack(data: JSONMap) optional reference ValidationResult
 func ValidateDeploy(data: JSONMap) optional reference ValidationResult
     hvVal, hasHv := data["health_value"]
     if not hasHv
-        return reference of ValidationResult{
+        return ValidationResult{
             field: "health_value",
             errorCode: "MISSING_FIELD",
             message: "DEPLOY requires health_value",
@@ -109,7 +109,7 @@ func ValidateDeploy(data: JSONMap) optional reference ValidationResult
 
     posVal, hasPos := data["position"]
     if not hasPos
-        return reference of ValidationResult{
+        return ValidationResult{
             field: "position",
             errorCode: "MISSING_FIELD",
             message: "DEPLOY requires position",
@@ -118,14 +118,14 @@ func ValidateDeploy(data: JSONMap) optional reference ValidationResult
     if isIntegerValue(hvVal)
         hvInt := toIntOrZero(hvVal)
         if not slice.Contains(constants.TOKEN_HEALTH_VALUES, hvInt)
-            return reference of ValidationResult{
+            return ValidationResult{
                 field: "health_value",
                 errorCode: "INVALID_VALUE",
                 message: "health_value must be one of {constants.TOKEN_HEALTH_VALUES}",
             }
 
         if not isPositionValue(posVal)
-            return reference of ValidationResult{
+            return ValidationResult{
                 field: "position",
                 errorCode: "INVALID_TYPE",
                 message: "position must be [x, y]",
@@ -133,7 +133,7 @@ func ValidateDeploy(data: JSONMap) optional reference ValidationResult
 
         return empty
     else
-        return reference of ValidationResult{
+        return ValidationResult{
             field: "health_value",
             errorCode: "INVALID_TYPE",
             message: "health_value must be an integer",

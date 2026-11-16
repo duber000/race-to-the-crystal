@@ -73,7 +73,7 @@ func NewEmptyResultData() ActionResultData
 func ValidateGamePhase on gs: reference GameState optional reference ValidationResult
     if gs.phase isnt enums.PLAYING
         r := InvalidResult("ACTION_FAILED: wrong_game_phase | current={gs.phase} | required=PLAYING")
-        return reference of r
+        return r
     return empty
 
 # kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
@@ -82,7 +82,7 @@ func ValidatePlayerTurn on gs: reference GameState(playerId: types.PlayerID) opt
         r := InvalidResult(
             "ACTION_FAILED: not_your_turn | current_player={gs.currentTurnPlayerId} | you={playerId}",
         )
-        return reference of r
+        return r
     return empty
 
 # kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
@@ -91,7 +91,7 @@ func ValidateTurnPhase on gs: reference GameState(required: enums.TurnPhase, act
         r := InvalidResult(
             "{actionName}_FAILED: wrong_phase | current={gs.turnPhase} | required={required}",
         )
-        return reference of r
+        return r
     return empty
 
 # kuki:suppress "exported-nonnull-reference" "deliberate carrier: internal app API — Kukicha enforces non-null at call sites; no Go consumers"
@@ -297,7 +297,7 @@ func ExecuteMove(TokenID: types.TokenID, dest: types.Position, gs: reference Gam
                 playerIndex := enums.PlayerIndex(p.color)
                 mysteryResult := triggerMysteryEvent(tokRef, reference of gs.board, playerIndex)
 
-                gs.lastTriggeredMysteryEvent = reference of MysteryEvent{
+                gs.lastTriggeredMysteryEvent = MysteryEvent{
                     TokenID: TokenID,
                     Position: dest,
                     effect: "{mysteryResult.effect}",

@@ -93,7 +93,7 @@ func VerifyPlayerToken(tokenStr: string, secretKey: string) optional reference T
         issuedAt: claims.Iat,
         expiresAt: claims.Exp,
     }
-    return reference of result
+    return result
 
 func ExtractTokenFromHeader(authorizationHeader: string) string
     if authorizationHeader is empty

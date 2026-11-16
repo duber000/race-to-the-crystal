@@ -315,7 +315,7 @@ func findGeneratorState(gens: list of GeneratorState, generatorId: int) optional
     for g in gens
         if g.ID equals generatorId
             found := g
-            return reference of found
+            return found
     return empty
 
 # Capture the current objective state.

@@ -57,7 +57,7 @@ func CreateGame(numPlayers: int) GameState
 
     crystalPos := gs.board.getCrystalPosition()
     c := NewCrystal(crystalPos)
-    gs.crystalInstance = reference of c
+    gs.crystalInstance = c
 
     return gs
 
@@ -252,7 +252,7 @@ func AttackToken on gs: reference GameState(attackerId: types.TokenID, defenderI
         counterDamage: counterDamage,
         attackerKilled: attackerKilled,
     }
-    return reference of outcome
+    return outcome
 
 func _auto_deploy_starting_tokens on gs: reference GameState(playerId: types.PlayerID, playerIndex: int)
     deployPositions := gs.board.getDeployablePositions(playerIndex)
@@ -384,7 +384,7 @@ func triggerRandomCrystalEffect on gs: reference GameState() (types.PlayerID, en
         gs.turnNumber,
         constants.CRYSTAL_EFFECT_INITIAL_DURATION,
     )
-    gs.lastTriggeredCrystalEffect = reference of CrystalEvent{playerId: targetPlayer, effectType: effect}
+    gs.lastTriggeredCrystalEffect = CrystalEvent{playerId: targetPlayer, effectType: effect}
     return targetPlayer, effect, true
 
 # The player with the most tokens on a cell, and how many they have.

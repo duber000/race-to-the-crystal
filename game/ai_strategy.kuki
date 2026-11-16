@@ -72,13 +72,13 @@ func ChooseAction(strategy: AIStrategyName, actions: list of ActionResponse, gs:
     switch strategy
         when AIStrategyName.AGGRESSIVE
             r := chooseAggressive(actions, gs, playerId)
-            return reference of r
+            return r
         when AIStrategyName.DEFENSIVE
             r := chooseDefensive(actions, gs, playerId)
-            return reference of r
+            return r
         default
             r := chooseRandom(actions)
-            return reference of r
+            return r
 
 func chooseRandom(actions: list of ActionResponse) ChosenAction
     return resolveAction(random.Choice of ActionResponse from actions)

@@ -249,7 +249,7 @@ func SyncDesktopState()
     if crystalRef isnt empty
         ds.crystalPos = DPos(crystalRef.Position().X, crystalRef.Position().Y)
         ds.crystalHolder = crystalRef.HoldingPlayer() as string
-    app.gameState = reference of ds
+    app.gameState = ds
 
 func RunAiTurns()
     gs := app.realGame
