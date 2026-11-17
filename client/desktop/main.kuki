@@ -188,7 +188,7 @@ func StartLocalGame()
     gs.StartGame()
     app.realGame = reference of gs
     api := gamepkg.NewGameAPI(reference of gs, app.humanPlayer)
-    app.realApi = reference of api
+    app.realApi = api
     deselect()
     app.message = ""
     SyncDesktopState()

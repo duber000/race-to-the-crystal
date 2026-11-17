@@ -48,7 +48,7 @@ func freeDeployPosition(gs: reference GameState, playerId: types.PlayerID) optio
         if c.cellType isnt enums.NORMAL
             continue
         found := pos
-        return reference of found
+        return found
     return empty
 
 func TestEventTypeNames(t: reference testing.T)
