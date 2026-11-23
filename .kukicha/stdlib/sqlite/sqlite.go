@@ -33,6 +33,7 @@ import (
 	"math"
 	"net/url"
 	"path/filepath"
+	"sort"
 	"strings"
 	"unicode"
 )
@@ -942,13 +943,6 @@ func openDefaults() map[string]string {
 // "" for the read-write opens). The mode parameter comes first in the query
 // string: file:<path>?mode=ro&_pragma=...
 func openWithPragmas(path string, pragmas map[string]string, mode string) (db.Pool, error) {
-	parts := make([]string, 0, len(pragmas)+1)
-	if mode != "" {
-		parts = append(parts, fmt.Sprintf("mode=%v", mode))
-	}
-	for k, v := range pragmas {
-		parts = append(parts, fmt.Sprintf("_pragma=%v(%v)", k, v))
-	}
 	connStr := buildURI(path)
 	sep := func() string {
 		if strpkg.Contains(connStr, "?") {
@@ -957,7 +951,33 @@ func openWithPragmas(path string, pragmas map[string]string, mode string) (db.Po
 			return "?"
 		}
 	}()
-	return db.Open("sqlite3", connStr+sep+strpkg.Join(parts, "&"))
+	return db.Open("sqlite3", connStr+sep+pragmaQuery(pragmas, mode))
+}
+
+// pragmaQuery renders connection pragmas deterministically. busy_timeout is
+// emitted first so journal-mode changes wait for an existing database lock;
+// the remaining names are sorted for reproducible DSNs.
+func pragmaQuery(pragmas map[string]string, mode string) string {
+	parts := make([]string, 0, len(pragmas)+1)
+	if mode != "" {
+		parts = append(parts, fmt.Sprintf("mode=%v", mode))
+	}
+	keys := make([]string, 0, len(pragmas))
+	for k := range pragmas {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if k == "busy_timeout" {
+			parts = append(parts, fmt.Sprintf("_pragma=%v(%v)", k, pragmas[k]))
+		}
+	}
+	for _, k := range keys {
+		if k != "busy_timeout" {
+			parts = append(parts, fmt.Sprintf("_pragma=%v(%v)", k, pragmas[k]))
+		}
+	}
+	return strpkg.Join(parts, "&")
 }
 
 // buildURI constructs a SQLite file URI with properly escaped path components.

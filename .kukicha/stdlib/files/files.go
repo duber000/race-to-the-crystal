@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"iter"
 	"kukicha.org/stdlib/files/filetimes"
 	"kukicha.org/stdlib/json"
 	kukistring "kukicha.org/stdlib/string"
@@ -239,19 +240,113 @@ type Entry struct {
 	ModTime int64
 }
 
+// validateDirectory checks that path can be opened and is a directory.
+func validateDirectory(path string) error {
+	probe, openErr := os.Open(path)
+	if openErr != nil {
+		return openErr
+	}
+	info, statErr := probe.Stat()
+	if statErr != nil {
+		_ = probe.Close()
+		return statErr
+	}
+	if !info.IsDir() {
+		_ = probe.Close()
+		return fmt.Errorf("files: not a directory: %v", path)
+	}
+	_ = probe.Close()
+	return nil
+}
+
+// Names streams direct child basenames under path without calling stat.
+// The path is validated upfront; a mid-read error ends the sequence because
+// iter.Seq has no late error channel. Early exit closes the directory handle.
+// Example: for name in files.Names(".") |> iterator.Take(10)
+func Names(path string) (iter.Seq[string], error) {
+	validateErr := validateDirectory(path)
+	if validateErr != nil {
+		return nil, validateErr
+	}
+	seq := func(yield func(string) bool) {
+		dir, openErr := os.Open(path)
+		if openErr != nil {
+			return
+		}
+		defer func() {
+			_ = dir.Close()
+		}()
+		for {
+			batch, readErr := dir.ReadDir(64)
+			if readErr != nil {
+				return
+			}
+			if len(batch) == 0 {
+				return
+			}
+			for _, entry := range batch {
+				if !yield(entry.Name()) {
+					return
+				}
+			}
+		}
+	}
+	return seq, nil
+}
+
+// Entries streams direct child Entry values under path. Entry metadata is
+// loaded only when an entry is yielded, so an early exit stats no later items.
+// The path is validated upfront; a mid-read error ends the sequence because
+// iter.Seq has no late error channel. Early exit closes the directory handle.
+// Example: for entry in files.Entries(".") |> iterator.Take(10)
+func Entries(path string) (iter.Seq[Entry], error) {
+	validateErr := validateDirectory(path)
+	if validateErr != nil {
+		return nil, validateErr
+	}
+	seq := func(yield func(Entry) bool) {
+		dir, openErr := os.Open(path)
+		if openErr != nil {
+			return
+		}
+		defer func() {
+			_ = dir.Close()
+		}()
+		for {
+			batch, readErr := dir.ReadDir(64)
+			if readErr != nil {
+				return
+			}
+			if len(batch) == 0 {
+				return
+			}
+			for _, entry := range batch {
+				info, err_14 := entry.Info()
+				if err_14 != nil {
+					continue
+				}
+				if (!yield(Entry{Name: entry.Name(), Path: filepath.Join(path, entry.Name()), IsDir: entry.IsDir(), Size: info.Size(), ModTime: info.ModTime().Unix()})) {
+					return
+				}
+			}
+		}
+	}
+	return seq, nil
+}
+
 // ListEntries returns one Entry per direct child of path
 // Does not recurse. Pipe the result into slice.Filter / slice.Map for
 // everything else.
 // Example: files.ListEntries(".") |> slice.Filter((e: files.Entry) => not e.IsDir)
 func ListEntries(path string) ([]Entry, error) {
-	raw, err_14 := os.ReadDir(path)
-	if err_14 != nil {
-		return []Entry{}, err_14
+	raw, err_15 := os.ReadDir(path)
+	if err_15 != nil {
+		return []Entry{}, err_15
 	}
 	result := make([]Entry, 0, len(raw))
 	for _, entry := range raw {
-		info, err_15 := entry.Info()
-		if err_15 != nil {
+		info, err_16 := entry.Info()
+		if err_16 != nil {
 			continue
 		}
 		result = append(result, Entry{Name: entry.Name(), Path: filepath.Join(path, entry.Name()), IsDir: entry.IsDir(), Size: info.Size(), ModTime: info.ModTime().Unix()})
@@ -262,9 +357,9 @@ func ListEntries(path string) ([]Entry, error) {
 // ListDirs returns the names of subdirectories directly under path
 // Example: for d in files.ListDirs("./projects") ...
 func ListDirs(path string) ([]string, error) {
-	entries, err_16 := ListEntries(path)
-	if err_16 != nil {
-		return []string{}, err_16
+	entries, err_17 := ListEntries(path)
+	if err_17 != nil {
+		return []string{}, err_17
 	}
 	result := make([]string, 0, len(entries))
 	for _, entry := range entries {
@@ -279,9 +374,9 @@ func ListDirs(path string) ([]string, error) {
 // Skips directories and other non-regular entries (symlinks, devices).
 // Example: for f in files.ListFiles("./src") ...
 func ListFiles(path string) ([]string, error) {
-	entries, err_17 := ListEntries(path)
-	if err_17 != nil {
-		return []string{}, err_17
+	entries, err_18 := ListEntries(path)
+	if err_18 != nil {
+		return []string{}, err_18
 	}
 	result := make([]string, 0, len(entries))
 	for _, entry := range entries {
@@ -297,9 +392,9 @@ func ListFiles(path string) ([]string, error) {
 // slice.Reverse to get oldest-first.
 // Example: recent := files.ListByModTime("./logs") onerr return
 func ListByModTime(path string) ([]Entry, error) {
-	entries, err_18 := ListEntries(path)
-	if err_18 != nil {
-		return []Entry{}, err_18
+	entries, err_19 := ListEntries(path)
+	if err_19 != nil {
+		return []Entry{}, err_19
 	}
 	sort.Slice(entries, func(i int, j int) bool {
 		return entries[i].ModTime > entries[j].ModTime
@@ -324,6 +419,57 @@ func Walk(path string) ([]Entry, error) {
 		return nil, walkErr
 	}
 	return result, nil
+}
+
+// WalkNames streams every path under path, including the root, without stat.
+// Unreadable subdirectories are skipped so a partial walk remains usable.
+// The root is validated upfront; early exit stops the walk immediately.
+// Example: for path in files.WalkNames("./src") |> iterator.Take(10)
+func WalkNames(path string) (iter.Seq[string], error) {
+	validateErr := validateDirectory(path)
+	if validateErr != nil {
+		return nil, validateErr
+	}
+	seq := func(yield func(string) bool) {
+		_ = filepath.WalkDir(path, func(filePath string, entry fs.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return fs.SkipDir
+			}
+			if !yield(filePath) {
+				return fs.SkipAll
+			}
+			return nil
+		})
+	}
+	return seq, nil
+}
+
+// WalkEntries streams one Entry for every file and directory under path,
+// including the root, with per-entry Info() called only at yield time.
+// Unreadable subdirectories are skipped so a partial walk remains usable.
+// The root is validated upfront; early exit stops the walk immediately.
+// Example: for entry in files.WalkEntries("./src") |> iterator.Take(10)
+func WalkEntries(path string) (iter.Seq[Entry], error) {
+	validateErr := validateDirectory(path)
+	if validateErr != nil {
+		return nil, validateErr
+	}
+	seq := func(yield func(Entry) bool) {
+		_ = filepath.WalkDir(path, func(filePath string, entry fs.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return fs.SkipDir
+			}
+			info, err_20 := entry.Info()
+			if err_20 != nil {
+				return fs.SkipDir
+			}
+			if (!yield(Entry{Name: entry.Name(), Path: filePath, IsDir: entry.IsDir(), Size: info.Size(), ModTime: info.ModTime().Unix()})) {
+				return fs.SkipAll
+			}
+			return nil
+		})
+	}
+	return seq, nil
 }
 
 // Glob expands a shell-style pattern into matching paths.
@@ -436,14 +582,14 @@ func DeleteAll(path string) error {
 // Returns any error that occurred
 // Example: files.Copy("source.txt", "destination.txt")
 func Copy(src string, dst string) error {
-	sourceFile, err_19 := os.Open(src)
-	if err_19 != nil {
-		return err_19
+	sourceFile, err_21 := os.Open(src)
+	if err_21 != nil {
+		return err_21
 	}
 	defer sourceFile.Close()
-	destFile, err_20 := os.Create(dst)
-	if err_20 != nil {
-		return err_20
+	destFile, err_22 := os.Create(dst)
+	if err_22 != nil {
+		return err_22
 	}
 	defer destFile.Close()
 	_, err := io.Copy(destFile, sourceFile)
@@ -496,14 +642,14 @@ func MkDirAll(path string) error {
 // Returns the file path and any error that occurred
 // Example: files.TempFile("upload-") |> processFile()
 func TempFile(prefix string) (string, error) {
-	file, err_21 := os.CreateTemp("", prefix)
-	if err_21 != nil {
-		return "", err_21
+	file, err_23 := os.CreateTemp("", prefix)
+	if err_23 != nil {
+		return "", err_23
 	}
 	path := file.Name()
-	err_22 := file.Close()
-	if err_22 != nil {
-		return "", err_22
+	err_24 := file.Close()
+	if err_24 != nil {
+		return "", err_24
 	}
 	return path, nil
 }
@@ -525,14 +671,14 @@ func TempDir(prefix string) (string, error) {
 //	dir, cleanup := files.TempDirAuto("build-") onerr return
 //	defer cleanup()
 func TempDirAuto(prefix string) (string, func(), error) {
-	path, err_23 := os.MkdirTemp("", prefix)
-	if err_23 != nil {
-		return "", nil, err_23
+	path, err_25 := os.MkdirTemp("", prefix)
+	if err_25 != nil {
+		return "", nil, err_25
 	}
 	cleanup := func() {
-		err_24 := os.RemoveAll(path)
-		if err_24 != nil {
-			fmt.Fprintf(os.Stderr, "files.TempDirAuto cleanup: %v\n", err_24)
+		err_26 := os.RemoveAll(path)
+		if err_26 != nil {
+			fmt.Fprintf(os.Stderr, "files.TempDirAuto cleanup: %v\n", err_26)
 		}
 	}
 	return path, cleanup, nil
@@ -547,19 +693,19 @@ func TempDirAuto(prefix string) (string, func(), error) {
 //	path, cleanup := files.TempFileAuto("upload-") onerr return
 //	defer cleanup()
 func TempFileAuto(prefix string) (string, func(), error) {
-	file, err_25 := os.CreateTemp("", prefix)
-	if err_25 != nil {
-		return "", nil, err_25
+	file, err_27 := os.CreateTemp("", prefix)
+	if err_27 != nil {
+		return "", nil, err_27
 	}
 	path := file.Name()
-	err_26 := file.Close()
-	if err_26 != nil {
-		return "", nil, err_26
+	err_28 := file.Close()
+	if err_28 != nil {
+		return "", nil, err_28
 	}
 	cleanup := func() {
-		err_27 := os.Remove(path)
-		if err_27 != nil {
-			fmt.Fprintf(os.Stderr, "files.TempFileAuto cleanup: %v\n", err_27)
+		err_29 := os.Remove(path)
+		if err_29 != nil {
+			fmt.Fprintf(os.Stderr, "files.TempFileAuto cleanup: %v\n", err_29)
 		}
 	}
 	return path, cleanup, nil
@@ -569,9 +715,9 @@ func TempFileAuto(prefix string) (string, func(), error) {
 // Returns the size and any error that occurred
 // Example: "large-file.dat" |> files.Size()
 func Size(path string) (int64, error) {
-	info, err_28 := os.Stat(path)
-	if err_28 != nil {
-		return 0, err_28
+	info, err_30 := os.Stat(path)
+	if err_30 != nil {
+		return 0, err_30
 	}
 	return info.Size(), nil
 }
@@ -580,9 +726,9 @@ func Size(path string) (int64, error) {
 // Returns the modification time in seconds since epoch and any error that occurred
 // Example: "document.txt" |> files.ModTime()
 func ModTime(path string) (int64, error) {
-	info, err_29 := os.Stat(path)
-	if err_29 != nil {
-		return 0, err_29
+	info, err_31 := os.Stat(path)
+	if err_31 != nil {
+		return 0, err_31
 	}
 	return info.ModTime().Unix(), nil
 }

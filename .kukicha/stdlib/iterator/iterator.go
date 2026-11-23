@@ -38,6 +38,20 @@ func Lines(rd io.Reader) iter.Seq[string] {
 	}
 }
 
+// Tap returns an iterator that calls f(item) for each yielded element without
+// changing the stream. Use this instead of pipe.Tap on iter.Seq pipelines;
+// pipe.Tap observes the iterator handle, not its elements.
+func Tap[T any](seq iter.Seq[T], f func(T)) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for item := range seq {
+			if !yield(item) {
+				return
+			}
+			f(item)
+		}
+	}
+}
+
 // Filter returns an iterator that yields only items matching the predicate
 func Filter[T any](seq iter.Seq[T], keep func(T) bool) iter.Seq[T] {
 	return func(yield func(T) bool) {

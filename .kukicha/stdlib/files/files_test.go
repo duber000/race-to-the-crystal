@@ -5,9 +5,12 @@ package files_test
 
 import (
 	"kukicha.org/stdlib/files"
+	"kukicha.org/stdlib/iterator"
 	"kukicha.org/stdlib/test"
 	"os"
 	"path/filepath"
+	"runtime"
+	"sort"
 	"testing"
 	"time"
 )
@@ -241,6 +244,156 @@ func TestWalk(t *testing.T) {
 			}
 		})
 	}
+}
+
+// --- TestNamesStreamsDirectChildren ---
+func TestNamesStreamsDirectChildren(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+	test.AssertNoError(t, err)
+	defer os.RemoveAll(tmpDir)
+	err = os.Mkdir(filepath.Join(tmpDir, "nested"), 0o755)
+	test.AssertNoError(t, err)
+	err = files.WriteString("top", filepath.Join(tmpDir, "top.txt"))
+	test.AssertNoError(t, err)
+	seq, namesErr := files.Names(tmpDir)
+	test.AssertNoError(t, namesErr)
+	names := iterator.Collect(seq)
+	sort.Strings(names)
+	test.AssertEqual(t, names, []string{"nested", "top.txt"})
+}
+
+// --- TestNamesEarlyExit ---
+func TestNamesEarlyExit(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+	test.AssertNoError(t, err)
+	defer os.RemoveAll(tmpDir)
+	for _, name := range []string{"one", "two", "three"} {
+		err = files.WriteString(name, filepath.Join(tmpDir, name))
+		test.AssertNoError(t, err)
+	}
+	seq, namesErr := files.Names(tmpDir)
+	test.AssertNoError(t, namesErr)
+	names := iterator.Collect(iterator.Take(seq, 2))
+	test.AssertEqual(t, len(names), 2)
+}
+
+// --- TestEntriesStreamsDirectChildren ---
+func TestEntriesStreamsDirectChildren(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+	test.AssertNoError(t, err)
+	defer os.RemoveAll(tmpDir)
+	err = os.Mkdir(filepath.Join(tmpDir, "nested"), 0o755)
+	test.AssertNoError(t, err)
+	err = files.WriteString("hello", filepath.Join(tmpDir, "top.txt"))
+	test.AssertNoError(t, err)
+	seq, entriesErr := files.Entries(tmpDir)
+	test.AssertNoError(t, entriesErr)
+	entries := iterator.Collect(seq)
+	sort.Slice(entries, func(i int, j int) bool {
+		return entries[i].Name < entries[j].Name
+	})
+	test.AssertEqual(t, len(entries), 2)
+	test.AssertEqual(t, entries[0].Name, "nested")
+	test.AssertTrue(t, entries[0].IsDir)
+	test.AssertEqual(t, entries[0].Path, filepath.Join(tmpDir, "nested"))
+	test.AssertEqual(t, entries[1].Name, "top.txt")
+	test.AssertFalse(t, entries[1].IsDir)
+	test.AssertEqual(t, entries[1].Size, int64(5))
+}
+
+// --- TestLazyIteratorsRejectInvalidPaths ---
+func TestLazyIteratorsRejectInvalidPaths(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+	test.AssertNoError(t, err)
+	defer os.RemoveAll(tmpDir)
+	filePath := filepath.Join(tmpDir, "file.txt")
+	err = files.WriteString("file", filePath)
+	test.AssertNoError(t, err)
+	_, namesErr := files.Names("/this/path/should/never/exist/kukicha")
+	if namesErr == nil {
+		t.Error("Expected files.Names to reject a missing path")
+	}
+	_, entriesErr := files.Entries(filePath)
+	if entriesErr == nil {
+		t.Error("Expected files.Entries to reject a file path")
+	}
+	_, walkNamesErr := files.WalkNames("/this/path/should/never/exist/kukicha")
+	if walkNamesErr == nil {
+		t.Error("Expected files.WalkNames to reject a missing path")
+	}
+	_, walkEntriesErr := files.WalkEntries(filePath)
+	if walkEntriesErr == nil {
+		t.Error("Expected files.WalkEntries to reject a file path")
+	}
+}
+
+// --- TestNamesPermissionError ---
+func TestNamesPermissionError(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("permission bits are not observable on Windows or as root")
+	}
+	tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+	test.AssertNoError(t, err)
+	defer os.RemoveAll(tmpDir)
+	private := filepath.Join(tmpDir, "private")
+	err = os.Mkdir(private, 0o755)
+	test.AssertNoError(t, err)
+	err = os.Chmod(private, 0)
+	test.AssertNoError(t, err)
+	defer func() {
+		_ = os.Chmod(private, 0o755)
+	}()
+	_, namesErr := files.Names(private)
+	if namesErr == nil {
+		t.Error("Expected files.Names to reject an unreadable directory")
+	}
+}
+
+// --- TestWalkNamesStreamsRecursively ---
+func TestWalkNamesStreamsRecursively(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+	test.AssertNoError(t, err)
+	defer os.RemoveAll(tmpDir)
+	nested := filepath.Join(tmpDir, "nested")
+	err = os.Mkdir(nested, 0o755)
+	test.AssertNoError(t, err)
+	err = files.WriteString("top", filepath.Join(tmpDir, "top.txt"))
+	test.AssertNoError(t, err)
+	err = files.WriteString("deep", filepath.Join(nested, "deep.txt"))
+	test.AssertNoError(t, err)
+	seq, walkErr := files.WalkNames(tmpDir)
+	test.AssertNoError(t, walkErr)
+	paths := iterator.Collect(seq)
+	sort.Strings(paths)
+	expected := []string{tmpDir, filepath.Join(nested, "deep.txt"), nested, filepath.Join(tmpDir, "top.txt")}
+	sort.Strings(expected)
+	test.AssertEqual(t, paths, expected)
+}
+
+// --- TestWalkEntriesStreamsRecursively ---
+func TestWalkEntriesStreamsRecursively(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+	test.AssertNoError(t, err)
+	defer os.RemoveAll(tmpDir)
+	nested := filepath.Join(tmpDir, "nested")
+	err = os.Mkdir(nested, 0o755)
+	test.AssertNoError(t, err)
+	err = files.WriteString("top", filepath.Join(tmpDir, "top.txt"))
+	test.AssertNoError(t, err)
+	err = files.WriteString("deep", filepath.Join(nested, "deep.txt"))
+	test.AssertNoError(t, err)
+	seq, walkErr := files.WalkEntries(tmpDir)
+	test.AssertNoError(t, walkErr)
+	entries := iterator.Collect(seq)
+	byPath := map[string]files.Entry{}
+	for _, entry := range entries {
+		byPath[entry.Path] = entry
+	}
+	test.AssertEqual(t, len(entries), 4)
+	test.AssertTrue(t, byPath[tmpDir].IsDir)
+	test.AssertTrue(t, byPath[nested].IsDir)
+	test.AssertEqual(t, byPath[filepath.Join(tmpDir, "top.txt")].Size, int64(3))
+	test.AssertEqual(t, byPath[filepath.Join(nested, "deep.txt")].Size, int64(4))
 }
 
 // --- TestListEntriesMissing ---

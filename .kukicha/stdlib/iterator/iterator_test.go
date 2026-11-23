@@ -13,6 +13,12 @@ import (
 	"testing"
 )
 
+var observed []int
+
+func record(value int) {
+	observed = append(observed, value)
+}
+
 // --- TestValues ---
 func TestValues(t *testing.T) {
 	items := []int{10, 20, 30}
@@ -52,6 +58,18 @@ func TestTake(t *testing.T) {
 		result := iterator.Collect(iterator.Take(iterator.Values(items), 0))
 		test.AssertEqual(t, len(result), 0)
 	})
+}
+
+// --- TestTap ---
+func TestTap(t *testing.T) {
+	observed = []int{}
+	items := []int{1, 2, 3, 4, 5}
+	result := iterator.Collect(iterator.Take(iterator.Tap(iterator.Values(items), record), 3))
+	test.AssertEqual(t, len(result), 3)
+	test.AssertEqual(t, len(observed), 3)
+	test.AssertEqual(t, observed[0], 1)
+	test.AssertEqual(t, observed[1], 2)
+	test.AssertEqual(t, observed[2], 3)
 }
 
 // --- TestSkip ---
